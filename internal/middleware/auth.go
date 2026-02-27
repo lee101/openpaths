@@ -1,0 +1,69 @@
+package middleware
+
+import (
+	"strings"
+
+	"github.com/valyala/fasthttp"
+
+	"github.com/openpath/openpath/internal/auth"
+	"github.com/openpath/openpath/internal/db/queries"
+)
+
+const (
+	CtxKeyUserID = "user_id"
+	CtxKeyAPIKey = "api_key"
+)
+
+// APIKeyAuth validates Bearer tokens as API keys.
+func APIKeyAuth(apiKeyQ *queries.APIKeyQueries) Middleware {
+	return func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
+		return func(ctx *fasthttp.RequestCtx) {
+			authHeader := string(ctx.Request.Header.Peek("Authorization"))
+			if !strings.HasPrefix(authHeader, "Bearer ") {
+				writeAuthError(ctx, "Missing API key", "missing_api_key")
+				return
+			}
+			rawKey := strings.TrimPrefix(authHeader, "Bearer ")
+
+			apiKey, err := apiKeyQ.ValidateKey(ctx, auth.HashAPIKey(rawKey))
+			if err != nil {
+				writeAuthError(ctx, "Invalid API key", "invalid_api_key")
+				return
+			}
+
+			ctx.SetUserValue(CtxKeyUserID, apiKey.UserID)
+			ctx.SetUserValue(CtxKeyAPIKey, apiKey)
+
+			next(ctx)
+		}
+	}
+}
+
+// JWTAuth validates JWT tokens for web dashboard access.
+func JWTAuth(jwtService *auth.JWTService) Middleware {
+	return func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
+		return func(ctx *fasthttp.RequestCtx) {
+			authHeader := string(ctx.Request.Header.Peek("Authorization"))
+			if !strings.HasPrefix(authHeader, "Bearer ") {
+				writeAuthError(ctx, "Missing token", "missing_token")
+				return
+			}
+			token := strings.TrimPrefix(authHeader, "Bearer ")
+
+			claims, err := jwtService.Validate(token)
+			if err != nil {
+				writeAuthError(ctx, "Invalid token", "invalid_token")
+				return
+			}
+
+			ctx.SetUserValue(CtxKeyUserID, claims.UserID)
+			next(ctx)
+		}
+	}
+}
+
+func writeAuthError(ctx *fasthttp.RequestCtx, message, code string) {
+	ctx.SetStatusCode(401)
+	ctx.SetContentType("application/json")
+	ctx.SetBodyString(`{"error":{"message":"` + message + `","type":"auth_error","code":"` + code + `"}}`)
+}

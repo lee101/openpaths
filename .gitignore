@@ -1,0 +1,22 @@
+# Environment & secrets
+.env
+.env.*
+secrets/
+
+# Binaries
+bin/
+*.exe
+
+# Go
+vendor/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

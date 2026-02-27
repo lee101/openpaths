@@ -1,0 +1,233 @@
+server:
+  port: 8080
+  read_timeout_seconds: 30
+  write_timeout_seconds: 300
+  max_request_body_mb: 10
+
+database:
+  url: "postgres://openpath:openpath@localhost:5432/openpath?sslmode=disable"
+  max_conns: 20
+  min_conns: 2
+
+jwt:
+  secret: "${JWT_SECRET}"
+  expiration_hours: 72
+
+providers:
+  - name: openai
+    base_url: "https://api.openai.com"
+    api_key: "${OPENAI_API_KEY}"
+    enabled: true
+
+  - name: anthropic
+    base_url: "https://api.anthropic.com"
+    api_key: "${ANTHROPIC_API_KEY}"
+    enabled: true
+
+  - name: google
+    base_url: "https://generativelanguage.googleapis.com"
+    api_key: "${GOOGLE_API_KEY}"
+    enabled: true
+
+  - name: mistral
+    base_url: "https://api.mistral.ai"
+    api_key: "${MISTRAL_API_KEY}"
+    enabled: true
+
+  - name: groq
+    base_url: "https://api.groq.com/openai"
+    api_key: "${GROQ_API_KEY}"
+    enabled: true
+
+models:
+  # OpenAI Models
+  - id: "gpt-4o"
+    provider: openai
+    provider_model_id: "gpt-4o"
+    input_price_per_1m: 2.50
+    output_price_per_1m: 10.00
+    context_window: 128000
+    max_output_tokens: 16384
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "gpt-4o-mini"
+    provider: openai
+    provider_model_id: "gpt-4o-mini"
+    input_price_per_1m: 0.15
+    output_price_per_1m: 0.60
+    context_window: 128000
+    max_output_tokens: 16384
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "gpt-4-turbo"
+    provider: openai
+    provider_model_id: "gpt-4-turbo"
+    input_price_per_1m: 10.00
+    output_price_per_1m: 30.00
+    context_window: 128000
+    max_output_tokens: 4096
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "o1"
+    provider: openai
+    provider_model_id: "o1"
+    input_price_per_1m: 15.00
+    output_price_per_1m: 60.00
+    context_window: 200000
+    max_output_tokens: 100000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "o1-mini"
+    provider: openai
+    provider_model_id: "o1-mini"
+    input_price_per_1m: 3.00
+    output_price_per_1m: 12.00
+    context_window: 128000
+    max_output_tokens: 65536
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  # Anthropic Models
+  - id: "claude-sonnet-4-20250514"
+    provider: anthropic
+    provider_model_id: "claude-sonnet-4-20250514"
+    input_price_per_1m: 3.00
+    output_price_per_1m: 15.00
+    aliases: ["claude-3.5-sonnet", "claude-sonnet"]
+    context_window: 200000
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "claude-opus-4-20250514"
+    provider: anthropic
+    provider_model_id: "claude-opus-4-20250514"
+    input_price_per_1m: 15.00
+    output_price_per_1m: 75.00
+    aliases: ["claude-3-opus", "claude-opus"]
+    context_window: 200000
+    max_output_tokens: 4096
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "claude-haiku-4-5-20251001"
+    provider: anthropic
+    provider_model_id: "claude-haiku-4-5-20251001"
+    input_price_per_1m: 0.80
+    output_price_per_1m: 4.00
+    aliases: ["claude-3-haiku", "claude-haiku"]
+    context_window: 200000
+    max_output_tokens: 4096
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  # Google Models
+  - id: "gemini-2.0-flash"
+    provider: google
+    provider_model_id: "gemini-2.0-flash"
+    input_price_per_1m: 0.075
+    output_price_per_1m: 0.30
+    aliases: ["gemini-flash"]
+    context_window: 1000000
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "gemini-2.0-pro"
+    provider: google
+    provider_model_id: "gemini-2.0-pro"
+    input_price_per_1m: 1.25
+    output_price_per_1m: 5.00
+    aliases: ["gemini-pro"]
+    context_window: 2000000
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  # Mistral Models
+  - id: "mistral-large-latest"
+    provider: mistral
+    provider_model_id: "mistral-large-latest"
+    input_price_per_1m: 2.00
+    output_price_per_1m: 6.00
+    aliases: ["mistral-large"]
+    context_window: 128000
+    max_output_tokens: 4096
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "mistral-small-latest"
+    provider: mistral
+    provider_model_id: "mistral-small-latest"
+    input_price_per_1m: 0.20
+    output_price_per_1m: 0.60
+    aliases: ["mistral-small"]
+    context_window: 128000
+    max_output_tokens: 4096
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "codestral-latest"
+    provider: mistral
+    provider_model_id: "codestral-latest"
+    input_price_per_1m: 0.30
+    output_price_per_1m: 0.90
+    aliases: ["codestral"]
+    context_window: 256000
+    max_output_tokens: 4096
+    supports_streaming: true
+    supports_tools: false
+    supports_vision: false
+
+  # Groq Models
+  - id: "llama-3.3-70b-versatile"
+    provider: groq
+    provider_model_id: "llama-3.3-70b-versatile"
+    input_price_per_1m: 0.59
+    output_price_per_1m: 0.79
+    aliases: ["llama-70b"]
+    context_window: 128000
+    max_output_tokens: 32768
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "llama-3.1-8b-instant"
+    provider: groq
+    provider_model_id: "llama-3.1-8b-instant"
+    input_price_per_1m: 0.05
+    output_price_per_1m: 0.08
+    aliases: ["llama-8b"]
+    context_window: 128000
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "mixtral-8x7b-32768"
+    provider: groq
+    provider_model_id: "mixtral-8x7b-32768"
+    input_price_per_1m: 0.24
+    output_price_per_1m: 0.24
+    aliases: ["mixtral"]
+    context_window: 32768
+    max_output_tokens: 4096
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false

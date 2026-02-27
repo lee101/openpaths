@@ -1,0 +1,181 @@
+package handler
+
+import (
+	"bufio"
+	"encoding/json"
+	"fmt"
+	"time"
+
+	"github.com/valyala/fasthttp"
+
+	"github.com/openpath/openpath/internal/billing"
+	"github.com/openpath/openpath/internal/metrics"
+	"github.com/openpath/openpath/internal/middleware"
+	"github.com/openpath/openpath/internal/model"
+	"github.com/openpath/openpath/internal/provider"
+	"github.com/openpath/openpath/internal/router"
+)
+
+type ChatHandler struct {
+	router   *router.Router
+	billing  *billing.Engine
+	recorder *metrics.Recorder
+}
+
+func NewChatHandler(r *router.Router, b *billing.Engine, rec *metrics.Recorder) *ChatHandler {
+	return &ChatHandler{router: r, billing: b, recorder: rec}
+}
+
+// HandleChatCompletion handles POST /v1/chat/completions.
+func (h *ChatHandler) HandleChatCompletion(ctx *fasthttp.RequestCtx) {
+	userID, _ := ctx.UserValue(middleware.CtxKeyUserID).(string)
+	apiKey, _ := ctx.UserValue(middleware.CtxKeyAPIKey).(*model.APIKey)
+
+	var req model.ChatCompletionRequest
+	if err := json.Unmarshal(ctx.PostBody(), &req); err != nil {
+		writeError(ctx, 400, "invalid_request", "Invalid JSON: "+err.Error())
+		return
+	}
+
+	if req.Model == "" {
+		writeError(ctx, 400, "invalid_request", "model is required")
+		return
+	}
+
+	// Resolve model to provider
+	modelCfg, prov, err := h.router.Resolve(req.Model)
+	if err != nil {
+		writeError(ctx, 404, "model_not_found", err.Error())
+		return
+	}
+
+	// Rewrite model to provider's native model ID
+	originalModel := req.Model
+	req.Model = modelCfg.ProviderModelID
+
+	start := time.Now()
+	apiKeyID := ""
+	if apiKey != nil {
+		apiKeyID = apiKey.ID
+	}
+
+	if req.Stream {
+		h.handleStreaming(ctx, &req, modelCfg, prov, userID, apiKeyID, originalModel, start)
+	} else {
+		h.handleNonStreaming(ctx, &req, modelCfg, prov, userID, apiKeyID, originalModel, start)
+	}
+}
+
+func (h *ChatHandler) handleNonStreaming(
+	ctx *fasthttp.RequestCtx,
+	req *model.ChatCompletionRequest,
+	modelCfg *model.ModelConfig,
+	prov provider.Provider,
+	userID, apiKeyID, originalModel string,
+	start time.Time,
+) {
+	resp, err := prov.ChatCompletion(ctx, req)
+	latency := time.Since(start)
+
+	if err != nil {
+		statusCode := 502
+		errMsg := "Upstream error"
+		if pe, ok := err.(*provider.ProviderError); ok {
+			statusCode = pe.StatusCode
+			errMsg = pe.Message
+			if pe.Retryable {
+				h.router.MarkUnhealthy(prov.Name())
+			}
+		}
+		h.recorder.RecordError(userID, apiKeyID, originalModel, prov.Name(),
+			int(latency.Milliseconds()), statusCode, errMsg, false)
+		writeError(ctx, statusCode, "provider_error", errMsg)
+		return
+	}
+
+	// Restore original model name
+	resp.Model = originalModel
+
+	var tps float32
+	var tokensIn, tokensOut int
+	if resp.Usage != nil {
+		tokensIn = resp.Usage.PromptTokens
+		tokensOut = resp.Usage.CompletionTokens
+		if latency.Seconds() > 0 {
+			tps = float32(float64(tokensOut) / latency.Seconds())
+		}
+	}
+
+	cost, _ := h.billing.Deduct(ctx, userID, modelCfg.ID, tokensIn, tokensOut, "")
+	h.recorder.RecordSuccess(userID, apiKeyID, originalModel, prov.Name(),
+		tokensIn, tokensOut, int(latency.Milliseconds()), tps, cost, false)
+
+	writeJSON(ctx, 200, resp)
+}
+
+func (h *ChatHandler) handleStreaming(
+	ctx *fasthttp.RequestCtx,
+	req *model.ChatCompletionRequest,
+	modelCfg *model.ModelConfig,
+	prov provider.Provider,
+	userID, apiKeyID, originalModel string,
+	start time.Time,
+) {
+	streamCh, err := prov.ChatCompletionStream(ctx, req)
+	if err != nil {
+		statusCode := 502
+		errMsg := "Stream initialization failed"
+		if pe, ok := err.(*provider.ProviderError); ok {
+			statusCode = pe.StatusCode
+			errMsg = pe.Message
+		}
+		writeError(ctx, statusCode, "provider_error", errMsg)
+		return
+	}
+
+	ctx.SetContentType("text/event-stream")
+	ctx.Response.Header.Set("Cache-Control", "no-cache")
+	ctx.Response.Header.Set("Connection", "keep-alive")
+	ctx.Response.Header.Set("X-Accel-Buffering", "no")
+
+	ctx.SetBodyStreamWriter(func(w *bufio.Writer) {
+		var usage *model.UsageInfo
+
+		for event := range streamCh {
+			if event.Err != nil {
+				errData, _ := json.Marshal(model.ErrorResponse{
+					Error: model.ErrorDetail{Message: event.Err.Error(), Type: "provider_error"},
+				})
+				fmt.Fprintf(w, "data: %s\n\n", errData)
+				w.Flush()
+				break
+			}
+			if event.Done {
+				usage = event.Usage
+				fmt.Fprintf(w, "data: [DONE]\n\n")
+				w.Flush()
+				break
+			}
+
+			// Rewrite model name
+			event.Chunk.Model = originalModel
+			data, _ := json.Marshal(event.Chunk)
+			fmt.Fprintf(w, "data: %s\n\n", data)
+			w.Flush()
+		}
+
+		// Post-stream billing
+		latency := time.Since(start)
+		if usage != nil {
+			var tps float32
+			if latency.Seconds() > 0 {
+				tps = float32(float64(usage.CompletionTokens) / latency.Seconds())
+			}
+			cost, _ := h.billing.Deduct(ctx, userID, modelCfg.ID,
+				usage.PromptTokens, usage.CompletionTokens, "")
+			h.recorder.RecordSuccess(userID, apiKeyID, originalModel, prov.Name(),
+				usage.PromptTokens, usage.CompletionTokens,
+				int(latency.Milliseconds()), tps, cost, true)
+		}
+	})
+}
