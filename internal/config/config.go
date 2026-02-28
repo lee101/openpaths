@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/openpath/openpath/internal/model"
@@ -10,11 +11,34 @@ import (
 )
 
 type Config struct {
-	Server    ServerConfig         `yaml:"server"`
-	Database  DatabaseConfig       `yaml:"database"`
-	JWT       JWTConfig            `yaml:"jwt"`
+	Server    ServerConfig           `yaml:"server"`
+	Database  DatabaseConfig         `yaml:"database"`
+	JWT       JWTConfig              `yaml:"jwt"`
+	Crypto    CryptoConfig           `yaml:"crypto"`
+	Storage   StorageConfig          `yaml:"storage"`
 	Providers []model.ProviderConfig `yaml:"providers"`
-	Models    []model.ModelConfig  `yaml:"models"`
+	Models    []model.ModelConfig    `yaml:"models"`
+}
+
+type StorageConfig struct {
+	Provider  string `yaml:"provider"`
+	LocalDir  string `yaml:"local_dir"`
+	R2Endpoint string `yaml:"r2_endpoint"`
+	R2Bucket   string `yaml:"r2_bucket"`
+	R2AccessKey string `yaml:"r2_access_key"`
+	R2SecretKey string `yaml:"r2_secret_key"`
+	R2PublicURL string `yaml:"r2_public_url"`
+}
+
+type CryptoConfig struct {
+	Enabled        bool   `yaml:"enabled"`
+	WalletPubkey   string `yaml:"solana_wallet_pubkey"`
+	HDWalletSeed   string `yaml:"hd_wallet_seed"`
+	SolanaRPCURL   string `yaml:"solana_rpc_url"`
+	HeliusAPIKey   string `yaml:"helius_api_key"`
+	CodexTokenMint string `yaml:"codex_token_mint"`
+	BagsAPIKey     string `yaml:"bags_api_key"`
+	MinTopupUSD    float64 `yaml:"min_topup_usd"`
 }
 
 type ServerConfig struct {
@@ -57,13 +81,62 @@ func Load(path string) (*Config, error) {
 		if v := os.Getenv(envKey); v != "" {
 			cfg.Providers[i].APIKey = v
 		}
+		// Also check GEMINI_API_KEY for google provider
+		if cfg.Providers[i].Name == "google" {
+			if v := os.Getenv("GEMINI_API_KEY"); v != "" && cfg.Providers[i].APIKey == "" {
+				cfg.Providers[i].APIKey = v
+			}
+		}
 	}
 
+	if v := os.Getenv("PORT"); v != "" {
+		if p, err := strconv.Atoi(v); err == nil {
+			cfg.Server.Port = p
+		}
+	}
 	if v := os.Getenv("DATABASE_URL"); v != "" {
 		cfg.Database.URL = v
 	}
 	if v := os.Getenv("JWT_SECRET"); v != "" {
 		cfg.JWT.Secret = v
+	}
+
+	if v := os.Getenv("SOLANA_WALLET_PUBKEY"); v != "" {
+		cfg.Crypto.WalletPubkey = v
+	}
+	if v := os.Getenv("HD_WALLET_SEED"); v != "" {
+		cfg.Crypto.HDWalletSeed = v
+	}
+	if v := os.Getenv("SOLANA_RPC_URL"); v != "" {
+		cfg.Crypto.SolanaRPCURL = v
+	}
+	if v := os.Getenv("HELIUS_API_KEY"); v != "" {
+		cfg.Crypto.HeliusAPIKey = v
+	}
+	if v := os.Getenv("CODEX_TOKEN_MINT"); v != "" {
+		cfg.Crypto.CodexTokenMint = v
+	}
+	if v := os.Getenv("BAGS_API_KEY"); v != "" {
+		cfg.Crypto.BagsAPIKey = v
+	}
+
+	if v := os.Getenv("STORAGE_PROVIDER"); v != "" {
+		cfg.Storage.Provider = v
+	}
+	if v := os.Getenv("R2_ENDPOINT"); v != "" {
+		cfg.Storage.R2Endpoint = v
+	}
+	if v := os.Getenv("R2_BUCKET"); v != "" {
+		cfg.Storage.R2Bucket = v
+	}
+	if v := os.Getenv("R2_ACCESS_KEY"); v != "" {
+		cfg.Storage.R2AccessKey = v
+	}
+	if v := os.Getenv("R2_SECRET_KEY"); v != "" {
+		cfg.Storage.R2SecretKey = v
+	}
+	if v := os.Getenv("R2_PUBLIC_URL"); v != "" {
+		cfg.Storage.R2PublicURL = v
 	}
 
 	return &cfg, nil
@@ -93,6 +166,18 @@ func (c *Config) applyDefaults() {
 	}
 	if c.Database.URL == "" {
 		c.Database.URL = "postgres://openpath:openpath@localhost:5432/openpath?sslmode=disable"
+	}
+	if c.Crypto.SolanaRPCURL == "" {
+		c.Crypto.SolanaRPCURL = "https://api.mainnet-beta.solana.com"
+	}
+	if c.Crypto.CodexTokenMint == "" {
+		c.Crypto.CodexTokenMint = "HAK9cX1jfYmcNpr6keTkLvxehGPWKELXSu7GH2ofBAGS"
+	}
+	if c.Crypto.MinTopupUSD == 0 {
+		c.Crypto.MinTopupUSD = 5
+	}
+	if c.Storage.LocalDir == "" {
+		c.Storage.LocalDir = "./uploads"
 	}
 }
 

@@ -70,6 +70,54 @@ func (e *Engine) Deduct(ctx context.Context, userID, modelID string, inputTokens
 	return cost, nil
 }
 
+// DeductImage calculates image generation cost and atomically deducts from balance.
+func (e *Engine) DeductImage(ctx context.Context, userID, modelID string, imageCount int, usageLogID string) (int64, error) {
+	cost, err := e.pricing.CalculateImageCost(modelID, imageCount)
+	if err != nil {
+		return 0, err
+	}
+	if cost == 0 {
+		return 0, nil
+	}
+	var refID *string
+	if usageLogID != "" {
+		refID = &usageLogID
+	}
+	err = e.credits.DeductWithTransaction(ctx, userID, cost,
+		model.TxTypeUsageDeduction,
+		fmt.Sprintf("Image: %s, count: %d", modelID, imageCount),
+		refID,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return cost, nil
+}
+
+// DeductVideo calculates video generation cost and atomically deducts from balance.
+func (e *Engine) DeductVideo(ctx context.Context, userID, modelID string, usageLogID string) (int64, error) {
+	cost, err := e.pricing.CalculateVideoCost(modelID)
+	if err != nil {
+		return 0, err
+	}
+	if cost == 0 {
+		return 0, nil
+	}
+	var refID *string
+	if usageLogID != "" {
+		refID = &usageLogID
+	}
+	err = e.credits.DeductWithTransaction(ctx, userID, cost,
+		model.TxTypeUsageDeduction,
+		fmt.Sprintf("Video: %s", modelID),
+		refID,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return cost, nil
+}
+
 // Deposit adds credits to a user's balance.
 func (e *Engine) Deposit(ctx context.Context, userID string, amountCents int64, description string) error {
 	return e.credits.Deposit(ctx, userID, amountCents, description)

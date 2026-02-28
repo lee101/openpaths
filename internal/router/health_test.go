@@ -37,8 +37,7 @@ func TestHealthTracker_IsHealthy(t *testing.T) {
 		{
 			name: "provider recovers after cooldown expires",
 			setup: func(h *HealthTracker) {
-				// Set cooldown to a very short duration so it expires immediately.
-				h.cooldown = 1 * time.Millisecond
+				h.baseCooldown = 1 * time.Millisecond
 				h.MarkUnhealthy("openai")
 				time.Sleep(5 * time.Millisecond)
 			},
@@ -65,7 +64,7 @@ func TestHealthTracker_IsHealthy(t *testing.T) {
 		{
 			name: "provider remains unhealthy before cooldown expires",
 			setup: func(h *HealthTracker) {
-				h.cooldown = 1 * time.Hour
+				h.baseCooldown = 1 * time.Hour
 				h.MarkUnhealthy("openai")
 			},
 			providerName: "openai",
@@ -87,43 +86,22 @@ func TestHealthTracker_IsHealthy(t *testing.T) {
 }
 
 func TestHealthTracker_MarkUnhealthy(t *testing.T) {
-	tests := []struct {
-		name         string
-		providerName string
-	}{
-		{
-			name:         "marks a new provider as unhealthy",
-			providerName: "openai",
-		},
-		{
-			name:         "marks an already unhealthy provider again",
-			providerName: "openai",
-		},
+	h := NewHealthTracker()
+
+	h.MarkUnhealthy("openai")
+	if h.IsHealthy("openai") {
+		t.Errorf("expected provider to be unhealthy after MarkUnhealthy")
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			h := NewHealthTracker()
-
-			h.MarkUnhealthy(tt.providerName)
-
-			if h.IsHealthy(tt.providerName) {
-				t.Errorf("expected provider %q to be unhealthy after MarkUnhealthy", tt.providerName)
-			}
-
-			// Mark it again; should not panic or change behavior.
-			h.MarkUnhealthy(tt.providerName)
-
-			if h.IsHealthy(tt.providerName) {
-				t.Errorf("expected provider %q to still be unhealthy after second MarkUnhealthy", tt.providerName)
-			}
-		})
+	h.MarkUnhealthy("openai")
+	if h.IsHealthy("openai") {
+		t.Errorf("expected provider to still be unhealthy after second MarkUnhealthy")
 	}
 }
 
 func TestHealthTracker_CooldownRecovery(t *testing.T) {
 	h := NewHealthTracker()
-	h.cooldown = 10 * time.Millisecond
+	h.baseCooldown = 10 * time.Millisecond
 
 	h.MarkUnhealthy("openai")
 
@@ -131,7 +109,6 @@ func TestHealthTracker_CooldownRecovery(t *testing.T) {
 		t.Fatal("expected provider to be unhealthy immediately after MarkUnhealthy")
 	}
 
-	// Wait for cooldown to expire.
 	time.Sleep(20 * time.Millisecond)
 
 	if !h.IsHealthy("openai") {
@@ -141,8 +118,8 @@ func TestHealthTracker_CooldownRecovery(t *testing.T) {
 
 func TestHealthTracker_DefaultCooldown(t *testing.T) {
 	h := NewHealthTracker()
-	if h.cooldown != 30*time.Second {
-		t.Errorf("default cooldown = %v, want %v", h.cooldown, 30*time.Second)
+	if h.baseCooldown != 30*time.Second {
+		t.Errorf("default cooldown = %v, want %v", h.baseCooldown, 30*time.Second)
 	}
 }
 
@@ -169,5 +146,34 @@ func TestHealthTracker_MultipleProviders(t *testing.T) {
 	}
 	if h.IsHealthy("anthropic") {
 		t.Error("expected anthropic to still be unhealthy")
+	}
+}
+
+func TestHealthTracker_EscalatingCooldown(t *testing.T) {
+	h := NewHealthTracker()
+	h.baseCooldown = 10 * time.Millisecond
+	h.maxCooldown = 40 * time.Millisecond
+
+	h.MarkUnhealthy("openai")
+	if h.failures["openai"] != 1 {
+		t.Errorf("failures = %d, want 1", h.failures["openai"])
+	}
+
+	h.MarkUnhealthy("openai")
+	if h.failures["openai"] != 2 {
+		t.Errorf("failures = %d, want 2", h.failures["openai"])
+	}
+
+	h.MarkHealthy("openai")
+	if h.failures["openai"] != 0 {
+		t.Errorf("failures after MarkHealthy = %d, want 0", h.failures["openai"])
+	}
+}
+
+func TestHealthTracker_ModelProviderKey(t *testing.T) {
+	h := NewHealthTracker()
+	key := h.ModelProviderKey("google", "gemini-3.1-pro-preview")
+	if key != "google:gemini-3.1-pro-preview" {
+		t.Errorf("key = %q, want %q", key, "google:gemini-3.1-pro-preview")
 	}
 }

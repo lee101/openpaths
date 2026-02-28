@@ -9,7 +9,11 @@ import (
 	"github.com/openpath/openpath/internal/provider"
 )
 
-// Router maps model names to providers and handles fallback logic.
+type RouteCandidate struct {
+	ModelCfg *model.ModelConfig
+	Provider provider.Provider
+}
+
 type Router struct {
 	mu       sync.RWMutex
 	models   map[string]*model.ModelConfig
@@ -35,7 +39,6 @@ func New(registry *provider.Registry, models []model.ModelConfig) *Router {
 	return r
 }
 
-// Resolve returns the ModelConfig and Provider for a given model name.
 func (r *Router) Resolve(modelName string) (*model.ModelConfig, provider.Provider, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -50,7 +53,6 @@ func (r *Router) Resolve(modelName string) (*model.ModelConfig, provider.Provide
 		return nil, nil, fmt.Errorf("model %q not found", modelName)
 	}
 
-	// Try primary provider
 	if r.health.IsHealthy(cfg.Provider) {
 		p, err := r.registry.Get(cfg.Provider)
 		if err == nil {
@@ -58,7 +60,6 @@ func (r *Router) Resolve(modelName string) (*model.ModelConfig, provider.Provide
 		}
 	}
 
-	// Try fallbacks
 	for _, fb := range cfg.FallbackProviders {
 		if r.health.IsHealthy(fb) {
 			p, err := r.registry.Get(fb)
@@ -71,12 +72,76 @@ func (r *Router) Resolve(modelName string) (*model.ModelConfig, provider.Provide
 	return nil, nil, fmt.Errorf("no healthy provider available for model %q", modelName)
 }
 
-// MarkUnhealthy marks a provider as unhealthy for the cooldown period.
+func (r *Router) ResolveWithRetries(modelName string) ([]RouteCandidate, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	canonical := modelName
+	if mapped, ok := r.aliases[modelName]; ok {
+		canonical = mapped
+	}
+
+	cfg, ok := r.models[canonical]
+	if !ok {
+		return nil, fmt.Errorf("model %q not found", modelName)
+	}
+
+	var candidates []RouteCandidate
+
+	key := r.health.ModelProviderKey(cfg.Provider, cfg.ID)
+	if r.health.IsHealthy(key) {
+		if p, err := r.registry.Get(cfg.Provider); err == nil {
+			candidates = append(candidates, RouteCandidate{ModelCfg: cfg, Provider: p})
+		}
+	}
+
+	for _, fb := range cfg.FallbackProviders {
+		fbKey := r.health.ModelProviderKey(fb, cfg.ID)
+		if r.health.IsHealthy(fbKey) {
+			if p, err := r.registry.Get(fb); err == nil {
+				candidates = append(candidates, RouteCandidate{ModelCfg: cfg, Provider: p})
+			}
+		}
+	}
+
+	for _, fbModelID := range cfg.FallbackModels {
+		fbCfg, ok := r.models[fbModelID]
+		if !ok {
+			continue
+		}
+		fbKey := r.health.ModelProviderKey(fbCfg.Provider, fbCfg.ID)
+		if r.health.IsHealthy(fbKey) {
+			if p, err := r.registry.Get(fbCfg.Provider); err == nil {
+				candidates = append(candidates, RouteCandidate{ModelCfg: fbCfg, Provider: p})
+			}
+		}
+	}
+
+	if len(candidates) == 0 {
+		return nil, fmt.Errorf("no healthy provider available for model %q", modelName)
+	}
+
+	return candidates, nil
+}
+
+func (r *Router) HealthTracker() *HealthTracker {
+	return r.health
+}
+
 func (r *Router) MarkUnhealthy(providerName string) {
 	r.health.MarkUnhealthy(providerName)
 }
 
-// ListModels returns all available models in OpenAI format.
+func (r *Router) MarkModelUnhealthy(providerName, modelID string) {
+	key := r.health.ModelProviderKey(providerName, modelID)
+	r.health.MarkUnhealthy(key)
+}
+
+func (r *Router) MarkModelHealthy(providerName, modelID string) {
+	key := r.health.ModelProviderKey(providerName, modelID)
+	r.health.MarkHealthy(key)
+}
+
 func (r *Router) ListModels() []model.ModelInfo {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -93,7 +158,6 @@ func (r *Router) ListModels() []model.ModelInfo {
 	return models
 }
 
-// GetModelConfig returns the config for a model by name or alias.
 func (r *Router) GetModelConfig(modelName string) (*model.ModelConfig, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()

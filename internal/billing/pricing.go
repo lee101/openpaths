@@ -39,6 +39,39 @@ func (pt *PricingTable) CalculateCost(modelID string, inputTokens, outputTokens 
 	return totalCents, nil
 }
 
+// CalculateImageCost returns cost in hundredths-of-a-cent for image generation.
+func (pt *PricingTable) CalculateImageCost(modelID string, imageCount int) (int64, error) {
+	cfg, ok := pt.models[modelID]
+	if !ok {
+		return 0, fmt.Errorf("unknown model %q for pricing", modelID)
+	}
+	if cfg.PricePerImage <= 0 {
+		return 0, fmt.Errorf("model %q has no per-image pricing", modelID)
+	}
+	totalDollars := cfg.PricePerImage * float64(imageCount)
+	totalCents := int64(totalDollars * 10000)
+	if totalCents < 1 && imageCount > 0 {
+		totalCents = 1
+	}
+	return totalCents, nil
+}
+
+// CalculateVideoCost returns cost in hundredths-of-a-cent for video generation.
+func (pt *PricingTable) CalculateVideoCost(modelID string) (int64, error) {
+	cfg, ok := pt.models[modelID]
+	if !ok {
+		return 0, fmt.Errorf("unknown model %q for pricing", modelID)
+	}
+	if cfg.PricePerVideo <= 0 {
+		return 0, fmt.Errorf("model %q has no per-video pricing", modelID)
+	}
+	totalCents := int64(cfg.PricePerVideo * 10000)
+	if totalCents < 1 {
+		totalCents = 1
+	}
+	return totalCents, nil
+}
+
 // EstimateMaxCost returns a conservative cost estimate for balance pre-check.
 func (pt *PricingTable) EstimateMaxCost(modelID string, maxOutputTokens int) (int64, error) {
 	if maxOutputTokens <= 0 {

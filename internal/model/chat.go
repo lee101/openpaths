@@ -86,25 +86,6 @@ type ToolCallFunc struct {
 	Arguments string `json:"arguments"`
 }
 
-type EmbeddingRequest struct {
-	Model          string `json:"model"`
-	Input          any    `json:"input"`
-	EncodingFormat string `json:"encoding_format,omitempty"`
-}
-
-type EmbeddingResponse struct {
-	Object string          `json:"object"`
-	Data   []EmbeddingData `json:"data"`
-	Model  string          `json:"model"`
-	Usage  *UsageInfo      `json:"usage,omitempty"`
-}
-
-type EmbeddingData struct {
-	Object    string    `json:"object"`
-	Embedding []float64 `json:"embedding"`
-	Index     int       `json:"index"`
-}
-
 // ErrorResponse is the OpenAI-compatible error format.
 type ErrorResponse struct {
 	Error ErrorDetail `json:"error"`

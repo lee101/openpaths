@@ -1,0 +1,5 @@
+{
+  "name": "OpenPath",
+  "description": "An open source model router for LLMs and art generators with millisecond routing and crypto/Stripe payments.",
+  "requestFramePermissions": []
+}

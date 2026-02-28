@@ -1,22 +1,14 @@
-# Environment & secrets
-.env
-.env.*
-secrets/
-
-# Binaries
+node_modules/
+build/
+dist/
 bin/
-*.exe
-
-# Go
-vendor/
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS
+openpath
+coverage/
 .DS_Store
-Thumbs.db
+*.log
+.env*
+!.env.example
+crawlers/__pycache__/
+crawlers/*.pyc
+crawlers/.venv/
+test-results/

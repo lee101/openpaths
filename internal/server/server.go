@@ -11,11 +11,14 @@ import (
 	"github.com/openpath/openpath/internal/auth"
 	"github.com/openpath/openpath/internal/billing"
 	"github.com/openpath/openpath/internal/config"
+	"github.com/openpath/openpath/internal/crypto"
 	"github.com/openpath/openpath/internal/db/queries"
 	"github.com/openpath/openpath/internal/handler"
 	"github.com/openpath/openpath/internal/metrics"
 	"github.com/openpath/openpath/internal/middleware"
+	"github.com/openpath/openpath/internal/provider"
 	"github.com/openpath/openpath/internal/router"
+	"github.com/openpath/openpath/internal/storage"
 )
 
 type Server struct {
@@ -24,21 +27,24 @@ type Server struct {
 }
 
 type Dependencies struct {
-	Config     *config.Config
-	Router     *router.Router
-	Billing    *billing.Engine
-	Recorder   *metrics.Recorder
-	JWTService *auth.JWTService
-	UserQ      *queries.UserQueries
-	APIKeyQ    *queries.APIKeyQueries
-	CreditQ    *queries.CreditQueries
-	StatsQ     *queries.StatsQueries
+	Config       *config.Config
+	Router       *router.Router
+	Billing      *billing.Engine
+	Recorder     *metrics.Recorder
+	JWTService   *auth.JWTService
+	UserQ        *queries.UserQueries
+	APIKeyQ      *queries.APIKeyQueries
+	CreditQ      *queries.CreditQueries
+	StatsQ       *queries.StatsQueries
+	Transcribers []provider.TranscriptionProvider
+	Embedders    []provider.EmbeddingProvider
+	CryptoSvc    *crypto.Service
+	Storage      storage.Store
 }
 
 func New(deps *Dependencies) *Server {
 	r := fasthttprouter.New()
 
-	// Create handlers
 	chatH := handler.NewChatHandler(deps.Router, deps.Billing, deps.Recorder)
 	modelsH := handler.NewModelsHandler(deps.Router)
 	authH := handler.NewAuthHandler(deps.UserQ, deps.CreditQ, deps.JWTService)
@@ -46,7 +52,6 @@ func New(deps *Dependencies) *Server {
 	creditsH := handler.NewCreditsHandler(deps.Billing)
 	statsH := handler.NewStatsHandler(deps.StatsQ)
 
-	// Middleware chains
 	apiKeyChain := middleware.Chain(
 		middleware.Recovery(),
 		middleware.Logging(),
@@ -66,15 +71,46 @@ func New(deps *Dependencies) *Server {
 		middleware.Logging(),
 	)
 
-	// OpenAI-compatible API endpoints (API key auth)
 	r.POST("/v1/chat/completions", apiKeyChain(chatH.HandleChatCompletion))
 	r.GET("/v1/models", apiKeyChain(modelsH.HandleListModels))
 
-	// Auth endpoints (public)
+	imageH := handler.NewImageHandler(deps.Router, deps.Billing, deps.Recorder)
+	r.POST("/v1/images/generations", apiKeyChain(imageH.HandleImageGeneration))
+	log.Printf("Image generation endpoint enabled")
+
+	videoH := handler.NewVideoHandler(deps.Router, deps.Billing, deps.Recorder)
+	r.POST("/v1/videos/generations", apiKeyChain(videoH.HandleVideoGeneration))
+	log.Printf("Video generation endpoint enabled")
+
+	musicH := handler.NewMusicHandler(deps.Router, deps.Billing, deps.Recorder)
+	r.POST("/v1/music/generations", apiKeyChain(musicH.HandleMusicGeneration))
+	log.Printf("Music generation endpoint enabled")
+
+	speechH := handler.NewSpeechHandler(deps.Router, deps.Billing, deps.Recorder)
+	r.POST("/v1/audio/speech", apiKeyChain(speechH.HandleSpeechGeneration))
+	log.Printf("Speech generation endpoint enabled")
+
+	embeddingH := handler.NewEmbeddingHandler(deps.Router, deps.Billing, deps.Recorder, deps.Embedders)
+	r.POST("/v1/embeddings", apiKeyChain(embeddingH.HandleEmbedding))
+	log.Printf("Embedding endpoint enabled (%d fallback providers)", len(deps.Embedders))
+
+	if len(deps.Transcribers) > 0 {
+		transcriptionH := handler.NewTranscriptionHandler(deps.Transcribers, deps.Router.HealthTracker(), deps.Recorder)
+		r.POST("/v1/audio/transcriptions", apiKeyChain(transcriptionH.HandleTranscription))
+		log.Printf("Transcription endpoint enabled (%d providers)", len(deps.Transcribers))
+	}
+
+	if deps.Storage != nil {
+		uploadH := handler.NewUploadHandler(deps.Storage)
+		r.POST("/v1/files/upload", apiKeyChain(uploadH.HandleUpload))
+		log.Printf("File upload endpoint enabled")
+	}
+
+	r.ServeFiles("/uploads/{filepath:*}", deps.Config.Storage.LocalDir)
+
 	r.POST("/auth/register", publicChain(authH.HandleRegister))
 	r.POST("/auth/login", publicChain(authH.HandleLogin))
 
-	// Account management (JWT auth)
 	r.GET("/account/keys", jwtChain(accountH.HandleListAPIKeys))
 	r.POST("/account/keys", jwtChain(accountH.HandleCreateAPIKey))
 	r.DELETE("/account/keys/{id}", jwtChain(accountH.HandleRevokeAPIKey))
@@ -82,21 +118,28 @@ func New(deps *Dependencies) *Server {
 	r.GET("/account/transactions", jwtChain(accountH.HandleGetTransactions))
 	r.POST("/account/credits/add", jwtChain(creditsH.HandleAddCredits))
 
-	// Stats (public for now, can add auth later)
+	if deps.CryptoSvc != nil {
+		cryptoH := handler.NewCryptoHandler(deps.CryptoSvc)
+		r.POST("/crypto/checkout", jwtChain(cryptoH.HandleCreateCheckout))
+		r.GET("/crypto/checkout/{id}", publicChain(cryptoH.HandleGetCheckout))
+		r.GET("/crypto/checkout/{id}/events", publicChain(cryptoH.HandleCheckoutEvents))
+		r.GET("/crypto/prices", publicChain(cryptoH.HandlePrices))
+		log.Printf("Crypto payment endpoints enabled")
+	}
+
 	r.GET("/stats/models", publicChain(statsH.HandleModelStats))
 	r.GET("/stats/providers", publicChain(statsH.HandleProviderStats))
 	r.GET("/stats/timeseries", publicChain(statsH.HandleTimeSeries))
 
-	// Health check
 	r.GET("/health", func(ctx *fasthttp.RequestCtx) {
 		ctx.SetStatusCode(200)
 		ctx.SetBodyString(`{"status":"ok"}`)
 	})
 
 	srv := &fasthttp.Server{
-		Handler:          r.Handler,
-		ReadTimeout:      time.Duration(deps.Config.Server.ReadTimeout) * time.Second,
-		WriteTimeout:     time.Duration(deps.Config.Server.WriteTimeout) * time.Second,
+		Handler:            r.Handler,
+		ReadTimeout:        time.Duration(deps.Config.Server.ReadTimeout) * time.Second,
+		WriteTimeout:       time.Duration(deps.Config.Server.WriteTimeout) * time.Second,
 		MaxRequestBodySize: deps.Config.Server.MaxRequestBody * 1024 * 1024,
 	}
 

@@ -2,7 +2,7 @@ server:
   port: 8080
   read_timeout_seconds: 30
   write_timeout_seconds: 300
-  max_request_body_mb: 10
+  max_request_body_mb: 25
 
 database:
   url: "postgres://openpath:openpath@localhost:5432/openpath?sslmode=disable"
@@ -14,6 +14,11 @@ jwt:
   expiration_hours: 72
 
 providers:
+  - name: netwrck
+    base_url: "https://netwrck.com"
+    api_key: "${NETWRCK_API_KEY}"
+    enabled: true
+
   - name: openai
     base_url: "https://api.openai.com"
     api_key: "${OPENAI_API_KEY}"
@@ -26,7 +31,7 @@ providers:
 
   - name: google
     base_url: "https://generativelanguage.googleapis.com"
-    api_key: "${GOOGLE_API_KEY}"
+    api_key: "${GEMINI_API_KEY}"
     enabled: true
 
   - name: mistral
@@ -39,8 +44,176 @@ providers:
     api_key: "${GROQ_API_KEY}"
     enabled: true
 
+  - name: xai
+    base_url: "https://api.x.ai"
+    api_key: "${XAI_API_KEY}"
+    enabled: true
+
+  - name: deepseek
+    base_url: "https://api.deepseek.com"
+    api_key: "${DEEPSEEK_API_KEY}"
+    enabled: true
+
+  - name: openrouter
+    base_url: "https://openrouter.ai/api"
+    api_key: "${OPENROUTER_API_KEY}"
+    enabled: true
+
+  - name: together
+    base_url: "https://api.together.xyz"
+    api_key: "${TOGETHER_API_KEY}"
+    enabled: true
+
+  - name: minimax
+    base_url: "https://api.minimax.io"
+    api_key: "${MINIMAX_API_KEY}"
+    enabled: true
+
+  - name: textgenerator
+    base_url: "https://api.text-generator.io"
+    api_key: "${TEXTGENERATOR_API_KEY}"
+    enabled: true
+
+  - name: zai
+    base_url: "https://api.z.ai"
+    api_key: "${Z_API_KEY}"
+    enabled: true
+
+  - name: fal
+    base_url: ""
+    api_key: "${FAL_API_KEY}"
+    enabled: true
+
 models:
-  # OpenAI Models
+  # --- Auto (Gemini 3.1 primary, cross-provider fallbacks) ---
+  - id: "auto"
+    provider: google
+    provider_model_id: "gemini-3.1-pro-preview"
+    input_price_per_1m: 2.00
+    output_price_per_1m: 12.00
+    aliases: ["auto-chat"]
+    context_window: 1000000
+    max_output_tokens: 64000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models:
+      - "gpt-5.2"
+      - "deepseek-chat"
+      - "claude-sonnet-4-6"
+      - "grok-4-0709"
+      - "or/gemini-3.1"
+      - "or/gpt-5.2"
+
+  # --- Netwrck (Image Generation) ---
+  - id: "ra1"
+    provider: netwrck
+    provider_model_id: "ra1"
+    price_per_image: 0.04
+    aliases: ["netwrck-image", "netwrck-art"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+    supported_sizes:
+      - "512x512"
+      - "768x768"
+      - "1024x1024"
+      - "1024x768"
+      - "768x1024"
+      - "1024x576"
+      - "576x1024"
+      - "1280x720"
+      - "720x1280"
+
+  - id: "zimage"
+    provider: netwrck
+    provider_model_id: "zimage"
+    price_per_image: 0.007
+    aliases: ["netwrck-anime", "anime-image"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+    supported_sizes:
+      - "512x512"
+      - "768x768"
+      - "1024x1024"
+      - "1024x768"
+      - "768x1024"
+      - "1024x576"
+      - "576x1024"
+
+  # --- Netwrck (Video Generation) ---
+  - id: "wan"
+    provider: netwrck
+    provider_model_id: "wan"
+    price_per_video: 0.30
+    aliases: ["netwrck-wan", "wan-video"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "ltx-video"
+    provider: netwrck
+    provider_model_id: "ltx-video-v097"
+    price_per_video: 0.05
+    aliases: ["ltx-video-v097", "netwrck-ltx"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "ltx-2"
+    provider: netwrck
+    provider_model_id: "ltx-2"
+    price_per_video: 0.072
+    aliases: ["netwrck-ltx2", "ltx2"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "ra2v"
+    provider: netwrck
+    provider_model_id: "ra2v"
+    price_per_video: 1.00
+    aliases: ["netwrck-video", "smart-video"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  # --- OpenAI ---
+  - id: "gpt-5.2"
+    provider: openai
+    provider_model_id: "gpt-5.2"
+    input_price_per_1m: 1.75
+    output_price_per_1m: 14.00
+    aliases: ["gpt5"]
+    context_window: 400000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "o3"
+    provider: openai
+    provider_model_id: "o3"
+    input_price_per_1m: 10.00
+    output_price_per_1m: 40.00
+    context_window: 200000
+    max_output_tokens: 100000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "o4-mini"
+    provider: openai
+    provider_model_id: "o4-mini"
+    input_price_per_1m: 1.10
+    output_price_per_1m: 4.40
+    context_window: 200000
+    max_output_tokens: 100000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
   - id: "gpt-4o"
     provider: openai
     provider_model_id: "gpt-4o"
@@ -59,17 +232,6 @@ models:
     output_price_per_1m: 0.60
     context_window: 128000
     max_output_tokens: 16384
-    supports_streaming: true
-    supports_tools: true
-    supports_vision: true
-
-  - id: "gpt-4-turbo"
-    provider: openai
-    provider_model_id: "gpt-4-turbo"
-    input_price_per_1m: 10.00
-    output_price_per_1m: 30.00
-    context_window: 128000
-    max_output_tokens: 4096
     supports_streaming: true
     supports_tools: true
     supports_vision: true
@@ -96,15 +258,101 @@ models:
     supports_tools: true
     supports_vision: false
 
-  # Anthropic Models
+  # --- Anthropic ---
+  - id: "claude-sonnet-latest"
+    provider: anthropic
+    provider_model_id: "claude-sonnet-4-6"
+    input_price_per_1m: 3.00
+    output_price_per_1m: 15.00
+    aliases: ["claude-sonnet", "sonnet-latest", "sonnet"]
+    context_window: 200000
+    max_output_tokens: 64000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_providers: ["openrouter"]
+
+  - id: "claude-sonnet-4-6"
+    provider: anthropic
+    provider_model_id: "claude-sonnet-4-6"
+    input_price_per_1m: 3.00
+    output_price_per_1m: 15.00
+    aliases: ["sonnet-4.6"]
+    context_window: 200000
+    max_output_tokens: 64000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "claude-sonnet-4-5-20250929"
+    provider: anthropic
+    provider_model_id: "claude-sonnet-4-5-20250929"
+    input_price_per_1m: 3.00
+    output_price_per_1m: 15.00
+    aliases: ["sonnet-4.5"]
+    context_window: 200000
+    max_output_tokens: 64000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
   - id: "claude-sonnet-4-20250514"
     provider: anthropic
     provider_model_id: "claude-sonnet-4-20250514"
     input_price_per_1m: 3.00
     output_price_per_1m: 15.00
-    aliases: ["claude-3.5-sonnet", "claude-sonnet"]
+    aliases: ["sonnet-4.0"]
     context_window: 200000
-    max_output_tokens: 8192
+    max_output_tokens: 64000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "claude-opus-latest"
+    provider: anthropic
+    provider_model_id: "claude-opus-4-6"
+    input_price_per_1m: 5.00
+    output_price_per_1m: 25.00
+    aliases: ["claude-opus", "opus-latest", "opus"]
+    context_window: 200000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_providers: ["openrouter"]
+
+  - id: "claude-opus-4-6"
+    provider: anthropic
+    provider_model_id: "claude-opus-4-6"
+    input_price_per_1m: 5.00
+    output_price_per_1m: 25.00
+    aliases: ["opus-4.6"]
+    context_window: 200000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "claude-opus-4-5-20251101"
+    provider: anthropic
+    provider_model_id: "claude-opus-4-5-20251101"
+    input_price_per_1m: 5.00
+    output_price_per_1m: 25.00
+    aliases: ["opus-4.5"]
+    context_window: 200000
+    max_output_tokens: 64000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "claude-opus-4-1-20250805"
+    provider: anthropic
+    provider_model_id: "claude-opus-4-1-20250805"
+    input_price_per_1m: 15.00
+    output_price_per_1m: 75.00
+    aliases: ["opus-4.1"]
+    context_window: 200000
+    max_output_tokens: 32000
     supports_streaming: true
     supports_tools: true
     supports_vision: true
@@ -114,9 +362,9 @@ models:
     provider_model_id: "claude-opus-4-20250514"
     input_price_per_1m: 15.00
     output_price_per_1m: 75.00
-    aliases: ["claude-3-opus", "claude-opus"]
+    aliases: ["opus-4.0"]
     context_window: 200000
-    max_output_tokens: 4096
+    max_output_tokens: 32000
     supports_streaming: true
     supports_tools: true
     supports_vision: true
@@ -124,41 +372,113 @@ models:
   - id: "claude-haiku-4-5-20251001"
     provider: anthropic
     provider_model_id: "claude-haiku-4-5-20251001"
-    input_price_per_1m: 0.80
-    output_price_per_1m: 4.00
-    aliases: ["claude-3-haiku", "claude-haiku"]
+    input_price_per_1m: 1.00
+    output_price_per_1m: 5.00
+    aliases: ["claude-haiku", "haiku"]
     context_window: 200000
-    max_output_tokens: 4096
+    max_output_tokens: 64000
     supports_streaming: true
     supports_tools: true
     supports_vision: true
 
-  # Google Models
-  - id: "gemini-2.0-flash"
+  # --- Google Gemini ---
+  - id: "gemini-3.1-pro-preview"
     provider: google
-    provider_model_id: "gemini-2.0-flash"
-    input_price_per_1m: 0.075
-    output_price_per_1m: 0.30
+    provider_model_id: "gemini-3.1-pro-preview"
+    input_price_per_1m: 2.00
+    output_price_per_1m: 12.00
+    aliases: ["gemini-3.1", "gemini-pro"]
+    context_window: 1000000
+    max_output_tokens: 64000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "gemini-2.5-pro"
+    provider: google
+    provider_model_id: "gemini-2.5-pro"
+    input_price_per_1m: 1.25
+    output_price_per_1m: 10.00
+    context_window: 2000000
+    max_output_tokens: 64000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "gemini-2.5-flash"
+    provider: google
+    provider_model_id: "gemini-2.5-flash"
+    input_price_per_1m: 0.30
+    output_price_per_1m: 2.50
     aliases: ["gemini-flash"]
     context_window: 1000000
-    max_output_tokens: 8192
+    max_output_tokens: 64000
     supports_streaming: true
     supports_tools: true
     supports_vision: true
 
-  - id: "gemini-2.0-pro"
-    provider: google
-    provider_model_id: "gemini-2.0-pro"
-    input_price_per_1m: 1.25
-    output_price_per_1m: 5.00
-    aliases: ["gemini-pro"]
+  # --- xAI Grok ---
+  - id: "grok-4-0709"
+    provider: xai
+    provider_model_id: "grok-4-0709"
+    input_price_per_1m: 3.00
+    output_price_per_1m: 15.00
+    aliases: ["grok-4", "grok"]
+    context_window: 256000
+    max_output_tokens: 16384
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "grok-4-1-fast-reasoning"
+    provider: xai
+    provider_model_id: "grok-4-1-fast-reasoning"
+    input_price_per_1m: 0.20
+    output_price_per_1m: 0.50
+    aliases: ["grok-fast"]
     context_window: 2000000
-    max_output_tokens: 8192
+    max_output_tokens: 16384
     supports_streaming: true
     supports_tools: true
     supports_vision: true
 
-  # Mistral Models
+  - id: "grok-3-mini"
+    provider: xai
+    provider_model_id: "grok-3-mini"
+    input_price_per_1m: 0.30
+    output_price_per_1m: 0.50
+    aliases: ["grok-mini"]
+    context_window: 131000
+    max_output_tokens: 16384
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  # --- DeepSeek ---
+  - id: "deepseek-chat"
+    provider: deepseek
+    provider_model_id: "deepseek-chat"
+    input_price_per_1m: 0.28
+    output_price_per_1m: 0.42
+    aliases: ["deepseek"]
+    context_window: 128000
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "deepseek-reasoner"
+    provider: deepseek
+    provider_model_id: "deepseek-reasoner"
+    input_price_per_1m: 0.28
+    output_price_per_1m: 0.42
+    context_window: 128000
+    max_output_tokens: 65536
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  # --- Mistral ---
   - id: "mistral-large-latest"
     provider: mistral
     provider_model_id: "mistral-large-latest"
@@ -195,7 +515,7 @@ models:
     supports_tools: false
     supports_vision: false
 
-  # Groq Models
+  # --- Groq ---
   - id: "llama-3.3-70b-versatile"
     provider: groq
     provider_model_id: "llama-3.3-70b-versatile"
@@ -218,6 +538,557 @@ models:
     max_output_tokens: 8192
     supports_streaming: true
     supports_tools: true
+    supports_vision: false
+
+  # --- OpenRouter (fallback access to any model) ---
+  - id: "or/gpt-5.2"
+    provider: openrouter
+    provider_model_id: "openai/gpt-5.2"
+    input_price_per_1m: 1.75
+    output_price_per_1m: 14.00
+    context_window: 400000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "or/claude-sonnet"
+    provider: openrouter
+    provider_model_id: "anthropic/claude-sonnet-4-6"
+    input_price_per_1m: 3.00
+    output_price_per_1m: 15.00
+    context_window: 200000
+    max_output_tokens: 64000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "or/claude-opus"
+    provider: openrouter
+    provider_model_id: "anthropic/claude-opus-4-6"
+    input_price_per_1m: 5.00
+    output_price_per_1m: 25.00
+    context_window: 200000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "or/gemini-3.1"
+    provider: openrouter
+    provider_model_id: "google/gemini-3.1-pro-preview"
+    input_price_per_1m: 2.00
+    output_price_per_1m: 12.00
+    context_window: 1000000
+    max_output_tokens: 64000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "or/deepseek-chat"
+    provider: openrouter
+    provider_model_id: "deepseek/deepseek-chat"
+    input_price_per_1m: 0.28
+    output_price_per_1m: 0.42
+    context_window: 128000
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "or/grok-4"
+    provider: openrouter
+    provider_model_id: "x-ai/grok-4-0709"
+    input_price_per_1m: 3.00
+    output_price_per_1m: 15.00
+    context_window: 256000
+    max_output_tokens: 16384
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  # --- OpenRouter Embedding Models ---
+  - id: "or/nemotron-embed"
+    provider: openrouter
+    provider_model_id: "nvidia/llama-nemotron-embed-vl-1b-v2:free"
+    input_price_per_1m: 0
+    output_price_per_1m: 0
+    aliases: ["nemotron-embed"]
+    context_window: 8192
+    max_output_tokens: 0
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  # --- Text-Generator.io Embedding ---
+  - id: "text-embedding"
+    provider: textgenerator
+    provider_model_id: "feature-extraction"
+    input_price_per_1m: 0.10
+    output_price_per_1m: 0
+    aliases: ["embed", "embedding"]
+    context_window: 8192
+    max_output_tokens: 0
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  # --- OpenRouter Free Models ---
+  - id: "or/stepfun-flash"
+    provider: openrouter
+    provider_model_id: "stepfun/step-3.5-flash:free"
+    input_price_per_1m: 0
+    output_price_per_1m: 0
+    aliases: ["stepfun-flash", "step-flash"]
+    context_window: 256000
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "or/solar-pro-3"
+    provider: openrouter
+    provider_model_id: "upstage/solar-pro-3:free"
+    input_price_per_1m: 0
+    output_price_per_1m: 0
+    aliases: ["solar-pro", "solar"]
+    context_window: 128000
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "or/nemotron-nano"
+    provider: openrouter
+    provider_model_id: "nvidia/nemotron-3-nano-30b-a3b:free"
+    input_price_per_1m: 0
+    output_price_per_1m: 0
+    aliases: ["nemotron-nano", "nemotron"]
+    context_window: 256000
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "or/arcee-trinity"
+    provider: openrouter
+    provider_model_id: "arcee-ai/trinity-large-preview:free"
+    input_price_per_1m: 0
+    output_price_per_1m: 0
+    aliases: ["arcee-trinity", "trinity"]
+    context_window: 131072
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "or/arcee-trinity-mini"
+    provider: openrouter
+    provider_model_id: "arcee-ai/trinity-mini:free"
+    input_price_per_1m: 0
+    output_price_per_1m: 0
+    aliases: ["trinity-mini"]
+    context_window: 131072
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "or/lfm-thinking"
+    provider: openrouter
+    provider_model_id: "liquid/lfm-2.5-1.2b-thinking:free"
+    input_price_per_1m: 0
+    output_price_per_1m: 0
+    aliases: ["lfm-thinking"]
+    context_window: 32768
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: false
+    supports_vision: false
+
+  - id: "or/lfm-instruct"
+    provider: openrouter
+    provider_model_id: "liquid/lfm-2.5-1.2b-instruct:free"
+    input_price_per_1m: 0
+    output_price_per_1m: 0
+    aliases: ["lfm-instruct", "lfm"]
+    context_window: 32768
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: false
+    supports_vision: false
+
+  # --- Z.AI (Image Generation) ---
+  - id: "glm-image"
+    provider: zai
+    provider_model_id: "glm-image"
+    price_per_image: 0.015
+    aliases: ["zai-image"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+    supported_sizes:
+      - "1280x1280"
+      - "1568x1056"
+      - "1056x1568"
+      - "1472x1088"
+      - "1088x1472"
+      - "1728x960"
+      - "960x1728"
+
+  # --- Z.AI (GLM direct) ---
+  - id: "zai/glm-5"
+    provider: zai
+    provider_model_id: "glm-5"
+    input_price_per_1m: 1.00
+    output_price_per_1m: 3.20
+    aliases: ["zai-glm5"]
+    context_window: 202800
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "glm-4.6v"
+    provider: zai
+    provider_model_id: "glm-4.6v"
+    input_price_per_1m: 1.50
+    output_price_per_1m: 5.00
+    aliases: ["glm-vision", "zai-vision"]
+    context_window: 128000
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "glm-4.6v-flashx"
+    provider: zai
+    provider_model_id: "glm-4.6v-flashx"
+    input_price_per_1m: 0.50
+    output_price_per_1m: 2.00
+    aliases: ["glm-vision-flashx"]
+    context_window: 128000
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "glm-4.6v-flash"
+    provider: zai
+    provider_model_id: "glm-4.6v-flash"
+    input_price_per_1m: 0.00
+    output_price_per_1m: 0.00
+    aliases: ["glm-vision-flash"]
+    context_window: 128000
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  # --- Together AI ---
+  - id: "glm-5"
+    provider: together
+    provider_model_id: "zai-org/GLM-5"
+    input_price_per_1m: 1.00
+    output_price_per_1m: 3.20
+    aliases: ["glm5", "glm-5-fp4"]
+    context_window: 202800
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+    fallback_providers: ["zai"]
+
+  - id: "qwen3.5-397b"
+    provider: together
+    provider_model_id: "Qwen/Qwen3.5-397B-A17B"
+    input_price_per_1m: 0.60
+    output_price_per_1m: 3.60
+    aliases: ["qwen3.5"]
+    context_window: 131072
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "minimax-m2.5"
+    provider: together
+    provider_model_id: "MiniMaxAI/MiniMax-M2.5"
+    input_price_per_1m: 0.30
+    output_price_per_1m: 1.20
+    aliases: ["minimax"]
+    context_window: 1000000
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "kimi-k2.5"
+    provider: together
+    provider_model_id: "moonshotai/Kimi-K2.5"
+    input_price_per_1m: 0.50
+    output_price_per_1m: 2.80
+    aliases: ["kimi"]
+    context_window: 131072
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "glm-4.7"
+    provider: together
+    provider_model_id: "zai-org/GLM-4.7"
+    input_price_per_1m: 0.45
+    output_price_per_1m: 2.00
+    aliases: ["glm4"]
+    context_window: 202800
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "qwen3-coder"
+    provider: together
+    provider_model_id: "Qwen/Qwen3-Coder-Next-FP8"
+    input_price_per_1m: 0.50
+    output_price_per_1m: 1.20
+    aliases: ["qwen-coder"]
+    context_window: 131072
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "together/deepseek-r1"
+    provider: together
+    provider_model_id: "deepseek-ai/DeepSeek-R1"
+    input_price_per_1m: 3.00
+    output_price_per_1m: 7.00
+    context_window: 128000
+    max_output_tokens: 65536
+    supports_streaming: true
+    supports_tools: false
+    supports_vision: false
+
+  - id: "together/deepseek-v3.1"
+    provider: together
+    provider_model_id: "deepseek-ai/DeepSeek-V3.1"
+    input_price_per_1m: 0.60
+    output_price_per_1m: 1.70
+    context_window: 128000
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  # --- Together AI (Image Generation) ---
+  - id: "flux-schnell"
+    provider: together
+    provider_model_id: "black-forest-labs/FLUX.1-schnell"
+    price_per_image: 0.003
+    aliases: ["flux-fast"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+    supported_sizes:
+      - "512x512"
+      - "768x768"
+      - "1024x1024"
+      - "1024x768"
+      - "768x1024"
+      - "1024x576"
+      - "576x1024"
+      - "1280x720"
+      - "720x1280"
+      - "1440x1080"
+      - "1080x1440"
+
+  - id: "flux-dev"
+    provider: together
+    provider_model_id: "black-forest-labs/FLUX.2-dev"
+    price_per_image: 0.015
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+    supported_sizes:
+      - "512x512"
+      - "768x768"
+      - "1024x1024"
+      - "1024x768"
+      - "768x1024"
+      - "1024x576"
+      - "576x1024"
+      - "1280x720"
+      - "720x1280"
+      - "1440x1080"
+      - "1080x1440"
+
+  - id: "flux-pro"
+    provider: together
+    provider_model_id: "black-forest-labs/FLUX1.1-pro"
+    price_per_image: 0.04
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+    supported_sizes:
+      - "512x512"
+      - "768x768"
+      - "1024x1024"
+      - "1024x768"
+      - "768x1024"
+      - "1024x576"
+      - "576x1024"
+      - "1280x720"
+      - "720x1280"
+      - "1440x1080"
+      - "1080x1440"
+
+  - id: "stable-diffusion-3"
+    provider: together
+    provider_model_id: "stabilityai/stable-diffusion-3-medium"
+    price_per_image: 0.002
+    aliases: ["sd3"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+    supported_sizes:
+      - "512x512"
+      - "768x768"
+      - "1024x1024"
+      - "1024x768"
+      - "768x1024"
+      - "1024x576"
+      - "576x1024"
+
+  # --- MiniMax (Chat) ---
+  - id: "minimax-m2.5-direct"
+    provider: minimax
+    provider_model_id: "MiniMax-M2.5"
+    input_price_per_1m: 0.30
+    output_price_per_1m: 1.10
+    aliases: ["mm-m2.5"]
+    context_window: 1000000
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "minimax-m2.5-highspeed"
+    provider: minimax
+    provider_model_id: "MiniMax-M2.5-highspeed"
+    input_price_per_1m: 0.30
+    output_price_per_1m: 1.10
+    aliases: ["mm-fast"]
+    context_window: 1000000
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "minimax-m2.1"
+    provider: minimax
+    provider_model_id: "MiniMax-M2.1"
+    input_price_per_1m: 0.27
+    output_price_per_1m: 0.95
+    context_window: 1000000
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "minimax-m2"
+    provider: minimax
+    provider_model_id: "MiniMax-M2"
+    input_price_per_1m: 0.26
+    output_price_per_1m: 1.00
+    context_window: 200000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  # --- MiniMax (Video Generation) ---
+  - id: "hailuo-2.3"
+    provider: minimax
+    provider_model_id: "MiniMax-Hailuo-2.3"
+    price_per_video: 0.10
+    aliases: ["hailuo", "minimax-video"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "hailuo-2.3-fast"
+    provider: minimax
+    provider_model_id: "MiniMax-Hailuo-2.3-Fast"
+    price_per_video: 0.05
+    aliases: ["hailuo-fast"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "hailuo-02"
+    provider: minimax
+    provider_model_id: "MiniMax-Hailuo-02"
+    price_per_video: 0.08
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  # --- MiniMax (Music Generation) ---
+  - id: "music-2.5"
+    provider: minimax
+    provider_model_id: "music-2.5"
+    price_per_image: 0.01
+    aliases: ["minimax-music"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "music-2.0"
+    provider: minimax
+    provider_model_id: "music-2.0"
+    price_per_image: 0.008
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  # --- MiniMax (Speech/TTS) ---
+  - id: "speech-2.8-hd"
+    provider: minimax
+    provider_model_id: "speech-2.8-hd"
+    input_price_per_1m: 100.00
+    output_price_per_1m: 0
+    aliases: ["minimax-tts-hd", "tts-hd"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "speech-2.8-turbo"
+    provider: minimax
+    provider_model_id: "speech-2.8-turbo"
+    input_price_per_1m: 60.00
+    output_price_per_1m: 0
+    aliases: ["minimax-tts", "tts-turbo"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "speech-2.6-hd"
+    provider: minimax
+    provider_model_id: "speech-2.6-hd"
+    input_price_per_1m: 100.00
+    output_price_per_1m: 0
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "speech-2.6-turbo"
+    provider: minimax
+    provider_model_id: "speech-2.6-turbo"
+    input_price_per_1m: 60.00
+    output_price_per_1m: 0
+    supports_streaming: false
+    supports_tools: false
     supports_vision: false
 
   - id: "mixtral-8x7b-32768"

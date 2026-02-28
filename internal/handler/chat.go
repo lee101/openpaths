@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/valyala/fasthttp"
@@ -26,7 +27,6 @@ func NewChatHandler(r *router.Router, b *billing.Engine, rec *metrics.Recorder) 
 	return &ChatHandler{router: r, billing: b, recorder: rec}
 }
 
-// HandleChatCompletion handles POST /v1/chat/completions.
 func (h *ChatHandler) HandleChatCompletion(ctx *fasthttp.RequestCtx) {
 	userID, _ := ctx.UserValue(middleware.CtxKeyUserID).(string)
 	apiKey, _ := ctx.UserValue(middleware.CtxKeyAPIKey).(*model.APIKey)
@@ -42,38 +42,53 @@ func (h *ChatHandler) HandleChatCompletion(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	// Resolve model to provider
-	modelCfg, prov, err := h.router.Resolve(req.Model)
-	if err != nil {
-		writeError(ctx, 404, "model_not_found", err.Error())
-		return
-	}
-
-	// Rewrite model to provider's native model ID
 	originalModel := req.Model
-	req.Model = modelCfg.ProviderModelID
-
-	start := time.Now()
 	apiKeyID := ""
 	if apiKey != nil {
 		apiKeyID = apiKey.ID
 	}
 
-	if req.Stream {
-		h.handleStreaming(ctx, &req, modelCfg, prov, userID, apiKeyID, originalModel, start)
-	} else {
-		h.handleNonStreaming(ctx, &req, modelCfg, prov, userID, apiKeyID, originalModel, start)
+	candidates, err := h.router.ResolveWithRetries(req.Model)
+	if err != nil {
+		writeError(ctx, 404, "model_not_found", err.Error())
+		return
 	}
+
+	for i, cand := range candidates {
+		req.Model = cand.ModelCfg.ProviderModelID
+		start := time.Now()
+
+		if req.Stream {
+			if h.tryStreaming(ctx, &req, cand.ModelCfg, cand.Provider, userID, apiKeyID, originalModel, start) {
+				h.router.MarkModelHealthy(cand.Provider.Name(), cand.ModelCfg.ID)
+				return
+			}
+		} else {
+			if h.tryNonStreaming(ctx, &req, cand.ModelCfg, cand.Provider, userID, apiKeyID, originalModel, start) {
+				h.router.MarkModelHealthy(cand.Provider.Name(), cand.ModelCfg.ID)
+				return
+			}
+		}
+
+		h.router.MarkModelUnhealthy(cand.Provider.Name(), cand.ModelCfg.ID)
+		if i < len(candidates)-1 {
+			log.Printf("fallback: %s/%s failed, trying %s/%s",
+				cand.Provider.Name(), cand.ModelCfg.ID,
+				candidates[i+1].Provider.Name(), candidates[i+1].ModelCfg.ID)
+		}
+	}
+
+	writeError(ctx, 502, "provider_error", "all providers failed for model "+originalModel)
 }
 
-func (h *ChatHandler) handleNonStreaming(
+func (h *ChatHandler) tryNonStreaming(
 	ctx *fasthttp.RequestCtx,
 	req *model.ChatCompletionRequest,
 	modelCfg *model.ModelConfig,
 	prov provider.Provider,
 	userID, apiKeyID, originalModel string,
 	start time.Time,
-) {
+) bool {
 	resp, err := prov.ChatCompletion(ctx, req)
 	latency := time.Since(start)
 
@@ -83,17 +98,18 @@ func (h *ChatHandler) handleNonStreaming(
 		if pe, ok := err.(*provider.ProviderError); ok {
 			statusCode = pe.StatusCode
 			errMsg = pe.Message
-			if pe.Retryable {
-				h.router.MarkUnhealthy(prov.Name())
+			if !pe.Retryable {
+				h.recorder.RecordError(userID, apiKeyID, originalModel, prov.Name(),
+					int(latency.Milliseconds()), statusCode, errMsg, false)
+				writeError(ctx, statusCode, "provider_error", errMsg)
+				return true
 			}
 		}
 		h.recorder.RecordError(userID, apiKeyID, originalModel, prov.Name(),
 			int(latency.Milliseconds()), statusCode, errMsg, false)
-		writeError(ctx, statusCode, "provider_error", errMsg)
-		return
+		return false
 	}
 
-	// Restore original model name
 	resp.Model = originalModel
 
 	var tps float32
@@ -111,16 +127,17 @@ func (h *ChatHandler) handleNonStreaming(
 		tokensIn, tokensOut, int(latency.Milliseconds()), tps, cost, false)
 
 	writeJSON(ctx, 200, resp)
+	return true
 }
 
-func (h *ChatHandler) handleStreaming(
+func (h *ChatHandler) tryStreaming(
 	ctx *fasthttp.RequestCtx,
 	req *model.ChatCompletionRequest,
 	modelCfg *model.ModelConfig,
 	prov provider.Provider,
 	userID, apiKeyID, originalModel string,
 	start time.Time,
-) {
+) bool {
 	streamCh, err := prov.ChatCompletionStream(ctx, req)
 	if err != nil {
 		statusCode := 502
@@ -128,9 +145,12 @@ func (h *ChatHandler) handleStreaming(
 		if pe, ok := err.(*provider.ProviderError); ok {
 			statusCode = pe.StatusCode
 			errMsg = pe.Message
+			if !pe.Retryable {
+				writeError(ctx, statusCode, "provider_error", errMsg)
+				return true
+			}
 		}
-		writeError(ctx, statusCode, "provider_error", errMsg)
-		return
+		return false
 	}
 
 	ctx.SetContentType("text/event-stream")
@@ -157,14 +177,12 @@ func (h *ChatHandler) handleStreaming(
 				break
 			}
 
-			// Rewrite model name
 			event.Chunk.Model = originalModel
 			data, _ := json.Marshal(event.Chunk)
 			fmt.Fprintf(w, "data: %s\n\n", data)
 			w.Flush()
 		}
 
-		// Post-stream billing
 		latency := time.Since(start)
 		if usage != nil {
 			var tps float32
@@ -178,4 +196,5 @@ func (h *ChatHandler) handleStreaming(
 				int(latency.Milliseconds()), tps, cost, true)
 		}
 	})
+	return true
 }
