@@ -14,6 +14,14 @@ jwt:
   secret: "${JWT_SECRET}"
   expiration_hours: 72
 
+crypto:
+  enabled: true
+  solana_wallet_pubkey: "${SOLANA_WALLET_PUBKEY}"
+  hd_wallet_seed: "${HD_WALLET_SEED}"
+  helius_api_key: "${HELIUS_API_KEY}"
+  bags_api_key: "${BAGS_API_KEY}"
+  min_topup_usd: 5
+
 providers:
   - name: netwrck
     base_url: "https://netwrck.com"
