@@ -3,6 +3,7 @@ server:
   read_timeout_seconds: 30
   write_timeout_seconds: 300
   max_request_body_mb: 25
+  static_dir: "./dist"
 
 database:
   url: "postgres://openpath:openpath@localhost:5432/openpath?sslmode=disable"

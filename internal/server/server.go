@@ -3,6 +3,9 @@ package server
 import (
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	fasthttprouter "github.com/fasthttp/router"
@@ -136,8 +139,14 @@ func New(deps *Dependencies) *Server {
 		ctx.SetBodyString(`{"status":"ok"}`)
 	})
 
+	handler := r.Handler
+	if staticDir := deps.Config.Server.StaticDir; staticDir != "" {
+		handler = spaHandler(staticDir, r.Handler)
+		log.Printf("Serving frontend from %s", staticDir)
+	}
+
 	srv := &fasthttp.Server{
-		Handler:            r.Handler,
+		Handler:            handler,
 		ReadTimeout:        time.Duration(deps.Config.Server.ReadTimeout) * time.Second,
 		WriteTimeout:       time.Duration(deps.Config.Server.WriteTimeout) * time.Second,
 		MaxRequestBodySize: deps.Config.Server.MaxRequestBody * 1024 * 1024,
@@ -157,4 +166,41 @@ func (s *Server) Start() error {
 
 func (s *Server) Shutdown() error {
 	return s.httpServer.Shutdown()
+}
+
+func spaHandler(dir string, api fasthttp.RequestHandler) fasthttp.RequestHandler {
+	fs := &fasthttp.FS{
+		Root:       dir,
+		IndexNames: []string{"index.html"},
+		Compress:   true,
+	}
+	fsHandler := fs.NewRequestHandler()
+	indexPath := filepath.Join(dir, "index.html")
+
+	return func(ctx *fasthttp.RequestCtx) {
+		path := string(ctx.Path())
+		if strings.HasPrefix(path, "/v1/") ||
+			strings.HasPrefix(path, "/auth/") ||
+			strings.HasPrefix(path, "/account/") ||
+			strings.HasPrefix(path, "/crypto/") ||
+			strings.HasPrefix(path, "/stats/") ||
+			strings.HasPrefix(path, "/uploads/") ||
+			path == "/health" {
+			api(ctx)
+			return
+		}
+		// try static file
+		fsHandler(ctx)
+		if ctx.Response.StatusCode() == fasthttp.StatusNotFound || ctx.Response.StatusCode() == fasthttp.StatusForbidden {
+			ctx.Response.Reset()
+			data, err := os.ReadFile(indexPath)
+			if err != nil {
+				api(ctx)
+				return
+			}
+			ctx.SetStatusCode(200)
+			ctx.SetContentType("text/html; charset=utf-8")
+			ctx.SetBody(data)
+		}
+	}
 }

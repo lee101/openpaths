@@ -42,10 +42,11 @@ type CryptoConfig struct {
 }
 
 type ServerConfig struct {
-	Port            int `yaml:"port"`
-	ReadTimeout     int `yaml:"read_timeout_seconds"`
-	WriteTimeout    int `yaml:"write_timeout_seconds"`
-	MaxRequestBody  int `yaml:"max_request_body_mb"`
+	Port            int    `yaml:"port"`
+	ReadTimeout     int    `yaml:"read_timeout_seconds"`
+	WriteTimeout    int    `yaml:"write_timeout_seconds"`
+	MaxRequestBody  int    `yaml:"max_request_body_mb"`
+	StaticDir       string `yaml:"static_dir"`
 }
 
 type DatabaseConfig struct {

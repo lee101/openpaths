@@ -1,5 +1,5 @@
 {
-  "name": "react-example",
+  "name": "openpath",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -21,8 +21,7 @@
     "motion": "^12.23.24",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-router-dom": "^7.13.1",
-    "vite": "^6.2.0"
+    "react-router-dom": "^7.13.1"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
