@@ -133,9 +133,9 @@ export const models: Model[] = [
     tags: ['roleplay', 'open-source', 'fast']
   },
   {
-    id: 'midjourney/v6',
-    name: 'Midjourney v6',
-    provider: 'Midjourney',
+    id: 'ra1/art-generator',
+    name: 'RA1 Art Generator',
+    provider: 'RA1',
     description: 'State-of-the-art image generation model with incredible photorealism.',
     contextLength: 'N/A',
     priceInput: 40.00, // per 1000 images

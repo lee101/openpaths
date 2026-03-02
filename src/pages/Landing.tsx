@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Terminal, Zap, CreditCard, Code2, ArrowRight, Github, Search, Layers, Activity } from 'lucide-react';
+import { Terminal, Zap, Code2, ArrowRight, Github, Search, Layers, Activity, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export function Landing() {
@@ -133,12 +133,12 @@ export function Landing() {
           <FeatureCard 
             icon={<Code2 className="w-6 h-6" />}
             title="Universal API"
-            description="One API key for OpenAI, Anthropic, Meta, Mistral, and dozens of art generators like Midjourney and Stable Diffusion."
+            description="One API key for OpenAI, Anthropic, Meta, Mistral, and dozens of art generators like RA1 and Stable Diffusion."
           />
-          <FeatureCard 
-            icon={<CreditCard className="w-6 h-6" />}
-            title="Stripe Integration"
-            description="Easily top up your account balance using credit cards via our secure and fast Stripe integration."
+          <FeatureCard
+            icon={<Sparkles className="w-6 h-6" />}
+            title="Auto Models"
+            description="Always on the price frontier. Static embedding model-based routing picks the best frontier model for every task — just use auto-coding-latest and stay ahead automatically."
           />
           <FeatureCard 
             icon={<svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 3h-10l-2 5h10l2-5Z"/><path d="M11.5 11h-10l-2 5h10l2-5Z"/><path d="M14.5 19h-10l-2 5h10l2-5Z"/></svg>}
