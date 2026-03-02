@@ -13,12 +13,23 @@ var ErrInsufficientBalance = errors.New("insufficient balance")
 
 // Engine handles balance checks and deductions.
 type Engine struct {
-	pricing *PricingTable
-	credits *queries.CreditQueries
+	pricing    *PricingTable
+	credits    *queries.CreditQueries
+	autoTopup  *AutoTopupService
 }
 
 func NewEngine(pricing *PricingTable, credits *queries.CreditQueries) *Engine {
 	return &Engine{pricing: pricing, credits: credits}
+}
+
+func (e *Engine) SetAutoTopup(svc *AutoTopupService) {
+	e.autoTopup = svc
+}
+
+func (e *Engine) triggerAutoTopup(userID string) {
+	if e.autoTopup != nil {
+		e.autoTopup.CheckAndTopup(userID)
+	}
 }
 
 // PreCheck verifies the user has a minimum balance to attempt a request.
@@ -67,6 +78,7 @@ func (e *Engine) Deduct(ctx context.Context, userID, modelID string, inputTokens
 	if err != nil {
 		return 0, err
 	}
+	e.triggerAutoTopup(userID)
 	return cost, nil
 }
 
@@ -91,6 +103,7 @@ func (e *Engine) DeductImage(ctx context.Context, userID, modelID string, imageC
 	if err != nil {
 		return 0, err
 	}
+	e.triggerAutoTopup(userID)
 	return cost, nil
 }
 
@@ -115,6 +128,7 @@ func (e *Engine) DeductVideo(ctx context.Context, userID, modelID string, usageL
 	if err != nil {
 		return 0, err
 	}
+	e.triggerAutoTopup(userID)
 	return cost, nil
 }
 

@@ -16,12 +16,14 @@ import (
 	"github.com/openpaths/openpaths/internal/config"
 	"github.com/openpaths/openpaths/internal/crypto"
 	"github.com/openpaths/openpaths/internal/db/queries"
+	"github.com/openpaths/openpaths/internal/discovery"
 	"github.com/openpaths/openpaths/internal/handler"
 	"github.com/openpaths/openpaths/internal/metrics"
 	"github.com/openpaths/openpaths/internal/middleware"
 	"github.com/openpaths/openpaths/internal/provider"
 	"github.com/openpaths/openpaths/internal/router"
 	"github.com/openpaths/openpaths/internal/storage"
+	stripesvc "github.com/openpaths/openpaths/internal/stripe"
 )
 
 type Server struct {
@@ -43,6 +45,9 @@ type Dependencies struct {
 	Embedders    []provider.EmbeddingProvider
 	CryptoSvc    *crypto.Service
 	Storage      storage.Store
+	StripeSvc    *stripesvc.Service
+	Discovery    *discovery.Service
+	ModelMetaQ   *queries.ModelMetadataQueries
 }
 
 func New(deps *Dependencies) *Server {
@@ -76,6 +81,7 @@ func New(deps *Dependencies) *Server {
 
 	r.POST("/v1/chat/completions", apiKeyChain(chatH.HandleChatCompletion))
 	r.GET("/v1/models", apiKeyChain(modelsH.HandleListModels))
+	r.GET("/v1/models/{model_id}", apiKeyChain(modelsH.HandleGetModel))
 
 	imageH := handler.NewImageHandler(deps.Router, deps.Billing, deps.Recorder)
 	r.POST("/v1/images/generations", apiKeyChain(imageH.HandleImageGeneration))
@@ -130,9 +136,49 @@ func New(deps *Dependencies) *Server {
 		log.Printf("Crypto payment endpoints enabled")
 	}
 
+	if deps.StripeSvc != nil {
+		atH := handler.NewAutotopupHandler(deps.UserQ, deps.StripeSvc)
+		r.POST("/account/stripe/setup", jwtChain(atH.HandleStripeSetup))
+		r.POST("/account/stripe/confirm", jwtChain(atH.HandleStripeConfirm))
+		r.GET("/account/stripe/payment-methods", jwtChain(atH.HandleListPaymentMethods))
+		r.DELETE("/account/stripe/payment-methods/{id}", jwtChain(atH.HandleDeletePaymentMethod))
+		r.POST("/account/autotopup/settings", jwtChain(atH.HandleUpdateAutotopupSettings))
+		r.GET("/account/autotopup/settings", jwtChain(atH.HandleGetAutotopupSettings))
+		log.Printf("Stripe auto-topup endpoints enabled")
+	}
+
 	r.GET("/stats/models", publicChain(statsH.HandleModelStats))
 	r.GET("/stats/providers", publicChain(statsH.HandleProviderStats))
 	r.GET("/stats/timeseries", publicChain(statsH.HandleTimeSeries))
+
+	if deps.Discovery != nil {
+		disc := deps.Discovery
+		metaQ := deps.ModelMetaQ
+		r.POST("/admin/discovery/run", jwtChain(func(ctx *fasthttp.RequestCtx) {
+			n, err := disc.DiscoverAll(ctx)
+			if err != nil {
+				handler.WriteJSONPublic(ctx, 500, map[string]any{"error": err.Error()})
+				return
+			}
+			handler.WriteJSONPublic(ctx, 200, map[string]any{"indexed": n})
+		}))
+		r.GET("/admin/discovery/models", publicChain(func(ctx *fasthttp.RequestCtx) {
+			prov := string(ctx.QueryArgs().Peek("provider"))
+			var models []*queries.ModelMetadata
+			var err error
+			if prov != "" {
+				models, err = metaQ.ListByProvider(ctx, prov)
+			} else {
+				models, err = metaQ.ListAll(ctx)
+			}
+			if err != nil {
+				handler.WriteJSONPublic(ctx, 500, map[string]any{"error": err.Error()})
+				return
+			}
+			handler.WriteJSONPublic(ctx, 200, map[string]any{"object": "list", "data": models, "count": len(models)})
+		}))
+		log.Printf("Model discovery endpoints enabled")
+	}
 
 	r.GET("/health", func(ctx *fasthttp.RequestCtx) {
 		ctx.SetStatusCode(200)
@@ -184,6 +230,7 @@ func spaHandler(dir string, api fasthttp.RequestHandler) fasthttp.RequestHandler
 			strings.HasPrefix(path, "/account/") ||
 			strings.HasPrefix(path, "/crypto/") ||
 			strings.HasPrefix(path, "/stats/") ||
+			strings.HasPrefix(path, "/admin/") ||
 			strings.HasPrefix(path, "/uploads/") ||
 			path == "/health" {
 			api(ctx)

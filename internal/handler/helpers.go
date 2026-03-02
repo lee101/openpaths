@@ -24,3 +24,7 @@ func writeJSON(ctx *fasthttp.RequestCtx, status int, v any) {
 	ctx.SetContentType("application/json")
 	json.NewEncoder(ctx).Encode(v)
 }
+
+func WriteJSONPublic(ctx *fasthttp.RequestCtx, status int, v any) {
+	writeJSON(ctx, status, v)
+}

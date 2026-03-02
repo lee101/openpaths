@@ -100,8 +100,27 @@ type ErrorDetail struct {
 
 // ModelInfo represents a model in the /v1/models response.
 type ModelInfo struct {
-	ID      string `json:"id"`
-	Object  string `json:"object"`
-	Created int64  `json:"created"`
-	OwnedBy string `json:"owned_by"`
+	ID               string            `json:"id"`
+	Object           string            `json:"object"`
+	Created          int64             `json:"created"`
+	OwnedBy          string            `json:"owned_by"`
+	Pricing          *ModelPricing     `json:"pricing,omitempty"`
+	Capabilities     *ModelCapabilities `json:"capabilities,omitempty"`
+	ContextWindow    int               `json:"context_window,omitempty"`
+	MaxOutputTokens  int               `json:"max_output_tokens,omitempty"`
+	Aliases          []string          `json:"aliases,omitempty"`
+	SupportedSizes   []string          `json:"supported_sizes,omitempty"`
+}
+
+type ModelPricing struct {
+	InputPer1M  float64 `json:"input_per_1m_tokens,omitempty"`
+	OutputPer1M float64 `json:"output_per_1m_tokens,omitempty"`
+	PerImage    float64 `json:"per_image,omitempty"`
+	PerVideo    float64 `json:"per_video,omitempty"`
+}
+
+type ModelCapabilities struct {
+	Streaming bool `json:"streaming"`
+	Tools     bool `json:"tools"`
+	Vision    bool `json:"vision"`
 }

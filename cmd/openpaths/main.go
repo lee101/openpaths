@@ -18,8 +18,10 @@ import (
 	"github.com/openpaths/openpaths/internal/db"
 	"github.com/openpaths/openpaths/internal/db/migrations"
 	"github.com/openpaths/openpaths/internal/db/queries"
+	"github.com/openpaths/openpaths/internal/discovery"
 	"github.com/openpaths/openpaths/internal/metrics"
 	"github.com/openpaths/openpaths/internal/provider"
+	stripesvc "github.com/openpaths/openpaths/internal/stripe"
 	"github.com/openpaths/openpaths/internal/provider/anthropic"
 	"github.com/openpaths/openpaths/internal/provider/deepseek"
 	"github.com/openpaths/openpaths/internal/provider/fal"
@@ -102,7 +104,9 @@ func main() {
 		case "google":
 			p = google.New(provCfg.APIKey, provCfg.BaseURL)
 		case "mistral":
-			p = mistral.New(provCfg.APIKey, provCfg.BaseURL)
+			m := mistral.New(provCfg.APIKey, provCfg.BaseURL)
+			embedders = append(embedders, m)
+			p = m
 		case "groq":
 			p = groq.New(provCfg.APIKey, provCfg.BaseURL)
 			transcribers = append([]provider.TranscriptionProvider{
@@ -155,6 +159,15 @@ func main() {
 	pricingTable := billing.NewPricingTable(cfg.Models)
 	billingEngine := billing.NewEngine(pricingTable, creditQ)
 
+	var stripe *stripesvc.Service
+	if cfg.Stripe.SecretKey != "" {
+		stripe = stripesvc.NewService(cfg.Stripe.SecretKey)
+		topupQ := queries.NewAutotopupQueries(database.Pool)
+		autoTopup := billing.NewAutoTopupService(userQ, creditQ, topupQ, stripe, billingEngine)
+		billingEngine.SetAutoTopup(autoTopup)
+		log.Printf("Stripe auto-topup enabled")
+	}
+
 	collector := metrics.NewCollector(usageQ, 0)
 	collector.Start()
 	defer collector.Stop()
@@ -186,6 +199,18 @@ func main() {
 		cryptoSvc = initCrypto(cfg, database, billingEngine)
 	}
 
+	modelMetaQ := queries.NewModelMetadataQueries(database.Pool)
+	disc := discovery.New(cfg.Providers, modelMetaQ)
+
+	go func() {
+		n, err := disc.DiscoverAll(ctx)
+		if err != nil {
+			log.Printf("Initial model discovery failed: %v", err)
+		} else {
+			log.Printf("Model discovery: indexed %d models", n)
+		}
+	}()
+
 	srv := server.New(&server.Dependencies{
 		Config:       cfg,
 		Router:       modelRouter,
@@ -200,6 +225,9 @@ func main() {
 		Embedders:    embedders,
 		CryptoSvc:    cryptoSvc,
 		Storage:      store,
+		StripeSvc:    stripe,
+		Discovery:    disc,
+		ModelMetaQ:   modelMetaQ,
 	})
 
 	done := make(chan os.Signal, 1)

@@ -15,9 +15,15 @@ type Config struct {
 	Database  DatabaseConfig         `yaml:"database"`
 	JWT       JWTConfig              `yaml:"jwt"`
 	Crypto    CryptoConfig           `yaml:"crypto"`
+	Stripe    StripeConfig           `yaml:"stripe"`
 	Storage   StorageConfig          `yaml:"storage"`
 	Providers []model.ProviderConfig `yaml:"providers"`
 	Models    []model.ModelConfig    `yaml:"models"`
+}
+
+type StripeConfig struct {
+	SecretKey     string `yaml:"secret_key"`
+	WebhookSecret string `yaml:"webhook_secret"`
 }
 
 type StorageConfig struct {
@@ -119,6 +125,13 @@ func Load(path string) (*Config, error) {
 	}
 	if v := os.Getenv("BAGS_API_KEY"); v != "" {
 		cfg.Crypto.BagsAPIKey = v
+	}
+
+	if v := os.Getenv("STRIPE_SECRET_KEY"); v != "" {
+		cfg.Stripe.SecretKey = v
+	}
+	if v := os.Getenv("STRIPE_WEBHOOK_SECRET"); v != "" {
+		cfg.Stripe.WebhookSecret = v
 	}
 
 	if v := os.Getenv("STORAGE_PROVIDER"); v != "" {

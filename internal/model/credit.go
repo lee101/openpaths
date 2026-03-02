@@ -24,4 +24,5 @@ const (
 	TxTypeUsageDeduction = "usage_deduction"
 	TxTypeRefund         = "refund"
 	TxTypeAdjustment     = "adjustment"
+	TxTypeAutoTopup      = "auto_topup"
 )

@@ -14,6 +14,10 @@ jwt:
   secret: "${JWT_SECRET}"
   expiration_hours: 72
 
+stripe:
+  secret_key: "${STRIPE_SECRET_KEY}"
+  webhook_secret: "${STRIPE_WEBHOOK_SECRET}"
+
 crypto:
   enabled: true
   solana_wallet_pubkey: "${SOLANA_WALLET_PUBKEY}"
@@ -583,26 +587,38 @@ models:
   - id: "mistral-large-latest"
     provider: mistral
     provider_model_id: "mistral-large-latest"
-    input_price_per_1m: 2.00
-    output_price_per_1m: 6.00
-    aliases: ["mistral-large"]
-    context_window: 128000
-    max_output_tokens: 4096
+    input_price_per_1m: 0.50
+    output_price_per_1m: 1.50
+    aliases: ["mistral-large", "mistral-large-3"]
+    context_window: 262144
+    max_output_tokens: 8192
     supports_streaming: true
     supports_tools: true
-    supports_vision: false
+    supports_vision: true
+
+  - id: "mistral-medium-latest"
+    provider: mistral
+    provider_model_id: "mistral-medium-latest"
+    input_price_per_1m: 0.40
+    output_price_per_1m: 2.00
+    aliases: ["mistral-medium", "mistral-medium-3"]
+    context_window: 131072
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
 
   - id: "mistral-small-latest"
     provider: mistral
     provider_model_id: "mistral-small-latest"
-    input_price_per_1m: 0.20
-    output_price_per_1m: 0.60
+    input_price_per_1m: 0.35
+    output_price_per_1m: 0.56
     aliases: ["mistral-small"]
-    context_window: 128000
-    max_output_tokens: 4096
+    context_window: 131072
+    max_output_tokens: 8192
     supports_streaming: true
     supports_tools: true
-    supports_vision: false
+    supports_vision: true
 
   - id: "codestral-latest"
     provider: mistral
@@ -611,8 +627,140 @@ models:
     output_price_per_1m: 0.90
     aliases: ["codestral"]
     context_window: 256000
-    max_output_tokens: 4096
+    max_output_tokens: 8192
     supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "pixtral-large-latest"
+    provider: mistral
+    provider_model_id: "pixtral-large-latest"
+    input_price_per_1m: 2.00
+    output_price_per_1m: 6.00
+    aliases: ["pixtral-large", "pixtral"]
+    context_window: 131072
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "magistral-medium-latest"
+    provider: mistral
+    provider_model_id: "magistral-medium-latest"
+    input_price_per_1m: 0.40
+    output_price_per_1m: 2.00
+    aliases: ["magistral-medium", "magistral"]
+    context_window: 131072
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "magistral-small-latest"
+    provider: mistral
+    provider_model_id: "magistral-small-latest"
+    input_price_per_1m: 0.10
+    output_price_per_1m: 0.30
+    aliases: ["magistral-small"]
+    context_window: 131072
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "open-mistral-nemo"
+    provider: mistral
+    provider_model_id: "open-mistral-nemo"
+    input_price_per_1m: 0.02
+    output_price_per_1m: 0.04
+    aliases: ["mistral-nemo", "nemo"]
+    context_window: 131072
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "devstral-small-latest"
+    provider: mistral
+    provider_model_id: "devstral-small-latest"
+    input_price_per_1m: 0.10
+    output_price_per_1m: 0.30
+    aliases: ["devstral-small"]
+    context_window: 262144
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "devstral-medium-latest"
+    provider: mistral
+    provider_model_id: "devstral-medium-latest"
+    input_price_per_1m: 0.40
+    output_price_per_1m: 2.00
+    aliases: ["devstral-medium", "devstral"]
+    context_window: 262144
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "ministral-8b-latest"
+    provider: mistral
+    provider_model_id: "ministral-8b-latest"
+    input_price_per_1m: 0.15
+    output_price_per_1m: 0.15
+    aliases: ["ministral-8b", "ministral"]
+    context_window: 262144
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "ministral-3b-latest"
+    provider: mistral
+    provider_model_id: "ministral-3b-latest"
+    input_price_per_1m: 0.10
+    output_price_per_1m: 0.10
+    aliases: ["ministral-3b"]
+    context_window: 131072
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "ministral-14b-latest"
+    provider: mistral
+    provider_model_id: "ministral-14b-latest"
+    input_price_per_1m: 0.20
+    output_price_per_1m: 0.20
+    aliases: ["ministral-14b"]
+    context_window: 262144
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "mistral-embed"
+    provider: mistral
+    provider_model_id: "mistral-embed"
+    input_price_per_1m: 0.10
+    output_price_per_1m: 0
+    aliases: ["mistral-embedding"]
+    context_window: 8192
+    max_output_tokens: 0
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "codestral-embed"
+    provider: mistral
+    provider_model_id: "codestral-embed"
+    input_price_per_1m: 0.10
+    output_price_per_1m: 0
+    aliases: ["codestral-embedding"]
+    context_window: 8192
+    max_output_tokens: 0
+    supports_streaming: false
     supports_tools: false
     supports_vision: false
 
