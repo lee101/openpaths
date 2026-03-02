@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/openpath/openpath/internal/model"
+	"github.com/openpaths/openpaths/internal/model"
 )
 
 // Provider defines the interface every LLM provider must implement.

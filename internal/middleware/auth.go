@@ -5,8 +5,8 @@ import (
 
 	"github.com/valyala/fasthttp"
 
-	"github.com/openpath/openpath/internal/auth"
-	"github.com/openpath/openpath/internal/db/queries"
+	"github.com/openpaths/openpaths/internal/auth"
+	"github.com/openpaths/openpaths/internal/db/queries"
 )
 
 const (

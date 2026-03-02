@@ -53,7 +53,6 @@ export function Playground() {
   const [input, setInput] = useState('');
   const [panes, setPanes] = useState<ModelPane[]>([
     makePane('auto'),
-    makePane('claude-sonnet-latest'),
   ]);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRefs = useRef<Map<string, AbortController>>(new Map());
@@ -211,7 +210,7 @@ export function Playground() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-65px)]">
+    <div className="flex flex-col h-full">
       {/* Toolbar */}
       <div className="border-b border-white/10 px-4 py-3 flex items-center gap-3 bg-white/[0.02]">
         <button

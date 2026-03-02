@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/openpath/openpath/internal/db/queries"
-	"github.com/openpath/openpath/internal/model"
+	"github.com/openpaths/openpaths/internal/db/queries"
+	"github.com/openpaths/openpaths/internal/model"
 )
 
 var ErrInsufficientBalance = errors.New("insufficient balance")

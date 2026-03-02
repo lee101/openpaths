@@ -11,6 +11,6 @@ export GOMAXPROCS="${GOMAXPROCS:-3}"
 
 go build -tags="gpu cuda" \
   -ldflags="-extldflags '-Wl,-rpath,${GOBED_GPU} -Wl,-rpath,${CUDA_PATH}/lib64'" \
-  -o bin/openpath-gpu ./cmd/openpath/
+  -o bin/openpaths-gpu ./cmd/openpaths/
 
-echo "Built bin/openpath-gpu (CUDA ${CUDA_PATH})"
+echo "Built bin/openpaths-gpu (CUDA ${CUDA_PATH})"

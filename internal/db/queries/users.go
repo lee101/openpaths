@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/openpath/openpath/internal/model"
+	"github.com/openpaths/openpaths/internal/model"
 )
 
 type UserQueries struct {

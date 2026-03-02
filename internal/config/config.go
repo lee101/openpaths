@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/openpath/openpath/internal/model"
+	"github.com/openpaths/openpaths/internal/model"
 	"gopkg.in/yaml.v3"
 )
 

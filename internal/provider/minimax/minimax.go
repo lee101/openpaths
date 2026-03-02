@@ -10,9 +10,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/openpath/openpath/internal/model"
-	"github.com/openpath/openpath/internal/provider"
-	"github.com/openpath/openpath/internal/provider/openai"
+	"github.com/openpaths/openpaths/internal/model"
+	"github.com/openpaths/openpaths/internal/provider"
+	"github.com/openpaths/openpaths/internal/provider/openai"
 )
 
 const baseURL = "https://api.minimax.io"

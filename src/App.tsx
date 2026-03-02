@@ -5,6 +5,8 @@ import { Landing } from './pages/Landing';
 import { Models } from './pages/Models';
 import { Account } from './pages/Account';
 import { Playground } from './pages/Playground';
+import { Blog } from './pages/Blog';
+import { BlogPost } from './pages/BlogPost';
 
 export default function App() {
   return (
@@ -15,6 +17,8 @@ export default function App() {
           <Route path="models" element={<Models />} />
           <Route path="playground" element={<Playground />} />
           <Route path="account" element={<Account />} />
+          <Route path="blog" element={<Blog />} />
+          <Route path="blog/:slug" element={<BlogPost />} />
         </Route>
       </Routes>
     </BrowserRouter>

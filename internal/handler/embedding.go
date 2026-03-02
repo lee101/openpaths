@@ -7,12 +7,12 @@ import (
 
 	"github.com/valyala/fasthttp"
 
-	"github.com/openpath/openpath/internal/billing"
-	"github.com/openpath/openpath/internal/metrics"
-	"github.com/openpath/openpath/internal/middleware"
-	"github.com/openpath/openpath/internal/model"
-	"github.com/openpath/openpath/internal/provider"
-	"github.com/openpath/openpath/internal/router"
+	"github.com/openpaths/openpaths/internal/billing"
+	"github.com/openpaths/openpaths/internal/metrics"
+	"github.com/openpaths/openpaths/internal/middleware"
+	"github.com/openpaths/openpaths/internal/model"
+	"github.com/openpaths/openpaths/internal/provider"
+	"github.com/openpaths/openpaths/internal/router"
 )
 
 type EmbeddingHandler struct {

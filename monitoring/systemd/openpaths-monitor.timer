@@ -1,0 +1,10 @@
+[Unit]
+Description=Run OpenPaths monitor every 30 minutes
+
+[Timer]
+OnCalendar=*:0/30
+Persistent=true
+RandomizedDelaySec=60
+
+[Install]
+WantedBy=timers.target

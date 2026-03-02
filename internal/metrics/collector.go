@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/openpath/openpath/internal/db/queries"
-	"github.com/openpath/openpath/internal/model"
+	"github.com/openpaths/openpaths/internal/db/queries"
+	"github.com/openpaths/openpaths/internal/model"
 )
 
 // Collector buffers usage logs in memory and flushes to the database periodically.

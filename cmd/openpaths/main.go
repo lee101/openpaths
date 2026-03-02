@@ -11,32 +11,33 @@ import (
 	"syscall"
 
 	"github.com/joho/godotenv"
-	"github.com/openpath/openpath/internal/auth"
-	"github.com/openpath/openpath/internal/billing"
-	"github.com/openpath/openpath/internal/config"
-	"github.com/openpath/openpath/internal/crypto"
-	"github.com/openpath/openpath/internal/db"
-	"github.com/openpath/openpath/internal/db/migrations"
-	"github.com/openpath/openpath/internal/db/queries"
-	"github.com/openpath/openpath/internal/metrics"
-	"github.com/openpath/openpath/internal/provider"
-	"github.com/openpath/openpath/internal/provider/anthropic"
-	"github.com/openpath/openpath/internal/provider/deepseek"
-	"github.com/openpath/openpath/internal/provider/fal"
-	"github.com/openpath/openpath/internal/provider/google"
-	"github.com/openpath/openpath/internal/provider/groq"
-	"github.com/openpath/openpath/internal/provider/minimax"
-	"github.com/openpath/openpath/internal/provider/mistral"
-	"github.com/openpath/openpath/internal/provider/netwrck"
-	"github.com/openpath/openpath/internal/provider/openai"
-	"github.com/openpath/openpath/internal/provider/openrouter"
-	"github.com/openpath/openpath/internal/provider/textgenerator"
-	"github.com/openpath/openpath/internal/provider/together"
-	"github.com/openpath/openpath/internal/provider/xai"
-	"github.com/openpath/openpath/internal/provider/zai"
-	"github.com/openpath/openpath/internal/router"
-	"github.com/openpath/openpath/internal/server"
-	"github.com/openpath/openpath/internal/storage"
+	"github.com/openpaths/openpaths/internal/auth"
+	"github.com/openpaths/openpaths/internal/billing"
+	"github.com/openpaths/openpaths/internal/config"
+	"github.com/openpaths/openpaths/internal/crypto"
+	"github.com/openpaths/openpaths/internal/db"
+	"github.com/openpaths/openpaths/internal/db/migrations"
+	"github.com/openpaths/openpaths/internal/db/queries"
+	"github.com/openpaths/openpaths/internal/metrics"
+	"github.com/openpaths/openpaths/internal/provider"
+	"github.com/openpaths/openpaths/internal/provider/anthropic"
+	"github.com/openpaths/openpaths/internal/provider/deepseek"
+	"github.com/openpaths/openpaths/internal/provider/fal"
+	gobedprov "github.com/openpaths/openpaths/internal/provider/gobed"
+	"github.com/openpaths/openpaths/internal/provider/google"
+	"github.com/openpaths/openpaths/internal/provider/groq"
+	"github.com/openpaths/openpaths/internal/provider/minimax"
+	"github.com/openpaths/openpaths/internal/provider/mistral"
+	"github.com/openpaths/openpaths/internal/provider/netwrck"
+	"github.com/openpaths/openpaths/internal/provider/openai"
+	"github.com/openpaths/openpaths/internal/provider/openrouter"
+	"github.com/openpaths/openpaths/internal/provider/textgenerator"
+	"github.com/openpaths/openpaths/internal/provider/together"
+	"github.com/openpaths/openpaths/internal/provider/xai"
+	"github.com/openpaths/openpaths/internal/provider/zai"
+	"github.com/openpaths/openpaths/internal/router"
+	"github.com/openpaths/openpaths/internal/server"
+	"github.com/openpaths/openpaths/internal/storage"
 )
 
 func main() {
@@ -77,6 +78,13 @@ func main() {
 	registry := provider.NewRegistry()
 	var transcribers []provider.TranscriptionProvider
 	var embedders []provider.EmbeddingProvider
+
+	if gp, err := gobedprov.New(); err != nil {
+		log.Printf("gobed: disabled (%v)", err)
+	} else {
+		embedders = append(embedders, gp)
+		log.Printf("Registered embedding provider: gobed")
+	}
 
 	for _, provCfg := range cfg.Providers {
 		if !provCfg.Enabled || provCfg.APIKey == "" {
@@ -120,9 +128,9 @@ func main() {
 		case "zai":
 			p = zai.New(provCfg.APIKey, provCfg.BaseURL)
 		case "fal":
-			transcribers = append(transcribers, fal.New(provCfg.APIKey))
-			log.Printf("Registered transcription provider: fal")
-			continue
+			f := fal.New(provCfg.APIKey)
+			transcribers = append(transcribers, f)
+			p = f
 		default:
 			log.Printf("Unknown provider: %s", provCfg.Name)
 			continue
@@ -133,6 +141,16 @@ func main() {
 	}
 
 	modelRouter := router.New(registry, cfg.Models)
+
+	if len(embedders) > 0 {
+		ar := router.NewAutoRouter(embedders[0])
+		if err := ar.Init(ctx); err != nil {
+			log.Printf("AutoRouter init failed (will use static routing): %v", err)
+		} else {
+			modelRouter.SetAutoRouter(ar)
+			log.Printf("AutoRouter enabled with embedding-based model selection")
+		}
+	}
 
 	pricingTable := billing.NewPricingTable(cfg.Models)
 	billingEngine := billing.NewEngine(pricingTable, creditQ)

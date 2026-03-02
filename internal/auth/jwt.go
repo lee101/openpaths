@@ -32,7 +32,7 @@ func (s *JWTService) Generate(userID, email string) (string, error) {
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.expiration)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			Issuer:    "openpath",
+			Issuer:    "openpaths",
 		},
 	}
 

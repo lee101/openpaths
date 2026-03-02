@@ -10,7 +10,7 @@ import (
 	"net/url"
 
 	"github.com/mr-tron/base58"
-	"github.com/openpath/openpath/internal/model"
+	"github.com/openpaths/openpaths/internal/model"
 	"golang.org/x/crypto/hkdf"
 )
 
@@ -18,7 +18,7 @@ func deriveDepositKeypair(seed []byte, index int64) (ed25519.PublicKey, ed25519.
 	info := make([]byte, 8)
 	binary.BigEndian.PutUint64(info, uint64(index))
 
-	hkdfReader := hkdf.New(sha256.New, seed, []byte("openpath-deposit"), info)
+	hkdfReader := hkdf.New(sha256.New, seed, []byte("openpaths-deposit"), info)
 	keySeed := make([]byte, ed25519.SeedSize)
 	if _, err := io.ReadFull(hkdfReader, keySeed); err != nil {
 		return nil, nil, fmt.Errorf("hkdf derivation: %w", err)

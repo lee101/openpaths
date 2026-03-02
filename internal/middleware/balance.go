@@ -3,7 +3,7 @@ package middleware
 import (
 	"github.com/valyala/fasthttp"
 
-	"github.com/openpath/openpath/internal/billing"
+	"github.com/openpaths/openpaths/internal/billing"
 )
 
 // BalanceCheck verifies the user has credits before processing.

@@ -3,7 +3,7 @@ package mistral
 import (
 	"strings"
 
-	"github.com/openpath/openpath/internal/provider/openai"
+	"github.com/openpaths/openpaths/internal/provider/openai"
 )
 
 // Mistral uses an OpenAI-compatible API, so we wrap the OpenAI adapter.

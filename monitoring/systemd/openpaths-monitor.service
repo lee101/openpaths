@@ -1,0 +1,15 @@
+[Unit]
+Description=OpenPaths site monitor and auto-fix
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=administrator
+WorkingDirectory=/nvme0n1-disk/code/openpaths
+ExecStart=/bin/bash monitoring/autofix_agent.sh
+TimeoutStartSec=1800
+Environment=HOME=/home/administrator
+Environment=PATH=/usr/local/bin:/usr/bin:/bin:/home/administrator/.local/bin
+
+[Install]
+WantedBy=multi-user.target

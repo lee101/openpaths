@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openpath/openpath/internal/model"
-	"github.com/openpath/openpath/internal/provider"
+	"github.com/openpaths/openpaths/internal/model"
+	"github.com/openpaths/openpaths/internal/provider"
 )
 
 type NetwrckProvider struct {

@@ -8,8 +8,8 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/openpath/openpath/internal/model"
-	"github.com/openpath/openpath/internal/provider"
+	"github.com/openpaths/openpaths/internal/model"
+	"github.com/openpaths/openpaths/internal/provider"
 )
 
 func (p *OpenRouterProvider) Embed(ctx context.Context, req *model.EmbeddingRequest) (*model.EmbeddingResponse, error) {

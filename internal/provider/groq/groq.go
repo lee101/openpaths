@@ -3,7 +3,7 @@ package groq
 import (
 	"strings"
 
-	"github.com/openpath/openpath/internal/provider/openai"
+	"github.com/openpaths/openpaths/internal/provider/openai"
 )
 
 // Groq uses an OpenAI-compatible API, so we wrap the OpenAI adapter.

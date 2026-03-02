@@ -3,7 +3,7 @@ package metrics
 import (
 	"time"
 
-	"github.com/openpath/openpath/internal/model"
+	"github.com/openpaths/openpaths/internal/model"
 )
 
 // Recorder provides a convenient API for recording request metrics.

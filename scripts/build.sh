@@ -1,4 +1,4 @@
 #!/bin/bash
 set -e
-go build -o bin/openpath ./cmd/openpath/
-echo "Built bin/openpath"
+go build -o bin/openpaths ./cmd/openpaths/
+echo "Built bin/openpaths"

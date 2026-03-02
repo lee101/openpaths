@@ -3,7 +3,7 @@ package billing
 import (
 	"testing"
 
-	"github.com/openpath/openpath/internal/model"
+	"github.com/openpaths/openpaths/internal/model"
 )
 
 func newTestPricingTable() *PricingTable {

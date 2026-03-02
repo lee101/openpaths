@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/openpath/openpath/internal/model"
+	"github.com/openpaths/openpaths/internal/model"
 )
 
 func TestGenerateImage_Integration(t *testing.T) {

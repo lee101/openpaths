@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/openpath/openpath/internal/model"
+	"github.com/openpaths/openpaths/internal/model"
 )
 
 type mockProvider struct {

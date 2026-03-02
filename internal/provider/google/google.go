@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/openpath/openpath/internal/model"
-	"github.com/openpath/openpath/internal/provider"
+	"github.com/openpaths/openpaths/internal/model"
+	"github.com/openpaths/openpaths/internal/provider"
 )
 
 type GoogleProvider struct {
@@ -65,10 +65,15 @@ type geminiFuncResp struct {
 }
 
 type geminiGenerationCfg struct {
-	Temperature     *float64 `json:"temperature,omitempty"`
-	TopP            *float64 `json:"topP,omitempty"`
-	MaxOutputTokens *int     `json:"maxOutputTokens,omitempty"`
-	StopSequences   []string `json:"stopSequences,omitempty"`
+	Temperature     *float64             `json:"temperature,omitempty"`
+	TopP            *float64             `json:"topP,omitempty"`
+	MaxOutputTokens *int                 `json:"maxOutputTokens,omitempty"`
+	StopSequences   []string             `json:"stopSequences,omitempty"`
+	ThinkingConfig  *geminiThinkingCfg   `json:"thinkingConfig,omitempty"`
+}
+
+type geminiThinkingCfg struct {
+	ThinkingBudget *int `json:"thinkingBudget,omitempty"`
 }
 
 type geminiToolDecl struct {
@@ -281,6 +286,11 @@ func translateRequest(req *model.ChatCompletionRequest) *geminiRequest {
 		gemReq.GenerationConfig.MaxOutputTokens = req.MaxCompletionTokens
 	}
 
+	if req.ReasoningEffort != "" {
+		budget := reasoningToBudget(req.ReasoningEffort)
+		gemReq.GenerationConfig.ThinkingConfig = &geminiThinkingCfg{ThinkingBudget: &budget}
+	}
+
 	for _, msg := range req.Messages {
 		if msg.Role == "system" {
 			if s, ok := msg.Content.(string); ok {
@@ -382,6 +392,21 @@ func translateResponse(resp *geminiResponse, requestModel string) *model.ChatCom
 			FinishReason: &finishReason,
 		}},
 		Usage: usage,
+	}
+}
+
+func reasoningToBudget(effort string) int {
+	switch effort {
+	case "none":
+		return 0
+	case "low":
+		return 1024
+	case "medium":
+		return 8192
+	case "high":
+		return 32768
+	default:
+		return 0
 	}
 }
 

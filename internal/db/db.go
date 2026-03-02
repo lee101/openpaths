@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/openpath/openpath/internal/config"
+	"github.com/openpaths/openpaths/internal/config"
 )
 
 type DB struct {

@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openpath/openpath/internal/model"
-	"github.com/openpath/openpath/internal/provider"
-	oai "github.com/openpath/openpath/internal/provider/openai"
+	"github.com/openpaths/openpaths/internal/model"
+	"github.com/openpaths/openpaths/internal/provider"
+	oai "github.com/openpaths/openpaths/internal/provider/openai"
 )
 
 type OpenRouterProvider struct {
@@ -82,6 +82,6 @@ func (p *OpenRouterProvider) ChatCompletion(ctx context.Context, req *model.Chat
 func (p *OpenRouterProvider) setHeaders(req *http.Request) {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+p.apiKey)
-	req.Header.Set("HTTP-Referer", "https://openpath.ai")
-	req.Header.Set("X-Title", "OpenPath")
+	req.Header.Set("HTTP-Referer", "https://openpaths.io")
+	req.Header.Set("X-Title", "OpenPaths")
 }

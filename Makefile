@@ -1,13 +1,13 @@
 .PHONY: build test run clean lint
 
 build:
-	go build -o bin/openpath ./cmd/openpath
+	go build -o bin/openpaths ./cmd/openpaths
 
 test:
 	go test -v -race ./...
 
 run: build
-	./bin/openpath
+	./bin/openpaths
 
 clean:
 	rm -rf bin/

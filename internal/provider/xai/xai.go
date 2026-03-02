@@ -3,7 +3,7 @@ package xai
 import (
 	"strings"
 
-	"github.com/openpath/openpath/internal/provider/openai"
+	"github.com/openpaths/openpaths/internal/provider/openai"
 )
 
 type XAIProvider struct {

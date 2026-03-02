@@ -11,17 +11,17 @@ import (
 	fasthttprouter "github.com/fasthttp/router"
 	"github.com/valyala/fasthttp"
 
-	"github.com/openpath/openpath/internal/auth"
-	"github.com/openpath/openpath/internal/billing"
-	"github.com/openpath/openpath/internal/config"
-	"github.com/openpath/openpath/internal/crypto"
-	"github.com/openpath/openpath/internal/db/queries"
-	"github.com/openpath/openpath/internal/handler"
-	"github.com/openpath/openpath/internal/metrics"
-	"github.com/openpath/openpath/internal/middleware"
-	"github.com/openpath/openpath/internal/provider"
-	"github.com/openpath/openpath/internal/router"
-	"github.com/openpath/openpath/internal/storage"
+	"github.com/openpaths/openpaths/internal/auth"
+	"github.com/openpaths/openpaths/internal/billing"
+	"github.com/openpaths/openpaths/internal/config"
+	"github.com/openpaths/openpaths/internal/crypto"
+	"github.com/openpaths/openpaths/internal/db/queries"
+	"github.com/openpaths/openpaths/internal/handler"
+	"github.com/openpaths/openpaths/internal/metrics"
+	"github.com/openpaths/openpaths/internal/middleware"
+	"github.com/openpaths/openpaths/internal/provider"
+	"github.com/openpaths/openpaths/internal/router"
+	"github.com/openpaths/openpaths/internal/storage"
 )
 
 type Server struct {

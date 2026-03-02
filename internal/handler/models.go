@@ -3,7 +3,7 @@ package handler
 import (
 	"github.com/valyala/fasthttp"
 
-	"github.com/openpath/openpath/internal/router"
+	"github.com/openpaths/openpaths/internal/router"
 )
 
 type ModelsHandler struct {

@@ -7,9 +7,9 @@ import (
 
 	"github.com/valyala/fasthttp"
 
-	"github.com/openpath/openpath/internal/crypto"
-	"github.com/openpath/openpath/internal/middleware"
-	"github.com/openpath/openpath/internal/model"
+	"github.com/openpaths/openpaths/internal/crypto"
+	"github.com/openpaths/openpaths/internal/middleware"
+	"github.com/openpaths/openpaths/internal/model"
 )
 
 type CryptoHandler struct {

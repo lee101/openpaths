@@ -3,7 +3,7 @@ package billing
 import (
 	"fmt"
 
-	"github.com/openpath/openpath/internal/model"
+	"github.com/openpaths/openpaths/internal/model"
 )
 
 // PricingTable holds per-model pricing loaded from config.

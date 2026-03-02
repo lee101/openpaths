@@ -17,6 +17,7 @@ type ChatCompletionRequest struct {
 	ResponseFormat      *ResponseFormat `json:"response_format,omitempty"`
 	Tools               []Tool          `json:"tools,omitempty"`
 	ToolChoice          any             `json:"tool_choice,omitempty"`
+	ReasoningEffort     string          `json:"reasoning_effort,omitempty"`
 }
 
 type ChatMessage struct {

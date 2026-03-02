@@ -6,8 +6,8 @@ STATIC_BUCKET="${STATIC_BUCKET:-openpathsstatic}"
 R2_ENDPOINT="${R2_ENDPOINT:-https://${R2_ACCOUNT_ID:-f76d25b8b86cfa5638f43016510d8f77}.r2.cloudflarestorage.com}"
 STATIC_URL="${STATIC_URL:-https://openpathsstatic.openpaths.io}"
 API_HOST="${API_HOST:-administrator@93.127.141.100}"
-API_SERVICE="openpath"
-REMOTE_DIR="/nvme0n1-disk/code/openpath"
+API_SERVICE="openpaths"
+REMOTE_DIR="/nvme0n1-disk/code/openpaths"
 DIST_DIR="dist"
 CF_ZONE_ID="${CLOUDFLARE_ZONE_OPENPATHS:-}"
 SSH_PASS="${SSH_PASS:-ka3iMI4OSNvgFcREuDaQyLguFxuP}"
@@ -73,15 +73,15 @@ deploy_site() {
 # --- API deploy: build Go binary + deploy to server ---
 deploy_api() {
     green "building api..."
-    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o dist/openpath-api ./cmd/openpath/
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o dist/openpaths-api ./cmd/openpaths/
 
     green "deploying api to ${API_HOST}..."
     require_cmd sshpass
 
-    scp_cmd dist/openpath-api "${API_HOST}:${REMOTE_DIR}/openpath-api.new"
+    scp_cmd dist/openpaths-api "${API_HOST}:${REMOTE_DIR}/openpaths-api.new"
 
     green "syncing frontend dist..."
-    rsync_cmd --delete --exclude='openpath-api*' dist/ "${API_HOST}:${REMOTE_DIR}/dist/"
+    rsync_cmd --delete --exclude='openpaths-api*' dist/ "${API_HOST}:${REMOTE_DIR}/dist/"
 
     green "syncing config..."
     scp_cmd config.yaml "${API_HOST}:${REMOTE_DIR}/config.yaml"
@@ -90,14 +90,14 @@ deploy_api() {
     ssh_cmd bash -s <<REMOTE
         set -euo pipefail
         cd ${REMOTE_DIR}
-        mv openpath-api.new openpath-api
-        chmod +x openpath-api
+        mv openpaths-api.new openpaths-api
+        chmod +x openpaths-api
         if sudo supervisorctl status ${API_SERVICE} >/dev/null 2>&1; then
             sudo supervisorctl restart ${API_SERVICE}
         else
-            kill \$(pgrep -x openpath-api) 2>/dev/null || true
+            kill \$(pgrep -x openpaths-api) 2>/dev/null || true
             sleep 1
-            nohup ./openpath-api > /var/log/supervisor/${API_SERVICE}.log 2>&1 &
+            nohup ./openpaths-api > /var/log/supervisor/${API_SERVICE}.log 2>&1 &
         fi
         echo "api deployed"
 REMOTE
@@ -126,7 +126,7 @@ deploy_setup() {
         if ! sudo test -f /etc/supervisor/conf.d/${API_SERVICE}.conf; then
             sudo tee /etc/supervisor/conf.d/${API_SERVICE}.conf > /dev/null <<'CONF'
 [program:${API_SERVICE}]
-command=${REMOTE_DIR}/openpath-api
+command=${REMOTE_DIR}/openpaths-api
 directory=${REMOTE_DIR}
 user=administrator
 autostart=true

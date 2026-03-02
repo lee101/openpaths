@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/openpath/openpath/internal/model"
-	"github.com/openpath/openpath/internal/provider"
+	"github.com/openpaths/openpaths/internal/model"
+	"github.com/openpaths/openpaths/internal/provider"
 )
 
 const anthropicVersion = "2023-06-01"

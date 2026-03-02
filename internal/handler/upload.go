@@ -11,7 +11,7 @@ import (
 
 	"github.com/valyala/fasthttp"
 
-	"github.com/openpath/openpath/internal/storage"
+	"github.com/openpaths/openpaths/internal/storage"
 )
 
 type UploadHandler struct {

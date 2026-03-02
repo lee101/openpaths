@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/mr-tron/base58"
-	"github.com/openpath/openpath/internal/billing"
-	"github.com/openpath/openpath/internal/model"
+	"github.com/openpaths/openpaths/internal/billing"
+	"github.com/openpaths/openpaths/internal/model"
 )
 
 type CryptoStore interface {

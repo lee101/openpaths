@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/openpath/openpath/internal/model"
+	"github.com/openpaths/openpaths/internal/model"
 	"github.com/valyala/fasthttp"
 )
 

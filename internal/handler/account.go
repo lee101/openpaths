@@ -6,10 +6,10 @@ import (
 
 	"github.com/valyala/fasthttp"
 
-	"github.com/openpath/openpath/internal/auth"
-	"github.com/openpath/openpath/internal/billing"
-	"github.com/openpath/openpath/internal/db/queries"
-	"github.com/openpath/openpath/internal/middleware"
+	"github.com/openpaths/openpaths/internal/auth"
+	"github.com/openpaths/openpaths/internal/billing"
+	"github.com/openpaths/openpaths/internal/db/queries"
+	"github.com/openpaths/openpaths/internal/middleware"
 )
 
 type AccountHandler struct {

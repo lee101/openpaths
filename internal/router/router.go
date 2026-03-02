@@ -1,12 +1,14 @@
 package router
 
 import (
+	"context"
 	"fmt"
+	"log"
 	"sync"
 	"time"
 
-	"github.com/openpath/openpath/internal/model"
-	"github.com/openpath/openpath/internal/provider"
+	"github.com/openpaths/openpaths/internal/model"
+	"github.com/openpaths/openpaths/internal/provider"
 )
 
 type RouteCandidate struct {
@@ -15,11 +17,12 @@ type RouteCandidate struct {
 }
 
 type Router struct {
-	mu       sync.RWMutex
-	models   map[string]*model.ModelConfig
-	aliases  map[string]string
-	registry *provider.Registry
-	health   *HealthTracker
+	mu         sync.RWMutex
+	models     map[string]*model.ModelConfig
+	aliases    map[string]string
+	registry   *provider.Registry
+	health     *HealthTracker
+	autoRouter *AutoRouter
 }
 
 func New(registry *provider.Registry, models []model.ModelConfig) *Router {
@@ -168,4 +171,35 @@ func (r *Router) GetModelConfig(modelName string) (*model.ModelConfig, bool) {
 	}
 	cfg, ok := r.models[canonical]
 	return cfg, ok
+}
+
+func (r *Router) SetAutoRouter(ar *AutoRouter) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.autoRouter = ar
+}
+
+func (r *Router) MaybeResolveAuto(ctx context.Context, modelName, modality, prompt string) AutoRouteResult {
+	fallback := AutoRouteResult{ModelID: modelName}
+
+	if r.autoRouter == nil {
+		return fallback
+	}
+
+	mod, isAuto := IsAutoModel(modelName)
+	if !isAuto {
+		return fallback
+	}
+
+	if modality != "" {
+		mod = modality
+	}
+
+	result, err := r.autoRouter.ResolveAuto(ctx, mod, prompt)
+	if err != nil {
+		log.Printf("autorouter: %v, using default", err)
+		return fallback
+	}
+
+	return result
 }

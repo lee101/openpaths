@@ -151,8 +151,8 @@ func TestValidate_ClaimsContainCorrectIssuer(t *testing.T) {
 		t.Fatalf("Validate returned unexpected error: %v", err)
 	}
 
-	if claims.Issuer != "openpath" {
-		t.Errorf("expected issuer %q, got %q", "openpath", claims.Issuer)
+	if claims.Issuer != "openpaths" {
+		t.Errorf("expected issuer %q, got %q", "openpaths", claims.Issuer)
 	}
 }
 

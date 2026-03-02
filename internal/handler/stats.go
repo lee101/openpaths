@@ -3,7 +3,7 @@ package handler
 import (
 	"github.com/valyala/fasthttp"
 
-	"github.com/openpath/openpath/internal/db/queries"
+	"github.com/openpaths/openpaths/internal/db/queries"
 )
 
 type StatsHandler struct {
