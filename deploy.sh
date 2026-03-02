@@ -10,7 +10,7 @@ API_SERVICE="openpaths"
 REMOTE_DIR="/nvme0n1-disk/code/openpaths"
 DIST_DIR="dist"
 CF_ZONE_ID="${CLOUDFLARE_ZONE_OPENPATHS:-}"
-SSH_PASS="${SSH_PASS:-ka3iMI4OSNvgFcREuDaQyLguFxuP}"
+SSH_PASS="${SSH_PASS:-}"
 
 export AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID:-${CLOUDFLARE_R2_ACCESS_KEY_ID:-}}"
 export AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY:-${CLOUDFLARE_R2_SECRET_ACCESS_KEY:-}}"
@@ -24,16 +24,28 @@ require_cmd() {
 }
 
 ssh_cmd() {
-    sshpass -p "${SSH_PASS}" ssh -o StrictHostKeyChecking=no "${API_HOST}" "$@"
+    if [[ -n "$SSH_PASS" ]]; then
+        sshpass -p "${SSH_PASS}" ssh -o StrictHostKeyChecking=no "${API_HOST}" "$@"
+    else
+        ssh "${API_HOST}" "$@"
+    fi
 }
 
 scp_cmd() {
-    sshpass -p "${SSH_PASS}" scp -o StrictHostKeyChecking=no "$@"
+    if [[ -n "$SSH_PASS" ]]; then
+        sshpass -p "${SSH_PASS}" scp -o StrictHostKeyChecking=no "$@"
+    else
+        scp "$@"
+    fi
 }
 
 rsync_cmd() {
-    sshpass -p "${SSH_PASS}" rsync -az \
-        -e "sshpass -p ${SSH_PASS} ssh -o StrictHostKeyChecking=no" "$@"
+    if [[ -n "$SSH_PASS" ]]; then
+        sshpass -p "${SSH_PASS}" rsync -az \
+            -e "sshpass -p ${SSH_PASS} ssh -o StrictHostKeyChecking=no" "$@"
+    else
+        rsync -az "$@"
+    fi
 }
 
 purge_cf_cache() {

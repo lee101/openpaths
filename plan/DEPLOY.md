@@ -11,7 +11,12 @@
 ## SSH
 
 ```bash
-alias sscp='sshpass -p '\''ka3iMI4OSNvgFcREuDaQyLguFxuP'\'' ssh -o StrictHostKeyChecking=no administrator@93.127.141.100'
+# Key-based auth (preferred):
+alias sscp='ssh administrator@93.127.141.100'
+
+# Or with sshpass if needed:
+# export SSH_PASS=<password>
+# alias sscp='sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no administrator@93.127.141.100'
 ```
 
 ## deploy.sh
@@ -51,11 +56,11 @@ npm run build
 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o dist/openpath-api ./cmd/openpath/
 
 # 3. SCP binary to remote
-sshpass -p 'ka3iMI4OSNvgFcREuDaQyLguFxuP' scp -o StrictHostKeyChecking=no \
+sshpass -p "$SSH_PASS" scp -o StrictHostKeyChecking=no \
   dist/openpath-api administrator@93.127.141.100:/nvme0n1-disk/code/openpath/openpath-api.new
 
 # 4. Rsync dist/ to remote
-sshpass -p 'ka3iMI4OSNvgFcREuDaQyLguFxuP' rsync -az --delete \
+sshpass -p "$SSH_PASS" rsync -az --delete \
   -e 'sshpass -p ka3iMI4OSNvgFcREuDaQyLguFxuP ssh -o StrictHostKeyChecking=no' \
   --exclude='openpath-api*' dist/ administrator@93.127.141.100:/nvme0n1-disk/code/openpath/dist/
 
