@@ -3,17 +3,14 @@ package metrics
 import (
 	"context"
 	"log"
-	"sync"
 	"time"
 
 	"github.com/openpaths/openpaths/internal/db/queries"
 	"github.com/openpaths/openpaths/internal/model"
 )
 
-// Collector buffers usage logs in memory and flushes to the database periodically.
 type Collector struct {
-	mu       sync.Mutex
-	buffer   []model.UsageLog
+	ch       chan model.UsageLog
 	usageQ   *queries.UsageQueries
 	interval time.Duration
 	done     chan struct{}
@@ -24,59 +21,91 @@ func NewCollector(usageQ *queries.UsageQueries, flushInterval time.Duration) *Co
 		flushInterval = 5 * time.Second
 	}
 	return &Collector{
+		ch:       make(chan model.UsageLog, 4096),
 		usageQ:   usageQ,
 		interval: flushInterval,
 		done:     make(chan struct{}),
 	}
 }
 
-// Start begins the periodic flush loop.
 func (c *Collector) Start() {
 	go func() {
+		buf := make([]model.UsageLog, 0, 256)
 		ticker := time.NewTicker(c.interval)
 		defer ticker.Stop()
 
 		for {
 			select {
+			case entry := <-c.ch:
+				buf = append(buf, entry)
+				if len(buf) >= 256 {
+					c.flush(buf)
+					buf = buf[:0]
+				}
 			case <-ticker.C:
-				c.Flush()
+				// drain remaining
+				for {
+					select {
+					case entry := <-c.ch:
+						buf = append(buf, entry)
+					default:
+						goto done
+					}
+				}
+			done:
+				if len(buf) > 0 {
+					c.flush(buf)
+					buf = buf[:0]
+				}
 			case <-c.done:
-				c.Flush() // final flush
+				close(c.ch)
+				for entry := range c.ch {
+					buf = append(buf, entry)
+				}
+				if len(buf) > 0 {
+					c.flush(buf)
+				}
 				return
 			}
 		}
 	}()
 }
 
-// Stop signals the collector to stop and performs a final flush.
 func (c *Collector) Stop() {
 	close(c.done)
 }
 
-// Record adds a usage log to the buffer.
 func (c *Collector) Record(logEntry model.UsageLog) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.buffer = append(c.buffer, logEntry)
+	select {
+	case c.ch <- logEntry:
+	default:
+		log.Printf("metrics: buffer full, dropping log")
+	}
 }
 
-// Flush writes all buffered logs to the database.
-func (c *Collector) Flush() {
-	c.mu.Lock()
-	if len(c.buffer) == 0 {
-		c.mu.Unlock()
-		return
-	}
-	batch := c.buffer
-	c.buffer = nil
-	c.mu.Unlock()
-
+func (c *Collector) flush(batch []model.UsageLog) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	for i := range batch {
 		if err := c.usageQ.Insert(ctx, &batch[i]); err != nil {
-			log.Printf("Failed to insert usage log: %v", err)
+			log.Printf("metrics flush: %v", err)
+		}
+	}
+}
+
+// Flush drains and writes all pending logs (for testing).
+func (c *Collector) Flush() {
+	buf := make([]model.UsageLog, 0, 64)
+	for {
+		select {
+		case entry := <-c.ch:
+			buf = append(buf, entry)
+		default:
+			if len(buf) > 0 {
+				c.flush(buf)
+			}
+			return
 		}
 	}
 }

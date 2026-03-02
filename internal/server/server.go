@@ -43,11 +43,13 @@ type Dependencies struct {
 	StatsQ       *queries.StatsQueries
 	Transcribers []provider.TranscriptionProvider
 	Embedders    []provider.EmbeddingProvider
-	CryptoSvc    *crypto.Service
-	Storage      storage.Store
-	StripeSvc    *stripesvc.Service
-	Discovery    *discovery.Service
-	ModelMetaQ   *queries.ModelMetadataQueries
+	CryptoSvc      *crypto.Service
+	Storage        storage.Store
+	StripeSvc      *stripesvc.Service
+	Discovery      *discovery.Service
+	ModelMetaQ     *queries.ModelMetadataQueries
+	FineTuneQ      *queries.FineTuneQueries
+	FineTuneProvs  map[string]provider.FineTuneProvider
 }
 
 func New(deps *Dependencies) *Server {
@@ -151,6 +153,18 @@ func New(deps *Dependencies) *Server {
 	r.GET("/stats/providers", publicChain(statsH.HandleProviderStats))
 	r.GET("/stats/timeseries", publicChain(statsH.HandleTimeSeries))
 
+	if deps.FineTuneQ != nil && len(deps.FineTuneProvs) > 0 {
+		ftH := handler.NewFineTuneHandler(deps.FineTuneQ, deps.FineTuneProvs, deps.Storage)
+		r.POST("/v1/files", apiKeyChain(ftH.HandleUploadFile))
+		r.GET("/v1/files", apiKeyChain(ftH.HandleListFiles))
+		r.POST("/v1/fine_tuning/jobs", apiKeyChain(ftH.HandleCreateJob))
+		r.GET("/v1/fine_tuning/jobs", apiKeyChain(ftH.HandleListJobs))
+		r.GET("/v1/fine_tuning/jobs/{job_id}", apiKeyChain(ftH.HandleGetJob))
+		r.POST("/v1/fine_tuning/jobs/{job_id}/cancel", apiKeyChain(ftH.HandleCancelJob))
+		r.GET("/v1/fine_tuning/jobs/{job_id}/events", apiKeyChain(ftH.HandleListEvents))
+		log.Printf("Fine-tuning endpoints enabled (%d providers)", len(deps.FineTuneProvs))
+	}
+
 	if deps.Discovery != nil {
 		disc := deps.Discovery
 		metaQ := deps.ModelMetaQ
@@ -192,10 +206,16 @@ func New(deps *Dependencies) *Server {
 	}
 
 	srv := &fasthttp.Server{
-		Handler:            handler,
-		ReadTimeout:        time.Duration(deps.Config.Server.ReadTimeout) * time.Second,
-		WriteTimeout:       time.Duration(deps.Config.Server.WriteTimeout) * time.Second,
-		MaxRequestBodySize: deps.Config.Server.MaxRequestBody * 1024 * 1024,
+		Handler:                       handler,
+		ReadTimeout:                   time.Duration(deps.Config.Server.ReadTimeout) * time.Second,
+		WriteTimeout:                  time.Duration(deps.Config.Server.WriteTimeout) * time.Second,
+		MaxRequestBodySize:            deps.Config.Server.MaxRequestBody * 1024 * 1024,
+		DisableHeaderNamesNormalizing: true,
+		TCPKeepalive:                  true,
+		ReduceMemoryUsage:            false,
+		NoDefaultServerHeader:         true,
+		NoDefaultDate:                 true,
+		NoDefaultContentType:          true,
 	}
 
 	return &Server{
@@ -221,7 +241,11 @@ func spaHandler(dir string, api fasthttp.RequestHandler) fasthttp.RequestHandler
 		Compress:   true,
 	}
 	fsHandler := fs.NewRequestHandler()
-	indexPath := filepath.Join(dir, "index.html")
+
+	indexData, err := os.ReadFile(filepath.Join(dir, "index.html"))
+	if err != nil {
+		log.Printf("WARN: could not pre-read index.html: %v", err)
+	}
 
 	return func(ctx *fasthttp.RequestCtx) {
 		path := string(ctx.Path())
@@ -236,18 +260,16 @@ func spaHandler(dir string, api fasthttp.RequestHandler) fasthttp.RequestHandler
 			api(ctx)
 			return
 		}
-		// try static file
 		fsHandler(ctx)
 		if ctx.Response.StatusCode() == fasthttp.StatusNotFound || ctx.Response.StatusCode() == fasthttp.StatusForbidden {
-			ctx.Response.Reset()
-			data, err := os.ReadFile(indexPath)
-			if err != nil {
+			if indexData == nil {
 				api(ctx)
 				return
 			}
+			ctx.Response.Reset()
 			ctx.SetStatusCode(200)
 			ctx.SetContentType("text/html; charset=utf-8")
-			ctx.SetBody(data)
+			ctx.SetBody(indexData)
 		}
 	}
 }

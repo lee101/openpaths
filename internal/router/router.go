@@ -189,6 +189,34 @@ func (r *Router) GetModelConfig(modelName string) (*model.ModelConfig, bool) {
 	return cfg, ok
 }
 
+func (r *Router) GetModelInfo(modelName string) (model.ModelInfo, bool) {
+	cfg, ok := r.GetModelConfig(modelName)
+	if !ok {
+		return model.ModelInfo{}, false
+	}
+	return model.ModelInfo{
+		ID:              cfg.ID,
+		Object:          "model",
+		Created:         time.Now().Unix(),
+		OwnedBy:         cfg.Provider,
+		ContextWindow:   cfg.ContextWindow,
+		MaxOutputTokens: cfg.MaxOutputTokens,
+		Aliases:         cfg.Aliases,
+		SupportedSizes:  cfg.SupportedSizes,
+		Pricing: &model.ModelPricing{
+			InputPer1M:  cfg.InputPricePer1M,
+			OutputPer1M: cfg.OutputPricePer1M,
+			PerImage:    cfg.PricePerImage,
+			PerVideo:    cfg.PricePerVideo,
+		},
+		Capabilities: &model.ModelCapabilities{
+			Streaming: cfg.SupportsStreaming,
+			Tools:     cfg.SupportsTools,
+			Vision:    cfg.SupportsVision,
+		},
+	}, true
+}
+
 func (r *Router) SetAutoRouter(ar *AutoRouter) {
 	r.mu.Lock()
 	defer r.mu.Unlock()

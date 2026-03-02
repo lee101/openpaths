@@ -34,7 +34,6 @@ func TestRateLimitBlocks(t *testing.T) {
 
 	handler := mw(func(ctx *fasthttp.RequestCtx) {})
 
-	// Make 3 requests with limit of 2
 	for i := 0; i < 3; i++ {
 		ctx := &fasthttp.RequestCtx{}
 		ctx.SetUserValue(CtxKeyAPIKey, &model.APIKey{ID: "key-limited", RateLimitRPM: 2})
@@ -68,45 +67,44 @@ func TestRateLimitNoAPIKey(t *testing.T) {
 	}
 }
 
-func TestRateLimiterAllow(t *testing.T) {
-	rl := &rateLimiter{windows: make(map[string]*window)}
+func newTestRL() *rateLimiter {
+	rl := &rateLimiter{}
+	for i := range rl.shards {
+		rl.shards[i].windows = make(map[string]*window)
+	}
+	return rl
+}
 
-	// First request should be allowed
+func TestRateLimiterAllow(t *testing.T) {
+	rl := newTestRL()
+
 	if !rl.allow("key1", 2) {
 		t.Error("first request should be allowed")
 	}
-
-	// Second request should be allowed
 	if !rl.allow("key1", 2) {
 		t.Error("second request should be allowed")
 	}
-
-	// Third request should be blocked
 	if rl.allow("key1", 2) {
 		t.Error("third request should be blocked")
 	}
-
-	// Different key should be independent
 	if !rl.allow("key2", 2) {
 		t.Error("different key should be allowed")
 	}
 }
 
 func TestRateLimiterReset(t *testing.T) {
-	rl := &rateLimiter{windows: make(map[string]*window)}
+	rl := newTestRL()
 
-	// Fill up the limit
 	rl.allow("key1", 1)
 	if rl.allow("key1", 1) {
 		t.Error("should be blocked")
 	}
 
-	// Manually expire the window
-	rl.mu.Lock()
-	rl.windows["key1"].resetAt = time.Now().Add(-1 * time.Second)
-	rl.mu.Unlock()
+	s := rl.shard("key1")
+	s.mu.Lock()
+	s.windows["key1"].resetAt = time.Now().Add(-1 * time.Second)
+	s.mu.Unlock()
 
-	// Should be allowed again
 	if !rl.allow("key1", 1) {
 		t.Error("should be allowed after reset")
 	}

@@ -9,7 +9,13 @@ import (
 	"github.com/openpaths/openpaths/internal/model"
 )
 
+const rlShards = 64
+
 type rateLimiter struct {
+	shards [rlShards]rlShard
+}
+
+type rlShard struct {
 	mu      sync.Mutex
 	windows map[string]*window
 }
@@ -19,9 +25,20 @@ type window struct {
 	resetAt time.Time
 }
 
-// RateLimit implements per-API-key sliding window rate limiting.
 func RateLimit() Middleware {
-	rl := &rateLimiter{windows: make(map[string]*window)}
+	rl := &rateLimiter{}
+	for i := range rl.shards {
+		rl.shards[i].windows = make(map[string]*window)
+	}
+
+	go func() {
+		ticker := time.NewTicker(5 * time.Minute)
+		defer ticker.Stop()
+		for range ticker.C {
+			rl.cleanup()
+		}
+	}()
+
 	return func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 		return func(ctx *fasthttp.RequestCtx) {
 			apiKey, ok := ctx.UserValue(CtxKeyAPIKey).(*model.APIKey)
@@ -42,13 +59,23 @@ func RateLimit() Middleware {
 	}
 }
 
-func (rl *rateLimiter) allow(keyID string, limitRPM int) bool {
-	rl.mu.Lock()
-	defer rl.mu.Unlock()
+func (rl *rateLimiter) shard(key string) *rlShard {
+	h := uint32(0)
+	for i := 0; i < len(key); i++ {
+		h = h*31 + uint32(key[i])
+	}
+	return &rl.shards[h%rlShards]
+}
 
-	w, ok := rl.windows[keyID]
-	if !ok || time.Now().After(w.resetAt) {
-		rl.windows[keyID] = &window{count: 1, resetAt: time.Now().Add(time.Minute)}
+func (rl *rateLimiter) allow(keyID string, limitRPM int) bool {
+	s := rl.shard(keyID)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	now := time.Now()
+	w, ok := s.windows[keyID]
+	if !ok || now.After(w.resetAt) {
+		s.windows[keyID] = &window{count: 1, resetAt: now.Add(time.Minute)}
 		return true
 	}
 	if w.count >= limitRPM {
@@ -56,4 +83,18 @@ func (rl *rateLimiter) allow(keyID string, limitRPM int) bool {
 	}
 	w.count++
 	return true
+}
+
+func (rl *rateLimiter) cleanup() {
+	now := time.Now()
+	for i := range rl.shards {
+		s := &rl.shards[i]
+		s.mu.Lock()
+		for k, w := range s.windows {
+			if now.After(w.resetAt) {
+				delete(s.windows, k)
+			}
+		}
+		s.mu.Unlock()
+	}
 }

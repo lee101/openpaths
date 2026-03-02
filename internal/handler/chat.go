@@ -3,7 +3,6 @@ package handler
 import (
 	"bufio"
 	"encoding/json"
-	"fmt"
 	"log"
 	"time"
 
@@ -181,20 +180,24 @@ func (h *ChatHandler) tryStreaming(
 				errData, _ := json.Marshal(model.ErrorResponse{
 					Error: model.ErrorDetail{Message: event.Err.Error(), Type: "provider_error"},
 				})
-				fmt.Fprintf(w, "data: %s\n\n", errData)
+				w.WriteString("data: ")
+				w.Write(errData)
+				w.WriteString("\n\n")
 				w.Flush()
 				break
 			}
 			if event.Done {
 				usage = event.Usage
-				fmt.Fprintf(w, "data: [DONE]\n\n")
+				w.WriteString("data: [DONE]\n\n")
 				w.Flush()
 				break
 			}
 
 			event.Chunk.Model = originalModel
 			data, _ := json.Marshal(event.Chunk)
-			fmt.Fprintf(w, "data: %s\n\n", data)
+			w.WriteString("data: ")
+			w.Write(data)
+			w.WriteString("\n\n")
 			w.Flush()
 		}
 

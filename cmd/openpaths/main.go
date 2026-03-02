@@ -200,7 +200,22 @@ func main() {
 	}
 
 	modelMetaQ := queries.NewModelMetadataQueries(database.Pool)
+	ftQ := queries.NewFineTuneQueries(database.Pool)
 	disc := discovery.New(cfg.Providers, modelMetaQ)
+
+	ftProviders := make(map[string]provider.FineTuneProvider)
+	for _, provCfg := range cfg.Providers {
+		if !provCfg.Enabled || provCfg.APIKey == "" {
+			continue
+		}
+		switch provCfg.Name {
+		case "mistral":
+			ftProviders["mistral"] = mistral.New(provCfg.APIKey, provCfg.BaseURL)
+		}
+	}
+	if len(ftProviders) > 0 {
+		log.Printf("Fine-tuning providers: %d", len(ftProviders))
+	}
 
 	go func() {
 		n, err := disc.DiscoverAll(ctx)
@@ -226,8 +241,10 @@ func main() {
 		CryptoSvc:    cryptoSvc,
 		Storage:      store,
 		StripeSvc:    stripe,
-		Discovery:    disc,
-		ModelMetaQ:   modelMetaQ,
+		Discovery:      disc,
+		ModelMetaQ:     modelMetaQ,
+		FineTuneQ:      ftQ,
+		FineTuneProvs:  ftProviders,
 	})
 
 	done := make(chan os.Signal, 1)

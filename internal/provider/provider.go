@@ -59,6 +59,15 @@ type EmbeddingProvider interface {
 	Embed(ctx context.Context, req *model.EmbeddingRequest) (*model.EmbeddingResponse, error)
 }
 
+// FineTuneProvider defines the interface for fine-tuning.
+type FineTuneProvider interface {
+	Name() string
+	UploadFineTuneFile(ctx context.Context, filename string, data []byte) (providerFileID string, err error)
+	CreateFineTuneJob(ctx context.Context, req *model.FineTuneJobRequest, providerTrainingFileID string, providerValidationFileID string) (*model.ProviderFineTuneJob, error)
+	GetFineTuneJob(ctx context.Context, providerJobID string) (*model.ProviderFineTuneJob, error)
+	CancelFineTuneJob(ctx context.Context, providerJobID string) error
+}
+
 // ProviderError wraps errors with provider-specific context.
 type ProviderError struct {
 	Provider   string

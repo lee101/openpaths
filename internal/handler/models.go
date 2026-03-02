@@ -29,18 +29,10 @@ func (h *ModelsHandler) HandleGetModel(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	cfg, found := h.router.GetModelConfig(modelID)
+	info, found := h.router.GetModelInfo(modelID)
 	if !found {
 		writeJSON(ctx, 404, map[string]any{"error": map[string]string{"message": "model not found", "type": "invalid_request_error"}})
 		return
 	}
-
-	models := h.router.ListModels()
-	for _, m := range models {
-		if m.ID == cfg.ID {
-			writeJSON(ctx, 200, m)
-			return
-		}
-	}
-	writeJSON(ctx, 404, map[string]any{"error": map[string]string{"message": "model not found"}})
+	writeJSON(ctx, 200, info)
 }
