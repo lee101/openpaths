@@ -10,7 +10,7 @@ export function Blog() {
       <div className="mb-16">
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">Blog</h1>
         <p className="text-white/60 text-lg font-light max-w-2xl">
-          Engineering deep-dives, model comparisons, and guides for building with OpenPath.
+          Engineering deep-dives, model comparisons, and guides for building with OpenPaths.
         </p>
       </div>
 

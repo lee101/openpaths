@@ -16,7 +16,7 @@ interface ModelPane {
 }
 
 const CHAT_MODELS = [
-  { id: 'auto', label: 'Auto (Gemini 3.1 + fallbacks)', provider: 'OpenPath' },
+  { id: 'auto', label: 'Auto (Gemini 3.1 + fallbacks)', provider: 'OpenPaths' },
   { id: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro', provider: 'Google' },
   { id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', provider: 'Google' },
   { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', provider: 'Google' },

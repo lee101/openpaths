@@ -11,14 +11,139 @@ export interface BlogPost {
 
 export const posts: BlogPost[] = [
   {
+    slug: 'state-of-ai-models-march-2026',
+    title: 'The State of AI Models: 342 Models, 57 Providers, and What the Data Actually Shows',
+    excerpt: 'We pulled every model from the OpenRouter catalog and crunched the numbers. Here is what the AI model landscape actually looks like in March 2026.',
+    date: '2026-03-02',
+    author: 'OpenPaths Team',
+    readTime: '10 min',
+    tags: ['data', 'analysis', 'models', 'industry'],
+    content: `We pulled the full model catalog from OpenRouter's API -- 342 models from 57 different providers -- and ran the numbers. Here's what the AI model landscape actually looks like right now.
+
+## The Big Picture: 342 Models and Counting
+
+A year ago you could list every available LLM on a napkin. Today there are 342 models accessible through a single API. 35 of those were added in 2026 alone -- roughly one new model every two days since January.
+
+The market is consolidating around a few major players while simultaneously fragmenting into dozens of niche providers. The top 5 providers account for over half the catalog:
+
+| Provider | Models | Avg Input $/1M | Avg Output $/1M |
+|----------|--------|---------------|-----------------|
+| OpenAI | 58 | $7.03 | $28.06 |
+| Qwen | 50 | $0.31 | $1.43 |
+| Mistral | 27 | $0.57 | $1.71 |
+| Google | 26 | $0.68 | $4.29 |
+| Meta (Llama) | 17 | $0.65 | $0.74 |
+
+OpenAI has the most models but also the highest average price -- nearly 23x more expensive than Qwen per input token. The Chinese providers (Qwen, DeepSeek, MiniMax, Z.AI, Baidu) are collectively driving prices down hard.
+
+## The Price Collapse Is Real
+
+Here's the distribution of all 342 models by price tier:
+
+**Free:** 29 models (8%) -- Completely free to use. Qwen leads with 6 free models, Google has 5. These aren't toy models either -- Gemini Flash Lite gives you a 1M context window at zero cost.
+
+**Budget (<$0.50/1M):** 179 models (52%) -- Over half of all available models cost less than fifty cents per million input tokens. This tier barely existed 18 months ago.
+
+**Mid ($0.50-$3/1M):** 97 models (28%) -- The sweet spot where most production apps live. Claude Sonnet, Gemini Pro, GPT-5.2 all land here.
+
+**Premium ($3-$15/1M):** 28 models (8%) -- Frontier reasoning models. Claude Opus, o3, GPT-5.2 Pro.
+
+**Ultra (>$15/1M):** 9 models (2%) -- The bleeding edge. OpenAI's o1-pro at $150/$600 per 1M tokens sits alone at the top. GPT-5.2 Pro ($21/$168) and the legacy GPT-4 models ($30/$60) round out this tier.
+
+The takeaway: 60% of all AI models are now either free or under $0.50 per million tokens. The "AI is expensive" narrative is increasingly wrong for most use cases.
+
+## Context Windows Have Exploded
+
+Remember when 4K tokens was standard? The context window distribution tells a story:
+
+| Context Size | Models | Share |
+|-------------|--------|-------|
+| Under 32K | 33 | 9% |
+| 32K - 128K | 106 | 30% |
+| 128K - 256K | 124 | 36% |
+| 256K - 1M | 63 | 18% |
+| 1M+ | 16 | 4% |
+
+The median context window is now in the 128K-256K range. 36% of all models support at least 128K tokens. xAI's Grok 4.1 Fast leads the pack at 2 million tokens.
+
+The 1M+ club includes nearly every Gemini model, several Grok variants, and a few Qwen models. Google is clearly betting that massive context is a competitive advantage -- and at $0.10/1M tokens for Gemini Flash Lite, they might be right.
+
+## The Best Value in AI
+
+We calculated a "value score" -- context window size divided by price per million tokens. The winners might surprise you:
+
+| Model | Context | Input $/1M | Value Score |
+|-------|---------|-----------|-------------|
+| Gemini 2.0 Flash Lite | 1M | $0.07 | 13.9M |
+| Gemini 2.5 Flash Lite | 1M | $0.10 | 10.4M |
+| GPT-4.1 Nano | 1M | $0.10 | 10.4M |
+| Grok 4.1 Fast | 2M | $0.20 | 10.0M |
+| GPT-5 Nano | 400K | $0.05 | 8.0M |
+
+Google dominates value. Their Flash Lite models give you a million tokens of context for seven cents. For comparison, o1-pro gives you 200K context for $150 -- a value score of just 1,333. That's a 10,000x difference in tokens-per-dollar.
+
+Of course, value isn't everything. o1-pro solves problems that Flash Lite can't touch. But for document processing, RAG, and summarization, the value tier models are absurdly capable for their price.
+
+## Multimodality Is the New Normal
+
+Text-only models are becoming the minority:
+
+| Capability | Models | Share |
+|-----------|--------|-------|
+| Text input | 342 | 100% |
+| Image input | 130 | 38% |
+| File/PDF input | 54 | 15% |
+| Video input | 26 | 7% |
+| Audio input | 17 | 4% |
+| Image output | 6 | 1.7% |
+
+38% of all models now accept images. Google leads multimodal with 5-modality support (text, image, file, audio, video) across their entire Gemini lineup. Image generation through LLMs (like GPT-5 Image and Gemini's image models) is still rare at just 6 models, but growing.
+
+## Tool Use Has Won
+
+234 out of 342 models (68%) support function calling / tool use. It's no longer a premium feature -- it's table stakes. Even budget models like Qwen3.5 Flash and Nemotron Nano support tools.
+
+144 models (42%) support explicit reasoning modes. This was zero models two years ago. The "thinking" paradigm pioneered by o1 has been adopted across the industry -- from Xiaomi's MiMo to Liquid's 1.2B parameter model.
+
+## The Provider Landscape
+
+57 unique providers. Here's what stands out:
+
+**The Big 5** (OpenAI, Anthropic, Google, Meta, Mistral) still dominate quality benchmarks. Gemini 3.1 Pro leads OpenRouter's intelligence rankings at 57.2, followed by GPT-5.3 Codex (54.0) and Claude Opus 4.6 (53.0).
+
+**The Chinese Wave** (Qwen, DeepSeek, MiniMax, Z.AI, Baidu, ByteDance, Moonshot/Kimi, Xiaomi) now collectively offer more models than any single Western provider. They compete on price and increasingly on quality. Xiaomi's MiMo-V2-Flash claims SWE-bench scores comparable to Claude Sonnet 4.5 at 3.5% of the cost.
+
+**The Specialists** are proliferating. Writer (enterprise agents), Perplexity (search-augmented), Liquid (edge deployment), Arcee (instruction-tuned), Cohere (enterprise RAG). Each carving out a niche.
+
+**The Open Source Push**: Meta's Llama, AllenAI's Olmo, NVIDIA's Nemotron -- open-weight models are driving the budget tier and enabling self-hosting.
+
+## What This Means for Developers
+
+Three conclusions from the data:
+
+**1. Default to cheap.** Over 60% of models cost under $0.50/1M tokens. For most tasks -- summarization, classification, extraction, simple Q&A -- a $0.10 model works as well as a $15 one. Start cheap, upgrade only where quality demands it.
+
+**2. Context is basically free.** A million tokens of context at $0.07-0.10 means you can stuff entire codebases, documents, or conversation histories into a single request without sweating the cost. Design your applications around abundant context.
+
+**3. Use a router.** With 342 models across 57 providers, manual model selection is a losing game. The optimal model for a coding task is different from a creative writing task is different from a document analysis task. Routing -- whether through OpenPaths's auto system or your own logic -- is no longer optional for serious applications.
+
+The AI model market is maturing fast. Prices are falling, capabilities are rising, and the gap between "best" and "good enough" is shrinking. The developers who win are the ones who navigate this efficiently -- not the ones who always pick the most expensive option.
+
+## How OpenPaths Fits In
+
+OpenPaths routes across all of these providers. Our \`auto\` model uses local embeddings to pick the optimal backend per request. One API key, one balance, automatic fallbacks. The data above is exactly why we built it -- because choosing from 342 models manually is insane.
+
+All the models mentioned in this post are available through OpenPaths. [Get started here](/account).`
+  },
+  {
     slug: 'how-auto-models-work',
     title: 'How Auto Models Work: Intelligent Routing for Every Request',
-    excerpt: 'OpenPath auto models use embedding-based routing to pick the best provider for your prompt. One model ID, zero config, always the right backend.',
+    excerpt: 'OpenPaths auto models use embedding-based routing to pick the best provider for your prompt. One model ID, zero config, always the right backend.',
     date: '2026-03-01',
-    author: 'OpenPath Team',
+    author: 'OpenPaths Team',
     readTime: '5 min',
     tags: ['engineering', 'auto', 'routing'],
-    content: `When you send a request to \`auto\`, \`auto-image\`, or \`auto-video\`, OpenPath doesn't just pick a random provider. It runs your prompt through a lightweight embedding model and matches it against provider capabilities to find the optimal backend.
+    content: `When you send a request to \`auto\`, \`auto-image\`, or \`auto-video\`, OpenPaths doesn't just pick a random provider. It runs your prompt through a lightweight embedding model and matches it against provider capabilities to find the optimal backend.
 
 ## The Problem
 
@@ -52,7 +177,7 @@ client = openai.OpenAI(
     api_key="op_..."
 )
 
-# Just use "auto" -- OpenPath picks the best model
+# Just use "auto" -- OpenPaths picks the best model
 response = client.chat.completions.create(
     model="auto",
     messages=[{"role": "user", "content": "Explain quantum entanglement"}]
@@ -76,12 +201,12 @@ On average, auto-routed requests cost 40% less than always using the most expens
   {
     slug: 'ai-art-generation-compared',
     title: 'AI Art Generation Compared: ra1, FLUX, Stable Diffusion, and GLM Image',
-    excerpt: 'A practical comparison of image generation models available through OpenPath. What each one does best, pricing, and when to use which.',
+    excerpt: 'A practical comparison of image generation models available through OpenPaths. What each one does best, pricing, and when to use which.',
     date: '2026-02-28',
-    author: 'OpenPath Team',
+    author: 'OpenPaths Team',
     readTime: '7 min',
     tags: ['art generation', 'models', 'comparison'],
-    content: `OpenPath routes to multiple image generation backends. Here's how they stack up and when to use each one.
+    content: `OpenPaths routes to multiple image generation backends. Here's how they stack up and when to use each one.
 
 ## ra1 (Netwrck)
 
@@ -129,7 +254,7 @@ A specialized model tuned for anime and illustration-style art. At just $0.007 p
 
 ## Resolution Handling
 
-OpenPath automatically handles resolution mismatches. If you request a size like 1920x1080 but the model only supports specific resolutions, our gateway:
+OpenPaths automatically handles resolution mismatches. If you request a size like 1920x1080 but the model only supports specific resolutions, our gateway:
 
 1. Finds the supported resolution with the closest aspect ratio
 2. Generates the image at that resolution
@@ -164,10 +289,10 @@ Start with \`auto-image\` and let the router pick. For explicit control:
     title: 'Choosing the Right LLM: A Practical Guide to 2026 Models',
     excerpt: 'With 50+ LLMs available, picking the right one is overwhelming. Here is a no-nonsense breakdown of when to use what.',
     date: '2026-02-25',
-    author: 'OpenPath Team',
+    author: 'OpenPaths Team',
     readTime: '8 min',
     tags: ['models', 'comparison', 'guide'],
-    content: `The LLM landscape in 2026 is dense. Here's our take on what actually matters when choosing a model through OpenPath.
+    content: `The LLM landscape in 2026 is dense. Here's our take on what actually matters when choosing a model through OpenPaths.
 
 ## The Frontier Tier
 
@@ -239,19 +364,19 @@ Ask yourself these questions:
 6. **Just prototyping?** -> Free tier models
 7. **Don't want to think about it?** -> Use \`auto\`
 
-Or just use \`auto\` and let OpenPath figure it out. That's literally what it's for.`
+Or just use \`auto\` and let OpenPaths figure it out. That's literally what it's for.`
   },
   {
     slug: 'image-resolution-handling',
-    title: 'How OpenPath Handles Image Resolutions Automatically',
-    excerpt: 'Request any resolution from any image model. OpenPath matches aspect ratios, generates at supported sizes, and resizes to your exact dimensions.',
+    title: 'How OpenPaths Handles Image Resolutions Automatically',
+    excerpt: 'Request any resolution from any image model. OpenPaths matches aspect ratios, generates at supported sizes, and resizes to your exact dimensions.',
     date: '2026-02-22',
-    author: 'OpenPath Team',
+    author: 'OpenPaths Team',
     readTime: '4 min',
     tags: ['engineering', 'art generation', 'features'],
     content: `Every image model supports different resolutions. FLUX works with sizes from 512x512 to 1440x1080. ra1 supports a different set. GLM Image generates up to 1728x960. Keeping track of which model supports which sizes is annoying.
 
-OpenPath handles this automatically.
+OpenPaths handles this automatically.
 
 ## The Problem
 
@@ -261,7 +386,7 @@ Previously, you had to know each model's supported sizes, pick the right one, an
 
 ## Our Solution
 
-When you request any resolution, OpenPath's image handler:
+When you request any resolution, OpenPaths's image handler:
 
 **Step 1: Find the best match.** We compare your requested aspect ratio against all supported sizes for the model. The size with the closest aspect ratio wins. If multiple sizes have the same aspect ratio, we pick the one closest in total pixel count to your request.
 
@@ -287,7 +412,7 @@ The result: you always get back exactly the dimensions you asked for.
 
 Resolution handling is automatic but only activates when:
 
-1. The model has \`supported_sizes\` configured (all image models in OpenPath do)
+1. The model has \`supported_sizes\` configured (all image models in OpenPaths do)
 2. The requested size doesn't exactly match a supported size
 3. The request includes a \`size\` parameter
 
@@ -309,12 +434,12 @@ response = client.images.generate(
   {
     slug: 'video-generation-guide',
     title: 'AI Video Generation: Hailuo, Wan, LTX, and ra2v Compared',
-    excerpt: 'A breakdown of every video generation model available through OpenPath. Speed, quality, pricing, and what each one handles best.',
+    excerpt: 'A breakdown of every video generation model available through OpenPaths. Speed, quality, pricing, and what each one handles best.',
     date: '2026-02-18',
-    author: 'OpenPath Team',
+    author: 'OpenPaths Team',
     readTime: '6 min',
     tags: ['video', 'models', 'comparison'],
-    content: `Video generation is moving fast. OpenPath provides access to four video generation backends, each with different strengths.
+    content: `Video generation is moving fast. OpenPaths provides access to four video generation backends, each with different strengths.
 
 ## Hailuo 2.3 (MiniMax)
 
@@ -387,17 +512,17 @@ response = requests.post(
   },
   {
     slug: 'openpath-vs-openrouter',
-    title: 'OpenPath vs OpenRouter: Why We Built Another Model Router',
-    excerpt: 'There are other model routers out there. Here is what makes OpenPath different and why we think it matters.',
+    title: 'OpenPaths vs OpenRouter: Why We Built Another Model Router',
+    excerpt: 'There are other model routers out there. Here is what makes OpenPaths different and why we think it matters.',
     date: '2026-02-15',
-    author: 'OpenPath Team',
+    author: 'OpenPaths Team',
     readTime: '5 min',
     tags: ['company', 'comparison'],
-    content: `OpenRouter exists and it's good. We even use it as a fallback provider. So why build OpenPath?
+    content: `OpenRouter exists and it's good. We even use it as a fallback provider. So why build OpenPaths?
 
 ## What We Do Differently
 
-**Multimodal from day one.** OpenPath isn't just a chat router. We route images (ra1, FLUX, Stable Diffusion, GLM Image, zimage), video (Hailuo, Wan, LTX, ra2v), music (MiniMax), speech synthesis, transcription, and embeddings. One API key, one balance, every modality.
+**Multimodal from day one.** OpenPaths isn't just a chat router. We route images (ra1, FLUX, Stable Diffusion, GLM Image, zimage), video (Hailuo, Wan, LTX, ra2v), music (MiniMax), speech synthesis, transcription, and embeddings. One API key, one balance, every modality.
 
 **Auto routing with embeddings.** Our \`auto\` models use local embedding-based routing to pick the best backend per request. Not round-robin, not random -- actual semantic matching against model capabilities.
 
@@ -405,7 +530,7 @@ response = requests.post(
 
 **Solana payments.** Fund your account with SOL or USDC. No KYC for crypto payments. For developers who prefer decentralized infrastructure.
 
-**Open source.** The entire gateway is open source. You can self-host OpenPath, audit the routing logic, or contribute improvements.
+**Open source.** The entire gateway is open source. You can self-host OpenPaths, audit the routing logic, or contribute improvements.
 
 **First-party embeddings.** Our local gobed embedding model runs in-process with zero network latency. No external API call needed for embeddings.
 
@@ -415,7 +540,7 @@ Transparency -- OpenRouter has been around longer and has a larger community. Th
 
 We use OpenRouter as a fallback for exactly this reason. If our primary provider for a model is unhealthy, requests can route through OpenRouter automatically.
 
-## When to Use OpenPath
+## When to Use OpenPaths
 
 - You need image, video, music, or speech generation alongside chat
 - You want auto-routing that picks the best model per request
@@ -430,17 +555,17 @@ We use OpenRouter as a fallback for exactly this reason. If our primary provider
 
 ## The Real Answer
 
-Use both. OpenPath for primary routing with OpenRouter as a fallback. That's literally how we designed it.`
+Use both. OpenPaths for primary routing with OpenRouter as a fallback. That's literally how we designed it.`
   },
   {
     slug: 'music-and-speech-models',
-    title: 'AI Music Generation and Text-to-Speech on OpenPath',
+    title: 'AI Music Generation and Text-to-Speech on OpenPaths',
     excerpt: 'Generate music with MiniMax and convert text to natural speech. Here is how our audio models work.',
     date: '2026-02-10',
-    author: 'OpenPath Team',
+    author: 'OpenPaths Team',
     readTime: '4 min',
     tags: ['music', 'speech', 'models'],
-    content: `OpenPath isn't just chat and images. We provide full access to music generation and text-to-speech through MiniMax's audio models.
+    content: `OpenPaths isn't just chat and images. We provide full access to music generation and text-to-speech through MiniMax's audio models.
 
 ## Music Generation
 
@@ -478,7 +603,7 @@ response = requests.post(
     headers={"Authorization": "Bearer op_..."},
     json={
         "model": "speech-2.8-hd",
-        "input": "Welcome to OpenPath. The open source model router.",
+        "input": "Welcome to OpenPaths. The open source model router.",
         "voice": "alloy"
     }
 )
@@ -513,13 +638,13 @@ print(response.json()["text"])
   },
   {
     slug: 'free-ai-models',
-    title: 'Free AI Models You Can Use Right Now on OpenPath',
-    excerpt: 'Several high-quality models are available at zero cost through OpenPath. Here is what they are and what they can do.',
+    title: 'Free AI Models You Can Use Right Now on OpenPaths',
+    excerpt: 'Several high-quality models are available at zero cost through OpenPaths. Here is what they are and what they can do.',
     date: '2026-02-05',
-    author: 'OpenPath Team',
+    author: 'OpenPaths Team',
     readTime: '3 min',
     tags: ['models', 'free', 'guide'],
-    content: `Not everything costs money. OpenPath routes to several free models through OpenRouter's free tier and Z.AI's free offerings. Here's what's available at $0.00.
+    content: `Not everything costs money. OpenPaths routes to several free models through OpenRouter's free tier and Z.AI's free offerings. Here's what's available at $0.00.
 
 ## Free Chat Models
 
@@ -541,7 +666,7 @@ print(response.json()["text"])
 
 **Nemotron Embed** (NVIDIA) -- Free vision-capable embedding model through OpenRouter. 8K context.
 
-**OpenPath Embed** (gobed) -- Our first-party embedding model. Runs locally in-process. $0.002/1M tokens -- practically free.
+**OpenPaths Embed** (gobed) -- Our first-party embedding model. Runs locally in-process. $0.002/1M tokens -- practically free.
 
 ## What's the Catch?
 
@@ -569,6 +694,6 @@ response = client.chat.completions.create(
 )
 \`\`\`
 
-Free models are a great way to get started with OpenPath before committing any budget. Create an account, grab an API key, and start building.`
+Free models are a great way to get started with OpenPaths before committing any budget. Create an account, grab an API key, and start building.`
   }
 ];

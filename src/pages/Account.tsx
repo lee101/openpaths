@@ -119,7 +119,7 @@ function StripeCheckoutModal({ open, onClose }: { open: boolean; onClose: () => 
               </button>
             </div>
 
-            <p className="text-sm text-white/60 mb-6">Select an amount to add to your OpenPath balance via Stripe.</p>
+            <p className="text-sm text-white/60 mb-6">Select an amount to add to your OpenPaths balance via Stripe.</p>
 
             <div className="grid grid-cols-2 gap-3 mb-6">
               {STRIPE_AMOUNTS.map(a => (
