@@ -16,7 +16,9 @@ jwt:
 
 stripe:
   secret_key: "${STRIPE_SECRET_KEY}"
+  publishable_key: "${STRIPE_PUBLISHABLE_KEY}"
   webhook_secret: "${STRIPE_WEBHOOK_SECRET}"
+  credits_price_id: "price_1T6egFHXPxordcGkslP1HYDP"
 
 crypto:
   enabled: true
@@ -118,6 +120,42 @@ models:
       - "grok-4-0709"
       - "or/gemini-3.1"
       - "or/gpt-5.2"
+
+  # --- Auto Easy Task (cheapest models only) ---
+  - id: "auto-easy-task"
+    provider: google
+    provider_model_id: "gemini-flash-lite-latest"
+    input_price_per_1m: 0.02
+    output_price_per_1m: 0.10
+    aliases: ["auto-easy"]
+    context_window: 1000000
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: false
+    supports_vision: true
+    fallback_models:
+      - "minimax-m2.5-highspeed"
+      - "gpt-4o-mini"
+      - "llama-3.1-8b-instant"
+      - "gemini-flash-lite"
+
+  # --- Auto Medium Task (mid-tier models) ---
+  - id: "auto-medium-task"
+    provider: anthropic
+    provider_model_id: "claude-sonnet-4-6"
+    input_price_per_1m: 3.00
+    output_price_per_1m: 15.00
+    aliases: ["auto-medium"]
+    context_window: 200000
+    max_output_tokens: 64000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models:
+      - "gemini-2.5-flash"
+      - "deepseek-chat"
+      - "minimax-m2.5"
+      - "gpt-4o"
 
   # --- Auto Image (embedding-routed, defaults to ra1) ---
   - id: "auto-image"

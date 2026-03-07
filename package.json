@@ -10,10 +10,13 @@
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "test:e2e": "npx playwright test",
-    "test:e2e:ui": "npx playwright test --ui"
+    "test:e2e:ui": "npx playwright test --ui",
+    "test:e2e:live": "npx playwright test --config=playwright.live.config.ts"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
+    "@stripe/react-stripe-js": "^5.6.1",
+    "@stripe/stripe-js": "^8.8.0",
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
     "better-sqlite3": "^12.4.1",

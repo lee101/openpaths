@@ -22,8 +22,10 @@ type Config struct {
 }
 
 type StripeConfig struct {
-	SecretKey     string `yaml:"secret_key"`
-	WebhookSecret string `yaml:"webhook_secret"`
+	SecretKey      string `yaml:"secret_key"`
+	PublishableKey string `yaml:"publishable_key"`
+	WebhookSecret  string `yaml:"webhook_secret"`
+	CreditsPriceID string `yaml:"credits_price_id"`
 }
 
 type StorageConfig struct {
@@ -130,8 +132,14 @@ func Load(path string) (*Config, error) {
 	if v := os.Getenv("STRIPE_SECRET_KEY"); v != "" {
 		cfg.Stripe.SecretKey = v
 	}
+	if v := os.Getenv("STRIPE_PUBLISHABLE_KEY"); v != "" {
+		cfg.Stripe.PublishableKey = v
+	}
 	if v := os.Getenv("STRIPE_WEBHOOK_SECRET"); v != "" {
 		cfg.Stripe.WebhookSecret = v
+	}
+	if v := os.Getenv("STRIPE_CREDITS_PRICE_ID"); v != "" {
+		cfg.Stripe.CreditsPriceID = v
 	}
 
 	if v := os.Getenv("STORAGE_PROVIDER"); v != "" {

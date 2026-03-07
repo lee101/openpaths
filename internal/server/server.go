@@ -85,6 +85,10 @@ func New(deps *Dependencies) *Server {
 	r.GET("/v1/models", apiKeyChain(modelsH.HandleListModels))
 	r.GET("/v1/models/{model_id}", apiKeyChain(modelsH.HandleGetModel))
 
+	anthH := handler.NewAnthropicHandler(deps.Router, deps.Billing, deps.Recorder)
+	r.POST("/v1/messages", apiKeyChain(anthH.HandleMessages))
+	log.Printf("Anthropic-compatible /v1/messages endpoint enabled")
+
 	imageH := handler.NewImageHandler(deps.Router, deps.Billing, deps.Recorder)
 	r.POST("/v1/images/generations", apiKeyChain(imageH.HandleImageGeneration))
 	log.Printf("Image generation endpoint enabled")
@@ -146,7 +150,13 @@ func New(deps *Dependencies) *Server {
 		r.DELETE("/account/stripe/payment-methods/{id}", jwtChain(atH.HandleDeletePaymentMethod))
 		r.POST("/account/autotopup/settings", jwtChain(atH.HandleUpdateAutotopupSettings))
 		r.GET("/account/autotopup/settings", jwtChain(atH.HandleGetAutotopupSettings))
-		log.Printf("Stripe auto-topup endpoints enabled")
+
+		checkoutH := handler.NewCheckoutHandler(deps.StripeSvc, deps.UserQ, deps.Billing, deps.Config.Stripe.CreditsPriceID, deps.Config.Stripe.WebhookSecret)
+		r.POST("/account/stripe/checkout", jwtChain(checkoutH.HandleCreateCheckout))
+		r.GET("/account/stripe/config", publicChain(checkoutH.HandleStripeConfig))
+		r.POST("/stripe/webhooks", publicChain(checkoutH.HandleWebhook))
+
+		log.Printf("Stripe checkout + auto-topup endpoints enabled (price: %s)", deps.Config.Stripe.CreditsPriceID)
 	}
 
 	r.GET("/stats/models", publicChain(statsH.HandleModelStats))
@@ -253,6 +263,7 @@ func spaHandler(dir string, api fasthttp.RequestHandler) fasthttp.RequestHandler
 			strings.HasPrefix(path, "/auth/") ||
 			strings.HasPrefix(path, "/account/") ||
 			strings.HasPrefix(path, "/crypto/") ||
+			strings.HasPrefix(path, "/stripe/") ||
 			strings.HasPrefix(path, "/stats/") ||
 			strings.HasPrefix(path, "/admin/") ||
 			strings.HasPrefix(path, "/uploads/") ||

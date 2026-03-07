@@ -28,7 +28,8 @@ test.describe('Global Navigation', () => {
     await page.goto('/');
     await page.click('nav >> text=Dashboard');
     await expect(page).toHaveURL('/account');
-    await expect(page.locator('h2:has-text("Account")')).toBeVisible();
+    // Shows login form when not authenticated
+    await expect(page.locator('h1:has-text("Sign In")')).toBeVisible();
   });
 
   test('logo navigates home', async ({ page }) => {

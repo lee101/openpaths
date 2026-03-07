@@ -11,6 +11,156 @@ export interface BlogPost {
 
 export const posts: BlogPost[] = [
   {
+    slug: 'switch-to-openpaths-in-2-lines',
+    title: 'Switch from OpenAI or Anthropic to OpenPaths in 2 Lines of Code',
+    excerpt: 'OpenPaths now supports both the OpenAI and Anthropic API formats natively. Change your base URL, swap your key, and get access to 50+ models with auto-routing, fallbacks, and unified billing.',
+    date: '2026-03-03',
+    author: 'OpenPaths Team',
+    readTime: '6 min',
+    tags: ['engineering', 'guide', 'models'],
+    content: `We just shipped Anthropic API compatibility. OpenPaths now accepts requests in both OpenAI and Anthropic formats -- meaning you can switch from either provider in two lines of code.
+
+## From OpenAI SDK
+
+\`\`\`python
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://openpaths.io/v1",  # was https://api.openai.com/v1
+    api_key="op-your-key"                # was sk-...
+)
+
+response = client.chat.completions.create(
+    model="auto",  # or any specific model
+    messages=[{"role": "user", "content": "Hello!"}]
+)
+\`\`\`
+
+That's it. Every OpenAI SDK feature works: streaming, tool use, vision, response format. You get access to 50+ models across 15 providers instead of just OpenAI.
+
+## From Anthropic SDK
+
+\`\`\`python
+import anthropic
+
+client = anthropic.Anthropic(
+    base_url="https://openpaths.io",  # was https://api.anthropic.com
+    api_key="op-your-key"             # was sk-ant-...
+)
+
+message = client.messages.create(
+    model="auto-medium-task",  # or "claude-sonnet-4-6", etc.
+    max_tokens=1000,
+    messages=[{"role": "user", "content": "Hello!"}]
+)
+\`\`\`
+
+The \`/v1/messages\` endpoint accepts the full Anthropic message format: system prompts, streaming with SSE events, tool use, content blocks -- all translated and routed through our backend.
+
+We accept both \`Authorization: Bearer\` and \`x-api-key\` headers, so the Anthropic SDK works out of the box.
+
+## From MiniMax SDK
+
+MiniMax supports both OpenAI and Anthropic SDK formats. If you're already using MiniMax through either SDK, switching to OpenPaths is the same two-line change:
+
+\`\`\`python
+# Was: base_url="https://api.minimax.io/v1"
+# Now: base_url="https://openpaths.io/v1"
+
+# MiniMax models available: minimax-m2.5, minimax-m2.5-highspeed, minimax-m2.1, minimax-m2
+\`\`\`
+
+## Why Switch?
+
+**One key, every model.** Instead of managing API keys for OpenAI, Anthropic, Google, Mistral, xAI, DeepSeek, MiniMax, and more -- use one OpenPaths key.
+
+**Auto-routing.** Send to \`auto\` and we pick the best model for your prompt. Or use the new tiers:
+
+- \`auto-easy-task\` -- Routes to cheapest models (Gemini Flash Lite, MiniMax M2.5 Highspeed, GPT-4o Mini). For simple lookups, formatting, summarization. Starting at $0.02/1M input tokens.
+- \`auto-medium-task\` -- Routes to mid-tier models (Claude Sonnet, Gemini Flash, DeepSeek, MiniMax M2.5). For coding, analysis, moderate complexity.
+- \`auto\` -- Full intelligent routing across all tiers based on task complexity.
+
+**Automatic fallbacks.** If Claude is down, your request falls through to GPT-5.2 or Gemini. No code changes needed.
+
+**Unified billing.** One balance, one dashboard. Pay with Stripe or crypto (SOL/USDC).
+
+## New: Auto Task Tiers
+
+We added two new auto-routing models designed for cost optimization:
+
+### auto-easy-task
+
+For simple tasks that don't need a $15/1M-token model. The router picks from:
+- **Gemini Flash Lite** -- $0.02 input, 1M context, vision
+- **MiniMax M2.5 Highspeed** -- $0.30 input, 1M context, 100 tps
+- **GPT-4o Mini** -- $0.15 input, 128K context, tools
+
+Use cases: information lookup, text formatting, spell checking, simple Q&A, git commands, config changes, boilerplate generation.
+
+### auto-medium-task
+
+For real work that doesn't need frontier reasoning. Routes to:
+- **Claude Sonnet 4.6** -- Best all-rounder for coding and analysis
+- **Gemini 2.5 Flash** -- Fast with 1M context
+- **DeepSeek Chat** -- Ultra-cheap coding
+- **MiniMax M2.5** -- Strong 1M context model
+- **GPT-4o** -- Reliable general-purpose
+
+Use cases: feature implementation, debugging, code review, database queries, API integration, frontend development, data analysis.
+
+## The Anthropic Endpoint in Detail
+
+Our \`/v1/messages\` endpoint supports:
+
+| Feature | Status |
+|---------|--------|
+| Text messages | Full support |
+| System prompts | Full support (string and array format) |
+| Streaming (SSE) | Full support with proper event types |
+| Tool use | Full support (input_schema translated) |
+| Temperature, top_p | Full support |
+| max_tokens | Full support |
+| Content blocks | text and tool_use |
+
+Streaming emits proper Anthropic SSE events: \`message_start\`, \`content_block_start\`, \`content_block_delta\`, \`content_block_stop\`, \`message_delta\`, \`message_stop\`.
+
+Response format matches Anthropic exactly:
+\`\`\`json
+{
+  "id": "msg_abc123",
+  "type": "message",
+  "role": "assistant",
+  "content": [{"type": "text", "text": "Hello!"}],
+  "model": "auto-medium-task",
+  "stop_reason": "end_turn",
+  "usage": {"input_tokens": 10, "output_tokens": 5}
+}
+\`\`\`
+
+## MiniMax Integration
+
+MiniMax models are fully integrated as both a direct provider and through Together AI:
+
+| Model | Provider | Input $/1M | Output $/1M | Context | Speed |
+|-------|----------|-----------|-------------|---------|-------|
+| minimax-m2.5 | Together | $0.30 | $1.20 | 1M | ~60 tps |
+| minimax-m2.5-direct | MiniMax | $0.30 | $1.10 | 1M | ~60 tps |
+| minimax-m2.5-highspeed | MiniMax | $0.30 | $1.10 | 1M | ~100 tps |
+| minimax-m2.1 | MiniMax | $0.27 | $0.95 | 1M | ~60 tps |
+| minimax-m2 | MiniMax | $0.26 | $1.00 | 200K | -- |
+
+Plus video (Hailuo 2.3), music (Music 2.5), and speech (Speech 2.8) all through MiniMax.
+
+## Get Started
+
+1. [Create an account](/account) and grab an API key
+2. Change your base URL to \`https://openpaths.io/v1\` (OpenAI) or \`https://openpaths.io\` (Anthropic)
+3. Replace your API key with your OpenPaths key
+4. Optionally switch \`model\` to \`auto\`, \`auto-easy-task\`, or \`auto-medium-task\`
+
+That's it. Your existing code, libraries, and integrations keep working. You just get more models, automatic fallbacks, and one bill.`
+  },
+  {
     slug: 'state-of-ai-models-march-2026',
     title: 'The State of AI Models: 342 Models, 57 Providers, and What the Data Actually Shows',
     excerpt: 'We pulled every model from the OpenRouter catalog and crunched the numbers. Here is what the AI model landscape actually looks like in March 2026.',

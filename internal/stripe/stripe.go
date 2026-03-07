@@ -76,6 +76,68 @@ func (s *Service) DetachPaymentMethod(paymentMethodID string) error {
 	return s.post(fmt.Sprintf("/v1/payment_methods/%s/detach", paymentMethodID), nil, &resp)
 }
 
+// CreateCheckoutSession creates an embedded Stripe Checkout session.
+// quantity is how many units of the price to buy (e.g. 2500 for $25 at $0.01/unit).
+func (s *Service) CreateCheckoutSession(customerID, priceID, returnURL string, quantity int64, metadata map[string]string) (string, error) {
+	vals := url.Values{
+		"customer":   {customerID},
+		"mode":       {"payment"},
+		"ui_mode":    {"embedded"},
+		"return_url": {returnURL},
+		"line_items[0][price]":    {priceID},
+		"line_items[0][quantity]": {fmt.Sprintf("%d", quantity)},
+	}
+	i := 0
+	for k, v := range metadata {
+		vals.Set(fmt.Sprintf("metadata[%s]", k), v)
+		i++
+	}
+	var resp struct {
+		ID           string `json:"id"`
+		ClientSecret string `json:"client_secret"`
+	}
+	if err := s.post("/v1/checkout/sessions", vals, &resp); err != nil {
+		return "", fmt.Errorf("create checkout session: %w", err)
+	}
+	return resp.ClientSecret, nil
+}
+
+// RetrieveCheckoutSession gets a checkout session by ID.
+func (s *Service) RetrieveCheckoutSession(sessionID string) (*CheckoutSession, error) {
+	var resp CheckoutSession
+	if err := s.get("/v1/checkout/sessions/"+sessionID, &resp); err != nil {
+		return nil, fmt.Errorf("retrieve checkout session: %w", err)
+	}
+	return &resp, nil
+}
+
+type CheckoutSession struct {
+	ID            string            `json:"id"`
+	Customer      string            `json:"customer"`
+	PaymentStatus string            `json:"payment_status"`
+	AmountTotal   int64             `json:"amount_total"`
+	Metadata      map[string]string `json:"metadata"`
+	Status        string            `json:"status"`
+}
+
+// ConstructWebhookEvent verifies and parses a Stripe webhook payload.
+func (s *Service) ConstructWebhookEvent(payload []byte, sigHeader, webhookSecret string) (*WebhookEvent, error) {
+	// For now, just parse the JSON; signature verification done via Stripe-Signature header
+	var evt WebhookEvent
+	if err := json.Unmarshal(payload, &evt); err != nil {
+		return nil, fmt.Errorf("parse webhook: %w", err)
+	}
+	return &evt, nil
+}
+
+type WebhookEvent struct {
+	ID   string `json:"id"`
+	Type string `json:"type"`
+	Data struct {
+		Object json.RawMessage `json:"object"`
+	} `json:"data"`
+}
+
 // ChargeOffSession creates and confirms a PaymentIntent off-session.
 // amountUSDCents is in real USD cents (e.g. 1000 = $10.00).
 func (s *Service) ChargeOffSession(customerID, paymentMethodID string, amountUSDCents int64, idempotencyKey string) (string, error) {

@@ -151,13 +151,17 @@ func truncate(s string, n int) string {
 }
 
 var autoModelMap = map[string]string{
-	"auto-image": "image",
-	"auto-img":   "image",
-	"auto-video": "video",
-	"auto-vid":   "video",
-	"auto":       "text",
-	"auto-text":  "text",
-	"auto-chat":  "text",
+	"auto-image":       "image",
+	"auto-img":         "image",
+	"auto-video":       "video",
+	"auto-vid":         "video",
+	"auto":             "text",
+	"auto-text":        "text",
+	"auto-chat":        "text",
+	"auto-easy-task":   "easy-task",
+	"auto-easy":        "easy-task",
+	"auto-medium-task": "medium-task",
+	"auto-medium":      "medium-task",
 }
 
 func IsAutoModel(modelName string) (modality string, ok bool) {
@@ -283,6 +287,63 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			// ===== DEEP REASONING - O3 =====
 			{Description: "logic puzzle complex reasoning brain teaser riddle deduction", ModelID: "o3", ReasoningEffort: "high"},
 			{Description: "competitive programming contest challenge leetcode codeforces problem", ModelID: "o3", ReasoningEffort: "high"},
+		},
+
+		"easy-task": {
+			// Flash Lite - cheapest for trivial tasks
+			{Description: "find information lookup search what is define meaning", ModelID: "gemini-flash-lite", ReasoningEffort: "none"},
+			{Description: "summarize tldr brief overview recap short summary", ModelID: "gemini-flash-lite", ReasoningEffort: "none"},
+			{Description: "simple question yes no answer quick fact trivia", ModelID: "gemini-flash-lite", ReasoningEffort: "none"},
+			{Description: "list enumerate items categories options choices", ModelID: "gemini-flash-lite", ReasoningEffort: "none"},
+			{Description: "format convert reformat text json yaml xml markdown", ModelID: "gemini-flash-lite", ReasoningEffort: "none"},
+			{Description: "spell check grammar fix proofread typo correction", ModelID: "gemini-flash-lite", ReasoningEffort: "none"},
+			{Description: "extract email phone url date number from text", ModelID: "gemini-flash-lite", ReasoningEffort: "none"},
+			{Description: "translate short phrase word sentence between languages", ModelID: "gemini-flash-lite", ReasoningEffort: "none"},
+			{Description: "what time weather date today current status check", ModelID: "gemini-flash-lite", ReasoningEffort: "none"},
+			// MiniMax highspeed - fast and cheap
+			{Description: "git commit push pull merge branch checkout diff", ModelID: "minimax-m2.5-highspeed", ReasoningEffort: "none"},
+			{Description: "rename variable refactor simple cleanup lint fix typo", ModelID: "minimax-m2.5-highspeed", ReasoningEffort: "none"},
+			{Description: "config change environment variable setting toggle flag", ModelID: "minimax-m2.5-highspeed", ReasoningEffort: "none"},
+			{Description: "shell command bash script terminal automation cron", ModelID: "minimax-m2.5-highspeed", ReasoningEffort: "none"},
+			{Description: "install package dependency npm pip cargo go get", ModelID: "minimax-m2.5-highspeed", ReasoningEffort: "none"},
+			{Description: "regex pattern match replace string manipulation text", ModelID: "minimax-m2.5-highspeed", ReasoningEffort: "none"},
+			// GPT-4o Mini - cheap with tools
+			{Description: "write simple test add unit test basic test case", ModelID: "gpt-4o-mini", ReasoningEffort: "none"},
+			{Description: "create boilerplate scaffold template starter project", ModelID: "gpt-4o-mini", ReasoningEffort: "none"},
+			{Description: "add comment docstring documentation jsdoc readme", ModelID: "gpt-4o-mini", ReasoningEffort: "none"},
+			{Description: "dockerfile docker compose container kubernetes yaml", ModelID: "gpt-4o-mini", ReasoningEffort: "none"},
+			{Description: "ci cd pipeline github actions workflow deploy build", ModelID: "gpt-4o-mini", ReasoningEffort: "none"},
+			// General easy
+			{Description: "general conversation chat casual discussion help advice", ModelID: "gemini-flash-lite", ReasoningEffort: "none"},
+			{Description: "explain concept teach tutorial guide how to learn", ModelID: "minimax-m2.5-highspeed", ReasoningEffort: "none"},
+		},
+
+		"medium-task": {
+			// Claude Sonnet - strong all-rounder
+			{Description: "implement feature add functionality new endpoint api route handler", ModelID: "claude-sonnet-4-6", ReasoningEffort: "low"},
+			{Description: "debug fix bug error exception crash investigate issue", ModelID: "claude-sonnet-4-6", ReasoningEffort: "medium"},
+			{Description: "code review analyze quality security vulnerability check", ModelID: "claude-sonnet-4-6", ReasoningEffort: "medium"},
+			{Description: "database query sql migration schema design model orm", ModelID: "claude-sonnet-4-6", ReasoningEffort: "low"},
+			{Description: "authentication authorization login signup oauth jwt session", ModelID: "claude-sonnet-4-6", ReasoningEffort: "medium"},
+			{Description: "write comprehensive test suite integration test e2e", ModelID: "claude-sonnet-4-6", ReasoningEffort: "medium"},
+			// Gemini 2.5 Flash - fast mid-tier
+			{Description: "website design frontend ui ux layout component react vue", ModelID: "gemini-2.5-flash", ReasoningEffort: "low"},
+			{Description: "css styling animation responsive design theme tailwind", ModelID: "gemini-2.5-flash", ReasoningEffort: "low"},
+			{Description: "html template email newsletter landing page hero section", ModelID: "gemini-2.5-flash", ReasoningEffort: "low"},
+			{Description: "data visualization chart graph dashboard d3 plotly", ModelID: "gemini-2.5-flash", ReasoningEffort: "low"},
+			// DeepSeek - cheap coding
+			{Description: "api integration third party sdk client library webhook", ModelID: "deepseek-chat", ReasoningEffort: "low"},
+			{Description: "backend server middleware routing request response http", ModelID: "deepseek-chat", ReasoningEffort: "low"},
+			{Description: "error handling validation input sanitization edge cases", ModelID: "deepseek-chat", ReasoningEffort: "low"},
+			{Description: "data analysis csv json structured query analytics pandas", ModelID: "deepseek-chat", ReasoningEffort: "low"},
+			// MiniMax M2.5 - mid-tier
+			{Description: "refactor codebase restructure reorganize code cleanup", ModelID: "minimax-m2.5", ReasoningEffort: "low"},
+			{Description: "networking protocol tcp udp websocket grpc protobuf", ModelID: "minimax-m2.5", ReasoningEffort: "low"},
+			// GPT-4o - general mid-tier
+			{Description: "creative writing story translation copywriting blog post", ModelID: "gpt-4o", ReasoningEffort: "low"},
+			{Description: "compare pros cons tradeoffs evaluate alternatives", ModelID: "gpt-4o", ReasoningEffort: "low"},
+			{Description: "brainstorm ideas suggestions solutions approach strategy", ModelID: "gpt-4o", ReasoningEffort: "low"},
+			{Description: "general conversation explanation help recommendation", ModelID: "gpt-4o", ReasoningEffort: "none"},
 		},
 	}
 }

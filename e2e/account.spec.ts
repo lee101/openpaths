@@ -5,247 +5,226 @@ test.describe('Account Page', () => {
     await page.goto('/account');
   });
 
-  test('page loads with sidebar and overview tab active', async ({ page }) => {
-    await expect(page.locator('h2:has-text("Account")')).toBeVisible();
-    await expect(page.locator('text=user@example.com')).toBeVisible();
-    await expect(page.locator('h1:has-text("Overview")')).toBeVisible();
+  // ========== AUTH FLOW ==========
+
+  test('shows login form when not authenticated', async ({ page }) => {
+    await expect(page.locator('h1:has-text("Sign In")')).toBeVisible();
+    await expect(page.getByTestId('auth-email')).toBeVisible();
+    await expect(page.getByTestId('auth-password')).toBeVisible();
+    await expect(page.getByTestId('auth-submit')).toBeVisible();
   });
 
-  test('sidebar has all three tabs', async ({ page }) => {
-    await expect(page.getByTestId('tab-overview')).toBeVisible();
-    await expect(page.getByTestId('tab-keys')).toBeVisible();
-    await expect(page.getByTestId('tab-billing')).toBeVisible();
+  test('can toggle between login and register', async ({ page }) => {
+    await expect(page.locator('h1:has-text("Sign In")')).toBeVisible();
+    await page.getByTestId('auth-toggle').click();
+    await expect(page.locator('h1:has-text("Create Account")')).toBeVisible();
+    await page.getByTestId('auth-toggle').click();
+    await expect(page.locator('h1:has-text("Sign In")')).toBeVisible();
   });
 
-  // ========== OVERVIEW TAB ==========
+  // ========== AUTHENTICATED TESTS (mock localStorage) ==========
 
-  test('overview shows balance and request metrics', async ({ page }) => {
-    await expect(page.getByTestId('balance')).toContainText('$42.50');
-    await expect(page.getByTestId('requests-count')).toContainText('1.2M');
-    await expect(page.locator('text=+14% from last month')).toBeVisible();
-  });
+  test.describe('Authenticated', () => {
+    test.beforeEach(async ({ page }) => {
+      // Mock auth by setting localStorage before navigating
+      await page.addInitScript(() => {
+        localStorage.setItem('op_token', 'test-jwt-token');
+        localStorage.setItem('op_user', JSON.stringify({ id: 'u1', email: 'test@example.com', name: 'Test' }));
+      });
 
-  test('overview shows usage graph over time', async ({ page }) => {
-    const graph = page.getByTestId('usage-graph');
-    await expect(graph).toBeVisible();
-    await expect(graph.locator('text=Usage Over Time')).toBeVisible();
-    await expect(graph.locator('text=Last 9 weeks')).toBeVisible();
-    // SVG chart renders
-    await expect(graph.locator('svg[role="img"]')).toBeVisible();
-    // data points render (9 circles for 9 weeks)
-    const circles = graph.locator('svg circle');
-    await expect(circles).toHaveCount(9);
-  });
+      // Mock API responses
+      await page.route('**/account/balance', route =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ balance_cents: 425000, balance_usd: 42.50 }) })
+      );
+      await page.route('**/account/transactions*', route =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ transactions: [
+          { id: '1', tx_type: 'deposit', description: 'Stripe checkout cs_123 ($25.00)', amount_cents: 2500000, balance_after: 4250000, created_at: '2024-01-15T00:00:00Z' },
+          { id: '2', tx_type: 'usage_deduction', description: 'Model: gpt-4o, in: 1000, out: 500', amount_cents: -5000, balance_after: 4245000, created_at: '2024-01-14T00:00:00Z' },
+        ] }) })
+      );
+      await page.route('**/account/keys', route => {
+        if (route.request().method() === 'GET') {
+          return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ keys: [
+            { id: 'k1', name: 'Default', key_prefix: 'op_live_abc123' },
+          ] }) });
+        }
+        return route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ key: 'op_live_newkey123', id: 'k2', name: 'New', prefix: 'op_live_new' }) });
+      });
+      await page.route('**/account/stripe/config', route =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ publishable_key: 'pk_test_123' }) })
+      );
 
-  test('usage graph shows tooltip on hover', async ({ page }) => {
-    const graph = page.getByTestId('usage-graph');
-    const circles = graph.locator('svg circle');
-    // hover over a data point
-    await circles.nth(4).hover();
-    // tooltip with request count should appear
-    await expect(graph.locator('svg text:has-text("req")')).toBeVisible();
-  });
+      await page.goto('/account');
+    });
 
-  test('usage graph has axis labels', async ({ page }) => {
-    const graph = page.getByTestId('usage-graph');
-    // Y-axis labels (k values)
-    await expect(graph.locator('svg text:has-text("k")')).toHaveCount(5);
-    // X-axis date labels
-    await expect(graph.locator('svg text:has-text("Jan")')).toHaveCount(5);
-    await expect(graph.locator('svg text:has-text("Feb")')).toHaveCount(4);
-  });
+    test('page loads with sidebar and overview tab active', async ({ page }) => {
+      await expect(page.locator('h2:has-text("Account")')).toBeVisible();
+      await expect(page.locator('text=test@example.com')).toBeVisible();
+      await expect(page.locator('h1:has-text("Overview")')).toBeVisible();
+    });
 
-  test('overview shows recent activity table', async ({ page }) => {
-    const table = page.getByTestId('activity-table');
-    await expect(table).toBeVisible();
-    await expect(table.locator('th:has-text("Model")')).toBeVisible();
-    await expect(table.locator('th:has-text("Requests")')).toBeVisible();
-    await expect(table.locator('th:has-text("Cost")')).toBeVisible();
-    await expect(table.locator('text=anthropic/claude-3.5-sonnet')).toBeVisible();
-    await expect(table.locator('text=openai/gpt-4o')).toBeVisible();
-    await expect(table.locator('text=meta-llama/llama-3.1-70b-instruct')).toBeVisible();
-  });
+    test('sidebar has all three tabs', async ({ page }) => {
+      await expect(page.getByTestId('tab-overview')).toBeVisible();
+      await expect(page.getByTestId('tab-keys')).toBeVisible();
+      await expect(page.getByTestId('tab-billing')).toBeVisible();
+    });
 
-  test('Add Funds button switches to billing tab', async ({ page }) => {
-    await page.click('button:has-text("Add Funds")');
-    await expect(page.locator('h1:has-text("Billing & Payments")')).toBeVisible();
-  });
+    // ========== OVERVIEW TAB ==========
 
-  // ========== KEYS TAB ==========
+    test('overview shows balance from API', async ({ page }) => {
+      await expect(page.getByTestId('balance')).toContainText('$42.50');
+    });
 
-  test('keys tab renders', async ({ page }) => {
-    await page.getByTestId('tab-keys').click();
-    await expect(page.locator('h1:has-text("API Keys")')).toBeVisible();
-  });
+    test('overview shows transactions from API', async ({ page }) => {
+      const table = page.getByTestId('activity-table');
+      await expect(table).toBeVisible();
+      await expect(table.locator('text=deposit')).toBeVisible();
+      await expect(table.locator('text=usage_deduction')).toBeVisible();
+    });
 
-  test('keys tab shows create key button', async ({ page }) => {
-    await page.getByTestId('tab-keys').click();
-    await expect(page.getByTestId('create-key-btn')).toBeVisible();
-    await expect(page.getByTestId('create-key-btn')).toContainText('Create Key');
-  });
+    test('Add Funds button switches to billing tab', async ({ page }) => {
+      await page.click('button:has-text("Add Funds")');
+      await expect(page.locator('h1:has-text("Billing & Payments")')).toBeVisible();
+    });
 
-  test('keys tab shows API key with active status', async ({ page }) => {
-    await page.getByTestId('tab-keys').click();
-    const card = page.getByTestId('api-key-card');
-    await expect(card).toBeVisible();
-    await expect(card.locator('text=Default Project Key')).toBeVisible();
-    await expect(page.getByTestId('key-status')).toContainText('Active');
-    await expect(page.getByTestId('api-key-value')).toContainText('op_live_');
-  });
+    // ========== KEYS TAB ==========
 
-  test('copy key button works', async ({ page, context }) => {
-    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
-    await page.getByTestId('tab-keys').click();
-    await page.getByTestId('copy-key-btn').click();
-    // check icon changes to checkmark (green)
-    await expect(page.locator('[data-testid="copy-key-btn"] svg.text-green-400')).toBeVisible();
-  });
+    test('keys tab renders with API keys from backend', async ({ page }) => {
+      await page.getByTestId('tab-keys').click();
+      await expect(page.locator('h1:has-text("API Keys")')).toBeVisible();
+      await expect(page.getByTestId('api-key-card')).toBeVisible();
+      await expect(page.getByTestId('key-status')).toContainText('Active');
+    });
 
-  test('keys tab shows security warning', async ({ page }) => {
-    await page.getByTestId('tab-keys').click();
-    await expect(page.locator('text=Do not share your API key')).toBeVisible();
-  });
+    test('keys tab shows create key button', async ({ page }) => {
+      await page.getByTestId('tab-keys').click();
+      await expect(page.getByTestId('create-key-btn')).toBeVisible();
+      await expect(page.getByTestId('create-key-btn')).toContainText('Create Key');
+    });
 
-  // ========== BILLING TAB ==========
+    test('keys tab shows security warning', async ({ page }) => {
+      await page.getByTestId('tab-keys').click();
+      await expect(page.locator('text=Do not share your API key')).toBeVisible();
+    });
 
-  test('billing tab renders', async ({ page }) => {
-    await page.getByTestId('tab-billing').click();
-    await expect(page.locator('h1:has-text("Billing & Payments")')).toBeVisible();
-  });
+    // ========== BILLING TAB ==========
 
-  test('billing tab shows Stripe and Solana payment cards', async ({ page }) => {
-    await page.getByTestId('tab-billing').click();
-    await expect(page.getByTestId('stripe-card')).toBeVisible();
-    await expect(page.getByTestId('solana-card')).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Credit Card' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Solana Payment' })).toBeVisible();
-  });
+    test('billing tab renders', async ({ page }) => {
+      await page.getByTestId('tab-billing').click();
+      await expect(page.locator('h1:has-text("Billing & Payments")')).toBeVisible();
+    });
 
-  test('billing tab shows payment history', async ({ page }) => {
-    await page.getByTestId('tab-billing').click();
-    const table = page.getByTestId('payment-history-table');
-    await expect(table).toBeVisible();
-    await expect(table.locator('text=Solana (USDC)')).toBeVisible();
-    await expect(table.locator('text=Stripe (...4242)')).toBeVisible();
-    await expect(table.locator('text=$50.00')).toBeVisible();
-    await expect(table.locator('text=$25.00')).toBeVisible();
-    await expect(table.locator('text=Completed').first()).toBeVisible();
-  });
+    test('billing tab shows balance', async ({ page }) => {
+      await page.getByTestId('tab-billing').click();
+      await expect(page.getByTestId('billing-balance')).toContainText('$42.50');
+    });
 
-  // ========== STRIPE PORTAL LINK ==========
+    test('billing tab shows Stripe and Solana payment cards', async ({ page }) => {
+      await page.getByTestId('tab-billing').click();
+      await expect(page.getByTestId('stripe-card')).toBeVisible();
+      await expect(page.getByTestId('solana-card')).toBeVisible();
+    });
 
-  test('Manage Billing button opens Stripe portal in new tab', async ({ page, context }) => {
-    await page.getByTestId('tab-billing').click();
-    const portalBtn = page.getByTestId('stripe-portal-link');
-    await expect(portalBtn).toBeVisible();
-    await expect(portalBtn).toContainText('Manage Billing');
+    test('billing tab shows transaction history', async ({ page }) => {
+      await page.getByTestId('tab-billing').click();
+      const table = page.getByTestId('payment-history-table');
+      await expect(table).toBeVisible();
+      await expect(table.locator('text=deposit')).toBeVisible();
+    });
 
-    const [newPage] = await Promise.all([
-      context.waitForEvent('page'),
-      portalBtn.click(),
-    ]);
-    expect(newPage.url()).toContain('billing.stripe.com');
-    await newPage.close();
-  });
+    // ========== STRIPE CHECKOUT MODAL ==========
 
-  // ========== STRIPE CHECKOUT MODAL ==========
+    test('Add Funds with Stripe opens checkout modal', async ({ page }) => {
+      await page.getByTestId('tab-billing').click();
+      await page.getByTestId('add-funds-stripe-btn').click();
+      await expect(page.getByTestId('stripe-modal')).toBeVisible();
+      await expect(page.locator('h2:has-text("Add Funds")')).toBeVisible();
+    });
 
-  test('Add Funds with Stripe opens checkout modal', async ({ page }) => {
-    await page.getByTestId('tab-billing').click();
-    await page.getByTestId('add-funds-stripe-btn').click();
-    await expect(page.getByTestId('stripe-modal')).toBeVisible();
-    await expect(page.locator('h2:has-text("Add Funds")')).toBeVisible();
-  });
+    test('stripe modal shows amount selection buttons', async ({ page }) => {
+      await page.getByTestId('tab-billing').click();
+      await page.getByTestId('add-funds-stripe-btn').click();
+      for (const amount of [10, 25, 50, 100]) {
+        await expect(page.getByTestId(`amount-${amount}`)).toBeVisible();
+      }
+    });
 
-  test('stripe modal shows amount selection buttons', async ({ page }) => {
-    await page.getByTestId('tab-billing').click();
-    await page.getByTestId('add-funds-stripe-btn').click();
+    test('stripe modal amount selection updates checkout button', async ({ page }) => {
+      await page.getByTestId('tab-billing').click();
+      await page.getByTestId('add-funds-stripe-btn').click();
+      await expect(page.getByTestId('stripe-checkout-btn')).toContainText('Pay $25');
+      await page.getByTestId('amount-100').click();
+      await expect(page.getByTestId('stripe-checkout-btn')).toContainText('Pay $100');
+      await page.getByTestId('amount-10').click();
+      await expect(page.getByTestId('stripe-checkout-btn')).toContainText('Pay $10');
+    });
 
-    for (const amount of [10, 25, 50, 100]) {
-      await expect(page.getByTestId(`amount-${amount}`)).toBeVisible();
-    }
-  });
+    test('stripe modal custom amount input works', async ({ page }) => {
+      await page.getByTestId('tab-billing').click();
+      await page.getByTestId('add-funds-stripe-btn').click();
+      const input = page.getByTestId('custom-amount-input');
+      await input.fill('75');
+      await expect(page.getByTestId('stripe-checkout-btn')).toContainText('Pay $75');
+    });
 
-  test('stripe modal amount selection updates checkout button', async ({ page }) => {
-    await page.getByTestId('tab-billing').click();
-    await page.getByTestId('add-funds-stripe-btn').click();
+    test('stripe modal closes on X button', async ({ page }) => {
+      await page.getByTestId('tab-billing').click();
+      await page.getByTestId('add-funds-stripe-btn').click();
+      await expect(page.getByTestId('stripe-modal')).toBeVisible();
+      await page.getByTestId('stripe-modal-close').click();
+      await expect(page.getByTestId('stripe-modal')).not.toBeVisible();
+    });
 
-    // default is $25
-    await expect(page.getByTestId('stripe-checkout-btn')).toContainText('Pay $25');
+    test('stripe modal closes on backdrop click', async ({ page }) => {
+      await page.getByTestId('tab-billing').click();
+      await page.getByTestId('add-funds-stripe-btn').click();
+      await expect(page.getByTestId('stripe-modal')).toBeVisible();
+      await page.getByTestId('stripe-modal-backdrop').click({ position: { x: 10, y: 10 } });
+      await expect(page.getByTestId('stripe-modal')).not.toBeVisible();
+    });
 
-    // select $100
-    await page.getByTestId('amount-100').click();
-    await expect(page.getByTestId('stripe-checkout-btn')).toContainText('Pay $100');
+    test('stripe checkout calls backend and transitions to embedded checkout', async ({ page }) => {
+      let checkoutCalled = false;
+      await page.route('**/account/stripe/checkout', route => {
+        checkoutCalled = true;
+        return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ client_secret: 'cs_test_secret_123' }) });
+      });
 
-    // select $10
-    await page.getByTestId('amount-10').click();
-    await expect(page.getByTestId('stripe-checkout-btn')).toContainText('Pay $10');
-  });
+      await page.getByTestId('tab-billing').click();
+      await page.getByTestId('add-funds-stripe-btn').click();
+      await page.getByTestId('stripe-checkout-btn').click();
 
-  test('stripe modal custom amount input works', async ({ page }) => {
-    await page.getByTestId('tab-billing').click();
-    await page.getByTestId('add-funds-stripe-btn').click();
+      // The checkout container should be in the DOM after the API call
+      await expect(page.getByTestId('embedded-checkout-container')).toBeAttached({ timeout: 5000 });
+      // The amount selection should no longer be visible (replaced by checkout)
+      await expect(page.getByTestId('stripe-checkout-btn')).not.toBeVisible();
+      expect(checkoutCalled).toBe(true);
+    });
 
-    const input = page.getByTestId('custom-amount-input');
-    await input.fill('75');
-    await expect(page.getByTestId('stripe-checkout-btn')).toContainText('Pay $75');
-  });
+    // ========== TAB SWITCHING ==========
 
-  test('stripe modal closes on X button', async ({ page }) => {
-    await page.getByTestId('tab-billing').click();
-    await page.getByTestId('add-funds-stripe-btn').click();
-    await expect(page.getByTestId('stripe-modal')).toBeVisible();
+    test('tab switching preserves correct content', async ({ page }) => {
+      await expect(page.locator('h1:has-text("Overview")')).toBeVisible();
+      await page.getByTestId('tab-keys').click();
+      await expect(page.locator('h1:has-text("API Keys")')).toBeVisible();
+      await expect(page.locator('h1:has-text("Overview")')).not.toBeVisible();
+      await page.getByTestId('tab-billing').click();
+      await expect(page.locator('h1:has-text("Billing & Payments")')).toBeVisible();
+      await expect(page.locator('h1:has-text("API Keys")')).not.toBeVisible();
+      await page.getByTestId('tab-overview').click();
+      await expect(page.locator('h1:has-text("Overview")')).toBeVisible();
+    });
 
-    await page.getByTestId('stripe-modal-close').click();
-    await expect(page.getByTestId('stripe-modal')).not.toBeVisible();
-  });
+    test('Connect Wallet button is visible on billing tab', async ({ page }) => {
+      await page.getByTestId('tab-billing').click();
+      await expect(page.getByTestId('connect-wallet-btn')).toBeVisible();
+      await expect(page.getByTestId('connect-wallet-btn')).toContainText('Connect Wallet');
+    });
 
-  test('stripe modal closes on backdrop click', async ({ page }) => {
-    await page.getByTestId('tab-billing').click();
-    await page.getByTestId('add-funds-stripe-btn').click();
-    await expect(page.getByTestId('stripe-modal')).toBeVisible();
-
-    // click the backdrop (outside the modal)
-    await page.getByTestId('stripe-modal-backdrop').click({ position: { x: 10, y: 10 } });
-    await expect(page.getByTestId('stripe-modal')).not.toBeVisible();
-  });
-
-  test('stripe checkout button opens Stripe in new tab', async ({ page, context }) => {
-    await page.getByTestId('tab-billing').click();
-    await page.getByTestId('add-funds-stripe-btn').click();
-
-    const [newPage] = await Promise.all([
-      context.waitForEvent('page'),
-      page.getByTestId('stripe-checkout-btn').click(),
-    ]);
-    expect(newPage.url()).toContain('stripe.com');
-    await newPage.close();
-  });
-
-  // ========== TAB SWITCHING ==========
-
-  test('tab switching preserves correct content', async ({ page }) => {
-    // overview is default
-    await expect(page.locator('h1:has-text("Overview")')).toBeVisible();
-
-    // switch to keys
-    await page.getByTestId('tab-keys').click();
-    await expect(page.locator('h1:has-text("API Keys")')).toBeVisible();
-    await expect(page.locator('h1:has-text("Overview")')).not.toBeVisible();
-
-    // switch to billing
-    await page.getByTestId('tab-billing').click();
-    await expect(page.locator('h1:has-text("Billing & Payments")')).toBeVisible();
-    await expect(page.locator('h1:has-text("API Keys")')).not.toBeVisible();
-
-    // back to overview
-    await page.getByTestId('tab-overview').click();
-    await expect(page.locator('h1:has-text("Overview")')).toBeVisible();
-  });
-
-  test('Connect Wallet button is visible on billing tab', async ({ page }) => {
-    await page.getByTestId('tab-billing').click();
-    await expect(page.getByTestId('connect-wallet-btn')).toBeVisible();
-    await expect(page.getByTestId('connect-wallet-btn')).toContainText('Connect Wallet');
+    test('logout clears auth and shows login form', async ({ page }) => {
+      await expect(page.getByTestId('logout-btn')).toBeVisible();
+      await page.getByTestId('logout-btn').click();
+      await expect(page.locator('h1:has-text("Sign In")')).toBeVisible();
+    });
   });
 });

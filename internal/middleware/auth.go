@@ -14,16 +14,22 @@ const (
 	CtxKeyAPIKey = "api_key"
 )
 
-// APIKeyAuth validates Bearer tokens as API keys.
+// APIKeyAuth validates Bearer tokens or x-api-key header as API keys.
 func APIKeyAuth(apiKeyQ *queries.APIKeyQueries) Middleware {
 	return func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 		return func(ctx *fasthttp.RequestCtx) {
+			var rawKey string
 			authHeader := string(ctx.Request.Header.Peek("Authorization"))
-			if !strings.HasPrefix(authHeader, "Bearer ") {
+			xAPIKey := string(ctx.Request.Header.Peek("x-api-key"))
+
+			if strings.HasPrefix(authHeader, "Bearer ") {
+				rawKey = strings.TrimPrefix(authHeader, "Bearer ")
+			} else if xAPIKey != "" {
+				rawKey = xAPIKey
+			} else {
 				writeAuthError(ctx, "Missing API key", "missing_api_key")
 				return
 			}
-			rawKey := strings.TrimPrefix(authHeader, "Bearer ")
 
 			apiKey, err := apiKeyQ.ValidateKey(ctx, auth.HashAPIKey(rawKey))
 			if err != nil {

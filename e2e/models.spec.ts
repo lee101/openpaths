@@ -7,7 +7,7 @@ test.describe('Models Page', () => {
 
   test('page title and description render', async ({ page }) => {
     await expect(page.locator('h1')).toContainText('Model Directory');
-    await expect(page.locator('text=Explore our vast network')).toBeVisible();
+    await expect(page.locator('text=models from leading providers')).toBeVisible();
   });
 
   test('search input is present and functional', async ({ page }) => {
@@ -15,22 +15,19 @@ test.describe('Models Page', () => {
     await expect(search).toBeVisible();
 
     await search.fill('claude');
-    await expect(page.locator('text=Claude 3.5 Sonnet')).toBeVisible();
-    await expect(page.locator('text=Midjourney v6')).not.toBeVisible();
+    await expect(page.locator('text=Claude Sonnet 4.6')).toBeVisible();
+    await expect(page.locator('text=RA1 Art Generator')).not.toBeVisible();
   });
 
   test('tag filters work', async ({ page }) => {
-    // click art generation tag
     await page.click('button:has-text("art generation")');
-    await expect(page.locator('text=Midjourney v6')).toBeVisible();
+    await expect(page.locator('text=RA1 Art Generator')).toBeVisible();
     await expect(page.locator('text=FLUX.1 Pro')).toBeVisible();
-    // text models should not be visible
-    await expect(page.locator('text=Claude 3.5 Sonnet')).not.toBeVisible();
+    await expect(page.locator('text=Claude Sonnet 4.6')).not.toBeVisible();
   });
 
   test('clear filters button works', async ({ page }) => {
     await page.click('button:has-text("programming")');
-    // fewer models visible
     const cardsBefore = await page.locator('[class*="rounded-xl"][class*="border"]').count();
 
     await page.click('text=Clear');
@@ -39,12 +36,11 @@ test.describe('Models Page', () => {
   });
 
   test('model cards show provider, name, pricing, and ID', async ({ page }) => {
-    const card = page.locator('text=Claude 3.5 Sonnet').locator('..');
+    const card = page.locator('text=Claude Sonnet 4.6').locator('..');
     await expect(card).toBeVisible();
-    // pricing is in the parent card area
     await expect(page.locator('text=$3.00').first()).toBeVisible();
     await expect(page.locator('text=$15.00').first()).toBeVisible();
-    await expect(page.locator('code:has-text("anthropic/claude-3.5-sonnet")')).toBeVisible();
+    await expect(page.locator('code:has-text("claude-sonnet-4-6")')).toBeVisible();
   });
 
   test('no results state shows when search matches nothing', async ({ page }) => {
@@ -54,9 +50,25 @@ test.describe('Models Page', () => {
   });
 
   test('all tag filter buttons are present', async ({ page }) => {
-    const tags = ['programming', 'roleplay', 'art generation', 'general', 'vision', 'fast', 'reasoning', 'open-source'];
+    const tags = ['programming', 'reasoning', 'general', 'vision', 'fast', 'open-source', 'free', 'art generation', 'video generation', 'roleplay'];
     for (const tag of tags) {
       await expect(page.locator(`button:has-text("${tag}")`)).toBeVisible();
     }
+  });
+
+  test('sort dropdown is present and functional', async ({ page }) => {
+    const sortSelect = page.locator('select');
+    await expect(sortSelect).toBeVisible();
+
+    await sortSelect.selectOption('newest');
+    const firstCard = page.locator('[class*="rounded-xl"][class*="border"]').first();
+    await expect(firstCard).toBeVisible();
+
+    await sortSelect.selectOption('price-low');
+    await expect(firstCard).toBeVisible();
+  });
+
+  test('model count is displayed', async ({ page }) => {
+    await expect(page.locator('text=/\\d+ models?/')).toBeVisible();
   });
 });
