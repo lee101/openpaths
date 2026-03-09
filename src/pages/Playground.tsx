@@ -22,7 +22,7 @@ const CHAT_MODELS = [
   { id: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro', provider: 'Google' },
   { id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', provider: 'Google' },
   { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', provider: 'Google' },
-  { id: 'gpt-5.2', label: 'GPT-5.2', provider: 'OpenAI' },
+  { id: 'gpt-5.4', label: 'GPT-5.4', provider: 'OpenAI' },
   { id: 'o3', label: 'o3', provider: 'OpenAI' },
   { id: 'o4-mini', label: 'o4-mini', provider: 'OpenAI' },
   { id: 'gpt-4o', label: 'GPT-4o', provider: 'OpenAI' },

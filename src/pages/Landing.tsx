@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 
 export function Landing() {
   const [activeTab, setActiveTab] = useState<'python' | 'curl'>('python');
+  const apiKey = localStorage.getItem('op_api_key') || 'op_...';
 
   return (
     <>
@@ -87,11 +88,11 @@ export function Landing() {
               <pre className="font-mono text-sm leading-relaxed">
                 <span className="text-white/40">import</span> <span className="text-white">openai</span>{'\n\n'}
                 <span className="text-white">client</span> <span className="text-white/40">=</span> <span className="text-white">openai.OpenAI(</span>{'\n'}
-                {'  '}base_url<span className="text-white/40">="</span><span className="text-white">https://api.openpath.ai/v1</span><span className="text-white/40">"</span>,{'\n'}
-                {'  '}api_key<span className="text-white/40">="</span><span className="text-white">op_...</span><span className="text-white/40">"</span>{'\n'}
+                {'  '}base_url<span className="text-white/40">="</span><span className="text-white">https://api.openpaths.io/v1</span><span className="text-white/40">"</span>,{'\n'}
+                {'  '}api_key<span className="text-white/40">="</span><span className="text-white">{apiKey}</span><span className="text-white/40">"</span>{'\n'}
                 <span className="text-white">)</span>{'\n\n'}
                 <span className="text-white">response</span> <span className="text-white/40">=</span> <span className="text-white">client.chat.completions.create(</span>{'\n'}
-                {'  '}model<span className="text-white/40">="</span><span className="text-white">anthropic/claude-3-opus</span><span className="text-white/40">"</span>,{'\n'}
+                {'  '}model<span className="text-white/40">="</span><span className="text-white">opus-latest</span><span className="text-white/40">"</span>,{'\n'}
                 {'  '}messages<span className="text-white/40">=[</span>{'\n'}
                 {'    '}<span className="text-white/40">&#123;</span>"role"<span className="text-white/40">:</span> "user"<span className="text-white/40">,</span> "content"<span className="text-white/40">:</span> "Write a python script to reverse a string."<span className="text-white/40">&#125;</span>{'\n'}
                 {'  '}<span className="text-white/40">]</span>{'\n'}
@@ -99,11 +100,11 @@ export function Landing() {
               </pre>
             ) : (
               <pre className="font-mono text-sm leading-relaxed">
-                <span className="text-white">curl</span> <span className="text-white/40">https://api.openpath.ai/v1/chat/completions</span> <span className="text-white/40">\</span>{'\n'}
+                <span className="text-white">curl</span> <span className="text-white/40">https://api.openpaths.io/v1/chat/completions</span> <span className="text-white/40">\</span>{'\n'}
                 {'  '}<span className="text-white/40">-H</span> <span className="text-white">"Content-Type: application/json"</span> <span className="text-white/40">\</span>{'\n'}
-                {'  '}<span className="text-white/40">-H</span> <span className="text-white">"Authorization: Bearer op_..."</span> <span className="text-white/40">\</span>{'\n'}
+                {'  '}<span className="text-white/40">-H</span> <span className="text-white">"Authorization: Bearer {apiKey}"</span> <span className="text-white/40">\</span>{'\n'}
                 {'  '}<span className="text-white/40">-d</span> <span className="text-white">'{'{'}</span>{'\n'}
-                {'    '}<span className="text-white">"model": "anthropic/claude-3-opus",</span>{'\n'}
+                {'    '}<span className="text-white">"model": "opus-latest",</span>{'\n'}
                 {'    '}<span className="text-white">"messages": [</span>{'\n'}
                 {'      '}<span className="text-white">{'{'}</span>{'\n'}
                 {'        '}<span className="text-white">"role": "user",</span>{'\n'}
