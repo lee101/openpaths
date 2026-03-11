@@ -37,7 +37,7 @@ export function Landing() {
             <Link to="/models" className="w-full sm:w-auto bg-white text-black px-8 py-4 font-mono font-bold flex items-center justify-center gap-2 hover:bg-white/90 transition-colors rounded">
               Explore Models <ArrowRight className="w-4 h-4" />
             </Link>
-            <a href="https://github.com" target="_blank" rel="noreferrer" className="w-full sm:w-auto border border-white/20 px-8 py-4 font-mono flex items-center justify-center gap-2 hover:bg-white/10 transition-colors rounded">
+            <a href="https://codex-infinity.com/@lee101/openpaths" target="_blank" rel="noreferrer" className="w-full sm:w-auto border border-white/20 px-8 py-4 font-mono flex items-center justify-center gap-2 hover:bg-white/10 transition-colors rounded">
               <Github className="w-4 h-4" /> View Source
             </a>
           </div>

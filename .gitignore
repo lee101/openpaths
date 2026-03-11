@@ -12,3 +12,7 @@ crawlers/__pycache__/
 crawlers/*.pyc
 crawlers/.venv/
 test-results/
+model
+openpaths-api
+openpaths
+discover

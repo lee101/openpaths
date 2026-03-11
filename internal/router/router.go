@@ -145,16 +145,28 @@ func (r *Router) MarkModelHealthy(providerName, modelID string) {
 	r.health.MarkHealthy(key)
 }
 
+func (r *Router) ListModelConfigs() []*model.ModelConfig {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	var configs []*model.ModelConfig
+	for _, cfg := range r.models {
+		configs = append(configs, cfg)
+	}
+	return configs
+}
+
 func (r *Router) ListModels() []model.ModelInfo {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
+	now := time.Now().Unix()
 	var models []model.ModelInfo
 	for _, cfg := range r.models {
 		info := model.ModelInfo{
 			ID:              cfg.ID,
 			Object:          "model",
-			Created:         time.Now().Unix(),
+			Created:         now,
 			OwnedBy:         cfg.Provider,
 			ContextWindow:   cfg.ContextWindow,
 			MaxOutputTokens: cfg.MaxOutputTokens,

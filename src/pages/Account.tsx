@@ -12,21 +12,41 @@ function getStripe(pk: string) {
   return stripePromise;
 }
 
-function api(path: string, opts: RequestInit = {}) {
+// Shared user data helper — reads from localStorage, used across pages
+function getUserData(): { token: string | null; user: any; apiKey: string | null } {
   const token = localStorage.getItem('op_token');
-  return fetch(API_BASE + path, {
+  const apiKey = localStorage.getItem('op_api_key');
+  let user = null;
+  try { user = JSON.parse(localStorage.getItem('op_user') || 'null'); } catch {}
+  return { token, user, apiKey };
+}
+
+async function api(path: string, opts: RequestInit = {}) {
+  const { token } = getUserData();
+  if (!token) {
+    // No token — return a synthetic 401 so callers handle it uniformly
+    return new Response(JSON.stringify({ error: { message: 'Not authenticated' } }), { status: 401 });
+  }
+  const res = await fetch(API_BASE + path, {
     ...opts,
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      Authorization: `Bearer ${token}`,
       ...opts.headers,
     },
   });
+  if (res.status === 401) {
+    console.warn('[openpaths] JWT expired or invalid, clearing session');
+    localStorage.removeItem('op_token');
+    localStorage.removeItem('op_user');
+    window.location.reload();
+  }
+  return res;
 }
 
 // --- Auth forms ---
 
-function AuthForms({ onAuth }: { onAuth: (token: string, user: any) => void }) {
+function AuthForms({ onAuth }: { onAuth: (token: string, user: any, apiKey?: string) => void }) {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -45,7 +65,8 @@ function AuthForms({ onAuth }: { onAuth: (token: string, user: any) => void }) {
       if (!res.ok) { setError(data.error?.message || 'Failed'); return; }
       localStorage.setItem('op_token', data.token);
       localStorage.setItem('op_user', JSON.stringify(data.user));
-      onAuth(data.token, data.user);
+      if (data.api_key) localStorage.setItem('op_api_key', data.api_key);
+      onAuth(data.token, data.user, data.api_key);
     } catch { setError('Network error'); } finally { setLoading(false); }
   };
 
@@ -294,11 +315,19 @@ export function Account() {
     if (token) { fetchBalance(); fetchTransactions(); fetchKeys(); }
   }, [token, fetchBalance, fetchTransactions, fetchKeys]);
 
-  const handleAuth = (t: string, u: any) => { setToken(t); setUser(u); };
+  const handleAuth = (t: string, u: any, apiKey?: string) => {
+    setToken(t);
+    setUser(u);
+    if (apiKey) {
+      setNewKeyResult(apiKey);
+      setActiveTab('keys');
+    }
+  };
 
   const logout = () => {
     localStorage.removeItem('op_token');
     localStorage.removeItem('op_user');
+    localStorage.removeItem('op_api_key');
     setToken(null);
     setUser(null);
   };
@@ -314,6 +343,7 @@ export function Account() {
     const data = await res.json();
     if (res.ok) {
       setNewKeyResult(data.key);
+      localStorage.setItem('op_api_key', data.key);
       setNewKeyName('');
       fetchKeys();
     }

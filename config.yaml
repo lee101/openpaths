@@ -94,6 +94,11 @@ providers:
     api_key: "${Z_API_KEY}"
     enabled: true
 
+  - name: nous
+    base_url: "https://inference-api.nousresearch.com"
+    api_key: "${NOUS_API_KEY}"
+    enabled: true
+
   - name: fal
     base_url: ""
     api_key: "${FAL_API_KEY}"
@@ -1438,6 +1443,31 @@ models:
     output_price_per_1m: 0
     supports_streaming: false
     supports_tools: false
+    supports_vision: false
+
+  # --- Nous Research ---
+  - id: "hermes-4-70b"
+    provider: nous
+    provider_model_id: "Hermes-4-70B"
+    input_price_per_1m: 0.05
+    output_price_per_1m: 0.20
+    aliases: ["hermes-70b", "nous-70b"]
+    context_window: 131072
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "hermes-4-405b"
+    provider: nous
+    provider_model_id: "Hermes-4-405B"
+    input_price_per_1m: 0.09
+    output_price_per_1m: 0.37
+    aliases: ["hermes-405b", "nous-405b", "hermes"]
+    context_window: 131072
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
     supports_vision: false
 
   - id: "mixtral-8x7b-32768"

@@ -57,7 +57,7 @@ func New(deps *Dependencies) *Server {
 
 	chatH := handler.NewChatHandler(deps.Router, deps.Billing, deps.Recorder)
 	modelsH := handler.NewModelsHandler(deps.Router)
-	authH := handler.NewAuthHandler(deps.UserQ, deps.CreditQ, deps.JWTService)
+	authH := handler.NewAuthHandler(deps.UserQ, deps.CreditQ, deps.APIKeyQ, deps.JWTService)
 	accountH := handler.NewAccountHandler(deps.APIKeyQ, deps.CreditQ, deps.Billing)
 	creditsH := handler.NewCreditsHandler(deps.Billing)
 	statsH := handler.NewStatsHandler(deps.StatsQ)
@@ -204,6 +204,12 @@ func New(deps *Dependencies) *Server {
 		log.Printf("Model discovery endpoints enabled")
 	}
 
+	// OpenRouter provider endpoint - public, no auth required
+	// This lets OpenRouter discover our models and route traffic to us
+	orProvH := handler.NewOpenRouterProviderHandler(deps.Router)
+	r.GET("/openrouter/models", publicChain(orProvH.HandleListModels))
+	log.Printf("OpenRouter provider models endpoint enabled at /openrouter/models")
+
 	r.GET("/health", func(ctx *fasthttp.RequestCtx) {
 		ctx.SetStatusCode(200)
 		ctx.SetBodyString(`{"status":"ok"}`)
@@ -267,6 +273,7 @@ func spaHandler(dir string, api fasthttp.RequestHandler) fasthttp.RequestHandler
 			strings.HasPrefix(path, "/stats/") ||
 			strings.HasPrefix(path, "/admin/") ||
 			strings.HasPrefix(path, "/uploads/") ||
+			strings.HasPrefix(path, "/openrouter/") ||
 			path == "/health" {
 			api(ctx)
 			return

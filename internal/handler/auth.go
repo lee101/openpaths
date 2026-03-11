@@ -10,13 +10,14 @@ import (
 )
 
 type AuthHandler struct {
-	userQ   *queries.UserQueries
-	creditQ *queries.CreditQueries
-	jwt     *auth.JWTService
+	userQ    *queries.UserQueries
+	creditQ  *queries.CreditQueries
+	apiKeyQ  *queries.APIKeyQueries
+	jwt      *auth.JWTService
 }
 
-func NewAuthHandler(userQ *queries.UserQueries, creditQ *queries.CreditQueries, jwt *auth.JWTService) *AuthHandler {
-	return &AuthHandler{userQ: userQ, creditQ: creditQ, jwt: jwt}
+func NewAuthHandler(userQ *queries.UserQueries, creditQ *queries.CreditQueries, apiKeyQ *queries.APIKeyQueries, jwt *auth.JWTService) *AuthHandler {
+	return &AuthHandler{userQ: userQ, creditQ: creditQ, apiKeyQ: apiKeyQ, jwt: jwt}
 }
 
 type registerRequest struct {
@@ -31,8 +32,9 @@ type loginRequest struct {
 }
 
 type authResponse struct {
-	Token string `json:"token"`
-	User  any    `json:"user"`
+	Token  string `json:"token"`
+	APIKey string `json:"api_key,omitempty"`
+	User   any    `json:"user"`
 }
 
 // HandleRegister handles POST /auth/register.
@@ -71,6 +73,17 @@ func (h *AuthHandler) HandleRegister(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
+	// Auto-create a default API key for the new user
+	rawKey, keyHash, keyPrefix, err := auth.GenerateAPIKey()
+	if err != nil {
+		writeError(ctx, 500, "server_error", "Failed to generate API key")
+		return
+	}
+	if _, err := h.apiKeyQ.Create(ctx, user.ID, keyHash, keyPrefix, "Default"); err != nil {
+		writeError(ctx, 500, "server_error", "Failed to create API key")
+		return
+	}
+
 	token, err := h.jwt.Generate(user.ID, user.Email)
 	if err != nil {
 		writeError(ctx, 500, "server_error", "Failed to generate token")
@@ -78,7 +91,8 @@ func (h *AuthHandler) HandleRegister(ctx *fasthttp.RequestCtx) {
 	}
 
 	writeJSON(ctx, 201, authResponse{
-		Token: token,
+		Token:  token,
+		APIKey: rawKey,
 		User: map[string]any{
 			"id":    user.ID,
 			"email": user.Email,

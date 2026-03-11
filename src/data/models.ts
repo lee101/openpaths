@@ -367,7 +367,7 @@ export const models: Model[] = [
   {
     id: 'together/deepseek-r1',
     name: 'DeepSeek R1',
-    provider: 'Together',
+    provider: 'Together AI',
     description: 'Open-source reasoning model hosted on Together AI.',
     contextLength: '128K',
     priceInput: 3.00,
@@ -379,7 +379,7 @@ export const models: Model[] = [
   {
     id: 'together/deepseek-v3.1',
     name: 'DeepSeek V3.1',
-    provider: 'Together',
+    provider: 'Together AI',
     description: 'Previous-gen DeepSeek model on Together AI infrastructure.',
     contextLength: '128K',
     priceInput: 0.60,
@@ -511,11 +511,37 @@ export const models: Model[] = [
     popularity: 44
   },
 
+  // --- Nous Research ---
+  {
+    id: 'hermes-4-70b',
+    name: 'Hermes 4 70B',
+    provider: 'Nous Research',
+    description: 'Open-source deep thinking model with extended chain-of-thought reasoning at ultra-low cost.',
+    contextLength: '131K',
+    priceInput: 0.05,
+    priceOutput: 0.20,
+    tags: ['reasoning', 'general', 'open-source'],
+    released: '2026-02-01',
+    popularity: 34
+  },
+  {
+    id: 'hermes-4-405b',
+    name: 'Hermes 4 405B',
+    provider: 'Nous Research',
+    description: 'Massive 405B parameter model with deep reasoning, tool use, and system prompt adherence.',
+    contextLength: '131K',
+    priceInput: 0.09,
+    priceOutput: 0.37,
+    tags: ['reasoning', 'general', 'open-source'],
+    released: '2026-02-01',
+    popularity: 34
+  },
+
   // --- Qwen / Moonshot / Together ---
   {
     id: 'qwen3.5-397b',
     name: 'Qwen 3.5 397B',
-    provider: 'Together',
+    provider: 'Together AI',
     description: 'Massive sparse MoE model from Alibaba with strong reasoning.',
     contextLength: '131K',
     priceInput: 0.60,
@@ -527,7 +553,7 @@ export const models: Model[] = [
   {
     id: 'qwen3-coder',
     name: 'Qwen 3 Coder',
-    provider: 'Together',
+    provider: 'Together AI',
     description: 'Code-specialized Qwen model optimized for software tasks.',
     contextLength: '131K',
     priceInput: 0.50,
@@ -539,7 +565,7 @@ export const models: Model[] = [
   {
     id: 'kimi-k2.5',
     name: 'Kimi K2.5',
-    provider: 'Together',
+    provider: 'Together AI',
     description: 'Moonshot AI model with strong coding and reasoning.',
     contextLength: '131K',
     priceInput: 0.50,
@@ -553,7 +579,7 @@ export const models: Model[] = [
   {
     id: 'glm-5',
     name: 'GLM-5',
-    provider: 'Together',
+    provider: 'Together AI',
     description: 'Z.AI flagship model with 200K+ context and tool use.',
     contextLength: '202K',
     priceInput: 1.00,
@@ -565,7 +591,7 @@ export const models: Model[] = [
   {
     id: 'glm-4.7',
     name: 'GLM-4.7',
-    provider: 'Together',
+    provider: 'Together AI',
     description: 'Efficient Z.AI model with strong general performance.',
     contextLength: '202K',
     priceInput: 0.45,
@@ -591,7 +617,7 @@ export const models: Model[] = [
   {
     id: 'minimax-m2.5',
     name: 'MiniMax M2.5',
-    provider: 'Together',
+    provider: 'Together AI',
     description: '1M context model with excellent long-document performance.',
     contextLength: '1M',
     priceInput: 0.30,
@@ -717,7 +743,7 @@ export const models: Model[] = [
   {
     id: 'flux-pro',
     name: 'FLUX.1 Pro',
-    provider: 'Together',
+    provider: 'Together AI',
     description: 'Top-tier image generation with exceptional typography and detail.',
     contextLength: 'N/A',
     priceInput: 40.00,
@@ -729,7 +755,7 @@ export const models: Model[] = [
   {
     id: 'flux-dev',
     name: 'FLUX.2 Dev',
-    provider: 'Together',
+    provider: 'Together AI',
     description: 'Development-tier FLUX model for fast image iteration.',
     contextLength: 'N/A',
     priceInput: 15.00,
@@ -741,7 +767,7 @@ export const models: Model[] = [
   {
     id: 'flux-schnell',
     name: 'FLUX.1 Schnell',
-    provider: 'Together',
+    provider: 'Together AI',
     description: 'Ultra-fast, ultra-cheap image generation.',
     contextLength: 'N/A',
     priceInput: 3.00,
@@ -765,7 +791,7 @@ export const models: Model[] = [
   {
     id: 'stable-diffusion-3',
     name: 'Stable Diffusion 3',
-    provider: 'Together',
+    provider: 'Together AI',
     description: 'Open-weights image generation with excellent prompt adherence.',
     contextLength: 'N/A',
     priceInput: 2.00,
