@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { CreditCard, Key, Wallet, Plus, Copy, Check, Activity, X, TrendingUp, LogOut, KeyRound, Eye, EyeOff, Save } from 'lucide-react';
+import { CreditCard, Key, Wallet, Plus, Copy, Check, Activity, X, TrendingUp, LogOut, KeyRound, Eye, EyeOff, Save, Trash2, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { loadStripe } from '@stripe/stripe-js';
-import { EmbeddedCheckoutProvider, EmbeddedCheckout } from '@stripe/react-stripe-js';
+import { EmbeddedCheckoutProvider, EmbeddedCheckout, Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { DEFAULT_API_KEY_NAME, TOKEN_STORAGE_KEY, clearStoredSession, getStoredAPIKey, getStoredToken, getStoredUser, persistAuth, storeAPIKey } from '../lib/session';
 
 const API_BASE = '';
@@ -389,6 +389,214 @@ function BYOKPanel() {
   );
 }
 
+// --- Auto Top-Up Section ---
+
+const THRESHOLD_OPTIONS = [
+  { value: 10000, label: '$1' },
+  { value: 50000, label: '$5' },
+  { value: 100000, label: '$10' },
+  { value: 250000, label: '$25' },
+  { value: 500000, label: '$50' },
+];
+
+const AMOUNT_OPTIONS = [
+  { value: 50000, label: '$5' },
+  { value: 100000, label: '$10' },
+  { value: 250000, label: '$25' },
+  { value: 500000, label: '$50' },
+  { value: 1000000, label: '$100' },
+];
+
+function AddCardForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () => void }) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+    setLoading(true);
+    setError('');
+
+    try {
+      const res = await api('/account/stripe/setup', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error?.message || 'Failed'); setLoading(false); return; }
+
+      const card = elements.getElement(CardElement);
+      if (!card) { setError('Card element not ready'); setLoading(false); return; }
+
+      const { error: stripeErr, setupIntent } = await stripe.confirmCardSetup(data.client_secret, {
+        payment_method: { card: card as any },
+      });
+
+      if (stripeErr) { setError(stripeErr.message || 'Card setup failed'); setLoading(false); return; }
+
+      if (setupIntent?.payment_method) {
+        const pmId = typeof setupIntent.payment_method === 'string' ? setupIntent.payment_method : setupIntent.payment_method.id;
+        await api('/account/stripe/confirm', {
+          method: 'POST',
+          body: JSON.stringify({ payment_method_id: pmId }),
+        });
+      }
+
+      onSuccess();
+    } catch { setError('Network error'); } finally { setLoading(false); }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="border border-white/10 bg-white/[0.02] rounded-xl p-4">
+      <div className="mb-4">
+        <CardElement options={{
+          style: {
+            base: { color: '#fff', fontSize: '14px', fontFamily: 'monospace', '::placeholder': { color: 'rgba(255,255,255,0.3)' } },
+            invalid: { color: '#ef4444' },
+          },
+        }} />
+      </div>
+      {error && <p className="text-red-400 text-xs font-mono mb-3">{error}</p>}
+      <div className="flex gap-2">
+        <button type="submit" disabled={loading || !stripe}
+          className="bg-white text-black px-4 py-2 text-xs font-mono font-bold rounded hover:bg-white/90 transition-colors disabled:opacity-50">
+          {loading ? 'Saving...' : 'Save Card'}
+        </button>
+        <button type="button" onClick={onCancel} className="text-xs font-mono text-white/40 hover:text-white px-3 py-2">Cancel</button>
+      </div>
+    </form>
+  );
+}
+
+function AutoTopupSection({ stripePk }: { stripePk: string }) {
+  const [settings, setSettings] = useState<any>(null);
+  const [methods, setMethods] = useState<any[]>([]);
+  const [showAddCard, setShowAddCard] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [threshold, setThreshold] = useState(50000);
+  const [amount, setAmount] = useState(100000);
+  const [enabled, setEnabled] = useState(false);
+
+  const fetchSettings = useCallback(() => {
+    api('/account/autotopup/settings').then(r => r.json()).then(d => {
+      setSettings(d);
+      setEnabled(d.enabled);
+      setThreshold(d.threshold_cents || 50000);
+      setAmount(d.amount_cents || 100000);
+    }).catch(() => {});
+  }, []);
+
+  const fetchMethods = useCallback(() => {
+    api('/account/stripe/payment-methods').then(r => r.json()).then(d => {
+      setMethods(d.payment_methods || []);
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => { fetchSettings(); fetchMethods(); }, [fetchSettings, fetchMethods]);
+
+  const saveSettings = async (en: boolean, th: number, am: number) => {
+    setSaving(true);
+    try {
+      await api('/account/autotopup/settings', {
+        method: 'POST',
+        body: JSON.stringify({ enabled: en, threshold_cents: th, amount_cents: am }),
+      });
+      fetchSettings();
+    } catch {} finally { setSaving(false); }
+  };
+
+  const removeCard = async (pmId: string) => {
+    await api(`/account/stripe/payment-methods/${pmId}`, { method: 'DELETE' });
+    fetchMethods();
+    fetchSettings();
+  };
+
+  const handleToggle = () => {
+    const next = !enabled;
+    setEnabled(next);
+    saveSettings(next, threshold, amount);
+  };
+
+  const handleThreshold = (v: number) => { setThreshold(v); if (enabled) saveSettings(enabled, v, amount); };
+  const handleAmount = (v: number) => { setAmount(v); if (enabled) saveSettings(enabled, threshold, v); };
+
+  const hasCard = methods.length > 0;
+
+  return (
+    <div className="border border-white/10 bg-white/[0.02] rounded-xl p-6 mb-8">
+      <div className="flex items-center gap-3 mb-6">
+        <Zap className="w-5 h-5 text-yellow-400" />
+        <h3 className="text-lg font-bold">Auto Top-Up</h3>
+      </div>
+
+      <div className="mb-6">
+        <div className="text-xs font-mono text-white/40 mb-3">Payment Methods</div>
+        {methods.length > 0 ? (
+          <div className="space-y-2 mb-3">
+            {methods.map((m: any) => (
+              <div key={m.id} className="flex items-center justify-between bg-black border border-white/10 rounded-lg px-4 py-3">
+                <span className="font-mono text-sm text-white/80">{m.brand?.toUpperCase()} **** {m.last4} &middot; {m.exp_month}/{m.exp_year}</span>
+                <button onClick={() => removeCard(m.id)} className="text-white/30 hover:text-red-400 transition-colors"><Trash2 className="w-4 h-4" /></button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-white/40 mb-3">No card saved. Add one to enable auto top-up.</p>
+        )}
+
+        {showAddCard && stripePk ? (
+          <Elements stripe={getStripe(stripePk)!}>
+            <AddCardForm onSuccess={() => { setShowAddCard(false); fetchMethods(); }} onCancel={() => setShowAddCard(false)} />
+          </Elements>
+        ) : (
+          <button onClick={() => setShowAddCard(true)} className="text-xs font-mono text-white border border-white/20 px-3 py-1.5 rounded hover:bg-white/10 transition-colors flex items-center gap-1">
+            <Plus className="w-3 h-3" /> Add Card
+          </button>
+        )}
+      </div>
+
+      {hasCard && (
+        <>
+          <div className="border-t border-white/10 pt-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <div className="text-sm font-bold">Enable Auto Top-Up</div>
+                <div className="text-xs text-white/40">Automatically add funds when balance is low</div>
+              </div>
+              <button onClick={handleToggle} disabled={saving}
+                className={`w-12 h-6 rounded-full transition-colors relative ${enabled ? 'bg-green-500' : 'bg-white/10'}`}>
+                <span className={`block w-5 h-5 rounded-full bg-white absolute top-0.5 transition-transform ${enabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <label className="text-xs font-mono text-white/40 block mb-2">When balance drops below</label>
+                <select value={threshold} onChange={e => handleThreshold(Number(e.target.value))}
+                  className="w-full bg-black border border-white/10 rounded-lg py-2 px-3 text-sm text-white font-mono focus:outline-none focus:border-white/30 appearance-none">
+                  {THRESHOLD_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-mono text-white/40 block mb-2">Top up amount</label>
+                <select value={amount} onChange={e => handleAmount(Number(e.target.value))}
+                  className="w-full bg-black border border-white/10 rounded-lg py-2 px-3 text-sm text-white font-mono focus:outline-none focus:border-white/30 appearance-none">
+                  {AMOUNT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </div>
+            </div>
+
+            {enabled && (
+              <p className="text-xs text-white/40 mt-4 font-mono">
+                Your card will be charged {AMOUNT_OPTIONS.find(o => o.value === amount)?.label} when balance falls below {THRESHOLD_OPTIONS.find(o => o.value === threshold)?.label}. Max once per 60s.
+              </p>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // --- Main Account component ---
 
 export function Account() {
@@ -672,6 +880,8 @@ export function Account() {
               <div className="text-sm font-mono text-white/40 mb-2">Current Balance</div>
               <div className="text-4xl font-light tracking-tight mb-4" data-testid="billing-balance">{balanceDisplay}</div>
             </div>
+
+            <AutoTopupSection stripePk={stripePk} />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
               <div className="border border-white/10 bg-white/[0.02] rounded-xl p-6 flex flex-col" data-testid="stripe-card">
