@@ -1,12 +1,19 @@
 package stripe
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/json"
+	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
+	"time"
 )
 
 type Service struct {
@@ -122,7 +129,13 @@ type CheckoutSession struct {
 
 // ConstructWebhookEvent verifies and parses a Stripe webhook payload.
 func (s *Service) ConstructWebhookEvent(payload []byte, sigHeader, webhookSecret string) (*WebhookEvent, error) {
-	// For now, just parse the JSON; signature verification done via Stripe-Signature header
+	if webhookSecret == "" {
+		return nil, errors.New("stripe webhook secret is not configured")
+	}
+	if err := verifyWebhookSignature(payload, sigHeader, webhookSecret, 5*time.Minute); err != nil {
+		return nil, err
+	}
+
 	var evt WebhookEvent
 	if err := json.Unmarshal(payload, &evt); err != nil {
 		return nil, fmt.Errorf("parse webhook: %w", err)
@@ -222,4 +235,70 @@ func (s *Service) get(path string, out any) error {
 		return fmt.Errorf("stripe %d: %s", resp.StatusCode, string(data))
 	}
 	return json.Unmarshal(data, out)
+}
+
+func verifyWebhookSignature(payload []byte, sigHeader, webhookSecret string, tolerance time.Duration) error {
+	timestamp, signatures, err := parseSignatureHeader(sigHeader)
+	if err != nil {
+		return err
+	}
+	if tolerance > 0 && time.Since(timestamp) > tolerance {
+		return errors.New("stripe webhook signature timestamp is too old")
+	}
+
+	signedPayload := fmt.Sprintf("%d.%s", timestamp.Unix(), payload)
+	mac := hmac.New(sha256.New, []byte(webhookSecret))
+	mac.Write([]byte(signedPayload))
+	expected := mac.Sum(nil)
+
+	for _, sig := range signatures {
+		decoded, err := hex.DecodeString(sig)
+		if err != nil {
+			continue
+		}
+		if subtle.ConstantTimeCompare(decoded, expected) == 1 {
+			return nil
+		}
+	}
+
+	return errors.New("stripe webhook signature verification failed")
+}
+
+func parseSignatureHeader(sigHeader string) (time.Time, []string, error) {
+	if sigHeader == "" {
+		return time.Time{}, nil, errors.New("missing Stripe-Signature header")
+	}
+
+	var (
+		timestamp time.Time
+		signatures []string
+	)
+
+	for _, part := range strings.Split(sigHeader, ",") {
+		part = strings.TrimSpace(part)
+		key, value, ok := strings.Cut(part, "=")
+		if !ok {
+			continue
+		}
+
+		switch key {
+		case "t":
+			secs, err := strconv.ParseInt(value, 10, 64)
+			if err != nil {
+				return time.Time{}, nil, fmt.Errorf("invalid stripe signature timestamp: %w", err)
+			}
+			timestamp = time.Unix(secs, 0)
+		case "v1":
+			signatures = append(signatures, value)
+		}
+	}
+
+	if timestamp.IsZero() {
+		return time.Time{}, nil, errors.New("missing stripe signature timestamp")
+	}
+	if len(signatures) == 0 {
+		return time.Time{}, nil, errors.New("missing stripe v1 signature")
+	}
+
+	return timestamp, signatures, nil
 }

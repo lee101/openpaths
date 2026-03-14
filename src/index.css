@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import "highlight.js/styles/github-dark.css";
 @import "tailwindcss";
 
 @theme {
@@ -9,5 +10,17 @@
 @layer base {
   body {
     @apply bg-black text-white font-sans antialiased selection:bg-white selection:text-black;
+  }
+
+  :not(pre) > code:not(.hljs) {
+    @apply px-1.5 py-0.5 bg-white/10 rounded text-sm font-mono text-white/80;
+  }
+}
+
+@layer components {
+  .hljs {
+    background: transparent;
+    color: rgb(229 231 235);
+    padding: 0;
   }
 }

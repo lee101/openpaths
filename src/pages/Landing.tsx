@@ -1,10 +1,43 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Terminal, Zap, Code2, ArrowRight, Github, Search, Layers, Activity, Sparkles } from 'lucide-react';
+import { Terminal, Zap, Code2, ArrowRight, Github, Search, Layers, Activity, Sparkles, KeyRound, Cpu } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { CodeBlock } from '../components/CodeBlock';
 
 export function Landing() {
-  const [activeTab, setActiveTab] = useState<'python' | 'curl'>('python');
+  const [activeTab, setActiveTab] = useState<'openai' | 'anthropic' | 'curl'>('openai');
+  const openAIPythonExample = `import openai
+
+client = openai.OpenAI(
+    base_url="https://openpaths.io/v1",
+    api_key="op-...",
+)
+
+response = client.chat.completions.create(
+    model="anthropic-opus-latest",
+    messages=[{"role": "user", "content": "Write a tiny SSE server in Go."}],
+)`;
+  const anthropicPythonExample = `from anthropic import Anthropic
+
+client = Anthropic(
+    base_url="https://openpaths.io",
+    api_key="op-...",
+)
+
+message = client.messages.create(
+    model="anthropic-opus-latest",
+    max_tokens=1024,
+    messages=[{"role": "user", "content": "Write a tiny SSE server in Go."}],
+)`;
+  const curlExample = `curl https://openpaths.io/v1/chat/completions \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer op-..." \\
+  -d '{
+    "model": "anthropic-opus-latest",
+    "messages": [
+      {"role": "user", "content": "Write a tiny SSE server in Go."}
+    ]
+  }'`;
 
   return (
     <>
@@ -56,8 +89,12 @@ export function Landing() {
       {/* Code Snippet */}
       <section id="api" className="px-6 py-24 max-w-5xl mx-auto">
         <div className="mb-12 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">100% OpenAI Compatible</h2>
-          <p className="text-white/60 font-mono text-sm">Just change the base URL and API key. That's it.</p>
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">OpenAI And Anthropic SDK Compatible</h2>
+          <p className="text-white/60 font-mono text-sm mb-4">Keep your existing Python client. Just change the base URL and API key.</p>
+          <div className="flex flex-wrap items-center justify-center gap-2 text-xs font-mono text-white/50">
+            <span className="px-3 py-1 rounded-full border border-white/10 bg-white/[0.03]">OpenAI SDK {'->'} <code>https://openpaths.io/v1</code></span>
+            <span className="px-3 py-1 rounded-full border border-white/10 bg-white/[0.03]">Anthropic SDK {'->'} <code>https://openpaths.io</code></span>
+          </div>
         </div>
         
         <div className="border border-white/10 bg-black rounded-lg overflow-hidden shadow-2xl shadow-white/5">
@@ -69,10 +106,16 @@ export function Landing() {
             </div>
             <div className="flex gap-2 font-mono text-xs">
               <button 
-                onClick={() => setActiveTab('python')}
-                className={`px-3 py-1 rounded transition-colors ${activeTab === 'python' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white'}`}
+                onClick={() => setActiveTab('openai')}
+                className={`px-3 py-1 rounded transition-colors ${activeTab === 'openai' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white'}`}
               >
-                Python
+                OpenAI Python
+              </button>
+              <button 
+                onClick={() => setActiveTab('anthropic')}
+                className={`px-3 py-1 rounded transition-colors ${activeTab === 'anthropic' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white'}`}
+              >
+                Anthropic Python
               </button>
               <button 
                 onClick={() => setActiveTab('curl')}
@@ -83,35 +126,12 @@ export function Landing() {
             </div>
           </div>
           <div className="p-6 overflow-x-auto">
-            {activeTab === 'python' ? (
-              <pre className="font-mono text-sm leading-relaxed">
-                <span className="text-white/40">import</span> <span className="text-white">openai</span>{'\n\n'}
-                <span className="text-white">client</span> <span className="text-white/40">=</span> <span className="text-white">openai.OpenAI(</span>{'\n'}
-                {'  '}base_url<span className="text-white/40">="</span><span className="text-white">https://api.openpath.ai/v1</span><span className="text-white/40">"</span>,{'\n'}
-                {'  '}api_key<span className="text-white/40">="</span><span className="text-white">op_...</span><span className="text-white/40">"</span>{'\n'}
-                <span className="text-white">)</span>{'\n\n'}
-                <span className="text-white">response</span> <span className="text-white/40">=</span> <span className="text-white">client.chat.completions.create(</span>{'\n'}
-                {'  '}model<span className="text-white/40">="</span><span className="text-white">anthropic/claude-3-opus</span><span className="text-white/40">"</span>,{'\n'}
-                {'  '}messages<span className="text-white/40">=[</span>{'\n'}
-                {'    '}<span className="text-white/40">&#123;</span>"role"<span className="text-white/40">:</span> "user"<span className="text-white/40">,</span> "content"<span className="text-white/40">:</span> "Write a python script to reverse a string."<span className="text-white/40">&#125;</span>{'\n'}
-                {'  '}<span className="text-white/40">]</span>{'\n'}
-                <span className="text-white">)</span>
-              </pre>
+            {activeTab === 'openai' ? (
+              <CodeBlock code={openAIPythonExample} language="python" />
+            ) : activeTab === 'anthropic' ? (
+              <CodeBlock code={anthropicPythonExample} language="python" />
             ) : (
-              <pre className="font-mono text-sm leading-relaxed">
-                <span className="text-white">curl</span> <span className="text-white/40">https://api.openpath.ai/v1/chat/completions</span> <span className="text-white/40">\</span>{'\n'}
-                {'  '}<span className="text-white/40">-H</span> <span className="text-white">"Content-Type: application/json"</span> <span className="text-white/40">\</span>{'\n'}
-                {'  '}<span className="text-white/40">-H</span> <span className="text-white">"Authorization: Bearer op_..."</span> <span className="text-white/40">\</span>{'\n'}
-                {'  '}<span className="text-white/40">-d</span> <span className="text-white">'{'{'}</span>{'\n'}
-                {'    '}<span className="text-white">"model": "anthropic/claude-3-opus",</span>{'\n'}
-                {'    '}<span className="text-white">"messages": [</span>{'\n'}
-                {'      '}<span className="text-white">{'{'}</span>{'\n'}
-                {'        '}<span className="text-white">"role": "user",</span>{'\n'}
-                {'        '}<span className="text-white">"content": "Write a python script to reverse a string."</span>{'\n'}
-                {'      '}<span className="text-white">{'}'}</span>{'\n'}
-                {'    '}<span className="text-white">]</span>{'\n'}
-                {'  '}<span className="text-white">{'}'}'</span>
-              </pre>
+              <CodeBlock code={curlExample} language="bash" />
             )}
           </div>
         </div>
@@ -124,23 +144,33 @@ export function Landing() {
           <p className="text-white/60 font-mono text-sm max-w-2xl">We handle the complexity of routing, fallbacks, and payments so you can focus on building your product.</p>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-px bg-white/10">
-          <FeatureCard 
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-white/10">
+          <FeatureCard
             icon={<Zap className="w-6 h-6" />}
             title="Millisecond Routing"
             description="Intelligent pathways find the lowest latency and highest throughput provider for your request instantly."
           />
-          <FeatureCard 
+          <FeatureCard
             icon={<Code2 className="w-6 h-6" />}
             title="Universal API"
-            description="One API key for OpenAI, Anthropic, Meta, Mistral, and dozens of art generators like RA1 and Stable Diffusion."
+            description="One API key for OpenAI, Anthropic, Meta, Mistral, and dozens of art generators like RA1, FLUX, and Stable Diffusion."
           />
           <FeatureCard
             icon={<Sparkles className="w-6 h-6" />}
             title="Auto Models"
-            description="Always on the price frontier. Static embedding model-based routing picks the best frontier model for every task — just use auto-coding-latest and stay ahead automatically."
+            description="Always on the price frontier. AI neural routing picks the best frontier model for every task -- just use auto-coding-latest and stay ahead automatically."
           />
-          <FeatureCard 
+          <FeatureCard
+            icon={<KeyRound className="w-6 h-6" />}
+            title="Bring Your Own Keys"
+            description="Use your own API keys from OpenAI, Anthropic, Google, and more. Free routing and fallbacks with zero markup on your keys."
+          />
+          <FeatureCard
+            icon={<Cpu className="w-6 h-6" />}
+            title="Codex Spark Models"
+            description="Use GPT-5.3 Codex and Codex Spark with your OpenAI Max plan. Low reasoning mode for fast, cheap coding tasks with automatic token refresh."
+          />
+          <FeatureCard
             icon={<svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 3h-10l-2 5h10l2-5Z"/><path d="M11.5 11h-10l-2 5h10l2-5Z"/><path d="M14.5 19h-10l-2 5h10l2-5Z"/></svg>}
             title="Solana Payments"
             description="Prefer decentralization? Fund your API usage instantly with Solana (SOL) or USDC on the world's fastest blockchain."

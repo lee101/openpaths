@@ -14,8 +14,8 @@ cp .env.example .env
 # Edit .env with your API keys and JWT_SECRET
 
 # 3. Build and run
-go build -o bin/openpath ./cmd/openpath/
-GOMAXPROCS=3 ./bin/openpath
+go build -o bin/openpaths ./cmd/openpaths/
+GOMAXPROCS=3 ./bin/openpaths
 ```
 
 ## GPU Build (CUDA + gobed)
@@ -36,7 +36,7 @@ Or manually:
 export LD_LIBRARY_PATH="/home/lee/code/gobed/gpu:/usr/local/cuda-12.9/lib64:$LD_LIBRARY_PATH"
 GOMAXPROCS=3 go build -tags="gpu cuda" \
   -ldflags="-extldflags '-Wl,-rpath,/home/lee/code/gobed/gpu -Wl,-rpath,/usr/local/cuda-12.9/lib64'" \
-  -o bin/openpath-gpu ./cmd/openpath/
+  -o bin/openpath-gpu ./cmd/openpaths/
 ./bin/openpath-gpu
 ```
 
@@ -82,3 +82,5 @@ GOMAXPROCS=3 go build -tags="gpu cuda" \
 npm install
 npm run dev
 ```
+
+The web UI includes API docs at `/docs`.

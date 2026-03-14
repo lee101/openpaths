@@ -66,7 +66,7 @@ Replace static fallback chains for "auto" models with intelligent routing via co
 - Compiler/language design, cryptography
 - OS/kernel, quantum computing
 
-### Creative -> gpt-5.2 (reasoning: low)
+### Creative -> gpt-5-chat-latest (reasoning: low)
 - Creative writing, stories, poetry
 - Translation, copywriting, blog posts
 

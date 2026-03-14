@@ -252,31 +252,31 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			{Description: "svg icon illustration vector graphic canvas webgl shader", ModelID: "gemini-3.1-pro-preview", ReasoningEffort: "low"},
 			{Description: "user experience flow onboarding accessibility aria wcag a11y", ModelID: "gemini-3.1-pro-preview", ReasoningEffort: "medium"},
 
-			// ===== ADVANCED CODING - GPT 5.3 Codex medium thinking =====
-			{Description: "architect system design infrastructure scale distributed microservice", ModelID: "gpt-5.3-codex", ReasoningEffort: "medium"},
-			{Description: "optimize performance profiling memory cpu bottleneck latency throughput", ModelID: "gpt-5.3-codex", ReasoningEffort: "medium"},
-			{Description: "refactor large codebase restructure migrate rewrite legacy modernize", ModelID: "gpt-5.3-codex", ReasoningEffort: "medium"},
-			{Description: "security audit penetration test vulnerability assessment hardening", ModelID: "gpt-5.3-codex", ReasoningEffort: "medium"},
-			{Description: "implement complex algorithm data structure tree graph trie heap", ModelID: "gpt-5.3-codex", ReasoningEffort: "medium"},
-			{Description: "concurrency parallel threading async await goroutine channel mutex", ModelID: "gpt-5.3-codex", ReasoningEffort: "medium"},
-			{Description: "networking protocol tcp udp websocket grpc protobuf", ModelID: "gpt-5.3-codex", ReasoningEffort: "medium"},
-			{Description: "full stack application end to end complete project from scratch", ModelID: "gpt-5.3-codex", ReasoningEffort: "medium"},
+			// ===== ADVANCED CODING - GPT 5 Codex medium thinking =====
+			{Description: "architect system design infrastructure scale distributed microservice", ModelID: "gpt-5-codex", ReasoningEffort: "medium"},
+			{Description: "optimize performance profiling memory cpu bottleneck latency throughput", ModelID: "gpt-5-codex", ReasoningEffort: "medium"},
+			{Description: "refactor large codebase restructure migrate rewrite legacy modernize", ModelID: "gpt-5-codex", ReasoningEffort: "medium"},
+			{Description: "security audit penetration test vulnerability assessment hardening", ModelID: "gpt-5-codex", ReasoningEffort: "medium"},
+			{Description: "implement complex algorithm data structure tree graph trie heap", ModelID: "gpt-5-codex", ReasoningEffort: "medium"},
+			{Description: "concurrency parallel threading async await goroutine channel mutex", ModelID: "gpt-5-codex", ReasoningEffort: "medium"},
+			{Description: "networking protocol tcp udp websocket grpc protobuf", ModelID: "gpt-5-codex", ReasoningEffort: "medium"},
+			{Description: "full stack application end to end complete project from scratch", ModelID: "gpt-5-codex", ReasoningEffort: "medium"},
 
-			// ===== VERY HARD / RESEARCH - GPT 5.3 Codex high thinking =====
-			{Description: "mathematics proof theorem formula derivation calculus algebra topology", ModelID: "gpt-5.3-codex", ReasoningEffort: "high"},
-			{Description: "research paper academic analysis deep investigation survey literature", ModelID: "gpt-5.3-codex", ReasoningEffort: "high"},
-			{Description: "machine learning model training neural network deep learning transformer", ModelID: "gpt-5.3-codex", ReasoningEffort: "high"},
-			{Description: "complex debugging race condition deadlock memory leak concurrency bug", ModelID: "gpt-5.3-codex", ReasoningEffort: "high"},
-			{Description: "compiler interpreter parser language design type system ast", ModelID: "gpt-5.3-codex", ReasoningEffort: "high"},
-			{Description: "cryptography protocol security formal verification zero knowledge proof", ModelID: "gpt-5.3-codex", ReasoningEffort: "high"},
-			{Description: "operating system kernel driver low level systems programming", ModelID: "gpt-5.3-codex", ReasoningEffort: "high"},
-			{Description: "quantum computing algorithm complexity theory np hard reduction", ModelID: "gpt-5.3-codex", ReasoningEffort: "high"},
+			// ===== VERY HARD / RESEARCH - GPT 5 Codex high thinking =====
+			{Description: "mathematics proof theorem formula derivation calculus algebra topology", ModelID: "gpt-5-codex", ReasoningEffort: "high"},
+			{Description: "research paper academic analysis deep investigation survey literature", ModelID: "gpt-5-codex", ReasoningEffort: "high"},
+			{Description: "machine learning model training neural network deep learning transformer", ModelID: "gpt-5-codex", ReasoningEffort: "high"},
+			{Description: "complex debugging race condition deadlock memory leak concurrency bug", ModelID: "gpt-5-codex", ReasoningEffort: "high"},
+			{Description: "compiler interpreter parser language design type system ast", ModelID: "gpt-5-codex", ReasoningEffort: "high"},
+			{Description: "cryptography protocol security formal verification zero knowledge proof", ModelID: "gpt-5-codex", ReasoningEffort: "high"},
+			{Description: "operating system kernel driver low level systems programming", ModelID: "gpt-5-codex", ReasoningEffort: "high"},
+			{Description: "quantum computing algorithm complexity theory np hard reduction", ModelID: "gpt-5-codex", ReasoningEffort: "high"},
 
-			// ===== CREATIVE - GPT 5.2 =====
-			{Description: "creative writing story poetry fiction novel narrative worldbuilding screenplay", ModelID: "gpt-5.2", ReasoningEffort: "low"},
-			{Description: "translation language multilingual foreign text localization internationalization", ModelID: "gpt-5.2", ReasoningEffort: "none"},
-			{Description: "copywriting marketing ad copy slogan tagline brand voice", ModelID: "gpt-5.2", ReasoningEffort: "low"},
-			{Description: "blog post article essay editorial opinion piece long form", ModelID: "gpt-5.2", ReasoningEffort: "low"},
+			// ===== CREATIVE / CHAT - GPT 5 Chat Latest =====
+			{Description: "creative writing story poetry fiction novel narrative worldbuilding screenplay", ModelID: "gpt-5-chat-latest", ReasoningEffort: "low"},
+			{Description: "translation language multilingual foreign text localization internationalization", ModelID: "gpt-5-chat-latest", ReasoningEffort: "none"},
+			{Description: "copywriting marketing ad copy slogan tagline brand voice", ModelID: "gpt-5-chat-latest", ReasoningEffort: "low"},
+			{Description: "blog post article essay editorial opinion piece long form", ModelID: "gpt-5-chat-latest", ReasoningEffort: "low"},
 
 			// ===== GENERAL - Gemini 3.1 Pro =====
 			{Description: "general conversation chat casual discussion help advice recommendation", ModelID: "gemini-3.1-pro-preview", ReasoningEffort: "none"},

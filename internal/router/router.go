@@ -79,52 +79,63 @@ func (r *Router) ResolveWithRetries(modelName string) ([]RouteCandidate, error) 
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	canonical := modelName
-	if mapped, ok := r.aliases[modelName]; ok {
-		canonical = mapped
+	canonical := r.canonicalModelNameLocked(modelName)
+	return r.resolveWithRetriesLocked(modelName, canonical)
+}
+
+// ResolveForRequest prefers the routed model chosen by the autorouter, then
+// falls back to the original requested model chain if the routed target is
+// unavailable or unhealthy.
+func (r *Router) ResolveForRequest(requestedModel, routedModel string) ([]RouteCandidate, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	requestedCanonical := r.canonicalModelNameLocked(requestedModel)
+	routedCanonical := r.canonicalModelNameLocked(routedModel)
+	if routedCanonical == "" {
+		routedCanonical = requestedCanonical
 	}
 
-	cfg, ok := r.models[canonical]
-	if !ok {
-		return nil, fmt.Errorf("model %q not found", modelName)
+	if requestedCanonical == routedCanonical {
+		return r.resolveWithRetriesLocked(requestedModel, requestedCanonical)
 	}
 
 	var candidates []RouteCandidate
+	seen := make(map[string]struct{})
 
-	key := r.health.ModelProviderKey(cfg.Provider, cfg.ID)
-	if r.health.IsHealthy(key) {
-		if p, err := r.registry.Get(cfg.Provider); err == nil {
-			candidates = append(candidates, RouteCandidate{ModelCfg: cfg, Provider: p})
-		}
-	}
-
-	for _, fb := range cfg.FallbackProviders {
-		fbKey := r.health.ModelProviderKey(fb, cfg.ID)
-		if r.health.IsHealthy(fbKey) {
-			if p, err := r.registry.Get(fb); err == nil {
-				candidates = append(candidates, RouteCandidate{ModelCfg: cfg, Provider: p})
+	appendUnique := func(items []RouteCandidate) {
+		for _, cand := range items {
+			key := cand.Provider.Name() + "::" + cand.ModelCfg.ID
+			if _, ok := seen[key]; ok {
+				continue
 			}
+			seen[key] = struct{}{}
+			candidates = append(candidates, cand)
 		}
 	}
 
-	for _, fbModelID := range cfg.FallbackModels {
-		fbCfg, ok := r.models[fbModelID]
-		if !ok {
-			continue
-		}
-		fbKey := r.health.ModelProviderKey(fbCfg.Provider, fbCfg.ID)
-		if r.health.IsHealthy(fbKey) {
-			if p, err := r.registry.Get(fbCfg.Provider); err == nil {
-				candidates = append(candidates, RouteCandidate{ModelCfg: fbCfg, Provider: p})
-			}
+	var routedErr error
+	if routedCanonical != "" {
+		routed, err := r.resolveWithRetriesLocked(routedModel, routedCanonical)
+		if err != nil {
+			routedErr = err
+		} else {
+			appendUnique(routed)
 		}
 	}
 
-	if len(candidates) == 0 {
-		return nil, fmt.Errorf("no healthy provider available for model %q", modelName)
+	requested, requestedErr := r.resolveWithRetriesLocked(requestedModel, requestedCanonical)
+	if requestedErr == nil {
+		appendUnique(requested)
 	}
 
-	return candidates, nil
+	if len(candidates) > 0 {
+		return candidates, nil
+	}
+	if routedErr != nil {
+		return nil, routedErr
+	}
+	return nil, requestedErr
 }
 
 func (r *Router) HealthTracker() *HealthTracker {
@@ -246,4 +257,55 @@ func (r *Router) MaybeResolveAuto(ctx context.Context, modelName, modality, prom
 	}
 
 	return result
+}
+
+func (r *Router) canonicalModelNameLocked(modelName string) string {
+	if mapped, ok := r.aliases[modelName]; ok {
+		return mapped
+	}
+	return modelName
+}
+
+func (r *Router) resolveWithRetriesLocked(originalName, canonical string) ([]RouteCandidate, error) {
+	cfg, ok := r.models[canonical]
+	if !ok {
+		return nil, fmt.Errorf("model %q not found", originalName)
+	}
+
+	var candidates []RouteCandidate
+
+	key := r.health.ModelProviderKey(cfg.Provider, cfg.ID)
+	if r.health.IsHealthy(key) {
+		if p, err := r.registry.Get(cfg.Provider); err == nil {
+			candidates = append(candidates, RouteCandidate{ModelCfg: cfg, Provider: p})
+		}
+	}
+
+	for _, fb := range cfg.FallbackProviders {
+		fbKey := r.health.ModelProviderKey(fb, cfg.ID)
+		if r.health.IsHealthy(fbKey) {
+			if p, err := r.registry.Get(fb); err == nil {
+				candidates = append(candidates, RouteCandidate{ModelCfg: cfg, Provider: p})
+			}
+		}
+	}
+
+	for _, fbModelID := range cfg.FallbackModels {
+		fbCfg, ok := r.models[fbModelID]
+		if !ok {
+			continue
+		}
+		fbKey := r.health.ModelProviderKey(fbCfg.Provider, fbCfg.ID)
+		if r.health.IsHealthy(fbKey) {
+			if p, err := r.registry.Get(fbCfg.Provider); err == nil {
+				candidates = append(candidates, RouteCandidate{ModelCfg: fbCfg, Provider: p})
+			}
+		}
+	}
+
+	if len(candidates) == 0 {
+		return nil, fmt.Errorf("no healthy provider available for model %q", originalName)
+	}
+
+	return candidates, nil
 }

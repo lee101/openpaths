@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Plus, X, Settings, ChevronDown, Loader2, Trash2 } from 'lucide-react';
+import { API_KEY_STORAGE_KEY, getAppOrigin } from '../lib/session';
 
 interface Message {
   role: 'system' | 'user' | 'assistant';
@@ -22,7 +23,9 @@ const CHAT_MODELS = [
   { id: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro', provider: 'Google' },
   { id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', provider: 'Google' },
   { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', provider: 'Google' },
-  { id: 'gpt-5.2', label: 'GPT-5.2', provider: 'OpenAI' },
+  { id: 'gpt-5-chat-latest', label: 'GPT-5 Chat Latest', provider: 'OpenAI' },
+  { id: 'gpt-5.4', label: 'GPT-5.4', provider: 'OpenAI' },
+  { id: 'gpt-5-codex', label: 'GPT-5 Codex', provider: 'OpenAI' },
   { id: 'o3', label: 'o3', provider: 'OpenAI' },
   { id: 'o4-mini', label: 'o4-mini', provider: 'OpenAI' },
   { id: 'gpt-4o', label: 'GPT-4o', provider: 'OpenAI' },
@@ -49,7 +52,7 @@ function makePane(modelId: string): ModelPane {
 }
 
 export function Playground() {
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('op_api_key') || '');
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem(API_KEY_STORAGE_KEY) || '');
   const [systemPrompt, setSystemPrompt] = useState('You are a helpful assistant.');
   const [showSettings, setShowSettings] = useState(false);
   const [input, setInput] = useState('');
@@ -60,10 +63,10 @@ export function Playground() {
   const abortRefs = useRef<Map<string, AbortController>>(new Map());
 
   useEffect(() => {
-    if (apiKey) localStorage.setItem('op_api_key', apiKey);
+    if (apiKey) localStorage.setItem(API_KEY_STORAGE_KEY, apiKey);
   }, [apiKey]);
 
-  const baseUrl = window.location.origin;
+  const baseUrl = getAppOrigin();
 
   async function sendToModel(paneId: string, modelId: string, messages: Message[]) {
     const controller = new AbortController();

@@ -10,6 +10,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const defaultStripeCreditsPriceID = "price_1T6egFHXPxordcGkslP1HYDP"
+
 type Config struct {
 	Server    ServerConfig           `yaml:"server"`
 	Database  DatabaseConfig         `yaml:"database"`
@@ -197,6 +199,9 @@ func (c *Config) applyDefaults() {
 	}
 	if c.Crypto.MinTopupUSD == 0 {
 		c.Crypto.MinTopupUSD = 5
+	}
+	if c.Stripe.CreditsPriceID == "" {
+		c.Stripe.CreditsPriceID = defaultStripeCreditsPriceID
 	}
 	if c.Storage.LocalDir == "" {
 		c.Storage.LocalDir = "./uploads"

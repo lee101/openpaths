@@ -14,6 +14,7 @@ import (
 	"github.com/openpaths/openpaths/internal/auth"
 	"github.com/openpaths/openpaths/internal/billing"
 	"github.com/openpaths/openpaths/internal/config"
+	"github.com/openpaths/openpaths/internal/cron"
 	"github.com/openpaths/openpaths/internal/crypto"
 	"github.com/openpaths/openpaths/internal/db"
 	"github.com/openpaths/openpaths/internal/db/migrations"
@@ -74,6 +75,7 @@ func main() {
 	creditQ := queries.NewCreditQueries(database.Pool)
 	usageQ := queries.NewUsageQueries(database.Pool)
 	statsQ := queries.NewStatsQueries(database.Pool)
+	providerKeyQ := queries.NewProviderKeyQueries(database.Pool)
 
 	jwtService := auth.NewJWTService(cfg.JWT.Secret, cfg.JWT.ExpirationHours)
 
@@ -226,6 +228,10 @@ func main() {
 		}
 	}()
 
+	codexRefresher := cron.NewCodexRefresher(providerKeyQ)
+	codexRefresher.Start()
+	defer codexRefresher.Stop()
+
 	srv := server.New(&server.Dependencies{
 		Config:       cfg,
 		Router:       modelRouter,
@@ -245,6 +251,7 @@ func main() {
 		ModelMetaQ:     modelMetaQ,
 		FineTuneQ:      ftQ,
 		FineTuneProvs:  ftProviders,
+		ProviderKeyQ:   providerKeyQ,
 	})
 
 	done := make(chan os.Signal, 1)

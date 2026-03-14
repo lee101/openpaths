@@ -323,8 +323,8 @@ Auto routing is a three-step pipeline:
 
 \`\`\`python
 client = openai.OpenAI(
-    base_url="https://api.openpath.ai/v1",
-    api_key="op_..."
+    base_url="https://openpaths.io/v1",
+    api_key="op-..."
 )
 
 # Just use "auto" -- OpenPaths picks the best model
@@ -637,8 +637,8 @@ The premium option. ra2v produces the highest quality video but at 10x the cost 
 import requests
 
 response = requests.post(
-    "https://api.openpath.ai/v1/video/generations",
-    headers={"Authorization": "Bearer op_..."},
+    "https://openpaths.io/v1/video/generations",
+    headers={"Authorization": "Bearer op-..."},
     json={
         "model": "auto-video",
         "prompt": "A drone shot flying over a misty mountain range at sunrise"
@@ -650,8 +650,8 @@ video_url = response.json()["video_url"]
 For image-to-video:
 \`\`\`python
 response = requests.post(
-    "https://api.openpath.ai/v1/video/generations",
-    headers={"Authorization": "Bearer op_..."},
+    "https://openpaths.io/v1/video/generations",
+    headers={"Authorization": "Bearer op-..."},
     json={
         "model": "wan",
         "prompt": "Camera slowly zooms in, subject blinks",
@@ -727,8 +727,8 @@ Two models available through MiniMax:
 
 \`\`\`python
 response = requests.post(
-    "https://api.openpath.ai/v1/music/generations",
-    headers={"Authorization": "Bearer op_..."},
+    "https://openpaths.io/v1/music/generations",
+    headers={"Authorization": "Bearer op-..."},
     json={
         "model": "music-2.5",
         "prompt": "Upbeat electronic track with synth leads, 128 BPM"
@@ -749,8 +749,8 @@ Four TTS models, split between HD (higher quality) and Turbo (faster):
 
 \`\`\`python
 response = requests.post(
-    "https://api.openpath.ai/v1/audio/speech",
-    headers={"Authorization": "Bearer op_..."},
+    "https://openpaths.io/v1/audio/speech",
+    headers={"Authorization": "Bearer op-..."},
     json={
         "model": "speech-2.8-hd",
         "input": "Welcome to OpenPaths. The open source model router.",
@@ -767,8 +767,8 @@ For the reverse direction -- audio to text -- we support Whisper through both Gr
 \`\`\`python
 with open("recording.mp3", "rb") as f:
     response = requests.post(
-        "https://api.openpath.ai/v1/audio/transcriptions",
-        headers={"Authorization": "Bearer op_..."},
+        "https://openpaths.io/v1/audio/transcriptions",
+        headers={"Authorization": "Bearer op-..."},
         files={"file": f},
         data={"model": "whisper-large-v3-turbo"}
     )

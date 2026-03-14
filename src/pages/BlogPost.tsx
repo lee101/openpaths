@@ -3,6 +3,7 @@ import { useParams, Link, Navigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowLeft, Calendar, Clock, User } from 'lucide-react';
 import { posts } from '../data/blog';
+import { CodeBlock } from '../components/CodeBlock';
 
 function renderMarkdown(content: string): React.ReactNode[] {
   const lines = content.split('\n');
@@ -51,14 +52,16 @@ function renderMarkdown(content: string): React.ReactNode[] {
       if (inTable) flushTable();
       if (inCodeBlock) {
         elements.push(
-          <div key={key++} className="my-6 border border-white/10 rounded-lg overflow-hidden">
-            {codeLang && (
-              <div className="px-4 py-2 bg-white/[0.03] border-b border-white/10 text-[10px] font-mono text-white/30">{codeLang}</div>
-            )}
-            <pre className="p-4 overflow-x-auto text-sm font-mono leading-relaxed text-white/70">
-              {codeLines.join('\n')}
-            </pre>
-          </div>
+          <React.Fragment key={key++}>
+            <CodeBlock
+              code={codeLines.join('\n')}
+              language={codeLang}
+              label={codeLang}
+              containerClassName="my-6 border border-white/10 rounded-lg overflow-hidden bg-black/40"
+              headerClassName="bg-white/[0.03]"
+              preClassName="text-sm"
+            />
+          </React.Fragment>
         );
         codeLines = [];
         codeLang = '';

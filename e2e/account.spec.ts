@@ -45,10 +45,10 @@ test.describe('Account Page', () => {
       await page.route('**/account/keys', route => {
         if (route.request().method() === 'GET') {
           return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ keys: [
-            { id: 'k1', name: 'Default', key_prefix: 'op_live_abc123' },
+            { id: 'k1', name: 'Default', key_prefix: 'op-abc123' },
           ] }) });
         }
-        return route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ key: 'op_live_newkey123', id: 'k2', name: 'New', prefix: 'op_live_new' }) });
+        return route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ key: 'op-newkey123', id: 'k2', name: 'New', prefix: 'op-newkey' }) });
       });
       await page.route('**/account/stripe/config', route =>
         route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ publishable_key: 'pk_test_123' }) })

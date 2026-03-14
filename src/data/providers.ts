@@ -39,7 +39,7 @@ export const providers: Provider[] = [
     slug: 'openai',
     name: 'OpenAI',
     url: 'https://openai.com',
-    description: 'GPT-5.3 Codex, GPT-5.2, o3/o4-mini reasoning models, and Codex Mini for code generation.',
+    description: 'GPT-5.4, GPT-5 Chat Latest, GPT-5 Codex, o3/o4-mini reasoning models, and Codex Mini for code generation.',
     featured: false
   },
   {

@@ -50,6 +50,7 @@ type Dependencies struct {
 	ModelMetaQ     *queries.ModelMetadataQueries
 	FineTuneQ      *queries.FineTuneQueries
 	FineTuneProvs  map[string]provider.FineTuneProvider
+	ProviderKeyQ   *queries.ProviderKeyQueries
 }
 
 func New(deps *Dependencies) *Server {
@@ -59,13 +60,13 @@ func New(deps *Dependencies) *Server {
 	modelsH := handler.NewModelsHandler(deps.Router)
 	authH := handler.NewAuthHandler(deps.UserQ, deps.CreditQ, deps.JWTService)
 	accountH := handler.NewAccountHandler(deps.APIKeyQ, deps.CreditQ, deps.Billing)
-	creditsH := handler.NewCreditsHandler(deps.Billing)
 	statsH := handler.NewStatsHandler(deps.StatsQ)
 
 	apiKeyChain := middleware.Chain(
 		middleware.Recovery(),
 		middleware.Logging(),
 		middleware.APIKeyAuth(deps.APIKeyQ),
+		middleware.BYOKLoader(deps.ProviderKeyQ),
 		middleware.RateLimit(),
 		middleware.BalanceCheck(deps.Billing),
 	)
@@ -131,7 +132,15 @@ func New(deps *Dependencies) *Server {
 	r.DELETE("/account/keys/{id}", jwtChain(accountH.HandleRevokeAPIKey))
 	r.GET("/account/balance", jwtChain(accountH.HandleGetBalance))
 	r.GET("/account/transactions", jwtChain(accountH.HandleGetTransactions))
-	r.POST("/account/credits/add", jwtChain(creditsH.HandleAddCredits))
+
+	if deps.ProviderKeyQ != nil {
+		pkH := handler.NewProviderKeysHandler(deps.ProviderKeyQ)
+		r.GET("/account/provider-keys", jwtChain(pkH.HandleList))
+		r.POST("/account/provider-keys", jwtChain(pkH.HandleUpsert))
+		r.POST("/account/provider-keys/bulk", jwtChain(pkH.HandleBulkUpsert))
+		r.DELETE("/account/provider-keys", jwtChain(pkH.HandleDelete))
+		log.Printf("BYOK provider keys endpoints enabled")
+	}
 
 	if deps.CryptoSvc != nil {
 		cryptoH := handler.NewCryptoHandler(deps.CryptoSvc)
