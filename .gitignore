@@ -3,6 +3,9 @@ build/
 dist/
 bin/
 openpath
+openpaths
+*.jpeg
+*.png
 coverage/
 .DS_Store
 *.log
