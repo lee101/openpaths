@@ -334,7 +334,8 @@ func spaHandler(dir string, api fasthttp.RequestHandler) fasthttp.RequestHandler
 			strings.HasPrefix(path, "/admin/") ||
 			strings.HasPrefix(path, "/uploads/") ||
 			strings.HasPrefix(path, "/openrouter/") ||
-			path == "/health" {
+			path == "/health" ||
+			path == "/sitemap.xml" {
 			api(ctx)
 			return
 		}
