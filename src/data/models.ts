@@ -701,6 +701,32 @@ export const models: Model[] = [
     popularity: 47
   },
 
+  // --- Fireworks AI ---
+  {
+    id: 'fireworks/gpt-oss-120b',
+    name: 'GPT-OSS 120B',
+    provider: 'Fireworks AI',
+    description: 'Open-source 120B parameter model on Fireworks with fast inference and 128K context.',
+    contextLength: '128K',
+    priceInput: 0.90,
+    priceOutput: 0.90,
+    tags: ['general', 'programming', 'open-source'],
+    released: '2026-03-01',
+    popularity: 34
+  },
+  {
+    id: 'fireworks/glm-5',
+    name: 'GLM-5 (Fireworks)',
+    provider: 'Fireworks AI',
+    description: 'Z.AI GLM-5 hosted on Fireworks for fast, reliable inference.',
+    contextLength: '128K',
+    priceInput: 0.90,
+    priceOutput: 0.90,
+    tags: ['general', 'reasoning', 'open-source'],
+    released: '2026-03-01',
+    popularity: 35
+  },
+
   // --- Free Models ---
   {
     id: 'or/stepfun-flash',

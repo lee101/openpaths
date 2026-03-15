@@ -2,8 +2,8 @@ node_modules/
 build/
 dist/
 bin/
-openpath
-openpaths
+/openpath
+/openpaths
 *.jpeg
 *.png
 coverage/
@@ -15,7 +15,6 @@ crawlers/__pycache__/
 crawlers/*.pyc
 crawlers/.venv/
 test-results/
-model
-openpaths-api
-openpaths
-discover
+/model
+/openpaths-api
+/discover

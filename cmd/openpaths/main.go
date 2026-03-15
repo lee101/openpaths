@@ -26,6 +26,7 @@ import (
 	"github.com/openpaths/openpaths/internal/provider/anthropic"
 	"github.com/openpaths/openpaths/internal/provider/deepseek"
 	"github.com/openpaths/openpaths/internal/provider/fal"
+	"github.com/openpaths/openpaths/internal/provider/fireworks"
 	gobedprov "github.com/openpaths/openpaths/internal/provider/gobed"
 	"github.com/openpaths/openpaths/internal/provider/google"
 	"github.com/openpaths/openpaths/internal/provider/groq"
@@ -136,6 +137,8 @@ func main() {
 			continue
 		case "zai":
 			p = zai.New(provCfg.APIKey, provCfg.BaseURL)
+		case "fireworks":
+			p = fireworks.New(provCfg.APIKey, provCfg.BaseURL)
 		case "fal":
 			f := fal.New(provCfg.APIKey)
 			transcribers = append(transcribers, f)
