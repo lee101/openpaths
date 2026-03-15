@@ -46,5 +46,5 @@ echo "=== Testing model ==="
 curl -s https://openrouter.ai/api/v1/chat/completions \
   -H "Authorization: Bearer $OPENROUTER_API_KEY" \
   -H "Content-Type: application/json" \
-  -H "HTTP-Referer: https://openpath.ai" \
+  -H "HTTP-Referer: https://openpaths.io" \
   -d "{\"model\":\"$MODEL_ID\",\"messages\":[{\"role\":\"user\",\"content\":\"say hello in one word\"}],\"max_tokens\":20}" | python3 -m json.tool

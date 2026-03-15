@@ -7,7 +7,7 @@ export default defineConfig({
   retries: 0,
   reporter: 'list',
   use: {
-    baseURL: 'http://openpaths.local:8080',
+    baseURL: 'http://openpaths.local:8090',
     trace: 'on-first-retry',
   },
   projects: [

@@ -32,6 +32,7 @@ import (
 	"github.com/openpaths/openpaths/internal/provider/minimax"
 	"github.com/openpaths/openpaths/internal/provider/mistral"
 	"github.com/openpaths/openpaths/internal/provider/netwrck"
+	"github.com/openpaths/openpaths/internal/provider/nous"
 	"github.com/openpaths/openpaths/internal/provider/openai"
 	"github.com/openpaths/openpaths/internal/provider/openrouter"
 	"github.com/openpaths/openpaths/internal/provider/textgenerator"
@@ -126,6 +127,8 @@ func main() {
 			p = minimax.New(provCfg.APIKey)
 		case "netwrck":
 			p = netwrck.New(provCfg.APIKey, provCfg.BaseURL)
+		case "nous":
+			p = nous.New(provCfg.APIKey, provCfg.BaseURL)
 		case "textgenerator":
 			tg := textgenerator.New(provCfg.APIKey)
 			embedders = append(embedders, tg)

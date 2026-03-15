@@ -14,12 +14,21 @@ const (
 	CtxKeyAPIKey = "api_key"
 )
 
+// peekAuthHeader returns the Authorization header value, checking both
+// canonical and lowercase forms for compatibility with HTTP/2 proxies.
+func peekAuthHeader(ctx *fasthttp.RequestCtx) string {
+	if v := ctx.Request.Header.Peek("Authorization"); len(v) > 0 {
+		return string(v)
+	}
+	return string(ctx.Request.Header.Peek("authorization"))
+}
+
 // APIKeyAuth validates Bearer tokens or x-api-key header as API keys.
 func APIKeyAuth(apiKeyQ *queries.APIKeyQueries) Middleware {
 	return func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 		return func(ctx *fasthttp.RequestCtx) {
 			var rawKey string
-			authHeader := string(ctx.Request.Header.Peek("Authorization"))
+			authHeader := peekAuthHeader(ctx)
 			xAPIKey := string(ctx.Request.Header.Peek("x-api-key"))
 
 			if strings.HasPrefix(authHeader, "Bearer ") {
@@ -49,7 +58,7 @@ func APIKeyAuth(apiKeyQ *queries.APIKeyQueries) Middleware {
 func JWTAuth(jwtService *auth.JWTService) Middleware {
 	return func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 		return func(ctx *fasthttp.RequestCtx) {
-			authHeader := string(ctx.Request.Header.Peek("Authorization"))
+			authHeader := peekAuthHeader(ctx)
 			if !strings.HasPrefix(authHeader, "Bearer ") {
 				writeAuthError(ctx, "Missing token", "missing_token")
 				return

@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 8090
   read_timeout_seconds: 30
   write_timeout_seconds: 300
   max_request_body_mb: 25
@@ -94,6 +94,11 @@ providers:
     api_key: "${Z_API_KEY}"
     enabled: true
 
+  - name: nous
+    base_url: "https://inference-api.nousresearch.com"
+    api_key: "${NOUS_API_KEY}"
+    enabled: true
+
   - name: fal
     base_url: ""
     api_key: "${FAL_API_KEY}"
@@ -156,6 +161,42 @@ models:
       - "deepseek-chat"
       - "minimax-m2.5"
       - "gpt-5-chat-latest"
+
+  # --- Auto Easy Task (cheapest models only) ---
+  - id: "auto-easy-task"
+    provider: google
+    provider_model_id: "gemini-flash-lite-latest"
+    input_price_per_1m: 0.02
+    output_price_per_1m: 0.10
+    aliases: ["auto-easy"]
+    context_window: 1000000
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: false
+    supports_vision: true
+    fallback_models:
+      - "minimax-m2.5-highspeed"
+      - "gpt-4o-mini"
+      - "llama-3.1-8b-instant"
+      - "gemini-flash-lite"
+
+  # --- Auto Medium Task (mid-tier models) ---
+  - id: "auto-medium-task"
+    provider: anthropic
+    provider_model_id: "claude-sonnet-4-6"
+    input_price_per_1m: 3.00
+    output_price_per_1m: 15.00
+    aliases: ["auto-medium"]
+    context_window: 200000
+    max_output_tokens: 64000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models:
+      - "gemini-2.5-flash"
+      - "deepseek-chat"
+      - "minimax-m2.5"
+      - "gpt-4o"
 
   # --- Auto Image (embedding-routed, defaults to ra1) ---
   - id: "auto-image"
@@ -290,7 +331,7 @@ models:
     provider_model_id: "gpt-5-chat-latest"
     input_price_per_1m: 1.25
     output_price_per_1m: 10.00
-    aliases: ["gpt5-chat", "gpt-5-chat", "gpt-5.2-chat-latest", "openai-chat-latest"]
+    aliases: ["gpt5-chat", "gpt-5-chat", "gpt-5.2-chat-latest"]
     context_window: 400000
     max_output_tokens: 128000
     supports_streaming: true
@@ -302,7 +343,7 @@ models:
     provider_model_id: "gpt-5.4"
     input_price_per_1m: 2.50
     output_price_per_1m: 15.00
-    aliases: ["gpt5", "gpt-5.2", "openai-latest"]
+    aliases: ["gpt5", "gpt-5.2", "openai-latest", "openai-chat-latest"]
     context_window: 1050000
     max_output_tokens: 128000
     supports_streaming: true
@@ -314,36 +355,12 @@ models:
     provider_model_id: "gpt-5-codex"
     input_price_per_1m: 1.25
     output_price_per_1m: 10.00
-    aliases: ["codex-5.2", "gpt-5.2-codex", "openai-coding-latest", "openai-codex-latest"]
+    aliases: ["codex-5.2", "gpt5.3", "gpt-5.3", "codex-5.3", "gpt-5.2-codex", "openai-coding-latest", "openai-codex-latest"]
     context_window: 400000
     max_output_tokens: 128000
     supports_streaming: true
     supports_tools: true
     supports_vision: true
-
-  - id: "gpt5.3-codex"
-    provider: openai
-    provider_model_id: "gpt-5-codex"
-    input_price_per_1m: 1.25
-    output_price_per_1m: 10.00
-    aliases: ["gpt5.3", "gpt-5.3", "codex-5.3", "gpt-5.3-codex"]
-    context_window: 400000
-    max_output_tokens: 128000
-    supports_streaming: true
-    supports_tools: true
-    supports_vision: true
-
-  - id: "gpt5.3-codex-spark"
-    provider: openai
-    provider_model_id: "codex-mini-latest"
-    input_price_per_1m: 0.50
-    output_price_per_1m: 2.00
-    aliases: ["codex-spark", "gpt-5.3-spark", "spark"]
-    context_window: 400000
-    max_output_tokens: 128000
-    supports_streaming: true
-    supports_tools: true
-    supports_vision: false
 
   - id: "gpt-5-mini"
     provider: openai
@@ -1426,6 +1443,31 @@ models:
     output_price_per_1m: 0
     supports_streaming: false
     supports_tools: false
+    supports_vision: false
+
+  # --- Nous Research ---
+  - id: "hermes-4-70b"
+    provider: nous
+    provider_model_id: "Hermes-4-70B"
+    input_price_per_1m: 0.05
+    output_price_per_1m: 0.20
+    aliases: ["hermes-70b", "nous-70b"]
+    context_window: 131072
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "hermes-4-405b"
+    provider: nous
+    provider_model_id: "Hermes-4-405B"
+    input_price_per_1m: 0.09
+    output_price_per_1m: 0.37
+    aliases: ["hermes-405b", "nous-405b", "hermes"]
+    context_window: 131072
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
     supports_vision: false
 
   - id: "mixtral-8x7b-32768"

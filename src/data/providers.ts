@@ -99,6 +99,13 @@ export const providers: Provider[] = [
     featured: false
   },
   {
+    slug: 'nous',
+    name: 'Nous Research',
+    url: 'https://nousresearch.com',
+    description: 'Open-source AI research lab. Hermes 4 70B and 405B models with deep thinking and tool use at ultra-low cost.',
+    featured: false
+  },
+  {
     slug: 'openrouter',
     name: 'OpenRouter',
     url: 'https://openrouter.ai',

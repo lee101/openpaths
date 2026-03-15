@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { CreditCard, Key, Wallet, Plus, Copy, Check, Activity, X, TrendingUp, LogOut, KeyRound, Eye, EyeOff, Save, Trash2, Zap } from 'lucide-react';
+import { CreditCard, Key, Wallet, Plus, Copy, Check, Activity, ArrowUpRight, ExternalLink, X, TrendingUp, LogIn, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { loadStripe } from '@stripe/stripe-js';
-import { EmbeddedCheckoutProvider, EmbeddedCheckout, Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { DEFAULT_API_KEY_NAME, TOKEN_STORAGE_KEY, clearStoredSession, getStoredAPIKey, getStoredToken, getStoredUser, persistAuth, storeAPIKey } from '../lib/session';
+import { EmbeddedCheckoutProvider, EmbeddedCheckout } from '@stripe/react-stripe-js';
 
 const API_BASE = '';
 
@@ -13,21 +12,41 @@ function getStripe(pk: string) {
   return stripePromise;
 }
 
-function api(path: string, opts: RequestInit = {}) {
-  const token = localStorage.getItem(TOKEN_STORAGE_KEY);
-  return fetch(API_BASE + path, {
+// Shared user data helper — reads from localStorage, used across pages
+function getUserData(): { token: string | null; user: any; apiKey: string | null } {
+  const token = localStorage.getItem('op_token');
+  const apiKey = localStorage.getItem('op_api_key');
+  let user = null;
+  try { user = JSON.parse(localStorage.getItem('op_user') || 'null'); } catch {}
+  return { token, user, apiKey };
+}
+
+async function api(path: string, opts: RequestInit = {}) {
+  const { token } = getUserData();
+  if (!token) {
+    // No token — return a synthetic 401 so callers handle it uniformly
+    return new Response(JSON.stringify({ error: { message: 'Not authenticated' } }), { status: 401 });
+  }
+  const res = await fetch(API_BASE + path, {
     ...opts,
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      Authorization: `Bearer ${token}`,
       ...opts.headers,
     },
   });
+  if (res.status === 401) {
+    console.warn('[openpaths] JWT expired or invalid, clearing session');
+    localStorage.removeItem('op_token');
+    localStorage.removeItem('op_user');
+    window.location.reload();
+  }
+  return res;
 }
 
 // --- Auth forms ---
 
-function AuthForms({ onAuth }: { onAuth: (token: string, user: any) => void }) {
+function AuthForms({ onAuth }: { onAuth: (token: string, user: any, apiKey?: string) => void }) {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -44,8 +63,10 @@ function AuthForms({ onAuth }: { onAuth: (token: string, user: any) => void }) {
       const res = await api(`/auth/${mode}`, { method: 'POST', body: JSON.stringify(body) });
       const data = await res.json();
       if (!res.ok) { setError(data.error?.message || 'Failed'); return; }
-      persistAuth(data.token, data.user);
-      onAuth(data.token, data.user);
+      localStorage.setItem('op_token', data.token);
+      localStorage.setItem('op_user', JSON.stringify(data.user));
+      if (data.api_key) localStorage.setItem('op_api_key', data.api_key);
+      onAuth(data.token, data.user, data.api_key);
     } catch { setError('Network error'); } finally { setLoading(false); }
   };
 
@@ -226,385 +247,13 @@ function StripeCheckoutModal({ open, onClose, stripePk }: { open: boolean; onClo
   );
 }
 
-// --- BYOK Panel ---
-
-const BYOK_PROVIDERS = [
-  { key: 'openai', label: 'OpenAI API Key', placeholder: 'sk-...', hint: 'Provider: OpenAI (GPT-5, GPT-5.3 Codex)' },
-  { key: 'anthropic', label: 'Anthropic API Key', placeholder: 'sk-ant-...', hint: 'Provider: Anthropic (Claude Opus, Sonnet)' },
-  { key: 'google', label: 'Google Gemini API Key', placeholder: 'AIza...', hint: 'Provider: Google (Gemini 3.1 Pro)' },
-  { key: 'deepseek', label: 'DeepSeek API Key', placeholder: 'sk-...', hint: 'Provider: DeepSeek (V3.2, Reasoner)' },
-  { key: 'openrouter', label: 'OpenRouter API Key', placeholder: 'sk-or-...', hint: 'Provider: OpenRouter (Multi-provider routing)' },
-  { key: 'xai', label: 'xAI API Key', placeholder: 'xai-...', hint: 'Provider: xAI (Grok 4)' },
-  { key: 'mistral', label: 'Mistral API Key', placeholder: 'sk-...', hint: 'Provider: Mistral (Large, Codestral)' },
-  { key: 'together', label: 'Together AI API Key', placeholder: 'sk-...', hint: 'Provider: Together (Qwen, GLM, FLUX)' },
-  { key: 'netwrck', label: 'Netwrck API Key', placeholder: 'sk-...', hint: 'Provider: Netwrck (RA1 Art Generator)' },
-  { key: 'fal', label: 'FAL API Key', placeholder: 'fal_...', hint: 'Provider: FAL (FLUX Klein 4B)' },
-];
-
-const BYOK_JSON_FIELDS = [
-  { key: 'openai_codex', label: 'OpenAI Codex Max', placeholder: '{"token": "...", "expiresAt": "..."}', hint: '~/.codex/auth.json - OpenAI Codex Max authentication. Used for GPT-5.3 Codex and Spark models. Token refreshes automatically every 3 hours.' },
-  { key: 'claude_code', label: 'Claude Code Pro/Max', placeholder: '{"claudeAiOauth": {"accessToken": "...", "refreshToken": "...", "expiresAt": "..."}}', hint: '~/.claude/.credentials.json from `claude setup-token`. Used instead of Anthropic API key.' },
-];
-
-const BYOKKeyInput: React.FC<{
-  label: string; placeholder: string; hint: string; value: string; onChange: (v: string) => void;
-}> = ({ label, placeholder, hint, value, onChange }) => {
-  const [show, setShow] = useState(false);
-  return (
-    <div className="space-y-0.5">
-      <label className="text-xs font-medium text-white/60">{label}</label>
-      <div className="relative">
-        <input
-          type={show ? 'text' : 'password'}
-          placeholder={placeholder}
-          value={value}
-          onChange={e => onChange(e.target.value)}
-          className="w-full bg-black border border-white/10 rounded-lg py-2 pl-3 pr-10 text-sm text-white font-mono focus:outline-none focus:border-white/30 transition-colors"
-        />
-        <button type="button" onClick={() => setShow(!show)} className="absolute right-3 top-2 text-white/30 hover:text-white/60">
-          {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-        </button>
-      </div>
-      <p className="text-[10px] text-white/30 leading-tight">{hint}</p>
-    </div>
-  );
-}
-
-function BYOKPanel() {
-  const [keys, setKeys] = useState<Record<string, string>>({});
-  const [jsonFields, setJsonFields] = useState<Record<string, string>>({});
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    api('/account/provider-keys').then(r => r.json()).then(data => {
-      if (!data.keys) return;
-      const loaded: Record<string, string> = {};
-      for (const k of data.keys) {
-        if (k.has_key) loaded[k.provider] = k.key_preview || '********';
-        if (k.has_auth) {
-          if (!loaded[k.provider]) loaded[k.provider] = '';
-          setJsonFields(prev => ({ ...prev, [k.provider]: '(saved)' }));
-        }
-      }
-    }).catch(() => {});
-  }, []);
-
-  const handleSave = async () => {
-    setSaving(true);
-    setError('');
-    setSaved(false);
-
-    const bulkKeys: { provider: string; api_key: string; auth_json: string }[] = [];
-    for (const p of BYOK_PROVIDERS) {
-      const val = keys[p.key];
-      if (val && !val.includes('*')) {
-        bulkKeys.push({ provider: p.key, api_key: val, auth_json: '' });
-      }
-    }
-    for (const f of BYOK_JSON_FIELDS) {
-      const val = jsonFields[f.key];
-      if (val && val !== '(saved)') {
-        bulkKeys.push({ provider: f.key, api_key: '', auth_json: val });
-      }
-    }
-
-    if (bulkKeys.length === 0) {
-      setSaving(false);
-      return;
-    }
-
-    try {
-      const res = await api('/account/provider-keys/bulk', {
-        method: 'POST',
-        body: JSON.stringify({ keys: bulkKeys }),
-      });
-      const data = await res.json();
-      if (!res.ok) { setError(data.error?.message || 'Failed to save'); return; }
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-    } catch { setError('Network error'); } finally { setSaving(false); }
-  };
-
-  return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Bring Your Own Keys</h1>
-        <p className="text-sm text-white/40">Use your own API keys to bypass credit usage. Requests using your own keys are free on the platform.</p>
-      </div>
-
-      <div className="border border-white/10 bg-white/[0.02] rounded-xl overflow-hidden">
-        <div className="p-6 space-y-4">
-          {BYOK_PROVIDERS.map((p, i) => (
-            <BYOKKeyInput
-              key={i}
-              label={p.label}
-              placeholder={p.placeholder}
-              hint={p.hint}
-              value={keys[p.key] || ''}
-              onChange={(v: string) => setKeys(prev => ({ ...prev, [p.key]: v }))}
-            />
-          ))}
-
-          <div className="border-t border-white/10 pt-4 mt-4">
-            <h3 className="text-sm font-bold mb-3">OAuth / Auth JSON</h3>
-            {BYOK_JSON_FIELDS.map(f => (
-              <div key={f.key} className="mb-4">
-                <label className="text-xs font-medium text-white/60 block mb-1">{f.label}</label>
-                <textarea
-                  placeholder={f.placeholder}
-                  value={jsonFields[f.key] || ''}
-                  onChange={e => setJsonFields(prev => ({ ...prev, [f.key]: e.target.value }))}
-                  rows={2}
-                  className="w-full bg-black border border-white/10 rounded-lg py-2 px-3 text-sm text-white font-mono focus:outline-none focus:border-white/30 transition-colors resize-none"
-                />
-                <p className="text-[10px] text-white/30 leading-tight mt-0.5">{f.hint}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="px-6 py-4 bg-white/[0.02] border-t border-white/10 flex items-center justify-between">
-          {error && <p className="text-red-400 text-sm font-mono">{error}</p>}
-          {saved && <p className="text-green-400 text-sm font-mono">Keys saved</p>}
-          {!error && !saved && <span />}
-          <button onClick={handleSave} disabled={saving}
-            className="bg-white text-black px-4 py-2 rounded-lg text-sm font-mono font-bold flex items-center gap-2 hover:bg-white/90 transition-colors disabled:opacity-50">
-            {saving ? <span className="animate-spin w-4 h-4 border-2 border-black/20 border-t-black rounded-full" /> : <><Save className="w-4 h-4" /> Save Keys</>}
-          </button>
-        </div>
-      </div>
-
-      <div className="mt-6 border border-green-500/20 bg-green-500/5 rounded-xl p-4">
-        <h3 className="text-sm font-bold text-green-400 mb-1">How it works</h3>
-        <ul className="text-xs text-white/50 space-y-1">
-          <li>When you set your own API key for a provider, all requests routed to that provider use YOUR key at no cost.</li>
-          <li>OpenAI Codex Max auth tokens are refreshed automatically every 3 hours to keep them active.</li>
-          <li>GPT-5.3 Codex and Codex Spark models work with your OpenAI API key or Codex Max auth.</li>
-          <li>Your keys are stored encrypted and never shared.</li>
-        </ul>
-      </div>
-    </motion.div>
-  );
-}
-
-// --- Auto Top-Up Section ---
-
-const THRESHOLD_OPTIONS = [
-  { value: 10000, label: '$1' },
-  { value: 50000, label: '$5' },
-  { value: 100000, label: '$10' },
-  { value: 250000, label: '$25' },
-  { value: 500000, label: '$50' },
-];
-
-const AMOUNT_OPTIONS = [
-  { value: 50000, label: '$5' },
-  { value: 100000, label: '$10' },
-  { value: 250000, label: '$25' },
-  { value: 500000, label: '$50' },
-  { value: 1000000, label: '$100' },
-];
-
-function AddCardForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () => void }) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!stripe || !elements) return;
-    setLoading(true);
-    setError('');
-
-    try {
-      const res = await api('/account/stripe/setup', { method: 'POST' });
-      const data = await res.json();
-      if (!res.ok) { setError(data.error?.message || 'Failed'); setLoading(false); return; }
-
-      const card = elements.getElement(CardElement);
-      if (!card) { setError('Card element not ready'); setLoading(false); return; }
-
-      const { error: stripeErr, setupIntent } = await stripe.confirmCardSetup(data.client_secret, {
-        payment_method: { card: card as any },
-      });
-
-      if (stripeErr) { setError(stripeErr.message || 'Card setup failed'); setLoading(false); return; }
-
-      if (setupIntent?.payment_method) {
-        const pmId = typeof setupIntent.payment_method === 'string' ? setupIntent.payment_method : setupIntent.payment_method.id;
-        await api('/account/stripe/confirm', {
-          method: 'POST',
-          body: JSON.stringify({ payment_method_id: pmId }),
-        });
-      }
-
-      onSuccess();
-    } catch { setError('Network error'); } finally { setLoading(false); }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="border border-white/10 bg-white/[0.02] rounded-xl p-4">
-      <div className="mb-4">
-        <CardElement options={{
-          style: {
-            base: { color: '#fff', fontSize: '14px', fontFamily: 'monospace', '::placeholder': { color: 'rgba(255,255,255,0.3)' } },
-            invalid: { color: '#ef4444' },
-          },
-        }} />
-      </div>
-      {error && <p className="text-red-400 text-xs font-mono mb-3">{error}</p>}
-      <div className="flex gap-2">
-        <button type="submit" disabled={loading || !stripe}
-          className="bg-white text-black px-4 py-2 text-xs font-mono font-bold rounded hover:bg-white/90 transition-colors disabled:opacity-50">
-          {loading ? 'Saving...' : 'Save Card'}
-        </button>
-        <button type="button" onClick={onCancel} className="text-xs font-mono text-white/40 hover:text-white px-3 py-2">Cancel</button>
-      </div>
-    </form>
-  );
-}
-
-function AutoTopupSection({ stripePk }: { stripePk: string }) {
-  const [settings, setSettings] = useState<any>(null);
-  const [methods, setMethods] = useState<any[]>([]);
-  const [showAddCard, setShowAddCard] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [threshold, setThreshold] = useState(50000);
-  const [amount, setAmount] = useState(100000);
-  const [enabled, setEnabled] = useState(false);
-
-  const fetchSettings = useCallback(() => {
-    api('/account/autotopup/settings').then(r => r.json()).then(d => {
-      setSettings(d);
-      setEnabled(d.enabled);
-      setThreshold(d.threshold_cents || 50000);
-      setAmount(d.amount_cents || 100000);
-    }).catch(() => {});
-  }, []);
-
-  const fetchMethods = useCallback(() => {
-    api('/account/stripe/payment-methods').then(r => r.json()).then(d => {
-      setMethods(d.payment_methods || []);
-    }).catch(() => {});
-  }, []);
-
-  useEffect(() => { fetchSettings(); fetchMethods(); }, [fetchSettings, fetchMethods]);
-
-  const saveSettings = async (en: boolean, th: number, am: number) => {
-    setSaving(true);
-    try {
-      await api('/account/autotopup/settings', {
-        method: 'POST',
-        body: JSON.stringify({ enabled: en, threshold_cents: th, amount_cents: am }),
-      });
-      fetchSettings();
-    } catch {} finally { setSaving(false); }
-  };
-
-  const removeCard = async (pmId: string) => {
-    await api(`/account/stripe/payment-methods/${pmId}`, { method: 'DELETE' });
-    fetchMethods();
-    fetchSettings();
-  };
-
-  const handleToggle = () => {
-    const next = !enabled;
-    setEnabled(next);
-    saveSettings(next, threshold, amount);
-  };
-
-  const handleThreshold = (v: number) => { setThreshold(v); if (enabled) saveSettings(enabled, v, amount); };
-  const handleAmount = (v: number) => { setAmount(v); if (enabled) saveSettings(enabled, threshold, v); };
-
-  const hasCard = methods.length > 0;
-
-  return (
-    <div className="border border-white/10 bg-white/[0.02] rounded-xl p-6 mb-8">
-      <div className="flex items-center gap-3 mb-6">
-        <Zap className="w-5 h-5 text-yellow-400" />
-        <h3 className="text-lg font-bold">Auto Top-Up</h3>
-      </div>
-
-      <div className="mb-6">
-        <div className="text-xs font-mono text-white/40 mb-3">Payment Methods</div>
-        {methods.length > 0 ? (
-          <div className="space-y-2 mb-3">
-            {methods.map((m: any) => (
-              <div key={m.id} className="flex items-center justify-between bg-black border border-white/10 rounded-lg px-4 py-3">
-                <span className="font-mono text-sm text-white/80">{m.brand?.toUpperCase()} **** {m.last4} &middot; {m.exp_month}/{m.exp_year}</span>
-                <button onClick={() => removeCard(m.id)} className="text-white/30 hover:text-red-400 transition-colors"><Trash2 className="w-4 h-4" /></button>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-white/40 mb-3">No card saved. Add one to enable auto top-up.</p>
-        )}
-
-        {showAddCard && stripePk ? (
-          <Elements stripe={getStripe(stripePk)!}>
-            <AddCardForm onSuccess={() => { setShowAddCard(false); fetchMethods(); }} onCancel={() => setShowAddCard(false)} />
-          </Elements>
-        ) : (
-          <button onClick={() => setShowAddCard(true)} className="text-xs font-mono text-white border border-white/20 px-3 py-1.5 rounded hover:bg-white/10 transition-colors flex items-center gap-1">
-            <Plus className="w-3 h-3" /> Add Card
-          </button>
-        )}
-      </div>
-
-      {hasCard && (
-        <>
-          <div className="border-t border-white/10 pt-6">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <div className="text-sm font-bold">Enable Auto Top-Up</div>
-                <div className="text-xs text-white/40">Automatically add funds when balance is low</div>
-              </div>
-              <button onClick={handleToggle} disabled={saving}
-                className={`w-12 h-6 rounded-full transition-colors relative ${enabled ? 'bg-green-500' : 'bg-white/10'}`}>
-                <span className={`block w-5 h-5 rounded-full bg-white absolute top-0.5 transition-transform ${enabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 gap-6">
-              <div>
-                <label className="text-xs font-mono text-white/40 block mb-2">When balance drops below</label>
-                <select value={threshold} onChange={e => handleThreshold(Number(e.target.value))}
-                  className="w-full bg-black border border-white/10 rounded-lg py-2 px-3 text-sm text-white font-mono focus:outline-none focus:border-white/30 appearance-none">
-                  {THRESHOLD_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-mono text-white/40 block mb-2">Top up amount</label>
-                <select value={amount} onChange={e => handleAmount(Number(e.target.value))}
-                  className="w-full bg-black border border-white/10 rounded-lg py-2 px-3 text-sm text-white font-mono focus:outline-none focus:border-white/30 appearance-none">
-                  {AMOUNT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-              </div>
-            </div>
-
-            {enabled && (
-              <p className="text-xs text-white/40 mt-4 font-mono">
-                Your card will be charged {AMOUNT_OPTIONS.find(o => o.value === amount)?.label} when balance falls below {THRESHOLD_OPTIONS.find(o => o.value === threshold)?.label}. Max once per 60s.
-              </p>
-            )}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
 // --- Main Account component ---
 
 export function Account() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'keys' | 'billing' | 'byok'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'keys' | 'billing'>('overview');
   const [user, setUser] = useState<any>(null);
   const [token, setToken] = useState<string | null>(null);
   const [stripePk, setStripePk] = useState('');
-  const [deviceApiKey, setDeviceApiKey] = useState(() => getStoredAPIKey());
 
   // Data states
   const [balance, setBalance] = useState<number | null>(null);
@@ -626,11 +275,11 @@ export function Account() {
 
   // Init auth from localStorage
   useEffect(() => {
-    const t = getStoredToken();
-    const u = getStoredUser();
+    const t = localStorage.getItem('op_token');
+    const u = localStorage.getItem('op_user');
     if (t && u) {
       setToken(t);
-      setUser(u);
+      try { setUser(JSON.parse(u)); } catch {}
     }
   }, []);
 
@@ -666,43 +315,21 @@ export function Account() {
     if (token) { fetchBalance(); fetchTransactions(); fetchKeys(); }
   }, [token, fetchBalance, fetchTransactions, fetchKeys]);
 
-  useEffect(() => {
-    if (!token) return;
-
-    const existing = getStoredAPIKey();
-    if (existing) {
-      setDeviceApiKey(existing);
-      return;
+  const handleAuth = (t: string, u: any, apiKey?: string) => {
+    setToken(t);
+    setUser(u);
+    if (apiKey) {
+      setNewKeyResult(apiKey);
+      setActiveTab('keys');
     }
-
-    let cancelled = false;
-
-    api('/account/keys', {
-      method: 'POST',
-      body: JSON.stringify({ name: DEFAULT_API_KEY_NAME }),
-    })
-      .then(async res => ({ ok: res.ok, data: await res.json() }))
-      .then(({ ok, data }) => {
-        if (cancelled || !ok || !data.key) return;
-        storeAPIKey(data.key);
-        setDeviceApiKey(data.key);
-        setNewKeyResult(prev => prev || data.key);
-        fetchKeys();
-      })
-      .catch(() => {});
-
-    return () => {
-      cancelled = true;
-    };
-  }, [token, fetchKeys]);
-
-  const handleAuth = (t: string, u: any) => { setToken(t); setUser(u); };
+  };
 
   const logout = () => {
-    clearStoredSession();
+    localStorage.removeItem('op_token');
+    localStorage.removeItem('op_user');
+    localStorage.removeItem('op_api_key');
     setToken(null);
     setUser(null);
-    setDeviceApiKey('');
   };
 
   const copyKey = (key: string) => {
@@ -712,12 +339,11 @@ export function Account() {
   };
 
   const createKey = async () => {
-    const res = await api('/account/keys', { method: 'POST', body: JSON.stringify({ name: newKeyName || DEFAULT_API_KEY_NAME }) });
+    const res = await api('/account/keys', { method: 'POST', body: JSON.stringify({ name: newKeyName || 'Default' }) });
     const data = await res.json();
     if (res.ok) {
       setNewKeyResult(data.key);
-      storeAPIKey(data.key);
-      setDeviceApiKey(data.key);
+      localStorage.setItem('op_api_key', data.key);
       setNewKeyName('');
       fetchKeys();
     }
@@ -751,10 +377,6 @@ export function Account() {
             className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${activeTab === 'keys' ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/5 hover:text-white'}`}>
             <Key className="w-4 h-4" /> API Keys
           </button>
-          <button onClick={() => setActiveTab('byok')} data-testid="tab-byok"
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${activeTab === 'byok' ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/5 hover:text-white'}`}>
-            <KeyRound className="w-4 h-4" /> Bring Your Own Keys
-          </button>
           <button onClick={() => setActiveTab('billing')} data-testid="tab-billing"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${activeTab === 'billing' ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/5 hover:text-white'}`}>
             <CreditCard className="w-4 h-4" /> Billing
@@ -777,14 +399,6 @@ export function Account() {
                 <div className="text-4xl font-light tracking-tight mb-4" data-testid="keys-count">{apiKeys.length}</div>
                 <button onClick={() => setActiveTab('keys')} className="text-xs font-mono text-white border border-white/20 px-3 py-1.5 rounded hover:bg-white/10 transition-colors">Manage</button>
               </div>
-            </div>
-
-            <div className="border border-white/10 bg-white/[0.02] rounded-xl p-6 mb-12" data-testid="api-ready-card">
-              <div className="text-sm font-mono text-white/40 mb-2">API Ready On This Device</div>
-              <div className="font-mono text-sm text-white/80 break-all mb-3" data-testid="active-api-key">
-                {deviceApiKey || 'Generating your API key...'}
-              </div>
-              <a href="/docs" className="text-xs font-mono text-white border border-white/20 px-3 py-1.5 rounded hover:bg-white/10 transition-colors inline-block">Open API Docs</a>
             </div>
 
             {transactions.length > 0 && (
@@ -825,7 +439,7 @@ export function Account() {
 
             {newKeyResult && (
               <div className="border border-green-500/30 bg-green-500/5 rounded-xl p-4 mb-6" data-testid="new-key-banner">
-                <p className="text-sm text-green-400 mb-2 font-bold">New key created:</p>
+                <p className="text-sm text-green-400 mb-2 font-bold">New key created - save it now, it won't be shown again:</p>
                 <div className="flex items-center gap-2 bg-black border border-white/10 rounded-lg p-3">
                   <code className="flex-1 font-mono text-sm text-white/80 break-all">{newKeyResult}</code>
                   <button onClick={() => copyKey(newKeyResult)} className="p-2 hover:bg-white/10 rounded transition-colors">
@@ -866,10 +480,6 @@ export function Account() {
           </motion.div>
         )}
 
-        {activeTab === 'byok' && (
-          <BYOKPanel />
-        )}
-
         {activeTab === 'billing' && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
             <div className="flex items-center justify-between mb-8">
@@ -880,8 +490,6 @@ export function Account() {
               <div className="text-sm font-mono text-white/40 mb-2">Current Balance</div>
               <div className="text-4xl font-light tracking-tight mb-4" data-testid="billing-balance">{balanceDisplay}</div>
             </div>
-
-            <AutoTopupSection stripePk={stripePk} />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
               <div className="border border-white/10 bg-white/[0.02] rounded-xl p-6 flex flex-col" data-testid="stripe-card">

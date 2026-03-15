@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test';
 // Tests: register -> logout -> login -> open stripe checkout dialog
 // All in a single test, no page reloads
 
-const BASE = 'http://openpaths.local:8080';
+const BASE = 'http://openpaths.local:8090';
 const unique = () => `e2e_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
 test.describe('Full Checkout Flow (live backend)', () => {
