@@ -218,6 +218,57 @@ func New(deps *Dependencies) *Server {
 		ctx.SetBodyString(`{"status":"ok"}`)
 	})
 
+	r.GET("/sitemap.xml", func(ctx *fasthttp.RequestCtx) {
+		const base = "https://openpaths.io"
+		pages := []struct{ loc, priority, freq string }{
+			{"/", "1.0", "daily"},
+			{"/models", "0.9", "weekly"},
+			{"/providers", "0.8", "weekly"},
+			{"/docs", "0.9", "weekly"},
+			{"/playground", "0.7", "monthly"},
+			{"/blog", "0.8", "weekly"},
+		}
+		blogSlugs := []string{
+			"switch-to-openpaths-in-2-lines",
+			"state-of-ai-models-march-2026",
+			"how-auto-models-work",
+			"ai-art-generation-compared",
+			"choosing-the-right-llm",
+			"image-resolution-handling",
+			"video-generation-guide",
+			"openpath-vs-openrouter",
+			"music-and-speech-models",
+			"free-ai-models",
+			"provider-openai",
+			"provider-anthropic",
+			"provider-google",
+			"provider-xai",
+			"provider-deepseek",
+			"provider-mistral",
+			"provider-groq",
+			"provider-minimax",
+			"provider-together",
+			"provider-zai",
+			"provider-openrouter",
+			"provider-netwrck",
+			"provider-text-generator",
+			"provider-fal",
+		}
+		var b strings.Builder
+		b.WriteString(`<?xml version="1.0" encoding="UTF-8"?>` + "\n")
+		b.WriteString(`<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` + "\n")
+		for _, p := range pages {
+			fmt.Fprintf(&b, "  <url>\n    <loc>%s%s</loc>\n    <changefreq>%s</changefreq>\n    <priority>%s</priority>\n  </url>\n", base, p.loc, p.freq, p.priority)
+		}
+		for _, slug := range blogSlugs {
+			fmt.Fprintf(&b, "  <url>\n    <loc>%s/blog/%s</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.7</priority>\n  </url>\n", base, slug)
+		}
+		b.WriteString("</urlset>\n")
+		ctx.SetContentType("text/xml; charset=utf-8")
+		ctx.SetStatusCode(200)
+		ctx.SetBodyString(b.String())
+	})
+
 	handler := r.Handler
 	if staticDir := deps.Config.Server.StaticDir; staticDir != "" {
 		handler = spaHandler(staticDir, r.Handler)
