@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -108,6 +109,17 @@ func Load(path string) (*Config, error) {
 	if v := os.Getenv("DATABASE_URL"); v != "" {
 		cfg.Database.URL = v
 	}
+	if v := os.Getenv("DB_HOST"); v != "" && os.Getenv("DATABASE_URL") == "" {
+		if u, err := url.Parse(cfg.Database.URL); err == nil {
+			port := u.Port()
+			if port != "" {
+				u.Host = v + ":" + port
+			} else {
+				u.Host = v
+			}
+			cfg.Database.URL = u.String()
+		}
+	}
 	if v := os.Getenv("JWT_SECRET"); v != "" {
 		cfg.JWT.Secret = v
 	}
@@ -189,7 +201,7 @@ func (c *Config) applyDefaults() {
 		c.JWT.ExpirationHours = 72
 	}
 	if c.Database.URL == "" {
-		c.Database.URL = "postgres://openpath:openpath@localhost:5432/openpath?sslmode=disable"
+		c.Database.URL = "postgres://openpaths:openpaths@localhost:5432/openpaths?sslmode=disable"
 	}
 	if c.Crypto.SolanaRPCURL == "" {
 		c.Crypto.SolanaRPCURL = "https://api.mainnet-beta.solana.com"
