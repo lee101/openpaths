@@ -1,6 +1,6 @@
 # OpenPath
 
-AI model gateway -- unified API for chat, image, video, music, speech, embedding, and transcription across 15+ providers.
+[openpaths.io](https://openpaths.io) -- AI model gateway -- unified API for chat, image, video, music, speech, embedding, and transcription across 15+ providers.
 
 ## Quick Start
 
