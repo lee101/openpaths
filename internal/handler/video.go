@@ -49,7 +49,7 @@ func (h *VideoHandler) HandleVideoGeneration(ctx *fasthttp.RequestCtx) {
 
 	originalModel := req.Model
 	autoResult := h.router.MaybeResolveAuto(ctx, req.Model, "video", req.Prompt)
-	candidates, err := h.router.ResolveWithRetries(autoResult.ModelID)
+	candidates, err := h.router.ResolveForRequest(originalModel, autoResult.ModelID)
 	if err != nil {
 		writeError(ctx, 404, "model_not_found", err.Error())
 		return

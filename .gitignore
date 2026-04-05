@@ -2,7 +2,10 @@ node_modules/
 build/
 dist/
 bin/
-openpath
+/openpath
+/openpaths
+*.jpeg
+*.png
 coverage/
 .DS_Store
 *.log
@@ -13,9 +16,11 @@ crawlers/*.pyc
 crawlers/.venv/
 test-results/
 monitoring/logs/
-model
-openpaths-api
-openpaths
-discover
+/model
+/openpaths-api
+/openpaths
+/discover
 openpath.log
 *.conf
+systemtest
+servers.md

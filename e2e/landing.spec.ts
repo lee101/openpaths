@@ -23,26 +23,32 @@ test.describe('Landing Page', () => {
     await expect(page.locator('text=Intelligent Fallbacks')).toBeVisible();
   });
 
-  test('code snippet tabs toggle between python and curl', async ({ page }) => {
+  test('code snippet tabs toggle between openai python, anthropic python, and curl', async ({ page }) => {
     const codeSection = page.locator('#api');
-    await expect(codeSection.locator('text=100% OpenAI Compatible')).toBeVisible();
+    await expect(codeSection.locator('text=OpenAI And Anthropic SDK Compatible')).toBeVisible();
 
-    // python tab active by default
+    // openai python tab active by default
     await expect(codeSection.locator('text=import')).toBeVisible();
+    await expect(codeSection.locator('text=openai.OpenAI')).toBeVisible();
+
+    // switch to anthropic
+    await codeSection.locator('button:has-text("Anthropic Python")').click();
+    await expect(codeSection.locator('text=client.messages.create')).toBeVisible();
+    await expect(codeSection.locator('text=Anthropic(')).toBeVisible();
 
     // switch to curl
     await codeSection.locator('button:has-text("cURL")').click();
     await expect(codeSection.locator('pre >> text=curl')).toBeVisible();
 
-    // switch back
-    await codeSection.locator('button:has-text("Python")').click();
-    await expect(codeSection.locator('text=import')).toBeVisible();
+    // switch back to openai
+    await codeSection.locator('button:has-text("OpenAI Python")').click();
+    await expect(codeSection.locator('text=openai.OpenAI')).toBeVisible();
   });
 
   test('feature cards render', async ({ page }) => {
     await expect(page.getByRole('heading', { name: 'Millisecond Routing' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Universal API' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Stripe Integration' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Auto Models' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Solana Payments' })).toBeVisible();
   });
 

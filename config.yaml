@@ -99,6 +99,11 @@ providers:
     api_key: "${NOUS_API_KEY}"
     enabled: true
 
+  - name: fireworks
+    base_url: "https://api.fireworks.ai/inference"
+    api_key: "${FIREWORKS_API_KEY}"
+    enabled: true
+
   - name: fal
     base_url: ""
     api_key: "${FAL_API_KEY}"
@@ -1564,3 +1569,29 @@ models:
     supports_streaming: true
     supports_tools: true
     supports_vision: false
+
+  # --- Fireworks AI ---
+  - id: "fireworks/gpt-oss-120b"
+    provider: fireworks
+    provider_model_id: "accounts/fireworks/models/gpt-oss-120b"
+    input_price_per_1m: 0.90
+    output_price_per_1m: 0.90
+    aliases: ["gpt-oss-120b", "gpt-oss"]
+    context_window: 131072
+    max_output_tokens: 16384
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "fireworks/glm-5"
+    provider: fireworks
+    provider_model_id: "accounts/fireworks/models/glm-5"
+    input_price_per_1m: 0.90
+    output_price_per_1m: 0.90
+    aliases: ["fireworks-glm-5"]
+    context_window: 131072
+    max_output_tokens: 16384
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+    fallback_models: ["glm-5"]

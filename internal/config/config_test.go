@@ -106,6 +106,9 @@ models:
 	if cfg.JWT.ExpirationHours != 72 {
 		t.Errorf("default jwt expiration should be 72, got %d", cfg.JWT.ExpirationHours)
 	}
+	if cfg.Stripe.CreditsPriceID != defaultStripeCreditsPriceID {
+		t.Errorf("default stripe credits price id should be %q, got %q", defaultStripeCreditsPriceID, cfg.Stripe.CreditsPriceID)
+	}
 }
 
 func TestEnvOverride(t *testing.T) {

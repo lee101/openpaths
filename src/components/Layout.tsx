@@ -44,6 +44,7 @@ export function Layout() {
         <div className="hidden md:flex items-center gap-8 text-sm font-mono text-white/60">
           <Link to="/models" className={`transition-colors ${location.pathname === '/models' ? 'text-white' : 'hover:text-white'}`}>Models</Link>
           <Link to="/providers" className={`transition-colors ${location.pathname === '/providers' ? 'text-white' : 'hover:text-white'}`}>Providers</Link>
+          <Link to="/docs" className={`transition-colors ${location.pathname === '/docs' ? 'text-white' : 'hover:text-white'}`}>Docs</Link>
           <Link to="/playground" className={`transition-colors ${isPlayground ? 'text-white' : 'hover:text-white'}`}>Playground</Link>
           <Link to="/blog" className={`transition-colors ${location.pathname.startsWith('/blog') ? 'text-white' : 'hover:text-white'}`}>Blog</Link>
           <a href="/#api" className="hover:text-white transition-colors">API</a>
@@ -114,6 +115,7 @@ export function Layout() {
             <div className="border-t border-white/10 pt-6 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs font-mono text-white/20">
               <span>© {new Date().getFullYear()} OpenPaths. Open source model routing.</span>
               <div className="flex gap-4">
+                <Link to="/docs" className="hover:text-white transition-colors">Docs</Link>
                 <Link to="/account" className="hover:text-white transition-colors">Account</Link>
               </div>
             </div>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { providers } from '../data/providers';
+import { providers, FALLBACK_LOGO } from '../data/providers';
 import { models } from '../data/models';
 import { ExternalLink, ArrowRight, Star } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -39,7 +39,10 @@ export function Providers() {
               className="border border-white/20 bg-white/[0.04] rounded-xl p-6 hover:bg-white/[0.06] hover:border-white/30 transition-all flex flex-col"
             >
               <div className="flex justify-between items-start mb-3">
-                <h3 className="text-xl font-bold tracking-tight">{provider.name}</h3>
+                <div className="flex items-center gap-3">
+                  <img src={provider.logo || FALLBACK_LOGO} alt="" className="w-8 h-8 rounded" />
+                  <h3 className="text-xl font-bold tracking-tight">{provider.name}</h3>
+                </div>
                 <span className="px-2 py-0.5 bg-white/10 rounded text-[10px] font-mono text-white/60">
                   {modelCountFor(provider.name)} model{modelCountFor(provider.name) !== 1 ? 's' : ''}
                 </span>
@@ -84,7 +87,10 @@ export function Providers() {
               className="border border-white/10 bg-white/[0.02] rounded-xl p-6 hover:bg-white/[0.04] hover:border-white/20 transition-all flex flex-col"
             >
               <div className="flex justify-between items-start mb-3">
-                <h3 className="text-lg font-bold tracking-tight">{provider.name}</h3>
+                <div className="flex items-center gap-3">
+                  <img src={provider.logo || FALLBACK_LOGO} alt="" className="w-7 h-7 rounded" />
+                  <h3 className="text-lg font-bold tracking-tight">{provider.name}</h3>
+                </div>
                 <span className="px-2 py-0.5 bg-white/10 rounded text-[10px] font-mono text-white/60">
                   {modelCountFor(provider.name)} model{modelCountFor(provider.name) !== 1 ? 's' : ''}
                 </span>

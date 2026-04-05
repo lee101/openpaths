@@ -47,11 +47,11 @@ func (h *ChatHandler) HandleChatCompletion(ctx *fasthttp.RequestCtx) {
 		apiKeyID = apiKey.ID
 	}
 
-	autoResult := h.router.MaybeResolveAuto(ctx, req.Model, "text", extractChatPrompt(req.Messages))
+	autoResult := h.router.MaybeResolveAuto(ctx, req.Model, "", extractChatPrompt(req.Messages))
 	if autoResult.ReasoningEffort != "" && req.ReasoningEffort == "" {
 		req.ReasoningEffort = autoResult.ReasoningEffort
 	}
-	candidates, err := h.router.ResolveWithRetries(autoResult.ModelID)
+	candidates, err := h.router.ResolveForRequest(originalModel, autoResult.ModelID)
 	if err != nil {
 		writeError(ctx, 404, "model_not_found", err.Error())
 		return
@@ -61,13 +61,20 @@ func (h *ChatHandler) HandleChatCompletion(ctx *fasthttp.RequestCtx) {
 		req.Model = cand.ModelCfg.ProviderModelID
 		start := time.Now()
 
+		activeProv := cand.Provider
+		byok := false
+		if bp, ok := getBYOKProvider(ctx, cand.Provider.Name()); ok {
+			activeProv = bp
+			byok = true
+		}
+
 		if req.Stream {
-			if h.tryStreaming(ctx, &req, cand.ModelCfg, cand.Provider, userID, apiKeyID, originalModel, start) {
+			if h.tryStreamingBYOK(ctx, &req, cand.ModelCfg, activeProv, userID, apiKeyID, originalModel, start, byok) {
 				h.router.MarkModelHealthy(cand.Provider.Name(), cand.ModelCfg.ID)
 				return
 			}
 		} else {
-			if h.tryNonStreaming(ctx, &req, cand.ModelCfg, cand.Provider, userID, apiKeyID, originalModel, start) {
+			if h.tryNonStreamingBYOK(ctx, &req, cand.ModelCfg, activeProv, userID, apiKeyID, originalModel, start, byok) {
 				h.router.MarkModelHealthy(cand.Provider.Name(), cand.ModelCfg.ID)
 				return
 			}
@@ -102,6 +109,18 @@ func (h *ChatHandler) tryNonStreaming(
 	prov provider.Provider,
 	userID, apiKeyID, originalModel string,
 	start time.Time,
+) bool {
+	return h.tryNonStreamingBYOK(ctx, req, modelCfg, prov, userID, apiKeyID, originalModel, start, false)
+}
+
+func (h *ChatHandler) tryNonStreamingBYOK(
+	ctx *fasthttp.RequestCtx,
+	req *model.ChatCompletionRequest,
+	modelCfg *model.ModelConfig,
+	prov provider.Provider,
+	userID, apiKeyID, originalModel string,
+	start time.Time,
+	byok bool,
 ) bool {
 	resp, err := prov.ChatCompletion(ctx, req)
 	latency := time.Since(start)
@@ -141,7 +160,10 @@ func (h *ChatHandler) tryNonStreaming(
 		}
 	}
 
-	cost, _ := h.billing.Deduct(ctx, userID, modelCfg.ID, tokensIn, tokensOut, req.ReasoningEffort, "")
+	var cost int64
+	if !byok {
+		cost, _ = h.billing.Deduct(ctx, userID, modelCfg.ID, tokensIn, tokensOut, req.ReasoningEffort, "")
+	}
 	h.recorder.RecordSuccess(userID, apiKeyID, originalModel, prov.Name(),
 		tokensIn, tokensOut, int(latency.Milliseconds()), tps, cost, false)
 
@@ -156,6 +178,18 @@ func (h *ChatHandler) tryStreaming(
 	prov provider.Provider,
 	userID, apiKeyID, originalModel string,
 	start time.Time,
+) bool {
+	return h.tryStreamingBYOK(ctx, req, modelCfg, prov, userID, apiKeyID, originalModel, start, false)
+}
+
+func (h *ChatHandler) tryStreamingBYOK(
+	ctx *fasthttp.RequestCtx,
+	req *model.ChatCompletionRequest,
+	modelCfg *model.ModelConfig,
+	prov provider.Provider,
+	userID, apiKeyID, originalModel string,
+	start time.Time,
+	byok bool,
 ) bool {
 	streamCh, err := prov.ChatCompletionStream(ctx, req)
 	if err != nil {
@@ -215,8 +249,11 @@ func (h *ChatHandler) tryStreaming(
 			if latency.Seconds() > 0 {
 				tps = float32(float64(usage.CompletionTokens) / latency.Seconds())
 			}
-			cost, _ := h.billing.Deduct(ctx, userID, modelCfg.ID,
-				usage.PromptTokens, usage.CompletionTokens, req.ReasoningEffort, "")
+			var cost int64
+			if !byok {
+				cost, _ = h.billing.Deduct(ctx, userID, modelCfg.ID,
+					usage.PromptTokens, usage.CompletionTokens, req.ReasoningEffort, "")
+			}
 			h.recorder.RecordSuccess(userID, apiKeyID, originalModel, prov.Name(),
 				usage.PromptTokens, usage.CompletionTokens,
 				int(latency.Milliseconds()), tps, cost, true)

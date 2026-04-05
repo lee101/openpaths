@@ -5,7 +5,7 @@ set -euo pipefail
 STATIC_BUCKET="${STATIC_BUCKET:-openpathsstatic}"
 R2_ENDPOINT="${R2_ENDPOINT:-https://${R2_ACCOUNT_ID:-f76d25b8b86cfa5638f43016510d8f77}.r2.cloudflarestorage.com}"
 STATIC_URL="${STATIC_URL:-https://openpathsstatic.openpaths.io}"
-API_HOST="${API_HOST:-administrator@93.127.141.100}"
+API_HOST="${API_HOST:-openpaths-prod}"
 API_SERVICE="openpaths"
 REMOTE_DIR="/nvme0n1-disk/code/openpaths"
 DIST_DIR="dist"
@@ -23,8 +23,15 @@ require_cmd() {
     command -v "$1" >/dev/null 2>&1 || { red "missing: $1"; exit 1; }
 }
 
+require_sshpass_if_needed() {
+    if [[ -n "$SSH_PASS" ]]; then
+        require_cmd sshpass
+    fi
+}
+
 ssh_cmd() {
     if [[ -n "$SSH_PASS" ]]; then
+        require_sshpass_if_needed
         sshpass -p "${SSH_PASS}" ssh -o StrictHostKeyChecking=no "${API_HOST}" "$@"
     else
         ssh "${API_HOST}" "$@"
@@ -33,6 +40,7 @@ ssh_cmd() {
 
 scp_cmd() {
     if [[ -n "$SSH_PASS" ]]; then
+        require_sshpass_if_needed
         sshpass -p "${SSH_PASS}" scp -o StrictHostKeyChecking=no "$@"
     else
         scp "$@"
@@ -41,6 +49,7 @@ scp_cmd() {
 
 rsync_cmd() {
     if [[ -n "$SSH_PASS" ]]; then
+        require_sshpass_if_needed
         sshpass -p "${SSH_PASS}" rsync -az \
             -e "sshpass -p ${SSH_PASS} ssh -o StrictHostKeyChecking=no" "$@"
     else
@@ -88,7 +97,6 @@ deploy_api() {
     CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o dist/openpaths-api ./cmd/openpaths/
 
     green "deploying api to ${API_HOST}..."
-    require_cmd sshpass
 
     scp_cmd dist/openpaths-api "${API_HOST}:${REMOTE_DIR}/openpaths-api.new"
 
@@ -120,7 +128,6 @@ REMOTE
 # --- Deploy env file ---
 deploy_env() {
     green "syncing .env to server..."
-    require_cmd sshpass
     scp_cmd .env "${API_HOST}:${REMOTE_DIR}/.env"
     green ".env deployed"
 }
@@ -128,7 +135,6 @@ deploy_env() {
 # --- Server setup: create dirs + supervisor config ---
 deploy_setup() {
     green "setting up server..."
-    require_cmd sshpass
 
     ssh_cmd bash -s <<REMOTE
         set -euo pipefail

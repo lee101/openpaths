@@ -11,8 +11,9 @@ test.describe('Playground Page', () => {
     await expect(page.locator('button:has-text("Clear")')).toBeVisible();
   });
 
-  test('shows 2 default model panes', async ({ page }) => {
-    await expect(page.locator('text=2/4 models')).toBeVisible();
+  test('shows 1 default model pane', async ({ page }) => {
+    await expect(page.locator('text=1/4 models')).toBeVisible();
+    await expect(page.locator('button:has-text("Auto (intelligent routing)")')).toBeVisible();
   });
 
   test('settings panel toggles', async ({ page }) => {
@@ -23,6 +24,9 @@ test.describe('Playground Page', () => {
   });
 
   test('add model pane up to 4', async ({ page }) => {
+    await page.click('button:has-text("Add Model")');
+    await expect(page.locator('text=2/4 models')).toBeVisible();
+
     await page.click('button:has-text("Add Model")');
     await expect(page.locator('text=3/4 models')).toBeVisible();
 

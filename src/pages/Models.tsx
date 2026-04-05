@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { models, Tag, SortOption, parseContextLength } from '../data/models';
-import { providersByName } from '../data/providers';
+import { providersByName, getProviderLogo } from '../data/providers';
 import { Search, Tag as TagIcon, Cpu, Zap, Image as ImageIcon, Code2, BrainCircuit, MessageSquare, Globe, ArrowUpDown, Video, Gift, Database } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -158,7 +158,8 @@ export function Models() {
           >
             <div className="flex justify-between items-start mb-4">
               <div>
-                <div className="text-xs font-mono text-white/40 mb-1">
+                <div className="text-xs font-mono text-white/40 mb-1 flex items-center gap-1.5">
+                  <img src={getProviderLogo(model.provider)} alt="" className="w-4 h-4 rounded-sm" />
                   {providersByName[model.provider] ? (
                     providersByName[model.provider].url !== '/' ? (
                       <a href={providersByName[model.provider].url} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors underline underline-offset-2 decoration-white/20">

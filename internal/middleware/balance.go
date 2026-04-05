@@ -7,6 +7,7 @@ import (
 )
 
 // BalanceCheck verifies the user has credits before processing.
+// Skipped if user has BYOK provider keys loaded.
 func BalanceCheck(engine *billing.Engine) Middleware {
 	return func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 		return func(ctx *fasthttp.RequestCtx) {
@@ -16,7 +17,15 @@ func BalanceCheck(engine *billing.Engine) Middleware {
 				return
 			}
 
-			// Lightweight check with minimum estimate
+			if keys, _ := ctx.UserValue(CtxKeyUserProviderKeys).(map[string]any); keys != nil && len(keys) > 0 {
+				next(ctx)
+				return
+			}
+			if keys := ctx.UserValue(CtxKeyUserProviderKeys); keys != nil {
+				next(ctx)
+				return
+			}
+
 			err := engine.PreCheck(ctx, userID, "", 100)
 			if err != nil {
 				ctx.SetStatusCode(402)

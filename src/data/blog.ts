@@ -849,5 +849,897 @@ response = client.chat.completions.create(
 \`\`\`
 
 Free models are a great way to get started with OpenPaths before committing any budget. Create an account, grab an API key, and start building.`
+  },
+
+  // --- Provider Deep Dives ---
+
+  {
+    slug: 'provider-openai',
+    title: 'OpenAI on OpenPaths: GPT-5, Codex, o3, and the Model That Started It All',
+    excerpt: 'From GPT-3 to GPT-5.4 -- OpenAI defined the modern AI era. Here is how their full model lineup works through OpenPaths and why having alternatives matters.',
+    date: '2026-03-10',
+    author: 'OpenPaths Team',
+    readTime: '7 min',
+    tags: ['providers', 'openai', 'models'],
+    content: `OpenAI needs no introduction. They launched the modern AI wave with GPT-3 in 2020, turned it mainstream with ChatGPT in 2022, and have shipped relentlessly since. Love them or not, every AI company today is building in their shadow.
+
+## The OpenAI Lineup on OpenPaths
+
+We route to 11 OpenAI models spanning four distinct tiers:
+
+| Model | Price (In/Out per 1M) | Context | Best For |
+|-------|----------------------|---------|----------|
+| GPT-5.4 | $2.50/$15.00 | 1.05M | Latest flagship, long context |
+| GPT-5 Chat Latest | $1.25/$10.00 | 400K | Conversational, creative |
+| GPT-5 Codex | $1.25/$10.00 | 400K | Software engineering |
+| GPT-5.3 Codex | $1.25/$10.00 | 400K | Advanced coding |
+| GPT-5.3 Codex Spark | $0.50/$2.00 | 400K | Fast lightweight coding |
+| o3 | $2.00/$8.00 | 200K | Deep reasoning, math |
+| o4-mini | $1.10/$4.40 | 200K | Cost-effective reasoning |
+| Codex Mini | $1.50/$6.00 | 400K | Fast code generation |
+| GPT-5 Mini | $0.25/$2.00 | 400K | High-volume, affordable |
+| GPT-4o | $2.50/$10.00 | 128K | Proven multimodal |
+| GPT-4o Mini | $0.15/$0.60 | 128K | Ultra-cheap simple tasks |
+
+## Strengths
+
+**Tool use and structured output.** No one does function calling better than OpenAI. If your application relies heavily on structured JSON output, tool orchestration, or multi-step agent workflows, GPT models are the most reliable choice. The Codex line takes this further with SWE-bench performance that rivals dedicated coding tools.
+
+**Speed.** GPT-5.4 ships with a 1.05 million token context window and still manages competitive latency. GPT-5 Mini at $0.25/1M input tokens is absurdly fast for its price point.
+
+**The reasoning split.** OpenAI was first to ship dedicated reasoning models with o1, and the lineage continues with o3 and o4-mini. The separation between "fast chat" and "deep thinking" models gives developers precise control over cost-quality tradeoffs.
+
+**Ecosystem.** The OpenAI SDK is the de facto standard. Most AI tooling, frameworks, and tutorials assume OpenAI's API format. Using OpenPaths means you get this compatibility for free -- our API is OpenAI-compatible, so any code written for OpenAI works unchanged.
+
+## Weaknesses
+
+**Price at the top.** GPT-5.4 at $2.50/$15.00 is competitive with Gemini 3.1 Pro but significantly more expensive than DeepSeek V3.2 ($0.28/$0.42) for tasks where the quality difference is negligible.
+
+**Context window limitations on older models.** GPT-4o and GPT-4o Mini are stuck at 128K. If you need more context from OpenAI, you have to jump to the GPT-5 family.
+
+**No free tier.** Unlike Google (Gemini Flash Lite) or Z.AI (GLM-4.6v Flash), OpenAI offers nothing at zero cost. The cheapest entry point is GPT-4o Mini at $0.15/1M.
+
+## How We Integrated
+
+OpenPaths speaks OpenAI's API format natively -- it was the first format we supported. Our auto router uses GPT-5 Chat Latest as a primary fallback in the chain, and o3 slots in for reasoning-heavy tasks. When you send a request to \`auto\`, if the router determines it needs strong general performance with fast tool use, it often lands on a GPT-5 variant.
+
+## The Evolution
+
+OpenAI's pace is remarkable. In 18 months they went from GPT-4 (a single model) to a lineup of 11 models covering chat, code, reasoning, vision, and budget tiers. The introduction of the Codex brand specifically for software engineering signals where they see the highest commercial value.
+
+The most interesting development is GPT-5.3 Codex Spark -- a $0.50/$2.00 model that's free with your own OpenAI key. It suggests OpenAI is willing to give away fast inference to lock developers into their ecosystem. Through OpenPaths, you get access to Spark alongside every other provider, so you never have to choose just one ecosystem.
+
+## When to Use OpenAI Through OpenPaths
+
+- **Agent workflows** with heavy tool use and structured output
+- **Code generation** where Codex models excel
+- **Reasoning tasks** where o3 or o4-mini outperform general chat models
+- **Any existing OpenAI integration** -- just change the base URL to \`openpaths.io/v1\`
+
+Or use \`auto\` and let us pick when GPT-5 is the right backend for your specific request.`
+  },
+  {
+    slug: 'provider-anthropic',
+    title: 'Anthropic on OpenPaths: Claude Opus, Sonnet, Haiku, and the Art of Careful AI',
+    excerpt: 'Anthropic builds the most thoughtful AI models in the industry. Here is how Claude fits into OpenPaths and why developers love the Anthropic approach.',
+    date: '2026-03-10',
+    author: 'OpenPaths Team',
+    readTime: '7 min',
+    tags: ['providers', 'anthropic', 'models'],
+    content: `Anthropic was founded in 2021 by former OpenAI researchers who wanted to build AI more carefully. Five years later, Claude is the model that developers trust most for nuanced, high-stakes work. There is a reason Anthropic's models consistently rank highest on coding benchmarks and user satisfaction surveys.
+
+## The Claude Lineup on OpenPaths
+
+| Model | Price (In/Out per 1M) | Context | Best For |
+|-------|----------------------|---------|----------|
+| Claude Opus 4.6 | $5.00/$25.00 | 200K | Frontier reasoning, complex tasks |
+| Claude Sonnet 4.6 | $3.00/$15.00 | 200K | Production workhorse |
+| Claude Haiku 4.5 | $1.00/$5.00 | 200K | Fast, high-volume tasks |
+| Claude Opus 4.5 | $5.00/$25.00 | 200K | Previous-gen deep reasoning |
+| Claude Sonnet 4.5 | $3.00/$15.00 | 200K | Previous-gen all-rounder |
+
+## Strengths
+
+**Writing quality.** Claude produces text that sounds human in a way that other models struggle to match. Technical documentation, creative writing, nuanced analysis -- Claude's output consistently requires the least editing. This is not a benchmark you can measure easily, but developers notice it immediately.
+
+**Code generation.** Claude Sonnet 4.6 is the model most developers reach for when building software. It understands codebases holistically, suggests architecturally sound changes, and catches subtle bugs. Opus 4.6 goes further -- it can reason about entire systems and produce complete implementations in a single pass with its 128K output token limit.
+
+**Safety and instruction following.** Anthropic's constitutional AI approach means Claude follows complex instructions more faithfully than competitors. When you say "never include PII in the output" or "always respond in JSON," Claude actually does it. This matters enormously for production applications.
+
+**Honest uncertainty.** Claude tells you when it does not know something. Other models hallucinate confidently. This is a feature, not a limitation -- for applications where correctness matters more than always having an answer.
+
+## Weaknesses
+
+**Price.** Opus 4.6 at $5.00/$25.00 is the most expensive chat model on OpenPaths. For simple tasks, you are paying a premium for capabilities you do not need.
+
+**Context window.** 200K tokens is generous but falls short of Google's 2M (Gemini 2.5 Pro) or xAI's 2M (Grok 4.1 Fast). For processing very large document sets, Claude requires chunking strategies that other models handle natively.
+
+**No free tier.** The cheapest Claude model is Haiku at $1.00/$5.00 -- more expensive than many competitors' mid-tier models.
+
+**Speed at the top.** Opus 4.6 is slower than GPT-5.4 or Gemini 3.1 Pro for equivalent tasks. The quality-per-token is higher, but latency-sensitive applications may prefer faster alternatives.
+
+## How We Integrated
+
+OpenPaths was originally OpenAI-compatible only. Adding Anthropic compatibility was one of our biggest engineering efforts -- translating between the Messages API format and OpenAI's chat completions format, handling Anthropic-specific SSE events, supporting content blocks, and mapping tool use schemas.
+
+The result: you can use the official Anthropic SDK with OpenPaths by changing two lines of code. Our \`/v1/messages\` endpoint accepts the full Anthropic format natively.
+
+Claude Sonnet 4.6 sits in our \`auto\` and \`auto-medium-task\` routing chains. When the router detects a coding task, complex analysis, or a request that benefits from careful reasoning, Claude is often the model it selects.
+
+## The Anthropic Difference
+
+What makes Anthropic interesting is their research-first approach. They published the papers on constitutional AI, RLHF improvements, and scaling laws before shipping products. The result is models that feel qualitatively different from competitors -- more careful, more consistent, less likely to produce garbage.
+
+The 4.6 generation represents a significant jump. Opus 4.6 scores 53.0 on OpenRouter's intelligence rankings, placing it in the top 3 globally. But the real story is Sonnet 4.6 -- it delivers roughly 90% of Opus quality at 60% of the price, making it the model most production applications should default to.
+
+## When to Use Anthropic Through OpenPaths
+
+- **Code review and generation** where quality and correctness matter
+- **Complex analysis** requiring multi-step reasoning
+- **Content generation** that needs to sound natural
+- **Regulated industries** where instruction adherence is critical
+- **Any task where you would rather get "I don't know" than a confident hallucination**
+
+If you are migrating from the Anthropic SDK, OpenPaths is a drop-in replacement. Same format, same features, more fallback options.`
+  },
+  {
+    slug: 'provider-google',
+    title: 'Google on OpenPaths: Gemini, Million-Token Context, and the Value King',
+    excerpt: 'Google Gemini offers the largest context windows and best price-to-performance in the industry. Here is how we route to the full Gemini lineup.',
+    date: '2026-03-09',
+    author: 'OpenPaths Team',
+    readTime: '7 min',
+    tags: ['providers', 'google', 'models'],
+    content: `Google entered the LLM race late but came in swinging. Gemini launched in December 2023, and by 2026 they have the largest context windows, the cheapest per-token pricing at every tier, and arguably the best multimodal capabilities of any provider.
+
+## The Gemini Lineup on OpenPaths
+
+| Model | Price (In/Out per 1M) | Context | Best For |
+|-------|----------------------|---------|----------|
+| Gemini 3.1 Pro | $2.00/$12.00 | 1M | Flagship, default auto |
+| Gemini 2.5 Pro | $1.25/$10.00 | 2M | Massive context processing |
+| Gemini 2.5 Flash | $0.30/$2.50 | 1M | Fast, high-throughput |
+| Gemini Flash Lite | $0.02/$0.10 | 1M | Near-free, prototyping |
+
+## Strengths
+
+**Context windows that redefine what is possible.** Gemini 2.5 Pro accepts 2 million tokens in a single request. That is roughly 1,500 pages of text, or an entire large codebase, or hours of transcribed audio. Gemini 3.1 Pro and Flash both handle 1 million tokens. No other provider comes close at these price points.
+
+**Value.** Gemini Flash Lite gives you a 1M context window for $0.02/$0.10 per million tokens. That is essentially free. Our value analysis shows Gemini models occupy 3 of the top 5 positions for tokens-per-dollar -- a 10,000x advantage over premium models.
+
+**Multimodal breadth.** Gemini natively handles text, images, audio, video, and PDFs. You can feed it a YouTube video transcript, a set of images, and a text prompt in a single request. No other model family matches this breadth of input modalities.
+
+**Speed.** Gemini 2.5 Flash is one of the fastest models available. For real-time chatbots, classification pipelines, and high-throughput batch processing, Flash delivers competitive quality at latencies under 500ms for short responses.
+
+## Weaknesses
+
+**Consistency.** Google iterates rapidly on Gemini, which sometimes means version-to-version behavior changes. The API has had breaking changes and model ID deprecations that require developer attention.
+
+**Instruction following on edge cases.** For highly structured output requirements or complex multi-constraint prompts, Claude and GPT-5 tend to follow instructions more reliably than Gemini.
+
+**Regional availability.** Some Gemini features and models have variable availability depending on region and Google Cloud account status.
+
+## How We Integrated
+
+Google uses a custom API format -- not OpenAI-compatible. Our integration translates between OpenAI's chat completions format and Google's \`generateContent\` endpoint, handling content parts, safety settings, tool declarations, thinking configuration, and streaming.
+
+Gemini 3.1 Pro is the first model in our \`auto\` routing chain. It is our default "smart" model -- when the router cannot confidently classify a task as needing a specialist, Gemini 3.1 Pro handles it. The reasoning: best overall value at the frontier tier with a massive context window.
+
+Gemini Flash Lite powers \`auto-easy-task\` -- the routing tier for simple lookups, formatting, and summarization where spending more than $0.02/1M tokens is wasteful.
+
+## The Google Advantage
+
+Google's real moat is infrastructure. They designed Gemini to run on TPUs they built themselves, in data centers they own, connected by networks they control. This vertical integration means they can offer prices that would be unprofitable for competitors using rented GPU clusters.
+
+The result is a provider that competes on both quality AND price simultaneously. Gemini 3.1 Pro is not just cheap -- it ranks #1 on OpenRouter's intelligence benchmark at 57.2, ahead of GPT-5.3 Codex and Claude Opus 4.6. That combination of top-tier quality and competitive pricing makes Google the value king of the AI industry.
+
+## The Context Revolution
+
+A year ago, 128K tokens was considered generous. Google normalized 1M+ context windows and made them affordable. This changes how applications are built:
+
+- **RAG becomes optional.** Instead of chunking documents and doing similarity search, just put the whole document in the context window.
+- **Codebases fit in one prompt.** A 50,000-line codebase is roughly 750K tokens. Gemini 2.5 Pro can hold two of those.
+- **Conversation history is infinite.** At 2M tokens, you can maintain a conversation that spans days without summarization.
+
+## When to Use Google Through OpenPaths
+
+- **Large document processing** where context window size matters
+- **Budget-conscious applications** that need good quality at low cost
+- **Prototyping** with Flash Lite at near-zero cost
+- **Multimodal applications** processing images, audio, and video
+- **High-throughput pipelines** where Flash delivers speed at scale`
+  },
+  {
+    slug: 'provider-xai',
+    title: 'xAI on OpenPaths: Grok, 2M Context, and the Challenger From X',
+    excerpt: 'xAI entered the AI race in 2023 and already has frontier models with the largest context windows in the industry. Here is what Grok brings to the table.',
+    date: '2026-03-09',
+    author: 'OpenPaths Team',
+    readTime: '6 min',
+    tags: ['providers', 'xai', 'models'],
+    content: `xAI launched in 2023 with a simple pitch: build AI that understands the real world. Backed by Elon Musk and trained partly on X (Twitter) data, Grok has gone from curiosity to legitimate frontier contender faster than anyone expected.
+
+## The Grok Lineup on OpenPaths
+
+| Model | Price (In/Out per 1M) | Context | Best For |
+|-------|----------------------|---------|----------|
+| Grok 4 | $3.00/$15.00 | 256K | Flagship reasoning |
+| Grok 4.1 Fast | $0.20/$0.50 | 2M | Ultra-fast, massive context |
+| Grok 3 Mini | $0.30/$0.50 | 131K | Affordable reasoning |
+
+## Strengths
+
+**The 2M context window.** Grok 4.1 Fast holds 2 million tokens at $0.20/$0.50 per million. That is the largest context window available on OpenPaths at the lowest price for its capacity class. You can feed it entire repositories, book-length documents, or weeks of conversation history in a single request.
+
+**Speed-to-cost ratio.** Grok 4.1 Fast lives up to its name. At $0.20 input/$0.50 output per million tokens with a 2M context, it occupies a unique niche -- frontier-adjacent quality at budget pricing with reasoning capabilities included.
+
+**Current knowledge.** Trained on real-time data from X, Grok handles questions about recent events, trending topics, and current affairs better than models with static training cutoffs. For applications that need up-to-date knowledge without RAG, Grok has an edge.
+
+**Reasoning across the lineup.** All three Grok models support reasoning modes. You do not need to choose between a "fast" model and a "thinking" model like with OpenAI -- Grok gives you both in one.
+
+## Weaknesses
+
+**Ecosystem maturity.** xAI's API is newer than OpenAI's or Anthropic's. Documentation is thinner, community resources are fewer, and edge cases in the API are less well-documented.
+
+**Smaller model lineup.** Three models versus OpenAI's 11 or Mistral's 10. xAI has fewer options for fine-grained cost-quality tradeoffs.
+
+**Training data bias.** The X/Twitter training data gives Grok a distinctive voice that can lean informal or opinionated. For professional or enterprise applications, this tone may require additional prompting to control.
+
+## How We Integrated
+
+xAI's API is OpenAI-compatible, which made integration straightforward. Grok slots into our routing chain as a fallback after the primary models -- if Gemini, GPT-5, DeepSeek, and Claude are all unhealthy, Grok picks up the request.
+
+Grok 4.1 Fast is particularly interesting for our routing because its 2M context window means we can route large-context requests to it without worrying about truncation.
+
+## The xAI Trajectory
+
+xAI's speed of execution is notable. They went from founding to frontier model in under two years. Grok 4 competes with Claude Sonnet and GPT-5 on benchmarks, and Grok 4.1 Fast offers the industry's best context-to-price ratio.
+
+The company is building its own data center (the Memphis "Colossus" cluster with 100,000 GPUs), which suggests pricing will get more competitive as they move off rented infrastructure. For a company that is barely three years old, having a frontier model and purpose-built inference infrastructure is unprecedented.
+
+## When to Use xAI Through OpenPaths
+
+- **Massive context tasks** where 2M tokens at $0.20 is unbeatable
+- **Real-time knowledge** queries that benefit from current X/Twitter data
+- **Budget reasoning** with Grok 3 Mini at $0.30/$0.50
+- **Fast inference** where Grok 4.1 Fast delivers speed and capacity`
+  },
+  {
+    slug: 'provider-deepseek',
+    title: 'DeepSeek on OpenPaths: Open-Source AI That Punches Way Above Its Price',
+    excerpt: 'DeepSeek delivers GPT-5 class performance at 10x lower cost. Here is why the Chinese open-source lab is reshaping AI economics.',
+    date: '2026-03-08',
+    author: 'OpenPaths Team',
+    readTime: '6 min',
+    tags: ['providers', 'deepseek', 'models', 'open-source'],
+    content: `DeepSeek came out of nowhere in 2024 and immediately changed the economics of AI. Their V3 model matched GPT-4o quality at a fraction of the cost. V3.2 goes further -- it competes with GPT-5 on coding and reasoning benchmarks while costing $0.28/$0.42 per million tokens. That is roughly 10x cheaper than comparable models.
+
+## The DeepSeek Lineup on OpenPaths
+
+| Model | Price (In/Out per 1M) | Context | Best For |
+|-------|----------------------|---------|----------|
+| DeepSeek V3.2 | $0.28/$0.42 | 128K | General, coding, daily tasks |
+| DeepSeek Reasoner | $0.28/$0.42 | 128K | Math, logic, complex reasoning |
+
+We also route to DeepSeek R1 and V3.1 through Together AI for additional redundancy.
+
+## Strengths
+
+**Price-performance ratio.** This is DeepSeek's headline feature. At $0.28 input/$0.42 output per million tokens, V3.2 costs less than 10% of Claude Sonnet 4.6 while handling most everyday tasks comparably. For summarization, Q&A, code generation, data extraction, and translation, the quality difference is negligible but the cost difference is 10x.
+
+**Open source.** DeepSeek's models are open-weight, meaning the community can inspect, fine-tune, and self-host them. This matters for organizations with data residency requirements or those who want to run inference on their own hardware.
+
+**Coding ability.** DeepSeek was founded by a quantitative trading firm (High-Flyer). Their DNA is mathematical and code-oriented, and it shows. V3.2 handles code generation, debugging, and refactoring remarkably well for its price tier.
+
+**Extended thinking.** DeepSeek Reasoner supports chain-of-thought reasoning that shows its work step by step. For math proofs, complex debugging, and multi-step logic problems, this transparency helps developers verify the model's reasoning.
+
+## Weaknesses
+
+**No vision.** DeepSeek models are text-only. No image input, no multimodal capabilities. If your application needs to process images, you need a different model.
+
+**128K context ceiling.** Adequate for most tasks but limiting compared to Gemini's 2M or Grok's 2M. Large codebase analysis or long-document processing may require chunking.
+
+**Availability.** Being based in China, DeepSeek has occasionally faced availability issues for international users. API rate limits can be tighter during peak hours.
+
+**Nuance.** For tasks requiring cultural context, subtle tone control, or creative writing that needs to sound natural in English, Claude and GPT-5 have an edge. DeepSeek excels at factual, technical content.
+
+## How We Integrated
+
+DeepSeek's API is OpenAI-compatible, making integration trivial. DeepSeek V3.2 sits in our \`auto\` and \`auto-medium-task\` routing chains as a cost-optimization option. When the router detects a task that does not require frontier reasoning or vision, it often routes to DeepSeek to save money without sacrificing quality.
+
+## Why DeepSeek Matters
+
+DeepSeek's impact goes beyond their own models. They proved that frontier-quality AI does not require frontier-level budgets. Their MoE (mixture of experts) architecture and training efficiency innovations have pushed every other provider to reconsider pricing.
+
+Before DeepSeek, the cheapest "good" model cost roughly $1-3 per million tokens. After DeepSeek, that floor dropped to $0.28. This compression forced OpenAI to ship GPT-5 Mini ($0.25/$2.00), Google to drop Flash Lite to $0.02, and Mistral to price Nemo at $0.02/$0.04.
+
+The competitive pressure from DeepSeek has made AI cheaper for everyone. That is why we consider them one of the most important providers in our ecosystem, even beyond the quality of their individual models.
+
+## When to Use DeepSeek Through OpenPaths
+
+- **Budget production workloads** where cost matters more than having the absolute best
+- **Code generation and debugging** at 10x less cost than Claude
+- **High-volume processing** where spending $0.28/1M vs $3.00/1M adds up fast
+- **Tasks that do not need vision or massive context windows**`
+  },
+  {
+    slug: 'provider-mistral',
+    title: 'Mistral on OpenPaths: Europe\'s AI Champion and the Deepest Model Lineup',
+    excerpt: 'Mistral offers 10 models spanning every use case from tiny edge deployment to frontier vision. Here is the full breakdown of Europe\'s leading AI lab.',
+    date: '2026-03-08',
+    author: 'OpenPaths Team',
+    readTime: '7 min',
+    tags: ['providers', 'mistral', 'models'],
+    content: `Mistral launched in 2023 from Paris with a team of ex-Meta and ex-Google researchers. In under three years they have built the largest model lineup of any non-American AI company -- 10 models on OpenPaths covering everything from $0.02 ultra-cheap inference to frontier vision and code generation.
+
+## The Mistral Lineup on OpenPaths
+
+| Model | Price (In/Out per 1M) | Context | Best For |
+|-------|----------------------|---------|----------|
+| Mistral Large 3 | $0.50/$1.50 | 262K | Flagship general-purpose |
+| Pixtral Large | $2.00/$6.00 | 131K | Vision, image analysis |
+| Mistral Medium 3 | $0.40/$2.00 | 131K | Balanced performance |
+| Magistral Medium | $0.40/$2.00 | 131K | Reasoning tasks |
+| Devstral Medium | $0.40/$2.00 | 262K | Developer workflows |
+| Mistral Small 3 | $0.35/$0.56 | 131K | Efficient vision |
+| Codestral | $0.30/$0.90 | 256K | Code generation |
+| Mistral Nemo | $0.02/$0.04 | 131K | Ultra-cheap basic tasks |
+| Ministral 14B | $0.20/$0.20 | 262K | Compact vision |
+| Ministral 8B | $0.15/$0.15 | 262K | Edge, minimum cost |
+
+## Strengths
+
+**Lineup depth.** No other provider covers as many niches. Need a frontier model? Large 3. Code specialist? Codestral. Vision? Pixtral or Small 3. Reasoning? Magistral. Developer agents? Devstral. Cheap and tiny? Nemo or Ministral. Mistral has a model for every slot.
+
+**European data sovereignty.** For companies bound by GDPR or EU AI Act requirements, Mistral is the go-to provider. Based in Paris, they operate under European regulations and offer data processing guarantees that American and Chinese providers cannot match.
+
+**Context windows.** Even Mistral's smaller models offer 131K-262K context windows. Codestral gives you 256K tokens of context -- enough to hold a large codebase while generating code. Mistral Large 3 and Devstral both push to 262K.
+
+**Open-source commitment.** Several Mistral models (Nemo, Ministral 8B/14B) are open-weight, enabling self-hosting and fine-tuning. Their open-source releases have been some of the most downloaded models on Hugging Face.
+
+**Pricing.** Mistral Large 3 at $0.50/$1.50 significantly undercuts Claude Sonnet ($3.00/$15.00) and GPT-5 ($1.25/$10.00) while delivering competitive quality. Their budget models are among the cheapest available -- Nemo at $0.02/$0.04 rivals Gemini Flash Lite.
+
+## Weaknesses
+
+**Brand recognition.** Outside the developer community, Mistral is less known than OpenAI, Google, or Anthropic. This means fewer tutorials, fewer Stack Overflow answers, and a smaller community for troubleshooting.
+
+**Frontier ceiling.** While Mistral Large 3 is excellent, it does not quite reach the peak performance of Claude Opus 4.6, Gemini 3.1 Pro, or GPT-5.4 on the hardest benchmarks. Mistral wins on value, not raw capability at the very top.
+
+**Vision model pricing.** Pixtral Large at $2.00/$6.00 is competitive but not cheap. For vision-heavy workloads, Google's free Flash Lite or Z.AI's free GLM-4.6v Flash may be more cost-effective.
+
+## How We Integrated
+
+Mistral's API is OpenAI-compatible with their own endpoint at api.mistral.ai. We route to all 10 models, making Mistral one of our most deeply integrated providers. Codestral and Devstral are particularly valuable in our routing because they offer specialized coding capability at prices that make them viable for high-volume code generation.
+
+## Mistral's Position in the Market
+
+Mistral represents something important: proof that world-class AI does not have to come from Silicon Valley or Beijing. A Paris-based team has built models that compete on quality and win on value against companies with 10x their budget.
+
+Their strategy of releasing many specialized models rather than one monolithic flagship is smart. Instead of trying to beat GPT-5 at everything, they offer Codestral that beats it at code, Pixtral that matches it on vision, and Nemo that costs 50x less for simple tasks. This portfolio approach lets developers pick the right tool for each job.
+
+## When to Use Mistral Through OpenPaths
+
+- **Code generation** with Codestral at $0.30/$0.90 -- excellent value
+- **European compliance** requirements (GDPR, EU AI Act)
+- **Budget production** with Nemo at $0.02/$0.04
+- **Vision tasks** with Pixtral or Small 3 for image analysis
+- **Edge deployment** with Ministral 8B for minimum latency and cost`
+  },
+  {
+    slug: 'provider-groq',
+    title: 'Groq on OpenPaths: The Fastest Inference on the Planet',
+    excerpt: 'Groq built custom silicon specifically for LLM inference. The result: token generation speeds that make GPUs look slow. Here is what that means for developers.',
+    date: '2026-03-07',
+    author: 'OpenPaths Team',
+    readTime: '5 min',
+    tags: ['providers', 'groq', 'models', 'performance'],
+    content: `Groq does one thing and does it exceptionally well: fast inference. While every other AI company uses NVIDIA GPUs, Groq designed their own chip -- the Language Processing Unit (LPU) -- from the ground up for transformer inference. The result is token generation speeds that are genuinely hard to believe until you see them.
+
+## The Groq Lineup on OpenPaths
+
+| Model | Price (In/Out per 1M) | Context | Best For |
+|-------|----------------------|---------|----------|
+| Llama 3.3 70B | $0.59/$0.79 | 128K | Fast general-purpose |
+| Llama 3.1 8B | $0.05/$0.08 | 128K | Ultra-fast, ultra-cheap |
+| Mixtral 8x7B | $0.24/$0.24 | 32K | Fast MoE inference |
+
+## Strengths
+
+**Raw speed.** Groq's LPU delivers 500+ tokens per second on Llama 3.3 70B. For comparison, the same model on a standard GPU cluster generates roughly 80-100 tokens per second. This is not an incremental improvement -- it is a 5x jump that changes what is possible in real-time applications.
+
+**Deterministic latency.** Because the LPU processes entire tensors at once rather than batching across GPUs, latency is predictable. There is no queuing, no variable batch sizes, no "sometimes fast, sometimes slow." Every request gets consistent performance.
+
+**Price.** Llama 3.1 8B at $0.05/$0.08 per million tokens is one of the cheapest inference options anywhere. For applications that need hundreds of thousands of fast, simple responses -- chatbots, classification, extraction -- Groq is hard to beat.
+
+**Open-source models.** Groq runs Meta's Llama and Mistral's Mixtral -- proven open-source models with strong community support and well-understood capabilities.
+
+## Weaknesses
+
+**Model selection.** Groq only hosts a few models. No GPT, no Claude, no Gemini -- just open-source models they have optimized for their hardware. If you need frontier reasoning, Groq is not the answer.
+
+**Context window.** Mixtral tops out at 32K and Llama at 128K. No million-token context windows here.
+
+**No vision or multimodal.** Groq's current offerings are text-only.
+
+**Availability.** As Groq scales their custom hardware, capacity can be constrained during peak periods. Rate limits apply.
+
+## How We Integrated
+
+Groq's API is OpenAI-compatible. We use Groq primarily for two things: ultra-fast inference when latency is the priority, and audio transcription through their Whisper implementation (which is also the fastest available).
+
+In our routing, Groq's Llama models serve as fast fallbacks. If a request is simple and speed matters more than depth, Llama 3.1 8B on Groq can respond in milliseconds.
+
+## Why Custom Silicon Matters
+
+Groq's approach challenges the assumption that NVIDIA GPUs are the only way to run AI. Their LPU architecture eliminates the memory bandwidth bottleneck that limits GPU inference speed. While GPUs wait for data to move between memory and compute, the LPU processes everything in a single pass.
+
+This matters because inference cost is dominated by how long a chip is occupied per request. If Groq's LPU generates tokens 5x faster, it can serve 5x more requests per chip per second. That is how they offer competitive prices despite manufacturing custom silicon.
+
+As AI moves from training (where GPUs excel) to inference (where speed and efficiency matter), custom inference hardware may become the norm. Groq is leading that transition.
+
+## When to Use Groq Through OpenPaths
+
+- **Real-time applications** where sub-second response time matters
+- **High-throughput pipelines** processing thousands of requests per minute
+- **Audio transcription** where Groq's Whisper is the fastest available
+- **Budget batch processing** with Llama 3.1 8B at $0.05/$0.08`
+  },
+  {
+    slug: 'provider-minimax',
+    title: 'MiniMax on OpenPaths: The Multimodal Powerhouse From China',
+    excerpt: 'MiniMax does chat, video, music, and speech -- all from one provider. Here is why this Chinese AI lab is one of the most versatile in our ecosystem.',
+    date: '2026-03-07',
+    author: 'OpenPaths Team',
+    readTime: '6 min',
+    tags: ['providers', 'minimax', 'models'],
+    content: `MiniMax is the provider most people have not heard of but probably should have. Founded in 2021 in Shanghai, they quietly built one of the most complete AI platforms in the world -- covering chat, video generation, music generation, and text-to-speech from a single company. No other provider on OpenPaths matches this breadth.
+
+## The MiniMax Lineup on OpenPaths
+
+**Chat:**
+| Model | Price (In/Out per 1M) | Context | Best For |
+|-------|----------------------|---------|----------|
+| MiniMax M2.5 | $0.30/$1.20 | 1M | Long-context chat |
+| MiniMax M2 | $0.26/$1.00 | 200K | General chat |
+
+**Video:**
+| Model | Price | Best For |
+|-------|-------|----------|
+| Hailuo 2.3 | $0.10/video | Default video generation |
+| Hailuo 2.3 Fast | $0.05/video | Quick iteration |
+| Hailuo 02 | $0.08/video | Previous-gen, still solid |
+
+**Music:** Music 2.5 ($0.01/gen), Music 2.0 ($0.008/gen)
+
+**Speech:** Speech 2.8 HD ($100/1M chars), Speech 2.8 Turbo ($60/1M chars)
+
+## Strengths
+
+**Multimodal breadth.** One API key for chat, video, music, and speech. No other single provider offers this range. Building an application that generates text, creates a video, adds background music, and narrates with a voice? MiniMax handles all four.
+
+**1M context window.** M2.5 matches Google's Gemini for context length at a competitive $0.30/$1.20. For long-document processing, maintaining extensive conversation history, or analyzing large datasets, that million-token window is invaluable.
+
+**Hailuo video quality.** Hailuo 2.3 is our default video generation model for good reason. It produces smooth, coherent motion with strong prompt adherence at just $0.10 per video. The fast variant cuts that to $0.05 while maintaining good quality.
+
+**Music generation.** MiniMax's Music 2.5 is the only music generation model on OpenPaths. At $0.01 per generation, you can create background tracks, jingles, and full songs from text prompts. Genre specification, mood control, and lyrics input are all supported.
+
+**Speech quality.** Speech 2.8 HD produces some of the most natural-sounding TTS output available. Emotional range, natural intonation, minimal artifacts -- it competes with ElevenLabs at a lower price point.
+
+## Weaknesses
+
+**Chat model ranking.** M2.5 is solid but does not reach frontier quality for complex reasoning tasks. It sits comfortably in the mid-tier -- great for everyday tasks, less competitive for hard coding or deep analysis.
+
+**Video generation time.** Hailuo uses async task submission with polling. You submit a job, wait 30-60 seconds, and retrieve the result. Not a problem for batch workflows, but it means video generation is not real-time.
+
+**Regional focus.** MiniMax's primary market is China, and some documentation and community resources are Chinese-first. English language support is good but not as deep as Western providers.
+
+## How We Integrated
+
+MiniMax has a custom API format for video, music, and speech. We built dedicated handlers for each modality:
+
+- **Video:** Async task submission -> polling for completion -> URL retrieval
+- **Music:** Similar async pattern with genre and mood parameters
+- **Speech:** Streaming audio response with voice selection
+- **Chat:** OpenAI-compatible through Together AI (M2.5) and direct API (M2)
+
+Hailuo 2.3 is the first model in our \`auto-video\` routing chain. MiniMax M2.5 sits in the \`auto-medium-task\` tier as a cost-effective option with its massive context window.
+
+## The Multimodal Future
+
+MiniMax represents where AI is heading -- unified multimodal platforms rather than siloed text-only services. The ability to chain text generation, video creation, music composition, and speech synthesis through a single provider simplifies architecture and reduces integration overhead.
+
+Their speed of iteration is impressive too. In 12 months they shipped M2, M2.5 (doubling context to 1M), Hailuo 2.3 (major quality jump), Music 2.5, and Speech 2.8. That is five significant model releases across four modalities from a team that is still relatively small by industry standards.
+
+## When to Use MiniMax Through OpenPaths
+
+- **Video generation** with Hailuo -- best quality/price default
+- **Long-context processing** with M2.5's 1M window
+- **Music generation** for soundtracks, jingles, background audio
+- **Text-to-speech** for natural-sounding voiceovers
+- **Multimodal applications** that need text + video + audio from one flow`
+  },
+  {
+    slug: 'provider-together',
+    title: 'Together AI on OpenPaths: The Open-Source Inference Platform',
+    excerpt: 'Together AI hosts the best open-source models on fast infrastructure. From Qwen to FLUX, here is how they power a huge chunk of our catalog.',
+    date: '2026-03-06',
+    author: 'OpenPaths Team',
+    readTime: '6 min',
+    tags: ['providers', 'together', 'models', 'open-source'],
+    content: `Together AI is not a model builder -- they are an inference platform. They take the best open-source models from labs around the world and host them on optimized infrastructure. The result: you get access to Qwen, Kimi, GLM, DeepSeek, MiniMax, and FLUX image models through a single, reliable API.
+
+## The Together Lineup on OpenPaths
+
+**Chat Models:**
+| Model | Price (In/Out per 1M) | Context | Origin |
+|-------|----------------------|---------|--------|
+| Qwen 3.5 397B | $0.60/$3.60 | 131K | Alibaba |
+| Qwen 3 Coder | $0.50/$1.20 | 131K | Alibaba |
+| Kimi K2.5 | $0.50/$2.80 | 131K | Moonshot AI |
+| GLM-5 | $1.00/$3.20 | 202K | Z.AI (Zhipu) |
+| GLM-4.7 | $0.45/$2.00 | 202K | Z.AI (Zhipu) |
+| MiniMax M2.5 | $0.30/$1.20 | 1M | MiniMax |
+| DeepSeek R1 | $3.00/$7.00 | 128K | DeepSeek |
+| DeepSeek V3.1 | $0.60/$1.70 | 128K | DeepSeek |
+
+**Image Models:**
+| Model | Price per Image |
+|-------|----------------|
+| FLUX Pro | $0.04 |
+| FLUX Dev | $0.015 |
+| FLUX Schnell | $0.003 |
+| Stable Diffusion 3 | $0.002 |
+
+## Strengths
+
+**Model diversity.** Together hosts models from Alibaba, Moonshot, Z.AI, DeepSeek, MiniMax, and Black Forest Labs -- all through one API. This gives OpenPaths access to the best of the open-source world without maintaining separate integrations for each origin lab.
+
+**Inference optimization.** Together specializes in making open-source models run fast. They use custom kernels, quantization techniques, and batching strategies to squeeze maximum performance from GPU clusters. Models on Together often run faster than on the origin provider's own API.
+
+**Image generation.** Together hosts the entire FLUX family and Stable Diffusion 3, making them our primary image generation backend for non-Netwrck models. FLUX Schnell at $0.003 per image through Together is one of the cheapest image generation options anywhere.
+
+**Reliability.** As a dedicated inference platform, Together has invested heavily in uptime, auto-scaling, and redundancy. Their SLA and availability track record is strong.
+
+**Open-source ecosystem.** Together actively contributes to the open-source AI community through research, model fine-tuning, and tooling. They are not just hosting models -- they are improving them.
+
+## Weaknesses
+
+**Markup over direct API.** In some cases, running a model through Together costs more than using the origin provider directly. DeepSeek R1 on Together ($3.00/$7.00) versus DeepSeek direct ($0.28/$0.42) is a 10x price difference. The tradeoff is reliability, speed, and not having to manage the China-based API.
+
+**No proprietary models.** Together does not build their own models. If you need Claude, GPT, or Gemini, you need those providers directly. Together's value is in making open-source models accessible.
+
+**Dependent on upstream.** When an origin lab updates or deprecates a model, Together has to follow. This creates a dependency chain that can cause temporary gaps.
+
+## How We Integrated
+
+Together's API is OpenAI-compatible for chat and has a dedicated image generation endpoint. We route to Together for:
+
+- **Qwen models** -- Together is the most reliable Western host for Alibaba's Qwen family
+- **FLUX image generation** -- Our primary FLUX backend
+- **GLM models** -- More reliable than routing to Z.AI directly for international users
+- **Redundancy** -- Together serves as a fallback for models that we also route to directly (like DeepSeek)
+
+## The Platform Play
+
+Together represents an important trend: the separation of model creation from model serving. Not every lab needs to build inference infrastructure. Some (like Alibaba, Moonshot, Zhipu) are better at research and training. Together handles the serving part, and OpenPaths handles the routing and unification on top.
+
+This three-layer architecture -- model labs build, platforms like Together serve, routers like OpenPaths unify -- is how the industry is settling. Developers should not need to think about which GPU cluster is running their request. They should think about what model is best for their task.
+
+## When to Use Together Through OpenPaths
+
+- You typically do not choose Together explicitly -- our router picks it when it is the best host for a given model
+- **Qwen models** for strong open-source reasoning and coding
+- **Kimi K2.5** for Moonshot's unique reasoning approach
+- **FLUX image generation** at every price tier
+- **GLM models** when you want Z.AI quality with Western infrastructure reliability`
+  },
+  {
+    slug: 'provider-zai',
+    title: 'Z.AI on OpenPaths: GLM Models, Free Vision, and China\'s Dark Horse',
+    excerpt: 'Z.AI (Zhipu) builds the GLM model family -- including the best free vision model available. Here is what makes this Beijing-based lab worth watching.',
+    date: '2026-03-06',
+    author: 'OpenPaths Team',
+    readTime: '5 min',
+    tags: ['providers', 'zai', 'models'],
+    content: `Z.AI (formerly Zhipu AI) is a Beijing-based AI lab spun out of Tsinghua University. They build the GLM (General Language Model) family, which has quietly become one of the most capable model lineups from China. Their secret weapon: a free vision model that is genuinely useful.
+
+## The Z.AI Lineup on OpenPaths
+
+| Model | Price (In/Out per 1M) | Context | Best For |
+|-------|----------------------|---------|----------|
+| GLM-5 | $1.00/$3.20 | 202K | Flagship reasoning |
+| GLM-4.7 | $0.45/$2.00 | 202K | Efficient general |
+| GLM-4.6v | $1.50/$5.00 | 128K | Paid vision |
+| GLM-4.6v Flash | Free | 128K | Free vision |
+| GLM Image | $0.015/image | N/A | Image generation |
+
+Note: GLM-5 and GLM-4.7 are also available through Together AI for improved reliability.
+
+## Strengths
+
+**Free vision.** GLM-4.6v Flash is a free model that accepts images. It handles OCR, image description, visual Q&A, and basic image analysis at zero cost. For prototyping multimodal applications or processing images at scale without budget, it is the best option available.
+
+**202K context.** GLM-5 and GLM-4.7 both offer 202K token context windows -- larger than Anthropic's 200K, suitable for long documents and extended conversations.
+
+**Image generation.** GLM Image generates at high native resolutions (up to 1728x960) and handles both English and Chinese text rendering well. At $0.015 per image, it occupies a sweet spot between budget options like SD3 ($0.002) and premium models like FLUX Pro ($0.04).
+
+**Bilingual excellence.** Z.AI models handle Chinese and English equally well. For applications serving Chinese-speaking users or processing Chinese-language content, GLM models are a natural choice.
+
+**Academic foundation.** Born from Tsinghua University research, Z.AI's models reflect strong theoretical foundations in natural language understanding, knowledge representation, and multimodal learning.
+
+## Weaknesses
+
+**International API reliability.** Routing to Z.AI's API from outside China can have variable latency and occasional connectivity issues. This is why we also route GLM models through Together AI as a fallback.
+
+**Ecosystem.** Documentation and community resources are primarily Chinese-language. English support exists but is less comprehensive than Western providers.
+
+**Model naming.** The GLM version numbering (5, 4.7, 4.6v, 4.6v Flash) is less intuitive than competitors' naming conventions.
+
+## How We Integrated
+
+Z.AI uses a custom API format at api.z.ai. Our integration handles their specific endpoint structure, authentication, and response format. For chat models, we also maintain the Together AI route as a more reliable international pathway.
+
+GLM-4.6v Flash sits in our free tier routing as the go-to free vision model. When a user requests a free model that can handle images, GLM-4.6v Flash is what they get.
+
+## Why Z.AI Matters
+
+Z.AI demonstrates that the AI landscape is genuinely global. Their GLM-5 competes on benchmarks with models from companies that have raised 10x more funding. Their free vision model offers capabilities that Western providers charge for.
+
+The Tsinghua connection also means Z.AI benefits from one of China's top computer science research programs. Their models incorporate techniques from knowledge graph research, multilingual NLP, and multimodal learning that reflect years of academic groundwork.
+
+## When to Use Z.AI Through OpenPaths
+
+- **Free vision tasks** with GLM-4.6v Flash
+- **Chinese/bilingual applications** where GLM excels
+- **High-resolution image generation** with GLM Image (up to 1728x960)
+- **Budget general tasks** with GLM-4.7 at $0.45/$2.00`
+  },
+  {
+    slug: 'provider-openrouter',
+    title: 'OpenRouter on OpenPaths: 600+ Models as Our Safety Net',
+    excerpt: 'OpenRouter is both a competitor and a partner. Here is how we use the largest model gateway as our fallback layer.',
+    date: '2026-03-05',
+    author: 'OpenPaths Team',
+    readTime: '5 min',
+    tags: ['providers', 'openrouter', 'models'],
+    content: `OpenRouter is the largest model gateway in the AI ecosystem, providing access to over 600 models from dozens of providers. They are also our fallback layer. When primary providers are unhealthy or unavailable, OpenPaths routes through OpenRouter to maintain uptime.
+
+## The OpenRouter Lineup on OpenPaths
+
+We primarily use OpenRouter for free-tier models:
+
+| Model | Provider | Context | Features |
+|-------|----------|---------|----------|
+| StepFun Flash | StepFun | 256K | Free, tool use |
+| Solar Pro 3 | Upstage | 128K | Free, tool use |
+| Nemotron Nano 30B | NVIDIA | 256K | Free, reasoning |
+| Arcee Trinity | Arcee AI | 131K | Free, tool use |
+
+Plus fallback access to hundreds of additional models when primary routes are down.
+
+## Strengths
+
+**Model catalog size.** 600+ models is unmatched. If a model exists in the AI ecosystem, OpenRouter probably hosts it. This makes them an invaluable fallback -- no matter what model a user requests, there is likely an OpenRouter route available.
+
+**Free tiers.** OpenRouter negotiates free access to models from smaller providers like StepFun, Upstage, NVIDIA (Nemotron), Arcee, and Liquid. These free models are genuinely useful for prototyping and low-volume use cases.
+
+**Reliability.** OpenRouter has been operating since 2023 and has built robust infrastructure for handling high request volumes across many providers. Their routing and load balancing is mature.
+
+**Community.** OpenRouter has the largest community of any model gateway, with detailed pricing pages, model comparisons, and activity rankings. Their intelligence benchmark provides useful signal for model quality.
+
+## Weaknesses
+
+**Markup.** OpenRouter adds a margin on top of provider pricing. For high-volume production use, routing directly to providers (as OpenPaths does) is cheaper than going through OpenRouter for every request.
+
+**Latency.** Adding an extra hop through OpenRouter's gateway increases request latency compared to direct provider connections. For latency-sensitive applications, this matters.
+
+**Less control.** When routing through OpenRouter, you are subject to their rate limits, queuing, and routing decisions. Direct integrations give OpenPaths more control over request handling.
+
+## How We Integrated
+
+OpenRouter uses an OpenAI-compatible API with additional headers (HTTP-Referer, X-Title). We use it in two ways:
+
+1. **Free model access.** StepFun Flash, Solar Pro 3, Nemotron Nano, and Arcee Trinity are only available through OpenRouter's free tier agreements.
+
+2. **Fallback routing.** Every model in our catalog has a fallback chain. At the end of most chains, OpenRouter sits as the last resort. If our direct connection to Anthropic is down AND our Together AI fallback fails, the request goes through OpenRouter.
+
+This dual role -- free model host and universal fallback -- makes OpenRouter one of our most important partners despite also being a competitor.
+
+## The Coopetition Model
+
+Our relationship with OpenRouter is a good example of how the AI infrastructure market works in 2026. We compete on user-facing features (auto routing, multimodal, crypto payments) while cooperating on reliability (fallback routing) and free model access.
+
+This makes the ecosystem better for developers. If you use OpenPaths, you get our direct integrations for speed and cost, plus OpenRouter's breadth as a safety net. You are effectively getting two routers for the price of one.
+
+## When OpenRouter Routes Activate
+
+- When a primary provider is unhealthy or rate-limited
+- When you request a model we do not have a direct integration for
+- When you use one of the free-tier models (StepFun, Solar, Nemotron, Arcee)
+- As the last fallback in any routing chain`
+  },
+  {
+    slug: 'provider-netwrck',
+    title: 'Netwrck on OpenPaths: Our First-Party Partner for Art and Video',
+    excerpt: 'Netwrck powers RA1, ZImage, Wan, LTX Video, and RA2V on OpenPaths. Here is how our closest creative AI partner builds the tools artists actually use.',
+    date: '2026-03-05',
+    author: 'OpenPaths Team',
+    readTime: '6 min',
+    tags: ['providers', 'netwrck', 'art generation', 'video generation'],
+    content: `Netwrck is not just a provider on OpenPaths -- they are a first-party partner. Their creative AI models power some of the most popular features on our platform: RA1 image generation, ZImage anime art, and a full video generation pipeline with Wan, LTX Video, and RA2V.
+
+## The Netwrck Lineup on OpenPaths
+
+**Image Generation:**
+| Model | Price per Image | Best For |
+|-------|----------------|----------|
+| RA1 Art Generator | $0.04 | General art, photorealism |
+| ZImage | $0.007 | Anime, illustration |
+
+**Video Generation:**
+| Model | Price per Video | Best For |
+|-------|----------------|----------|
+| Wan Video | $0.30 | Cinematic, complex scenes |
+| LTX Video | $0.05 | Budget, prototyping |
+| RA2V | $1.00 | Maximum quality |
+
+## Strengths
+
+**RA1 image quality.** RA1 consistently produces high-quality images across diverse styles -- photorealistic portraits, landscapes, concept art, product renders, architectural visualization. At $0.04 per image, it matches FLUX Pro quality at the same price point while handling a broader range of artistic styles without complex prompt engineering.
+
+**ZImage for anime.** ZImage is purpose-built for anime and illustration-style art. At $0.007 per image, it is the cheapest quality option for manga-style characters, anime scenes, and stylized illustrations. If your application generates anime content, ZImage is the obvious choice.
+
+**Video pipeline depth.** Having three video models at different price points means developers can match quality to budget precisely. LTX for prototyping at $0.05, Wan for production at $0.30, RA2V for final renders at $1.00. No other single provider offers this range.
+
+**Image-to-video.** Wan supports animating still images -- provide an image URL and a prompt describing the motion, and Wan brings it to life. This is a workflow that creative professionals use daily for social media content, product demonstrations, and animated art.
+
+**Tight integration.** As a first-party partner, Netwrck's API integration is maintained directly by our team. This means faster bug fixes, coordinated feature releases, and infrastructure that is optimized for the OpenPaths pipeline.
+
+## Weaknesses
+
+**No chat models.** Netwrck is creative-only. No LLMs, no embeddings, no transcription. For text tasks, you need another provider.
+
+**Resolution constraints.** RA1's maximum native resolution is 1360x768. For higher resolutions, OpenPaths' automatic resize pipeline kicks in, which adds processing time and converts URL responses to base64.
+
+**Video generation time.** Like all video models, generation is not instant. Expect 10-60 seconds depending on the model and complexity. Not suitable for real-time video generation.
+
+## How We Integrated
+
+Netwrck uses custom API endpoints at netwrck.com/api/. Our integration is deeper than typical provider connections:
+
+- **Direct coordination** on model updates and capability additions
+- **Shared infrastructure monitoring** for uptime and performance
+- **Priority for new model access** -- when Netwrck ships a new model, OpenPaths gets it first
+- **Custom resolution handling** that wraps Netwrck's supported sizes with our automatic resize pipeline
+
+RA1 is the first model in our \`auto-image\` routing chain. ZImage slots in for anime-detected prompts. Wan leads the video chain for quality requests.
+
+## The Creative AI Landscape
+
+Image and video generation are evolving faster than any other AI modality. Two years ago, the best image models produced 512x512 images with obvious artifacts. Today, RA1 generates photorealistic images at 1360x768 for four cents each.
+
+Video generation has moved even faster. The jump from LTX (early generation, experimental quality) to Wan (cinematic coherence) to RA2V (production-grade) happened in under a year. Each generation roughly doubles quality while costs stay flat or decrease.
+
+Netwrck sits at the center of this creative AI acceleration. Their focus on artistic quality over benchmark scores means their models are tuned for what creative professionals actually need -- consistent style, good composition, natural lighting, and reliable prompt adherence.
+
+## When to Use Netwrck Through OpenPaths
+
+- **Image generation** with RA1 as the default choice
+- **Anime and illustration** with ZImage at $0.007
+- **Video production** with Wan for cinematic quality
+- **Budget video prototyping** with LTX at $0.05
+- **Maximum quality video** with RA2V when every frame counts`
+  },
+  {
+    slug: 'provider-text-generator',
+    title: 'Text-Generator.io on OpenPaths: The Embedding Specialist',
+    excerpt: 'Text-Generator.io powers our ModernBERT embeddings -- the backbone of semantic search and RAG pipelines. Here is how a focused specialist outperforms generalists.',
+    date: '2026-03-04',
+    author: 'OpenPaths Team',
+    readTime: '4 min',
+    tags: ['providers', 'text-generator', 'embedding'],
+    content: `Text-Generator.io is the smallest provider on OpenPaths by model count -- they offer exactly one model. But that model, ModernBERT Embedding, is the backbone of every semantic search and RAG pipeline that runs through our platform.
+
+## The Text-Generator.io Lineup
+
+| Model | Price (per 1M tokens) | Context | Best For |
+|-------|----------------------|---------|----------|
+| ModernBERT Embedding | $0.10 | 8K | Search, RAG, similarity |
+
+## Strengths
+
+**ModernBERT quality.** ModernBERT represents the latest generation of embedding models -- trained on more data, with better fine-tuning for retrieval tasks, and improved handling of domain-specific vocabulary. The embeddings it produces are measurably better at semantic similarity, document clustering, and retrieval than previous-generation models.
+
+**Specialization.** Text-Generator.io does one thing well. They are not distracted by chat models, image generation, or other modalities. Their entire infrastructure is optimized for embedding generation -- fast, reliable, and cost-effective.
+
+**Price.** At $0.10 per million tokens, ModernBERT embeddings are affordable for even high-volume applications. Processing a million documents at 500 tokens each costs about $0.05.
+
+**API reliability.** As a first-party partner, Text-Generator.io's integration is maintained directly by our team. The API is simple, fast, and has excellent uptime.
+
+## Weaknesses
+
+**Single model.** No alternatives if ModernBERT does not suit your use case. For applications that need multilingual embeddings, very long context embeddings, or vision-capable embeddings, other options exist.
+
+**8K context limit.** Each embedding request handles up to 8,192 tokens. For very long documents, you need to chunk before embedding. Models like Gemini's embedding support longer contexts.
+
+**No multimodal.** Text only. For image-text embeddings, you would need NVIDIA's Nemotron Embed (available free through OpenRouter) or another multimodal embedding model.
+
+## How We Integrated
+
+Text-Generator.io uses a REST API at api.text-generator.io. Our embedding handler sends text to their feature extraction endpoint and receives back dense vector embeddings in the OpenAI-compatible format.
+
+We also run our own local embedding model (gobed) for the auto router's semantic matching. For user-facing embedding requests through the API, ModernBERT is the default and recommended option.
+
+## Why Embeddings Matter
+
+Embeddings are the unsung hero of AI applications. They power:
+
+- **Semantic search** -- find documents by meaning, not just keywords
+- **RAG pipelines** -- retrieve relevant context before sending to an LLM
+- **Clustering** -- group similar documents, support tickets, or user queries
+- **Recommendation** -- find items similar to what a user has interacted with
+- **Deduplication** -- identify near-duplicate content at scale
+
+Every production AI application that handles more than a few documents uses embeddings somewhere. Having a reliable, cheap, high-quality embedding provider is infrastructure-level important.
+
+## When to Use Text-Generator.io Through OpenPaths
+
+- **Building RAG pipelines** that need reliable document retrieval
+- **Semantic search** over document collections
+- **Text similarity** for clustering, deduplication, or recommendation
+- **Any embedding task** where ModernBERT's quality and $0.10/1M pricing fits`
+  },
+  {
+    slug: 'provider-fal',
+    title: 'Fal on OpenPaths: Serverless AI Inference for Image Generation',
+    excerpt: 'Fal runs FLUX Klein 4B -- a compact image model that generates fast on serverless infrastructure. Here is how serverless inference is changing AI deployment.',
+    date: '2026-03-04',
+    author: 'OpenPaths Team',
+    readTime: '4 min',
+    tags: ['providers', 'fal', 'art generation'],
+    content: `Fal takes a different approach to AI inference. Instead of maintaining always-on GPU clusters, they run models on serverless infrastructure that scales to zero when idle and spins up on demand. The result: fast inference for image generation without paying for idle capacity.
+
+## The Fal Lineup on OpenPaths
+
+| Model | Price per Image | Best For |
+|-------|----------------|----------|
+| FLUX Klein 4B | $0.02 | Compact, fast image generation |
+
+## Strengths
+
+**Serverless economics.** Fal's pay-per-use model means you never pay for idle GPUs. For applications with variable or bursty image generation needs, this is significantly cheaper than maintaining dedicated inference capacity.
+
+**FLUX Klein 4B.** Klein is a compact version of the FLUX architecture -- smaller parameter count, faster generation, lower cost. At $0.02 per image, it sits between FLUX Schnell ($0.003) and FLUX Dev ($0.015) on price while offering good quality for its size class.
+
+**Cold start optimization.** Fal has invested heavily in minimizing serverless cold start times for AI models. Their infrastructure pre-warms model weights and uses optimized container orchestration to reduce the time from request to first pixel.
+
+**Developer experience.** Fal's API is clean, well-documented, and includes built-in webhook support for async workflows. Their SDKs for Python and JavaScript are maintained actively.
+
+## Weaknesses
+
+**Limited model selection.** Only one model on OpenPaths currently. Fal's broader catalog includes more models, but our integration focuses on Klein as a fast, cheap image option.
+
+**Cold starts.** Despite optimization, serverless inference can have variable latency. The first request after a period of inactivity may take longer than subsequent requests.
+
+**No chat or text models.** Fal focuses on media generation and audio processing. For text tasks, you need another provider.
+
+## How We Integrated
+
+Fal's API uses their own endpoint format at fal.run/. Our integration submits image generation requests and handles the response, which can be synchronous for fast models like Klein or async with polling for heavier workloads.
+
+FLUX Klein sits in our image generation catalog as a compact, fast option. When the router determines a request needs quick image generation and maximum quality is not the priority, Klein is a candidate.
+
+## The Serverless Inference Trend
+
+Fal represents a broader trend in AI infrastructure: the move from "reserve a GPU for 24/7" to "pay per inference." For most applications, GPU utilization hovers between 5-30%. Paying for 100% of a GPU's time when you use 10% of it is wasteful.
+
+Serverless inference solves this by sharing GPU capacity across many users. The tradeoff is cold start latency and less control over hardware. For latency-insensitive workloads like image generation (where users expect a few seconds of generation time anyway), serverless is often the better economic choice.
+
+## When to Use Fal Through OpenPaths
+
+- **Fast image generation** where Klein's speed-to-cost ratio fits
+- **Variable workloads** that benefit from serverless scaling
+- **Prototyping** where $0.02 per image keeps costs minimal
+- **Compact model inference** where smaller parameter counts are acceptable`
   }
 ];

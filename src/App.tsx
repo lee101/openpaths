@@ -8,6 +8,7 @@ import { Playground } from './pages/Playground';
 import { Blog } from './pages/Blog';
 import { BlogPost } from './pages/BlogPost';
 import { Providers } from './pages/Providers';
+import { Docs } from './pages/Docs';
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
           <Route index element={<Landing />} />
           <Route path="models" element={<Models />} />
           <Route path="providers" element={<Providers />} />
+          <Route path="docs" element={<Docs />} />
           <Route path="playground" element={<Playground />} />
           <Route path="account" element={<Account />} />
           <Route path="blog" element={<Blog />} />

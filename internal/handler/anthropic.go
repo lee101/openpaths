@@ -115,11 +115,11 @@ func (h *AnthropicHandler) HandleMessages(ctx *fasthttp.RequestCtx) {
 
 	chatReq := anthToInternal(&req)
 
-	autoResult := h.router.MaybeResolveAuto(ctx, chatReq.Model, "text", extractChatPrompt(chatReq.Messages))
+	autoResult := h.router.MaybeResolveAuto(ctx, chatReq.Model, "", extractChatPrompt(chatReq.Messages))
 	if autoResult.ReasoningEffort != "" && chatReq.ReasoningEffort == "" {
 		chatReq.ReasoningEffort = autoResult.ReasoningEffort
 	}
-	candidates, err := h.router.ResolveWithRetries(autoResult.ModelID)
+	candidates, err := h.router.ResolveForRequest(originalModel, autoResult.ModelID)
 	if err != nil {
 		writeAnthError(ctx, 404, "not_found_error", err.Error())
 		return
