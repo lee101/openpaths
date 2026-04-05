@@ -247,7 +247,9 @@ func (r *Router) MaybeResolveAuto(ctx context.Context, modelName, modality, prom
 		return fallback
 	}
 
-	if modality != "" {
+	// Only override modality for generic auto models (text/image/video).
+	// Task-specific modalities (easy-task, medium-task) use their own routing table.
+	if modality != "" && mod == "text" {
 		mod = modality
 	}
 

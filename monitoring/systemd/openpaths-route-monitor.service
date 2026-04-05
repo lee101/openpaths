@@ -1,0 +1,15 @@
+[Unit]
+Description=OpenPaths daily API route tests with auto-fix
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=administrator
+WorkingDirectory=/nvme0n1-disk/code/openpaths
+ExecStart=/bin/bash monitoring/daily_route_monitor.sh
+TimeoutStartSec=3600
+Environment=HOME=/home/administrator
+Environment=PATH=/usr/local/bin:/usr/bin:/bin:/home/administrator/.local/bin:/home/administrator/.npm-global/bin
+
+[Install]
+WantedBy=multi-user.target

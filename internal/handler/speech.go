@@ -96,7 +96,7 @@ func (h *SpeechHandler) HandleSpeechGeneration(ctx *fasthttp.RequestCtx) {
 		if chars == 0 {
 			chars = len(req.Input)
 		}
-		cost, _ := h.billing.Deduct(ctx, userID, cand.ModelCfg.ID, chars, 0, "")
+		cost, _ := h.billing.Deduct(ctx, userID, cand.ModelCfg.ID, chars, 0, "", "")
 		h.recorder.RecordSuccess(userID, apiKeyID, originalModel, cand.Provider.Name(),
 			chars, 0, int(latency.Milliseconds()), 0, cost, false)
 

@@ -79,8 +79,8 @@ type anthUsage struct {
 }
 
 type anthErrorResponse struct {
-	Type  string         `json:"type"`
-	Error anthErrorBody  `json:"error"`
+	Type  string        `json:"type"`
+	Error anthErrorBody `json:"error"`
 }
 
 type anthErrorBody struct {
@@ -167,6 +167,11 @@ func (h *AnthropicHandler) tryAnthNonStream(
 		statusCode := 502
 		if pe, ok := err.(*provider.ProviderError); ok {
 			statusCode = pe.StatusCode
+			if statusCode == 401 || statusCode == 403 {
+				h.recorder.RecordError(userID, apiKeyID, originalModel, prov.Name(),
+					int(latency.Milliseconds()), statusCode, pe.Message, false)
+				return false
+			}
 			if !pe.Retryable {
 				h.recorder.RecordError(userID, apiKeyID, originalModel, prov.Name(),
 					int(latency.Milliseconds()), statusCode, pe.Message, false)
@@ -189,7 +194,7 @@ func (h *AnthropicHandler) tryAnthNonStream(
 		}
 	}
 
-	cost, _ := h.billing.Deduct(ctx, userID, modelCfg.ID, tokensIn, tokensOut, "")
+	cost, _ := h.billing.Deduct(ctx, userID, modelCfg.ID, tokensIn, tokensOut, req.ReasoningEffort, "")
 	h.recorder.RecordSuccess(userID, apiKeyID, originalModel, prov.Name(),
 		tokensIn, tokensOut, int(latency.Milliseconds()), tps, cost, false)
 
@@ -209,6 +214,9 @@ func (h *AnthropicHandler) tryAnthStream(
 	streamCh, err := prov.ChatCompletionStream(ctx, req)
 	if err != nil {
 		if pe, ok := err.(*provider.ProviderError); ok {
+			if pe.StatusCode == 401 || pe.StatusCode == 403 {
+				return false
+			}
 			if !pe.Retryable {
 				writeAnthError(ctx, pe.StatusCode, "api_error", pe.Message)
 				return true
@@ -230,11 +238,11 @@ func (h *AnthropicHandler) tryAnthStream(
 		startMsg := map[string]any{
 			"type": "message_start",
 			"message": map[string]any{
-				"id":         msgID,
-				"type":       "message",
-				"role":       "assistant",
-				"content":    []any{},
-				"model":      originalModel,
+				"id":          msgID,
+				"type":        "message",
+				"role":        "assistant",
+				"content":     []any{},
+				"model":       originalModel,
 				"stop_reason": nil,
 				"usage": map[string]int{
 					"input_tokens":  0,
@@ -329,7 +337,7 @@ func (h *AnthropicHandler) tryAnthStream(
 				tps = float32(float64(usage.CompletionTokens) / latency.Seconds())
 			}
 			cost, _ := h.billing.Deduct(ctx, userID, modelCfg.ID,
-				usage.PromptTokens, usage.CompletionTokens, "")
+				usage.PromptTokens, usage.CompletionTokens, req.ReasoningEffort, "")
 			h.recorder.RecordSuccess(userID, apiKeyID, originalModel, prov.Name(),
 				usage.PromptTokens, usage.CompletionTokens,
 				int(latency.Milliseconds()), tps, cost, true)
@@ -360,11 +368,12 @@ func writeAnthError(ctx *fasthttp.RequestCtx, status int, errType, message strin
 
 func anthToInternal(req *anthRequest) *model.ChatCompletionRequest {
 	chatReq := &model.ChatCompletionRequest{
-		Model:       req.Model,
-		Stream:      req.Stream,
-		Temperature: req.Temperature,
-		TopP:        req.TopP,
-		MaxTokens:   &req.MaxTokens,
+		Model:           req.Model,
+		Stream:          req.Stream,
+		Temperature:     req.Temperature,
+		TopP:            req.TopP,
+		MaxTokens:       &req.MaxTokens,
+		ReasoningEffort: parseAnthropicThinking(req.Thinking),
 	}
 
 	// System message
@@ -413,6 +422,51 @@ func anthToInternal(req *anthRequest) *model.ChatCompletionRequest {
 	}
 
 	return chatReq
+}
+
+func parseAnthropicThinking(thinking any) string {
+	m, ok := thinking.(map[string]any)
+	if !ok {
+		return ""
+	}
+
+	thinkingType, _ := m["type"].(string)
+	if thinkingType == "disabled" {
+		return "none"
+	}
+	if thinkingType != "" && thinkingType != "enabled" {
+		return ""
+	}
+
+	budget, ok := numberToInt(m["budget_tokens"])
+	if !ok || budget <= 0 {
+		return ""
+	}
+	switch {
+	case budget < 2048:
+		return "low"
+	case budget < 12288:
+		return "medium"
+	default:
+		return "high"
+	}
+}
+
+func numberToInt(v any) (int, bool) {
+	switch n := v.(type) {
+	case int:
+		return n, true
+	case int32:
+		return int(n), true
+	case int64:
+		return int(n), true
+	case float32:
+		return int(n), true
+	case float64:
+		return int(n), true
+	default:
+		return 0, false
+	}
 }
 
 func internalToAnth(resp *model.ChatCompletionResponse, originalModel string) *anthResponse {

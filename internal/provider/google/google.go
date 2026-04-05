@@ -37,10 +37,10 @@ func (p *GoogleProvider) Name() string { return "google" }
 
 // Gemini API types
 type geminiRequest struct {
-	Contents         []geminiContent        `json:"contents"`
-	SystemInstruction *geminiContent        `json:"systemInstruction,omitempty"`
-	GenerationConfig *geminiGenerationCfg   `json:"generationConfig,omitempty"`
-	Tools            []geminiToolDecl       `json:"tools,omitempty"`
+	Contents          []geminiContent      `json:"contents"`
+	SystemInstruction *geminiContent       `json:"systemInstruction,omitempty"`
+	GenerationConfig  *geminiGenerationCfg `json:"generationConfig,omitempty"`
+	Tools             []geminiToolDecl     `json:"tools,omitempty"`
 }
 
 type geminiContent struct {
@@ -65,11 +65,11 @@ type geminiFuncResp struct {
 }
 
 type geminiGenerationCfg struct {
-	Temperature     *float64             `json:"temperature,omitempty"`
-	TopP            *float64             `json:"topP,omitempty"`
-	MaxOutputTokens *int                 `json:"maxOutputTokens,omitempty"`
-	StopSequences   []string             `json:"stopSequences,omitempty"`
-	ThinkingConfig  *geminiThinkingCfg   `json:"thinkingConfig,omitempty"`
+	Temperature     *float64           `json:"temperature,omitempty"`
+	TopP            *float64           `json:"topP,omitempty"`
+	MaxOutputTokens *int               `json:"maxOutputTokens,omitempty"`
+	StopSequences   []string           `json:"stopSequences,omitempty"`
+	ThinkingConfig  *geminiThinkingCfg `json:"thinkingConfig,omitempty"`
 }
 
 type geminiThinkingCfg struct {
@@ -99,6 +99,7 @@ type geminiCandidate struct {
 type geminiUsage struct {
 	PromptTokenCount     int `json:"promptTokenCount"`
 	CandidatesTokenCount int `json:"candidatesTokenCount"`
+	ThoughtsTokenCount   int `json:"thoughtsTokenCount"`
 	TotalTokenCount      int `json:"totalTokenCount"`
 }
 
@@ -204,11 +205,7 @@ func (p *GoogleProvider) ChatCompletionStream(ctx context.Context, req *model.Ch
 			}
 
 			if gemResp.UsageMetadata != nil {
-				lastUsage = &model.UsageInfo{
-					PromptTokens:     gemResp.UsageMetadata.PromptTokenCount,
-					CompletionTokens: gemResp.UsageMetadata.CandidatesTokenCount,
-					TotalTokens:      gemResp.UsageMetadata.TotalTokenCount,
-				}
+				lastUsage = translateUsage(gemResp.UsageMetadata)
 			}
 
 			for _, cand := range gemResp.Candidates {
@@ -287,7 +284,7 @@ func translateRequest(req *model.ChatCompletionRequest) *geminiRequest {
 	}
 
 	if req.ReasoningEffort != "" {
-		budget := reasoningToBudget(req.ReasoningEffort)
+		budget := reasoningToBudget(req.ReasoningEffort, gemReq.GenerationConfig.MaxOutputTokens)
 		gemReq.GenerationConfig.ThinkingConfig = &geminiThinkingCfg{ThinkingBudget: &budget}
 	}
 
@@ -374,11 +371,7 @@ func translateResponse(resp *geminiResponse, requestModel string) *model.ChatCom
 
 	var usage *model.UsageInfo
 	if resp.UsageMetadata != nil {
-		usage = &model.UsageInfo{
-			PromptTokens:     resp.UsageMetadata.PromptTokenCount,
-			CompletionTokens: resp.UsageMetadata.CandidatesTokenCount,
-			TotalTokens:      resp.UsageMetadata.TotalTokenCount,
-		}
+		usage = translateUsage(resp.UsageMetadata)
 	}
 
 	return &model.ChatCompletionResponse{
@@ -395,18 +388,43 @@ func translateResponse(resp *geminiResponse, requestModel string) *model.ChatCom
 	}
 }
 
-func reasoningToBudget(effort string) int {
+func reasoningToBudget(effort string, maxOutputTokens *int) int {
+	clamp := func(budget int) int {
+		if maxOutputTokens != nil && *maxOutputTokens >= 0 && budget > *maxOutputTokens {
+			return *maxOutputTokens
+		}
+		return budget
+	}
+
 	switch effort {
 	case "none":
 		return 0
 	case "low":
-		return 1024
+		return clamp(1024)
 	case "medium":
-		return 8192
+		return clamp(8192)
 	case "high":
-		return 32768
+		return clamp(32768)
 	default:
 		return 0
+	}
+}
+
+func translateUsage(usage *geminiUsage) *model.UsageInfo {
+	if usage == nil {
+		return nil
+	}
+
+	completionTokens := usage.CandidatesTokenCount + usage.ThoughtsTokenCount
+	totalTokens := usage.TotalTokenCount
+	if totalTokens == 0 {
+		totalTokens = usage.PromptTokenCount + completionTokens
+	}
+
+	return &model.UsageInfo{
+		PromptTokens:     usage.PromptTokenCount,
+		CompletionTokens: completionTokens,
+		TotalTokens:      totalTokens,
 	}
 }
 

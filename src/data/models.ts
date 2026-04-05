@@ -13,6 +13,7 @@ export interface Model {
   tags: Tag[];
   released: string;
   popularity: number;
+  pricingType?: 'token' | 'request';
 }
 
 export function parseContextLength(ctx: string): number {
@@ -34,11 +35,12 @@ export const models: Model[] = [
     provider: 'Netwrck',
     description: 'State-of-the-art image generation with incredible photorealism. First-party from netwrck.com.',
     contextLength: 'N/A',
-    priceInput: 40.00,
+    priceInput: 0.04,
     priceOutput: 0,
     tags: ['art generation'],
     released: '2025-06-01',
-    popularity: -2
+    popularity: -2,
+    pricingType: 'request'
   },
   {
     id: 'text-embedding',
@@ -58,7 +60,7 @@ export const models: Model[] = [
     id: 'auto-easy-task',
     name: 'Auto Easy Task',
     provider: 'OpenPaths',
-    description: 'Cheapest models for simple tasks: lookups, formatting, summarization.',
+    description: 'Low-cost routing across GPT-5.4 Nano, Gemini Flash tiers, and Claude Haiku for simple tasks.',
     contextLength: '1M',
     priceInput: 0.02,
     priceOutput: 0.10,
@@ -70,12 +72,24 @@ export const models: Model[] = [
     id: 'auto-medium-task',
     name: 'Auto Medium Task',
     provider: 'OpenPaths',
-    description: 'Balanced mid-tier models for coding, analysis, and moderate complexity.',
-    contextLength: '200K',
-    priceInput: 3.00,
-    priceOutput: 15.00,
+    description: 'Balanced routing led by GPT-5.4 Mini with Claude Sonnet, Gemini 2.5 Flash, and DeepSeek fallbacks.',
+    contextLength: '400K',
+    priceInput: 0.75,
+    priceOutput: 4.50,
     tags: ['programming', 'general', 'reasoning'],
     released: '2026-03-03',
+    popularity: 0
+  },
+  {
+    id: 'auto-think',
+    name: 'Auto Think',
+    provider: 'OpenPaths',
+    description: 'Embedding-routed reasoning tier that picks none, low, medium, or high thinking across GPT-5.4 Nano, GPT-5.4 Mini, and GPT-5.4 with cross-provider fallbacks.',
+    contextLength: '400K',
+    priceInput: 0.75,
+    priceOutput: 4.50,
+    tags: ['programming', 'general', 'reasoning'],
+    released: '2026-03-17',
     popularity: 0
   },
 
@@ -225,6 +239,30 @@ export const models: Model[] = [
     tags: ['programming', 'fast'],
     released: '2026-01-15',
     popularity: 20
+  },
+  {
+    id: 'gpt-5.4-mini',
+    name: 'GPT-5.4 Mini',
+    provider: 'OpenAI',
+    description: 'Compact GPT-5.4 with strong coding, reasoning, and tool use at low cost.',
+    contextLength: '400K',
+    priceInput: 0.75,
+    priceOutput: 4.50,
+    tags: ['programming', 'reasoning', 'general', 'vision', 'fast'],
+    released: '2026-03-17',
+    popularity: 5
+  },
+  {
+    id: 'gpt-5.4-nano',
+    name: 'GPT-5.4 Nano',
+    provider: 'OpenAI',
+    description: 'Fastest, cheapest GPT-5.4 variant. Ideal for classification, extraction, and simple coding tasks.',
+    contextLength: '400K',
+    priceInput: 0.20,
+    priceOutput: 1.25,
+    tags: ['general', 'fast', 'vision'],
+    released: '2026-03-17',
+    popularity: 6
   },
   {
     id: 'gpt-4o',
@@ -738,6 +776,18 @@ export const models: Model[] = [
     released: '2025-08-01',
     popularity: 52
   },
+  {
+    id: 'or/hunter-alpha',
+    name: 'Hunter Alpha',
+    provider: 'OpenRouter',
+    description: 'Free 1T parameter frontier model built for agentic use, long-horizon planning, and complex reasoning.',
+    contextLength: '1M',
+    priceInput: 0,
+    priceOutput: 0,
+    tags: ['free', 'reasoning', 'general'],
+    released: '2026-03-11',
+    popularity: 46
+  },
 
   // --- Image Generation ---
   {
@@ -746,11 +796,12 @@ export const models: Model[] = [
     provider: 'Together AI',
     description: 'Top-tier image generation with exceptional typography and detail.',
     contextLength: 'N/A',
-    priceInput: 40.00,
+    priceInput: 0.04,
     priceOutput: 0,
     tags: ['art generation'],
     released: '2024-08-01',
-    popularity: 53
+    popularity: 53,
+    pricingType: 'request'
   },
   {
     id: 'flux-dev',
@@ -758,11 +809,12 @@ export const models: Model[] = [
     provider: 'Together AI',
     description: 'Development-tier FLUX model for fast image iteration.',
     contextLength: 'N/A',
-    priceInput: 15.00,
+    priceInput: 0.015,
     priceOutput: 0,
     tags: ['art generation', 'open-source'],
     released: '2025-11-25',
-    popularity: 54
+    popularity: 54,
+    pricingType: 'request'
   },
   {
     id: 'flux-schnell',
@@ -770,11 +822,12 @@ export const models: Model[] = [
     provider: 'Together AI',
     description: 'Ultra-fast, ultra-cheap image generation.',
     contextLength: 'N/A',
-    priceInput: 3.00,
+    priceInput: 0.003,
     priceOutput: 0,
     tags: ['art generation', 'open-source', 'fast'],
     released: '2024-08-01',
-    popularity: 55
+    popularity: 55,
+    pricingType: 'request'
   },
   {
     id: 'klein',
@@ -782,11 +835,12 @@ export const models: Model[] = [
     provider: 'Fal',
     description: 'Compact FLUX model for fast, affordable image generation.',
     contextLength: 'N/A',
-    priceInput: 20.00,
+    priceInput: 0.02,
     priceOutput: 0,
     tags: ['art generation', 'fast'],
     released: '2025-10-01',
-    popularity: 56
+    popularity: 56,
+    pricingType: 'request'
   },
   {
     id: 'stable-diffusion-3',
@@ -794,11 +848,12 @@ export const models: Model[] = [
     provider: 'Together AI',
     description: 'Open-weights image generation with excellent prompt adherence.',
     contextLength: 'N/A',
-    priceInput: 2.00,
+    priceInput: 0.002,
     priceOutput: 0,
     tags: ['art generation', 'open-source'],
     released: '2024-06-12',
-    popularity: 57
+    popularity: 57,
+    pricingType: 'request'
   },
   {
     id: 'glm-image',
@@ -806,11 +861,12 @@ export const models: Model[] = [
     provider: 'Z.AI',
     description: 'Z.AI image generation model with multiple aspect ratios.',
     contextLength: 'N/A',
-    priceInput: 15.00,
+    priceInput: 0.015,
     priceOutput: 0,
     tags: ['art generation'],
     released: '2025-05-01',
-    popularity: 58
+    popularity: 58,
+    pricingType: 'request'
   },
   {
     id: 'zimage',
@@ -818,11 +874,12 @@ export const models: Model[] = [
     provider: 'Netwrck',
     description: 'Anime-style image generation at very low cost.',
     contextLength: 'N/A',
-    priceInput: 7.00,
+    priceInput: 0.007,
     priceOutput: 0,
     tags: ['art generation', 'fast'],
     released: '2025-03-01',
-    popularity: 59
+    popularity: 59,
+    pricingType: 'request'
   },
 
   // --- Video Generation ---

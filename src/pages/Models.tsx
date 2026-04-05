@@ -192,12 +192,20 @@ export function Models() {
               </div>
 
               <div className="pt-4 border-t border-white/10 flex justify-between items-center text-xs font-mono">
-                <div className="text-white/40">
-                  <span className="text-white">${model.priceInput.toFixed(2)}</span> / 1M in
-                </div>
-                <div className="text-white/40">
-                  <span className="text-white">${model.priceOutput.toFixed(2)}</span> / 1M out
-                </div>
+                {model.pricingType === 'request' ? (
+                  <div className="text-white/40">
+                    <span className="text-white">${model.priceInput < 0.01 ? model.priceInput.toFixed(3) : model.priceInput.toFixed(2)}</span> / request
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-white/40">
+                      <span className="text-white">${model.priceInput.toFixed(2)}</span> / 1M in
+                    </div>
+                    <div className="text-white/40">
+                      <span className="text-white">${model.priceOutput.toFixed(2)}</span> / 1M out
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="pt-2">

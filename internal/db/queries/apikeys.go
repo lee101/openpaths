@@ -77,6 +77,19 @@ func (q *APIKeyQueries) ListByUser(ctx context.Context, userID string) ([]model.
 	return keys, nil
 }
 
+func (q *APIKeyQueries) GetFirstByUser(ctx context.Context, userID string) (*model.APIKey, error) {
+	var k model.APIKey
+	err := q.pool.QueryRow(ctx,
+		`SELECT id, user_id, key_hash, key_prefix, name, created_at, last_used_at, revoked, rate_limit_rpm
+		 FROM api_keys WHERE user_id = $1 AND NOT revoked ORDER BY created_at ASC LIMIT 1`,
+		userID,
+	).Scan(&k.ID, &k.UserID, &k.KeyHash, &k.KeyPrefix, &k.Name, &k.CreatedAt, &k.LastUsedAt, &k.Revoked, &k.RateLimitRPM)
+	if err != nil {
+		return nil, fmt.Errorf("get first api key: %w", err)
+	}
+	return &k, nil
+}
+
 func (q *APIKeyQueries) Revoke(ctx context.Context, id, userID string) error {
 	tag, err := q.pool.Exec(ctx,
 		"UPDATE api_keys SET revoked = TRUE WHERE id = $1 AND user_id = $2",

@@ -10,14 +10,13 @@ import (
 )
 
 type AuthHandler struct {
-	userQ    *queries.UserQueries
-	creditQ  *queries.CreditQueries
-	apiKeyQ  *queries.APIKeyQueries
-	jwt      *auth.JWTService
+	userQ   *queries.UserQueries
+	creditQ *queries.CreditQueries
+	apiKeyQ *queries.APIKeyQueries
 }
 
-func NewAuthHandler(userQ *queries.UserQueries, creditQ *queries.CreditQueries, apiKeyQ *queries.APIKeyQueries, jwt *auth.JWTService) *AuthHandler {
-	return &AuthHandler{userQ: userQ, creditQ: creditQ, apiKeyQ: apiKeyQ, jwt: jwt}
+func NewAuthHandler(userQ *queries.UserQueries, creditQ *queries.CreditQueries, apiKeyQ *queries.APIKeyQueries) *AuthHandler {
+	return &AuthHandler{userQ: userQ, creditQ: creditQ, apiKeyQ: apiKeyQ}
 }
 
 type registerRequest struct {
@@ -84,14 +83,9 @@ func (h *AuthHandler) HandleRegister(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	token, err := h.jwt.Generate(user.ID, user.Email)
-	if err != nil {
-		writeError(ctx, 500, "server_error", "Failed to generate token")
-		return
-	}
-
+	setSessionCookie(ctx, rawKey)
 	writeJSON(ctx, 201, authResponse{
-		Token:  token,
+		Token:  rawKey,
 		APIKey: rawKey,
 		User: map[string]any{
 			"id":    user.ID,
@@ -130,18 +124,35 @@ func (h *AuthHandler) HandleLogin(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	token, err := h.jwt.Generate(user.ID, user.Email)
+	rawKey, keyHash, keyPrefix, err := auth.GenerateAPIKey()
 	if err != nil {
-		writeError(ctx, 500, "server_error", "Failed to generate token")
+		writeError(ctx, 500, "server_error", "Failed to generate session key")
+		return
+	}
+	if _, err := h.apiKeyQ.Create(ctx, user.ID, keyHash, keyPrefix, "Login"); err != nil {
+		writeError(ctx, 500, "server_error", "Failed to create session key")
 		return
 	}
 
+	setSessionCookie(ctx, rawKey)
 	writeJSON(ctx, 200, authResponse{
-		Token: token,
+		Token:  rawKey,
+		APIKey: rawKey,
 		User: map[string]any{
 			"id":    user.ID,
 			"email": user.Email,
 			"name":  user.Name,
 		},
 	})
+}
+
+// HandleLogout clears the session cookie.
+func (h *AuthHandler) HandleLogout(ctx *fasthttp.RequestCtx) {
+	ctx.Response.Header.Set("Set-Cookie", "op_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0")
+	writeJSON(ctx, 200, map[string]any{"ok": true})
+}
+
+func setSessionCookie(ctx *fasthttp.RequestCtx, key string) {
+	ctx.Response.Header.Set("Set-Cookie",
+		"op_session="+key+"; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000")
 }

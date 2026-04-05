@@ -34,7 +34,21 @@ func New(apiKey, baseURL string) *OpenAIProvider {
 
 func (p *OpenAIProvider) Name() string { return "openai" }
 
+// normalizeMaxTokens converts max_tokens to max_completion_tokens for newer
+// OpenAI models (o-series, gpt-5.4-*) that reject the legacy parameter.
+func normalizeMaxTokens(req *model.ChatCompletionRequest) {
+	if req.MaxTokens != nil && req.MaxCompletionTokens == nil {
+		m := req.Model
+		if strings.HasPrefix(m, "o1") || strings.HasPrefix(m, "o3") || strings.HasPrefix(m, "o4") ||
+			strings.HasPrefix(m, "gpt-5.4") || strings.HasPrefix(m, "gpt-5-codex") {
+			req.MaxCompletionTokens = req.MaxTokens
+			req.MaxTokens = nil
+		}
+	}
+}
+
 func (p *OpenAIProvider) ChatCompletion(ctx context.Context, req *model.ChatCompletionRequest) (*model.ChatCompletionResponse, error) {
+	normalizeMaxTokens(req)
 	body, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("marshal request: %w", err)
@@ -79,6 +93,10 @@ func (p *OpenAIProvider) ChatCompletion(ctx context.Context, req *model.ChatComp
 
 func (p *OpenAIProvider) ChatCompletionStream(ctx context.Context, req *model.ChatCompletionRequest) (<-chan provider.StreamEvent, error) {
 	req.Stream = true
+	if req.StreamOptions == nil {
+		req.StreamOptions = &model.StreamOptions{IncludeUsage: true}
+	}
+	normalizeMaxTokens(req)
 
 	body, err := json.Marshal(req)
 	if err != nil {

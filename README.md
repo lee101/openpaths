@@ -76,6 +76,36 @@ GOMAXPROCS=3 go build -tags="gpu cuda" \
 - `POST /auth/login` -- Login
 - `GET /health` -- Health check
 
+## Chat Parameters
+
+`POST /v1/chat/completions` supports the standard OpenAI-style fields we route internally across providers:
+
+| Parameter | Status | Notes |
+|----------|--------|-------|
+| `model` | Full support | Includes direct models plus `auto`, `auto-easy-task`, `auto-medium-task`, and `auto-think` |
+| `messages` | Full support | OpenAI chat message format |
+| `temperature`, `top_p`, `stop` | Full support | Passed through where supported |
+| `max_tokens`, `max_completion_tokens` | Full support | Normalized per provider/model family |
+| `stream` | Full support | Streaming SSE responses |
+| `tools`, `tool_choice` | Full support | Function/tool calling |
+| `response_format` | Full support | Structured outputs / JSON mode where supported |
+| `reasoning_effort` | Full support | Supported values: `none`, `low`, `medium`, `high` |
+
+`reasoning_effort` can be set directly on compatible OpenAI-format requests:
+
+```json
+{
+  "model": "auto-think",
+  "messages": [
+    {"role": "user", "content": "Design a mesh simplification algorithm."}
+  ],
+  "reasoning_effort": "high",
+  "max_tokens": 2048
+}
+```
+
+The Anthropic-compatible `POST /v1/messages` endpoint also accepts `thinking`, which we map onto the same internal reasoning controls.
+
 ## Frontend
 
 ```bash

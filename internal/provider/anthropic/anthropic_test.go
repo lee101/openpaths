@@ -158,6 +158,45 @@ func TestTranslateRequestDefaults(t *testing.T) {
 	}
 }
 
+func TestTranslateRequest_MapsReasoningEffortToThinkingBudget(t *testing.T) {
+	maxTokens := 9000
+	req := &model.ChatCompletionRequest{
+		Model:           "claude-sonnet-4-20250514",
+		Messages:        []model.ChatMessage{{Role: "user", Content: "Think carefully."}},
+		MaxTokens:       &maxTokens,
+		ReasoningEffort: "medium",
+	}
+
+	anthReq := translateRequest(req)
+	if anthReq.Thinking == nil {
+		t.Fatal("expected thinking config to be set")
+	}
+	if anthReq.Thinking.Type != "enabled" {
+		t.Fatalf("thinking type = %q, want %q", anthReq.Thinking.Type, "enabled")
+	}
+	if anthReq.Thinking.BudgetTokens != 4096 {
+		t.Fatalf("thinking budget = %d, want %d", anthReq.Thinking.BudgetTokens, 4096)
+	}
+}
+
+func TestTranslateRequest_ClampsThinkingBudgetToMaxTokens(t *testing.T) {
+	maxTokens := 1500
+	req := &model.ChatCompletionRequest{
+		Model:           "claude-sonnet-4-20250514",
+		Messages:        []model.ChatMessage{{Role: "user", Content: "Think carefully."}},
+		MaxTokens:       &maxTokens,
+		ReasoningEffort: "high",
+	}
+
+	anthReq := translateRequest(req)
+	if anthReq.Thinking == nil {
+		t.Fatal("expected thinking config to be set")
+	}
+	if anthReq.Thinking.BudgetTokens != 1499 {
+		t.Fatalf("thinking budget = %d, want %d", anthReq.Thinking.BudgetTokens, 1499)
+	}
+}
+
 func TestTranslateResponse(t *testing.T) {
 	resp := &anthropicResponse{
 		ID:         "msg_123",

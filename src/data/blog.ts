@@ -31,12 +31,13 @@ client = OpenAI(
 )
 
 response = client.chat.completions.create(
-    model="auto",  # or any specific model
-    messages=[{"role": "user", "content": "Hello!"}]
+    model="auto-think",  # or "auto", "auto-medium-task", any direct model
+    messages=[{"role": "user", "content": "Hello!"}],
+    reasoning_effort="low"
 )
 \`\`\`
 
-That's it. Every OpenAI SDK feature works: streaming, tool use, vision, response format. You get access to 50+ models across 15 providers instead of just OpenAI.
+That's it. Every OpenAI SDK feature works: streaming, tool use, vision, response format, and \`reasoning_effort\`. You get access to 50+ models across 15 providers instead of just OpenAI.
 
 ## From Anthropic SDK
 
@@ -51,6 +52,7 @@ client = anthropic.Anthropic(
 message = client.messages.create(
     model="auto-medium-task",  # or "claude-sonnet-4-6", etc.
     max_tokens=1000,
+    thinking={"type": "enabled", "budget_tokens": 4096},
     messages=[{"role": "user", "content": "Hello!"}]
 )
 \`\`\`
@@ -78,6 +80,7 @@ MiniMax supports both OpenAI and Anthropic SDK formats. If you're already using 
 
 - \`auto-easy-task\` -- Routes to cheapest models (Gemini Flash Lite, MiniMax M2.5 Highspeed, GPT-4o Mini). For simple lookups, formatting, summarization. Starting at $0.02/1M input tokens.
 - \`auto-medium-task\` -- Routes to mid-tier models (Claude Sonnet, Gemini Flash, DeepSeek, MiniMax M2.5). For coding, analysis, moderate complexity.
+- \`auto-think\` -- Routes by reasoning depth and assigns \`none\`, \`low\`, \`medium\`, or \`high\` thinking automatically.
 - \`auto\` -- Full intelligent routing across all tiers based on task complexity.
 
 **Automatic fallbacks.** If Claude is down, your request falls through to GPT-5.2 or Gemini. No code changes needed.
@@ -120,6 +123,7 @@ Our \`/v1/messages\` endpoint supports:
 | Tool use | Full support (input_schema translated) |
 | Temperature, top_p | Full support |
 | max_tokens | Full support |
+| thinking | Full support (\`enabled\` / \`disabled\`, \`budget_tokens\`) |
 | Content blocks | text and tool_use |
 
 Streaming emits proper Anthropic SSE events: \`message_start\`, \`content_block_start\`, \`content_block_delta\`, \`content_block_stop\`, \`message_delta\`, \`message_stop\`.

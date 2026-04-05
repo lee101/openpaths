@@ -92,10 +92,11 @@ export function Landing() {
                 {'  '}api_key<span className="text-white/40">="</span><span className="text-white">{apiKey}</span><span className="text-white/40">"</span>{'\n'}
                 <span className="text-white">)</span>{'\n\n'}
                 <span className="text-white">response</span> <span className="text-white/40">=</span> <span className="text-white">client.chat.completions.create(</span>{'\n'}
-                {'  '}model<span className="text-white/40">="</span><span className="text-white">opus-latest</span><span className="text-white/40">"</span>,{'\n'}
+                {'  '}model<span className="text-white/40">="</span><span className="text-white">auto-think</span><span className="text-white/40">"</span>,{'\n'}
                 {'  '}messages<span className="text-white/40">=[</span>{'\n'}
                 {'    '}<span className="text-white/40">&#123;</span>"role"<span className="text-white/40">:</span> "user"<span className="text-white/40">,</span> "content"<span className="text-white/40">:</span> "Write a python script to reverse a string."<span className="text-white/40">&#125;</span>{'\n'}
-                {'  '}<span className="text-white/40">]</span>{'\n'}
+                {'  '}<span className="text-white/40">],</span>{'\n'}
+                {'  '}reasoning_effort<span className="text-white/40">="</span><span className="text-white">low</span><span className="text-white/40">"</span>{'\n'}
                 <span className="text-white">)</span>
               </pre>
             ) : (
@@ -104,16 +105,25 @@ export function Landing() {
                 {'  '}<span className="text-white/40">-H</span> <span className="text-white">"Content-Type: application/json"</span> <span className="text-white/40">\</span>{'\n'}
                 {'  '}<span className="text-white/40">-H</span> <span className="text-white">"Authorization: Bearer {apiKey}"</span> <span className="text-white/40">\</span>{'\n'}
                 {'  '}<span className="text-white/40">-d</span> <span className="text-white">'{'{'}</span>{'\n'}
-                {'    '}<span className="text-white">"model": "opus-latest",</span>{'\n'}
+                {'    '}<span className="text-white">"model": "auto-think",</span>{'\n'}
                 {'    '}<span className="text-white">"messages": [</span>{'\n'}
                 {'      '}<span className="text-white">{'{'}</span>{'\n'}
                 {'        '}<span className="text-white">"role": "user",</span>{'\n'}
                 {'        '}<span className="text-white">"content": "Write a python script to reverse a string."</span>{'\n'}
                 {'      '}<span className="text-white">{'}'}</span>{'\n'}
-                {'    '}<span className="text-white">]</span>{'\n'}
+                {'    '}<span className="text-white">],</span>{'\n'}
+                {'    '}<span className="text-white">"reasoning_effort": "low"</span>{'\n'}
                 {'  '}<span className="text-white">{'}'}'</span>
               </pre>
             )}
+          </div>
+        </div>
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 font-mono text-xs text-white/50">
+          <div className="border border-white/10 rounded-lg p-4 bg-white/[0.02]">
+            OpenAI-compatible params: <span className="text-white">model</span>, <span className="text-white">messages</span>, <span className="text-white">temperature</span>, <span className="text-white">top_p</span>, <span className="text-white">max_tokens</span>, <span className="text-white">stream</span>, <span className="text-white">tools</span>, <span className="text-white">response_format</span>, <span className="text-white">reasoning_effort</span>.
+          </div>
+          <div className="border border-white/10 rounded-lg p-4 bg-white/[0.02]">
+            <span className="text-white">reasoning_effort</span> supports <span className="text-white">none</span>, <span className="text-white">low</span>, <span className="text-white">medium</span>, and <span className="text-white">high</span>. Use <span className="text-white">auto-think</span> to let OpenPaths pick the reasoning tier automatically.
           </div>
         </div>
       </section>

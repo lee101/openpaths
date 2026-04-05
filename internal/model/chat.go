@@ -8,6 +8,7 @@ type ChatCompletionRequest struct {
 	TopP                *float64        `json:"top_p,omitempty"`
 	N                   *int            `json:"n,omitempty"`
 	Stream              bool            `json:"stream,omitempty"`
+	StreamOptions       *StreamOptions  `json:"stream_options,omitempty"`
 	Stop                []string        `json:"stop,omitempty"`
 	MaxTokens           *int            `json:"max_tokens,omitempty"`
 	MaxCompletionTokens *int            `json:"max_completion_tokens,omitempty"`
@@ -65,6 +66,10 @@ type ResponseFormat struct {
 	Type string `json:"type"`
 }
 
+type StreamOptions struct {
+	IncludeUsage bool `json:"include_usage,omitempty"`
+}
+
 type Tool struct {
 	Type     string       `json:"type"`
 	Function ToolFunction `json:"function"`
@@ -100,16 +105,16 @@ type ErrorDetail struct {
 
 // ModelInfo represents a model in the /v1/models response.
 type ModelInfo struct {
-	ID               string            `json:"id"`
-	Object           string            `json:"object"`
-	Created          int64             `json:"created"`
-	OwnedBy          string            `json:"owned_by"`
-	Pricing          *ModelPricing     `json:"pricing,omitempty"`
-	Capabilities     *ModelCapabilities `json:"capabilities,omitempty"`
-	ContextWindow    int               `json:"context_window,omitempty"`
-	MaxOutputTokens  int               `json:"max_output_tokens,omitempty"`
-	Aliases          []string          `json:"aliases,omitempty"`
-	SupportedSizes   []string          `json:"supported_sizes,omitempty"`
+	ID              string             `json:"id"`
+	Object          string             `json:"object"`
+	Created         int64              `json:"created"`
+	OwnedBy         string             `json:"owned_by"`
+	Pricing         *ModelPricing      `json:"pricing,omitempty"`
+	Capabilities    *ModelCapabilities `json:"capabilities,omitempty"`
+	ContextWindow   int                `json:"context_window,omitempty"`
+	MaxOutputTokens int                `json:"max_output_tokens,omitempty"`
+	Aliases         []string           `json:"aliases,omitempty"`
+	SupportedSizes  []string           `json:"supported_sizes,omitempty"`
 }
 
 type ModelPricing struct {

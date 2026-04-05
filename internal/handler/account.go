@@ -99,8 +99,9 @@ func (h *AccountHandler) HandleGetBalance(ctx *fasthttp.RequestCtx) {
 	dollars := float64(balance) / 10000.0
 
 	writeJSON(ctx, 200, map[string]any{
-		"balance_cents": balance,
-		"balance_usd":   dollars,
+		"balance_cents":     balance,
+		"balance_usd":       dollars,
+		"balance_usd_exact": formatUSDExact(balance),
 	})
 }
 

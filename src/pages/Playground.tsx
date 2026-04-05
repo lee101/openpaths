@@ -20,6 +20,7 @@ const CHAT_MODELS = [
   { id: 'auto', label: 'Auto (intelligent routing)', provider: 'OpenPaths' },
   { id: 'auto-easy-task', label: 'Auto Easy (cheapest)', provider: 'OpenPaths' },
   { id: 'auto-medium-task', label: 'Auto Medium (balanced)', provider: 'OpenPaths' },
+  { id: 'auto-think', label: 'Auto Think (reasoning)', provider: 'OpenPaths' },
   { id: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro', provider: 'Google' },
   { id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', provider: 'Google' },
   { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', provider: 'Google' },

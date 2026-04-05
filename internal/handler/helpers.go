@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/openpaths/openpaths/internal/model"
 	"github.com/valyala/fasthttp"
@@ -29,4 +30,14 @@ func writeJSON(ctx *fasthttp.RequestCtx, status int, v any) {
 
 func WriteJSONPublic(ctx *fasthttp.RequestCtx, status int, v any) {
 	writeJSON(ctx, status, v)
+}
+
+func formatUSDExact(amountUnits int64) string {
+	sign := ""
+	if amountUnits < 0 {
+		sign = "-"
+		amountUnits = -amountUnits
+	}
+
+	return fmt.Sprintf("%s%d.%04d", sign, amountUnits/10000, amountUnits%10000)
 }

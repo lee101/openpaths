@@ -134,6 +134,14 @@ func TestChatCompletionServerError(t *testing.T) {
 
 func TestChatCompletionStreamSuccess(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req model.ChatCompletionRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			t.Fatalf("decode request: %v", err)
+		}
+		if req.StreamOptions == nil || !req.StreamOptions.IncludeUsage {
+			t.Fatalf("expected stream_options.include_usage to be true")
+		}
+
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.WriteHeader(200)
 

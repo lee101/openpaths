@@ -45,6 +45,7 @@ type anthropicRequest struct {
 	MaxTokens int                `json:"max_tokens"`
 	Stream    bool               `json:"stream,omitempty"`
 	Tools     []anthropicTool    `json:"tools,omitempty"`
+	Thinking  *anthropicThinking `json:"thinking,omitempty"`
 }
 
 type anthropicMessage struct {
@@ -56,6 +57,11 @@ type anthropicTool struct {
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
 	InputSchema any    `json:"input_schema,omitempty"`
+}
+
+type anthropicThinking struct {
+	Type         string `json:"type"`
+	BudgetTokens int    `json:"budget_tokens,omitempty"`
 }
 
 type anthropicResponse struct {
@@ -83,12 +89,12 @@ type anthropicUsage struct {
 
 // Streaming event types
 type anthropicStreamEvent struct {
-	Type         string            `json:"type"`
+	Type         string             `json:"type"`
 	Message      *anthropicResponse `json:"message,omitempty"`
-	Index        int               `json:"index,omitempty"`
-	ContentBlock *anthropicContent `json:"content_block,omitempty"`
-	Delta        *anthropicDelta   `json:"delta,omitempty"`
-	Usage        *anthropicUsage   `json:"usage,omitempty"`
+	Index        int                `json:"index,omitempty"`
+	ContentBlock *anthropicContent  `json:"content_block,omitempty"`
+	Delta        *anthropicDelta    `json:"delta,omitempty"`
+	Usage        *anthropicUsage    `json:"usage,omitempty"`
 }
 
 type anthropicDelta struct {
@@ -300,6 +306,9 @@ func translateRequest(req *model.ChatCompletionRequest) *anthropicRequest {
 	if req.MaxCompletionTokens != nil {
 		anthReq.MaxTokens = *req.MaxCompletionTokens
 	}
+	if thinking := reasoningToThinking(req.ReasoningEffort, anthReq.MaxTokens); thinking != nil {
+		anthReq.Thinking = thinking
+	}
 
 	// Extract system message
 	var messages []anthropicMessage
@@ -327,6 +336,42 @@ func translateRequest(req *model.ChatCompletionRequest) *anthropicRequest {
 	}
 
 	return anthReq
+}
+
+func reasoningToThinking(effort string, maxTokens int) *anthropicThinking {
+	switch effort {
+	case "", "none":
+		return nil
+	}
+
+	maxBudget := maxTokens - 1
+	if maxBudget < 1024 {
+		return nil
+	}
+
+	budget := 1024
+	switch effort {
+	case "low":
+		budget = 1024
+	case "medium":
+		budget = 4096
+	case "high":
+		budget = 16384
+	default:
+		return nil
+	}
+
+	if budget > maxBudget {
+		budget = maxBudget
+	}
+	if budget < 1024 {
+		return nil
+	}
+
+	return &anthropicThinking{
+		Type:         "enabled",
+		BudgetTokens: budget,
+	}
 }
 
 func translateResponse(resp *anthropicResponse, requestModel string) *model.ChatCompletionResponse {

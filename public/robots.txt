@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://openpaths.io/sitemap.xml

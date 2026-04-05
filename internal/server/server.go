@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"os"
@@ -57,7 +58,7 @@ func New(deps *Dependencies) *Server {
 
 	chatH := handler.NewChatHandler(deps.Router, deps.Billing, deps.Recorder)
 	modelsH := handler.NewModelsHandler(deps.Router)
-	authH := handler.NewAuthHandler(deps.UserQ, deps.CreditQ, deps.APIKeyQ, deps.JWTService)
+	authH := handler.NewAuthHandler(deps.UserQ, deps.CreditQ, deps.APIKeyQ)
 	accountH := handler.NewAccountHandler(deps.APIKeyQ, deps.CreditQ, deps.Billing)
 	creditsH := handler.NewCreditsHandler(deps.Billing)
 	statsH := handler.NewStatsHandler(deps.StatsQ)
@@ -70,10 +71,11 @@ func New(deps *Dependencies) *Server {
 		middleware.BalanceCheck(deps.Billing),
 	)
 
-	jwtChain := middleware.Chain(
+	// accountChain: API key auth only — no balance check for account management
+	accountChain := middleware.Chain(
 		middleware.Recovery(),
 		middleware.Logging(),
-		middleware.JWTAuth(deps.JWTService),
+		middleware.APIKeyAuth(deps.APIKeyQ),
 	)
 
 	publicChain := middleware.Chain(
@@ -125,17 +127,18 @@ func New(deps *Dependencies) *Server {
 
 	r.POST("/auth/register", publicChain(authH.HandleRegister))
 	r.POST("/auth/login", publicChain(authH.HandleLogin))
+	r.POST("/auth/logout", publicChain(authH.HandleLogout))
 
-	r.GET("/account/keys", jwtChain(accountH.HandleListAPIKeys))
-	r.POST("/account/keys", jwtChain(accountH.HandleCreateAPIKey))
-	r.DELETE("/account/keys/{id}", jwtChain(accountH.HandleRevokeAPIKey))
-	r.GET("/account/balance", jwtChain(accountH.HandleGetBalance))
-	r.GET("/account/transactions", jwtChain(accountH.HandleGetTransactions))
-	r.POST("/account/credits/add", jwtChain(creditsH.HandleAddCredits))
+	r.GET("/account/keys", accountChain(accountH.HandleListAPIKeys))
+	r.POST("/account/keys", accountChain(accountH.HandleCreateAPIKey))
+	r.DELETE("/account/keys/{id}", accountChain(accountH.HandleRevokeAPIKey))
+	r.GET("/account/balance", accountChain(accountH.HandleGetBalance))
+	r.GET("/account/transactions", accountChain(accountH.HandleGetTransactions))
+	r.POST("/account/credits/add", accountChain(creditsH.HandleAddCredits))
 
 	if deps.CryptoSvc != nil {
 		cryptoH := handler.NewCryptoHandler(deps.CryptoSvc)
-		r.POST("/crypto/checkout", jwtChain(cryptoH.HandleCreateCheckout))
+		r.POST("/crypto/checkout", accountChain(cryptoH.HandleCreateCheckout))
 		r.GET("/crypto/checkout/{id}", publicChain(cryptoH.HandleGetCheckout))
 		r.GET("/crypto/checkout/{id}/events", publicChain(cryptoH.HandleCheckoutEvents))
 		r.GET("/crypto/prices", publicChain(cryptoH.HandlePrices))
@@ -144,15 +147,15 @@ func New(deps *Dependencies) *Server {
 
 	if deps.StripeSvc != nil {
 		atH := handler.NewAutotopupHandler(deps.UserQ, deps.StripeSvc)
-		r.POST("/account/stripe/setup", jwtChain(atH.HandleStripeSetup))
-		r.POST("/account/stripe/confirm", jwtChain(atH.HandleStripeConfirm))
-		r.GET("/account/stripe/payment-methods", jwtChain(atH.HandleListPaymentMethods))
-		r.DELETE("/account/stripe/payment-methods/{id}", jwtChain(atH.HandleDeletePaymentMethod))
-		r.POST("/account/autotopup/settings", jwtChain(atH.HandleUpdateAutotopupSettings))
-		r.GET("/account/autotopup/settings", jwtChain(atH.HandleGetAutotopupSettings))
+		r.POST("/account/stripe/setup", accountChain(atH.HandleStripeSetup))
+		r.POST("/account/stripe/confirm", accountChain(atH.HandleStripeConfirm))
+		r.GET("/account/stripe/payment-methods", accountChain(atH.HandleListPaymentMethods))
+		r.DELETE("/account/stripe/payment-methods/{id}", accountChain(atH.HandleDeletePaymentMethod))
+		r.POST("/account/autotopup/settings", accountChain(atH.HandleUpdateAutotopupSettings))
+		r.GET("/account/autotopup/settings", accountChain(atH.HandleGetAutotopupSettings))
 
 		checkoutH := handler.NewCheckoutHandler(deps.StripeSvc, deps.UserQ, deps.Billing, deps.Config.Stripe.CreditsPriceID, deps.Config.Stripe.WebhookSecret)
-		r.POST("/account/stripe/checkout", jwtChain(checkoutH.HandleCreateCheckout))
+		r.POST("/account/stripe/checkout", accountChain(checkoutH.HandleCreateCheckout))
 		r.GET("/account/stripe/config", publicChain(checkoutH.HandleStripeConfig))
 		r.POST("/stripe/webhooks", publicChain(checkoutH.HandleWebhook))
 
@@ -178,7 +181,7 @@ func New(deps *Dependencies) *Server {
 	if deps.Discovery != nil {
 		disc := deps.Discovery
 		metaQ := deps.ModelMetaQ
-		r.POST("/admin/discovery/run", jwtChain(func(ctx *fasthttp.RequestCtx) {
+		r.POST("/admin/discovery/run", apiKeyChain(func(ctx *fasthttp.RequestCtx) {
 			n, err := disc.DiscoverAll(ctx)
 			if err != nil {
 				handler.WriteJSONPublic(ctx, 500, map[string]any{"error": err.Error()})
@@ -217,7 +220,7 @@ func New(deps *Dependencies) *Server {
 
 	handler := r.Handler
 	if staticDir := deps.Config.Server.StaticDir; staticDir != "" {
-		handler = spaHandler(staticDir, r.Handler)
+		handler = spaHandler(staticDir, r.Handler, deps.APIKeyQ, deps.UserQ)
 		log.Printf("Serving frontend from %s", staticDir)
 	}
 
@@ -250,7 +253,7 @@ func (s *Server) Shutdown() error {
 	return s.httpServer.Shutdown()
 }
 
-func spaHandler(dir string, api fasthttp.RequestHandler) fasthttp.RequestHandler {
+func spaHandler(dir string, api fasthttp.RequestHandler, apiKeyQ *queries.APIKeyQueries, userQ *queries.UserQueries) fasthttp.RequestHandler {
 	fs := &fasthttp.FS{
 		Root:       dir,
 		IndexNames: []string{"index.html"},
@@ -287,7 +290,30 @@ func spaHandler(dir string, api fasthttp.RequestHandler) fasthttp.RequestHandler
 			ctx.Response.Reset()
 			ctx.SetStatusCode(200)
 			ctx.SetContentType("text/html; charset=utf-8")
-			ctx.SetBody(indexData)
+			ctx.SetBody(injectUserData(indexData, ctx, apiKeyQ, userQ))
+		} else if ctx.Response.StatusCode() == fasthttp.StatusOK && strings.HasSuffix(path, ".html") || path == "/" {
+			// Also inject on direct index.html hits
+			body := ctx.Response.Body()
+			ctx.Response.SetBody(injectUserData(body, ctx, apiKeyQ, userQ))
 		}
 	}
+}
+
+// injectUserData reads the op_session cookie and injects window.userData into index.html.
+func injectUserData(html []byte, ctx *fasthttp.RequestCtx, apiKeyQ *queries.APIKeyQueries, userQ *queries.UserQueries) []byte {
+	sessionKey := string(ctx.Request.Header.Cookie("op_session"))
+	if sessionKey == "" {
+		return html
+	}
+	apiKey, err := apiKeyQ.ValidateKey(ctx, auth.HashAPIKey(sessionKey))
+	if err != nil {
+		return html
+	}
+	user, err := userQ.GetByID(ctx, apiKey.UserID)
+	if err != nil {
+		return html
+	}
+	script := fmt.Sprintf(`<script>window.userData={id:%q,email:%q,name:%q,secret:%q,authenticated:true};</script>`,
+		user.ID, user.Email, user.Name, sessionKey)
+	return bytes.Replace(html, []byte("</head>"), []byte(script+"</head>"), 1)
 }

@@ -112,6 +112,11 @@ func (h *ChatHandler) tryNonStreaming(
 		if pe, ok := err.(*provider.ProviderError); ok {
 			statusCode = pe.StatusCode
 			errMsg = pe.Message
+			if statusCode == 401 || statusCode == 403 {
+				h.recorder.RecordError(userID, apiKeyID, originalModel, prov.Name(),
+					int(latency.Milliseconds()), statusCode, errMsg, false)
+				return false
+			}
 			if !pe.Retryable {
 				h.recorder.RecordError(userID, apiKeyID, originalModel, prov.Name(),
 					int(latency.Milliseconds()), statusCode, errMsg, false)
@@ -136,7 +141,7 @@ func (h *ChatHandler) tryNonStreaming(
 		}
 	}
 
-	cost, _ := h.billing.Deduct(ctx, userID, modelCfg.ID, tokensIn, tokensOut, "")
+	cost, _ := h.billing.Deduct(ctx, userID, modelCfg.ID, tokensIn, tokensOut, req.ReasoningEffort, "")
 	h.recorder.RecordSuccess(userID, apiKeyID, originalModel, prov.Name(),
 		tokensIn, tokensOut, int(latency.Milliseconds()), tps, cost, false)
 
@@ -159,6 +164,9 @@ func (h *ChatHandler) tryStreaming(
 		if pe, ok := err.(*provider.ProviderError); ok {
 			statusCode = pe.StatusCode
 			errMsg = pe.Message
+			if statusCode == 401 || statusCode == 403 {
+				return false
+			}
 			if !pe.Retryable {
 				writeError(ctx, statusCode, "provider_error", errMsg)
 				return true
@@ -208,7 +216,7 @@ func (h *ChatHandler) tryStreaming(
 				tps = float32(float64(usage.CompletionTokens) / latency.Seconds())
 			}
 			cost, _ := h.billing.Deduct(ctx, userID, modelCfg.ID,
-				usage.PromptTokens, usage.CompletionTokens, "")
+				usage.PromptTokens, usage.CompletionTokens, req.ReasoningEffort, "")
 			h.recorder.RecordSuccess(userID, apiKeyID, originalModel, prov.Name(),
 				usage.PromptTokens, usage.CompletionTokens,
 				int(latency.Milliseconds()), tps, cost, true)

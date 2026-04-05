@@ -18,13 +18,13 @@ export default defineConfig(({mode}) => {
     server: {
       hmr: process.env.DISABLE_HMR !== 'true',
       proxy: {
-        '/auth/': 'http://localhost:8080',
-        '/account/': 'http://localhost:8080',
-        '/stripe/': 'http://localhost:8080',
-        '/v1/': 'http://localhost:8080',
-        '/crypto/': 'http://localhost:8080',
-        '/health': 'http://localhost:8080',
-        '/stats/': 'http://localhost:8080',
+        '/auth/': 'http://localhost:8090',
+        '/account/': 'http://localhost:8090',
+        '/stripe/': 'http://localhost:8090',
+        '/v1/': 'http://localhost:8090',
+        '/crypto/': 'http://localhost:8090',
+        '/health': 'http://localhost:8090',
+        '/stats/': 'http://localhost:8090',
       },
     },
   };

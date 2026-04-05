@@ -75,7 +75,7 @@ func (h *EmbeddingHandler) HandleEmbedding(ctx *fasthttp.RequestCtx) {
 				} else {
 					h.router.MarkModelHealthy(cand.Provider.Name(), cand.ModelCfg.ID)
 					resp.Model = originalModel
-					cost, _ := h.billing.Deduct(ctx, userID, cand.ModelCfg.ID, resp.Usage.TotalTokens, 0, "")
+					cost, _ := h.billing.Deduct(ctx, userID, cand.ModelCfg.ID, resp.Usage.TotalTokens, 0, "", "")
 					h.recorder.RecordSuccess(userID, apiKeyID, originalModel, cand.Provider.Name(),
 						resp.Usage.TotalTokens, 0, int(latency.Milliseconds()), 0, cost, false)
 					writeJSON(ctx, 200, resp)

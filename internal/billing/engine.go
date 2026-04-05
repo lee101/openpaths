@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/openpaths/openpaths/internal/db/queries"
 	"github.com/openpaths/openpaths/internal/model"
@@ -13,9 +14,9 @@ var ErrInsufficientBalance = errors.New("insufficient balance")
 
 // Engine handles balance checks and deductions.
 type Engine struct {
-	pricing    *PricingTable
-	credits    *queries.CreditQueries
-	autoTopup  *AutoTopupService
+	pricing   *PricingTable
+	credits   *queries.CreditQueries
+	autoTopup *AutoTopupService
 }
 
 func NewEngine(pricing *PricingTable, credits *queries.CreditQueries) *Engine {
@@ -55,7 +56,7 @@ func (e *Engine) PreCheck(ctx context.Context, userID, modelID string, estimated
 }
 
 // Deduct calculates actual cost and atomically deducts from balance.
-func (e *Engine) Deduct(ctx context.Context, userID, modelID string, inputTokens, outputTokens int, usageLogID string) (int64, error) {
+func (e *Engine) Deduct(ctx context.Context, userID, modelID string, inputTokens, outputTokens int, reasoningEffort, usageLogID string) (int64, error) {
 	cost, err := e.pricing.CalculateCost(modelID, inputTokens, outputTokens)
 	if err != nil {
 		return 0, err
@@ -72,7 +73,7 @@ func (e *Engine) Deduct(ctx context.Context, userID, modelID string, inputTokens
 
 	err = e.credits.DeductWithTransaction(ctx, userID, cost,
 		model.TxTypeUsageDeduction,
-		fmt.Sprintf("Model: %s, in: %d, out: %d", modelID, inputTokens, outputTokens),
+		formatUsageDescription(modelID, inputTokens, outputTokens, reasoningEffort),
 		refID,
 	)
 	if err != nil {
@@ -140,4 +141,16 @@ func (e *Engine) Deposit(ctx context.Context, userID string, amountCents int64, 
 // GetBalance returns the user's current balance.
 func (e *Engine) GetBalance(ctx context.Context, userID string) (int64, error) {
 	return e.credits.GetBalance(ctx, userID)
+}
+
+func formatUsageDescription(modelID string, inputTokens, outputTokens int, reasoningEffort string) string {
+	parts := []string{fmt.Sprintf("Model: %s", modelID)}
+	if reasoningEffort != "" {
+		parts = append(parts, fmt.Sprintf("reasoning: %s", reasoningEffort))
+	}
+	parts = append(parts,
+		fmt.Sprintf("in: %d", inputTokens),
+		fmt.Sprintf("out: %d", outputTokens),
+	)
+	return strings.Join(parts, ", ")
 }

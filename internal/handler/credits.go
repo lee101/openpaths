@@ -50,9 +50,10 @@ func (h *CreditsHandler) HandleAddCredits(ctx *fasthttp.RequestCtx) {
 	balance, _ := h.billing.GetBalance(ctx, userID)
 
 	writeJSON(ctx, 200, map[string]any{
-		"message":       "Credits added successfully",
-		"added_cents":   req.AmountCents,
-		"balance_cents": balance,
-		"balance_usd":   float64(balance) / 10000.0,
+		"message":           "Credits added successfully",
+		"added_cents":       req.AmountCents,
+		"balance_cents":     balance,
+		"balance_usd":       float64(balance) / 10000.0,
+		"balance_usd_exact": formatUSDExact(balance),
 	})
 }

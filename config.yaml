@@ -139,64 +139,49 @@ models:
     supports_tools: false
     supports_vision: true
     fallback_models:
-      - "minimax-m2.5-highspeed"
-      - "gpt-4o-mini"
-      - "llama-3.1-8b-instant"
+      - "gpt-5.4-nano"
+      - "gemini-2.5-flash"
+      - "claude-haiku-4-5-20251001"
+      - "or/gpt-5.4-nano"
       - "gemini-flash-lite"
 
   # --- Auto Medium Task (mid-tier models) ---
   - id: "auto-medium-task"
-    provider: anthropic
-    provider_model_id: "claude-sonnet-4-6"
-    input_price_per_1m: 3.00
-    output_price_per_1m: 15.00
+    provider: openai
+    provider_model_id: "gpt-5.4-mini"
+    input_price_per_1m: 0.75
+    output_price_per_1m: 4.50
     aliases: ["auto-medium"]
-    context_window: 200000
-    max_output_tokens: 64000
+    context_window: 400000
+    max_output_tokens: 128000
     supports_streaming: true
     supports_tools: true
     supports_vision: true
     fallback_models:
+      - "claude-sonnet-4-6"
       - "gemini-2.5-flash"
       - "deepseek-chat"
-      - "minimax-m2.5"
-      - "gpt-5-chat-latest"
+      - "or/gpt-5.4-mini"
 
-  # --- Auto Easy Task (cheapest models only) ---
-  - id: "auto-easy-task"
-    provider: google
-    provider_model_id: "gemini-flash-lite-latest"
-    input_price_per_1m: 0.02
-    output_price_per_1m: 0.10
-    aliases: ["auto-easy"]
-    context_window: 1000000
-    max_output_tokens: 8192
-    supports_streaming: true
-    supports_tools: false
-    supports_vision: true
-    fallback_models:
-      - "minimax-m2.5-highspeed"
-      - "gpt-4o-mini"
-      - "llama-3.1-8b-instant"
-      - "gemini-flash-lite"
-
-  # --- Auto Medium Task (mid-tier models) ---
-  - id: "auto-medium-task"
-    provider: anthropic
-    provider_model_id: "claude-sonnet-4-6"
-    input_price_per_1m: 3.00
-    output_price_per_1m: 15.00
-    aliases: ["auto-medium"]
-    context_window: 200000
-    max_output_tokens: 64000
+  # --- Auto Think (embedding-routed reasoning effort) ---
+  - id: "auto-think"
+    provider: openai
+    provider_model_id: "gpt-5.4-mini"
+    input_price_per_1m: 0.75
+    output_price_per_1m: 4.50
+    aliases: ["autothink", "auto-think-task"]
+    context_window: 400000
+    max_output_tokens: 128000
     supports_streaming: true
     supports_tools: true
     supports_vision: true
     fallback_models:
+      - "gpt-5.4-nano"
+      - "gpt-5.4"
+      - "claude-sonnet-4-6"
       - "gemini-2.5-flash"
-      - "deepseek-chat"
-      - "minimax-m2.5"
-      - "gpt-4o"
+      - "gemini-2.5-pro"
+      - "or/gpt-5.4-mini"
 
   # --- Auto Image (embedding-routed, defaults to ra1) ---
   - id: "auto-image"
@@ -349,6 +334,45 @@ models:
     supports_streaming: true
     supports_tools: true
     supports_vision: true
+    fallback_models:
+      - "claude-sonnet-4-6"
+      - "gemini-2.5-pro"
+      - "deepseek-reasoner"
+      - "or/gpt-5.4"
+
+  - id: "gpt-5.4-mini"
+    provider: openai
+    provider_model_id: "gpt-5.4-mini"
+    input_price_per_1m: 0.75
+    output_price_per_1m: 4.50
+    aliases: ["gpt54-mini", "gpt-5-mini-latest"]
+    context_window: 400000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models:
+      - "claude-sonnet-4-6"
+      - "gemini-2.5-flash"
+      - "deepseek-chat"
+      - "or/gpt-5.4-mini"
+
+  - id: "gpt-5.4-nano"
+    provider: openai
+    provider_model_id: "gpt-5.4-nano"
+    input_price_per_1m: 0.20
+    output_price_per_1m: 1.25
+    aliases: ["gpt54-nano", "gpt-5-nano-latest"]
+    context_window: 400000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models:
+      - "gemini-flash-lite"
+      - "gemini-2.5-flash"
+      - "claude-haiku-4-5-20251001"
+      - "or/gpt-5.4-nano"
 
   - id: "gpt-5-codex"
     provider: openai
@@ -455,6 +479,11 @@ models:
     supports_streaming: true
     supports_tools: true
     supports_vision: true
+    fallback_models:
+      - "gpt-5.4-mini"
+      - "gemini-2.5-flash"
+      - "deepseek-chat"
+      - "or/claude-sonnet"
 
   - id: "claude-sonnet-4-5-20250929"
     provider: anthropic
@@ -552,6 +581,11 @@ models:
     supports_streaming: true
     supports_tools: true
     supports_vision: true
+    fallback_models:
+      - "gpt-5.4-nano"
+      - "gemini-flash-lite"
+      - "gemini-2.5-flash"
+      - "or/gpt-5.4-nano"
 
   # --- Google Gemini ---
   - id: "gemini-3.1-pro-preview"
@@ -588,18 +622,28 @@ models:
     supports_streaming: true
     supports_tools: true
     supports_vision: true
+    fallback_models:
+      - "gpt-5.4-mini"
+      - "claude-sonnet-4-6"
+      - "gpt-5.4-nano"
+      - "claude-haiku-4-5-20251001"
 
   - id: "gemini-flash-lite"
     provider: google
     provider_model_id: "gemini-flash-lite-latest"
     input_price_per_1m: 0.02
     output_price_per_1m: 0.10
-    aliases: ["flash-lite", "gemini-lite"]
+    aliases: ["flash-lite", "gemini-lite", "gemini-3.1-flash-lite"]
     context_window: 1000000
     max_output_tokens: 8192
     supports_streaming: true
     supports_tools: false
     supports_vision: true
+    fallback_models:
+      - "gpt-5.4-nano"
+      - "gemini-2.5-flash"
+      - "claude-haiku-4-5-20251001"
+      - "or/gpt-5.4-nano"
 
   # --- xAI Grok ---
   - id: "grok-4-0709"
@@ -650,6 +694,11 @@ models:
     supports_streaming: true
     supports_tools: true
     supports_vision: false
+    fallback_models:
+      - "gpt-5.4-mini"
+      - "claude-sonnet-4-6"
+      - "gemini-2.5-flash"
+      - "or/deepseek-chat"
 
   - id: "deepseek-reasoner"
     provider: deepseek
@@ -893,6 +942,28 @@ models:
     supports_tools: true
     supports_vision: true
 
+  - id: "or/gpt-5.4-mini"
+    provider: openrouter
+    provider_model_id: "openai/gpt-5.4-mini"
+    input_price_per_1m: 0.75
+    output_price_per_1m: 4.50
+    context_window: 400000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "or/gpt-5.4-nano"
+    provider: openrouter
+    provider_model_id: "openai/gpt-5.4-nano"
+    input_price_per_1m: 0.20
+    output_price_per_1m: 1.25
+    context_window: 400000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
   - id: "or/claude-sonnet"
     provider: openrouter
     provider_model_id: "anthropic/claude-sonnet-4-6"
@@ -1070,6 +1141,18 @@ models:
     max_output_tokens: 8192
     supports_streaming: true
     supports_tools: false
+    supports_vision: false
+
+  - id: "or/hunter-alpha"
+    provider: openrouter
+    provider_model_id: "openrouter/hunter-alpha"
+    input_price_per_1m: 0
+    output_price_per_1m: 0
+    aliases: ["hunter-alpha", "hunter"]
+    context_window: 1050000
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
     supports_vision: false
 
   # --- Z.AI (Image Generation) ---

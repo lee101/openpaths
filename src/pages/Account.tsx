@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { CreditCard, Key, Wallet, Plus, Copy, Check, Activity, ArrowUpRight, ExternalLink, X, TrendingUp, LogIn, LogOut } from 'lucide-react';
+import { CreditCard, Key, Wallet, Plus, Copy, Check, Activity, ArrowUpRight, ExternalLink, X, TrendingUp, LogIn, LogOut, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { loadStripe } from '@stripe/stripe-js';
 import { EmbeddedCheckoutProvider, EmbeddedCheckout } from '@stripe/react-stripe-js';
@@ -12,36 +12,59 @@ function getStripe(pk: string) {
   return stripePromise;
 }
 
-// Shared user data helper — reads from localStorage, used across pages
-function getUserData(): { token: string | null; user: any; apiKey: string | null } {
-  const token = localStorage.getItem('op_token');
+// Extend Window type to include server-injected userData
+declare global {
+  interface Window {
+    userData?: { id: string; email: string; name: string; secret: string; authenticated: boolean };
+  }
+}
+
+// getUserData: window.userData (server-injected) takes priority, localStorage is the fallback for dev/proxy.
+// Can be overridden in tests/console: window.userData = { secret: 'op-...', email: '...', ... }
+function getUserData(): { apiKey: string | null; user: any } {
+  if (window.userData?.secret) {
+    return {
+      apiKey: window.userData.secret,
+      user: { id: window.userData.id, email: window.userData.email, name: window.userData.name },
+    };
+  }
   const apiKey = localStorage.getItem('op_api_key');
   let user = null;
   try { user = JSON.parse(localStorage.getItem('op_user') || 'null'); } catch {}
-  return { token, user, apiKey };
+  return { apiKey, user };
 }
 
 async function api(path: string, opts: RequestInit = {}) {
-  const { token } = getUserData();
-  if (!token) {
-    // No token — return a synthetic 401 so callers handle it uniformly
+  const { apiKey } = getUserData();
+  const isAuthEndpoint = path.startsWith('/auth/');
+  if (!apiKey && !isAuthEndpoint) {
     return new Response(JSON.stringify({ error: { message: 'Not authenticated' } }), { status: 401 });
   }
-  const res = await fetch(API_BASE + path, {
-    ...opts,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-      ...opts.headers,
-    },
-  });
-  if (res.status === 401) {
-    console.warn('[openpaths] JWT expired or invalid, clearing session');
-    localStorage.removeItem('op_token');
+  const headers: Record<string, string> = { 'Content-Type': 'application/json', ...opts.headers as Record<string, string> };
+  if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+  const res = await fetch(API_BASE + path, { ...opts, headers });
+  if (res.status === 401 && !isAuthEndpoint) {
+    window.userData = undefined;
+    localStorage.removeItem('op_api_key');
     localStorage.removeItem('op_user');
     window.location.reload();
   }
   return res;
+}
+
+function parseBalanceUnits(data: any): number | null {
+  if (typeof data?.balance_cents === 'number' && Number.isFinite(data.balance_cents)) {
+    return data.balance_cents;
+  }
+  if (typeof data?.balance_usd === 'number' && Number.isFinite(data.balance_usd)) {
+    return Math.round(data.balance_usd * 10000);
+  }
+  return null;
+}
+
+function formatBalanceUnits(units: number): string {
+  const decimals = Math.abs(units) % 100 === 0 ? 2 : 4;
+  return `$${(units / 10000).toFixed(decimals)}`;
 }
 
 // --- Auth forms ---
@@ -50,6 +73,7 @@ function AuthForms({ onAuth }: { onAuth: (token: string, user: any, apiKey?: str
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -63,10 +87,12 @@ function AuthForms({ onAuth }: { onAuth: (token: string, user: any, apiKey?: str
       const res = await api(`/auth/${mode}`, { method: 'POST', body: JSON.stringify(body) });
       const data = await res.json();
       if (!res.ok) { setError(data.error?.message || 'Failed'); return; }
-      localStorage.setItem('op_token', data.token);
+      const key = data.api_key || data.token;
+      localStorage.setItem('op_api_key', key);
       localStorage.setItem('op_user', JSON.stringify(data.user));
-      if (data.api_key) localStorage.setItem('op_api_key', data.api_key);
-      onAuth(data.token, data.user, data.api_key);
+      window.userData = { id: data.user.id, email: data.user.email, name: data.user.name, secret: key, authenticated: true };
+      window.dispatchEvent(new Event('auth-change'));
+      onAuth(key, data.user);
     } catch { setError('Network error'); } finally { setLoading(false); }
   };
 
@@ -78,7 +104,12 @@ function AuthForms({ onAuth }: { onAuth: (token: string, user: any, apiKey?: str
           <input value={name} onChange={e => setName(e.target.value)} placeholder="Name" className="w-full bg-black border border-white/10 rounded-lg py-3 px-4 text-white font-mono focus:outline-none focus:border-white/30" />
         )}
         <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" required className="w-full bg-black border border-white/10 rounded-lg py-3 px-4 text-white font-mono focus:outline-none focus:border-white/30" data-testid="auth-email" />
-        <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" required minLength={8} className="w-full bg-black border border-white/10 rounded-lg py-3 px-4 text-white font-mono focus:outline-none focus:border-white/30" data-testid="auth-password" />
+        <div className="relative">
+          <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" required minLength={8} className="w-full bg-black border border-white/10 rounded-lg py-3 px-4 pr-12 text-white font-mono focus:outline-none focus:border-white/30" data-testid="auth-password" />
+          <button type="button" onClick={() => setShowPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors">
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
+        </div>
         {error && <p className="text-red-400 text-sm font-mono">{error}</p>}
         <button type="submit" disabled={loading} className="w-full bg-white text-black py-3 rounded-lg font-mono font-bold text-sm hover:bg-white/90 transition-colors disabled:opacity-50" data-testid="auth-submit">
           {loading ? 'Loading...' : mode === 'login' ? 'Sign In' : 'Create Account'}
@@ -252,11 +283,11 @@ function StripeCheckoutModal({ open, onClose, stripePk }: { open: boolean; onClo
 export function Account() {
   const [activeTab, setActiveTab] = useState<'overview' | 'keys' | 'billing'>('overview');
   const [user, setUser] = useState<any>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [apiKey, setApiKey] = useState<string | null>(null);
   const [stripePk, setStripePk] = useState('');
 
   // Data states
-  const [balance, setBalance] = useState<number | null>(null);
+  const [balanceUnits, setBalanceUnits] = useState<number | null>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [apiKeys, setApiKeys] = useState<any[]>([]);
   const [copied, setCopied] = useState<string | null>(null);
@@ -273,14 +304,10 @@ export function Account() {
     }
   }, []);
 
-  // Init auth from localStorage
+  // Init auth from window.userData (server-injected) or localStorage fallback
   useEffect(() => {
-    const t = localStorage.getItem('op_token');
-    const u = localStorage.getItem('op_user');
-    if (t && u) {
-      setToken(t);
-      try { setUser(JSON.parse(u)); } catch {}
-    }
+    const { apiKey: k, user: u } = getUserData();
+    if (k && u) { setApiKey(k); setUser(u); }
   }, []);
 
   // Fetch stripe config
@@ -291,44 +318,45 @@ export function Account() {
   }, []);
 
   const fetchBalance = useCallback(() => {
-    if (!token) return;
+    if (!apiKey) return;
     api('/account/balance').then(r => r.json()).then(d => {
-      if (d.balance_usd !== undefined) setBalance(d.balance_usd);
+      const nextBalance = parseBalanceUnits(d);
+      if (nextBalance !== null) setBalanceUnits(nextBalance);
     }).catch(() => {});
-  }, [token]);
+  }, [apiKey]);
 
   const fetchTransactions = useCallback(() => {
-    if (!token) return;
+    if (!apiKey) return;
     api('/account/transactions?limit=20').then(r => r.json()).then(d => {
       if (d.transactions) setTransactions(d.transactions);
     }).catch(() => {});
-  }, [token]);
+  }, [apiKey]);
 
   const fetchKeys = useCallback(() => {
-    if (!token) return;
+    if (!apiKey) return;
     api('/account/keys').then(r => r.json()).then(d => {
       if (d.keys) setApiKeys(d.keys);
     }).catch(() => {});
-  }, [token]);
+  }, [apiKey]);
 
   useEffect(() => {
-    if (token) { fetchBalance(); fetchTransactions(); fetchKeys(); }
-  }, [token, fetchBalance, fetchTransactions, fetchKeys]);
+    if (apiKey) { fetchBalance(); fetchTransactions(); fetchKeys(); }
+  }, [apiKey, fetchBalance, fetchTransactions, fetchKeys]);
 
-  const handleAuth = (t: string, u: any, apiKey?: string) => {
-    setToken(t);
+  const handleAuth = (key: string, u: any) => {
+    setApiKey(key);
     setUser(u);
-    if (apiKey) {
-      setNewKeyResult(apiKey);
-      setActiveTab('keys');
-    }
+    setNewKeyResult(key);
+    setActiveTab('keys');
   };
 
   const logout = () => {
-    localStorage.removeItem('op_token');
-    localStorage.removeItem('op_user');
+    fetch('/auth/logout', { method: 'POST' }).catch(() => {});
+    window.userData = undefined;
     localStorage.removeItem('op_api_key');
-    setToken(null);
+    localStorage.removeItem('op_user');
+    window.dispatchEvent(new Event('auth-change'));
+    setApiKey(null);
     setUser(null);
   };
 
@@ -354,9 +382,9 @@ export function Account() {
     fetchKeys();
   };
 
-  if (!token) return <AuthForms onAuth={handleAuth} />;
+  if (!apiKey) return <AuthForms onAuth={handleAuth} />;
 
-  const balanceDisplay = balance !== null ? `$${balance.toFixed(2)}` : '--';
+  const balanceDisplay = balanceUnits !== null ? formatBalanceUnits(balanceUnits) : '--';
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-12 flex flex-col md:flex-row gap-12">
