@@ -1,0 +1,163 @@
+{
+  "campaign": "new_user_onboarding",
+  "description": "22-email drip campaign for new OpenPaths users over ~95 days — provider spotlights, cost savings, auto-routing, generative media",
+  "from_email": "lee.penkman@openpaths.io",
+  "from_name": "OpenPaths",
+  "base_url": "https://openpaths.io",
+  "emails": [
+    {
+      "id": 1,
+      "delay_days": 0,
+      "subject": "Welcome to OpenPaths — One API, Every AI Model",
+      "template": "01-welcome.html",
+      "description": "Welcome email: 70+ models, 15+ providers, open source, OpenRouter-compatible"
+    },
+    {
+      "id": 2,
+      "delay_days": 1,
+      "subject": "Your First API Call in 2 Minutes",
+      "template": "02-first-api-call.html",
+      "description": "Quick start with Python, curl, Node.js — same API as OpenAI"
+    },
+    {
+      "id": 3,
+      "delay_days": 3,
+      "subject": "Auto Routing: Stay on the Pareto Frontier of AI Costs",
+      "template": "03-auto-models.html",
+      "description": "auto-easy, auto-medium, auto-think — how static embeddings route tasks to the right model"
+    },
+    {
+      "id": 4,
+      "delay_days": 7,
+      "subject": "Anthropic's Claude: World-Class Reasoning & Long Context",
+      "template": "04-anthropic.html",
+      "description": "Claude Opus 4.7, Sonnet 4.6, Haiku 4.5 — strengths, pricing, best use cases"
+    },
+    {
+      "id": 5,
+      "delay_days": 10,
+      "subject": "OpenAI's GPT: The Broadest Ecosystem in AI",
+      "template": "05-openai.html",
+      "description": "GPT-5 Chat, o3, o4-mini — tools, vision, code interpreter, when to use"
+    },
+    {
+      "id": 6,
+      "delay_days": 14,
+      "subject": "Google Gemini: 2M Token Context & Multimodal Mastery",
+      "template": "06-google.html",
+      "description": "Gemini 3.1 Pro, 2.5 Flash — long context, multimodal, competitive pricing"
+    },
+    {
+      "id": 7,
+      "delay_days": 18,
+      "subject": "DeepSeek: Open Source Reasoning at a Fraction of the Cost",
+      "template": "07-deepseek.html",
+      "description": "DeepSeek V3.2 & Reasoner — Chinese open source, near-GPT-5 quality for 95% less"
+    },
+    {
+      "id": 8,
+      "delay_days": 21,
+      "subject": "Mistral: Europe's Fastest, Leanest Models",
+      "template": "08-mistral.html",
+      "description": "Mistral Large 3, Codestral, Magistral, Devstral — open weights, EU-based, great price/perf"
+    },
+    {
+      "id": 9,
+      "delay_days": 25,
+      "subject": "Save 80% With Smart Model Routing",
+      "template": "09-cost-savings.html",
+      "description": "Real cost comparison: auto-routing vs direct provider, pareto frontier explained"
+    },
+    {
+      "id": 10,
+      "delay_days": 28,
+      "subject": "xAI Grok: Real-Time Web & Twitter's Training Data",
+      "template": "10-xai.html",
+      "description": "Grok 4, Grok 4.1 Fast — live web search, unique training data, Elon's lab"
+    },
+    {
+      "id": 11,
+      "delay_days": 33,
+      "subject": "Qwen & Alibaba: Multilingual Open Source Powerhouse",
+      "template": "11-qwen.html",
+      "description": "Qwen 3.5, Qwen Coder — multilingual, long context, Apache licensed"
+    },
+    {
+      "id": 12,
+      "delay_days": 38,
+      "subject": "Groq, Together & Fireworks: Inference at Warp Speed",
+      "template": "12-inference-providers.html",
+      "description": "Fast inference providers — Groq LPU, Together AI, Fireworks — for low-latency apps"
+    },
+    {
+      "id": 13,
+      "delay_days": 43,
+      "subject": "Coding Models: Which One Wins for Your Stack?",
+      "template": "13-coding-models.html",
+      "description": "Codestral, Claude Sonnet, Qwen Coder, DeepSeek Coder — benchmarks and use cases"
+    },
+    {
+      "id": 14,
+      "delay_days": 48,
+      "subject": "Thinking Models: o3, R1, QwQ & When to Use Them",
+      "template": "14-reasoning-models.html",
+      "description": "Extended thinking models — OpenAI o3, DeepSeek R1, QwQ — when reasoning is worth the cost"
+    },
+    {
+      "id": 15,
+      "delay_days": 53,
+      "subject": "Free & Ultra-Cheap Models That Still Deliver",
+      "template": "15-free-models.html",
+      "description": "Free tier and sub-$0.10/M models that punch above their weight"
+    },
+    {
+      "id": 16,
+      "delay_days": 58,
+      "subject": "Automatic Fallbacks — Never Get a 503 Again",
+      "template": "16-fallbacks.html",
+      "description": "How OpenPaths keeps your app running with automatic provider fallbacks"
+    },
+    {
+      "id": 17,
+      "delay_days": 63,
+      "subject": "OpenPaths Is Open Source — Here's What That Means for You",
+      "template": "17-open-source.html",
+      "description": "Self-host, audit the routing logic, contribute — the architecture explained"
+    },
+    {
+      "id": 18,
+      "delay_days": 70,
+      "subject": "Vision, Embeddings & Beyond — The Full Model Menu",
+      "template": "18-full-menu.html",
+      "description": "Vision models, embeddings (ModernBERT), image gen — the full OpenPaths model catalogue"
+    },
+    {
+      "id": 21,
+      "delay_days": 75,
+      "subject": "Fal: The Fastest Path to FLUX, Kling & Luma",
+      "template": "21-fal.html",
+      "description": "Fal provider spotlight — serverless image/video runtime behind FLUX Pro, Kling and Luma Dream Machine"
+    },
+    {
+      "id": 22,
+      "delay_days": 78,
+      "subject": "Generative Media — Image, Video, Audio, Embeddings via One API",
+      "template": "22-generative-media.html",
+      "description": "Cross-modality roundup of OpenPaths endpoints and which providers sit behind each"
+    },
+    {
+      "id": 19,
+      "delay_days": 85,
+      "subject": "Credits, Auto Top-Up & Making Your Budget Go Further",
+      "template": "19-billing-credits.html",
+      "description": "Credit system, auto top-up, usage dashboard — maximise ROI"
+    },
+    {
+      "id": 20,
+      "delay_days": 95,
+      "subject": "You're an OpenPaths Pro — Advanced Tips & What's Coming",
+      "template": "20-power-user.html",
+      "description": "Multi-key management, streaming, webhooks, upcoming features"
+    }
+  ]
+}

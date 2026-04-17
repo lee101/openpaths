@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Save 80% With Smart Model Routing</title>
+</head>
+<body style="margin:0; padding:0; background-color:#0a0a0a; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0a0a0a;">
+<tr>
+<td align="center" style="padding:24px 16px;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px; width:100%; background-color:#111111; border:1px solid #222222; border-radius:12px; overflow:hidden;">
+
+<tr>
+<td style="background:linear-gradient(135deg, #0a1a0a, #1a2a0a); padding:40px 40px 32px; text-align:center;">
+<h1 style="margin:0; color:#14F195; font-size:28px; font-weight:700; font-family:monospace;">OpenPaths</h1>
+<p style="margin:8px 0 0; color:#888888; font-size:16px;">Stay on the Pareto Frontier of AI Costs</p>
+</td>
+</tr>
+
+<tr>
+<td style="padding:36px 40px;">
+
+<h2 style="margin:0 0 16px; color:#e0e0e0; font-size:22px; font-weight:700;">Save 80% With Smart Routing</h2>
+<p style="margin:0 0 24px; color:#888; font-size:15px; line-height:1.6;">
+Most teams overpay for AI by routing everything through one expensive model — usually GPT-4 or Claude Opus — when 70-80% of their requests could be handled by a model that costs 10x less and delivers the same result.
+</p>
+
+<p style="margin:0 0 20px; color:#14F195; font-size:15px; font-weight:600;">The Pareto Frontier of AI</p>
+<p style="margin:0 0 24px; color:#888; font-size:15px; line-height:1.6;">
+The "pareto frontier" in AI costs is the set of models where you can't get better quality without paying more, and you can't pay less without losing quality. OpenPaths auto-routing keeps you on that frontier automatically — routing each request to the optimal model based on task complexity.
+</p>
+
+<!-- Routing tiers -->
+<p style="margin:0 0 16px; color:#e0e0e0; font-size:15px; font-weight:600;">The three auto-routing tiers:</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+<tr>
+<td style="padding:14px; background:#0d1a0d; border:1px solid #1a2a1a; border-radius:8px; margin-bottom:8px; display:block;">
+<p style="margin:0 0 4px;"><code style="color:#14F195; font-size:13px; font-family:monospace;">auto-easy</code> <span style="color:#555; font-size:12px;"> · ~$0.10-0.30/M tokens</span></p>
+<p style="margin:0; color:#888; font-size:13px; line-height:1.5;">Simple tasks: classification, summarisation, short Q&A, formatting, data extraction. Routed to Gemini Flash, Haiku, Mistral Small, or similar.</p>
+</td>
+</tr>
+</table>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:8px;">
+<tr>
+<td style="padding:14px; background:#1a1a0d; border:1px solid #2a2a1a; border-radius:8px;">
+<p style="margin:0 0 4px;"><code style="color:#14F195; font-size:13px; font-family:monospace;">auto-medium</code> <span style="color:#555; font-size:12px;"> · ~$0.50-2.00/M tokens</span></p>
+<p style="margin:0; color:#888; font-size:13px; line-height:1.5;">Standard tasks: coding, analysis, drafting, tool use. GPT-4o, Claude Sonnet, DeepSeek V3, or Gemini Pro depending on complexity.</p>
+</td>
+</tr>
+</table>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+<tr>
+<td style="padding:14px; background:#1a0d0d; border:1px solid #2a1a1a; border-radius:8px;">
+<p style="margin:0 0 4px;"><code style="color:#14F195; font-size:13px; font-family:monospace;">auto-think</code> <span style="color:#555; font-size:12px;"> · ~$2-10/M tokens</span></p>
+<p style="margin:0; color:#888; font-size:13px; line-height:1.5;">Hard reasoning: math proofs, complex debugging, research synthesis. o3, R1, Gemini 2.5 Pro, or Claude Opus with extended thinking.</p>
+</td>
+</tr>
+</table>
+
+<!-- How it works -->
+<table role="presentation" width="100%" style="background:#111; border:1px solid #1e1e1e; border-radius:8px; margin:0 0 24px;">
+<tr><td style="padding:20px;">
+<p style="margin:0 0 10px; color:#e0e0e0; font-size:14px; font-weight:600;">How the routing works</p>
+<p style="margin:0 0 12px; color:#888; font-size:13px; line-height:1.6;">OpenPaths uses a fast, static embedding model (runs locally in microseconds) to classify incoming requests by task type and complexity. This classification then maps to the cost-optimal model tier. No extra API call, no latency overhead.</p>
+<p style="margin:0; color:#555; font-size:13px; line-height:1.6;">The routing logic is open source — you can inspect exactly how your requests are classified and override at any time.</p>
+</td></tr>
+</table>
+
+<!-- Real savings example -->
+<p style="margin:0 0 12px; color:#e0e0e0; font-size:15px; font-weight:600;">Real-world savings example:</p>
+<table role="presentation" width="100%" style="border-collapse:collapse; margin-bottom:28px;">
+<tr style="border-bottom:1px solid #222;">
+<td style="padding:10px 12px; color:#555; font-size:12px; font-weight:600; text-transform:uppercase;">Approach</td>
+<td style="padding:10px 12px; color:#555; font-size:12px; font-weight:600; text-transform:uppercase; text-align:right;">100M tokens/mo cost</td>
+</tr>
+<tr style="border-bottom:1px solid #1a1a1a;">
+<td style="padding:10px 12px; color:#888; font-size:13px;">All GPT-4o</td>
+<td style="padding:10px 12px; color:#888; font-size:13px; text-align:right;">$250</td>
+</tr>
+<tr style="border-bottom:1px solid #1a1a1a;">
+<td style="padding:10px 12px; color:#888; font-size:13px;">All Claude Sonnet</td>
+<td style="padding:10px 12px; color:#888; font-size:13px; text-align:right;">$300</td>
+</tr>
+<tr style="border-bottom:1px solid #1a1a1a; background:#0d0d0d;">
+<td style="padding:10px 12px; color:#14F195; font-size:13px; font-weight:600;">OpenPaths auto-routing</td>
+<td style="padding:10px 12px; color:#14F195; font-size:13px; text-align:right; font-weight:600;">~$45</td>
+</tr>
+</table>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+<tr>
+<td align="center">
+<a href="https://openpaths.io/playground" style="display:inline-block; background:#14F195; color:#000; text-decoration:none; padding:14px 36px; border-radius:8px; font-size:15px; font-weight:600;">Try Auto Routing Now</a>
+</td>
+</tr>
+</table>
+
+<p style="margin:24px 0 0; color:#555; font-size:13px; text-align:center; font-style:italic;">Next: xAI Grok — real-time web and Twitter's training data</p>
+</td>
+</tr>
+
+<tr>
+<td style="padding:28px 40px; border-top:1px solid #222; text-align:center; background:#0d0d0d;">
+<p style="margin:0 0 10px; font-size:13px;">
+<a href="https://openpaths.io/blog" style="color:#555; text-decoration:none;">Blog</a> &nbsp;·&nbsp;
+<a href="https://openpaths.io/models" style="color:#555; text-decoration:none;">Models</a> &nbsp;·&nbsp;
+<a href="https://openpaths.io/providers" style="color:#555; text-decoration:none;">Providers</a> &nbsp;·&nbsp;
+<a href="{{.UnsubscribeURL}}" style="color:#555; text-decoration:none;">Unsubscribe</a>
+</p>
+<p style="margin:0; color:#444; font-size:12px;">OpenPaths · by <a href="https://app.nz" style="color:#444; text-decoration:underline;">Applied Science</a></p>
+</td>
+</tr>
+
+</table>
+</td>
+</tr>
+</table>
+</body>
+</html>

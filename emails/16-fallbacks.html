@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Automatic Fallbacks — Never Get a 503 Again</title>
+</head>
+<body style="margin:0; padding:0; background-color:#0a0a0a; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0a0a0a;">
+<tr>
+<td align="center" style="padding:24px 16px;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px; width:100%; background-color:#111111; border:1px solid #222222; border-radius:12px; overflow:hidden;">
+
+<tr>
+<td style="background:linear-gradient(135deg, #1a1a0a, #0a1a1a); padding:40px 40px 32px; text-align:center;">
+<h1 style="margin:0; color:#14F195; font-size:28px; font-weight:700; font-family:monospace;">OpenPaths</h1>
+<p style="margin:8px 0 0; color:#888888; font-size:16px;">Reliability: Automatic Fallbacks</p>
+</td>
+</tr>
+
+<tr>
+<td style="padding:36px 40px;">
+
+<h2 style="margin:0 0 16px; color:#e0e0e0; font-size:22px; font-weight:700;">Never Get a 503 Again</h2>
+<p style="margin:0 0 24px; color:#888; font-size:15px; line-height:1.6;">
+Every major AI provider has outages. OpenAI goes down around major product launches. Anthropic has rate limit windows. Google's API has regional issues. If your app talks directly to a single provider, you inherit all their availability problems.
+</p>
+<p style="margin:0 0 24px; color:#888; font-size:15px; line-height:1.6;">
+OpenPaths sits in front of all providers and handles failures automatically.
+</p>
+
+<!-- How it works -->
+<p style="margin:0 0 16px; color:#14F195; font-size:15px; font-weight:600;">How automatic fallbacks work:</p>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+<tr>
+<td style="padding:0 0 12px;">
+<table role="presentation" width="100%" style="background:#1a1a1a; border:1px solid #2a2a2a; border-radius:8px;">
+<tr><td style="padding:16px;">
+<p style="margin:0 0 4px; color:#e0e0e0; font-size:14px; font-weight:600;">1. Your request arrives</p>
+<p style="margin:0; color:#888; font-size:13px; line-height:1.5;">You send a request to <code style="color:#14F195; background:#0a0a0a; padding:1px 5px; border-radius:3px;">openpaths.io/v1/chat/completions</code> specifying <code style="color:#14F195; background:#0a0a0a; padding:1px 5px; border-radius:3px;">gpt-4o</code> or an auto tier.</p>
+</td></tr>
+</table>
+</td>
+</tr>
+<tr>
+<td style="padding:0 0 12px;">
+<table role="presentation" width="100%" style="background:#1a1a1a; border:1px solid #2a2a2a; border-radius:8px;">
+<tr><td style="padding:16px;">
+<p style="margin:0 0 4px; color:#e0e0e0; font-size:14px; font-weight:600;">2. Primary provider attempted</p>
+<p style="margin:0; color:#888; font-size:13px; line-height:1.5;">OpenPaths forwards to your requested provider. If it responds normally, the response comes straight back to you.</p>
+</td></tr>
+</table>
+</td>
+</tr>
+<tr>
+<td style="padding:0 0 12px;">
+<table role="presentation" width="100%" style="background:#1a1a1a; border:1px solid #2a2a2a; border-radius:8px;">
+<tr><td style="padding:16px;">
+<p style="margin:0 0 4px; color:#e0e0e0; font-size:14px; font-weight:600;">3. On error: automatic failover</p>
+<p style="margin:0; color:#888; font-size:13px; line-height:1.5;">On 429 (rate limit), 503 (unavailable), or timeout — OpenPaths immediately retries with the best equivalent model from another provider. Sub-second failover, no change to your response format.</p>
+</td></tr>
+</table>
+</td>
+</tr>
+<tr>
+<td>
+<table role="presentation" width="100%" style="background:#1a1a1a; border:1px solid #2a2a2a; border-radius:8px;">
+<tr><td style="padding:16px;">
+<p style="margin:0 0 4px; color:#e0e0e0; font-size:14px; font-weight:600;">4. Your app never sees the failure</p>
+<p style="margin:0; color:#888; font-size:13px; line-height:1.5;">From your app's perspective, the request succeeded. The response is in the same format. No retry logic needed in your code.</p>
+</td></tr>
+</table>
+</td>
+</tr>
+</table>
+
+<!-- Uptime comparison -->
+<table role="presentation" width="100%" style="background:#111; border:1px solid #1e1e1e; border-radius:8px; margin:0 0 24px;">
+<tr><td style="padding:20px;">
+<p style="margin:0 0 10px; color:#e0e0e0; font-size:14px; font-weight:600;">Reliability by the numbers</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+<tr style="border-bottom:1px solid #222;">
+<td style="padding:8px 0; color:#555; font-size:12px;">Setup</td>
+<td style="padding:8px 0; color:#555; font-size:12px; text-align:right;">Estimated uptime</td>
+</tr>
+<tr style="border-bottom:1px solid #1a1a1a;">
+<td style="padding:8px 0; color:#888; font-size:13px;">Direct to OpenAI only</td>
+<td style="padding:8px 0; color:#888; font-size:13px; text-align:right;">99.5%</td>
+</tr>
+<tr style="border-bottom:1px solid #1a1a1a;">
+<td style="padding:8px 0; color:#888; font-size:13px;">Direct to any single provider</td>
+<td style="padding:8px 0; color:#888; font-size:13px; text-align:right;">99.0–99.9%</td>
+</tr>
+<tr>
+<td style="padding:8px 0; color:#14F195; font-size:13px; font-weight:600;">OpenPaths (multi-provider fallback)</td>
+<td style="padding:8px 0; color:#14F195; font-size:13px; font-weight:600; text-align:right;">&gt;99.99%</td>
+</tr>
+</table>
+</td></tr>
+</table>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+<tr>
+<td align="center">
+<a href="https://openpaths.io/docs/fallbacks" style="display:inline-block; background:#14F195; color:#000; text-decoration:none; padding:14px 36px; border-radius:8px; font-size:15px; font-weight:600;">Learn About Reliability</a>
+</td>
+</tr>
+</table>
+
+<p style="margin:24px 0 0; color:#555; font-size:13px; text-align:center; font-style:italic;">Next: OpenPaths is open source — what that means for you</p>
+</td>
+</tr>
+
+<tr>
+<td style="padding:28px 40px; border-top:1px solid #222; text-align:center; background:#0d0d0d;">
+<p style="margin:0 0 10px; font-size:13px;">
+<a href="https://openpaths.io/blog" style="color:#555; text-decoration:none;">Blog</a> &nbsp;·&nbsp;
+<a href="https://openpaths.io/models" style="color:#555; text-decoration:none;">Models</a> &nbsp;·&nbsp;
+<a href="https://openpaths.io/providers" style="color:#555; text-decoration:none;">Providers</a> &nbsp;·&nbsp;
+<a href="{{.UnsubscribeURL}}" style="color:#555; text-decoration:none;">Unsubscribe</a>
+</p>
+<p style="margin:0; color:#444; font-size:12px;">OpenPaths · by <a href="https://app.nz" style="color:#444; text-decoration:underline;">Applied Science</a></p>
+</td>
+</tr>
+
+</table>
+</td>
+</tr>
+</table>
+</body>
+</html>
