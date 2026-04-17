@@ -87,10 +87,12 @@ func (r *DripRunner) SendWelcome(ctx context.Context, userID, userEmail string) 
 // obviously-fake addresses that should never receive marketing email.
 func isTestEmail(email string) bool {
 	e := strings.ToLower(email)
-	if strings.HasPrefix(e, "e2e-") || strings.HasPrefix(e, "smoketest-") {
-		return true
+	for _, prefix := range []string{"e2e-", "e2etest", "smoketest", "smoke-", "systemtest", "testuser"} {
+		if strings.HasPrefix(e, prefix) {
+			return true
+		}
 	}
-	for _, suffix := range []string{"@test.com", "@test.openpaths.io", "@example.com", "@example.org"} {
+	for _, suffix := range []string{"@test.com", "@test.io", "@test.openpaths.io", "@example.com", "@example.org"} {
 		if strings.HasSuffix(e, suffix) {
 			return true
 		}
@@ -113,10 +115,17 @@ func (r *DripRunner) RunScheduled(ctx context.Context) {
 			WHERE u.created_at <= $1
 			  AND u.email != ''
 			  AND u.disabled = false
-			  AND u.email NOT LIKE 'e2e-%'
-			  AND u.email NOT LIKE '%@test.com'
-			  AND u.email NOT LIKE '%@test.openpaths.io'
-			  AND u.email NOT LIKE '%@example.com'
+			  AND u.email NOT ILIKE 'e2e-%'
+			  AND u.email NOT ILIKE 'e2etest%'
+			  AND u.email NOT ILIKE 'smoketest%'
+			  AND u.email NOT ILIKE 'smoke-%'
+			  AND u.email NOT ILIKE 'systemtest%'
+			  AND u.email NOT ILIKE 'testuser%'
+			  AND u.email NOT ILIKE '%@test.com'
+			  AND u.email NOT ILIKE '%@test.io'
+			  AND u.email NOT ILIKE '%@test.openpaths.io'
+			  AND u.email NOT ILIKE '%@example.com'
+			  AND u.email NOT ILIKE '%@example.org'
 			  AND NOT EXISTS (
 				SELECT 1 FROM drip_emails_sent d
 				WHERE d.user_id = u.id::text AND d.email_id = $2
@@ -154,6 +163,9 @@ func (r *DripRunner) RunScheduled(ctx context.Context) {
 }
 
 func (r *DripRunner) sendDripEmail(ctx context.Context, userID, userEmail string, emailID int) error {
+	if isTestEmail(userEmail) {
+		return nil
+	}
 	// Find the email config.
 	var de *DripEmail
 	for i := range r.config.Emails {
