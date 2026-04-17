@@ -1,10 +1,29 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Send, Plus, X, Settings, ChevronDown, Loader2, Trash2, Square, Copy, Check, Zap, RotateCcw, Code2 } from 'lucide-react';
+import { Send, Plus, X, Settings, ChevronDown, Loader2, Trash2, Square, Copy, Check, Zap, RotateCcw, Code2, Share2, Wallet, Eye, Wrench } from 'lucide-react';
 
 interface Message {
   role: 'system' | 'user' | 'assistant';
   content: string;
+}
+
+interface ModelPricing {
+  input_per_1m_tokens?: number;
+  output_per_1m_tokens?: number;
+}
+
+interface ModelCapabilities {
+  streaming?: boolean;
+  tools?: boolean;
+  vision?: boolean;
+}
+
+interface CatalogModel {
+  id: string;
+  label: string;
+  provider: string;
+  pricing?: ModelPricing;
+  capabilities?: ModelCapabilities;
 }
 
 interface ModelPane {
@@ -15,9 +34,12 @@ interface ModelPane {
   error: string | null;
   latencyMs: number | null;
   tokensUsed: number | null;
+  promptTokens: number | null;
+  completionTokens: number | null;
+  costUsd: number | null;
 }
 
-const CHAT_MODELS = [
+const FALLBACK_MODELS: CatalogModel[] = [
   { id: 'auto', label: 'Auto (intelligent routing)', provider: 'OpenPaths' },
   { id: 'auto-easy-task', label: 'Auto Easy (cheapest)', provider: 'OpenPaths' },
   { id: 'auto-medium-task', label: 'Auto Medium (balanced)', provider: 'OpenPaths' },
@@ -54,9 +76,99 @@ const QUICK_PROMPTS = [
   'Create a React hook for debouncing',
 ];
 
+const MODELS_CACHE_KEY = 'op_models_cache_v1';
+const MODELS_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+const PANE_HISTORY_PREFIX = 'op_pg_pane_';
+const NON_CHAT_PATTERNS = /^(flux|klein|wan|ltx|hailuo|kling|luma|ra1|ra2v|zimage|glm-image|whisper|tts-|text-embedding|openpaths-embed|modernbert|gpt-4o-transcribe)/i;
+
 let paneCounter = 0;
 function makePane(modelId: string): ModelPane {
-  return { id: `pane-${++paneCounter}`, modelId, messages: [], streaming: false, error: null, latencyMs: null, tokensUsed: null };
+  return {
+    id: `pane-${++paneCounter}`,
+    modelId,
+    messages: [],
+    streaming: false,
+    error: null,
+    latencyMs: null,
+    tokensUsed: null,
+    promptTokens: null,
+    completionTokens: null,
+    costUsd: null,
+  };
+}
+
+function loadPaneHistory(modelId: string): Message[] {
+  try {
+    const raw = localStorage.getItem(PANE_HISTORY_PREFIX + modelId);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed;
+  } catch {}
+  return [];
+}
+
+function savePaneHistory(modelId: string, messages: Message[]) {
+  try {
+    if (messages.length === 0) {
+      localStorage.removeItem(PANE_HISTORY_PREFIX + modelId);
+    } else {
+      localStorage.setItem(PANE_HISTORY_PREFIX + modelId, JSON.stringify(messages));
+    }
+  } catch {}
+}
+
+function loadCachedModels(): CatalogModel[] | null {
+  try {
+    const raw = localStorage.getItem(MODELS_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object' && Array.isArray(parsed.models) && Date.now() - parsed.ts < MODELS_CACHE_TTL_MS) {
+      return parsed.models as CatalogModel[];
+    }
+  } catch {}
+  return null;
+}
+
+function saveCachedModels(models: CatalogModel[]) {
+  try {
+    localStorage.setItem(MODELS_CACHE_KEY, JSON.stringify({ ts: Date.now(), models }));
+  } catch {}
+}
+
+function humanProvider(ownedBy: string): string {
+  const p = (ownedBy || '').toLowerCase();
+  const map: Record<string, string> = {
+    openai: 'OpenAI', anthropic: 'Anthropic', google: 'Google', xai: 'xAI',
+    deepseek: 'DeepSeek', mistral: 'Mistral', groq: 'Groq', together: 'Together',
+    fireworks: 'Fireworks', minimax: 'MiniMax', zai: 'Z.AI', nous: 'Nous',
+    openrouter: 'OpenRouter', fal: 'fal', netwrck: 'Netwrck', gobed: 'GoBed',
+    openpaths: 'OpenPaths',
+  };
+  if (map[p]) return map[p];
+  if (!p) return 'Other';
+  return p.charAt(0).toUpperCase() + p.slice(1);
+}
+
+function fmtCost(usd: number): string {
+  if (usd < 0.0001) return '<$0.0001';
+  if (usd < 0.01) return `$${usd.toFixed(4)}`;
+  if (usd < 1) return `$${usd.toFixed(3)}`;
+  return `$${usd.toFixed(2)}`;
+}
+
+function estimateCost(model: CatalogModel | undefined, promptTok: number, completionTok: number): number | null {
+  const p = model?.pricing;
+  if (!p || (!p.input_per_1m_tokens && !p.output_per_1m_tokens)) return null;
+  const inCost = (p.input_per_1m_tokens || 0) * promptTok / 1_000_000;
+  const outCost = (p.output_per_1m_tokens || 0) * completionTok / 1_000_000;
+  return inCost + outCost;
+}
+
+function fmtBalance(cents: number): string {
+  const usd = cents / 100;
+  if (usd >= 1) return `$${usd.toFixed(2)}`;
+  if (usd > 0) return `$${usd.toFixed(4)}`;
+  return '$0.00';
 }
 
 // --- Minimal markdown renderer ---
@@ -202,7 +314,7 @@ function CodeBlock({ code, lang }: { code: string; lang: string; key?: React.Key
 // --- Main component ---
 
 export function Playground() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('op_api_key') || '');
   const [systemPrompt, setSystemPrompt] = useState('You are a helpful assistant.');
   const [temperature, setTemperature] = useState(0.7);
@@ -212,12 +324,26 @@ export function Playground() {
   const [codeLang, setCodeLang] = useState<'python' | 'js'>('python');
   const [codeCopied, setCodeCopied] = useState(false);
   const [input, setInput] = useState('');
+  const [shareCopied, setShareCopied] = useState(false);
+  const [balanceCents, setBalanceCents] = useState<number | null>(null);
+  const [dynamicModels, setDynamicModels] = useState<CatalogModel[] | null>(() => loadCachedModels());
   const [panes, setPanes] = useState<ModelPane[]>(() => {
     const modelParam = searchParams.get('model');
-    return [makePane(modelParam || 'auto')];
+    const initial = makePane(modelParam || 'auto');
+    initial.messages = loadPaneHistory(initial.modelId);
+    return [initial];
   });
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRefs = useRef<Map<string, AbortController>>(new Map());
+  const autoRanRef = useRef(false);
+
+  const catalog: CatalogModel[] = dynamicModels || FALLBACK_MODELS;
+  const chatCatalog = useMemo(() => catalog.filter(m => !NON_CHAT_PATTERNS.test(m.id)), [catalog]);
+  const modelIndex = useMemo(() => {
+    const m = new Map<string, CatalogModel>();
+    for (const mod of catalog) m.set(mod.id, mod);
+    return m;
+  }, [catalog]);
 
   const anyStreaming = panes.some(p => p.streaming);
 
@@ -232,6 +358,60 @@ export function Playground() {
     }
   }, [apiKey]);
 
+  // Fetch model catalog from /v1/models (works with or without API key — endpoint is auth-gated).
+  useEffect(() => {
+    if (!apiKey) return;
+    let aborted = false;
+    (async () => {
+      try {
+        const resp = await fetch(`${window.location.origin}/v1/models`, {
+          headers: { 'Authorization': `Bearer ${apiKey}` },
+        });
+        if (!resp.ok) return;
+        const data = await resp.json();
+        if (aborted || !Array.isArray(data.data)) return;
+        const mapped: CatalogModel[] = data.data.map((m: any) => ({
+          id: m.id,
+          label: m.id,
+          provider: humanProvider(m.owned_by),
+          pricing: m.pricing,
+          capabilities: m.capabilities,
+        }));
+        // Merge with fallback so curated labels survive for built-in ids.
+        const byId = new Map<string, CatalogModel>();
+        for (const f of FALLBACK_MODELS) byId.set(f.id, f);
+        for (const m of mapped) {
+          const existing = byId.get(m.id);
+          byId.set(m.id, {
+            ...m,
+            label: existing?.label || m.label,
+            provider: existing?.provider || m.provider,
+          });
+        }
+        const merged = Array.from(byId.values());
+        setDynamicModels(merged);
+        saveCachedModels(merged);
+      } catch {}
+    })();
+    return () => { aborted = true; };
+  }, [apiKey]);
+
+  // Fetch account balance when signed in.
+  const refreshBalance = useCallback(async () => {
+    if (!apiKey) return;
+    try {
+      const resp = await fetch(`${window.location.origin}/account/balance`, {
+        headers: { 'Authorization': `Bearer ${apiKey}` },
+      });
+      if (!resp.ok) return;
+      const d = await resp.json();
+      if (typeof d.balance_cents === 'number') setBalanceCents(d.balance_cents);
+      else if (typeof d.balance_usd === 'number') setBalanceCents(Math.round(d.balance_usd * 100));
+    } catch {}
+  }, [apiKey]);
+
+  useEffect(() => { refreshBalance(); }, [refreshBalance]);
+
   const baseUrl = window.location.origin;
 
   const sendToModel = useCallback(async (paneId: string, modelId: string, messages: Message[]) => {
@@ -241,7 +421,7 @@ export function Playground() {
     const start = performance.now();
 
     setPanes(prev => prev.map(p =>
-      p.id === paneId ? { ...p, streaming: true, error: null, latencyMs: null, tokensUsed: null } : p
+      p.id === paneId ? { ...p, streaming: true, error: null, latencyMs: null, tokensUsed: null, promptTokens: null, completionTokens: null, costUsd: null } : p
     ));
 
     try {
@@ -278,6 +458,8 @@ export function Playground() {
       let assistantContent = '';
       let firstToken = true;
       let totalTokens: number | null = null;
+      let promptTokens: number | null = null;
+      let completionTokens: number | null = null;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -294,8 +476,10 @@ export function Playground() {
           try {
             const parsed = JSON.parse(data);
             const delta = parsed.choices?.[0]?.delta?.content;
-            if (parsed.usage?.total_tokens) {
-              totalTokens = parsed.usage.total_tokens;
+            if (parsed.usage) {
+              if (typeof parsed.usage.total_tokens === 'number') totalTokens = parsed.usage.total_tokens;
+              if (typeof parsed.usage.prompt_tokens === 'number') promptTokens = parsed.usage.prompt_tokens;
+              if (typeof parsed.usage.completion_tokens === 'number') completionTokens = parsed.usage.completion_tokens;
             }
             if (delta) {
               if (firstToken) {
@@ -322,9 +506,13 @@ export function Playground() {
         }
       }
 
-      setPanes(prev => prev.map(p =>
-        p.id === paneId ? { ...p, streaming: false, tokensUsed: totalTokens } : p
-      ));
+      setPanes(prev => prev.map(p => {
+        if (p.id !== paneId) return p;
+        const cost = estimateCost(modelIndex.get(p.modelId), promptTokens || 0, completionTokens || 0);
+        return { ...p, streaming: false, tokensUsed: totalTokens, promptTokens, completionTokens, costUsd: cost };
+      }));
+      savePaneHistory(modelId, [...messages, { role: 'assistant', content: assistantContent }]);
+      refreshBalance();
     } catch (err: any) {
       if (err.name === 'AbortError') {
         setPanes(prev => prev.map(p =>
@@ -338,7 +526,7 @@ export function Playground() {
     } finally {
       abortRefs.current.delete(paneId);
     }
-  }, [apiKey, baseUrl, systemPrompt, temperature, maxTokens]);
+  }, [apiKey, baseUrl, systemPrompt, temperature, maxTokens, modelIndex, refreshBalance]);
 
   function generateCode(lang: 'python' | 'js'): string {
     const pane = panes[0];
@@ -400,7 +588,7 @@ console.log(completion.choices[0].message.content);`;
     setTimeout(() => setCodeCopied(false), 2000);
   }
 
-  function handleSend(text?: string) {
+  const handleSend = useCallback((text?: string) => {
     const msg = (text || input).trim();
     if (!msg || !apiKey) return;
 
@@ -415,8 +603,33 @@ console.log(completion.choices[0].message.content);`;
     setPanes(updatedPanes);
 
     for (const pane of updatedPanes) {
+      savePaneHistory(pane.modelId, pane.messages);
       sendToModel(pane.id, pane.modelId, pane.messages);
     }
+  }, [input, apiKey, panes, sendToModel]);
+
+  // Auto-run a prompt passed via ?prompt= once the API key is ready.
+  useEffect(() => {
+    if (autoRanRef.current) return;
+    const promptParam = searchParams.get('prompt');
+    if (!promptParam || !apiKey) return;
+    autoRanRef.current = true;
+    handleSend(promptParam);
+    // Strip the prompt param so refreshing doesn't re-trigger.
+    const next = new URLSearchParams(searchParams);
+    next.delete('prompt');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, apiKey, handleSend, setSearchParams]);
+
+  function copyShareLink() {
+    const firstPane = panes[0];
+    const lastUser = [...firstPane.messages].reverse().find(m => m.role === 'user');
+    const u = new URL(window.location.origin + '/playground');
+    u.searchParams.set('model', firstPane.modelId);
+    if (lastUser) u.searchParams.set('prompt', lastUser.content);
+    navigator.clipboard.writeText(u.toString());
+    setShareCopied(true);
+    setTimeout(() => setShareCopied(false), 2000);
   }
 
   function stopAll() {
@@ -427,8 +640,10 @@ console.log(completion.choices[0].message.content);`;
   function addPane() {
     if (panes.length >= 4) return;
     const usedModels = new Set(panes.map(p => p.modelId));
-    const next = CHAT_MODELS.find(m => !usedModels.has(m.id)) || CHAT_MODELS[0];
-    setPanes(prev => [...prev, makePane(next.id)]);
+    const next = chatCatalog.find(m => !usedModels.has(m.id)) || chatCatalog[0];
+    const pane = makePane(next.id);
+    pane.messages = loadPaneHistory(next.id);
+    setPanes(prev => [...prev, pane]);
   }
 
   function removePane(id: string) {
@@ -439,14 +654,19 @@ console.log(completion.choices[0].message.content);`;
   }
 
   function changeModel(paneId: string, modelId: string) {
-    setPanes(prev => prev.map(p =>
-      p.id === paneId ? { ...p, modelId } : p
-    ));
+    setPanes(prev => prev.map(p => {
+      if (p.id !== paneId) return p;
+      // Swap in persisted history for the new model (if any).
+      return { ...p, modelId, messages: loadPaneHistory(modelId), error: null, latencyMs: null, tokensUsed: null, promptTokens: null, completionTokens: null, costUsd: null };
+    }));
   }
 
   function clearAll() {
     stopAll();
-    setPanes(prev => prev.map(p => ({ ...p, messages: [], streaming: false, error: null, latencyMs: null, tokensUsed: null })));
+    setPanes(prev => prev.map(p => {
+      savePaneHistory(p.modelId, []);
+      return { ...p, messages: [], streaming: false, error: null, latencyMs: null, tokensUsed: null, promptTokens: null, completionTokens: null, costUsd: null };
+    }));
   }
 
   function retryLast(paneId: string) {
@@ -455,6 +675,7 @@ console.log(completion.choices[0].message.content);`;
     // Remove last assistant message and re-send
     const msgs = pane.messages.filter((_, i) => !(i === pane.messages.length - 1 && pane.messages[i].role === 'assistant'));
     setPanes(prev => prev.map(p => p.id === paneId ? { ...p, messages: msgs, error: null } : p));
+    savePaneHistory(pane.modelId, msgs);
     sendToModel(paneId, pane.modelId, msgs);
   }
 
@@ -500,7 +721,27 @@ console.log(completion.choices[0].message.content);`;
             <Code2 className="w-3.5 h-3.5" /> Copy Code
           </button>
         )}
+        {hasMessages && (
+          <button
+            onClick={copyShareLink}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border border-white/10 text-white/60 hover:text-white hover:border-white/20 transition-colors"
+            title="Copy a link that replays this prompt"
+          >
+            {shareCopied ? <><Check className="w-3.5 h-3.5 text-green-400" /> Copied</> : <><Share2 className="w-3.5 h-3.5" /> Share</>}
+          </button>
+        )}
         <div className="ml-auto flex items-center gap-3">
+          {apiKey && balanceCents !== null && (
+            balanceCents <= 0 ? (
+              <a href="/account" className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-mono rounded border border-red-400/30 bg-red-400/5 text-red-300 hover:bg-red-400/10 transition-colors">
+                <Wallet className="w-3.5 h-3.5" /> Top up credits
+              </a>
+            ) : (
+              <a href="/account" className="flex items-center gap-1.5 text-[11px] font-mono text-white/50 hover:text-white/80 transition-colors" title="Account balance">
+                <Wallet className="w-3.5 h-3.5" /> {fmtBalance(balanceCents)}
+              </a>
+            )
+          )}
           {panes.length > 1 && (
             <span className="text-[10px] font-mono text-white/25">{panes.length}/4 models</span>
           )}
@@ -607,6 +848,7 @@ console.log(completion.choices[0].message.content);`;
               <ModelSelect
                 value={pane.modelId}
                 onChange={m => changeModel(pane.id, m)}
+                models={chatCatalog}
               />
               <div className="flex items-center gap-2 shrink-0 ml-auto">
                 {pane.latencyMs !== null && (
@@ -617,6 +859,11 @@ console.log(completion.choices[0].message.content);`;
                 {pane.tokensUsed !== null && !pane.streaming && (
                   <span className="text-[10px] font-mono text-white/30" title="Total tokens">
                     {pane.tokensUsed.toLocaleString()} tok
+                  </span>
+                )}
+                {pane.costUsd !== null && !pane.streaming && (
+                  <span className="text-[10px] font-mono text-amber-300/70" title={`Prompt ${pane.promptTokens ?? '?'} + completion ${pane.completionTokens ?? '?'} tok`}>
+                    {fmtCost(pane.costUsd)}
                   </span>
                 )}
                 {pane.streaming && (
@@ -718,19 +965,42 @@ function EmptyState({ onPrompt, hasApiKey }: { onPrompt: (text: string) => void;
       <div className="text-white/10 mb-6">
         <Zap className="w-10 h-10" />
       </div>
-      <p className="text-sm font-mono text-white/20 mb-6">Try a prompt to get started</p>
-      {hasApiKey && (
-        <div className="flex flex-wrap gap-2 justify-center max-w-md">
-          {QUICK_PROMPTS.map((prompt, i) => (
-            <button
-              key={i}
-              onClick={() => onPrompt(prompt)}
-              className="text-xs font-mono text-white/40 border border-white/10 rounded-lg px-3 py-2 hover:border-white/25 hover:text-white/60 hover:bg-white/[0.02] transition-colors text-left"
+      {hasApiKey ? (
+        <>
+          <p className="text-sm font-mono text-white/20 mb-6">Try a prompt to get started</p>
+          <div className="flex flex-wrap gap-2 justify-center max-w-md">
+            {QUICK_PROMPTS.map((prompt, i) => (
+              <button
+                key={i}
+                onClick={() => onPrompt(prompt)}
+                className="text-xs font-mono text-white/40 border border-white/10 rounded-lg px-3 py-2 hover:border-white/25 hover:text-white/60 hover:bg-white/[0.02] transition-colors text-left"
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="text-sm font-mono text-white/60 mb-2">Sign in to start comparing models</p>
+          <p className="text-xs font-mono text-white/30 mb-6 max-w-sm text-center leading-relaxed">
+            One API key for every major model — GPT, Claude, Gemini, Grok, DeepSeek, Llama, and more.
+          </p>
+          <div className="flex gap-2">
+            <a
+              href="/account"
+              className="text-xs font-mono bg-white text-black rounded-lg px-4 py-2 font-bold hover:bg-white/90 transition-colors"
             >
-              {prompt}
-            </button>
-          ))}
-        </div>
+              Sign in / sign up
+            </a>
+            <a
+              href="/models"
+              className="text-xs font-mono text-white/50 border border-white/10 rounded-lg px-4 py-2 hover:text-white hover:border-white/25 transition-colors"
+            >
+              Browse models
+            </a>
+          </div>
+        </>
       )}
     </div>
   );
@@ -770,7 +1040,7 @@ function MessageBubble({ message }: { message: Message; key?: React.Key }) {
   );
 }
 
-function ModelSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function ModelSelect({ value, onChange, models }: { value: string; onChange: (v: string) => void; models: CatalogModel[] }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const ref = useRef<HTMLDivElement>(null);
@@ -791,16 +1061,16 @@ function ModelSelect({ value, onChange }: { value: string; onChange: (v: string)
     }
   }, [open]);
 
-  const current = CHAT_MODELS.find(m => m.id === value);
+  const current = models.find(m => m.id === value);
 
   const filtered = useMemo(() => {
-    if (!search) return CHAT_MODELS;
+    if (!search) return models;
     const q = search.toLowerCase();
-    return CHAT_MODELS.filter(m => m.label.toLowerCase().includes(q) || m.provider.toLowerCase().includes(q) || m.id.toLowerCase().includes(q));
-  }, [search]);
+    return models.filter(m => m.label.toLowerCase().includes(q) || m.provider.toLowerCase().includes(q) || m.id.toLowerCase().includes(q));
+  }, [search, models]);
 
-  const grouped: Record<string, typeof CHAT_MODELS> = useMemo(() => {
-    return filtered.reduce<Record<string, typeof CHAT_MODELS>>((acc, m) => {
+  const grouped: Record<string, CatalogModel[]> = useMemo(() => {
+    return filtered.reduce<Record<string, CatalogModel[]>>((acc, m) => {
       (acc[m.provider] ||= []).push(m);
       return acc;
     }, {});
@@ -816,7 +1086,7 @@ function ModelSelect({ value, onChange }: { value: string; onChange: (v: string)
         <ChevronDown className={`w-3 h-3 shrink-0 text-white/30 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div className="absolute top-full left-0 mt-1 w-72 max-h-80 overflow-hidden bg-black border border-white/10 rounded-lg shadow-xl z-50 flex flex-col">
+        <div className="absolute top-full left-0 mt-1 w-96 max-h-96 overflow-hidden bg-black border border-white/10 rounded-lg shadow-xl z-50 flex flex-col">
           <div className="p-2 border-b border-white/10">
             <input
               ref={searchRef}
@@ -830,23 +1100,39 @@ function ModelSelect({ value, onChange }: { value: string; onChange: (v: string)
             {Object.keys(grouped).length === 0 ? (
               <div className="px-3 py-4 text-xs font-mono text-white/30 text-center">No models found</div>
             ) : (
-              Object.entries(grouped).map(([provider, models]) => (
+              Object.entries(grouped).map(([provider, provModels]) => (
                 <div key={provider}>
                   <div className="px-3 py-1.5 text-[10px] font-mono text-white/30 uppercase tracking-wider sticky top-0 bg-black">
                     {provider}
                   </div>
-                  {models.map(m => (
-                    <button
-                      key={m.id}
-                      onClick={() => { onChange(m.id); setOpen(false); }}
-                      className={`w-full text-left px-3 py-1.5 text-xs font-mono hover:bg-white/5 transition-colors ${m.id === value ? 'text-white bg-white/5' : 'text-white/60'}`}
-                    >
-                      {m.label}
-                    </button>
-                  ))}
+                  {provModels.map(m => {
+                    const pin = m.pricing?.input_per_1m_tokens;
+                    const pout = m.pricing?.output_per_1m_tokens;
+                    return (
+                      <button
+                        key={m.id}
+                        onClick={() => { onChange(m.id); setOpen(false); }}
+                        className={`w-full text-left px-3 py-1.5 text-xs font-mono hover:bg-white/5 transition-colors flex items-center gap-2 ${m.id === value ? 'text-white bg-white/5' : 'text-white/70'}`}
+                      >
+                        <span className="truncate flex-1">{m.label}</span>
+                        <span className="flex items-center gap-1 shrink-0 text-white/30">
+                          {m.capabilities?.vision && <Eye className="w-3 h-3" aria-label="vision" />}
+                          {m.capabilities?.tools && <Wrench className="w-3 h-3" aria-label="tools" />}
+                        </span>
+                        {(pin !== undefined || pout !== undefined) && (
+                          <span className="text-[10px] font-mono text-white/30 shrink-0 tabular-nums">
+                            ${pin?.toFixed(2) ?? '?'}/${pout?.toFixed(2) ?? '?'}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               ))
             )}
+          </div>
+          <div className="px-3 py-1.5 border-t border-white/10 bg-white/[0.02]">
+            <p className="text-[9px] font-mono text-white/25">Prices are $ per 1M input / output tokens</p>
           </div>
         </div>
       )}
