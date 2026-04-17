@@ -97,7 +97,7 @@ func (r *DripRunner) RunScheduled(ctx context.Context) {
 			  AND u.disabled = false
 			  AND NOT EXISTS (
 				SELECT 1 FROM drip_emails_sent d
-				WHERE d.user_id = u.id AND d.email_id = $2
+				WHERE d.user_id = u.id::text AND d.email_id = $2
 			  )
 			LIMIT 100
 		`, cutoff, de.ID)
