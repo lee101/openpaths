@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Terminal, Zap, Code2, ArrowRight, Github, Search, Layers, Activity, Sparkles } from 'lucide-react';
+import { Zap, Code2, ArrowRight, Github, Search, Layers, Activity, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { CodeBlock } from '../components/CodeBlock';
 
 export function Landing() {
   const [activeTab, setActiveTab] = useState<'python' | 'curl'>('python');
@@ -83,38 +84,19 @@ export function Landing() {
               </button>
             </div>
           </div>
-          <div className="p-6 overflow-x-auto">
+          <div className="overflow-x-auto">
             {activeTab === 'python' ? (
-              <pre className="font-mono text-sm leading-relaxed">
-                <span className="text-white/40">import</span> <span className="text-white">openai</span>{'\n\n'}
-                <span className="text-white">client</span> <span className="text-white/40">=</span> <span className="text-white">openai.OpenAI(</span>{'\n'}
-                {'  '}base_url<span className="text-white/40">="</span><span className="text-white">https://api.openpaths.io/v1</span><span className="text-white/40">"</span>,{'\n'}
-                {'  '}api_key<span className="text-white/40">="</span><span className="text-white">{apiKey}</span><span className="text-white/40">"</span>{'\n'}
-                <span className="text-white">)</span>{'\n\n'}
-                <span className="text-white">response</span> <span className="text-white/40">=</span> <span className="text-white">client.chat.completions.create(</span>{'\n'}
-                {'  '}model<span className="text-white/40">="</span><span className="text-white">auto-think</span><span className="text-white/40">"</span>,{'\n'}
-                {'  '}messages<span className="text-white/40">=[</span>{'\n'}
-                {'    '}<span className="text-white/40">&#123;</span>"role"<span className="text-white/40">:</span> "user"<span className="text-white/40">,</span> "content"<span className="text-white/40">:</span> "Write a python script to reverse a string."<span className="text-white/40">&#125;</span>{'\n'}
-                {'  '}<span className="text-white/40">],</span>{'\n'}
-                {'  '}reasoning_effort<span className="text-white/40">="</span><span className="text-white">low</span><span className="text-white/40">"</span>{'\n'}
-                <span className="text-white">)</span>
-              </pre>
+              <CodeBlock
+                language="python"
+                preClassName="p-6"
+                code={`import openai\n\nclient = openai.OpenAI(\n  base_url="https://openpaths.io/v1",\n  api_key="${apiKey}"\n)\n\nresponse = client.chat.completions.create(\n  model="auto-think",\n  messages=[\n    {"role": "user", "content": "Write a python script to reverse a string."}\n  ],\n  reasoning_effort="low"\n)`}
+              />
             ) : (
-              <pre className="font-mono text-sm leading-relaxed">
-                <span className="text-white">curl</span> <span className="text-white/40">https://api.openpaths.io/v1/chat/completions</span> <span className="text-white/40">\</span>{'\n'}
-                {'  '}<span className="text-white/40">-H</span> <span className="text-white">"Content-Type: application/json"</span> <span className="text-white/40">\</span>{'\n'}
-                {'  '}<span className="text-white/40">-H</span> <span className="text-white">"Authorization: Bearer {apiKey}"</span> <span className="text-white/40">\</span>{'\n'}
-                {'  '}<span className="text-white/40">-d</span> <span className="text-white">'{'{'}</span>{'\n'}
-                {'    '}<span className="text-white">"model": "auto-think",</span>{'\n'}
-                {'    '}<span className="text-white">"messages": [</span>{'\n'}
-                {'      '}<span className="text-white">{'{'}</span>{'\n'}
-                {'        '}<span className="text-white">"role": "user",</span>{'\n'}
-                {'        '}<span className="text-white">"content": "Write a python script to reverse a string."</span>{'\n'}
-                {'      '}<span className="text-white">{'}'}</span>{'\n'}
-                {'    '}<span className="text-white">],</span>{'\n'}
-                {'    '}<span className="text-white">"reasoning_effort": "low"</span>{'\n'}
-                {'  '}<span className="text-white">{'}'}'</span>
-              </pre>
+              <CodeBlock
+                language="bash"
+                preClassName="p-6"
+                code={`curl https://openpaths.io/v1/chat/completions \\\n  -H "Content-Type: application/json" \\\n  -H "Authorization: Bearer ${apiKey}" \\\n  -d '{\n    "model": "auto-think",\n    "messages": [\n      {\n        "role": "user",\n        "content": "Write a python script to reverse a string."\n      }\n    ],\n    "reasoning_effort": "low"\n  }'`}
+              />
             )}
           </div>
         </div>

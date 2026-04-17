@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { models, Tag, SortOption, parseContextLength } from '../data/models';
 import { providersByName, getProviderLogo } from '../data/providers';
 import { Search, Tag as TagIcon, Cpu, Zap, Image as ImageIcon, Code2, BrainCircuit, MessageSquare, Globe, ArrowUpDown, Video, Gift, Database } from 'lucide-react';
@@ -47,8 +47,14 @@ function sortModels(items: typeof models, sort: SortOption) {
   }
 }
 
+const CHAT_TAGS: Tag[] = ['art generation', 'video generation', 'embedding'];
+function isChatModel(model: typeof models[0]) {
+  return !model.tags.every(t => CHAT_TAGS.includes(t)) && model.contextLength !== 'N/A';
+}
+
 export function Models() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [sortBy, setSortBy] = useState<SortOption>('popular');
@@ -209,10 +215,19 @@ export function Models() {
                 )}
               </div>
 
-              <div className="pt-2">
-                <code className="block w-full bg-black border border-white/10 rounded px-3 py-2 text-[10px] text-white/40 truncate group-hover:text-white/80 transition-colors">
+              <div className="pt-2 flex items-center gap-2">
+                <code className="flex-1 bg-black border border-white/10 rounded px-3 py-2 text-[10px] text-white/40 truncate group-hover:text-white/80 transition-colors">
                   {model.id}
                 </code>
+                {isChatModel(model) && (
+                  <button
+                    onClick={() => navigate(`/playground?model=${encodeURIComponent(model.id)}`)}
+                    title="Chat with this model"
+                    className="shrink-0 flex items-center gap-1 px-2.5 py-2 bg-white/5 border border-white/10 rounded text-[10px] font-mono text-white/50 hover:text-white hover:bg-white/10 hover:border-white/25 transition-colors"
+                  >
+                    <MessageSquare className="w-3 h-3" /> Chat
+                  </button>
+                )}
               </div>
             </div>
           </motion.div>

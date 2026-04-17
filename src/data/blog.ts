@@ -327,7 +327,7 @@ Auto routing is a three-step pipeline:
 
 \`\`\`python
 client = openai.OpenAI(
-    base_url="https://api.openpaths.io/v1",
+    base_url="https://openpaths.io/v1",
     api_key="op_..."
 )
 
@@ -641,7 +641,7 @@ The premium option. ra2v produces the highest quality video but at 10x the cost 
 import requests
 
 response = requests.post(
-    "https://api.openpaths.io/v1/video/generations",
+    "https://openpaths.io/v1/video/generations",
     headers={"Authorization": "Bearer op_..."},
     json={
         "model": "auto-video",
@@ -654,7 +654,7 @@ video_url = response.json()["video_url"]
 For image-to-video:
 \`\`\`python
 response = requests.post(
-    "https://api.openpaths.io/v1/video/generations",
+    "https://openpaths.io/v1/video/generations",
     headers={"Authorization": "Bearer op_..."},
     json={
         "model": "wan",
@@ -731,7 +731,7 @@ Two models available through MiniMax:
 
 \`\`\`python
 response = requests.post(
-    "https://api.openpaths.io/v1/music/generations",
+    "https://openpaths.io/v1/music/generations",
     headers={"Authorization": "Bearer op_..."},
     json={
         "model": "music-2.5",
@@ -753,7 +753,7 @@ Four TTS models, split between HD (higher quality) and Turbo (faster):
 
 \`\`\`python
 response = requests.post(
-    "https://api.openpaths.io/v1/audio/speech",
+    "https://openpaths.io/v1/audio/speech",
     headers={"Authorization": "Bearer op_..."},
     json={
         "model": "speech-2.8-hd",
@@ -771,7 +771,7 @@ For the reverse direction -- audio to text -- we support Whisper through both Gr
 \`\`\`python
 with open("recording.mp3", "rb") as f:
     response = requests.post(
-        "https://api.openpaths.io/v1/audio/transcriptions",
+        "https://openpaths.io/v1/audio/transcriptions",
         headers={"Authorization": "Bearer op_..."},
         files={"file": f},
         data={"model": "whisper-large-v3-turbo"}

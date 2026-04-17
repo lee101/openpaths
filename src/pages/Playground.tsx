@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Send, Plus, X, Settings, ChevronDown, Loader2, Trash2, Square, Copy, Check, Zap, RotateCcw } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { Send, Plus, X, Settings, ChevronDown, Loader2, Trash2, Square, Copy, Check, Zap, RotateCcw, Code2 } from 'lucide-react';
 
 interface Message {
   role: 'system' | 'user' | 'assistant';
@@ -41,6 +42,7 @@ const CHAT_MODELS = [
   { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B', provider: 'Groq' },
   { id: 'glm-5', label: 'GLM-5', provider: 'Together' },
   { id: 'qwen3.5-397b', label: 'Qwen 3.5 397B', provider: 'Together' },
+  { id: 'minimax-m2.7', label: 'MiniMax M2.7', provider: 'MiniMax' },
   { id: 'minimax-m2.5-direct', label: 'MiniMax M2.5', provider: 'MiniMax' },
   { id: 'kimi-k2.5', label: 'Kimi K2.5', provider: 'Together' },
 ];
@@ -200,13 +202,20 @@ function CodeBlock({ code, lang }: { code: string; lang: string; key?: React.Key
 // --- Main component ---
 
 export function Playground() {
+  const [searchParams] = useSearchParams();
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('op_api_key') || '');
   const [systemPrompt, setSystemPrompt] = useState('You are a helpful assistant.');
   const [temperature, setTemperature] = useState(0.7);
   const [maxTokens, setMaxTokens] = useState(4096);
   const [showSettings, setShowSettings] = useState(false);
+  const [showCode, setShowCode] = useState(false);
+  const [codeLang, setCodeLang] = useState<'python' | 'js'>('python');
+  const [codeCopied, setCodeCopied] = useState(false);
   const [input, setInput] = useState('');
-  const [panes, setPanes] = useState<ModelPane[]>([makePane('auto')]);
+  const [panes, setPanes] = useState<ModelPane[]>(() => {
+    const modelParam = searchParams.get('model');
+    return [makePane(modelParam || 'auto')];
+  });
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRefs = useRef<Map<string, AbortController>>(new Map());
 
@@ -331,6 +340,66 @@ export function Playground() {
     }
   }, [apiKey, baseUrl, systemPrompt, temperature, maxTokens]);
 
+  function generateCode(lang: 'python' | 'js'): string {
+    const pane = panes[0];
+    const model = pane.modelId;
+    const allMessages: Message[] = [
+      ...(systemPrompt ? [{ role: 'system' as const, content: systemPrompt }] : []),
+      ...pane.messages,
+    ];
+    const baseUrl = `${window.location.origin}/v1`;
+
+    if (lang === 'python') {
+      const messagesStr = allMessages
+        .map(m => `        {"role": "${m.role}", "content": ${JSON.stringify(m.content)}},`)
+        .join('\n');
+      return `from openai import OpenAI
+
+client = OpenAI(
+    api_key="YOUR_OPENPATHS_API_KEY",
+    base_url="${baseUrl}",
+)
+
+completion = client.chat.completions.create(
+    model="${model}",
+    messages=[
+${messagesStr}
+    ],
+    temperature=${temperature},
+    max_tokens=${maxTokens},
+)
+
+print(completion.choices[0].message.content)`;
+    } else {
+      const messagesStr = allMessages
+        .map(m => `    { role: "${m.role}", content: ${JSON.stringify(m.content)} },`)
+        .join('\n');
+      return `import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: "YOUR_OPENPATHS_API_KEY",
+  baseURL: "${baseUrl}",
+});
+
+const completion = await client.chat.completions.create({
+  model: "${model}",
+  messages: [
+${messagesStr}
+  ],
+  temperature: ${temperature},
+  maxTokens: ${maxTokens},
+});
+
+console.log(completion.choices[0].message.content);`;
+    }
+  }
+
+  function copyCode() {
+    navigator.clipboard.writeText(generateCode(codeLang));
+    setCodeCopied(true);
+    setTimeout(() => setCodeCopied(false), 2000);
+  }
+
   function handleSend(text?: string) {
     const msg = (text || input).trim();
     if (!msg || !apiKey) return;
@@ -423,6 +492,14 @@ export function Playground() {
             <Trash2 className="w-3.5 h-3.5" /> Clear
           </button>
         )}
+        {hasMessages && (
+          <button
+            onClick={() => setShowCode(!showCode)}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border transition-colors ${showCode ? 'border-white/30 bg-white/10 text-white' : 'border-white/10 text-white/60 hover:text-white hover:border-white/20'}`}
+          >
+            <Code2 className="w-3.5 h-3.5" /> Copy Code
+          </button>
+        )}
         <div className="ml-auto flex items-center gap-3">
           {panes.length > 1 && (
             <span className="text-[10px] font-mono text-white/25">{panes.length}/4 models</span>
@@ -495,6 +572,32 @@ export function Playground() {
         </div>
       )}
 
+      {/* Code Panel */}
+      {showCode && (
+        <div className="border-b border-white/10 bg-white/[0.02]">
+          <div className="flex items-center gap-1 px-4 pt-3 pb-0">
+            {(['python', 'js'] as const).map(lang => (
+              <button
+                key={lang}
+                onClick={() => setCodeLang(lang)}
+                className={`px-3 py-1.5 text-xs font-mono rounded-t border-t border-l border-r transition-colors ${codeLang === lang ? 'border-white/20 bg-black text-white' : 'border-transparent text-white/40 hover:text-white/70'}`}
+              >
+                {lang === 'python' ? 'Python' : 'JavaScript'}
+              </button>
+            ))}
+            <button
+              onClick={copyCode}
+              className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono border border-white/10 rounded text-white/60 hover:text-white hover:border-white/25 transition-colors mb-0.5"
+            >
+              {codeCopied ? <><Check className="w-3 h-3 text-green-400" /> Copied</> : <><Copy className="w-3 h-3" /> Copy</>}
+            </button>
+          </div>
+          <pre className="px-4 pb-4 overflow-x-auto text-[12px] font-mono leading-relaxed text-white/80 bg-black mx-4 mb-3 rounded-b rounded-tr border border-white/10 pt-3">
+            <code>{generateCode(codeLang)}</code>
+          </pre>
+        </div>
+      )}
+
       {/* Model Panes */}
       <div className="flex-1 flex overflow-hidden">
         {panes.map(pane => (
@@ -564,7 +667,9 @@ export function Playground() {
               setInput(e.target.value);
               const el = e.target;
               el.style.height = 'auto';
-              el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+              const next = Math.min(el.scrollHeight, 200);
+              el.style.height = next + 'px';
+              el.style.overflowY = el.scrollHeight > 200 ? 'auto' : 'hidden';
             }}
             onKeyDown={handleKeyDown}
             rows={1}
@@ -572,7 +677,7 @@ export function Playground() {
             disabled={!apiKey}
             autoFocus
             data-testid="chat-input"
-            className="flex-1 bg-black border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/10 resize-none disabled:opacity-30 transition-colors"
+            className="flex-1 bg-black border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/10 resize-none overflow-y-hidden disabled:opacity-30 transition-colors"
             style={{ minHeight: '44px', maxHeight: '200px' }}
           />
           {anyStreaming ? (
