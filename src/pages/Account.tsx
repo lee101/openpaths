@@ -1,10 +1,51 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { CreditCard, Key, Wallet, Plus, Copy, Check, Activity, ArrowUpRight, ExternalLink, X, TrendingUp, LogIn, LogOut, Eye, EyeOff } from 'lucide-react';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  Activity,
+  ArrowUpRight,
+  BarChart2,
+  Check,
+  ChevronLeft,
+  CircleDollarSign,
+  Copy,
+  CreditCard,
+  Eye,
+  EyeOff,
+  Key,
+  LogOut,
+  Plus,
+  Repeat,
+  ShieldCheck,
+  TriangleAlert,
+  Wallet,
+  X,
+} from 'lucide-react';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Cell,
+  CartesianGrid,
+} from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
 import { loadStripe } from '@stripe/stripe-js';
-import { EmbeddedCheckoutProvider, EmbeddedCheckout } from '@stripe/react-stripe-js';
+import {
+  Elements,
+  EmbeddedCheckout,
+  EmbeddedCheckoutProvider,
+  PaymentElement,
+  useElements,
+  useStripe,
+} from '@stripe/react-stripe-js';
 
 const API_BASE = '';
+const RECOMMENDED_THRESHOLD_USD = 100;
+const RECOMMENDED_TOPUP_USD = 200;
+const QUICK_TOPUP_AMOUNTS = [25, 100, 200, 500];
 
 let stripePromise: ReturnType<typeof loadStripe> | null = null;
 function getStripe(pk: string) {
@@ -12,15 +53,28 @@ function getStripe(pk: string) {
   return stripePromise;
 }
 
-// Extend Window type to include server-injected userData
 declare global {
   interface Window {
     userData?: { id: string; email: string; name: string; secret: string; authenticated: boolean };
   }
 }
 
-// getUserData: window.userData (server-injected) takes priority, localStorage is the fallback for dev/proxy.
-// Can be overridden in tests/console: window.userData = { secret: 'op-...', email: '...', ... }
+type PaymentMethod = {
+  id: string;
+  card?: {
+    brand: string;
+    last4: string;
+    exp_month: number;
+    exp_year: number;
+  };
+};
+
+type AutotopupSettings = {
+  enabled: boolean;
+  threshold_cents: number;
+  amount_cents: number;
+};
+
 function getUserData(): { apiKey: string | null; user: any } {
   if (window.userData?.secret) {
     return {
@@ -30,7 +84,9 @@ function getUserData(): { apiKey: string | null; user: any } {
   }
   const apiKey = localStorage.getItem('op_api_key');
   let user = null;
-  try { user = JSON.parse(localStorage.getItem('op_user') || 'null'); } catch {}
+  try {
+    user = JSON.parse(localStorage.getItem('op_user') || 'null');
+  } catch {}
   return { apiKey, user };
 }
 
@@ -40,8 +96,8 @@ async function api(path: string, opts: RequestInit = {}) {
   if (!apiKey && !isAuthEndpoint) {
     return new Response(JSON.stringify({ error: { message: 'Not authenticated' } }), { status: 401 });
   }
-  const headers: Record<string, string> = { 'Content-Type': 'application/json', ...opts.headers as Record<string, string> };
-  if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+  const headers: Record<string, string> = { 'Content-Type': 'application/json', ...(opts.headers as Record<string, string>) };
+  if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
   const res = await fetch(API_BASE + path, { ...opts, headers });
   if (res.status === 401 && !isAuthEndpoint) {
     window.userData = undefined;
@@ -62,12 +118,54 @@ function parseBalanceUnits(data: any): number | null {
   return null;
 }
 
+function usdToUnits(amount: number): number {
+  return Math.round(amount * 10000);
+}
+
+function unitsToUSD(units: number): number {
+  return units / 10000;
+}
+
 function formatBalanceUnits(units: number): string {
   const decimals = Math.abs(units) % 100 === 0 ? 2 : 4;
   return `$${(units / 10000).toFixed(decimals)}`;
 }
 
-// --- Auth forms ---
+function formatSignedUnits(units: number): string {
+  if (units === 0) return formatBalanceUnits(0);
+  return `${units > 0 ? '+' : '-'}${formatBalanceUnits(Math.abs(units))}`;
+}
+
+function formatUsdWhole(amount: number): string {
+  return `$${amount.toLocaleString('en-US')}`;
+}
+
+function maskCard(pm: PaymentMethod): string {
+  const brand = pm.card?.brand ? pm.card.brand.charAt(0).toUpperCase() + pm.card.brand.slice(1) : 'Card';
+  return `${brand} ending in ${pm.card?.last4 || '....'}`;
+}
+
+function getBalanceTone(balanceUnits: number | null) {
+  if (balanceUnits === null) {
+    return {
+      label: 'Loading',
+      accent: 'text-white/60',
+      pill: 'bg-white/10 text-white/70 border-white/15',
+    };
+  }
+  if (balanceUnits < usdToUnits(RECOMMENDED_THRESHOLD_USD)) {
+    return {
+      label: 'Below reserve',
+      accent: 'text-amber-300',
+      pill: 'bg-amber-500/10 text-amber-200 border-amber-400/20',
+    };
+  }
+  return {
+    label: 'Healthy reserve',
+    accent: 'text-emerald-300',
+    pill: 'bg-emerald-500/10 text-emerald-200 border-emerald-400/20',
+  };
+}
 
 function AuthForms({ onAuth }: { onAuth: (token: string, user: any, apiKey?: string) => void }) {
   const [mode, setMode] = useState<'login' | 'register'>('login');
@@ -86,14 +184,21 @@ function AuthForms({ onAuth }: { onAuth: (token: string, user: any, apiKey?: str
       const body = mode === 'register' ? { email, password, name } : { email, password };
       const res = await api(`/auth/${mode}`, { method: 'POST', body: JSON.stringify(body) });
       const data = await res.json();
-      if (!res.ok) { setError(data.error?.message || 'Failed'); return; }
+      if (!res.ok) {
+        setError(data.error?.message || 'Failed');
+        return;
+      }
       const key = data.api_key || data.token;
       localStorage.setItem('op_api_key', key);
       localStorage.setItem('op_user', JSON.stringify(data.user));
       window.userData = { id: data.user.id, email: data.user.email, name: data.user.name, secret: key, authenticated: true };
       window.dispatchEvent(new Event('auth-change'));
       onAuth(key, data.user);
-    } catch { setError('Network error'); } finally { setLoading(false); }
+    } catch {
+      setError('Network error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -101,103 +206,94 @@ function AuthForms({ onAuth }: { onAuth: (token: string, user: any, apiKey?: str
       <h1 className="text-3xl font-bold tracking-tight mb-8">{mode === 'login' ? 'Sign In' : 'Create Account'}</h1>
       <form onSubmit={submit} className="space-y-4">
         {mode === 'register' && (
-          <input value={name} onChange={e => setName(e.target.value)} placeholder="Name" className="w-full bg-black border border-white/10 rounded-lg py-3 px-4 text-white font-mono focus:outline-none focus:border-white/30" />
+          <input
+            value={name}
+            onChange={e => setName(e.target.value)}
+            placeholder="Name"
+            className="w-full bg-black border border-white/10 rounded-lg py-3 px-4 text-white font-mono focus:outline-none focus:border-white/30"
+          />
         )}
-        <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" required className="w-full bg-black border border-white/10 rounded-lg py-3 px-4 text-white font-mono focus:outline-none focus:border-white/30" data-testid="auth-email" />
+        <input
+          type="email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          placeholder="Email"
+          required
+          className="w-full bg-black border border-white/10 rounded-lg py-3 px-4 text-white font-mono focus:outline-none focus:border-white/30"
+          data-testid="auth-email"
+        />
         <div className="relative">
-          <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" required minLength={8} className="w-full bg-black border border-white/10 rounded-lg py-3 px-4 pr-12 text-white font-mono focus:outline-none focus:border-white/30" data-testid="auth-password" />
-          <button type="button" onClick={() => setShowPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors">
+          <input
+            type={showPassword ? 'text' : 'password'}
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            placeholder="Password"
+            required
+            minLength={8}
+            className="w-full bg-black border border-white/10 rounded-lg py-3 px-4 pr-12 text-white font-mono focus:outline-none focus:border-white/30"
+            data-testid="auth-password"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(v => !v)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors"
+          >
             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
         </div>
         {error && <p className="text-red-400 text-sm font-mono">{error}</p>}
-        <button type="submit" disabled={loading} className="w-full bg-white text-black py-3 rounded-lg font-mono font-bold text-sm hover:bg-white/90 transition-colors disabled:opacity-50" data-testid="auth-submit">
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-white text-black py-3 rounded-lg font-mono font-bold text-sm hover:bg-white/90 transition-colors disabled:opacity-50"
+          data-testid="auth-submit"
+        >
           {loading ? 'Loading...' : mode === 'login' ? 'Sign In' : 'Create Account'}
         </button>
       </form>
-      <button onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(''); }} className="mt-4 text-sm font-mono text-white/40 hover:text-white transition-colors" data-testid="auth-toggle">
+      <button
+        onClick={() => {
+          setMode(mode === 'login' ? 'register' : 'login');
+          setError('');
+        }}
+        className="mt-4 text-sm font-mono text-white/40 hover:text-white transition-colors"
+        data-testid="auth-toggle"
+      >
         {mode === 'login' ? 'Need an account? Register' : 'Already have an account? Sign In'}
       </button>
     </div>
   );
 }
 
-// --- Usage graph (unchanged) ---
-
-function UsageGraph({ data }: { data: { date: string; requests: number; cost: number }[] }) {
-  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
-  if (!data.length) return null;
-  const maxReq = Math.max(...data.map(d => d.requests));
-  const w = 600, h = 200, px = 40, py = 20;
-  const chartW = w - px * 2, chartH = h - py * 2;
-  const points = data.map((d, i) => ({
-    x: px + (i / Math.max(data.length - 1, 1)) * chartW,
-    y: py + chartH - (d.requests / (maxReq || 1)) * chartH,
-  }));
-  const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
-  const areaPath = `${linePath} L${points[points.length - 1].x},${h - py} L${points[0].x},${h - py} Z`;
-
-  return (
-    <div className="border border-white/10 bg-white/[0.02] rounded-xl p-6" data-testid="usage-graph">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-bold tracking-tight flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-white/40" /> Usage Over Time
-        </h3>
-      </div>
-      <svg viewBox={`0 0 ${w} ${h}`} className="w-full" role="img" aria-label="Usage over time chart">
-        {[0, 0.25, 0.5, 0.75, 1].map(frac => {
-          const y = py + chartH - frac * chartH;
-          return (
-            <g key={frac}>
-              <line x1={px} y1={y} x2={w - px} y2={y} stroke="rgba(255,255,255,0.06)" />
-              <text x={px - 6} y={y + 4} textAnchor="end" fill="rgba(255,255,255,0.25)" fontSize="9" fontFamily="monospace">
-                {Math.round(maxReq * frac / 1000)}k
-              </text>
-            </g>
-          );
-        })}
-        <defs>
-          <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="white" stopOpacity="0.1" />
-            <stop offset="100%" stopColor="white" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <path d={areaPath} fill="url(#areaGrad)" />
-        <path d={linePath} fill="none" stroke="white" strokeWidth="2" strokeLinejoin="round" />
-        {points.map((p, i) => (
-          <g key={i} onMouseEnter={() => setHoveredIdx(i)} onMouseLeave={() => setHoveredIdx(null)}>
-            <circle cx={p.x} cy={p.y} r={hoveredIdx === i ? 5 : 3} fill="white" className="transition-all" />
-            {hoveredIdx === i && (
-              <g>
-                <rect x={p.x - 50} y={p.y - 38} width="100" height="28" rx="4" fill="black" stroke="rgba(255,255,255,0.2)" />
-                <text x={p.x} y={p.y - 20} textAnchor="middle" fill="white" fontSize="10" fontFamily="monospace">
-                  {data[i].requests.toLocaleString()} req
-                </text>
-              </g>
-            )}
-          </g>
-        ))}
-        {data.map((d, i) => (
-          <text key={i} x={points[i].x} y={h - 4} textAnchor="middle" fill="rgba(255,255,255,0.25)" fontSize="8" fontFamily="monospace">
-            {d.date}
-          </text>
-        ))}
-      </svg>
-    </div>
-  );
-}
-
-// --- Stripe Checkout Modal (embedded) ---
-
-const STRIPE_AMOUNTS = [10, 25, 50, 100];
-
-function StripeCheckoutModal({ open, onClose, stripePk }: { open: boolean; onClose: () => void; stripePk: string }) {
-  const [amount, setAmount] = useState(25);
+function StripeCheckoutModal({
+  open,
+  onClose,
+  stripePk,
+  initialAmount,
+}: {
+  open: boolean;
+  onClose: () => void;
+  stripePk: string;
+  initialAmount: number;
+}) {
+  const [amount, setAmount] = useState(initialAmount);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  useEffect(() => {
+    if (!open) return;
+    setAmount(initialAmount);
+    setClientSecret(null);
+    setError('');
+  }, [initialAmount, open]);
+
   const startCheckout = async () => {
+    if (!stripePk) {
+      setError('Stripe billing is not configured yet.');
+      return;
+    }
+
     setLoading(true);
     setError('');
     try {
@@ -206,62 +302,117 @@ function StripeCheckoutModal({ open, onClose, stripePk }: { open: boolean; onClo
         body: JSON.stringify({ amount_usd: amount }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error?.message || 'Failed to create checkout'); return; }
+      if (!res.ok) {
+        setError(data.error?.message || 'Failed to create checkout');
+        return;
+      }
       setClientSecret(data.client_secret);
-    } catch { setError('Network error'); } finally { setLoading(false); }
-  };
-
-  const handleClose = () => {
-    setClientSecret(null);
-    setError('');
-    onClose();
+    } catch {
+      setError('Network error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <AnimatePresence>
       {open && (
         <motion.div
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           data-testid="stripe-modal-backdrop"
-          onClick={e => { if (e.target === e.currentTarget) handleClose(); }}
+          onClick={e => {
+            if (e.target === e.currentTarget) onClose();
+          }}
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            className="bg-[#0a0a0a] border border-white/10 rounded-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto"
+            initial={{ opacity: 0, scale: 0.96, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 10 }}
+            className="bg-[#090909] border border-white/10 rounded-3xl w-full max-w-2xl p-6 md:p-8 max-h-[90vh] overflow-y-auto shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
             data-testid="stripe-modal"
           >
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold tracking-tight">{clientSecret ? 'Complete Payment' : 'Add Funds'}</h2>
-              <button onClick={handleClose} className="text-white/40 hover:text-white transition-colors" data-testid="stripe-modal-close">
+            <div className="flex items-start justify-between gap-4 mb-6">
+              <div>
+                <p className="text-xs font-mono uppercase tracking-[0.2em] text-white/35 mb-2">Prepaid credits</p>
+                <h2 className="text-2xl font-bold tracking-tight">{clientSecret ? 'Complete Stripe payment' : 'Add funds'}</h2>
+                <p className="text-sm text-white/55 mt-2 max-w-xl">
+                  Stripe is the payment source of truth. OpenPaths keeps the spend model prepaid so your credit balance stays predictable.
+                </p>
+              </div>
+              <button onClick={onClose} className="text-white/40 hover:text-white transition-colors shrink-0" data-testid="stripe-modal-close">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {!clientSecret ? (
               <>
-                <p className="text-sm text-white/60 mb-6">Select an amount to add to your OpenPaths balance.</p>
-                <div className="grid grid-cols-2 gap-3 mb-6">
-                  {STRIPE_AMOUNTS.map(a => (
-                    <button key={a} onClick={() => setAmount(a)} data-testid={`amount-${a}`}
-                      className={`py-3 rounded-lg border text-sm font-mono font-bold transition-colors ${amount === a ? 'bg-white text-black border-white' : 'bg-white/5 text-white/60 border-white/10 hover:border-white/30'}`}
-                    >${a}</button>
-                  ))}
-                </div>
-                <div className="mb-6">
-                  <label className="text-xs font-mono text-white/40 block mb-2">Custom amount</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 font-mono">$</span>
-                    <input type="number" min="1" max="500" value={amount} onChange={e => setAmount(Number(e.target.value))}
-                      data-testid="custom-amount-input"
-                      className="w-full bg-black border border-white/10 rounded-lg py-3 pl-8 pr-4 text-white font-mono focus:outline-none focus:border-white/30" />
+                <div className="rounded-2xl border border-emerald-400/20 bg-[linear-gradient(135deg,rgba(16,185,129,0.12),rgba(255,255,255,0.02))] p-5 mb-6">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-mono uppercase tracking-[0.18em] text-emerald-200/70 mb-2">Recommended</p>
+                      <h3 className="text-lg font-semibold text-white">Keep at least {formatUsdWhole(RECOMMENDED_THRESHOLD_USD)} ready</h3>
+                      <p className="text-sm text-white/60 mt-2">Most teams avoid interruptions by keeping a larger prepaid reserve and using auto-topup as backup.</p>
+                    </div>
+                    <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
+                      <div className="text-xs font-mono text-white/45 mb-1">Top-up now</div>
+                      <div className="text-2xl font-semibold">{formatUsdWhole(RECOMMENDED_TOPUP_USD)}</div>
+                    </div>
                   </div>
                 </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                  {QUICK_TOPUP_AMOUNTS.map(a => (
+                    <button
+                      key={a}
+                      onClick={() => setAmount(a)}
+                      data-testid={`amount-${a}`}
+                      className={`rounded-2xl border px-4 py-4 text-left transition-colors ${
+                        amount === a
+                          ? 'border-white bg-white text-black'
+                          : 'border-white/10 bg-white/[0.03] text-white hover:border-white/30'
+                      }`}
+                    >
+                      <div className="text-xs font-mono uppercase tracking-[0.16em] opacity-60">Credit pack</div>
+                      <div className="text-xl font-semibold mt-2">{formatUsdWhole(a)}</div>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="mb-6">
+                  <label className="text-xs font-mono uppercase tracking-[0.16em] text-white/40 block mb-2">Custom amount</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 font-mono">$</span>
+                    <input
+                      type="number"
+                      min="1"
+                      max="500"
+                      value={amount}
+                      onChange={e => setAmount(Number(e.target.value))}
+                      data-testid="custom-amount-input"
+                      className="w-full bg-black border border-white/10 rounded-2xl py-4 pl-10 pr-4 text-white font-mono focus:outline-none focus:border-white/30"
+                    />
+                  </div>
+                </div>
+
                 {error && <p className="text-red-400 text-sm font-mono mb-4">{error}</p>}
-                <button onClick={startCheckout} disabled={loading || amount < 1}
+
+                <button
+                  onClick={startCheckout}
+                  disabled={loading || amount < 1}
                   data-testid="stripe-checkout-btn"
-                  className="w-full bg-white text-black py-3 rounded-lg font-mono font-bold text-sm hover:bg-white/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
-                  {loading ? <span className="animate-spin w-4 h-4 border-2 border-black/20 border-t-black rounded-full" /> : <><CreditCard className="w-4 h-4" /> Pay ${amount} with Stripe</>}
+                  className="w-full bg-white text-black py-4 rounded-2xl font-mono font-bold text-sm hover:bg-white/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {loading ? (
+                    <span className="animate-spin w-4 h-4 border-2 border-black/20 border-t-black rounded-full" />
+                  ) : (
+                    <>
+                      <CreditCard className="w-4 h-4" />
+                      Pay {formatUsdWhole(amount)} with Stripe
+                    </>
+                  )}
                 </button>
               </>
             ) : (
@@ -278,70 +429,326 @@ function StripeCheckoutModal({ open, onClose, stripePk }: { open: boolean; onClo
   );
 }
 
-// --- Main Account component ---
+function SaveCardForm({
+  onSuccess,
+}: {
+  onSuccess: () => Promise<void> | void;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const saveCard = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+
+    setSaving(true);
+    setError('');
+    try {
+      const result = await stripe.confirmSetup({
+        elements,
+        redirect: 'if_required',
+      });
+
+      if (result.error) {
+        setError(result.error.message || 'Failed to save card');
+        return;
+      }
+
+      const paymentMethod = result.setupIntent?.payment_method;
+      const paymentMethodID = typeof paymentMethod === 'string' ? paymentMethod : paymentMethod?.id;
+      if (!paymentMethodID) {
+        setError('Stripe did not return a payment method.');
+        return;
+      }
+
+      const res = await api('/account/stripe/confirm', {
+        method: 'POST',
+        body: JSON.stringify({ payment_method_id: paymentMethodID }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error?.message || 'Failed to save card');
+        return;
+      }
+
+      await onSuccess();
+    } catch {
+      setError('Network error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <form onSubmit={saveCard}>
+      <div className="rounded-2xl border border-white/10 bg-black/30 p-4 mb-4">
+        <PaymentElement />
+      </div>
+      {error && <p className="text-red-400 text-sm font-mono mb-4">{error}</p>}
+      <button
+        type="submit"
+        disabled={saving || !stripe || !elements}
+        className="w-full bg-white text-black py-3 rounded-2xl font-mono font-bold text-sm hover:bg-white/90 transition-colors disabled:opacity-50"
+        data-testid="save-card-submit"
+      >
+        {saving ? 'Saving card...' : 'Save card for auto-topup'}
+      </button>
+    </form>
+  );
+}
+
+function PaymentMethodSetupModal({
+  open,
+  stripePk,
+  clientSecret,
+  loading,
+  error,
+  onClose,
+  onSaved,
+}: {
+  open: boolean;
+  stripePk: string;
+  clientSecret: string | null;
+  loading: boolean;
+  error: string;
+  onClose: () => void;
+  onSaved: () => Promise<void> | void;
+}) {
+  const appearance = {
+    theme: 'night' as const,
+    variables: {
+      colorBackground: '#090909',
+      colorText: '#ffffff',
+      colorPrimary: '#ffffff',
+      colorDanger: '#f87171',
+      borderRadius: '16px',
+    },
+  };
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={e => {
+            if (e.target === e.currentTarget) onClose();
+          }}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 10 }}
+            className="bg-[#090909] border border-white/10 rounded-3xl w-full max-w-xl p-6 md:p-8"
+            data-testid="payment-method-modal"
+          >
+            <div className="flex items-start justify-between gap-4 mb-6">
+              <div>
+                <p className="text-xs font-mono uppercase tracking-[0.2em] text-white/35 mb-2">Stripe card</p>
+                <h2 className="text-2xl font-bold tracking-tight">Save a card for auto-topup</h2>
+                <p className="text-sm text-white/55 mt-2">Your card stays in Stripe. OpenPaths uses it only for the prepaid auto-topup rule you save here.</p>
+              </div>
+              <button onClick={onClose} className="text-white/40 hover:text-white transition-colors shrink-0">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {loading && <p className="text-sm font-mono text-white/50">Preparing secure Stripe form...</p>}
+            {!loading && error && <p className="text-sm font-mono text-red-400">{error}</p>}
+            {!loading && !error && clientSecret && stripePk && (
+              <Elements stripe={getStripe(stripePk)!} options={{ clientSecret, appearance }}>
+                <SaveCardForm onSuccess={onSaved} />
+              </Elements>
+            )}
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
 
 export function Account() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'keys' | 'billing'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'keys' | 'billing' | 'analytics'>('overview');
   const [user, setUser] = useState<any>(null);
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [stripePk, setStripePk] = useState('');
 
-  // Data states
   const [balanceUnits, setBalanceUnits] = useState<number | null>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [apiKeys, setApiKeys] = useState<any[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [hasPaymentMethod, setHasPaymentMethod] = useState(false);
+  const [autotopupSettings, setAutotopupSettings] = useState<AutotopupSettings>({
+    enabled: false,
+    threshold_cents: usdToUnits(RECOMMENDED_THRESHOLD_USD),
+    amount_cents: usdToUnits(RECOMMENDED_TOPUP_USD),
+  });
+
   const [copied, setCopied] = useState<string | null>(null);
   const [stripeModalOpen, setStripeModalOpen] = useState(false);
+  const [checkoutAmount, setCheckoutAmount] = useState(RECOMMENDED_TOPUP_USD);
   const [newKeyName, setNewKeyName] = useState('');
   const [newKeyResult, setNewKeyResult] = useState<string | null>(null);
 
-  // Check payment return
+  const [billingNotice, setBillingNotice] = useState<string | null>(null);
+  const [billingError, setBillingError] = useState<string | null>(null);
+  const [savingAutotopup, setSavingAutotopup] = useState(false);
+  const [cardModalOpen, setCardModalOpen] = useState(false);
+  const [cardSetupSecret, setCardSetupSecret] = useState<string | null>(null);
+  const [cardSetupLoading, setCardSetupLoading] = useState(false);
+  const [cardSetupError, setCardSetupError] = useState('');
+
+  // Analytics state
+  const [analyticsPeriod, setAnalyticsPeriod] = useState<'24h' | '7d' | '30d'>('30d');
+  const [spendTimeSeries, setSpendTimeSeries] = useState<{ timestamp: string; value: number }[]>([]);
+  const [spendByKey, setSpendByKey] = useState<{ api_key_id: string; key_prefix: string; key_name: string; total_requests: number; total_cost_cents: number }[]>([]);
+  const [spendByProvider, setSpendByProvider] = useState<{ provider: string; total_requests: number; total_cost_cents: number }[]>([]);
+  const [drilldown, setDrilldown] = useState<{ type: 'key' | 'provider'; id: string; label: string; models: { model: string; provider: string; total_requests: number; total_cost_cents: number }[] } | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success') {
       setActiveTab('billing');
+      setBillingNotice('Funds added successfully. Your balance will refresh in a moment.');
       window.history.replaceState({}, '', '/account');
     }
   }, []);
 
-  // Init auth from window.userData (server-injected) or localStorage fallback
   useEffect(() => {
     const { apiKey: k, user: u } = getUserData();
-    if (k && u) { setApiKey(k); setUser(u); }
+    if (k && u) {
+      setApiKey(k);
+      setUser(u);
+    }
   }, []);
 
-  // Fetch stripe config
   useEffect(() => {
-    fetch(API_BASE + '/account/stripe/config').then(r => r.json()).then(d => {
-      if (d.publishable_key) setStripePk(d.publishable_key);
-    }).catch(() => {});
+    fetch(API_BASE + '/account/stripe/config')
+      .then(r => r.json())
+      .then(d => {
+        if (d.publishable_key) setStripePk(d.publishable_key);
+      })
+      .catch(() => {});
   }, []);
 
   const fetchBalance = useCallback(() => {
-    if (!apiKey) return;
-    api('/account/balance').then(r => r.json()).then(d => {
-      const nextBalance = parseBalanceUnits(d);
-      if (nextBalance !== null) setBalanceUnits(nextBalance);
-    }).catch(() => {});
+    if (!apiKey) return Promise.resolve();
+    return api('/account/balance')
+      .then(r => r.json())
+      .then(d => {
+        const nextBalance = parseBalanceUnits(d);
+        if (nextBalance !== null) setBalanceUnits(nextBalance);
+      })
+      .catch(() => {});
   }, [apiKey]);
 
   const fetchTransactions = useCallback(() => {
-    if (!apiKey) return;
-    api('/account/transactions?limit=20').then(r => r.json()).then(d => {
-      if (d.transactions) setTransactions(d.transactions);
-    }).catch(() => {});
+    if (!apiKey) return Promise.resolve();
+    return api('/account/transactions?limit=20')
+      .then(r => r.json())
+      .then(d => {
+        if (d.transactions) setTransactions(d.transactions);
+      })
+      .catch(() => {});
   }, [apiKey]);
 
   const fetchKeys = useCallback(() => {
-    if (!apiKey) return;
-    api('/account/keys').then(r => r.json()).then(d => {
-      if (d.keys) setApiKeys(d.keys);
-    }).catch(() => {});
+    if (!apiKey) return Promise.resolve();
+    return api('/account/keys')
+      .then(r => r.json())
+      .then(d => {
+        if (d.keys) setApiKeys(d.keys);
+      })
+      .catch(() => {});
   }, [apiKey]);
 
+  const fetchPaymentMethods = useCallback(() => {
+    if (!apiKey) return Promise.resolve();
+    return api('/account/stripe/payment-methods')
+      .then(async r => {
+        if (!r.ok) throw new Error('payment methods unavailable');
+        return r.json();
+      })
+      .then(d => {
+        const methods = Array.isArray(d.payment_methods) ? d.payment_methods : [];
+        setPaymentMethods(methods);
+        setHasPaymentMethod(methods.length > 0 || Boolean(d.default_payment_method_id));
+      })
+      .catch(() => {
+        setPaymentMethods([]);
+        setHasPaymentMethod(false);
+      });
+  }, [apiKey]);
+
+  const fetchAutotopup = useCallback(() => {
+    if (!apiKey) return Promise.resolve();
+    return api('/account/autotopup/settings')
+      .then(async r => {
+        if (!r.ok) throw new Error('autotopup unavailable');
+        return r.json();
+      })
+      .then(d => {
+        setAutotopupSettings({
+          enabled: Boolean(d.enabled),
+          threshold_cents: typeof d.threshold_cents === 'number' ? d.threshold_cents : usdToUnits(RECOMMENDED_THRESHOLD_USD),
+          amount_cents: typeof d.amount_cents === 'number' ? d.amount_cents : usdToUnits(RECOMMENDED_TOPUP_USD),
+        });
+        if (typeof d.has_payment_method === 'boolean') {
+          setHasPaymentMethod(d.has_payment_method);
+        }
+      })
+      .catch(() => {});
+  }, [apiKey]);
+
+  const refreshBilling = useCallback(async () => {
+    await Promise.all([fetchBalance(), fetchTransactions(), fetchPaymentMethods(), fetchAutotopup()]);
+  }, [fetchAutotopup, fetchBalance, fetchPaymentMethods, fetchTransactions]);
+
+  const fetchAnalytics = useCallback(async (period: string) => {
+    if (!apiKey) return;
+    setAnalyticsLoading(true);
+    const interval = period === '24h' ? '1h' : period === '7d' ? '6h' : '1d';
+    try {
+      const [tsRes, keyRes, provRes] = await Promise.all([
+        api(`/account/stats/timeseries?period=${period}&interval=${interval}&metric=cost`),
+        api(`/account/stats/by-api-key?period=${period}`),
+        api(`/account/stats/by-provider?period=${period}`),
+      ]);
+      const [tsData, keyData, provData] = await Promise.all([tsRes.json(), keyRes.json(), provRes.json()]);
+      setSpendTimeSeries(Array.isArray(tsData.data) ? tsData.data : []);
+      setSpendByKey(Array.isArray(keyData.keys) ? keyData.keys : []);
+      setSpendByProvider(Array.isArray(provData.providers) ? provData.providers : []);
+    } catch {}
+    setAnalyticsLoading(false);
+  }, [apiKey]);
+
+  const loadDrilldown = async (type: 'key' | 'provider', id: string, label: string) => {
+    const period = analyticsPeriod;
+    const url = type === 'key'
+      ? `/account/stats/by-api-key/${encodeURIComponent(id)}/models?period=${period}`
+      : `/account/stats/by-provider/${encodeURIComponent(id)}/models?period=${period}`;
+    const res = await api(url);
+    const data = await res.json();
+    const models = Array.isArray(data.models) ? data.models : [];
+    setDrilldown({ type, id, label, models });
+  };
+
   useEffect(() => {
-    if (apiKey) { fetchBalance(); fetchTransactions(); fetchKeys(); }
-  }, [apiKey, fetchBalance, fetchTransactions, fetchKeys]);
+    if (!apiKey) return;
+    void Promise.all([fetchBalance(), fetchTransactions(), fetchKeys(), fetchPaymentMethods(), fetchAutotopup()]);
+  }, [apiKey, fetchAutotopup, fetchBalance, fetchKeys, fetchPaymentMethods, fetchTransactions]);
+
+  useEffect(() => {
+    if (activeTab === 'analytics' && apiKey) {
+      setDrilldown(null);
+      void fetchAnalytics(analyticsPeriod);
+    }
+  }, [activeTab, analyticsPeriod, apiKey, fetchAnalytics]);
 
   const handleAuth = (key: string, u: any) => {
     setApiKey(key);
@@ -373,21 +780,100 @@ export function Account() {
       setNewKeyResult(data.key);
       localStorage.setItem('op_api_key', data.key);
       setNewKeyName('');
-      fetchKeys();
+      void fetchKeys();
     }
   };
 
   const revokeKey = async (id: string) => {
     await api(`/account/keys/${id}`, { method: 'DELETE' });
-    fetchKeys();
+    void fetchKeys();
+  };
+
+  const openCheckout = (amountUSD: number) => {
+    setCheckoutAmount(amountUSD);
+    setStripeModalOpen(true);
+  };
+
+  const startCardSetup = async () => {
+    setCardModalOpen(true);
+    setCardSetupLoading(true);
+    setCardSetupError('');
+    setCardSetupSecret(null);
+    setBillingError(null);
+
+    try {
+      const res = await api('/account/stripe/setup', { method: 'POST', body: JSON.stringify({}) });
+      const data = await res.json();
+      if (!res.ok) {
+        setCardSetupError(data.error?.message || 'Failed to prepare Stripe card form');
+        return;
+      }
+      setCardSetupSecret(data.client_secret);
+    } catch {
+      setCardSetupError('Network error');
+    } finally {
+      setCardSetupLoading(false);
+    }
+  };
+
+  const handleCardSaved = async () => {
+    setCardModalOpen(false);
+    setCardSetupSecret(null);
+    setBillingNotice('Card saved. Auto-topup can now be enabled.');
+    await refreshBilling();
+  };
+
+  const deletePaymentMethod = async (paymentMethodID: string) => {
+    setBillingError(null);
+    setBillingNotice(null);
+    const res = await api(`/account/stripe/payment-methods/${paymentMethodID}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setBillingError(data.error?.message || 'Failed to remove card');
+      return;
+    }
+    setBillingNotice('Saved card removed.');
+    await refreshBilling();
+  };
+
+  const saveAutotopup = async () => {
+    setSavingAutotopup(true);
+    setBillingNotice(null);
+    setBillingError(null);
+    try {
+      const res = await api('/account/autotopup/settings', {
+        method: 'POST',
+        body: JSON.stringify(autotopupSettings),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setBillingError(data.error?.message || 'Failed to save auto-topup');
+        return;
+      }
+      setBillingNotice(
+        autotopupSettings.enabled
+          ? `Auto-topup will add ${formatBalanceUnits(autotopupSettings.amount_cents)} when your balance falls below ${formatBalanceUnits(autotopupSettings.threshold_cents)}.`
+          : 'Auto-topup disabled.',
+      );
+      await refreshBilling();
+    } catch {
+      setBillingError('Network error');
+    } finally {
+      setSavingAutotopup(false);
+    }
   };
 
   if (!apiKey) return <AuthForms onAuth={handleAuth} />;
 
   const balanceDisplay = balanceUnits !== null ? formatBalanceUnits(balanceUnits) : '--';
+  const balanceTone = getBalanceTone(balanceUnits);
+  const reserveGapUnits = balanceUnits === null ? 0 : Math.max(usdToUnits(RECOMMENDED_THRESHOLD_USD) - balanceUnits, 0);
+  const hasLowReserve = balanceUnits !== null && balanceUnits < usdToUnits(RECOMMENDED_THRESHOLD_USD);
+  const hasCards = paymentMethods.length > 0 || hasPaymentMethod;
+  const recommendedRuleCopy = `${formatUsdWhole(RECOMMENDED_TOPUP_USD)} when balance falls below ${formatUsdWhole(RECOMMENDED_THRESHOLD_USD)}`;
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-12 flex flex-col md:flex-row gap-12">
+    <div className="max-w-7xl mx-auto px-6 py-12 flex flex-col md:flex-row gap-12">
       <aside className="w-full md:w-64 shrink-0">
         <div className="mb-8">
           <h2 className="text-xl font-bold tracking-tight mb-1">Account</h2>
@@ -397,17 +883,41 @@ export function Account() {
           </button>
         </div>
         <nav className="flex flex-col gap-2 font-mono text-sm">
-          <button onClick={() => setActiveTab('overview')} data-testid="tab-overview"
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${activeTab === 'overview' ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/5 hover:text-white'}`}>
+          <button
+            onClick={() => setActiveTab('overview')}
+            data-testid="tab-overview"
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
+              activeTab === 'overview' ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/5 hover:text-white'
+            }`}
+          >
             <Activity className="w-4 h-4" /> Overview
           </button>
-          <button onClick={() => setActiveTab('keys')} data-testid="tab-keys"
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${activeTab === 'keys' ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/5 hover:text-white'}`}>
+          <button
+            onClick={() => setActiveTab('keys')}
+            data-testid="tab-keys"
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
+              activeTab === 'keys' ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/5 hover:text-white'
+            }`}
+          >
             <Key className="w-4 h-4" /> API Keys
           </button>
-          <button onClick={() => setActiveTab('billing')} data-testid="tab-billing"
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${activeTab === 'billing' ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/5 hover:text-white'}`}>
+          <button
+            onClick={() => setActiveTab('billing')}
+            data-testid="tab-billing"
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
+              activeTab === 'billing' ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/5 hover:text-white'
+            }`}
+          >
             <CreditCard className="w-4 h-4" /> Billing
+          </button>
+          <button
+            onClick={() => setActiveTab('analytics')}
+            data-testid="tab-analytics"
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
+              activeTab === 'analytics' ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/5 hover:text-white'
+            }`}
+          >
+            <BarChart2 className="w-4 h-4" /> Analytics
           </button>
         </nav>
       </aside>
@@ -415,24 +925,137 @@ export function Account() {
       <main className="flex-1 min-w-0">
         {activeTab === 'overview' && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-            <h1 className="text-3xl font-bold tracking-tight mb-8">Overview</h1>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-12">
-              <div className="border border-white/10 bg-white/[0.02] rounded-xl p-6">
-                <div className="text-sm font-mono text-white/40 mb-2">Current Balance</div>
-                <div className="text-4xl font-light tracking-tight mb-4" data-testid="balance">{balanceDisplay}</div>
-                <button onClick={() => setActiveTab('billing')} className="text-xs font-mono text-white border border-white/20 px-3 py-1.5 rounded hover:bg-white/10 transition-colors">Add Funds</button>
+            <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.16),transparent_42%),radial-gradient(circle_at_top_right,rgba(245,158,11,0.14),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-7 md:p-8 mb-8">
+              <div className="absolute inset-0 bg-[linear-gradient(120deg,transparent,rgba(255,255,255,0.05),transparent)] opacity-40 pointer-events-none" />
+              <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                <div className="max-w-2xl">
+                  <p className="text-xs font-mono uppercase tracking-[0.24em] text-white/35 mb-3">Prepaid credits</p>
+                  <h1 className="text-4xl md:text-5xl font-semibold tracking-tight mb-4">Keep spend predictable.</h1>
+                  <p className="text-base text-white/65 max-w-xl">
+                    Stripe handles the payment side. OpenPaths stays prepaid, so the balance you see here is still the source of truth for runtime usage.
+                  </p>
+                  <div className="mt-6 flex flex-wrap items-center gap-3">
+                    <button
+                      onClick={() => openCheckout(RECOMMENDED_TOPUP_USD)}
+                      className="rounded-2xl bg-white text-black px-5 py-3 text-sm font-mono font-bold hover:bg-white/90 transition-colors"
+                    >
+                      Add {formatUsdWhole(RECOMMENDED_TOPUP_USD)}
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('billing')}
+                      className="rounded-2xl border border-white/15 bg-white/[0.03] px-5 py-3 text-sm font-mono text-white hover:border-white/30 transition-colors inline-flex items-center gap-2"
+                    >
+                      Review billing <ArrowUpRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-4 min-w-[min(100%,28rem)]">
+                  <div className="rounded-3xl border border-white/10 bg-black/35 p-5" data-testid="balance-card">
+                    <div className="text-xs font-mono uppercase tracking-[0.16em] text-white/35 mb-2">Current balance</div>
+                    <div className="text-4xl font-light tracking-tight mb-3" data-testid="balance">{balanceDisplay}</div>
+                    <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-mono ${balanceTone.pill}`}>{balanceTone.label}</span>
+                  </div>
+
+                  <div className="rounded-3xl border border-white/10 bg-black/35 p-5" data-testid="overview-autotopup-card">
+                    <div className="text-xs font-mono uppercase tracking-[0.16em] text-white/35 mb-2">Auto-topup rule</div>
+                    <div className="text-2xl font-semibold tracking-tight mb-2">{autotopupSettings.enabled ? 'Enabled' : 'Recommended'}</div>
+                    <p className="text-sm text-white/60 mb-4">
+                      {autotopupSettings.enabled
+                        ? `${formatBalanceUnits(autotopupSettings.amount_cents)} when balance falls below ${formatBalanceUnits(autotopupSettings.threshold_cents)}`
+                        : recommendedRuleCopy}
+                    </p>
+                    <button
+                      onClick={() => setActiveTab('billing')}
+                      className="text-xs font-mono text-white border border-white/15 px-3 py-2 rounded-xl hover:bg-white/10 transition-colors"
+                    >
+                      {autotopupSettings.enabled ? 'Manage rule' : 'Set up auto-topup'}
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div className="border border-white/10 bg-white/[0.02] rounded-xl p-6">
+            </div>
+
+            {hasLowReserve && (
+              <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-6 mb-8">
+                <div className="rounded-3xl border border-amber-400/20 bg-[linear-gradient(135deg,rgba(245,158,11,0.13),rgba(255,255,255,0.02))] p-6" data-testid="low-balance-banner">
+                  <div className="flex items-start gap-4">
+                    <div className="rounded-2xl bg-amber-500/15 p-3 mt-1">
+                      <TriangleAlert className="w-5 h-5 text-amber-300" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h2 className="text-xl font-semibold tracking-tight">You are below the recommended reserve</h2>
+                      <p className="text-sm text-white/65 mt-2">
+                        You are short {formatBalanceUnits(reserveGapUnits)} from the recommended {formatUsdWhole(RECOMMENDED_THRESHOLD_USD)} buffer.
+                      </p>
+                      <div className="mt-4 flex flex-wrap gap-3">
+                        <button
+                          onClick={() => openCheckout(RECOMMENDED_TOPUP_USD)}
+                          className="rounded-2xl bg-white text-black px-4 py-3 text-sm font-mono font-bold hover:bg-white/90 transition-colors"
+                        >
+                          Add {formatUsdWhole(RECOMMENDED_TOPUP_USD)}
+                        </button>
+                        <button
+                          onClick={() => setActiveTab('billing')}
+                          className="rounded-2xl border border-white/15 bg-black/20 px-4 py-3 text-sm font-mono text-white hover:border-white/30 transition-colors"
+                        >
+                          Configure billing
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+                  <div className="text-xs font-mono uppercase tracking-[0.16em] text-white/35 mb-3">Quick top-up</div>
+                  <div className="grid grid-cols-2 gap-3">
+                    {QUICK_TOPUP_AMOUNTS.slice(0, 4).map(amount => (
+                      <button
+                        key={amount}
+                        onClick={() => openCheckout(amount)}
+                        className={`rounded-2xl border px-4 py-4 text-left transition-colors ${
+                          amount === RECOMMENDED_TOPUP_USD
+                            ? 'border-emerald-300/25 bg-emerald-500/10'
+                            : 'border-white/10 bg-black/20 hover:border-white/30'
+                        }`}
+                      >
+                        <div className="text-2xl font-semibold">{formatUsdWhole(amount)}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-10">
+              <div className="border border-white/10 bg-white/[0.02] rounded-3xl p-6">
                 <div className="text-sm font-mono text-white/40 mb-2">API Keys</div>
                 <div className="text-4xl font-light tracking-tight mb-4" data-testid="keys-count">{apiKeys.length}</div>
-                <button onClick={() => setActiveTab('keys')} className="text-xs font-mono text-white border border-white/20 px-3 py-1.5 rounded hover:bg-white/10 transition-colors">Manage</button>
+                <button onClick={() => setActiveTab('keys')} className="text-xs font-mono text-white border border-white/20 px-3 py-2 rounded-xl hover:bg-white/10 transition-colors">
+                  Manage keys
+                </button>
+              </div>
+              <div className="border border-white/10 bg-white/[0.02] rounded-3xl p-6">
+                <div className="text-sm font-mono text-white/40 mb-2">Saved payment method</div>
+                <div className="text-2xl font-semibold tracking-tight mb-4">{hasCards ? 'Ready for auto-topup' : 'No card saved'}</div>
+                <button
+                  onClick={() => setActiveTab('billing')}
+                  className="text-xs font-mono text-white border border-white/20 px-3 py-2 rounded-xl hover:bg-white/10 transition-colors"
+                >
+                  {hasCards ? 'Review billing' : 'Add a card'}
+                </button>
               </div>
             </div>
 
             {transactions.length > 0 && (
               <>
-                <h2 className="text-xl font-bold tracking-tight mb-4">Recent Transactions</h2>
-                <div className="border border-white/10 rounded-xl overflow-hidden">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold tracking-tight">Recent transactions</h2>
+                  <button onClick={() => setActiveTab('billing')} className="text-xs font-mono text-white/45 hover:text-white transition-colors">
+                    View billing history
+                  </button>
+                </div>
+                <div className="border border-white/10 rounded-3xl overflow-hidden">
                   <table className="w-full text-left text-sm" data-testid="activity-table">
                     <thead className="bg-white/5 font-mono text-xs text-white/40 border-b border-white/10">
                       <tr>
@@ -446,9 +1069,7 @@ export function Account() {
                         <tr key={tx.id}>
                           <td className="px-6 py-4 text-white/60">{tx.tx_type}</td>
                           <td className="px-6 py-4">{tx.description}</td>
-                          <td className={`px-6 py-4 ${tx.amount_cents > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                            {tx.amount_cents > 0 ? '+' : ''}{(tx.amount_cents / 10000).toFixed(4)}
-                          </td>
+                          <td className={`px-6 py-4 ${tx.amount_cents > 0 ? 'text-emerald-300' : 'text-red-400'}`}>{formatSignedUnits(tx.amount_cents)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -467,7 +1088,7 @@ export function Account() {
 
             {newKeyResult && (
               <div className="border border-green-500/30 bg-green-500/5 rounded-xl p-4 mb-6" data-testid="new-key-banner">
-                <p className="text-sm text-green-400 mb-2 font-bold">New key created - save it now, it won't be shown again:</p>
+                <p className="text-sm text-green-400 mb-2 font-bold">New key created. Save it now because it will not be shown again.</p>
                 <div className="flex items-center gap-2 bg-black border border-white/10 rounded-lg p-3">
                   <code className="flex-1 font-mono text-sm text-white/80 break-all">{newKeyResult}</code>
                   <button onClick={() => copyKey(newKeyResult)} className="p-2 hover:bg-white/10 rounded transition-colors">
@@ -478,9 +1099,17 @@ export function Account() {
             )}
 
             <div className="flex gap-3 mb-6">
-              <input value={newKeyName} onChange={e => setNewKeyName(e.target.value)} placeholder="Key name (optional)"
-                className="flex-1 bg-black border border-white/10 rounded-lg py-2 px-4 text-white font-mono text-sm focus:outline-none focus:border-white/30" />
-              <button onClick={createKey} className="bg-white text-black px-4 py-2 text-sm font-mono font-bold hover:bg-white/90 transition-colors flex items-center gap-2 rounded" data-testid="create-key-btn">
+              <input
+                value={newKeyName}
+                onChange={e => setNewKeyName(e.target.value)}
+                placeholder="Key name (optional)"
+                className="flex-1 bg-black border border-white/10 rounded-lg py-2 px-4 text-white font-mono text-sm focus:outline-none focus:border-white/30"
+              />
+              <button
+                onClick={createKey}
+                className="bg-white text-black px-4 py-2 text-sm font-mono font-bold hover:bg-white/90 transition-colors flex items-center gap-2 rounded"
+                data-testid="create-key-btn"
+              >
                 <Plus className="w-4 h-4" /> Create Key
               </button>
             </div>
@@ -496,63 +1125,277 @@ export function Account() {
                       <code className="font-mono text-xs text-white/40">{k.key_prefix}...</code>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="px-2 py-1 bg-green-500/10 text-green-400 text-[10px] font-mono rounded border border-green-500/20" data-testid="key-status">Active</span>
-                      <button onClick={() => revokeKey(k.id)} className="text-xs font-mono text-red-400/60 hover:text-red-400 px-2 py-1">Revoke</button>
+                      <span className="px-2 py-1 bg-green-500/10 text-green-400 text-[10px] font-mono rounded border border-green-500/20" data-testid="key-status">
+                        Active
+                      </span>
+                      <button onClick={() => revokeKey(k.id)} className="text-xs font-mono text-red-400/60 hover:text-red-400 px-2 py-1">
+                        Revoke
+                      </button>
                     </div>
                   </div>
                 ))}
               </div>
             )}
 
-            <p className="text-sm text-white/40 font-light mt-6">Do not share your API key in publicly accessible areas such as GitHub, client-side code, and so forth.</p>
+            <p className="text-sm text-white/40 font-light mt-6">Do not share your API key in publicly accessible areas such as GitHub or client-side code.</p>
           </motion.div>
         )}
 
         {activeTab === 'billing' && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-            <div className="flex items-center justify-between mb-8">
-              <h1 className="text-3xl font-bold tracking-tight">Billing & Payments</h1>
+            <div className="flex items-start justify-between gap-4 mb-8">
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight">Billing & Payments</h1>
+                <p className="text-sm text-white/55 mt-2">Stripe is the payment source of truth. Credits remain prepaid on OpenPaths.</p>
+              </div>
             </div>
 
-            <div className="border border-white/10 bg-white/[0.02] rounded-xl p-6 mb-8">
-              <div className="text-sm font-mono text-white/40 mb-2">Current Balance</div>
-              <div className="text-4xl font-light tracking-tight mb-4" data-testid="billing-balance">{balanceDisplay}</div>
-            </div>
+            {billingNotice && (
+              <div className="mb-6 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+                {billingNotice}
+              </div>
+            )}
+            {billingError && (
+              <div className="mb-6 rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                {billingError}
+              </div>
+            )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-              <div className="border border-white/10 bg-white/[0.02] rounded-xl p-6 flex flex-col" data-testid="stripe-card">
-                <div className="mb-6">
-                  <CreditCard className="w-8 h-8 text-white/60 mb-4" />
-                  <h3 className="text-xl font-bold mb-2">Credit Card</h3>
-                  <p className="text-sm text-white/60 font-light">Add funds securely using Stripe. Supports all major credit cards.</p>
-                </div>
-                <div className="mt-auto">
-                  <button onClick={() => setStripeModalOpen(true)} data-testid="add-funds-stripe-btn"
-                    className="w-full bg-white text-black px-4 py-3 text-sm font-mono font-bold hover:bg-white/90 transition-colors rounded">
-                    Add Funds with Stripe
+            <div className="grid gap-6 lg:grid-cols-[1.25fr_0.95fr] mb-8">
+              <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.18),transparent_40%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-7">
+                <div className="absolute inset-0 bg-[linear-gradient(115deg,transparent,rgba(255,255,255,0.05),transparent)] opacity-40 pointer-events-none" />
+                <div className="relative">
+                  <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+                    <div>
+                      <p className="text-xs font-mono uppercase tracking-[0.2em] text-white/35 mb-2">Prepaid balance</p>
+                      <div className="text-5xl font-light tracking-tight mb-3" data-testid="billing-balance">{balanceDisplay}</div>
+                      <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-mono ${balanceTone.pill}`}>{balanceTone.label}</span>
+                    </div>
+                    <div className="rounded-3xl border border-white/10 bg-black/30 px-5 py-4 min-w-[12rem]">
+                      <div className="text-xs font-mono uppercase tracking-[0.16em] text-white/35 mb-2">Recommended reserve</div>
+                      <div className="text-lg font-semibold">{formatUsdWhole(RECOMMENDED_THRESHOLD_USD)}</div>
+                    </div>
+                  </div>
+
+                  <p className="text-sm text-white/60 mb-6">
+                    Keep a prepaid buffer here and let Stripe refill it when needed.
+                  </p>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4" data-testid="billing-quick-topups">
+                    {QUICK_TOPUP_AMOUNTS.map(amount => (
+                      <button
+                        key={amount}
+                        onClick={() => openCheckout(amount)}
+                        className={`rounded-2xl border px-4 py-4 text-left transition-colors ${
+                          amount === RECOMMENDED_TOPUP_USD
+                            ? 'border-emerald-300/25 bg-emerald-500/10'
+                            : 'border-white/10 bg-black/25 hover:border-white/30'
+                        }`}
+                      >
+                        <div className="text-2xl font-semibold">{formatUsdWhole(amount)}</div>
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={() => openCheckout(RECOMMENDED_TOPUP_USD)}
+                    data-testid="add-funds-stripe-btn"
+                    className="w-full md:w-auto bg-white text-black px-5 py-3 text-sm font-mono font-bold hover:bg-white/90 transition-colors rounded-2xl"
+                  >
+                    Add {formatUsdWhole(RECOMMENDED_TOPUP_USD)} with Stripe
                   </button>
                 </div>
               </div>
 
-              <div className="border border-[#14F195]/30 bg-[#14F195]/5 rounded-xl p-6 flex flex-col relative overflow-hidden" data-testid="solana-card">
-                <div className="absolute -right-10 -top-10 w-32 h-32 bg-[#9945FF]/20 blur-3xl rounded-full pointer-events-none" />
-                <div className="mb-6 relative z-10">
-                  <svg className="w-8 h-8 text-[#14F195] mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 3h-10l-2 5h10l2-5Z"/><path d="M11.5 11h-10l-2 5h10l2-5Z"/><path d="M14.5 19h-10l-2 5h10l2-5Z"/></svg>
-                  <h3 className="text-xl font-bold mb-2">Solana Payment</h3>
-                  <p className="text-sm text-white/60 font-light">Pay instantly with SOL or USDC on the Solana network.</p>
+              <div className="grid gap-6">
+                <div className="border border-white/10 bg-white/[0.02] rounded-[28px] p-6" data-testid="autotopup-card">
+                  <div className="flex items-start justify-between gap-4 mb-5">
+                    <div>
+                      <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-[0.18em] text-white/35 mb-2">
+                        <Repeat className="w-4 h-4" /> Auto-topup
+                      </div>
+                      <h2 className="text-xl font-semibold tracking-tight">{autotopupSettings.enabled ? 'Enabled' : 'Backup funding rule'}</h2>
+                    </div>
+                    <button
+                      onClick={() =>
+                        setAutotopupSettings(prev => ({
+                          ...prev,
+                          enabled: !prev.enabled,
+                        }))
+                      }
+                      data-testid="autotopup-toggle"
+                      className={`relative inline-flex h-8 w-14 rounded-full transition-colors ${
+                        autotopupSettings.enabled ? 'bg-emerald-400' : 'bg-white/15'
+                      }`}
+                      aria-label="Toggle auto-topup"
+                    >
+                      <span
+                        className={`absolute top-1 h-6 w-6 rounded-full bg-black transition-transform ${
+                          autotopupSettings.enabled ? 'translate-x-7' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-black/20 p-4 mb-4">
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                      <div>
+                        <p className="text-xs font-mono uppercase tracking-[0.14em] text-white/35">Recommended default</p>
+                        <p className="text-sm text-white/60 mt-1">{recommendedRuleCopy}</p>
+                      </div>
+                      <button
+                        onClick={() =>
+                          setAutotopupSettings({
+                            enabled: true,
+                            threshold_cents: usdToUnits(RECOMMENDED_THRESHOLD_USD),
+                            amount_cents: usdToUnits(RECOMMENDED_TOPUP_USD),
+                          })
+                        }
+                        className="shrink-0 rounded-xl border border-white/15 px-3 py-2 text-xs font-mono text-white hover:bg-white/10 transition-colors"
+                        data-testid="autotopup-use-recommended"
+                      >
+                        Use recommended
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="text-xs font-mono uppercase tracking-[0.14em] text-white/35 block mb-2">Trigger when balance falls below</label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/35 font-mono">$</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max="100"
+                        value={unitsToUSD(autotopupSettings.threshold_cents)}
+                        onChange={e =>
+                          setAutotopupSettings(prev => ({
+                            ...prev,
+                            threshold_cents: usdToUnits(Number(e.target.value) || 0),
+                          }))
+                        }
+                        data-testid="autotopup-threshold-input"
+                        className="w-full bg-black border border-white/10 rounded-2xl py-3 pl-10 pr-4 text-white font-mono focus:outline-none focus:border-white/30"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mb-5">
+                    <label className="text-xs font-mono uppercase tracking-[0.14em] text-white/35 block mb-2">Top-up amount</label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/35 font-mono">$</span>
+                      <input
+                        type="number"
+                        min="5"
+                        max="500"
+                        value={unitsToUSD(autotopupSettings.amount_cents)}
+                        onChange={e =>
+                          setAutotopupSettings(prev => ({
+                            ...prev,
+                            amount_cents: usdToUnits(Number(e.target.value) || 0),
+                          }))
+                        }
+                        data-testid="autotopup-amount-input"
+                        className="w-full bg-black border border-white/10 rounded-2xl py-3 pl-10 pr-4 text-white font-mono focus:outline-none focus:border-white/30"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-black/20 p-4 mb-5">
+                    <div className="flex items-start gap-3">
+                      <ShieldCheck className="w-5 h-5 text-white/45 mt-0.5" />
+                      <div>
+                        <p className="text-sm text-white/70">
+                          {hasCards ? 'A Stripe card is on file.' : 'Save a Stripe card first before enabling auto-topup.'}
+                        </p>
+                        <p className="text-xs text-white/40 mt-1">This only funds prepaid credits. It does not switch you to postpaid billing.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-3">
+                    {!hasCards && (
+                      <button
+                        onClick={startCardSetup}
+                        disabled={!stripePk}
+                        className="rounded-2xl bg-white text-black px-4 py-3 text-sm font-mono font-bold hover:bg-white/90 transition-colors disabled:opacity-50"
+                        data-testid="add-card-btn"
+                      >
+                        Save a card
+                      </button>
+                    )}
+                    <button
+                      onClick={saveAutotopup}
+                      disabled={savingAutotopup || (autotopupSettings.enabled && !hasCards)}
+                      className="rounded-2xl border border-white/15 bg-white/[0.03] px-4 py-3 text-sm font-mono text-white hover:border-white/30 transition-colors disabled:opacity-50"
+                      data-testid="autotopup-save-btn"
+                    >
+                      {savingAutotopup ? 'Saving...' : autotopupSettings.enabled ? 'Save auto-topup rule' : 'Save as disabled'}
+                    </button>
+                  </div>
                 </div>
-                <div className="mt-auto relative z-10">
-                  <button className="w-full bg-gradient-to-r from-[#9945FF] to-[#14F195] text-black px-4 py-3 text-sm font-mono font-bold hover:opacity-90 transition-opacity rounded flex items-center justify-center gap-2" data-testid="connect-wallet-btn">
-                    <Wallet className="w-4 h-4" /> Connect Wallet
-                  </button>
+
+                <div className="border border-white/10 bg-white/[0.02] rounded-[28px] p-6" data-testid="stripe-card">
+                  <div className="flex items-center justify-between gap-4 mb-5">
+                    <div>
+                      <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-[0.18em] text-white/35 mb-2">
+                        <CreditCard className="w-4 h-4" /> Saved cards
+                      </div>
+                      <h2 className="text-xl font-semibold tracking-tight">{hasCards ? 'Stripe payment method on file' : 'No Stripe card saved'}</h2>
+                    </div>
+                    {stripePk && (
+                      <button
+                        onClick={startCardSetup}
+                        className="rounded-2xl border border-white/15 bg-white/[0.03] px-4 py-3 text-sm font-mono text-white hover:border-white/30 transition-colors"
+                      >
+                        {hasCards ? 'Replace card' : 'Add card'}
+                      </button>
+                    )}
+                  </div>
+
+                  {paymentMethods.length > 0 ? (
+                    <div className="space-y-3">
+                      {paymentMethods.map(pm => (
+                        <div key={pm.id} className="rounded-2xl border border-white/10 bg-black/20 p-4 flex items-center justify-between gap-3" data-testid="saved-card">
+                          <div>
+                            <div className="font-semibold">{maskCard(pm)}</div>
+                            <div className="text-xs font-mono text-white/40 mt-1">
+                              Expires {String(pm.card?.exp_month || '').padStart(2, '0')}/{pm.card?.exp_year}
+                            </div>
+                          </div>
+                          <button onClick={() => deletePaymentMethod(pm.id)} className="text-xs font-mono text-red-300 hover:text-red-200 transition-colors">
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl border border-dashed border-white/10 bg-black/20 p-5">
+                      <p className="text-sm text-white/60">Add a Stripe card if you want prepaid credits to refill automatically.</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="border border-[#14F195]/30 bg-[#14F195]/5 rounded-[28px] p-6 flex flex-col relative overflow-hidden" data-testid="solana-card">
+                  <div className="absolute -right-10 -top-10 w-32 h-32 bg-[#9945FF]/20 blur-3xl rounded-full pointer-events-none" />
+                  <div className="mb-6 relative z-10">
+                    <CircleDollarSign className="w-8 h-8 text-[#14F195] mb-4" />
+                    <h3 className="text-xl font-bold mb-2">Crypto top-up</h3>
+                    <p className="text-sm text-white/60 font-light">Still available if you want to pay with SOL or USDC instead of Stripe.</p>
+                  </div>
+                  <div className="mt-auto relative z-10">
+                    <button className="w-full bg-gradient-to-r from-[#9945FF] to-[#14F195] text-black px-4 py-3 text-sm font-mono font-bold hover:opacity-90 transition-opacity rounded-2xl flex items-center justify-center gap-2" data-testid="connect-wallet-btn">
+                      <Wallet className="w-4 h-4" /> Connect Wallet
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
 
             {transactions.length > 0 && (
               <>
-                <h2 className="text-xl font-bold tracking-tight mb-4">Transaction History</h2>
-                <div className="border border-white/10 rounded-xl overflow-hidden">
+                <h2 className="text-xl font-bold tracking-tight mb-4">Transaction history</h2>
+                <div className="border border-white/10 rounded-3xl overflow-hidden">
                   <table className="w-full text-left text-sm" data-testid="payment-history-table">
                     <thead className="bg-white/5 font-mono text-xs text-white/40 border-b border-white/10">
                       <tr>
@@ -568,9 +1411,7 @@ export function Account() {
                           <td className="px-6 py-4 text-white/60">{new Date(tx.created_at).toLocaleDateString()}</td>
                           <td className="px-6 py-4">{tx.tx_type}</td>
                           <td className="px-6 py-4 text-white/60">{tx.description}</td>
-                          <td className={`px-6 py-4 ${tx.amount_cents > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                            ${Math.abs(tx.amount_cents / 10000).toFixed(4)}
-                          </td>
+                          <td className={`px-6 py-4 ${tx.amount_cents > 0 ? 'text-emerald-300' : 'text-red-400'}`}>{formatSignedUnits(tx.amount_cents)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -580,9 +1421,300 @@ export function Account() {
             )}
           </motion.div>
         )}
+
+        {activeTab === 'analytics' && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight">Spend Analytics</h1>
+                <p className="text-sm text-white/40 font-mono mt-1">Usage and cost breakdown for your account</p>
+              </div>
+              <div className="flex gap-2 font-mono text-sm">
+                {(['24h', '7d', '30d'] as const).map(p => (
+                  <button
+                    key={p}
+                    onClick={() => setAnalyticsPeriod(p)}
+                    className={`px-3 py-1.5 rounded-lg transition-colors ${analyticsPeriod === p ? 'bg-white text-black font-bold' : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white'}`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {analyticsLoading ? (
+              <div className="flex items-center justify-center h-48 text-white/40 font-mono text-sm">Loading analytics…</div>
+            ) : drilldown ? (
+              <div>
+                <button
+                  onClick={() => setDrilldown(null)}
+                  className="flex items-center gap-2 text-white/60 hover:text-white font-mono text-sm mb-6 transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" /> Back to overview
+                </button>
+                <h2 className="text-lg font-bold tracking-tight mb-1">
+                  {drilldown.type === 'key' ? 'API Key' : 'Provider'}: <span className="font-mono text-white/70">{drilldown.label}</span>
+                </h2>
+                <p className="text-sm text-white/40 font-mono mb-6">Model breakdown · {analyticsPeriod}</p>
+                {drilldown.models.length === 0 ? (
+                  <p className="text-white/40 font-mono text-sm">No usage data for this period.</p>
+                ) : (
+                  <div className="border border-white/10 rounded-3xl overflow-hidden">
+                    <table className="w-full text-left text-sm font-mono">
+                      <thead className="bg-white/5 text-xs text-white/40 border-b border-white/10">
+                        <tr>
+                          <th className="px-6 py-3 font-normal">Model</th>
+                          <th className="px-6 py-3 font-normal">Provider</th>
+                          <th className="px-6 py-3 font-normal text-right">Requests</th>
+                          <th className="px-6 py-3 font-normal text-right">Spend</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/10">
+                        {drilldown.models.map((m, i) => (
+                          <tr key={i} className="hover:bg-white/5">
+                            <td className="px-6 py-3 text-white/90">{m.model}</td>
+                            <td className="px-6 py-3 text-white/50 capitalize">{m.provider}</td>
+                            <td className="px-6 py-3 text-right text-white/70">{m.total_requests.toLocaleString()}</td>
+                            <td className="px-6 py-3 text-right text-emerald-300">{formatBalanceUnits(m.total_cost_cents)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-8">
+                {/* Spend over time */}
+                <div className="border border-white/10 rounded-3xl p-6">
+                  <h2 className="text-base font-bold tracking-tight mb-1">Spend over time</h2>
+                  <p className="text-xs text-white/40 font-mono mb-5">Cost in USD · {analyticsPeriod}</p>
+                  {spendTimeSeries.length === 0 ? (
+                    <div className="h-48 flex items-center justify-center text-white/30 font-mono text-sm">No data for this period</div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={200}>
+                      <LineChart data={spendTimeSeries} margin={{ top: 4, right: 8, bottom: 4, left: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                        <XAxis
+                          dataKey="timestamp"
+                          tickFormatter={(v: string) => {
+                            const d = new Date(v);
+                            return analyticsPeriod === '24h'
+                              ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                              : d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+                          }}
+                          tick={{ fill: 'rgba(255,255,255,0.35)', fontSize: 11, fontFamily: 'monospace' }}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <YAxis
+                          tickFormatter={(v: number) => `$${(v / 10000).toFixed(2)}`}
+                          tick={{ fill: 'rgba(255,255,255,0.35)', fontSize: 11, fontFamily: 'monospace' }}
+                          axisLine={false}
+                          tickLine={false}
+                          width={60}
+                        />
+                        <Tooltip
+                          contentStyle={{ background: '#111', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, fontFamily: 'monospace', fontSize: 12 }}
+                          labelStyle={{ color: 'rgba(255,255,255,0.5)' }}
+                          itemStyle={{ color: '#6ee7b7' }}
+                          formatter={(v: number) => [`$${(v / 10000).toFixed(4)}`, 'Spend']}
+                          labelFormatter={(v: string) => new Date(v).toLocaleString()}
+                        />
+                        <Line type="monotone" dataKey="value" stroke="#6ee7b7" strokeWidth={2} dot={false} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Spend by API key */}
+                  <div className="border border-white/10 rounded-3xl p-6">
+                    <h2 className="text-base font-bold tracking-tight mb-1">Spend by API key</h2>
+                    <p className="text-xs text-white/40 font-mono mb-5">Click a bar to drill down · {analyticsPeriod}</p>
+                    {spendByKey.length === 0 ? (
+                      <div className="h-48 flex items-center justify-center text-white/30 font-mono text-sm">No data for this period</div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height={220}>
+                        <BarChart data={spendByKey} margin={{ top: 4, right: 8, bottom: 30, left: 0 }}
+                          onClick={(e: any) => {
+                            if (e?.activePayload?.[0]?.payload) {
+                              const d = e.activePayload[0].payload;
+                              void loadDrilldown('key', d.api_key_id, `${d.key_name} (${d.key_prefix}…)`);
+                            }
+                          }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                          <XAxis
+                            dataKey="key_name"
+                            tick={{ fill: 'rgba(255,255,255,0.35)', fontSize: 11, fontFamily: 'monospace' }}
+                            axisLine={false}
+                            tickLine={false}
+                            angle={-20}
+                            textAnchor="end"
+                          />
+                          <YAxis
+                            tickFormatter={(v: number) => `$${(v / 10000).toFixed(2)}`}
+                            tick={{ fill: 'rgba(255,255,255,0.35)', fontSize: 11, fontFamily: 'monospace' }}
+                            axisLine={false}
+                            tickLine={false}
+                            width={60}
+                          />
+                          <Tooltip
+                            contentStyle={{ background: '#111', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, fontFamily: 'monospace', fontSize: 12 }}
+                            labelStyle={{ color: 'rgba(255,255,255,0.5)' }}
+                            itemStyle={{ color: '#6ee7b7' }}
+                            formatter={(v: number, _: string, props: any) => [`$${(v / 10000).toFixed(4)} · ${props.payload.total_requests.toLocaleString()} reqs`, 'Spend']}
+                          />
+                          <Bar dataKey="total_cost_cents" radius={[4, 4, 0, 0]} cursor="pointer">
+                            {spendByKey.map((_, i) => (
+                              <Cell key={i} fill={`hsl(${160 + i * 28}, 70%, 55%)`} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                    {spendByKey.length > 0 && (
+                      <p className="text-xs text-white/30 font-mono mt-3 text-center">Click a bar to see model breakdown</p>
+                    )}
+                  </div>
+
+                  {/* Spend by provider */}
+                  <div className="border border-white/10 rounded-3xl p-6">
+                    <h2 className="text-base font-bold tracking-tight mb-1">Spend by provider</h2>
+                    <p className="text-xs text-white/40 font-mono mb-5">Click a bar to drill down · {analyticsPeriod}</p>
+                    {spendByProvider.length === 0 ? (
+                      <div className="h-48 flex items-center justify-center text-white/30 font-mono text-sm">No data for this period</div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height={220}>
+                        <BarChart data={spendByProvider} margin={{ top: 4, right: 8, bottom: 30, left: 0 }}
+                          onClick={(e: any) => {
+                            if (e?.activePayload?.[0]?.payload) {
+                              const d = e.activePayload[0].payload;
+                              void loadDrilldown('provider', d.provider, d.provider);
+                            }
+                          }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                          <XAxis
+                            dataKey="provider"
+                            tick={{ fill: 'rgba(255,255,255,0.35)', fontSize: 11, fontFamily: 'monospace' }}
+                            axisLine={false}
+                            tickLine={false}
+                            angle={-20}
+                            textAnchor="end"
+                          />
+                          <YAxis
+                            tickFormatter={(v: number) => `$${(v / 10000).toFixed(2)}`}
+                            tick={{ fill: 'rgba(255,255,255,0.35)', fontSize: 11, fontFamily: 'monospace' }}
+                            axisLine={false}
+                            tickLine={false}
+                            width={60}
+                          />
+                          <Tooltip
+                            contentStyle={{ background: '#111', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, fontFamily: 'monospace', fontSize: 12 }}
+                            labelStyle={{ color: 'rgba(255,255,255,0.5)' }}
+                            itemStyle={{ color: '#a78bfa' }}
+                            formatter={(v: number, _: string, props: any) => [`$${(v / 10000).toFixed(4)} · ${props.payload.total_requests.toLocaleString()} reqs`, 'Spend']}
+                          />
+                          <Bar dataKey="total_cost_cents" radius={[4, 4, 0, 0]} cursor="pointer">
+                            {spendByProvider.map((_, i) => (
+                              <Cell key={i} fill={`hsl(${260 + i * 30}, 70%, 60%)`} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                    {spendByProvider.length > 0 && (
+                      <p className="text-xs text-white/30 font-mono mt-3 text-center">Click a bar to see model breakdown</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Summary table */}
+                {(spendByKey.length > 0 || spendByProvider.length > 0) && (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="border border-white/10 rounded-3xl overflow-hidden">
+                      <table className="w-full text-left text-sm font-mono">
+                        <thead className="bg-white/5 text-xs text-white/40 border-b border-white/10">
+                          <tr>
+                            <th className="px-6 py-3 font-normal">API Key</th>
+                            <th className="px-6 py-3 font-normal text-right">Requests</th>
+                            <th className="px-6 py-3 font-normal text-right">Spend</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/10">
+                          {spendByKey.map((k, i) => (
+                            <tr
+                              key={i}
+                              className="hover:bg-white/5 cursor-pointer"
+                              onClick={() => void loadDrilldown('key', k.api_key_id, `${k.key_name} (${k.key_prefix}…)`)}
+                            >
+                              <td className="px-6 py-3 text-white/90">
+                                <span>{k.key_name}</span>
+                                <span className="text-white/30 ml-2">{k.key_prefix}…</span>
+                              </td>
+                              <td className="px-6 py-3 text-right text-white/60">{k.total_requests.toLocaleString()}</td>
+                              <td className="px-6 py-3 text-right text-emerald-300">{formatBalanceUnits(k.total_cost_cents)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="border border-white/10 rounded-3xl overflow-hidden">
+                      <table className="w-full text-left text-sm font-mono">
+                        <thead className="bg-white/5 text-xs text-white/40 border-b border-white/10">
+                          <tr>
+                            <th className="px-6 py-3 font-normal">Provider</th>
+                            <th className="px-6 py-3 font-normal text-right">Requests</th>
+                            <th className="px-6 py-3 font-normal text-right">Spend</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/10">
+                          {spendByProvider.map((p, i) => (
+                            <tr
+                              key={i}
+                              className="hover:bg-white/5 cursor-pointer capitalize"
+                              onClick={() => void loadDrilldown('provider', p.provider, p.provider)}
+                            >
+                              <td className="px-6 py-3 text-white/90">{p.provider}</td>
+                              <td className="px-6 py-3 text-right text-white/60">{p.total_requests.toLocaleString()}</td>
+                              <td className="px-6 py-3 text-right text-violet-300">{formatBalanceUnits(p.total_cost_cents)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </motion.div>
+        )}
       </main>
 
-      <StripeCheckoutModal open={stripeModalOpen} onClose={() => { setStripeModalOpen(false); fetchBalance(); fetchTransactions(); }} stripePk={stripePk} />
+      <StripeCheckoutModal
+        open={stripeModalOpen}
+        onClose={() => {
+          setStripeModalOpen(false);
+          void refreshBilling();
+        }}
+        stripePk={stripePk}
+        initialAmount={checkoutAmount}
+      />
+      <PaymentMethodSetupModal
+        open={cardModalOpen}
+        stripePk={stripePk}
+        clientSecret={cardSetupSecret}
+        loading={cardSetupLoading}
+        error={cardSetupError}
+        onClose={() => {
+          setCardModalOpen(false);
+          setCardSetupSecret(null);
+          setCardSetupError('');
+        }}
+        onSaved={handleCardSaved}
+      />
     </div>
   );
 }

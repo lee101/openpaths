@@ -16,6 +16,7 @@ import (
 	"github.com/openpaths/openpaths/internal/config"
 	"github.com/openpaths/openpaths/internal/cron"
 	"github.com/openpaths/openpaths/internal/crypto"
+	"github.com/openpaths/openpaths/internal/email"
 	"github.com/openpaths/openpaths/internal/db"
 	"github.com/openpaths/openpaths/internal/db/migrations"
 	"github.com/openpaths/openpaths/internal/db/queries"
@@ -238,6 +239,27 @@ func main() {
 	codexRefresher.Start()
 	defer codexRefresher.Stop()
 
+	// Start drip email campaign scheduler.
+	var onRegister func(string, string)
+	if os.Getenv("AWS_SMTP_USERNAME") != "" {
+		dripRunner, err := email.NewDripRunner(database.Pool, "emails")
+		if err != nil {
+			log.Printf("Drip email runner disabled: %v", err)
+		} else {
+			if err := dripRunner.EnsureTable(ctx); err != nil {
+				log.Printf("Drip email table creation failed: %v", err)
+			} else {
+				dripRunner.StartScheduler(ctx)
+				onRegister = func(userID, userEmail string) {
+					dripRunner.SendWelcome(ctx, userID, userEmail)
+				}
+				log.Printf("Drip email campaign started (20 emails over 90 days)")
+			}
+		}
+	} else {
+		log.Printf("Drip emails disabled (AWS_SMTP_USERNAME not set)")
+	}
+
 	srv := server.New(&server.Dependencies{
 		Config:       cfg,
 		Router:       modelRouter,
@@ -258,6 +280,7 @@ func main() {
 		FineTuneQ:      ftQ,
 		FineTuneProvs:  ftProviders,
 		ProviderKeyQ:   providerKeyQ,
+		OnRegister:     onRegister,
 	})
 
 	done := make(chan os.Signal, 1)

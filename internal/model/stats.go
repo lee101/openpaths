@@ -30,3 +30,19 @@ type StatsResponse struct {
 	Requests  []TimeSeriesPoint `json:"requests,omitempty"`
 	ErrorRate []TimeSeriesPoint `json:"error_rate,omitempty"`
 }
+
+// APIKeySpend is spend/usage aggregated per API key.
+type APIKeySpend struct {
+	APIKeyID       string `json:"api_key_id"`
+	KeyPrefix      string `json:"key_prefix"`
+	KeyName        string `json:"key_name"`
+	TotalRequests  int64  `json:"total_requests"`
+	TotalCostCents int64  `json:"total_cost_cents"`
+}
+
+// ProviderSpend is spend/usage aggregated per provider.
+type ProviderSpend struct {
+	Provider       string `json:"provider"`
+	TotalRequests  int64  `json:"total_requests"`
+	TotalCostCents int64  `json:"total_cost_cents"`
+}

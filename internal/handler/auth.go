@@ -9,14 +9,23 @@ import (
 	"github.com/openpaths/openpaths/internal/db/queries"
 )
 
+// OnRegisterFunc is called after a successful user registration with (userID, email).
+type OnRegisterFunc func(userID, email string)
+
 type AuthHandler struct {
-	userQ   *queries.UserQueries
-	creditQ *queries.CreditQueries
-	apiKeyQ *queries.APIKeyQueries
+	userQ      *queries.UserQueries
+	creditQ    *queries.CreditQueries
+	apiKeyQ    *queries.APIKeyQueries
+	onRegister OnRegisterFunc
 }
 
 func NewAuthHandler(userQ *queries.UserQueries, creditQ *queries.CreditQueries, apiKeyQ *queries.APIKeyQueries) *AuthHandler {
 	return &AuthHandler{userQ: userQ, creditQ: creditQ, apiKeyQ: apiKeyQ}
+}
+
+// SetOnRegister sets a callback invoked after successful registration.
+func (h *AuthHandler) SetOnRegister(fn OnRegisterFunc) {
+	h.onRegister = fn
 }
 
 type registerRequest struct {
@@ -93,6 +102,10 @@ func (h *AuthHandler) HandleRegister(ctx *fasthttp.RequestCtx) {
 			"name":  user.Name,
 		},
 	})
+
+	if h.onRegister != nil {
+		h.onRegister(user.ID, user.Email)
+	}
 }
 
 // HandleLogin handles POST /auth/login.

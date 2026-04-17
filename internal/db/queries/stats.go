@@ -183,6 +183,197 @@ func (q *StatsQueries) GetTimeSeries(ctx context.Context, period, interval, metr
 	return points, nil
 }
 
+func (q *StatsQueries) GetUserSpendByAPIKey(ctx context.Context, userID, period string) ([]model.APIKeySpend, error) {
+	since := time.Now().Add(-parsePeriod(period))
+	rows, err := q.pool.Query(ctx,
+		`SELECT ul.api_key_id, ak.key_prefix, ak.name,
+			COUNT(*) as total_requests,
+			COALESCE(SUM(ul.cost_cents), 0) as total_cost_cents
+		 FROM usage_logs ul
+		 JOIN api_keys ak ON ak.id = ul.api_key_id
+		 WHERE ul.user_id = $1 AND ul.created_at >= $2
+		 GROUP BY ul.api_key_id, ak.key_prefix, ak.name
+		 ORDER BY total_cost_cents DESC`,
+		userID, since,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("get user spend by api key: %w", err)
+	}
+	defer rows.Close()
+
+	var result []model.APIKeySpend
+	for rows.Next() {
+		var s model.APIKeySpend
+		if err := rows.Scan(&s.APIKeyID, &s.KeyPrefix, &s.KeyName, &s.TotalRequests, &s.TotalCostCents); err != nil {
+			return nil, fmt.Errorf("scan api key spend: %w", err)
+		}
+		result = append(result, s)
+	}
+	return result, nil
+}
+
+func (q *StatsQueries) GetUserSpendByProvider(ctx context.Context, userID, period string) ([]model.ProviderSpend, error) {
+	since := time.Now().Add(-parsePeriod(period))
+	rows, err := q.pool.Query(ctx,
+		`SELECT provider,
+			COUNT(*) as total_requests,
+			COALESCE(SUM(cost_cents), 0) as total_cost_cents
+		 FROM usage_logs
+		 WHERE user_id = $1 AND created_at >= $2
+		 GROUP BY provider
+		 ORDER BY total_cost_cents DESC`,
+		userID, since,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("get user spend by provider: %w", err)
+	}
+	defer rows.Close()
+
+	var result []model.ProviderSpend
+	for rows.Next() {
+		var s model.ProviderSpend
+		if err := rows.Scan(&s.Provider, &s.TotalRequests, &s.TotalCostCents); err != nil {
+			return nil, fmt.Errorf("scan provider spend: %w", err)
+		}
+		result = append(result, s)
+	}
+	return result, nil
+}
+
+func (q *StatsQueries) GetUserTimeSeries(ctx context.Context, userID, period, interval, metricName string) ([]model.TimeSeriesPoint, error) {
+	since := time.Now().Add(-parsePeriod(period))
+
+	intervalSQL := "1 hour"
+	switch interval {
+	case "5m":
+		intervalSQL = "5 minutes"
+	case "15m":
+		intervalSQL = "15 minutes"
+	case "1h":
+		intervalSQL = "1 hour"
+	case "6h":
+		intervalSQL = "6 hours"
+	case "1d":
+		intervalSQL = "1 day"
+	}
+
+	var metricExpr string
+	switch metricName {
+	case "cost":
+		metricExpr = "COALESCE(SUM(cost_cents), 0)"
+	case "requests":
+		metricExpr = "COUNT(*)"
+	case "latency":
+		metricExpr = "COALESCE(AVG(latency_ms), 0)"
+	case "tokens":
+		metricExpr = "COALESCE(SUM(tokens_in + tokens_out), 0)"
+	default:
+		metricExpr = "COALESCE(SUM(cost_cents), 0)"
+	}
+
+	query := fmt.Sprintf(
+		`SELECT
+			date_trunc('hour', created_at) +
+				(EXTRACT(EPOCH FROM created_at - date_trunc('hour', created_at))::int /
+				 EXTRACT(EPOCH FROM interval '%s')::int) * interval '%s' as bucket,
+			%s as value
+		 FROM usage_logs
+		 WHERE user_id = $1 AND created_at >= $2
+		 GROUP BY bucket ORDER BY bucket ASC`,
+		intervalSQL, intervalSQL, metricExpr,
+	)
+
+	rows, err := q.pool.Query(ctx, query, userID, since)
+	if err != nil {
+		return nil, fmt.Errorf("get user time series: %w", err)
+	}
+	defer rows.Close()
+
+	var points []model.TimeSeriesPoint
+	for rows.Next() {
+		var p model.TimeSeriesPoint
+		if err := rows.Scan(&p.Timestamp, &p.Value); err != nil {
+			return nil, fmt.Errorf("scan time series point: %w", err)
+		}
+		points = append(points, p)
+	}
+	return points, nil
+}
+
+func (q *StatsQueries) GetUserAPIKeyDrilldown(ctx context.Context, userID, apiKeyID, period string) ([]model.ModelStats, error) {
+	since := time.Now().Add(-parsePeriod(period))
+	rows, err := q.pool.Query(ctx,
+		`SELECT model, provider,
+			COUNT(*),
+			COALESCE(SUM(tokens_in), 0),
+			COALESCE(SUM(tokens_out), 0),
+			COALESCE(AVG(latency_ms), 0),
+			0, 0, 0,
+			COALESCE(AVG(tps), 0),
+			COALESCE(SUM(CASE WHEN error IS NOT NULL THEN 1 ELSE 0 END)::float / NULLIF(COUNT(*), 0), 0),
+			COALESCE(SUM(cost_cents), 0)
+		 FROM usage_logs
+		 WHERE user_id = $1 AND api_key_id = $2 AND created_at >= $3
+		 GROUP BY model, provider
+		 ORDER BY SUM(cost_cents) DESC`,
+		userID, apiKeyID, since,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("get api key drilldown: %w", err)
+	}
+	defer rows.Close()
+
+	var stats []model.ModelStats
+	for rows.Next() {
+		var s model.ModelStats
+		if err := rows.Scan(&s.Model, &s.Provider, &s.TotalRequests,
+			&s.TotalTokensIn, &s.TotalTokensOut, &s.AvgLatencyMs,
+			&s.P50LatencyMs, &s.P95LatencyMs, &s.P99LatencyMs,
+			&s.AvgTPS, &s.ErrorRate, &s.TotalCostCents); err != nil {
+			return nil, fmt.Errorf("scan drilldown: %w", err)
+		}
+		stats = append(stats, s)
+	}
+	return stats, nil
+}
+
+func (q *StatsQueries) GetUserProviderDrilldown(ctx context.Context, userID, prov, period string) ([]model.ModelStats, error) {
+	since := time.Now().Add(-parsePeriod(period))
+	rows, err := q.pool.Query(ctx,
+		`SELECT model, provider,
+			COUNT(*),
+			COALESCE(SUM(tokens_in), 0),
+			COALESCE(SUM(tokens_out), 0),
+			COALESCE(AVG(latency_ms), 0),
+			0, 0, 0,
+			COALESCE(AVG(tps), 0),
+			COALESCE(SUM(CASE WHEN error IS NOT NULL THEN 1 ELSE 0 END)::float / NULLIF(COUNT(*), 0), 0),
+			COALESCE(SUM(cost_cents), 0)
+		 FROM usage_logs
+		 WHERE user_id = $1 AND provider = $2 AND created_at >= $3
+		 GROUP BY model, provider
+		 ORDER BY SUM(cost_cents) DESC`,
+		userID, prov, since,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("get provider drilldown: %w", err)
+	}
+	defer rows.Close()
+
+	var stats []model.ModelStats
+	for rows.Next() {
+		var s model.ModelStats
+		if err := rows.Scan(&s.Model, &s.Provider, &s.TotalRequests,
+			&s.TotalTokensIn, &s.TotalTokensOut, &s.AvgLatencyMs,
+			&s.P50LatencyMs, &s.P95LatencyMs, &s.P99LatencyMs,
+			&s.AvgTPS, &s.ErrorRate, &s.TotalCostCents); err != nil {
+			return nil, fmt.Errorf("scan drilldown: %w", err)
+		}
+		stats = append(stats, s)
+	}
+	return stats, nil
+}
+
 func (q *StatsQueries) GetUserUsage(ctx context.Context, userID, period string) ([]model.ModelStats, error) {
 	since := time.Now().Add(-parsePeriod(period))
 

@@ -52,6 +52,7 @@ type Dependencies struct {
 	FineTuneQ      *queries.FineTuneQueries
 	FineTuneProvs  map[string]provider.FineTuneProvider
 	ProviderKeyQ   *queries.ProviderKeyQueries
+	OnRegister     handler.OnRegisterFunc
 }
 
 func New(deps *Dependencies) *Server {
@@ -60,9 +61,13 @@ func New(deps *Dependencies) *Server {
 	chatH := handler.NewChatHandler(deps.Router, deps.Billing, deps.Recorder)
 	modelsH := handler.NewModelsHandler(deps.Router)
 	authH := handler.NewAuthHandler(deps.UserQ, deps.CreditQ, deps.APIKeyQ)
+	if deps.OnRegister != nil {
+		authH.SetOnRegister(deps.OnRegister)
+	}
 	accountH := handler.NewAccountHandler(deps.APIKeyQ, deps.CreditQ, deps.Billing)
 	creditsH := handler.NewCreditsHandler(deps.Billing)
 	statsH := handler.NewStatsHandler(deps.StatsQ)
+	acctStatsH := handler.NewAccountStatsHandler(deps.StatsQ)
 
 	apiKeyChain := middleware.Chain(
 		middleware.Recovery(),
@@ -176,6 +181,12 @@ func New(deps *Dependencies) *Server {
 	r.GET("/stats/models", publicChain(statsH.HandleModelStats))
 	r.GET("/stats/providers", publicChain(statsH.HandleProviderStats))
 	r.GET("/stats/timeseries", publicChain(statsH.HandleTimeSeries))
+
+	r.GET("/account/stats/timeseries", accountChain(acctStatsH.HandleUserTimeSeries))
+	r.GET("/account/stats/by-api-key", accountChain(acctStatsH.HandleUserSpendByAPIKey))
+	r.GET("/account/stats/by-provider", accountChain(acctStatsH.HandleUserSpendByProvider))
+	r.GET("/account/stats/by-api-key/{key_id}/models", accountChain(acctStatsH.HandleUserAPIKeyDrilldown))
+	r.GET("/account/stats/by-provider/{provider}/models", accountChain(acctStatsH.HandleUserProviderDrilldown))
 
 	if deps.FineTuneQ != nil && len(deps.FineTuneProvs) > 0 {
 		ftH := handler.NewFineTuneHandler(deps.FineTuneQ, deps.FineTuneProvs, deps.Storage)

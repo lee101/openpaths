@@ -8,12 +8,24 @@ const TEST_USER = {
 };
 
 // Shared mock helpers
-function mockAccountAPIs(page: any, overrides: { balance?: any; transactions?: any[] } = {}) {
+function mockAccountAPIs(
+  page: any,
+  overrides: { balance?: any; transactions?: any[]; paymentMethods?: any[]; autotopup?: any } = {},
+) {
   const balance = overrides.balance ?? { balance_cents: 425000, balance_usd: 42.50, balance_usd_exact: '42.5000' };
   const transactions = overrides.transactions ?? [
     { id: '1', tx_type: 'deposit', description: 'Stripe checkout cs_123 ($25.00)', amount_cents: 2500000, balance_after: 4250000, created_at: '2024-01-15T00:00:00Z' },
     { id: '2', tx_type: 'usage_deduction', description: 'Model: gpt-4o, in: 1000, out: 500', amount_cents: -5000, balance_after: 4245000, created_at: '2024-01-14T00:00:00Z' },
   ];
+  let paymentMethods = overrides.paymentMethods ?? [];
+  let autotopup = overrides.autotopup ?? {
+    enabled: false,
+    threshold_cents: 1000000,
+    threshold_usd: 100,
+    amount_cents: 2000000,
+    amount_usd: 200,
+    has_payment_method: paymentMethods.length > 0,
+  };
   page.route('**/account/balance', (route: any) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(balance) })
   );
@@ -31,6 +43,57 @@ function mockAccountAPIs(page: any, overrides: { balance?: any; transactions?: a
   page.route('**/account/stripe/config', (route: any) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ publishable_key: 'pk_test_123' }) })
   );
+  page.route('**/account/stripe/payment-methods', (route: any) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        payment_methods: paymentMethods,
+        default_payment_method_id: paymentMethods[0]?.id ?? null,
+      }),
+    })
+  );
+  page.route('**/account/autotopup/settings', (route: any) => {
+    if (route.request().method() === 'GET') {
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(autotopup) });
+    }
+
+    const body = route.request().postDataJSON();
+    autotopup = {
+      ...autotopup,
+      ...body,
+      threshold_usd: body.threshold_cents / 10000,
+      amount_usd: body.amount_cents / 10000,
+      has_payment_method: paymentMethods.length > 0,
+    };
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(autotopup) });
+  });
+  page.route('**/account/stripe/setup', (route: any) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ client_secret: 'seti_secret_123', customer_id: 'cus_test_123' }),
+    })
+  );
+  page.route('**/account/stripe/confirm', (route: any) => {
+    paymentMethods = [
+      {
+        id: 'pm_saved_1',
+        card: { brand: 'visa', last4: '4242', exp_month: 12, exp_year: 2030 },
+      },
+    ];
+    autotopup = { ...autotopup, has_payment_method: true };
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ message: 'Payment method saved' }) });
+  });
+  page.route('**/account/stripe/payment-methods/*', (route: any) => {
+    if (route.request().method() !== 'DELETE') {
+      return route.continue();
+    }
+    const pmID = route.request().url().split('/').pop();
+    paymentMethods = paymentMethods.filter((pm: any) => pm.id !== pmID);
+    autotopup = { ...autotopup, enabled: false, has_payment_method: paymentMethods.length > 0 };
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ message: 'Payment method removed' }) });
+  });
 }
 
 test.describe('Account Page', () => {
@@ -254,7 +317,8 @@ test.describe('Account Page', () => {
     test('page loads with sidebar and overview tab active', async ({ page }) => {
       await expect(page.locator('h2:has-text("Account")')).toBeVisible();
       await expect(page.locator('text=test@example.com')).toBeVisible();
-      await expect(page.locator('h1:has-text("Overview")')).toBeVisible();
+      await expect(page.getByTestId('balance-card')).toBeVisible();
+      await expect(page.locator('text=Keep spend predictable.')).toBeVisible();
     });
 
     test('sidebar has all three tabs', async ({ page }) => {
@@ -292,7 +356,7 @@ test.describe('Account Page', () => {
     });
 
     test('Add Funds button switches to billing tab', async ({ page }) => {
-      await page.click('button:has-text("Add Funds")');
+      await page.getByRole('button', { name: 'Review billing' }).click();
       await expect(page.locator('h1:has-text("Billing & Payments")')).toBeVisible();
     });
 
@@ -327,6 +391,7 @@ test.describe('Account Page', () => {
     test('billing tab shows Stripe and Solana payment cards', async ({ page }) => {
       await page.getByTestId('tab-billing').click();
       await expect(page.getByTestId('stripe-card')).toBeVisible();
+      await expect(page.getByTestId('autotopup-card')).toBeVisible();
       await expect(page.getByTestId('solana-card')).toBeVisible();
     });
 
@@ -347,7 +412,7 @@ test.describe('Account Page', () => {
     test('stripe modal shows amount selection buttons', async ({ page }) => {
       await page.getByTestId('tab-billing').click();
       await page.getByTestId('add-funds-stripe-btn').click();
-      for (const amount of [10, 25, 50, 100]) {
+      for (const amount of [25, 100, 200, 500]) {
         await expect(page.getByTestId(`amount-${amount}`)).toBeVisible();
       }
     });
@@ -355,11 +420,11 @@ test.describe('Account Page', () => {
     test('stripe modal amount selection updates checkout button', async ({ page }) => {
       await page.getByTestId('tab-billing').click();
       await page.getByTestId('add-funds-stripe-btn').click();
-      await expect(page.getByTestId('stripe-checkout-btn')).toContainText('Pay $25');
+      await expect(page.getByTestId('stripe-checkout-btn')).toContainText('Pay $200');
+      await page.getByTestId('amount-500').click();
+      await expect(page.getByTestId('stripe-checkout-btn')).toContainText('Pay $500');
       await page.getByTestId('amount-100').click();
       await expect(page.getByTestId('stripe-checkout-btn')).toContainText('Pay $100');
-      await page.getByTestId('amount-10').click();
-      await expect(page.getByTestId('stripe-checkout-btn')).toContainText('Pay $10');
     });
 
     test('stripe modal custom amount input works', async ({ page }) => {
@@ -426,11 +491,11 @@ test.describe('Account Page', () => {
 
       await page.getByTestId('tab-billing').click();
       await page.getByTestId('add-funds-stripe-btn').click();
-      await page.getByTestId('amount-50').click();
+      await page.getByTestId('amount-100').click();
       await page.getByTestId('stripe-checkout-btn').click();
 
       await expect(page.getByTestId('embedded-checkout-container')).toBeAttached({ timeout: 5000 });
-      expect(capturedBody).toEqual({ amount_usd: 50 });
+      expect(capturedBody).toEqual({ amount_usd: 100 });
     });
 
     test('stripe checkout shows error on API failure', async ({ page }) => {
@@ -447,21 +512,85 @@ test.describe('Account Page', () => {
     });
 
     test('tab switching preserves correct content', async ({ page }) => {
-      await expect(page.locator('h1:has-text("Overview")')).toBeVisible();
+      await expect(page.getByTestId('balance-card')).toBeVisible();
       await page.getByTestId('tab-keys').click();
       await expect(page.locator('h1:has-text("API Keys")')).toBeVisible();
-      await expect(page.locator('h1:has-text("Overview")')).not.toBeVisible();
+      await expect(page.getByTestId('balance-card')).not.toBeVisible();
       await page.getByTestId('tab-billing').click();
       await expect(page.locator('h1:has-text("Billing & Payments")')).toBeVisible();
       await expect(page.locator('h1:has-text("API Keys")')).not.toBeVisible();
       await page.getByTestId('tab-overview').click();
-      await expect(page.locator('h1:has-text("Overview")')).toBeVisible();
+      await expect(page.getByTestId('balance-card')).toBeVisible();
     });
 
     test('Connect Wallet button is visible on billing tab', async ({ page }) => {
       await page.getByTestId('tab-billing').click();
       await expect(page.getByTestId('connect-wallet-btn')).toBeVisible();
       await expect(page.getByTestId('connect-wallet-btn')).toContainText('Connect Wallet');
+    });
+
+    test('overview shows low reserve warning and recommended auto-topup rule', async ({ page }) => {
+      await expect(page.getByTestId('low-balance-banner')).toBeVisible();
+      await expect(page.getByTestId('overview-autotopup-card')).toContainText('$200 when balance falls below $100');
+    });
+
+    test('billing shows recommended auto-topup defaults', async ({ page }) => {
+      await page.getByTestId('tab-billing').click();
+      await expect(page.getByTestId('autotopup-threshold-input')).toHaveValue('100');
+      await expect(page.getByTestId('autotopup-amount-input')).toHaveValue('200');
+    });
+
+    test('billing saves auto-topup rule', async ({ page }) => {
+      let capturedBody: any = null;
+      await page.unroute('**/account/autotopup/settings');
+      await page.route('**/account/autotopup/settings', (route: any) => {
+        if (route.request().method() === 'GET') {
+          return route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              enabled: false,
+              threshold_cents: 1000000,
+              threshold_usd: 100,
+              amount_cents: 2000000,
+              amount_usd: 200,
+              has_payment_method: true,
+            }),
+          });
+        }
+        capturedBody = route.request().postDataJSON();
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            enabled: true,
+            threshold_cents: 1000000,
+            threshold_usd: 100,
+            amount_cents: 2000000,
+            amount_usd: 200,
+            has_payment_method: true,
+          }),
+        });
+      });
+      await page.unroute('**/account/stripe/payment-methods');
+      await page.route('**/account/stripe/payment-methods', (route: any) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            payment_methods: [{ id: 'pm_saved_1', card: { brand: 'visa', last4: '4242', exp_month: 12, exp_year: 2030 } }],
+            default_payment_method_id: 'pm_saved_1',
+          }),
+        })
+      );
+      await page.reload();
+
+      await page.getByTestId('tab-billing').click();
+      await page.getByTestId('autotopup-toggle').click();
+      await page.getByTestId('autotopup-save-btn').click();
+
+      await expect(page.locator('text=Auto-topup will add')).toBeVisible();
+      expect(capturedBody).toEqual({ enabled: true, threshold_cents: 1000000, amount_cents: 2000000 });
     });
 
     test('logout clears auth and shows login form', async ({ page }) => {
