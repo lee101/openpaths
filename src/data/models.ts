@@ -95,16 +95,28 @@ export const models: Model[] = [
 
   // --- Anthropic ---
   {
+    id: 'claude-opus-4-7',
+    name: 'Claude Opus 4.7',
+    provider: 'Anthropic',
+    description: 'Latest flagship Claude model. State-of-the-art reasoning, coding, and long-horizon agentic tasks.',
+    contextLength: '200K',
+    priceInput: 5.00,
+    priceOutput: 25.00,
+    tags: ['programming', 'reasoning', 'general', 'vision'],
+    released: '2026-04-15',
+    popularity: 1
+  },
+  {
     id: 'claude-opus-4-6',
     name: 'Claude Opus 4.6',
     provider: 'Anthropic',
-    description: 'Most capable Claude model. Best-in-class for complex reasoning, coding, and agentic tasks.',
+    description: 'Previous-gen Opus. Strong reasoning, coding, and agentic tasks.',
     contextLength: '200K',
     priceInput: 5.00,
     priceOutput: 25.00,
     tags: ['programming', 'reasoning', 'general', 'vision'],
     released: '2026-02-15',
-    popularity: 2
+    popularity: 3
   },
   {
     id: 'claude-sonnet-4-6',
@@ -639,6 +651,18 @@ export const models: Model[] = [
 
   // --- GLM / Z.AI ---
   {
+    id: 'glm-5.1',
+    name: 'GLM-5.1',
+    provider: 'Z.AI',
+    description: 'Z.AI flagship agentic model with 200K context, tool use, and long-horizon task execution.',
+    contextLength: '200K',
+    priceInput: 1.00,
+    priceOutput: 3.20,
+    tags: ['general', 'reasoning', 'agentic', 'open-source'],
+    released: '2026-04-07',
+    popularity: 15
+  },
+  {
     id: 'glm-5',
     name: 'GLM-5',
     provider: 'Together AI',
@@ -676,6 +700,18 @@ export const models: Model[] = [
   },
 
   // --- MiniMax ---
+  {
+    id: 'minimax-m2.7',
+    name: 'MiniMax M2.7',
+    provider: 'MiniMax',
+    description: 'Latest MiniMax flagship model with 1M context and tool use.',
+    contextLength: '1M',
+    priceInput: 0.30,
+    priceOutput: 1.10,
+    tags: ['general', 'fast'],
+    released: '2026-04-01',
+    popularity: 50
+  },
   {
     id: 'minimax-m2.5',
     name: 'MiniMax M2.5',

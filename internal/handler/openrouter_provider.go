@@ -160,6 +160,7 @@ var orModelDisplayNames = map[string]string{
 	"claude-sonnet-latest":      "Anthropic: Claude Sonnet (Latest)",
 	"claude-sonnet-4-6":         "Anthropic: Claude Sonnet 4.6",
 	"claude-opus-latest":        "Anthropic: Claude Opus (Latest)",
+	"claude-opus-4-7":           "Anthropic: Claude Opus 4.7",
 	"claude-opus-4-6":           "Anthropic: Claude Opus 4.6",
 	"claude-haiku-4-5-20251001": "Anthropic: Claude Haiku 4.5",
 	"gemini-3.1-pro-preview":    "Google: Gemini 3.1 Pro",

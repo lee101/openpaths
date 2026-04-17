@@ -278,6 +278,51 @@ models:
       - "1360x768"
       - "768x1360"
 
+  - id: "flux-schnell"
+    provider: fal
+    provider_model_id: "fal-ai/flux/schnell"
+    price_per_image: 0.003
+    aliases: ["flux-1-schnell", "fal-flux-schnell"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+    supported_sizes:
+      - "1024x1024"
+      - "1152x768"
+      - "768x1152"
+      - "1360x768"
+      - "768x1360"
+
+  - id: "flux-dev"
+    provider: fal
+    provider_model_id: "fal-ai/flux/dev"
+    price_per_image: 0.025
+    aliases: ["flux-1-dev", "fal-flux-dev"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+    supported_sizes:
+      - "1024x1024"
+      - "1152x768"
+      - "768x1152"
+      - "1360x768"
+      - "768x1360"
+
+  - id: "flux-pro"
+    provider: fal
+    provider_model_id: "fal-ai/flux-pro/v1.1"
+    price_per_image: 0.04
+    aliases: ["flux-1.1-pro", "fal-flux-pro"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+    supported_sizes:
+      - "1024x1024"
+      - "1152x768"
+      - "768x1152"
+      - "1360x768"
+      - "768x1360"
+
   # --- Netwrck (Video Generation) ---
   - id: "wan"
     provider: netwrck
@@ -484,11 +529,6 @@ models:
     supports_streaming: true
     supports_tools: true
     supports_vision: true
-    fallback_models:
-      - "gpt-5.4-mini"
-      - "gemini-2.5-flash"
-      - "deepseek-chat"
-      - "or/claude-sonnet"
 
   - id: "claude-sonnet-4-5-20250929"
     provider: anthropic
@@ -516,7 +556,7 @@ models:
 
   - id: "claude-opus-latest"
     provider: anthropic
-    provider_model_id: "claude-opus-4-6"
+    provider_model_id: "claude-opus-4-7"
     input_price_per_1m: 5.00
     output_price_per_1m: 25.00
     aliases: ["claude-opus", "opus-latest", "opus", "anthropic-opus-latest"]
@@ -526,6 +566,18 @@ models:
     supports_tools: true
     supports_vision: true
     fallback_providers: ["openrouter"]
+
+  - id: "claude-opus-4-7"
+    provider: anthropic
+    provider_model_id: "claude-opus-4-7"
+    input_price_per_1m: 5.00
+    output_price_per_1m: 25.00
+    aliases: ["opus-4.7"]
+    context_window: 200000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
 
   - id: "claude-opus-4-6"
     provider: anthropic
@@ -586,11 +638,6 @@ models:
     supports_streaming: true
     supports_tools: true
     supports_vision: true
-    fallback_models:
-      - "gpt-5.4-nano"
-      - "gemini-flash-lite"
-      - "gemini-2.5-flash"
-      - "or/gpt-5.4-nano"
 
   # --- Google Gemini ---
   - id: "gemini-3.1-pro-preview"
@@ -627,28 +674,18 @@ models:
     supports_streaming: true
     supports_tools: true
     supports_vision: true
-    fallback_models:
-      - "gpt-5.4-mini"
-      - "claude-sonnet-4-6"
-      - "gpt-5.4-nano"
-      - "claude-haiku-4-5-20251001"
 
   - id: "gemini-flash-lite"
     provider: google
     provider_model_id: "gemini-flash-lite-latest"
     input_price_per_1m: 0.02
     output_price_per_1m: 0.10
-    aliases: ["flash-lite", "gemini-lite", "gemini-3.1-flash-lite"]
+    aliases: ["flash-lite", "gemini-lite"]
     context_window: 1000000
     max_output_tokens: 8192
     supports_streaming: true
     supports_tools: false
     supports_vision: true
-    fallback_models:
-      - "gpt-5.4-nano"
-      - "gemini-2.5-flash"
-      - "claude-haiku-4-5-20251001"
-      - "or/gpt-5.4-nano"
 
   # --- xAI Grok ---
   - id: "grok-4-0709"
@@ -699,11 +736,6 @@ models:
     supports_streaming: true
     supports_tools: true
     supports_vision: false
-    fallback_models:
-      - "gpt-5.4-mini"
-      - "claude-sonnet-4-6"
-      - "gemini-2.5-flash"
-      - "or/deepseek-chat"
 
   - id: "deepseek-reasoner"
     provider: deepseek
@@ -947,28 +979,6 @@ models:
     supports_tools: true
     supports_vision: true
 
-  - id: "or/gpt-5.4-mini"
-    provider: openrouter
-    provider_model_id: "openai/gpt-5.4-mini"
-    input_price_per_1m: 0.75
-    output_price_per_1m: 4.50
-    context_window: 400000
-    max_output_tokens: 128000
-    supports_streaming: true
-    supports_tools: true
-    supports_vision: true
-
-  - id: "or/gpt-5.4-nano"
-    provider: openrouter
-    provider_model_id: "openai/gpt-5.4-nano"
-    input_price_per_1m: 0.20
-    output_price_per_1m: 1.25
-    context_window: 400000
-    max_output_tokens: 128000
-    supports_streaming: true
-    supports_tools: true
-    supports_vision: true
-
   - id: "or/claude-sonnet"
     provider: openrouter
     provider_model_id: "anthropic/claude-sonnet-4-6"
@@ -982,7 +992,7 @@ models:
 
   - id: "or/claude-opus"
     provider: openrouter
-    provider_model_id: "anthropic/claude-opus-4-6"
+    provider_model_id: "anthropic/claude-opus-4-7"
     input_price_per_1m: 5.00
     output_price_per_1m: 25.00
     context_window: 200000
@@ -1025,7 +1035,7 @@ models:
     supports_vision: true
 
   # --- OpenPaths First-Party Embedding (gobed) ---
-  - id: "openpath-embed"
+  - id: "openpaths-embed"
     provider: gobed
     provider_model_id: "static-retrieval-mrl-en-v1"
     input_price_per_1m: 0.002
@@ -1148,18 +1158,6 @@ models:
     supports_tools: false
     supports_vision: false
 
-  - id: "or/hunter-alpha"
-    provider: openrouter
-    provider_model_id: "openrouter/hunter-alpha"
-    input_price_per_1m: 0
-    output_price_per_1m: 0
-    aliases: ["hunter-alpha", "hunter"]
-    context_window: 1050000
-    max_output_tokens: 8192
-    supports_streaming: true
-    supports_tools: true
-    supports_vision: false
-
   # --- Z.AI (Image Generation) ---
   - id: "glm-image"
     provider: zai
@@ -1187,6 +1185,18 @@ models:
     aliases: ["zai-glm5"]
     context_window: 202800
     max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "zai/glm-5.1"
+    provider: zai
+    provider_model_id: "glm-5.1"
+    input_price_per_1m: 1.40
+    output_price_per_1m: 4.40
+    aliases: ["zai-glm5.1", "zai-glm51"]
+    context_window: 202752
+    max_output_tokens: 65535
     supports_streaming: true
     supports_tools: true
     supports_vision: false
@@ -1240,6 +1250,21 @@ models:
     supports_tools: true
     supports_vision: false
     fallback_providers: ["zai"]
+
+  - id: "glm-5.1"
+    provider: together
+    provider_model_id: "zai-org/GLM-5.1"
+    input_price_per_1m: 1.40
+    output_price_per_1m: 4.40
+    aliases: ["glm5.1", "glm-51"]
+    context_window: 202752
+    max_output_tokens: 65535
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+    fallback_models:
+      - "zai/glm-5.1"
+      - "glm-5"
 
   - id: "qwen3.5-397b"
     provider: together
@@ -1529,6 +1554,82 @@ models:
     provider_model_id: "speech-2.6-turbo"
     input_price_per_1m: 60.00
     output_price_per_1m: 0
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  # --- Transcription (Speech-to-Text) ---
+
+  # Groq Whisper models (fastest, cheapest)
+  - id: "whisper-large-v3-turbo"
+    provider: groq
+    provider_model_id: "whisper-large-v3-turbo"
+    price_per_minute: 0.00067
+    aliases: ["whisper-turbo", "groq-whisper"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "whisper-large-v3"
+    provider: groq
+    provider_model_id: "whisper-large-v3"
+    price_per_minute: 0.00185
+    aliases: ["whisper-v3"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "distil-whisper-large-v3-en"
+    provider: groq
+    provider_model_id: "distil-whisper-large-v3-en"
+    price_per_minute: 0.00033
+    aliases: ["distil-whisper", "whisper-en"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  # OpenAI transcription models
+  - id: "gpt-4o-mini-transcribe"
+    provider: openai
+    provider_model_id: "gpt-4o-mini-transcribe"
+    price_per_minute: 0.003
+    aliases: ["openai-transcribe-mini"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "gpt-4o-transcribe"
+    provider: openai
+    provider_model_id: "gpt-4o-transcribe"
+    price_per_minute: 0.006
+    aliases: ["openai-transcribe"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "whisper-1"
+    provider: openai
+    provider_model_id: "whisper-1"
+    price_per_minute: 0.006
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  # Fireworks AI Whisper models
+  - id: "whisper-v3-large-turbo"
+    provider: fireworks
+    provider_model_id: "whisper-v3-large-turbo"
+    price_per_minute: 0.0009
+    aliases: ["fireworks-whisper-turbo"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "whisper-v3-large"
+    provider: fireworks
+    provider_model_id: "whisper-v3-large"
+    price_per_minute: 0.0015
+    aliases: ["fireworks-whisper"]
     supports_streaming: false
     supports_tools: false
     supports_vision: false

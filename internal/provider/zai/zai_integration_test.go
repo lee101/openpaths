@@ -14,6 +14,33 @@ import (
 	"github.com/openpaths/openpaths/internal/model"
 )
 
+func TestChatCompletion_GLM51_Integration(t *testing.T) {
+	apiKey := os.Getenv("Z_API_KEY")
+	if apiKey == "" {
+		t.Skip("Z_API_KEY not set")
+	}
+
+	p := New(apiKey, "")
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+
+	maxTok := 256
+	resp, err := p.ChatCompletion(ctx, &model.ChatCompletionRequest{
+		Model: "glm-5.1",
+		Messages: []model.ChatMessage{
+			{Role: "user", Content: "Reply with exactly the word: pong"},
+		},
+		MaxTokens: &maxTok,
+	})
+	if err != nil {
+		t.Fatalf("glm-5.1 ChatCompletion failed: %v", err)
+	}
+	if len(resp.Choices) == 0 {
+		t.Fatal("no choices returned")
+	}
+	t.Logf("glm-5.1 reply: %s", resp.Choices[0].Message.Content)
+}
+
 func TestGenerateImage_Integration(t *testing.T) {
 	apiKey := os.Getenv("Z_API_KEY")
 	if apiKey == "" {
