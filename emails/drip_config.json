@@ -1,7 +1,7 @@
 {
   "campaign": "new_user_onboarding",
   "description": "22-email drip campaign for new OpenPaths users over ~95 days — provider spotlights, cost savings, auto-routing, generative media",
-  "from_email": "lee.penkman@openpaths.io",
+  "from_email": "lee.penkman@netwrck.com",
   "from_name": "OpenPaths",
   "base_url": "https://openpaths.io",
   "emails": [

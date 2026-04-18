@@ -26,7 +26,7 @@ func Send(toEmail, subject, htmlBody string) error {
 
 	fromEmail := os.Getenv("SES_FROM_EMAIL")
 	if fromEmail == "" {
-		fromEmail = "lee.penkman@openpaths.io"
+		fromEmail = "lee.penkman@netwrck.com"
 	}
 
 	boundary := "----=_Part_" + randomHex(8)
