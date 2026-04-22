@@ -42,6 +42,9 @@ type anthRequest struct {
 	ToolChoice  any           `json:"tool_choice,omitempty"`
 	Metadata    any           `json:"metadata,omitempty"`
 	Thinking    any           `json:"thinking,omitempty"`
+
+	// Non-standard cross-provider hints — see model.ChatCompletionRequest.
+	TaskTier string `json:"task_tier,omitempty"`
 }
 
 type anthMessage struct {
@@ -115,7 +118,7 @@ func (h *AnthropicHandler) HandleMessages(ctx *fasthttp.RequestCtx) {
 
 	chatReq := anthToInternal(&req)
 
-	autoResult := h.router.MaybeResolveAuto(ctx, chatReq.Model, "", extractChatPrompt(chatReq.Messages))
+	autoResult := h.router.MaybeResolveAutoWithTier(ctx, chatReq.Model, "", chatReq.TaskTier, extractChatPrompt(chatReq.Messages))
 	if autoResult.ReasoningEffort != "" && chatReq.ReasoningEffort == "" {
 		chatReq.ReasoningEffort = autoResult.ReasoningEffort
 	}
@@ -374,6 +377,7 @@ func anthToInternal(req *anthRequest) *model.ChatCompletionRequest {
 		TopP:            req.TopP,
 		MaxTokens:       &req.MaxTokens,
 		ReasoningEffort: parseAnthropicThinking(req.Thinking),
+		TaskTier:        req.TaskTier,
 	}
 
 	// System message

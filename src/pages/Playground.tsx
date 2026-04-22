@@ -5,11 +5,15 @@ import { Send, Plus, X, Settings, ChevronDown, Loader2, Trash2, Square, Copy, Ch
 interface Message {
   role: 'system' | 'user' | 'assistant';
   content: string;
+  imageB64?: string;
+  imageUrl?: string;
 }
 
 interface ModelPricing {
   input_per_1m_tokens?: number;
   output_per_1m_tokens?: number;
+  per_image?: number;
+  per_video?: number;
 }
 
 interface ModelCapabilities {
@@ -76,10 +80,26 @@ const QUICK_PROMPTS = [
   'Create a React hook for debouncing',
 ];
 
+const IMAGE_QUICK_PROMPTS = [
+  'A beige ceramic coffee mug on a wooden table, natural light',
+  'Isometric illustration of a futuristic city at sunset',
+  'Photorealistic gray tabby cat hugging an otter with an orange scarf',
+  'Minimal line-art logo of a mountain over a flowing river',
+];
+
 const MODELS_CACHE_KEY = 'op_models_cache_v1';
 const MODELS_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 const PANE_HISTORY_PREFIX = 'op_pg_pane_';
-const NON_CHAT_PATTERNS = /^(flux|klein|wan|ltx|hailuo|kling|luma|ra1|ra2v|zimage|glm-image|whisper|tts-|text-embedding|openpaths-embed|modernbert|gpt-4o-transcribe)/i;
+// Models excluded from the chat selector. Image models remain available since
+// the playground now routes them to /v1/images/generations automatically.
+const NON_CHAT_PATTERNS = /^(wan|ltx|hailuo|kling|luma|ra2v|sora|whisper|tts-|speech-|music-|text-embedding|openpaths-embed|modernbert|mistral-embed|codestral-embed|nemotron-embed|gpt-4o-transcribe|gpt-4o-mini-transcribe|distil-whisper|whisper-v3)/i;
+const IMAGE_MODEL_PATTERNS = /^(flux|klein|ra1|zimage|glm-image|gpt-image|dall-e|stable-diffusion|sd3|ideogram)/i;
+
+function isImageModel(m: CatalogModel | undefined): boolean {
+  if (!m) return false;
+  if (m.pricing?.per_image && m.pricing.per_image > 0) return true;
+  return IMAGE_MODEL_PATTERNS.test(m.id);
+}
 
 let paneCounter = 0;
 function makePane(modelId: string): ModelPane {
@@ -414,7 +434,79 @@ export function Playground() {
 
   const baseUrl = window.location.origin;
 
+  const sendToImageModel = useCallback(async (paneId: string, modelId: string, prompt: string) => {
+    const controller = new AbortController();
+    abortRefs.current.set(paneId, controller);
+    const start = performance.now();
+
+    setPanes(prev => prev.map(p =>
+      p.id === paneId ? { ...p, streaming: true, error: null, latencyMs: null, tokensUsed: null, promptTokens: null, completionTokens: null, costUsd: null } : p
+    ));
+
+    try {
+      const resp = await fetch(`${baseUrl}/v1/images/generations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({ model: modelId, prompt, n: 1, size: '1024x1024' }),
+        signal: controller.signal,
+      });
+      if (!resp.ok) {
+        const errText = await resp.text();
+        throw new Error(`${resp.status}: ${errText.slice(0, 200)}`);
+      }
+      const data = await resp.json();
+      const first = data?.data?.[0];
+      if (!first) throw new Error('No image returned');
+      const latency = Math.round(performance.now() - start);
+      const modelCfg = modelIndex.get(modelId);
+      const cost = modelCfg?.pricing?.per_image ?? null;
+
+      setPanes(prev => prev.map(p => {
+        if (p.id !== paneId) return p;
+        const msgs = [...p.messages];
+        msgs.push({
+          role: 'assistant',
+          content: first.revised_prompt || '',
+          imageB64: first.b64_json,
+          imageUrl: first.url,
+        });
+        savePaneHistory(modelId, msgs);
+        return {
+          ...p,
+          messages: msgs,
+          streaming: false,
+          latencyMs: latency,
+          tokensUsed: null,
+          promptTokens: null,
+          completionTokens: null,
+          costUsd: cost,
+        };
+      }));
+      refreshBalance();
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        setPanes(prev => prev.map(p => p.id === paneId ? { ...p, streaming: false } : p));
+        return;
+      }
+      setPanes(prev => prev.map(p =>
+        p.id === paneId ? { ...p, streaming: false, error: err.message } : p
+      ));
+    } finally {
+      abortRefs.current.delete(paneId);
+    }
+  }, [apiKey, baseUrl, modelIndex, refreshBalance]);
+
   const sendToModel = useCallback(async (paneId: string, modelId: string, messages: Message[]) => {
+    // Image models get routed to /v1/images/generations.
+    if (isImageModel(modelIndex.get(modelId))) {
+      const lastUser = [...messages].reverse().find(m => m.role === 'user');
+      if (!lastUser) return;
+      return sendToImageModel(paneId, modelId, lastUser.content);
+    }
+
     const controller = new AbortController();
     abortRefs.current.set(paneId, controller);
 
@@ -526,7 +618,7 @@ export function Playground() {
     } finally {
       abortRefs.current.delete(paneId);
     }
-  }, [apiKey, baseUrl, systemPrompt, temperature, maxTokens, modelIndex, refreshBalance]);
+  }, [apiKey, baseUrl, systemPrompt, temperature, maxTokens, modelIndex, refreshBalance, sendToImageModel]);
 
   function generateCode(lang: 'python' | 'js'): string {
     const pane = panes[0];
@@ -880,7 +972,11 @@ console.log(completion.choices[0].message.content);`;
             {/* Messages */}
             <div className="flex-1 overflow-y-auto">
               {pane.messages.length === 0 && !pane.error ? (
-                <EmptyState onPrompt={handleSend} hasApiKey={!!apiKey} />
+                <EmptyState
+                  onPrompt={handleSend}
+                  hasApiKey={!!apiKey}
+                  isImage={isImageModel(modelIndex.get(pane.modelId))}
+                />
               ) : (
                 <div className="p-3 space-y-4">
                   {pane.messages.map((msg, i) => (
@@ -959,7 +1055,8 @@ console.log(completion.choices[0].message.content);`;
 
 // --- Sub-components ---
 
-function EmptyState({ onPrompt, hasApiKey }: { onPrompt: (text: string) => void; hasApiKey: boolean }) {
+function EmptyState({ onPrompt, hasApiKey, isImage }: { onPrompt: (text: string) => void; hasApiKey: boolean; isImage?: boolean }) {
+  const prompts = isImage ? IMAGE_QUICK_PROMPTS : QUICK_PROMPTS;
   return (
     <div className="h-full flex flex-col items-center justify-center px-6 py-12">
       <div className="text-white/10 mb-6">
@@ -967,9 +1064,11 @@ function EmptyState({ onPrompt, hasApiKey }: { onPrompt: (text: string) => void;
       </div>
       {hasApiKey ? (
         <>
-          <p className="text-sm font-mono text-white/20 mb-6">Try a prompt to get started</p>
+          <p className="text-sm font-mono text-white/20 mb-6">
+            {isImage ? 'Describe an image to generate' : 'Try a prompt to get started'}
+          </p>
           <div className="flex flex-wrap gap-2 justify-center max-w-md">
-            {QUICK_PROMPTS.map((prompt, i) => (
+            {prompts.map((prompt, i) => (
               <button
                 key={i}
                 onClick={() => onPrompt(prompt)}
@@ -1009,6 +1108,9 @@ function EmptyState({ onPrompt, hasApiKey }: { onPrompt: (text: string) => void;
 function MessageBubble({ message }: { message: Message; key?: React.Key }) {
   const [copied, setCopied] = useState(false);
   const isUser = message.role === 'user';
+  const imageSrc = message.imageB64
+    ? `data:image/png;base64,${message.imageB64}`
+    : message.imageUrl || null;
 
   const copy = () => {
     navigator.clipboard.writeText(message.content);
@@ -1024,8 +1126,18 @@ function MessageBubble({ message }: { message: Message; key?: React.Key }) {
             {message.content}
           </div>
         ) : (
-          <div className="text-sm leading-relaxed text-white/90">
-            {renderMarkdown(message.content)}
+          <div className="text-sm leading-relaxed text-white/90 space-y-3">
+            {imageSrc && (
+              <a
+                href={imageSrc}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block rounded-xl overflow-hidden border border-white/10 bg-black/40 max-w-lg"
+              >
+                <img src={imageSrc} alt={message.content || 'Generated image'} className="w-full h-auto block" />
+              </a>
+            )}
+            {message.content && renderMarkdown(message.content)}
           </div>
         )}
         <button

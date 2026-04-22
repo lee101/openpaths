@@ -6,6 +6,26 @@ import (
 	"github.com/openpaths/openpaths/internal/model"
 )
 
+func TestTranslateRequest_PrefillAppendsModelTurn(t *testing.T) {
+	req := &model.ChatCompletionRequest{
+		Model:    "gemini-3-pro-preview",
+		Messages: []model.ChatMessage{{Role: "user", Content: "Return JSON"}},
+		Prefill:  "{",
+	}
+
+	gemReq := translateRequest(req)
+	if len(gemReq.Contents) != 2 {
+		t.Fatalf("got %d contents, want 2 (user + model prefill)", len(gemReq.Contents))
+	}
+	last := gemReq.Contents[len(gemReq.Contents)-1]
+	if last.Role != "model" {
+		t.Errorf("last role = %q, want model", last.Role)
+	}
+	if len(last.Parts) != 1 || last.Parts[0].Text != "{" {
+		t.Errorf("last parts = %+v, want text={", last.Parts)
+	}
+}
+
 func TestTranslateRequest_ClampsThinkingBudgetToMaxOutput(t *testing.T) {
 	maxTokens := 128
 	req := &model.ChatCompletionRequest{

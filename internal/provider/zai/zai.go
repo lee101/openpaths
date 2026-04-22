@@ -39,7 +39,15 @@ func (p *ZAIProvider) chatURL() string {
 	return p.baseURL + "/api/paas/v4/chat/completions"
 }
 
+// sanitizeForZAI removes cross-provider hints that Z.AI's raw chat endpoint
+// does not understand.
+func sanitizeForZAI(req *model.ChatCompletionRequest) {
+	req.Prefill = ""
+	req.TaskTier = ""
+}
+
 func (p *ZAIProvider) ChatCompletion(ctx context.Context, req *model.ChatCompletionRequest) (*model.ChatCompletionResponse, error) {
+	sanitizeForZAI(req)
 	body, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("marshal request: %w", err)
@@ -84,6 +92,7 @@ func (p *ZAIProvider) ChatCompletion(ctx context.Context, req *model.ChatComplet
 
 func (p *ZAIProvider) ChatCompletionStream(ctx context.Context, req *model.ChatCompletionRequest) (<-chan provider.StreamEvent, error) {
 	req.Stream = true
+	sanitizeForZAI(req)
 
 	body, err := json.Marshal(req)
 	if err != nil {

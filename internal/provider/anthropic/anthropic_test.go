@@ -240,6 +240,48 @@ func TestMapStopReason(t *testing.T) {
 	}
 }
 
+func TestTranslateRequest_PrefillAppendsAssistantTurn(t *testing.T) {
+	req := &model.ChatCompletionRequest{
+		Model:    "claude-opus-4-7",
+		Messages: []model.ChatMessage{{Role: "user", Content: "Return JSON"}},
+		Prefill:  "{",
+	}
+
+	anthReq := translateRequest(req)
+
+	if len(anthReq.Messages) != 2 {
+		t.Fatalf("got %d messages, want 2 (user + prefill assistant)", len(anthReq.Messages))
+	}
+	last := anthReq.Messages[len(anthReq.Messages)-1]
+	if last.Role != "assistant" {
+		t.Errorf("last role = %q, want assistant", last.Role)
+	}
+	if s, ok := last.Content.(string); !ok || s != "{" {
+		t.Errorf("last content = %v, want %q", last.Content, "{")
+	}
+}
+
+func TestTranslateRequest_PrefillSkipsIfAssistantAlreadyLast(t *testing.T) {
+	req := &model.ChatCompletionRequest{
+		Model: "claude-opus-4-7",
+		Messages: []model.ChatMessage{
+			{Role: "user", Content: "Return JSON"},
+			{Role: "assistant", Content: "{\"chart_type\": \""},
+		},
+		Prefill: "{",
+	}
+
+	anthReq := translateRequest(req)
+
+	if len(anthReq.Messages) != 2 {
+		t.Fatalf("got %d messages, want 2 (existing assistant kept, prefill ignored)", len(anthReq.Messages))
+	}
+	last := anthReq.Messages[len(anthReq.Messages)-1]
+	if s, ok := last.Content.(string); !ok || s != "{\"chart_type\": \"" {
+		t.Errorf("existing assistant content was overwritten: %v", last.Content)
+	}
+}
+
 func TestToolCallTranslation(t *testing.T) {
 	resp := &anthropicResponse{
 		ID:   "msg_123",

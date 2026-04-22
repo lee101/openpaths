@@ -324,6 +324,17 @@ func translateRequest(req *model.ChatCompletionRequest) *anthropicRequest {
 			Content: msg.Content,
 		})
 	}
+	// Cross-provider prefill: Anthropic accepts a trailing assistant message to
+	// force the response to start with a specific string. Only append if the
+	// caller hasn't already supplied one.
+	if req.Prefill != "" {
+		if len(messages) == 0 || messages[len(messages)-1].Role != "assistant" {
+			messages = append(messages, anthropicMessage{
+				Role:    "assistant",
+				Content: req.Prefill,
+			})
+		}
+	}
 	anthReq.Messages = messages
 
 	// Translate tools

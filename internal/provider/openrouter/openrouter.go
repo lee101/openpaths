@@ -37,7 +37,15 @@ func New(apiKey, baseURL string) *OpenRouterProvider {
 
 func (p *OpenRouterProvider) Name() string { return "openrouter" }
 
+// sanitizeForOpenRouter removes cross-provider hints that OpenRouter does not
+// understand on the raw chat request payload.
+func sanitizeForOpenRouter(req *model.ChatCompletionRequest) {
+	req.Prefill = ""
+	req.TaskTier = ""
+}
+
 func (p *OpenRouterProvider) ChatCompletion(ctx context.Context, req *model.ChatCompletionRequest) (*model.ChatCompletionResponse, error) {
+	sanitizeForOpenRouter(req)
 	body, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("marshal request: %w", err)

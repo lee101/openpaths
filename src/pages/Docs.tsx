@@ -1,19 +1,25 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { BookOpen, Copy, Check, KeyRound } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getAPIBaseURL, getStoredAPIKey } from '../lib/session';
 import { CodeBlock } from '../components/CodeBlock';
 
 const ENDPOINTS = [
-  { method: 'POST', path: '/v1/chat/completions', description: 'OpenAI-compatible chat completions.' },
+  { method: 'POST', path: '/v1/chat/completions', description: 'OpenAI-compatible chat completions (streaming + tools).' },
   { method: 'GET', path: '/v1/models', description: 'List all available models and capabilities.' },
-  { method: 'POST', path: '/v1/images/generations', description: 'Generate images with first-party and routed models.' },
-  { method: 'POST', path: '/v1/videos/generations', description: 'Generate videos through the unified API.' },
+  { method: 'POST', path: '/v1/images/generations', description: 'Generate images (GPT Image 2, Flux, RA1, Klein, and more).' },
+  { method: 'POST', path: '/v1/videos/generations', description: 'Generate videos (Sora 2, Hailuo, Wan, LTX).' },
+  { method: 'POST', path: '/v1/audio/transcriptions', description: 'Transcribe speech to text (Whisper, GPT-4o Transcribe).' },
+  { method: 'POST', path: '/v1/audio/speech', description: 'Text-to-speech (MiniMax Speech 2.8 HD).' },
+  { method: 'POST', path: '/v1/embeddings', description: 'Generate vector embeddings (OpenPaths, Mistral, Nemotron).' },
 ];
+
+type Tab = 'chat' | 'images' | 'videos' | 'transcription';
 
 export function Docs() {
   const [apiKey, setApiKey] = useState(() => getStoredAPIKey());
   const [copied, setCopied] = useState(false);
+  const [tab, setTab] = useState<Tab>('chat');
   const apiBase = getAPIBaseURL();
   const exampleKey = apiKey || 'op-...';
 
@@ -23,32 +29,11 @@ export function Docs() {
     return () => window.removeEventListener('storage', sync);
   }, []);
 
-  const pythonExample = `from openai import OpenAI
-
-client = OpenAI(
-    base_url="${apiBase}",
-    api_key="${exampleKey}",
-)
-
-response = client.chat.completions.create(
-    model="openai-chat-latest",
-    messages=[{"role": "user", "content": "Write a tiny SSE server in Go."}],
-)
-
-print(response.choices[0].message.content)`;
-
-  const curlExample = `curl ${apiBase}/chat/completions \\
-  -H "Content-Type: application/json" \\
-  -H "Authorization: Bearer ${exampleKey}" \\
-  -d '{
-    "model": "openai-chat-latest",
-    "messages": [
-      {"role": "user", "content": "Write a tiny SSE server in Go."}
-    ]
-  }'`;
+  const samples = useMemo(() => buildSamples(apiBase, exampleKey), [apiBase, exampleKey]);
+  const active = samples[tab];
 
   const copyExample = async () => {
-    await navigator.clipboard.writeText(curlExample);
+    await navigator.clipboard.writeText(active.curl);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1500);
   };
@@ -69,7 +54,7 @@ print(response.choices[0].message.content)`;
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-6 mb-12">
         <div className="border border-white/10 bg-white/[0.02] rounded-2xl p-6" data-testid="docs-code-card">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
             <div>
               <div className="text-xs font-mono text-white/40 mb-1">Base URL</div>
               <code className="text-sm text-white/80" data-testid="docs-base-url">{apiBase}</code>
@@ -84,11 +69,28 @@ print(response.choices[0].message.content)`;
             </button>
           </div>
 
+          <div className="flex gap-1 mb-4 border-b border-white/10">
+            {(['chat', 'images', 'videos', 'transcription'] as const).map(t => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                data-testid={`docs-tab-${t}`}
+                className={`px-3 py-2 text-xs font-mono capitalize transition-colors border-b-2 -mb-px ${
+                  tab === t ? 'text-white border-white' : 'text-white/40 hover:text-white/70 border-transparent'
+                }`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+
+          <div className="mb-2 text-xs font-mono text-white/40">{active.description}</div>
+
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <div className="text-xs font-mono text-white/40 mb-2">Python</div>
               <CodeBlock
-                code={pythonExample}
+                code={active.python}
                 language="python"
                 preClassName="rounded-xl border border-white/10 bg-black/60 p-4 text-xs leading-6"
                 testId="docs-python"
@@ -97,7 +99,7 @@ print(response.choices[0].message.content)`;
             <div>
               <div className="text-xs font-mono text-white/40 mb-2">cURL</div>
               <CodeBlock
-                code={curlExample}
+                code={active.curl}
                 language="bash"
                 preClassName="rounded-xl border border-white/10 bg-black/60 p-4 text-xs leading-6"
                 testId="docs-curl"
@@ -128,14 +130,16 @@ print(response.choices[0].message.content)`;
             </div>
           )}
 
-            <div className="rounded-xl border border-white/10 bg-black/40 p-4 mb-5">
-              <div className="text-xs font-mono text-white/40 mb-2">Latest aliases</div>
-              <div className="space-y-1 text-sm text-white/70 font-mono" data-testid="docs-latest-aliases">
-                <div><code>openai-chat-latest</code>{' -> '}<code>gpt-5-chat-latest</code></div>
-                <div><code>openai-coding-latest</code>{' -> '}<code>gpt-5-codex</code></div>
-                <div><code>anthropic-opus-latest</code>{' -> '}<code>claude-opus-latest</code></div>
-              </div>
+          <div className="rounded-xl border border-white/10 bg-black/40 p-4 mb-5">
+            <div className="text-xs font-mono text-white/40 mb-2">Latest aliases</div>
+            <div className="space-y-1 text-sm text-white/70 font-mono" data-testid="docs-latest-aliases">
+              <div><code>openai-chat-latest</code>{' -> '}<code>gpt-5-chat-latest</code></div>
+              <div><code>openai-coding-latest</code>{' -> '}<code>gpt-5-codex</code></div>
+              <div><code>openai-image-latest</code>{' -> '}<code>gpt-image-2</code></div>
+              <div><code>anthropic-opus-latest</code>{' -> '}<code>claude-opus-latest</code></div>
+              <div><code>openai-video</code>{' -> '}<code>sora-2</code></div>
             </div>
+          </div>
 
           <div className="space-y-3">
             {ENDPOINTS.map(endpoint => (
@@ -150,6 +154,147 @@ print(response.choices[0].message.content)`;
           </div>
         </div>
       </div>
+
+      <div className="border border-white/10 bg-white/[0.02] rounded-2xl p-6">
+        <h2 className="text-xl font-bold tracking-tight mb-2">Provider guides</h2>
+        <p className="text-sm text-white/60 font-light mb-5">
+          Each provider has its own endpoints and model list. Use these shortcuts to browse per-provider docs and examples.
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {['openai', 'anthropic', 'google', 'xai', 'deepseek', 'mistral', 'groq', 'together', 'openrouter', 'netwrck', 'fal', 'minimax'].map(slug => (
+            <Link
+              key={slug}
+              to={`/${slug}/docs`}
+              className="rounded-xl border border-white/10 px-4 py-3 text-sm font-mono text-white/70 hover:text-white hover:border-white/30 transition-colors capitalize"
+              data-testid={`docs-provider-${slug}`}
+            >
+              /{slug}/docs
+            </Link>
+          ))}
+        </div>
+      </div>
     </section>
   );
+}
+
+function buildSamples(apiBase: string, exampleKey: string) {
+  const python = {
+    chat: `from openai import OpenAI
+
+client = OpenAI(
+    base_url="${apiBase}",
+    api_key="${exampleKey}",
+)
+
+response = client.chat.completions.create(
+    model="openai-chat-latest",
+    messages=[{"role": "user", "content": "Write a tiny SSE server in Go."}],
+)
+
+print(response.choices[0].message.content)`,
+    images: `from openai import OpenAI
+import base64, pathlib
+
+client = OpenAI(base_url="${apiBase}", api_key="${exampleKey}")
+
+result = client.images.generate(
+    model="gpt-image-2",
+    prompt="A beige coffee mug on a wooden table, natural light, editorial photo",
+    size="1024x1024",
+    quality="high",
+    n=1,
+)
+
+image_b64 = result.data[0].b64_json
+pathlib.Path("mug.png").write_bytes(base64.b64decode(image_b64))
+print("wrote mug.png")`,
+    videos: `from openai import OpenAI
+
+client = OpenAI(base_url="${apiBase}", api_key="${exampleKey}")
+
+# Creates a Sora job and waits for it to complete, then returns a signed URL.
+result = client.post(
+    "/videos/generations",
+    body={
+        "model": "sora-2",
+        "prompt": "A cinematic fly-through of a neon-lit cyberpunk street at night.",
+        "resolution": "1280x720",
+        "num_frames": 48,
+        "frames_per_second": 24,
+    },
+    cast_to=dict,
+)
+
+print(result["video_url"])`,
+    transcription: `from openai import OpenAI
+
+client = OpenAI(base_url="${apiBase}", api_key="${exampleKey}")
+
+with open("meeting.mp3", "rb") as f:
+    transcript = client.audio.transcriptions.create(
+        model="gpt-4o-transcribe",
+        file=f,
+    )
+
+print(transcript.text)`,
+  };
+
+  const curl = {
+    chat: `curl ${apiBase}/chat/completions \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer ${exampleKey}" \\
+  -d '{
+    "model": "openai-chat-latest",
+    "messages": [
+      {"role": "user", "content": "Write a tiny SSE server in Go."}
+    ]
+  }'`,
+    images: `curl ${apiBase}/images/generations \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer ${exampleKey}" \\
+  -d '{
+    "model": "gpt-image-2",
+    "prompt": "A beige coffee mug on a wooden table",
+    "size": "1024x1024",
+    "quality": "high",
+    "n": 1
+  }'`,
+    videos: `curl ${apiBase}/videos/generations \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer ${exampleKey}" \\
+  -d '{
+    "model": "sora-2",
+    "prompt": "A cinematic fly-through of a neon-lit cyberpunk street at night.",
+    "resolution": "1280x720",
+    "num_frames": 48,
+    "frames_per_second": 24
+  }'`,
+    transcription: `curl ${apiBase}/audio/transcriptions \\
+  -H "Authorization: Bearer ${exampleKey}" \\
+  -F model=gpt-4o-transcribe \\
+  -F file=@meeting.mp3`,
+  };
+
+  return {
+    chat: {
+      description: 'Send messages, receive streamed tokens. OpenAI SDK drop-in.',
+      python: python.chat,
+      curl: curl.chat,
+    },
+    images: {
+      description: 'Generate images with GPT Image 2, Flux, Netwrck RA1, and more.',
+      python: python.images,
+      curl: curl.images,
+    },
+    videos: {
+      description: 'Generate video clips with Sora 2, Hailuo, Wan, and LTX.',
+      python: python.videos,
+      curl: curl.videos,
+    },
+    transcription: {
+      description: 'Upload an audio file and receive a JSON transcript.',
+      python: python.transcription,
+      curl: curl.transcription,
+    },
+  } as const;
 }

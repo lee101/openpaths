@@ -47,7 +47,7 @@ func (h *ChatHandler) HandleChatCompletion(ctx *fasthttp.RequestCtx) {
 		apiKeyID = apiKey.ID
 	}
 
-	autoResult := h.router.MaybeResolveAuto(ctx, req.Model, "", extractChatPrompt(req.Messages))
+	autoResult := h.router.MaybeResolveAutoWithTier(ctx, req.Model, "", req.TaskTier, extractChatPrompt(req.Messages))
 	if autoResult.ReasoningEffort != "" && req.ReasoningEffort == "" {
 		req.ReasoningEffort = autoResult.ReasoningEffort
 	}

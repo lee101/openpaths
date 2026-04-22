@@ -18,6 +18,44 @@ func TestOpenAIProviderName(t *testing.T) {
 	}
 }
 
+func TestSanitizeForOpenAI_StripsPrefillAndTaskTier(t *testing.T) {
+	req := &model.ChatCompletionRequest{
+		Model:    "gpt-5-mini",
+		Messages: []model.ChatMessage{{Role: "user", Content: "Hi"}},
+		Prefill:  "{",
+		TaskTier: "hard",
+	}
+
+	sanitizeForOpenAI(req)
+
+	if req.Prefill != "" {
+		t.Errorf("Prefill not stripped: %q", req.Prefill)
+	}
+	if req.TaskTier != "" {
+		t.Errorf("TaskTier not stripped: %q", req.TaskTier)
+	}
+
+	// And ensure the marshaled body never contains those keys.
+	body, err := json.Marshal(req)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	if bytes := string(body); containsAny(bytes, "prefill", "task_tier") {
+		t.Errorf("marshaled body still references prefill/task_tier: %s", bytes)
+	}
+}
+
+func containsAny(s string, needles ...string) bool {
+	for _, n := range needles {
+		for i := 0; i+len(n) <= len(s); i++ {
+			if s[i:i+len(n)] == n {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func TestChatCompletionSuccess(t *testing.T) {
 	expectedResp := model.ChatCompletionResponse{
 		ID:      "chatcmpl-123",

@@ -24,3 +24,4 @@ openpath.log
 *.conf
 systemtest
 servers.md
+.claude

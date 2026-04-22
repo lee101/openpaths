@@ -319,6 +319,18 @@ func translateRequest(req *model.ChatCompletionRequest) *geminiRequest {
 		})
 	}
 
+	// Cross-provider prefill: Gemini continues from a trailing "model" turn,
+	// matching Anthropic's assistant-prefill behavior.
+	if req.Prefill != "" {
+		n := len(gemReq.Contents)
+		if n == 0 || gemReq.Contents[n-1].Role != "model" {
+			gemReq.Contents = append(gemReq.Contents, geminiContent{
+				Role:  "model",
+				Parts: []geminiPart{{Text: req.Prefill}},
+			})
+		}
+	}
+
 	// Translate tools
 	if len(req.Tools) > 0 {
 		var funcDecls []geminiFuncDecl

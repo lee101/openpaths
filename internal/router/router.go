@@ -247,6 +247,15 @@ func (r *Router) SetAutoRouter(ar *AutoRouter) {
 }
 
 func (r *Router) MaybeResolveAuto(ctx context.Context, modelName, modality, prompt string) AutoRouteResult {
+	return r.MaybeResolveAutoWithTier(ctx, modelName, modality, "", prompt)
+}
+
+// MaybeResolveAutoWithTier is MaybeResolveAuto extended with the cross-provider
+// `task_tier` hint. When set (e.g. "easy" or "hard"), it promotes the request
+// into the matching autorouter modality even if the caller did not use an
+// `auto-*` model name, so clients can opt into tiered routing without changing
+// their model string.
+func (r *Router) MaybeResolveAutoWithTier(ctx context.Context, modelName, modality, taskTier, prompt string) AutoRouteResult {
 	fallback := AutoRouteResult{ModelID: modelName}
 
 	if r.autoRouter == nil {
@@ -254,12 +263,21 @@ func (r *Router) MaybeResolveAuto(ctx context.Context, modelName, modality, prom
 	}
 
 	mod, isAuto := IsAutoModel(modelName)
+
+	// task_tier overrides any auto-* modality: an explicit hint from the client
+	// is more specific than the model-name convention.
+	if tierMod, ok := TaskTierToModality(taskTier); ok {
+		mod = tierMod
+		isAuto = true
+	}
+
 	if !isAuto {
 		return fallback
 	}
 
 	// Only override modality for generic auto models (text/image/video).
-	// Task-specific modalities (easy-task, medium-task) use their own routing table.
+	// Task-specific modalities (easy-task, medium-task, hard-task) use their
+	// own routing table and ignore the caller-supplied modality hint.
 	if modality != "" && mod == "text" {
 		mod = modality
 	}

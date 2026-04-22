@@ -243,6 +243,107 @@ func TestMaybeResolveAuto_UsesNamedTierWhenModalityIsEmpty(t *testing.T) {
 	}
 }
 
+func TestMaybeResolveAutoWithTier_HardTierOverridesNonAutoModel(t *testing.T) {
+	r := newTestRouter([]model.ModelConfig{
+		{ID: "gpt-4o", Provider: "openai"},
+		{ID: "claude-opus-latest", Provider: "anthropic"},
+	}, "openai", "anthropic")
+
+	r.SetAutoRouter(&AutoRouter{
+		embedder: &stubEmbedder{
+			vectors: map[string][]float64{
+				"build me a sankey flow diagram": {1, 0},
+			},
+		},
+		tables: map[string][]AutoEntry{
+			"hard-task": {
+				{ModelID: "claude-opus-latest", ReasoningEffort: "medium", Embedding: []float64{1, 0}},
+			},
+		},
+		ready: true,
+	})
+
+	// Caller didn't use an auto-* model name — task_tier alone should promote.
+	got := r.MaybeResolveAutoWithTier(context.Background(), "gpt-4o", "", "hard", "build me a sankey flow diagram")
+	if got.ModelID != "claude-opus-latest" {
+		t.Fatalf("task_tier=hard should route to claude-opus-latest, got %q", got.ModelID)
+	}
+	if got.ReasoningEffort != "medium" {
+		t.Fatalf("reasoning effort = %q, want medium", got.ReasoningEffort)
+	}
+}
+
+func TestMaybeResolveAutoWithTier_EmptyTierFallsBackToModelNameBehaviour(t *testing.T) {
+	r := newTestRouter([]model.ModelConfig{
+		{ID: "gpt-4o", Provider: "openai"},
+	}, "openai")
+
+	// No autorouter tables for the non-auto model → should pass through untouched.
+	r.SetAutoRouter(&AutoRouter{
+		embedder: &stubEmbedder{},
+		tables:   map[string][]AutoEntry{},
+		ready:    true,
+	})
+
+	got := r.MaybeResolveAutoWithTier(context.Background(), "gpt-4o", "", "", "hello")
+	if got.ModelID != "gpt-4o" {
+		t.Fatalf("non-auto model with empty tier should pass through, got %q", got.ModelID)
+	}
+}
+
+func TestTaskTierToModality(t *testing.T) {
+	cases := []struct {
+		tier string
+		want string
+		ok   bool
+	}{
+		{"easy", "easy-task", true},
+		{"medium", "medium-task", true},
+		{"think", "think-task", true},
+		{"hard", "hard-task", true},
+		{"", "", false},
+		{"bogus", "", false},
+	}
+	for _, c := range cases {
+		got, ok := TaskTierToModality(c.tier)
+		if got != c.want || ok != c.ok {
+			t.Errorf("TaskTierToModality(%q) = (%q,%v), want (%q,%v)", c.tier, got, ok, c.want, c.ok)
+		}
+	}
+}
+
+func TestAutoRouter_HardTaskRoutesSankeyToClaudeOpus(t *testing.T) {
+	ar := NewAutoRouter(&fakeEmbedder{})
+	if err := ar.Init(context.Background()); err != nil {
+		t.Fatalf("Init() error = %v", err)
+	}
+
+	got, err := ar.ResolveAuto(context.Background(), "hard-task", "Render a sankey diagram showing user flow through the funnel with nested categories.")
+	if err != nil {
+		t.Fatalf("ResolveAuto() error = %v", err)
+	}
+	if got.ModelID != "claude-opus-latest" {
+		t.Fatalf("ModelID = %q, want claude-opus-latest", got.ModelID)
+	}
+}
+
+func TestDefaultRoutingTables_HardTaskIncludesOpus(t *testing.T) {
+	entries := defaultRoutingTables()["hard-task"]
+	if len(entries) == 0 {
+		t.Fatal("hard-task routing table is empty")
+	}
+	var hasOpus bool
+	for _, e := range entries {
+		if e.ModelID == "claude-opus-latest" {
+			hasOpus = true
+			break
+		}
+	}
+	if !hasOpus {
+		t.Fatal("hard-task routing table must include claude-opus-latest")
+	}
+}
+
 func TestDefaultRoutingTablesTargetsExistInConfig(t *testing.T) {
 	oldJWT := os.Getenv("JWT_SECRET")
 	os.Setenv("JWT_SECRET", "test-secret")

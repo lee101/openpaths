@@ -19,6 +19,19 @@ type ChatCompletionRequest struct {
 	Tools               []Tool          `json:"tools,omitempty"`
 	ToolChoice          any             `json:"tool_choice,omitempty"`
 	ReasoningEffort     string          `json:"reasoning_effort,omitempty"`
+
+	// Prefill is a non-standard cross-provider hint: the assistant response
+	// should start with this exact string. Anthropic and Google Gemini support
+	// this natively (trailing assistant turn); OpenAI does not and ignores it.
+	// Prefer setting this field over manually appending a trailing assistant
+	// message so providers can translate it correctly.
+	Prefill string `json:"prefill,omitempty"`
+
+	// TaskTier is a non-standard cross-provider hint for routers: "easy" for
+	// cheap/fast paths (nano, flash-lite), "hard" for reasoning-heavy work
+	// (Opus, flagship). Providers and model selectors MAY use this as input;
+	// the direct provider HTTP layer ignores it.
+	TaskTier string `json:"task_tier,omitempty"`
 }
 
 type ChatMessage struct {

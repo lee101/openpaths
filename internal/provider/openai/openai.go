@@ -34,6 +34,15 @@ func New(apiKey, baseURL string) *OpenAIProvider {
 
 func (p *OpenAIProvider) Name() string { return "openai" }
 
+// sanitizeForOpenAI removes cross-provider hints that OpenAI's API does not
+// recognize. OpenAI has no native "prefill" or "task_tier" fields and may
+// reject unknown properties in strict mode. Callers should set these fields
+// and let the Anthropic/Google providers translate them; here we drop them.
+func sanitizeForOpenAI(req *model.ChatCompletionRequest) {
+	req.Prefill = ""
+	req.TaskTier = ""
+}
+
 // normalizeMaxTokens converts max_tokens to max_completion_tokens for newer
 // OpenAI models (o-series, gpt-5.4-*) that reject the legacy parameter.
 func normalizeMaxTokens(req *model.ChatCompletionRequest) {
@@ -49,6 +58,7 @@ func normalizeMaxTokens(req *model.ChatCompletionRequest) {
 
 func (p *OpenAIProvider) ChatCompletion(ctx context.Context, req *model.ChatCompletionRequest) (*model.ChatCompletionResponse, error) {
 	normalizeMaxTokens(req)
+	sanitizeForOpenAI(req)
 	body, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("marshal request: %w", err)
@@ -97,6 +107,7 @@ func (p *OpenAIProvider) ChatCompletionStream(ctx context.Context, req *model.Ch
 		req.StreamOptions = &model.StreamOptions{IncludeUsage: true}
 	}
 	normalizeMaxTokens(req)
+	sanitizeForOpenAI(req)
 
 	body, err := json.Marshal(req)
 	if err != nil {

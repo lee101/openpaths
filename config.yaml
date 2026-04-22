@@ -504,6 +504,95 @@ models:
     supports_tools: true
     supports_vision: true
 
+  # --- OpenAI (Image Generation) ---
+  - id: "gpt-image-2"
+    provider: openai
+    provider_model_id: "gpt-image-2"
+    price_per_image: 0.211
+    aliases: ["openai-image-latest", "openai-image"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+    supported_sizes:
+      - "1024x1024"
+      - "1536x1024"
+      - "1024x1536"
+      - "2048x2048"
+      - "2048x1152"
+      - "3840x2160"
+      - "2160x3840"
+
+  - id: "gpt-image-1.5"
+    provider: openai
+    provider_model_id: "gpt-image-1.5"
+    price_per_image: 0.133
+    aliases: ["openai-image-1.5"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+    supported_sizes:
+      - "1024x1024"
+      - "1536x1024"
+      - "1024x1536"
+
+  - id: "gpt-image-1"
+    provider: openai
+    provider_model_id: "gpt-image-1"
+    price_per_image: 0.167
+    aliases: ["openai-image-1"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+    supported_sizes:
+      - "1024x1024"
+      - "1536x1024"
+      - "1024x1536"
+
+  - id: "gpt-image-1-mini"
+    provider: openai
+    provider_model_id: "gpt-image-1-mini"
+    price_per_image: 0.036
+    aliases: ["openai-image-mini"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+    supported_sizes:
+      - "1024x1024"
+      - "1536x1024"
+      - "1024x1536"
+
+  - id: "dall-e-3"
+    provider: openai
+    provider_model_id: "dall-e-3"
+    price_per_image: 0.04
+    aliases: ["dalle-3", "dalle"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+    supported_sizes:
+      - "1024x1024"
+      - "1792x1024"
+      - "1024x1792"
+
+  # --- OpenAI (Video - Sora) ---
+  - id: "sora-2"
+    provider: openai
+    provider_model_id: "sora-2"
+    price_per_video: 0.80
+    aliases: ["sora", "openai-video"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "sora-2-pro"
+    provider: openai
+    provider_model_id: "sora-2-pro"
+    price_per_video: 5.60
+    aliases: ["sora-pro", "openai-video-pro"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
   # --- Anthropic ---
   - id: "claude-sonnet-latest"
     provider: anthropic
@@ -559,7 +648,7 @@ models:
     provider_model_id: "claude-opus-4-7"
     input_price_per_1m: 5.00
     output_price_per_1m: 25.00
-    aliases: ["claude-opus", "opus-latest", "opus", "anthropic-opus-latest"]
+    aliases: ["claude-opus", "opus-latest", "opus", "anthropic-opus-latest", "auto-hard", "auto-opus", "auto-hard-task"]
     context_window: 200000
     max_output_tokens: 128000
     supports_streaming: true

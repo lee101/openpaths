@@ -167,11 +167,32 @@ var autoModelMap = map[string]string{
 	"auto-think":       "think-task",
 	"auto-think-task":  "think-task",
 	"autothink":        "think-task",
+	"auto-hard":        "hard-task",
+	"auto-hard-task":   "hard-task",
+	"auto-opus":        "hard-task",
 }
 
 func IsAutoModel(modelName string) (modality string, ok bool) {
 	m, ok := autoModelMap[modelName]
 	return m, ok
+}
+
+// TaskTierToModality maps the cross-provider `task_tier` hint on
+// ChatCompletionRequest to the autorouter modality that should service it.
+// Returns ok=false for unknown or empty tiers so callers can fall back to
+// default model-name based routing.
+func TaskTierToModality(tier string) (modality string, ok bool) {
+	switch tier {
+	case "easy":
+		return "easy-task", true
+	case "medium":
+		return "medium-task", true
+	case "think":
+		return "think-task", true
+	case "hard":
+		return "hard-task", true
+	}
+	return "", false
 }
 
 func defaultRoutingTables() map[string][]AutoEntry {
@@ -354,6 +375,22 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			{Description: "compare pros cons tradeoffs evaluate alternatives", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
 			{Description: "brainstorm ideas suggestions solutions approach strategy", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
 			{Description: "general conversation explanation help recommendation", ModelID: "gpt-5.4-mini", ReasoningEffort: "none"},
+		},
+
+		"hard-task": {
+			// Hard-reasoning / frontier generation tasks where a flagship model is worth it.
+			// Primary: Claude Opus 4.7 (strong JSON/prefill support, careful reasoning).
+			{Description: "sankey diagram flow visualization network graph d3 custom force directed tree layout candlestick word cloud infographic", ModelID: "claude-opus-latest", ReasoningEffort: "medium"},
+			{Description: "advanced data visualization complex chart layout multi-panel dashboard composition nuanced design judgement", ModelID: "claude-opus-latest", ReasoningEffort: "medium"},
+			{Description: "non trivial json schema output structured generation prefill continuation careful formatting", ModelID: "claude-opus-latest", ReasoningEffort: "medium"},
+			{Description: "architectural decision tradeoff analysis senior engineer judgement", ModelID: "claude-opus-latest", ReasoningEffort: "high"},
+			{Description: "deep product reasoning subtle requirements ambiguous spec planning", ModelID: "claude-opus-latest", ReasoningEffort: "high"},
+			// High-effort algorithmic / math / systems — GPT-5.4 high.
+			{Description: "formal verification compiler design cryptography research deep scientific reasoning", ModelID: "gpt-5.4", ReasoningEffort: "high"},
+			{Description: "prove a theorem derive a formula or solve a hard math olympiad style problem", ModelID: "gpt-5.4", ReasoningEffort: "high"},
+			{Description: "design a distributed system protocol with consensus recovery and adversarial failures", ModelID: "gpt-5.4", ReasoningEffort: "high"},
+			{Description: "complex debugging race condition deadlock memory leak concurrency bug", ModelID: "gpt-5-codex", ReasoningEffort: "high"},
+			{Description: "implement complex algorithm data structure tree graph trie heap", ModelID: "gpt-5-codex", ReasoningEffort: "high"},
 		},
 
 		"think-task": {
