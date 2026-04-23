@@ -18,15 +18,17 @@ type CheckoutHandler struct {
 	stripe        *stripesvc.Service
 	userQ         *queries.UserQueries
 	billing       *billing.Engine
+	depositQ      *queries.StripeDepositQueries
 	priceID       string
 	webhookSecret string
 }
 
-func NewCheckoutHandler(stripe *stripesvc.Service, userQ *queries.UserQueries, billing *billing.Engine, priceID, webhookSecret string) *CheckoutHandler {
+func NewCheckoutHandler(stripe *stripesvc.Service, userQ *queries.UserQueries, billing *billing.Engine, depositQ *queries.StripeDepositQueries, priceID, webhookSecret string) *CheckoutHandler {
 	return &CheckoutHandler{
 		stripe:        stripe,
 		userQ:         userQ,
 		billing:       billing,
+		depositQ:      depositQ,
 		priceID:       priceID,
 		webhookSecret: webhookSecret,
 	}
@@ -127,6 +129,8 @@ func (h *CheckoutHandler) HandleWebhook(ctx *fasthttp.RequestCtx) {
 	switch evt.Type {
 	case "checkout.session.completed":
 		h.handleCheckoutCompleted(ctx, evt.Data.Object)
+	case "charge.refunded":
+		h.handleChargeRefunded(ctx, evt.ID, evt.Data.Object)
 	default:
 		log.Printf("unhandled webhook: %s", evt.Type)
 	}
@@ -153,15 +157,44 @@ func (h *CheckoutHandler) handleCheckoutCompleted(ctx *fasthttp.RequestCtx, raw 
 		return
 	}
 
-	// amount_total is in cents, convert to internal units (hundredths of a cent)
-	// $25.00 -> 2500 cents -> 25000000 internal units
-	internalAmount := session.AmountTotal * 100
+	credited, err := h.depositQ.CreditFromStripeSession(
+		ctx, userID, session.ID, session.PaymentIntent, session.AmountTotal, "webhook",
+	)
+	if err != nil {
+		log.Printf("webhook: credit failed for user %s session %s: %v", userID, session.ID, err)
+		return
+	}
+	if credited {
+		log.Printf("webhook: credited user %s for session %s ($%.2f)",
+			userID, session.ID, float64(session.AmountTotal)/100.0)
+	} else {
+		log.Printf("webhook: session %s already credited, no-op", session.ID)
+	}
+}
 
-	desc := fmt.Sprintf("Stripe checkout %s ($%.2f)", session.ID, float64(session.AmountTotal)/100.0)
-	if err := h.billing.Deposit(ctx, userID, internalAmount, desc); err != nil {
-		log.Printf("webhook: deposit failed for user %s: %v", userID, err)
+func (h *CheckoutHandler) handleChargeRefunded(ctx *fasthttp.RequestCtx, eventID string, raw json.RawMessage) {
+	var charge stripesvc.Charge
+	if err := json.Unmarshal(raw, &charge); err != nil {
+		log.Printf("webhook: failed to parse charge: %v", err)
+		return
+	}
+	if charge.PaymentIntent == "" {
+		log.Printf("webhook: charge %s has no payment_intent, skipping", charge.ID)
+		return
+	}
+	if charge.AmountRefunded <= 0 {
 		return
 	}
 
-	log.Printf("webhook: deposited %d units for user %s (session %s)", internalAmount, userID, session.ID)
+	deducted, err := h.depositQ.RefundByPaymentIntent(ctx, charge.PaymentIntent, charge.AmountRefunded, eventID)
+	if err != nil {
+		log.Printf("webhook: refund failed for charge %s (pi %s): %v", charge.ID, charge.PaymentIntent, err)
+		return
+	}
+	if deducted > 0 {
+		log.Printf("webhook: clawed back %d internal units for charge %s (pi %s, cumulative refunded=%d cents)",
+			deducted, charge.ID, charge.PaymentIntent, charge.AmountRefunded)
+	} else {
+		log.Printf("webhook: refund for charge %s already applied or no deposit match, no-op", charge.ID)
+	}
 }

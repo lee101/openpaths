@@ -14,17 +14,17 @@ export const providers: Provider[] = [
     slug: 'netwrck',
     name: 'Netwrck',
     url: 'https://netwrck.com',
-    description: 'First-party image and video generation. Home of RA1 art generator, ZImage anime art, and Wan/LTX/RA2V video models.',
+    description: 'Creative media platform with RA1 image generation, ZImage anime art, RA2V/LTX/Wan video, and adjacent image editing tools.',
     featured: true,
-    logo: '/logos/netwrck.svg'
+    logo: '/logos/netwrck.webp'
   },
   {
     slug: 'text-generator',
     name: 'Text-Generator.io',
     url: 'https://text-generator.io',
-    description: 'First-party embedding provider. ModernBERT-powered text embeddings for search, RAG, and semantic similarity.',
+    description: 'Text, vision, and speech API with privacy-first workflows; OpenPaths currently exposes its ModernBERT embedding lane for RAG and semantic search.',
     featured: true,
-    logo: '/logos/textgenerator.svg'
+    logo: '/logos/textgenerator-brain.webp'
   },
   {
     slug: 'openpaths',
@@ -46,7 +46,7 @@ export const providers: Provider[] = [
     slug: 'openai',
     name: 'OpenAI',
     url: 'https://openai.com',
-    description: 'GPT-5.4, GPT-5 Chat Latest, GPT-5 Codex, o3/o4-mini reasoning models, and Codex Mini for code generation.',
+    description: 'GPT-5.5, GPT-5 Chat Latest, GPT-5 Codex, o3/o4-mini reasoning models, and Codex Mini for code generation.',
     featured: false,
     logo: '/logos/openai.svg'
   },
@@ -137,6 +137,14 @@ export const providers: Provider[] = [
     description: 'Fast inference platform hosting GPT-OSS 120B, GLM-5, and other open-source models.',
     featured: false,
     logo: '/logos/fireworks.svg'
+  },
+  {
+    slug: 'nvidia',
+    name: 'NVIDIA',
+    url: 'https://build.nvidia.com',
+    description: 'NVIDIA NIM inference hosting MiniMax M2.7 and other frontier open models on accelerated infra.',
+    featured: false,
+    logo: '/logos/nvidia.svg'
   },
   {
     slug: 'fal',

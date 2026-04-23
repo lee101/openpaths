@@ -42,6 +42,9 @@ func TestAutoTierConfig_PrimaryModels(t *testing.T) {
 	if got := models["auto-easy-task"]; got != "gemini-flash-lite-latest" {
 		t.Fatalf("auto-easy-task provider_model_id = %q, want %q", got, "gemini-flash-lite-latest")
 	}
+	if got := models["gpt-5.5"]; got != "gpt-5.5" {
+		t.Fatalf("gpt-5.5 provider_model_id = %q, want %q", got, "gpt-5.5")
+	}
 }
 
 func TestResolveWithRetries_GPT54NanoHasThreeProviderCoverage(t *testing.T) {
@@ -101,5 +104,25 @@ func TestResolveWithRetries_GPT54HasThreeProviderCoverage(t *testing.T) {
 	}
 	if len(providers) < 3 {
 		t.Fatalf("gpt-5.4 providers = %d, want at least 3", len(providers))
+	}
+}
+
+func TestResolveWithRetries_GPT55HasThreeProviderCoverage(t *testing.T) {
+	cfg := loadRepoConfig(t)
+	r := newTestRouter(cfg.Models, "openai", "anthropic", "google", "deepseek", "openrouter")
+
+	candidates, err := r.ResolveWithRetries("gpt-5.5")
+	if err != nil {
+		t.Fatalf("ResolveWithRetries() error = %v", err)
+	}
+
+	providers := providerSet(candidates)
+	for _, want := range []string{"openai", "anthropic", "google"} {
+		if !providers[want] {
+			t.Fatalf("gpt-5.5 candidates missing provider %q", want)
+		}
+	}
+	if len(providers) < 3 {
+		t.Fatalf("gpt-5.5 providers = %d, want at least 3", len(providers))
 	}
 }

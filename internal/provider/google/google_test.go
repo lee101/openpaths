@@ -1,6 +1,10 @@
 package google
 
 import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/openpaths/openpaths/internal/model"
@@ -60,5 +64,54 @@ func TestTranslateUsage_CountsThoughtTokensAsBillableOutput(t *testing.T) {
 	}
 	if usage.TotalTokens != 200 {
 		t.Fatalf("TotalTokens = %d, want %d", usage.TotalTokens, 200)
+	}
+}
+
+func TestEmbed_BatchEmbeddings(t *testing.T) {
+	var captured geminiBatchEmbedRequest
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v1beta/models/gemini-embedding-001:batchEmbedContents" {
+			t.Fatalf("path = %s, want batch embed endpoint", r.URL.Path)
+		}
+		if got := r.URL.Query().Get("key"); got != "test-key" {
+			t.Fatalf("api key = %q, want test-key", got)
+		}
+		if err := json.NewDecoder(r.Body).Decode(&captured); err != nil {
+			t.Fatalf("decode request: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"embeddings": []map[string]any{
+				{"values": []float64{0.1, 0.2}},
+				{"values": []float64{0.3, 0.4}},
+			},
+		})
+	}))
+	defer server.Close()
+
+	p := New("test-key", server.URL)
+	dims := 768
+	resp, err := p.Embed(context.Background(), &model.EmbeddingRequest{
+		Model:      "gemini-embedding-001",
+		Input:      []string{"hello", "world"},
+		Dimensions: dims,
+	})
+	if err != nil {
+		t.Fatalf("Embed() error = %v", err)
+	}
+	if len(captured.Requests) != 2 {
+		t.Fatalf("captured %d requests, want 2", len(captured.Requests))
+	}
+	if captured.Requests[0].Model != "gemini-embedding-001" {
+		t.Fatalf("request model = %q", captured.Requests[0].Model)
+	}
+	if captured.Requests[0].OutputDimensionality == nil || *captured.Requests[0].OutputDimensionality != dims {
+		t.Fatalf("output dimensionality = %v, want %d", captured.Requests[0].OutputDimensionality, dims)
+	}
+	if len(resp.Data) != 2 {
+		t.Fatalf("got %d embeddings, want 2", len(resp.Data))
+	}
+	if resp.Usage.TotalTokens == 0 {
+		t.Fatal("expected non-zero token accounting")
 	}
 }

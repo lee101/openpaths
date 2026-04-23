@@ -91,6 +91,37 @@ type geminiResponse struct {
 	UsageMetadata *geminiUsage      `json:"usageMetadata"`
 }
 
+type geminiEmbedRequest struct {
+	Model                string             `json:"model,omitempty"`
+	Content              geminiEmbedContent `json:"content"`
+	TaskType             string             `json:"taskType,omitempty"`
+	OutputDimensionality *int               `json:"outputDimensionality,omitempty"`
+}
+
+type geminiEmbedContent struct {
+	Parts []geminiEmbedPart `json:"parts"`
+}
+
+type geminiEmbedPart struct {
+	Text string `json:"text,omitempty"`
+}
+
+type geminiEmbedResponse struct {
+	Embedding geminiContentEmbedding `json:"embedding"`
+}
+
+type geminiBatchEmbedRequest struct {
+	Requests []geminiEmbedRequest `json:"requests"`
+}
+
+type geminiBatchEmbedResponse struct {
+	Embeddings []geminiContentEmbedding `json:"embeddings"`
+}
+
+type geminiContentEmbedding struct {
+	Values []float64 `json:"values"`
+}
+
 type geminiCandidate struct {
 	Content      geminiContent `json:"content"`
 	FinishReason string        `json:"finishReason"`
@@ -146,6 +177,92 @@ func (p *GoogleProvider) ChatCompletion(ctx context.Context, req *model.ChatComp
 	}
 
 	return translateResponse(&gemResp, req.Model), nil
+}
+
+func (p *GoogleProvider) Embed(ctx context.Context, req *model.EmbeddingRequest) (*model.EmbeddingResponse, error) {
+	inputs, err := normalizeEmbeddingInput(req.Input)
+	if err != nil {
+		return nil, &provider.ProviderError{
+			Provider: "google", StatusCode: 400, Message: err.Error(),
+		}
+	}
+
+	if len(inputs) == 0 {
+		return &model.EmbeddingResponse{
+			Object: "list",
+			Data:   []model.EmbeddingData{},
+			Model:  req.Model,
+			Usage:  model.EmbeddingUsage{},
+		}, nil
+	}
+
+	requests := make([]geminiEmbedRequest, 0, len(inputs))
+	totalTokens := 0
+	for _, text := range inputs {
+		requests = append(requests, buildGeminiEmbedRequest(req.Model, text, req.Dimensions))
+		totalTokens += len(text) / 4
+	}
+
+	body, err := json.Marshal(geminiBatchEmbedRequest{Requests: requests})
+	if err != nil {
+		return nil, fmt.Errorf("marshal batch embed request: %w", err)
+	}
+
+	url := fmt.Sprintf("%s/v1beta/models/%s:batchEmbedContents?key=%s", p.baseURL, req.Model, p.apiKey)
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("create embed request: %w", err)
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	resp, err := p.client.Do(httpReq)
+	if err != nil {
+		return nil, &provider.ProviderError{
+			Provider: "google", StatusCode: 502, Message: err.Error(), Retryable: true, Err: err,
+		}
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("read embed response: %w", err)
+	}
+
+	if resp.StatusCode != 200 {
+		return nil, &provider.ProviderError{
+			Provider:   "google",
+			StatusCode: resp.StatusCode,
+			Message:    string(respBody),
+			Retryable:  resp.StatusCode >= 500 || resp.StatusCode == 429,
+		}
+	}
+
+	var batchResp geminiBatchEmbedResponse
+	if err := json.Unmarshal(respBody, &batchResp); err != nil {
+		return nil, fmt.Errorf("unmarshal embed response: %w", err)
+	}
+	if len(batchResp.Embeddings) != len(inputs) {
+		return nil, fmt.Errorf("embed response count mismatch: got %d embeddings for %d inputs", len(batchResp.Embeddings), len(inputs))
+	}
+
+	data := make([]model.EmbeddingData, 0, len(batchResp.Embeddings))
+	for i, emb := range batchResp.Embeddings {
+		data = append(data, model.EmbeddingData{
+			Object:    "embedding",
+			Embedding: emb.Values,
+			Index:     i,
+		})
+	}
+
+	return &model.EmbeddingResponse{
+		Object: "list",
+		Data:   data,
+		Model:  req.Model,
+		Usage: model.EmbeddingUsage{
+			PromptTokens: totalTokens,
+			TotalTokens:  totalTokens,
+		},
+	}, nil
 }
 
 func (p *GoogleProvider) ChatCompletionStream(ctx context.Context, req *model.ChatCompletionRequest) (<-chan provider.StreamEvent, error) {
@@ -265,6 +382,40 @@ func (p *GoogleProvider) HealthCheck(ctx context.Context) error {
 		return fmt.Errorf("health check failed: %d", resp.StatusCode)
 	}
 	return nil
+}
+
+func buildGeminiEmbedRequest(modelName, text string, dimensions int) geminiEmbedRequest {
+	req := geminiEmbedRequest{
+		Model: modelName,
+		Content: geminiEmbedContent{
+			Parts: []geminiEmbedPart{{Text: text}},
+		},
+	}
+	if dimensions > 0 {
+		req.OutputDimensionality = &dimensions
+	}
+	return req
+}
+
+func normalizeEmbeddingInput(input any) ([]string, error) {
+	switch v := input.(type) {
+	case string:
+		return []string{v}, nil
+	case []any:
+		out := make([]string, 0, len(v))
+		for _, item := range v {
+			s, ok := item.(string)
+			if !ok {
+				return nil, fmt.Errorf("input array must contain strings")
+			}
+			out = append(out, s)
+		}
+		return out, nil
+	case []string:
+		return v, nil
+	default:
+		return nil, fmt.Errorf("input must be a string or array of strings")
+	}
 }
 
 func translateRequest(req *model.ChatCompletionRequest) *geminiRequest {

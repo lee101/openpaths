@@ -379,16 +379,16 @@ func defaultRoutingTables() map[string][]AutoEntry {
 
 		"hard-task": {
 			// Hard-reasoning / frontier generation tasks where a flagship model is worth it.
-			// Primary: Claude Opus 4.7 (strong JSON/prefill support, careful reasoning).
-			{Description: "sankey diagram flow visualization network graph d3 custom force directed tree layout candlestick word cloud infographic", ModelID: "claude-opus-latest", ReasoningEffort: "medium"},
-			{Description: "advanced data visualization complex chart layout multi-panel dashboard composition nuanced design judgement", ModelID: "claude-opus-latest", ReasoningEffort: "medium"},
-			{Description: "non trivial json schema output structured generation prefill continuation careful formatting", ModelID: "claude-opus-latest", ReasoningEffort: "medium"},
-			{Description: "architectural decision tradeoff analysis senior engineer judgement", ModelID: "claude-opus-latest", ReasoningEffort: "high"},
-			{Description: "deep product reasoning subtle requirements ambiguous spec planning", ModelID: "claude-opus-latest", ReasoningEffort: "high"},
-			// High-effort algorithmic / math / systems — GPT-5.4 high.
-			{Description: "formal verification compiler design cryptography research deep scientific reasoning", ModelID: "gpt-5.4", ReasoningEffort: "high"},
-			{Description: "prove a theorem derive a formula or solve a hard math olympiad style problem", ModelID: "gpt-5.4", ReasoningEffort: "high"},
-			{Description: "design a distributed system protocol with consensus recovery and adversarial failures", ModelID: "gpt-5.4", ReasoningEffort: "high"},
+			// Primary: GPT-5.5 high/medium reasoning.
+			{Description: "sankey diagram flow visualization network graph d3 custom force directed tree layout candlestick word cloud infographic", ModelID: "gpt-5.5", ReasoningEffort: "medium"},
+			{Description: "advanced data visualization complex chart layout multi-panel dashboard composition nuanced design judgement", ModelID: "gpt-5.5", ReasoningEffort: "medium"},
+			{Description: "non trivial json schema output structured generation prefill continuation careful formatting", ModelID: "gpt-5.5", ReasoningEffort: "medium"},
+			{Description: "architectural decision tradeoff analysis senior engineer judgement", ModelID: "gpt-5.5", ReasoningEffort: "high"},
+			{Description: "deep product reasoning subtle requirements ambiguous spec planning", ModelID: "gpt-5.5", ReasoningEffort: "high"},
+			// High-effort algorithmic / math / systems.
+			{Description: "formal verification compiler design cryptography research deep scientific reasoning", ModelID: "gpt-5.5", ReasoningEffort: "high"},
+			{Description: "prove a theorem derive a formula or solve a hard math olympiad style problem", ModelID: "gpt-5.5", ReasoningEffort: "high"},
+			{Description: "design a distributed system protocol with consensus recovery and adversarial failures", ModelID: "gpt-5.5", ReasoningEffort: "high"},
 			{Description: "complex debugging race condition deadlock memory leak concurrency bug", ModelID: "gpt-5-codex", ReasoningEffort: "high"},
 			{Description: "implement complex algorithm data structure tree graph trie heap", ModelID: "gpt-5-codex", ReasoningEffort: "high"},
 		},
@@ -413,10 +413,10 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			{Description: "analyze tradeoffs architecture performance bottlenecks and failure modes", ModelID: "gpt-5.4-mini", ReasoningEffort: "medium"},
 
 			// HIGH - hard algorithmic or research-grade work that should spend real reasoning budget.
-			{Description: "create a 3d mesh simplification algorithm with error metrics and topology preservation", ModelID: "gpt-5.4", ReasoningEffort: "high"},
-			{Description: "prove a theorem derive a formula or solve a hard math olympiad style problem", ModelID: "gpt-5.4", ReasoningEffort: "high"},
-			{Description: "design a distributed system protocol with consensus recovery and adversarial failures", ModelID: "gpt-5.4", ReasoningEffort: "high"},
-			{Description: "formal verification compiler design cryptography research deep scientific reasoning", ModelID: "gpt-5.4", ReasoningEffort: "high"},
+			{Description: "create a 3d mesh simplification algorithm with error metrics and topology preservation", ModelID: "gpt-5.5", ReasoningEffort: "high"},
+			{Description: "prove a theorem derive a formula or solve a hard math olympiad style problem", ModelID: "gpt-5.5", ReasoningEffort: "high"},
+			{Description: "design a distributed system protocol with consensus recovery and adversarial failures", ModelID: "gpt-5.5", ReasoningEffort: "high"},
+			{Description: "formal verification compiler design cryptography research deep scientific reasoning", ModelID: "gpt-5.5", ReasoningEffort: "high"},
 		},
 	}
 }

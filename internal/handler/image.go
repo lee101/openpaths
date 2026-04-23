@@ -94,7 +94,7 @@ func (h *ImageHandler) HandleImageGeneration(ctx *fasthttp.RequestCtx) {
 			if pe, ok := err.(*provider.ProviderError); ok {
 				statusCode = pe.StatusCode
 				errMsg = pe.Message
-				if !pe.Retryable {
+				if !pe.Retryable && i == len(candidates)-1 {
 					h.recorder.RecordError(userID, apiKeyID, originalModel, cand.Provider.Name(),
 						int(latency.Milliseconds()), statusCode, errMsg, false)
 					writeError(ctx, statusCode, "provider_error", errMsg)

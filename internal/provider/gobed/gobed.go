@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"sync"
 	"time"
 
 	gobedlib "github.com/lee101/gobed"
@@ -12,9 +11,10 @@ import (
 	"github.com/openpaths/openpaths/internal/provider"
 )
 
+const gobedChunkSize = 256
+
 type GobedProvider struct {
 	model *gobedlib.SimpleInt8Model512
-	mu    sync.RWMutex
 }
 
 func New() (*GobedProvider, error) {
@@ -42,7 +42,7 @@ func (p *GobedProvider) Embed(ctx context.Context, req *model.EmbeddingRequest) 
 	totalTokens := 0
 
 	for i, text := range inputs {
-		emb, err := p.model.Embed(text)
+		emb, tokensUsed, err := p.embedText(req.LongTextMode, text)
 		if err != nil {
 			return nil, &provider.ProviderError{
 				Provider: "gobed", StatusCode: 500, Message: err.Error(), Retryable: true, Err: err,
@@ -59,7 +59,7 @@ func (p *GobedProvider) Embed(ctx context.Context, req *model.EmbeddingRequest) 
 			Embedding: emb64,
 			Index:     i,
 		})
-		totalTokens += len(text) / 4
+		totalTokens += tokensUsed
 	}
 
 	return &model.EmbeddingResponse{
@@ -71,6 +71,68 @@ func (p *GobedProvider) Embed(ctx context.Context, req *model.EmbeddingRequest) 
 			TotalTokens:  totalTokens,
 		},
 	}, nil
+}
+
+func (p *GobedProvider) embedText(mode, text string) ([]float32, int, error) {
+	tokens := p.model.SimpleTokenize(text)
+	if len(tokens) == 0 {
+		return make([]float32, gobedlib.Int8EmbeddingDim), 0, nil
+	}
+
+	switch normalizeLongTextMode(mode) {
+	case "truncate":
+		if len(tokens) > gobedChunkSize {
+			tokens = tokens[:gobedChunkSize]
+		}
+		emb, err := p.model.EmbedTokens(tokens)
+		return emb, len(tokens), err
+	case "average_chunks":
+		return p.embedAverageChunks(tokens)
+	default:
+		return nil, 0, fmt.Errorf("unsupported long_text_mode %q", mode)
+	}
+}
+
+func (p *GobedProvider) embedAverageChunks(tokens []int16) ([]float32, int, error) {
+	accum := make([]float32, gobedlib.Int8EmbeddingDim)
+	totalWeight := 0
+
+	for start := 0; start < len(tokens); start += gobedChunkSize {
+		end := start + gobedChunkSize
+		if end > len(tokens) {
+			end = len(tokens)
+		}
+		chunk := tokens[start:end]
+		emb, err := p.model.EmbedTokens(chunk)
+		if err != nil {
+			return nil, 0, err
+		}
+		weight := len(chunk)
+		totalWeight += weight
+		for i, v := range emb {
+			accum[i] += v * float32(weight)
+		}
+	}
+
+	if totalWeight > 0 {
+		inv := 1 / float32(totalWeight)
+		for i := range accum {
+			accum[i] *= inv
+		}
+	}
+
+	return accum, len(tokens), nil
+}
+
+func normalizeLongTextMode(mode string) string {
+	switch mode {
+	case "", "truncate":
+		return "truncate"
+	case "average_chunks", "avg_chunks", "chunk_mean":
+		return "average_chunks"
+	default:
+		return mode
+	}
 }
 
 func normalizeInput(input any) ([]string, error) {

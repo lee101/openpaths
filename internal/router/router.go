@@ -186,6 +186,7 @@ func (r *Router) ListModels() []model.ModelInfo {
 			Pricing: &model.ModelPricing{
 				InputPer1M:  cfg.InputPricePer1M,
 				OutputPer1M: cfg.OutputPricePer1M,
+				PerRequest:  cfg.PricePerRequest,
 				PerImage:    cfg.PricePerImage,
 				PerVideo:    cfg.PricePerVideo,
 			},
@@ -229,6 +230,7 @@ func (r *Router) GetModelInfo(modelName string) (model.ModelInfo, bool) {
 		Pricing: &model.ModelPricing{
 			InputPer1M:  cfg.InputPricePer1M,
 			OutputPer1M: cfg.OutputPricePer1M,
+			PerRequest:  cfg.PricePerRequest,
 			PerImage:    cfg.PricePerImage,
 			PerVideo:    cfg.PricePerVideo,
 		},

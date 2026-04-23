@@ -3,9 +3,11 @@ package server
 import (
 	"bytes"
 	"fmt"
+	"html"
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -33,26 +35,28 @@ type Server struct {
 }
 
 type Dependencies struct {
-	Config       *config.Config
-	Router       *router.Router
-	Billing      *billing.Engine
-	Recorder     *metrics.Recorder
-	JWTService   *auth.JWTService
-	UserQ        *queries.UserQueries
-	APIKeyQ      *queries.APIKeyQueries
-	CreditQ      *queries.CreditQueries
-	StatsQ       *queries.StatsQueries
-	Transcribers []provider.TranscriptionProvider
-	Embedders    []provider.EmbeddingProvider
-	CryptoSvc      *crypto.Service
-	Storage        storage.Store
-	StripeSvc      *stripesvc.Service
-	Discovery      *discovery.Service
-	ModelMetaQ     *queries.ModelMetadataQueries
-	FineTuneQ      *queries.FineTuneQueries
-	FineTuneProvs  map[string]provider.FineTuneProvider
-	ProviderKeyQ   *queries.ProviderKeyQueries
-	OnRegister     handler.OnRegisterFunc
+	Config           *config.Config
+	Router           *router.Router
+	Billing          *billing.Engine
+	Recorder         *metrics.Recorder
+	JWTService       *auth.JWTService
+	UserQ            *queries.UserQueries
+	APIKeyQ          *queries.APIKeyQueries
+	CreditQ          *queries.CreditQueries
+	StripeDepositQ   *queries.StripeDepositQueries
+	StripeReconciler *billing.Reconciler
+	StatsQ           *queries.StatsQueries
+	Transcribers     []provider.TranscriptionProvider
+	Embedders        []provider.EmbeddingProvider
+	CryptoSvc        *crypto.Service
+	Storage          storage.Store
+	StripeSvc        *stripesvc.Service
+	Discovery        *discovery.Service
+	ModelMetaQ       *queries.ModelMetadataQueries
+	FineTuneQ        *queries.FineTuneQueries
+	FineTuneProvs    map[string]provider.FineTuneProvider
+	ProviderKeyQ     *queries.ProviderKeyQueries
+	OnRegister       handler.OnRegisterFunc
 }
 
 func New(deps *Dependencies) *Server {
@@ -64,7 +68,7 @@ func New(deps *Dependencies) *Server {
 	if deps.OnRegister != nil {
 		authH.SetOnRegister(deps.OnRegister)
 	}
-	accountH := handler.NewAccountHandler(deps.APIKeyQ, deps.CreditQ, deps.Billing)
+	accountH := handler.NewAccountHandler(deps.APIKeyQ, deps.CreditQ, deps.Billing, deps.StripeReconciler)
 	creditsH := handler.NewCreditsHandler(deps.Billing)
 	statsH := handler.NewStatsHandler(deps.StatsQ)
 	acctStatsH := handler.NewAccountStatsHandler(deps.StatsQ)
@@ -170,7 +174,7 @@ func New(deps *Dependencies) *Server {
 		r.POST("/account/autotopup/settings", accountChain(atH.HandleUpdateAutotopupSettings))
 		r.GET("/account/autotopup/settings", accountChain(atH.HandleGetAutotopupSettings))
 
-		checkoutH := handler.NewCheckoutHandler(deps.StripeSvc, deps.UserQ, deps.Billing, deps.Config.Stripe.CreditsPriceID, deps.Config.Stripe.WebhookSecret)
+		checkoutH := handler.NewCheckoutHandler(deps.StripeSvc, deps.UserQ, deps.Billing, deps.StripeDepositQ, deps.Config.Stripe.CreditsPriceID, deps.Config.Stripe.WebhookSecret)
 		r.POST("/account/stripe/checkout", accountChain(checkoutH.HandleCreateCheckout))
 		r.GET("/account/stripe/config", publicChain(checkoutH.HandleStripeConfig))
 		r.POST("/stripe/webhooks", publicChain(checkoutH.HandleWebhook))
@@ -244,6 +248,7 @@ func New(deps *Dependencies) *Server {
 		const base = "https://openpaths.io"
 		pages := []struct{ loc, priority, freq string }{
 			{"/", "1.0", "daily"},
+			{"/pricing", "0.9", "weekly"},
 			{"/models", "0.9", "weekly"},
 			{"/providers", "0.8", "weekly"},
 			{"/docs", "0.9", "weekly"},
@@ -304,7 +309,7 @@ func New(deps *Dependencies) *Server {
 		MaxRequestBodySize:            deps.Config.Server.MaxRequestBody * 1024 * 1024,
 		DisableHeaderNamesNormalizing: true,
 		TCPKeepalive:                  true,
-		ReduceMemoryUsage:            false,
+		ReduceMemoryUsage:             false,
 		NoDefaultServerHeader:         true,
 		NoDefaultDate:                 true,
 		NoDefaultContentType:          true,
@@ -355,6 +360,12 @@ func spaHandler(dir string, api fasthttp.RequestHandler, apiKeyQ *queries.APIKey
 			api(ctx)
 			return
 		}
+		if isSPARoute(path) && indexData != nil {
+			ctx.SetStatusCode(200)
+			ctx.SetContentType("text/html; charset=utf-8")
+			ctx.SetBody(injectUserData(injectPageMeta(indexData, path), ctx, apiKeyQ, userQ))
+			return
+		}
 		fsHandler(ctx)
 		if ctx.Response.StatusCode() == fasthttp.StatusNotFound || ctx.Response.StatusCode() == fasthttp.StatusForbidden {
 			if indexData == nil {
@@ -364,11 +375,81 @@ func spaHandler(dir string, api fasthttp.RequestHandler, apiKeyQ *queries.APIKey
 			ctx.Response.Reset()
 			ctx.SetStatusCode(200)
 			ctx.SetContentType("text/html; charset=utf-8")
-			ctx.SetBody(injectUserData(indexData, ctx, apiKeyQ, userQ))
+			ctx.SetBody(injectUserData(injectPageMeta(indexData, path), ctx, apiKeyQ, userQ))
 		} else if ctx.Response.StatusCode() == fasthttp.StatusOK && strings.HasSuffix(path, ".html") || path == "/" {
 			// Also inject on direct index.html hits
-			body := ctx.Response.Body()
+			body := injectPageMeta(ctx.Response.Body(), path)
 			ctx.Response.SetBody(injectUserData(body, ctx, apiKeyQ, userQ))
+		}
+	}
+}
+
+func isSPARoute(path string) bool {
+	if path == "" || path == "/" {
+		return false
+	}
+	base := path
+	if i := strings.LastIndexByte(base, '/'); i >= 0 {
+		base = base[i+1:]
+	}
+	return !strings.Contains(base, ".")
+}
+
+type pageMeta struct {
+	Title       string
+	Description string
+	URL         string
+}
+
+func injectPageMeta(doc []byte, path string) []byte {
+	meta := pageMetaForPath(path)
+	if meta.Title == "" || meta.Description == "" || meta.URL == "" {
+		return doc
+	}
+
+	replacements := []struct {
+		pattern string
+		value   string
+	}{
+		{`(?is)<title>.*?</title>`, fmt.Sprintf("<title>%s</title>", html.EscapeString(meta.Title))},
+		{`(?is)<meta\s+name=["']description["']\s+content=["'][^"']*["']\s*/?>`, fmt.Sprintf(`<meta name="description" content="%s" />`, html.EscapeString(meta.Description))},
+		{`(?is)<meta\s+property=["']og:url["']\s+content=["'][^"']*["']\s*/?>`, fmt.Sprintf(`<meta property="og:url" content="%s" />`, html.EscapeString(meta.URL))},
+		{`(?is)<meta\s+property=["']og:title["']\s+content=["'][^"']*["']\s*/?>`, fmt.Sprintf(`<meta property="og:title" content="%s" />`, html.EscapeString(meta.Title))},
+		{`(?is)<meta\s+property=["']og:description["']\s+content=["'][^"']*["']\s*/?>`, fmt.Sprintf(`<meta property="og:description" content="%s" />`, html.EscapeString(meta.Description))},
+		{`(?is)<meta\s+name=["']twitter:title["']\s+content=["'][^"']*["']\s*/?>`, fmt.Sprintf(`<meta name="twitter:title" content="%s" />`, html.EscapeString(meta.Title))},
+		{`(?is)<meta\s+name=["']twitter:description["']\s+content=["'][^"']*["']\s*/?>`, fmt.Sprintf(`<meta name="twitter:description" content="%s" />`, html.EscapeString(meta.Description))},
+		{`(?is)<link\s+rel=["']canonical["']\s+href=["'][^"']*["']\s*/?>`, fmt.Sprintf(`<link rel="canonical" href="%s" />`, html.EscapeString(meta.URL))},
+	}
+
+	out := string(doc)
+	for _, replacement := range replacements {
+		re := regexp.MustCompile(replacement.pattern)
+		if re.MatchString(out) {
+			out = re.ReplaceAllString(out, replacement.value)
+			continue
+		}
+		out = strings.Replace(out, "</head>", replacement.value+"\n</head>", 1)
+	}
+
+	return []byte(out)
+}
+
+func pageMetaForPath(path string) pageMeta {
+	if path == "" {
+		path = "/"
+	}
+	switch path {
+	case "/pricing":
+		return pageMeta{
+			Title:       "OpenPaths Pricing | Near-Zero Markup AI Model Routing",
+			Description: "OpenPaths keeps AI pricing as close to zero markup as practical, makes money from first-party AI services, and supports transparent pay-as-you-go pricing across text, embeddings, image, and video models.",
+			URL:         "https://openpaths.io/pricing",
+		}
+	default:
+		return pageMeta{
+			Title:       "OpenPaths - The Open Source Model Router",
+			Description: "Search and we shall find open pathways. Millisecond routing between 432+ large model providers and art generators.",
+			URL:         "https://openpaths.io" + path,
 		}
 	}
 }

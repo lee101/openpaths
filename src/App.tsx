@@ -10,6 +10,7 @@ import { BlogPost } from './pages/BlogPost';
 import { Providers } from './pages/Providers';
 import { Docs } from './pages/Docs';
 import { ProviderDocs } from './pages/ProviderDocs';
+import { Pricing } from './pages/Pricing';
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Landing />} />
+          <Route path="pricing" element={<Pricing />} />
           <Route path="models" element={<Models />} />
           <Route path="providers" element={<Providers />} />
           <Route path="docs" element={<Docs />} />

@@ -43,12 +43,12 @@ export function Layout() {
         </Link>
         <div className="hidden md:flex items-center gap-8 text-sm font-mono text-white/60">
           <Link to="/models" className={`transition-colors ${location.pathname === '/models' ? 'text-white' : 'hover:text-white'}`}>Models</Link>
+          <Link to="/pricing" className={`transition-colors ${location.pathname === '/pricing' ? 'text-white' : 'hover:text-white'}`}>Pricing</Link>
           <Link to="/providers" className={`transition-colors ${location.pathname === '/providers' ? 'text-white' : 'hover:text-white'}`}>Providers</Link>
           <Link to="/docs" className={`transition-colors ${location.pathname === '/docs' ? 'text-white' : 'hover:text-white'}`}>Docs</Link>
           <Link to="/playground" className={`transition-colors ${isPlayground ? 'text-white' : 'hover:text-white'}`}>Playground</Link>
           <Link to="/blog" className={`transition-colors ${location.pathname.startsWith('/blog') ? 'text-white' : 'hover:text-white'}`}>Blog</Link>
           <a href="/#api" className="hover:text-white transition-colors">API</a>
-          <a href="/#pricing" className="hover:text-white transition-colors">Pricing</a>
         </div>
         <div className="flex items-center gap-4">
           {isLoggedIn ? (
@@ -89,10 +89,10 @@ export function Layout() {
                 <ul className="space-y-2 text-sm font-mono text-white/40">
                   <li><Link to="/models" className="hover:text-white transition-colors">Models</Link></li>
                   <li><Link to="/providers" className="hover:text-white transition-colors">Providers</Link></li>
+                  <li><Link to="/pricing" className="hover:text-white transition-colors">Pricing</Link></li>
                   <li><Link to="/playground" className="hover:text-white transition-colors">Playground</Link></li>
                   <li><Link to="/blog" className="hover:text-white transition-colors">Blog</Link></li>
                   <li><a href="/#api" className="hover:text-white transition-colors">API Docs</a></li>
-                  <li><a href="/#pricing" className="hover:text-white transition-colors">Pricing</a></li>
                 </ul>
               </div>
               <div>

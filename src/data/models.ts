@@ -43,6 +43,19 @@ export const models: Model[] = [
     pricingType: 'request'
   },
   {
+    id: 'openpaths-embed',
+    name: 'OpenPaths Embed',
+    provider: 'OpenPaths',
+    description: 'First-party gobed embeddings served locally on this machine. Default mode auto-truncates long input; optional long_text_mode can average chunk embeddings across the full text.',
+    contextLength: '256',
+    priceInput: 0.001,
+    priceOutput: 0,
+    tags: ['embedding'],
+    released: '2026-04-23',
+    popularity: -2,
+    pricingType: 'request'
+  },
+  {
     id: 'text-embedding',
     name: 'ModernBERT Embedding',
     provider: 'Text-Generator.io',
@@ -53,6 +66,30 @@ export const models: Model[] = [
     tags: ['embedding'],
     released: '2025-06-01',
     popularity: -1
+  },
+  {
+    id: 'gemini-embedding-001',
+    name: 'Gemini Embedding 001',
+    provider: 'Google',
+    description: 'Google text embedding model for search, retrieval, clustering, and RAG. OpenPaths exposes it through the standard embeddings endpoint.',
+    contextLength: '2K',
+    priceInput: 0.15,
+    priceOutput: 0,
+    tags: ['embedding'],
+    released: '2025-06-01',
+    popularity: 8
+  },
+  {
+    id: 'gemini-embedding-2-preview',
+    name: 'Gemini Embedding 2 Preview',
+    provider: 'Google',
+    description: 'Google’s newer embedding model with 8K text context and multimodal pricing on the upstream API. OpenPaths exposes the text embedding path today.',
+    contextLength: '8K',
+    priceInput: 0.20,
+    priceOutput: 0,
+    tags: ['embedding'],
+    released: '2026-04-17',
+    popularity: 7
   },
 
   // --- OpenPaths Auto Tiers ---
@@ -181,10 +218,22 @@ export const models: Model[] = [
     popularity: 3
   },
   {
+    id: 'gpt-5.5',
+    name: 'GPT-5.5',
+    provider: 'OpenAI',
+    description: 'Latest OpenAI flagship model with long context, strong reasoning, and multimodal support.',
+    contextLength: '1.05M',
+    priceInput: 5.00,
+    priceOutput: 30.00,
+    tags: ['general', 'vision', 'programming', 'reasoning'],
+    released: '2026-04-23',
+    popularity: 4
+  },
+  {
     id: 'gpt-5.4',
     name: 'GPT-5.4',
     provider: 'OpenAI',
-    description: 'Latest OpenAI flagship model with long context, strong reasoning, and multimodal support.',
+    description: 'OpenAI flagship model with long context, strong reasoning, and multimodal support.',
     contextLength: '1.05M',
     priceInput: 2.50,
     priceOutput: 15.00,
@@ -735,6 +784,42 @@ export const models: Model[] = [
     tags: ['general'],
     released: '2025-08-01',
     popularity: 46
+  },
+  {
+    id: 'nvidia/minimax-m2.7',
+    name: 'MiniMax M2.7 (NVIDIA)',
+    provider: 'NVIDIA',
+    description: 'Latest MiniMax M2.7 hosted on NVIDIA NIM. Auto-routed as a fallback for MiniMax traffic.',
+    contextLength: '1M',
+    priceInput: 0.30,
+    priceOutput: 1.10,
+    tags: ['general', 'fast'],
+    released: '2026-04-01',
+    popularity: 27
+  },
+  {
+    id: 'nvidia/deepseek-v3.2',
+    name: 'DeepSeek V3.2 (NVIDIA)',
+    provider: 'NVIDIA',
+    description: 'DeepSeek V3.2 on NVIDIA NIM. Supports reasoning_content streaming with chat_template_kwargs.thinking=true. Balanced with deepseek.com via circuit breakers.',
+    contextLength: '128K',
+    priceInput: 0.28,
+    priceOutput: 0.42,
+    tags: ['general', 'reasoning', 'open-source'],
+    released: '2026-04-01',
+    popularity: 26
+  },
+  {
+    id: 'nvidia/devstral-2-123b',
+    name: 'Devstral 2 123B (NVIDIA)',
+    provider: 'NVIDIA',
+    description: 'Mistral Devstral 2 123B instruct on NVIDIA NIM. Coding-focused; balanced with Mistral devstral-medium via circuit breakers.',
+    contextLength: '256K',
+    priceInput: 0.40,
+    priceOutput: 2.00,
+    tags: ['programming', 'open-source'],
+    released: '2026-04-01',
+    popularity: 25
   },
 
   // --- Groq (Fast Inference) ---

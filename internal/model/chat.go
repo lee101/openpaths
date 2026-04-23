@@ -133,6 +133,7 @@ type ModelInfo struct {
 type ModelPricing struct {
 	InputPer1M  float64 `json:"input_per_1m_tokens,omitempty"`
 	OutputPer1M float64 `json:"output_per_1m_tokens,omitempty"`
+	PerRequest  float64 `json:"per_request,omitempty"`
 	PerImage    float64 `json:"per_image,omitempty"`
 	PerVideo    float64 `json:"per_video,omitempty"`
 }

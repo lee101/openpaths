@@ -118,13 +118,44 @@ func (s *Service) RetrieveCheckoutSession(sessionID string) (*CheckoutSession, e
 	return &resp, nil
 }
 
+// Charge is the subset of a Stripe Charge we use for refund webhooks.
+// amount_refunded is cumulative across all refunds on the charge.
+type Charge struct {
+	ID             string `json:"id"`
+	PaymentIntent  string `json:"payment_intent"`
+	Amount         int64  `json:"amount"`
+	AmountRefunded int64  `json:"amount_refunded"`
+	Refunded       bool   `json:"refunded"`
+	Currency       string `json:"currency"`
+}
+
 type CheckoutSession struct {
 	ID            string            `json:"id"`
 	Customer      string            `json:"customer"`
+	PaymentIntent string            `json:"payment_intent"`
 	PaymentStatus string            `json:"payment_status"`
 	AmountTotal   int64             `json:"amount_total"`
 	Metadata      map[string]string `json:"metadata"`
 	Status        string            `json:"status"`
+}
+
+// ListCheckoutSessions returns recent checkout sessions for a customer,
+// most recent first (Stripe's default order).
+func (s *Service) ListCheckoutSessions(customerID string, limit int) ([]CheckoutSession, error) {
+	if customerID == "" {
+		return nil, fmt.Errorf("customer id required")
+	}
+	if limit <= 0 || limit > 100 {
+		limit = 20
+	}
+	var resp struct {
+		Data []CheckoutSession `json:"data"`
+	}
+	path := fmt.Sprintf("/v1/checkout/sessions?customer=%s&limit=%d", url.QueryEscape(customerID), limit)
+	if err := s.get(path, &resp); err != nil {
+		return nil, fmt.Errorf("list checkout sessions: %w", err)
+	}
+	return resp.Data, nil
 }
 
 // ConstructWebhookEvent verifies and parses a Stripe webhook payload.

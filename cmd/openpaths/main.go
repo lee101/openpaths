@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/openpaths/openpaths/internal/auth"
@@ -35,6 +36,7 @@ import (
 	"github.com/openpaths/openpaths/internal/provider/mistral"
 	"github.com/openpaths/openpaths/internal/provider/netwrck"
 	"github.com/openpaths/openpaths/internal/provider/nous"
+	"github.com/openpaths/openpaths/internal/provider/nvidia"
 	"github.com/openpaths/openpaths/internal/provider/openai"
 	"github.com/openpaths/openpaths/internal/provider/openrouter"
 	"github.com/openpaths/openpaths/internal/provider/textgenerator"
@@ -76,6 +78,7 @@ func main() {
 	userQ := queries.NewUserQueries(database.Pool)
 	apiKeyQ := queries.NewAPIKeyQueries(database.Pool)
 	creditQ := queries.NewCreditQueries(database.Pool)
+	stripeDepositQ := queries.NewStripeDepositQueries(database.Pool)
 	usageQ := queries.NewUsageQueries(database.Pool)
 	statsQ := queries.NewStatsQueries(database.Pool)
 	providerKeyQ := queries.NewProviderKeyQueries(database.Pool)
@@ -131,6 +134,8 @@ func main() {
 			p = netwrck.New(provCfg.APIKey, provCfg.BaseURL)
 		case "nous":
 			p = nous.New(provCfg.APIKey, provCfg.BaseURL)
+		case "nvidia":
+			p = nvidia.New(provCfg.APIKey, provCfg.BaseURL)
 		case "textgenerator":
 			tg := textgenerator.New(provCfg.APIKey)
 			embedders = append(embedders, tg)
@@ -169,12 +174,14 @@ func main() {
 	billingEngine := billing.NewEngine(pricingTable, creditQ)
 
 	var stripe *stripesvc.Service
+	var stripeReconciler *billing.Reconciler
 	if cfg.Stripe.SecretKey != "" {
 		stripe = stripesvc.NewService(cfg.Stripe.SecretKey)
 		topupQ := queries.NewAutotopupQueries(database.Pool)
 		autoTopup := billing.NewAutoTopupService(userQ, creditQ, topupQ, stripe, billingEngine)
 		billingEngine.SetAutoTopup(autoTopup)
-		log.Printf("Stripe auto-topup enabled")
+		stripeReconciler = billing.NewReconciler(stripe, userQ, stripeDepositQ, 30*time.Second)
+		log.Printf("Stripe auto-topup + deposit reconciler enabled")
 	}
 
 	collector := metrics.NewCollector(usageQ, 0)
@@ -269,6 +276,8 @@ func main() {
 		UserQ:        userQ,
 		APIKeyQ:      apiKeyQ,
 		CreditQ:      creditQ,
+		StripeDepositQ: stripeDepositQ,
+		StripeReconciler: stripeReconciler,
 		StatsQ:       statsQ,
 		Transcribers: transcribers,
 		Embedders:    embedders,

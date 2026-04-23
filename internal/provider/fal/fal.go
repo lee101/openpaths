@@ -17,14 +17,16 @@ import (
 )
 
 type FalProvider struct {
-	apiKey string
-	client *http.Client
+	apiKey  string
+	baseURL string
+	client  *http.Client
 }
 
 func New(apiKey string) *FalProvider {
 	return &FalProvider{
-		apiKey: apiKey,
-		client: &http.Client{Timeout: 2 * time.Minute},
+		apiKey:  apiKey,
+		baseURL: "https://fal.run",
+		client:  &http.Client{Timeout: 2 * time.Minute},
 	}
 }
 
@@ -47,7 +49,7 @@ type falRequest struct {
 }
 
 type falResponse struct {
-	Text   string    `json:"text"`
+	Text   string     `json:"text"`
 	Chunks []falChunk `json:"chunks,omitempty"`
 }
 
@@ -77,10 +79,13 @@ func mimeType(filename string) string {
 }
 
 func (p *FalProvider) GenerateImage(ctx context.Context, req *model.ImageGenerationRequest) (*model.ImageGenerationResponse, error) {
-	endpoint := "https://fal.run/" + req.Model
+	endpoint := strings.TrimRight(p.baseURL, "/") + "/" + req.Model
 
 	falReq := map[string]any{
 		"prompt": req.Prompt,
+	}
+	if req.Quality != "" {
+		falReq["quality"] = req.Quality
 	}
 	if req.Size != "" {
 		parts := strings.SplitN(req.Size, "x", 2)
@@ -95,6 +100,12 @@ func (p *FalProvider) GenerateImage(ctx context.Context, req *model.ImageGenerat
 	}
 	if req.N > 0 {
 		falReq["num_images"] = req.N
+	}
+	if outputFormat, syncMode := falOutputMode(req); outputFormat != "" {
+		falReq["output_format"] = outputFormat
+		if syncMode {
+			falReq["sync_mode"] = true
+		}
 	}
 
 	body, err := json.Marshal(falReq)
@@ -141,6 +152,12 @@ func (p *FalProvider) GenerateImage(ctx context.Context, req *model.ImageGenerat
 		for _, img := range imgs {
 			if m, ok := img.(map[string]any); ok {
 				if url, ok := m["url"].(string); ok {
+					if strings.HasPrefix(url, "data:image/") {
+						if b64, err := dataURIToBase64(url); err == nil {
+							images = append(images, model.ImageData{B64JSON: b64})
+							continue
+						}
+					}
 					images = append(images, model.ImageData{URL: url})
 				}
 			}
@@ -156,6 +173,32 @@ func (p *FalProvider) GenerateImage(ctx context.Context, req *model.ImageGenerat
 		Created: time.Now().Unix(),
 		Data:    images,
 	}, nil
+}
+
+func falOutputMode(req *model.ImageGenerationRequest) (outputFormat string, syncMode bool) {
+	respFormat := strings.ToLower(strings.TrimSpace(req.ResponseFormat))
+	modelName := strings.ToLower(req.Model)
+
+	switch respFormat {
+	case "b64_json":
+		return "png", true
+	case "url", "":
+		if strings.Contains(modelName, "gpt-image") && respFormat == "" {
+			return "png", true
+		}
+		return "", false
+	default:
+		return "", false
+	}
+}
+
+func dataURIToBase64(uri string) (string, error) {
+	const marker = ";base64,"
+	idx := strings.Index(uri, marker)
+	if idx == -1 {
+		return "", fmt.Errorf("data URI missing base64 marker")
+	}
+	return uri[idx+len(marker):], nil
 }
 
 func (p *FalProvider) Transcribe(ctx context.Context, req *model.TranscriptionRequest) (*model.TranscriptionResponse, error) {

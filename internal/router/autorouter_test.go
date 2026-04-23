@@ -167,8 +167,8 @@ func TestAutoRouter_ThinkTaskRoutesHardPromptToHighThinking(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ResolveAuto() error = %v", err)
 	}
-	if got.ModelID != "gpt-5.4" {
-		t.Fatalf("ModelID = %q, want %q", got.ModelID, "gpt-5.4")
+	if got.ModelID != "gpt-5.5" {
+		t.Fatalf("ModelID = %q, want %q", got.ModelID, "gpt-5.5")
 	}
 	if got.ReasoningEffort != "high" {
 		t.Fatalf("ReasoningEffort = %q, want %q", got.ReasoningEffort, "high")
@@ -188,6 +188,7 @@ func TestDefaultRoutingTables_ThinkTaskIncludesAllReasoningLevels(t *testing.T) 
 		}
 	}
 }
+
 type stubEmbedder struct {
 	vectors map[string][]float64
 }
@@ -246,7 +247,7 @@ func TestMaybeResolveAuto_UsesNamedTierWhenModalityIsEmpty(t *testing.T) {
 func TestMaybeResolveAutoWithTier_HardTierOverridesNonAutoModel(t *testing.T) {
 	r := newTestRouter([]model.ModelConfig{
 		{ID: "gpt-4o", Provider: "openai"},
-		{ID: "claude-opus-latest", Provider: "anthropic"},
+		{ID: "gpt-5.5", Provider: "openai"},
 	}, "openai", "anthropic")
 
 	r.SetAutoRouter(&AutoRouter{
@@ -257,7 +258,7 @@ func TestMaybeResolveAutoWithTier_HardTierOverridesNonAutoModel(t *testing.T) {
 		},
 		tables: map[string][]AutoEntry{
 			"hard-task": {
-				{ModelID: "claude-opus-latest", ReasoningEffort: "medium", Embedding: []float64{1, 0}},
+				{ModelID: "gpt-5.5", ReasoningEffort: "medium", Embedding: []float64{1, 0}},
 			},
 		},
 		ready: true,
@@ -265,8 +266,8 @@ func TestMaybeResolveAutoWithTier_HardTierOverridesNonAutoModel(t *testing.T) {
 
 	// Caller didn't use an auto-* model name — task_tier alone should promote.
 	got := r.MaybeResolveAutoWithTier(context.Background(), "gpt-4o", "", "hard", "build me a sankey flow diagram")
-	if got.ModelID != "claude-opus-latest" {
-		t.Fatalf("task_tier=hard should route to claude-opus-latest, got %q", got.ModelID)
+	if got.ModelID != "gpt-5.5" {
+		t.Fatalf("task_tier=hard should route to gpt-5.5, got %q", got.ModelID)
 	}
 	if got.ReasoningEffort != "medium" {
 		t.Fatalf("reasoning effort = %q, want medium", got.ReasoningEffort)
@@ -312,7 +313,7 @@ func TestTaskTierToModality(t *testing.T) {
 	}
 }
 
-func TestAutoRouter_HardTaskRoutesSankeyToClaudeOpus(t *testing.T) {
+func TestAutoRouter_HardTaskRoutesSankeyToGPT55(t *testing.T) {
 	ar := NewAutoRouter(&fakeEmbedder{})
 	if err := ar.Init(context.Background()); err != nil {
 		t.Fatalf("Init() error = %v", err)
@@ -322,25 +323,25 @@ func TestAutoRouter_HardTaskRoutesSankeyToClaudeOpus(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ResolveAuto() error = %v", err)
 	}
-	if got.ModelID != "claude-opus-latest" {
-		t.Fatalf("ModelID = %q, want claude-opus-latest", got.ModelID)
+	if got.ModelID != "gpt-5.5" {
+		t.Fatalf("ModelID = %q, want gpt-5.5", got.ModelID)
 	}
 }
 
-func TestDefaultRoutingTables_HardTaskIncludesOpus(t *testing.T) {
+func TestDefaultRoutingTables_HardTaskIncludesGPT55(t *testing.T) {
 	entries := defaultRoutingTables()["hard-task"]
 	if len(entries) == 0 {
 		t.Fatal("hard-task routing table is empty")
 	}
-	var hasOpus bool
+	var hasGPT55 bool
 	for _, e := range entries {
-		if e.ModelID == "claude-opus-latest" {
-			hasOpus = true
+		if e.ModelID == "gpt-5.5" {
+			hasGPT55 = true
 			break
 		}
 	}
-	if !hasOpus {
-		t.Fatal("hard-task routing table must include claude-opus-latest")
+	if !hasGPT55 {
+		t.Fatal("hard-task routing table must include gpt-5.5")
 	}
 }
 

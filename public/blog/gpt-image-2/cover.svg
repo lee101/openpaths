@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="96" y1="72" x2="1104" y2="728" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0b0b0f"/>
+      <stop offset="1" stop-color="#17171d"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="236" y1="214" x2="962" y2="586" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#f5f5f5" stop-opacity=".12"/>
+      <stop offset="1" stop-color="#f5f5f5" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" rx="36" fill="url(#bg)"/>
+  <circle cx="256" cy="184" r="150" fill="#ffffff" fill-opacity=".04"/>
+  <circle cx="940" cy="640" r="210" fill="#ffffff" fill-opacity=".03"/>
+  <rect x="118" y="102" width="964" height="596" rx="28" fill="#111118" stroke="#2a2a33"/>
+  <rect x="178" y="154" width="372" height="492" rx="26" fill="#0f0f13" stroke="#f5f5f5" stroke-opacity=".18" stroke-width="2"/>
+  <rect x="212" y="194" width="304" height="160" rx="20" fill="#f5f5f5" fill-opacity=".08"/>
+  <rect x="212" y="376" width="126" height="210" rx="18" fill="#f5f5f5" fill-opacity=".08"/>
+  <rect x="350" y="376" width="166" height="210" rx="18" fill="#f5f5f5" fill-opacity=".05"/>
+  <rect x="610" y="178" width="314" height="462" rx="26" fill="#121219" stroke="#f5f5f5" stroke-opacity=".16" stroke-width="2"/>
+  <rect x="646" y="216" width="242" height="54" rx="18" fill="#f5f5f5" fill-opacity=".07"/>
+  <rect x="646" y="290" width="242" height="136" rx="20" fill="#f5f5f5" fill-opacity=".05"/>
+  <rect x="646" y="448" width="112" height="150" rx="18" fill="#f5f5f5" fill-opacity=".07"/>
+  <rect x="776" y="448" width="112" height="150" rx="18" fill="#f5f5f5" fill-opacity=".04"/>
+  <circle cx="382" cy="270" r="68" fill="#f5f5f5" fill-opacity=".10"/>
+  <circle cx="382" cy="270" r="28" fill="#f5f5f5" fill-opacity=".22"/>
+  <path d="M726 514c40-60 120-68 154-20 28 40 15 102-30 134-56 39-139 17-166-40-17-34-13-54 42-74Z" fill="#f5f5f5" fill-opacity=".12"/>
+  <path d="M818 256c26 10 42 30 54 58" stroke="#f5f5f5" stroke-opacity=".22" stroke-width="4" stroke-linecap="round"/>
+  <path d="M240 532c66-28 116-16 156 38" stroke="#f5f5f5" stroke-opacity=".18" stroke-width="4" stroke-linecap="round"/>
+  <rect x="170" y="680" width="860" height="1" fill="#f5f5f5" fill-opacity=".08"/>
+  <rect x="250" y="640" width="700" height="18" rx="9" fill="url(#glow)"/>
+</svg>

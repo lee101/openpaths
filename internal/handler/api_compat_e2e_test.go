@@ -596,7 +596,7 @@ func TestAPICompatAliasResolution(t *testing.T) {
 		alias    string
 		wantModel string
 	}{
-		{"openai-chat-latest", "gpt-5.4"},
+		{"openai-chat-latest", "gpt-5.5"},
 		{"haiku", "claude-haiku-4-5-20251001"},
 		{"sonnet", "claude-sonnet-latest"},
 		{"opus", "claude-opus-latest"},
@@ -932,7 +932,7 @@ func TestAPICompatModelsList(t *testing.T) {
 		modelSet[m.ID] = true
 	}
 
-	required := []string{"gpt-5.4", "claude-sonnet-latest", "claude-opus-latest", "gemini-flash-lite", "claude-haiku-4-5-20251001"}
+	required := []string{"gpt-5.5", "gpt-5.4", "claude-sonnet-latest", "claude-opus-latest", "gemini-flash-lite", "claude-haiku-4-5-20251001"}
 	for _, id := range required {
 		if !modelSet[id] {
 			t.Errorf("expected model %q in /v1/models list", id)
@@ -943,13 +943,13 @@ func TestAPICompatModelsList(t *testing.T) {
 
 	// Log a few interesting ones
 	for _, m := range result.Data {
-		if m.ID == "gpt-5.4" || m.ID == "claude-sonnet-latest" || m.ID == "claude-opus-latest" {
+		if m.ID == "gpt-5.5" || m.ID == "gpt-5.4" || m.ID == "claude-sonnet-latest" || m.ID == "claude-opus-latest" {
 			t.Logf("  %s (owned_by: %s)", m.ID, m.OwnedBy)
 		}
 	}
 }
 
-// Verify the openai-chat-latest alias resolves to gpt-5.4
+// Verify the openai-chat-latest alias resolves to gpt-5.5
 func TestAPICompatOpenAIChatLatestAlias(t *testing.T) {
 	apiKey := getAPIKey(t)
 	serverURL := getServerURL()
@@ -990,5 +990,5 @@ func TestAPICompatOpenAIChatLatestAlias(t *testing.T) {
 		t.Logf("NOTE: response model %q (gateway may echo alias or resolved ID)", result.Model)
 	}
 
-	fmt.Println("openai-chat-latest -> gpt-5.4: OK")
+	fmt.Println("openai-chat-latest -> gpt-5.5: OK")
 }

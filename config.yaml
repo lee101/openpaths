@@ -104,6 +104,11 @@ providers:
     api_key: "${FIREWORKS_API_KEY}"
     enabled: true
 
+  - name: nvidia
+    base_url: "https://integrate.api.nvidia.com"
+    api_key: "${NVIDIA_API_KEY}"
+    enabled: true
+
   - name: fal
     base_url: ""
     api_key: "${FAL_API_KEY}"
@@ -123,13 +128,13 @@ models:
     supports_tools: true
     supports_vision: true
     fallback_models:
-      - "gpt-5.4"
+      - "gpt-5.5"
       - "gpt-5-chat-latest"
       - "deepseek-chat"
       - "claude-sonnet-4-6"
       - "grok-4-0709"
       - "or/gemini-3.1"
-      - "or/gpt-5.4"
+      - "or/gpt-5.5"
 
   # --- Auto Easy Task (cheapest models only) ---
   - id: "auto-easy-task"
@@ -182,11 +187,11 @@ models:
     supports_vision: true
     fallback_models:
       - "gpt-5.4-nano"
-      - "gpt-5.4"
+      - "gpt-5.5"
       - "claude-sonnet-4-6"
       - "gemini-2.5-flash"
       - "gemini-2.5-pro"
-      - "or/gpt-5.4-mini"
+      - "or/gpt-5.5"
 
   # --- Auto Image (embedding-routed, defaults to ra1) ---
   - id: "auto-image"
@@ -323,6 +328,15 @@ models:
       - "1360x768"
       - "768x1360"
 
+  - id: "fal-gpt-image-2"
+    provider: fal
+    provider_model_id: "openai/gpt-image-2"
+    price_per_image: 0.22
+    aliases: ["fal-openai-image", "fal-gpt-image"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
   # --- Netwrck (Video Generation) ---
   - id: "wan"
     provider: netwrck
@@ -373,12 +387,30 @@ models:
     supports_tools: true
     supports_vision: true
 
+  - id: "gpt-5.5"
+    provider: openai
+    provider_model_id: "gpt-5.5"
+    input_price_per_1m: 5.00
+    output_price_per_1m: 30.00
+    aliases: ["gpt5", "gpt55", "gpt-5-5", "openai-latest", "openai-chat-latest", "auto-hard", "auto-opus", "auto-hard-task"]
+    context_window: 1050000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models:
+      - "claude-opus-latest"
+      - "claude-sonnet-4-6"
+      - "gemini-2.5-pro"
+      - "deepseek-reasoner"
+      - "or/gpt-5.5"
+
   - id: "gpt-5.4"
     provider: openai
     provider_model_id: "gpt-5.4"
     input_price_per_1m: 2.50
     output_price_per_1m: 15.00
-    aliases: ["gpt5", "gpt-5.2", "openai-latest", "openai-chat-latest"]
+    aliases: ["gpt54", "gpt-5-4", "gpt-5.2"]
     context_window: 1050000
     max_output_tokens: 128000
     supports_streaming: true
@@ -521,6 +553,8 @@ models:
       - "2048x1152"
       - "3840x2160"
       - "2160x3840"
+    fallback_models:
+      - "fal-gpt-image-2"
 
   - id: "gpt-image-1.5"
     provider: openai
@@ -648,7 +682,7 @@ models:
     provider_model_id: "claude-opus-4-7"
     input_price_per_1m: 5.00
     output_price_per_1m: 25.00
-    aliases: ["claude-opus", "opus-latest", "opus", "anthropic-opus-latest", "auto-hard", "auto-opus", "auto-hard-task"]
+    aliases: ["claude-opus", "opus-latest", "opus", "anthropic-opus-latest"]
     context_window: 200000
     max_output_tokens: 128000
     supports_streaming: true
@@ -825,6 +859,10 @@ models:
     supports_streaming: true
     supports_tools: true
     supports_vision: false
+    fallback_models:
+      - "nvidia/deepseek-v3.2"
+      - "together/deepseek-v3.1"
+      - "or/deepseek-chat"
 
   - id: "deepseek-reasoner"
     provider: deepseek
@@ -836,6 +874,9 @@ models:
     supports_streaming: true
     supports_tools: true
     supports_vision: false
+    fallback_models:
+      - "nvidia/deepseek-v3.2"
+      - "together/deepseek-r1"
 
   # --- Mistral ---
   - id: "mistral-large-latest"
@@ -957,6 +998,9 @@ models:
     supports_streaming: true
     supports_tools: true
     supports_vision: false
+    fallback_models:
+      - "nvidia/devstral-2-123b"
+      - "codestral-latest"
 
   - id: "ministral-8b-latest"
     provider: mistral
@@ -1068,6 +1112,18 @@ models:
     supports_tools: true
     supports_vision: true
 
+  - id: "or/gpt-5.5"
+    provider: openrouter
+    provider_model_id: "openai/gpt-5.5"
+    input_price_per_1m: 5.00
+    output_price_per_1m: 30.00
+    aliases: ["or/gpt-5-5"]
+    context_window: 1050000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
   - id: "or/claude-sonnet"
     provider: openrouter
     provider_model_id: "anthropic/claude-sonnet-4-6"
@@ -1127,9 +1183,35 @@ models:
   - id: "openpaths-embed"
     provider: gobed
     provider_model_id: "static-retrieval-mrl-en-v1"
-    input_price_per_1m: 0.002
+    price_per_request: 0.001
+    input_price_per_1m: 0
     output_price_per_1m: 0
     aliases: ["gobed", "gobed-embed", "op-embed"]
+    context_window: 256
+    max_output_tokens: 0
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  # --- Google Embeddings ---
+  - id: "gemini-embedding-001"
+    provider: google
+    provider_model_id: "gemini-embedding-001"
+    input_price_per_1m: 0.15
+    output_price_per_1m: 0
+    aliases: ["google-embed", "gemini-embed-001"]
+    context_window: 2048
+    max_output_tokens: 0
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "gemini-embedding-2-preview"
+    provider: google
+    provider_model_id: "gemini-embedding-2-preview"
+    input_price_per_1m: 0.20
+    output_price_per_1m: 0
+    aliases: ["gemini-embedding-2", "google-embed-2"]
     context_window: 8192
     max_output_tokens: 0
     supports_streaming: false
@@ -1528,6 +1610,9 @@ models:
     supports_streaming: true
     supports_tools: true
     supports_vision: false
+    fallback_models:
+      - "nvidia/minimax-m2.7"
+      - "minimax-m2.5"
 
   - id: "minimax-m2.5-highspeed"
     provider: minimax
@@ -1785,3 +1870,50 @@ models:
     supports_tools: true
     supports_vision: false
     fallback_models: ["glm-5"]
+
+  # --- NVIDIA (NIM) ---
+  - id: "nvidia/minimax-m2.7"
+    provider: nvidia
+    provider_model_id: "minimaxai/minimax-m2.7"
+    input_price_per_1m: 0.30
+    output_price_per_1m: 1.10
+    aliases: ["minimax-m2.7", "mm-m2.7"]
+    context_window: 1000000
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+    fallback_models:
+      - "minimax-m2.5-direct"
+      - "minimax-m2.5"
+
+  - id: "nvidia/deepseek-v3.2"
+    provider: nvidia
+    provider_model_id: "deepseek-ai/deepseek-v3.2"
+    input_price_per_1m: 0.28
+    output_price_per_1m: 0.42
+    aliases: ["deepseek-v3.2", "deepseek-3.2"]
+    context_window: 128000
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+    fallback_models:
+      - "deepseek-chat"
+      - "together/deepseek-v3.1"
+      - "or/deepseek-chat"
+
+  - id: "nvidia/devstral-2-123b"
+    provider: nvidia
+    provider_model_id: "mistralai/devstral-2-123b-instruct-2512"
+    input_price_per_1m: 0.40
+    output_price_per_1m: 2.00
+    aliases: ["devstral-2", "devstral-2-123b"]
+    context_window: 262144
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+    fallback_models:
+      - "devstral-medium-latest"
+      - "codestral-latest"

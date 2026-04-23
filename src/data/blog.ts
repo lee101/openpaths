@@ -11,6 +11,105 @@ export interface BlogPost {
 
 export const posts: BlogPost[] = [
   {
+    slug: 'gpt-image-2-on-openpaths',
+    title: 'GPT Image 2 on OpenPaths: better text, cleaner edits, and layouts that hold together',
+    excerpt: 'A practical look at GPT Image 2, the OpenAI image model surfaced through OpenPaths, and what changes when the model starts respecting layout, typography, and editing constraints.',
+    date: '2026-04-23',
+    author: 'OpenPaths Team',
+    readTime: '8 min',
+    tags: ['openai', 'images', 'design', 'editorial'],
+    content: `GPT Image 2 is the first OpenAI image model that feels designed for production layout instead of just one-off art prompts. It is built for fast, high-quality generation and editing, and it handles flexible image sizes and high-fidelity image inputs better than the older generations.
+
+On OpenPaths, the integration is straightforward: the same OpenAI-compatible shape already used by the rest of the platform now points at \`gpt-image-2\` for image generation and editing.
+
+![GPT Image 2 editorial cover](/blog/gpt-image-2/cover.svg)
+
+## What changed
+
+The biggest shift is not that GPT Image 2 makes prettier pictures. It is that the model follows instructions closely enough to be useful in real workflows:
+
+- It renders cleaner typography and layout-aware compositions.
+- It handles image inputs for refinement and editing, not just fresh generation.
+- It supports flexible sizes, which makes it easier to target banners, posters, and social formats.
+- It is exposed through the same \`/v1/images/generations\` and \`/v1/images/edits\` endpoints developers already expect from OpenAI-style integrations.
+
+That combination matters because most image models are still optimized for aesthetics first and control second. GPT Image 2 closes that gap enough that designers and developers can treat generated images as production inputs instead of novelty outputs.
+
+## What it is good at
+
+The model is strongest when the prompt includes structure:
+
+- Editorial covers with a clear subject and negative space.
+- Product imagery where the composition has to stay legible.
+- Poster layouts where typography needs to sit in a predictable place.
+- Image edits that improve a draft without destroying the original composition.
+
+![Structured workflow image](/blog/gpt-image-2/workflow.svg)
+
+If you are used to text-only LLM prompting, the mental model changes a little. You get better results when you describe the scene, the framing, the material texture, and the visual hierarchy separately instead of stuffing everything into one sentence.
+
+## Prompt shape that works
+
+One good prompt pattern is:
+
+1. State the use case.
+2. Describe the subject.
+3. Describe the composition and lighting.
+4. Give hard constraints.
+
+For example:
+
+\`\`\`python
+from openai import OpenAI
+import base64, pathlib
+
+client = OpenAI(base_url="https://openpaths.io/v1", api_key="op-your-key")
+
+img = client.images.generate(
+    model="gpt-image-2",
+    prompt="A premium editorial poster for a blog post about AI image generation, monochrome palette, one subtle accent color, generous negative space, no watermark, no readable text",
+    size="1024x1024",
+    quality="high",
+    n=1,
+)
+
+pathlib.Path("gpt-image-2-poster.png").write_bytes(base64.b64decode(img.data[0].b64_json))
+\`\`\`
+
+That same request works through the OpenPaths docs and playground without changing the shape of the call. The main thing to tune is the prompt itself.
+
+![Gallery sample image](/blog/gpt-image-2/poster.svg)
+
+## Why it matters
+
+The practical upside is control. GPT Image 2 is not just about aesthetics; it is about getting fewer retries when you care about a layout staying coherent.
+
+- Product teams can use it for hero images and campaign mockups.
+- Founders can use it for quick visual prototypes.
+- Designers can use it for concepting and composition studies.
+- Builders can use it inside editing workflows instead of treating image generation as a dead-end export.
+
+![Gallery sample image](/blog/gpt-image-2/archive.svg)
+
+## Where we would use it
+
+If the job is a quick illustration, a stylized concept, or a prompt-only art piece, plenty of image models work. GPT Image 2 becomes more interesting when the output has to survive contact with a real page layout:
+
+- landing page hero art
+- article cover images
+- presentation visuals
+- product launch mockups
+- iterative edits on an existing draft
+
+That is the line where a model stops being a toy and becomes part of the design pipeline.
+
+## Bottom line
+
+GPT Image 2 is worth caring about because it makes image generation feel more like a controllable design tool and less like roulette. If your workflow needs instruction following, editing, and layout awareness, it is one of the few image models that actually changes how you work.
+
+OpenPaths already exposes the model through the same API surface as the rest of the platform, so it fits naturally into the existing developer workflow.`
+  },
+  {
     slug: 'switch-to-openpaths-in-2-lines',
     title: 'Switch from OpenAI or Anthropic to OpenPaths in 2 Lines of Code',
     excerpt: 'OpenPaths now supports both the OpenAI and Anthropic API formats natively. Change your base URL, swap your key, and get access to 50+ models with auto-routing, fallbacks, and unified billing.',
@@ -820,7 +919,7 @@ print(response.json()["text"])
 
 **Nemotron Embed** (NVIDIA) -- Free vision-capable embedding model through OpenRouter. 8K context.
 
-**OpenPaths Embed** (gobed) -- Our first-party embedding model. Runs locally in-process. $0.002/1M tokens -- practically free.
+**OpenPaths Embed** (gobed) -- Our first-party embedding model. Runs locally in-process. $0.001 per request with automatic truncation by default and chunk-averaging support for longer text.
 
 ## What's the Catch?
 
@@ -856,7 +955,7 @@ Free models are a great way to get started with OpenPaths before committing any 
   {
     slug: 'provider-openai',
     title: 'OpenAI on OpenPaths: GPT-5, Codex, o3, and the Model That Started It All',
-    excerpt: 'From GPT-3 to GPT-5.4 -- OpenAI defined the modern AI era. Here is how their full model lineup works through OpenPaths and why having alternatives matters.',
+    excerpt: 'From GPT-3 to GPT-5.5 -- OpenAI defined the modern AI era. Here is how their full model lineup works through OpenPaths and why having alternatives matters.',
     date: '2026-03-10',
     author: 'OpenPaths Team',
     readTime: '7 min',
@@ -869,7 +968,8 @@ We route to 11 OpenAI models spanning four distinct tiers:
 
 | Model | Price (In/Out per 1M) | Context | Best For |
 |-------|----------------------|---------|----------|
-| GPT-5.4 | $2.50/$15.00 | 1.05M | Latest flagship, long context |
+| GPT-5.5 | $5.00/$30.00 | 1.05M | Latest flagship, long context |
+| GPT-5.4 | $2.50/$15.00 | 1.05M | Previous flagship, long context |
 | GPT-5 Chat Latest | $1.25/$10.00 | 400K | Conversational, creative |
 | GPT-5 Codex | $1.25/$10.00 | 400K | Software engineering |
 | GPT-5.3 Codex | $1.25/$10.00 | 400K | Advanced coding |

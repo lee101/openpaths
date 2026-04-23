@@ -85,6 +85,8 @@ deploy_site() {
         --endpoint-url "${R2_ENDPOINT}" \
         --size-only \
         --delete \
+        --exclude "static/uploads/*" \
+        --exclude "uploads/*" \
         --exclude "*.map"
 
     purge_cf_cache

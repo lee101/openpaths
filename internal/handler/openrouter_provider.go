@@ -22,20 +22,20 @@ func NewOpenRouterProviderHandler(r *router.Router) *OpenRouterProviderHandler {
 
 // ORModel is the OpenRouter model format.
 type ORModel struct {
-	ID                          string              `json:"id"`
-	HuggingFaceID               string              `json:"hugging_face_id,omitempty"`
-	Name                        string              `json:"name"`
-	Created                     int64               `json:"created"`
-	InputModalities             []string            `json:"input_modalities"`
-	OutputModalities            []string            `json:"output_modalities"`
-	ContextLength               int                 `json:"context_length"`
-	MaxOutputLength             int                 `json:"max_output_length"`
-	Pricing                     ORPricing           `json:"pricing"`
-	SupportedSamplingParameters []string            `json:"supported_sampling_parameters"`
-	SupportedFeatures           []string            `json:"supported_features"`
-	Description                 string              `json:"description,omitempty"`
-	Datacenters                 []ORDatacenter      `json:"datacenters,omitempty"`
-	OpenRouter                  *ORSlug             `json:"openrouter,omitempty"`
+	ID                          string         `json:"id"`
+	HuggingFaceID               string         `json:"hugging_face_id,omitempty"`
+	Name                        string         `json:"name"`
+	Created                     int64          `json:"created"`
+	InputModalities             []string       `json:"input_modalities"`
+	OutputModalities            []string       `json:"output_modalities"`
+	ContextLength               int            `json:"context_length"`
+	MaxOutputLength             int            `json:"max_output_length"`
+	Pricing                     ORPricing      `json:"pricing"`
+	SupportedSamplingParameters []string       `json:"supported_sampling_parameters"`
+	SupportedFeatures           []string       `json:"supported_features"`
+	Description                 string         `json:"description,omitempty"`
+	Datacenters                 []ORDatacenter `json:"datacenters,omitempty"`
+	OpenRouter                  *ORSlug        `json:"openrouter,omitempty"`
 }
 
 type ORPricing struct {
@@ -149,6 +149,7 @@ func formatPrice(price float64) string {
 
 var orModelDisplayNames = map[string]string{
 	"gpt-5-chat-latest":         "OpenAI: GPT-5 Chat",
+	"gpt-5.5":                   "OpenAI: GPT-5.5",
 	"gpt-5.4":                   "OpenAI: GPT-5.4",
 	"gpt-5-codex":               "OpenAI: GPT-5 Codex",
 	"gpt-5-mini":                "OpenAI: GPT-5 Mini",

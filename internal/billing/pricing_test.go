@@ -10,6 +10,7 @@ func newTestPricingTable() *PricingTable {
 	models := []model.ModelConfig{
 		{ID: "gpt-4o", InputPricePer1M: 2.50, OutputPricePer1M: 10.00},
 		{ID: "gpt-4o-mini", InputPricePer1M: 0.15, OutputPricePer1M: 0.60},
+		{ID: "openpaths-embed", PricePerRequest: 0.001},
 	}
 	return NewPricingTable(models)
 }
@@ -135,6 +136,14 @@ func TestCalculateCost(t *testing.T) {
 			wantErr:  false,
 		},
 		{
+			name:         "request priced model charges once per request",
+			modelID:      "openpaths-embed",
+			inputTokens:  50000,
+			outputTokens: 0,
+			wantCost:     10,
+			wantErr:      false,
+		},
+		{
 			name:         "unknown model returns error",
 			modelID:      "unknown-model",
 			inputTokens:  100,
@@ -221,6 +230,13 @@ func TestEstimateMaxCost(t *testing.T) {
 			// hundredths-of-cent: 0.04096 * 10000 = 409 (truncated from 409.6)
 			wantCost: 409,
 			wantErr:  false,
+		},
+		{
+			name:            "request priced model estimates one request",
+			modelID:         "openpaths-embed",
+			maxOutputTokens: 0,
+			wantCost:        10,
+			wantErr:         false,
 		},
 		{
 			name:            "defaults to 4096 when maxOutput is negative",

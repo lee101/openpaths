@@ -40,7 +40,7 @@ export function Providers() {
             >
               <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-3">
-                  <img src={provider.logo || FALLBACK_LOGO} alt="" className="w-8 h-8 rounded" />
+                  <img src={provider.logo || FALLBACK_LOGO} alt="" className="w-8 h-8 rounded object-contain" />
                   <h3 className="text-xl font-bold tracking-tight">{provider.name}</h3>
                 </div>
                 <span className="px-2 py-0.5 bg-white/10 rounded text-[10px] font-mono text-white/60">
@@ -61,6 +61,12 @@ export function Providers() {
                     <ExternalLink className="w-3 h-3" /> Website
                   </a>
                 )}
+                <Link
+                  to={`/${provider.slug}/docs`}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white/60 border border-white/10 rounded hover:text-white hover:border-white/30 transition-colors"
+                >
+                  <ArrowRight className="w-3 h-3" /> Docs
+                </Link>
                 <Link
                   to={`/models?q=${encodeURIComponent(provider.name)}`}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white/60 border border-white/10 rounded hover:text-white hover:border-white/30 transition-colors"
@@ -88,7 +94,7 @@ export function Providers() {
             >
               <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-3">
-                  <img src={provider.logo || FALLBACK_LOGO} alt="" className="w-7 h-7 rounded" />
+                  <img src={provider.logo || FALLBACK_LOGO} alt="" className="w-7 h-7 rounded object-contain" />
                   <h3 className="text-lg font-bold tracking-tight">{provider.name}</h3>
                 </div>
                 <span className="px-2 py-0.5 bg-white/10 rounded text-[10px] font-mono text-white/60">
@@ -107,6 +113,12 @@ export function Providers() {
                 >
                   <ExternalLink className="w-3 h-3" /> Website
                 </a>
+                <Link
+                  to={`/${provider.slug}/docs`}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white/60 border border-white/10 rounded hover:text-white hover:border-white/30 transition-colors"
+                >
+                  <ArrowRight className="w-3 h-3" /> Docs
+                </Link>
                 <Link
                   to={`/models?q=${encodeURIComponent(provider.name)}`}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white/60 border border-white/10 rounded hover:text-white hover:border-white/30 transition-colors"

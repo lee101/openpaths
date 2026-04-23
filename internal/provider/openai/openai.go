@@ -44,12 +44,12 @@ func sanitizeForOpenAI(req *model.ChatCompletionRequest) {
 }
 
 // normalizeMaxTokens converts max_tokens to max_completion_tokens for newer
-// OpenAI models (o-series, gpt-5.4-*) that reject the legacy parameter.
+// OpenAI models (o-series, gpt-5.*) that reject the legacy parameter.
 func normalizeMaxTokens(req *model.ChatCompletionRequest) {
 	if req.MaxTokens != nil && req.MaxCompletionTokens == nil {
 		m := req.Model
 		if strings.HasPrefix(m, "o1") || strings.HasPrefix(m, "o3") || strings.HasPrefix(m, "o4") ||
-			strings.HasPrefix(m, "gpt-5.4") || strings.HasPrefix(m, "gpt-5-codex") {
+			strings.HasPrefix(m, "gpt-5.") || strings.HasPrefix(m, "gpt-5-codex") {
 			req.MaxCompletionTokens = req.MaxTokens
 			req.MaxTokens = nil
 		}

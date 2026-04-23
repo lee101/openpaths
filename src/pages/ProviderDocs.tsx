@@ -14,6 +14,10 @@ interface ProviderExample {
   videoModel?: string;
   transcriptionModel?: string;
   embeddingModel?: string;
+  provides?: Array<{
+    title: string;
+    description: string;
+  }>;
   notes?: string[];
 }
 
@@ -29,6 +33,7 @@ const EXAMPLES: Record<string, ProviderExample> = {
       'gpt-image-2 returns base64 PNGs by default — decode with base64.b64decode.',
       'sora-2 is async; OpenPaths polls for you and returns a signed content URL.',
       'Use openai-coding-latest alias for gpt-5-codex.',
+      'If the direct OpenAI GPT Image 2 path goes unhealthy, OpenPaths can fail over to Fal-hosted GPT Image 2 using the model-level circuit breaker.',
     ],
   },
   anthropic: {
@@ -41,10 +46,15 @@ const EXAMPLES: Record<string, ProviderExample> = {
     ],
   },
   google: {
-    description: 'Gemini 3.1 Pro, 2.5 Pro, 2.5 Flash, Flash Lite. Up to 2M tokens of context.',
+    description: 'Gemini 3.1 Pro, 2.5 Pro, 2.5 Flash, Flash Lite, plus Gemini embedding models.',
     endpoint: '/v1',
     chatModel: 'gemini-3.1-pro-preview',
-    notes: ['Pass image URLs as content parts for vision queries.'],
+    embeddingModel: 'gemini-embedding-2-preview',
+    notes: [
+      'Pass image URLs as content parts for vision queries.',
+      'OpenPaths exposes Google embedding models through the standard `/v1/embeddings` text-input path.',
+      '`gemini-embedding-001` follows Google’s published $0.15 / 1M text-token pricing. OpenPaths currently prices the text path for `gemini-embedding-2-preview` at $0.20 / 1M tokens, while multimodal upstream rates are higher for image/audio/video.',
+    ],
   },
   xai: {
     description: 'Grok 4, Grok 4.1 Fast Reasoning (2M context), Grok 3 Mini.',
@@ -80,10 +90,32 @@ const EXAMPLES: Record<string, ProviderExample> = {
     chatModel: 'or/gpt-5.4',
   },
   netwrck: {
-    description: 'First-party image and video: RA1 art, ZImage anime, Wan/LTX/RA2V video.',
+    description: 'Creative media platform centered on RA1 images, ZImage anime art, and video tooling such as RA2V and LTX. OpenPaths maps that into a clean OpenAI-style images/videos surface.',
     endpoint: '/v1',
     imageModel: 'ra1',
     videoModel: 'ra2v',
+    provides: [
+      {
+        title: 'RA1 Art Generator',
+        description: 'Netwrck positions RA1 as its flagship text-to-image system for high-quality creative work, marketing visuals, and prompt-driven image generation.',
+      },
+      {
+        title: 'Video Generation Stack',
+        description: 'The site also highlights RA2V smart video plus LTX image-to-video and text-to-video flows for turning stills or prompts into short motion pieces.',
+      },
+      {
+        title: 'Image And Anime Workflows',
+        description: 'Related tools on netwrck.com include ZImage anime art, Flux Kontext, background removal, and image upscaling around the core generation pipeline.',
+      },
+      {
+        title: 'OpenPaths Mapping',
+        description: 'Inside OpenPaths, Netwrck is the first-party media lane for `ra1` image generation and `ra2v` video generation through `/v1/images/generations` and `/v1/videos/generations`.',
+      },
+    ],
+    notes: [
+      'The Netwrck site emphasizes creator workflows beyond raw inference: generation, editing, cleanup, and image-to-video conversion.',
+      'Use `ra1` for images and `ra2v` for video when you want the first-party Netwrck path through OpenPaths.',
+    ],
   },
   fal: {
     description: 'FLUX Klein 4B, FLUX Schnell, FLUX Dev, FLUX Pro — fast serverless image generation.',
@@ -108,21 +140,71 @@ const EXAMPLES: Record<string, ProviderExample> = {
     chatModel: 'fireworks/gpt-oss-120b',
     transcriptionModel: 'whisper-v3-large-turbo',
   },
+  nvidia: {
+    description: 'NVIDIA NIM hosts frontier open models on accelerated infra. OpenPaths wires each one into a circuit-breaker fallback chain with the original provider so healthy capacity is used first and traffic cuts over on saturation.',
+    endpoint: '/v1',
+    chatModel: 'nvidia/minimax-m2.7',
+    provides: [
+      {
+        title: 'MiniMax M2.7',
+        description: 'Latest MiniMax chat model (1M context). Aliases `minimax-m2.7` / `mm-m2.7`. Paired with `minimax-m2.5-direct` and Together-hosted `minimax-m2.5` for balancing.',
+      },
+      {
+        title: 'DeepSeek V3.2',
+        description: 'DeepSeek V3.2 with reasoning_content streaming. Aliases `deepseek-v3.2` / `deepseek-3.2`. Circuit-broken with `deepseek-chat`, Together V3.1, and OpenRouter.',
+      },
+      {
+        title: 'Devstral 2 123B',
+        description: 'Mistral Devstral 2 123B-instruct, tuned for code. Aliases `devstral-2` / `devstral-2-123b`. Balanced with Mistral `devstral-medium-latest` and `codestral-latest`.',
+      },
+    ],
+    notes: [
+      'Health-tracker circuit breakers mark each provider+model key unhealthy on 5xx/429 with a 30s–2min exponential cooldown; traffic automatically shifts to the next healthy candidate.',
+      'Use the direct `nvidia/*` IDs to force NVIDIA routing; use the short aliases (e.g. `deepseek-v3.2`) when you want the full balanced pool.',
+      'DeepSeek V3.2 supports `chat_template_kwargs={"thinking": true}` for reasoning_content streaming when called against nvidia/deepseek-v3.2 directly.',
+    ],
+  },
   nous: {
     description: 'Hermes 4 70B and 405B — open reasoning models with tool use at low cost.',
     endpoint: '/v1',
     chatModel: 'hermes-4-405b',
   },
   'text-generator': {
-    description: 'ModernBERT embeddings for search, RAG, and semantic similarity.',
+    description: 'Text-Generator.io presents itself as a unified API for text, vision, and speech with privacy-first infrastructure. In OpenPaths today, the direct provider integration is its ModernBERT embedding capability.',
     endpoint: '/v1',
     embeddingModel: 'text-embedding',
+    provides: [
+      {
+        title: 'ModernBERT Embeddings',
+        description: 'OpenPaths uses Text-Generator.io for first-party embedding generation tuned for retrieval, semantic search, similarity scoring, and RAG pipelines.',
+      },
+      {
+        title: 'Unified AI API',
+        description: 'On text-generator.io, the broader product pitch is one API for text, speech, and vision workloads including chat, OCR-style analysis, summarization, and synthesis.',
+      },
+      {
+        title: 'Privacy-First Positioning',
+        description: 'The site repeatedly frames the platform as privacy-focused with lower operating cost and predictable infrastructure for production use cases.',
+      },
+      {
+        title: 'Playground And Tooling',
+        description: 'Text-Generator.io also ships a playground plus packaged tools like prompt optimization, image captioning, speech workflows, and domain/content helpers around the API.',
+      },
+    ],
+    notes: [
+      'OpenPaths currently exposes the Text-Generator.io integration as an embeddings provider rather than mirroring the full standalone site product surface.',
+      'If you want a first-party embedding path for search or RAG, `text-embedding` is the model to start with.',
+    ],
   },
   openpaths: {
     description: 'First-party auto-routing tiers (auto, auto-easy, auto-medium, auto-think) plus the gobed embedding model.',
     endpoint: '/v1',
     chatModel: 'auto',
     embeddingModel: 'openpaths-embed',
+    notes: [
+      '`openpaths-embed` is billed per request rather than per token.',
+      'Long inputs default to truncation; set `long_text_mode=average_chunks` if you want OpenPaths to average chunk embeddings across the full text.',
+    ],
   },
 };
 
@@ -176,7 +258,7 @@ export function ProviderDocs() {
             <img
               src={provider.logo || FALLBACK_LOGO}
               alt=""
-              className="w-12 h-12 rounded-lg border border-white/10 bg-white/[0.04] p-2"
+              className="w-12 h-12 rounded-lg border border-white/10 bg-white/[0.04] p-2 object-contain"
             />
           )}
           <div>
@@ -214,6 +296,25 @@ export function ProviderDocs() {
           </div>
         )}
       </div>
+
+      {example?.provides && example.provides.length > 0 && (
+        <div className="mb-8">
+          <div className="mb-4">
+            <h2 className="text-xl font-bold tracking-tight mb-1">What {providerName} provides</h2>
+            <p className="text-sm text-white/55 font-light">
+              Summary based on the provider site plus the OpenPaths integration surface.
+            </p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            {example.provides.map((item) => (
+              <div key={item.title} className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+                <h3 className="text-base font-semibold tracking-tight mb-2">{item.title}</h3>
+                <p className="text-sm text-white/60 font-light leading-relaxed">{item.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="space-y-8">
         {snippets.map(snip => (

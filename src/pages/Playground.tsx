@@ -51,6 +51,7 @@ const FALLBACK_MODELS: CatalogModel[] = [
   { id: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro', provider: 'Google' },
   { id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', provider: 'Google' },
   { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', provider: 'Google' },
+  { id: 'gpt-5.5', label: 'GPT-5.5', provider: 'OpenAI' },
   { id: 'gpt-5.4', label: 'GPT-5.4', provider: 'OpenAI' },
   { id: 'o3', label: 'o3', provider: 'OpenAI' },
   { id: 'o4-mini', label: 'o4-mini', provider: 'OpenAI' },
@@ -92,7 +93,7 @@ const MODELS_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 const PANE_HISTORY_PREFIX = 'op_pg_pane_';
 // Models excluded from the chat selector. Image models remain available since
 // the playground now routes them to /v1/images/generations automatically.
-const NON_CHAT_PATTERNS = /^(wan|ltx|hailuo|kling|luma|ra2v|sora|whisper|tts-|speech-|music-|text-embedding|openpaths-embed|modernbert|mistral-embed|codestral-embed|nemotron-embed|gpt-4o-transcribe|gpt-4o-mini-transcribe|distil-whisper|whisper-v3)/i;
+const NON_CHAT_PATTERNS = /^(wan|ltx|hailuo|kling|luma|ra2v|sora|whisper|tts-|speech-|music-|text-embedding|openpaths-embed|modernbert|mistral-embed|codestral-embed|nemotron-embed|gemini-embedding-001|gemini-embedding-2-preview|gemini-embedding-2|gpt-4o-transcribe|gpt-4o-mini-transcribe|distil-whisper|whisper-v3)/i;
 const IMAGE_MODEL_PATTERNS = /^(flux|klein|ra1|zimage|glm-image|gpt-image|dall-e|stable-diffusion|sd3|ideogram)/i;
 
 function isImageModel(m: CatalogModel | undefined): boolean {

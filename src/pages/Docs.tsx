@@ -11,7 +11,7 @@ const ENDPOINTS = [
   { method: 'POST', path: '/v1/videos/generations', description: 'Generate videos (Sora 2, Hailuo, Wan, LTX).' },
   { method: 'POST', path: '/v1/audio/transcriptions', description: 'Transcribe speech to text (Whisper, GPT-4o Transcribe).' },
   { method: 'POST', path: '/v1/audio/speech', description: 'Text-to-speech (MiniMax Speech 2.8 HD).' },
-  { method: 'POST', path: '/v1/embeddings', description: 'Generate vector embeddings (OpenPaths, Mistral, Nemotron).' },
+  { method: 'POST', path: '/v1/embeddings', description: 'Generate vector embeddings (OpenPaths, Google Gemini, Mistral, Nemotron).' },
 ];
 
 type Tab = 'chat' | 'images' | 'videos' | 'transcription';
@@ -161,7 +161,7 @@ export function Docs() {
           Each provider has its own endpoints and model list. Use these shortcuts to browse per-provider docs and examples.
         </p>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {['openai', 'anthropic', 'google', 'xai', 'deepseek', 'mistral', 'groq', 'together', 'openrouter', 'netwrck', 'fal', 'minimax'].map(slug => (
+          {['openai', 'anthropic', 'google', 'xai', 'deepseek', 'mistral', 'groq', 'together', 'openrouter', 'netwrck', 'text-generator', 'fal', 'minimax'].map(slug => (
             <Link
               key={slug}
               to={`/${slug}/docs`}

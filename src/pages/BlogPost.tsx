@@ -88,6 +88,21 @@ function renderMarkdown(content: string): React.ReactNode[] {
       flushTable();
     }
 
+    const imageMatch = line.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+    if (imageMatch) {
+      elements.push(
+        <figure key={key++} className="my-8">
+          <img
+            src={imageMatch[2]}
+            alt={imageMatch[1]}
+            loading="lazy"
+            className="w-full h-auto rounded-2xl border border-white/10 bg-white/5"
+          />
+        </figure>
+      );
+      continue;
+    }
+
     // Empty line
     if (line.trim() === '') {
       continue;

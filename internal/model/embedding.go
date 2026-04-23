@@ -5,6 +5,7 @@ type EmbeddingRequest struct {
 	Input          any    `json:"input"`
 	EncodingFormat string `json:"encoding_format,omitempty"`
 	Dimensions     int    `json:"dimensions,omitempty"`
+	LongTextMode   string `json:"long_text_mode,omitempty"`
 }
 
 type EmbeddingResponse struct {

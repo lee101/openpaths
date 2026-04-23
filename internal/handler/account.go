@@ -1,8 +1,11 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
+	"log"
 	"strconv"
+	"time"
 
 	"github.com/valyala/fasthttp"
 
@@ -13,13 +16,14 @@ import (
 )
 
 type AccountHandler struct {
-	apiKeyQ *queries.APIKeyQueries
-	creditQ *queries.CreditQueries
-	billing *billing.Engine
+	apiKeyQ    *queries.APIKeyQueries
+	creditQ    *queries.CreditQueries
+	billing    *billing.Engine
+	reconciler *billing.Reconciler
 }
 
-func NewAccountHandler(apiKeyQ *queries.APIKeyQueries, creditQ *queries.CreditQueries, billing *billing.Engine) *AccountHandler {
-	return &AccountHandler{apiKeyQ: apiKeyQ, creditQ: creditQ, billing: billing}
+func NewAccountHandler(apiKeyQ *queries.APIKeyQueries, creditQ *queries.CreditQueries, billing *billing.Engine, reconciler *billing.Reconciler) *AccountHandler {
+	return &AccountHandler{apiKeyQ: apiKeyQ, creditQ: creditQ, billing: billing, reconciler: reconciler}
 }
 
 // HandleListAPIKeys handles GET /account/keys.
@@ -88,6 +92,16 @@ func (h *AccountHandler) HandleRevokeAPIKey(ctx *fasthttp.RequestCtx) {
 // HandleGetBalance handles GET /account/balance.
 func (h *AccountHandler) HandleGetBalance(ctx *fasthttp.RequestCtx) {
 	userID, _ := ctx.UserValue(middleware.CtxKeyUserID).(string)
+
+	if h.reconciler != nil {
+		rctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		if credited, err := h.reconciler.ReconcileUser(rctx, userID); err != nil {
+			log.Printf("reconcile on balance fetch for user %s: %v", userID, err)
+		} else if credited > 0 {
+			log.Printf("reconcile on balance fetch credited %d session(s) for user %s", credited, userID)
+		}
+		cancel()
+	}
 
 	balance, err := h.billing.GetBalance(ctx, userID)
 	if err != nil {

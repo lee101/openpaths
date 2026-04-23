@@ -26,6 +26,16 @@ func (pt *PricingTable) CalculateCost(modelID string, inputTokens, outputTokens 
 	if !ok {
 		return 0, fmt.Errorf("unknown model %q for pricing", modelID)
 	}
+	if cfg.PricePerRequest > 0 {
+		if inputTokens == 0 && outputTokens == 0 {
+			return 0, nil
+		}
+		totalCents := int64(cfg.PricePerRequest * 10000)
+		if totalCents < 1 {
+			totalCents = 1
+		}
+		return totalCents, nil
+	}
 
 	inputCost := float64(inputTokens) * cfg.InputPricePer1M / 1_000_000.0
 	outputCost := float64(outputTokens) * cfg.OutputPricePer1M / 1_000_000.0

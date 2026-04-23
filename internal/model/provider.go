@@ -12,6 +12,7 @@ type ModelConfig struct {
 	SupportsStreaming bool     `yaml:"supports_streaming" json:"supports_streaming"`
 	SupportsTools     bool     `yaml:"supports_tools" json:"supports_tools"`
 	SupportsVision    bool     `yaml:"supports_vision" json:"supports_vision"`
+	PricePerRequest   float64  `yaml:"price_per_request,omitempty" json:"price_per_request,omitempty"`
 	PricePerImage     float64  `yaml:"price_per_image,omitempty" json:"price_per_image,omitempty"`
 	PricePerVideo     float64  `yaml:"price_per_video,omitempty" json:"price_per_video,omitempty"`
 	FallbackProviders []string `yaml:"fallback_providers,omitempty" json:"fallback_providers,omitempty"`
