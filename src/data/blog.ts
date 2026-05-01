@@ -11,6 +11,320 @@ export interface BlogPost {
 
 export const posts: BlogPost[] = [
   {
+    slug: 'openpaths-agent-integrations-hermes-openclaw',
+    title: 'OpenPaths Agent Integrations: Hermes Agent and OpenClaw',
+    excerpt: 'Hermes Agent and OpenClaw can now use OPENPATHS_API_KEY directly, with OpenPaths auto task-tier models for easy, medium, hard, and thinking-heavy work.',
+    date: '2026-05-01',
+    author: 'OpenPaths Team',
+    readTime: '5 min',
+    tags: ['integrations', 'agents', 'hermes', 'openclaw'],
+    content: `OpenPaths works best when agent frameworks can treat it as the default model router instead of a special integration. Hermes Agent and OpenClaw now have that path: set \`OPENPATHS_API_KEY\`, pick an OpenPaths auto model, and keep using the agent surface you already use.
+
+We added examples for both on the [Integrations](/integrations) page.
+
+## Model IDs for agents
+
+Both integrations use the OpenAI-compatible OpenPaths endpoint:
+
+\`\`\`bash
+OPENPATHS_API_KEY="op-..."
+OPENPATHS_BASE_URL="https://openpaths.io/v1"
+\`\`\`
+
+The useful model refs for agent work are:
+
+- \`auto\`
+- \`auto-easy-task\`
+- \`auto-medium-task\`
+- \`auto-hard-task\`
+- \`auto-think\`
+- \`autothink\`
+
+Use \`auto-medium-task\` as the default practical tier. Use \`auto-hard-task\` when the prompt is clearly deeper coding, research, debugging, or planning work. Use \`auto-think\` or \`autothink\` when you want the model route to bias toward reasoning-heavy execution.
+
+## Hermes Agent
+
+Hermes can detect \`OPENPATHS_API_KEY\` from the environment and use OpenPaths as the provider:
+
+\`\`\`bash
+export OPENPATHS_API_KEY="op-..."
+export OPENPATHS_BASE_URL="https://openpaths.io/v1"
+
+hermes model openpaths:auto-medium-task
+hermes
+\`\`\`
+
+That keeps the Hermes CLI and gateway flow intact. The OpenPaths key is the only credential Hermes needs for the OpenPaths route, and switching tiers is just a model change:
+
+\`\`\`bash
+hermes model openpaths:auto-hard-task
+\`\`\`
+
+## OpenClaw
+
+OpenClaw can onboard OpenPaths as a bundled provider:
+
+\`\`\`bash
+export OPENPATHS_API_KEY="op-..."
+
+openclaw onboard --auth-choice openpaths-api-key \\
+  --openpaths-api-key "$OPENPATHS_API_KEY"
+
+openclaw models list --all --provider openpaths
+openclaw models set openpaths/auto-medium-task
+\`\`\`
+
+OpenClaw also exposes thinking levels for OpenPaths auto models, so you can use \`/think medium\`, \`/think high\`, or \`/think xhigh\` in active conversations where the OpenAI-compatible transport accepts reasoning effort.
+
+## Why this matters
+
+Agent tools already have their own memory, command approval, gateways, workflows, and chat surfaces. OpenPaths should not replace those. It should give them a better model layer:
+
+- one API key
+- one OpenAI-compatible base URL
+- task-tier routing for agent workloads
+- simple switching between easy, medium, hard, and thinking-biased routes
+
+That is the integration shape we want across agent stacks: the framework stays familiar, and OpenPaths handles the model path underneath.`
+  },
+  {
+    slug: 'openpaths-sdk-integrations',
+    title: 'OpenPaths SDK Integrations: LangChain, Vercel AI SDK, PydanticAI, Mastra, Langfuse, and LiveKit',
+    excerpt: 'OpenPaths now has a dedicated integrations guide for the agent and observability SDKs developers already use in production.',
+    date: '2026-05-01',
+    author: 'OpenPaths Team',
+    readTime: '7 min',
+    tags: ['integrations', 'sdks', 'agents', 'observability'],
+    content: `OpenPaths is most useful when it disappears into the tools developers already use. The point is not to learn another client library. The point is to set one base URL, use one OpenPaths API key, and keep building with your existing framework.
+
+We added a dedicated [Integrations](/integrations) page for the SDKs that matter most in agent stacks:
+
+- LangChain
+- Vercel AI SDK
+- PydanticAI
+- Mastra
+- Langfuse
+- LiveKit Agents
+
+Before writing the examples, we checked the current SDK source for each project in local clones: \`../langchain\`, \`../ai\`, \`../pydantic-ai\`, \`../mastra\`, \`../langfuse\`, and \`../livekit-agents\`. The shared pattern is simple: each stack either accepts an OpenAI-compatible \`base_url\` / \`baseURL\`, or accepts an AI SDK model object that can point at OpenPaths.
+
+## The base URL
+
+Use OpenPaths as an OpenAI-compatible endpoint:
+
+\`\`\`bash
+OPENPATHS_API_KEY="op-..."
+OPENPATHS_BASE_URL="https://openpaths.io/v1"
+\`\`\`
+
+Then pick any OpenPaths model ID or alias:
+
+- \`openai-chat-latest\` for a stable OpenAI chat alias
+- \`grok-latest\` for the current Grok alias
+- \`auto\` for automatic routing
+- \`auto-medium-task\` for practical agent workloads
+- \`grok-imagine-image\` for xAI image generation and edits
+
+## LangChain
+
+LangChain's OpenAI integration accepts \`base_url\`, so the setup is a direct drop-in:
+
+\`\`\`python
+from langchain_openai import ChatOpenAI
+
+llm = ChatOpenAI(
+    model="openai-chat-latest",
+    api_key="op-...",
+    base_url="https://openpaths.io/v1",
+    temperature=0,
+)
+
+print(llm.invoke("say hi and nothing else").content)
+\`\`\`
+
+That means existing chains, retrievers, tools, and agents can keep their LangChain shape while OpenPaths handles model selection and provider routing.
+
+## Vercel AI SDK
+
+The AI SDK has a clean OpenAI-compatible provider path:
+
+\`\`\`ts
+import { generateText } from 'ai';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+
+const openpaths = createOpenAICompatible({
+  name: 'openpaths',
+  apiKey: 'op-...',
+  baseURL: 'https://openpaths.io/v1',
+});
+
+const { text } = await generateText({
+  model: openpaths('auto'),
+  prompt: 'say hi and nothing else',
+});
+
+console.log(text);
+\`\`\`
+
+This is the path we recommend for Next.js apps using \`streamText\`, \`generateText\`, tool calls, and UI message streams.
+
+## PydanticAI
+
+PydanticAI exposes an \`OpenAIProvider\` and \`OpenAIChatModel\` pair:
+
+\`\`\`python
+from pydantic_ai import Agent
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.openai import OpenAIProvider
+
+model = OpenAIChatModel(
+    'openai-chat-latest',
+    provider=OpenAIProvider(
+        base_url='https://openpaths.io/v1',
+        api_key='op-...',
+    ),
+)
+
+agent = Agent(model, instructions='Be concise.')
+print(agent.run_sync('say hi and nothing else').output)
+\`\`\`
+
+Structured output and tool validation stay in PydanticAI. OpenPaths just supplies the model endpoint.
+
+## Mastra
+
+Mastra agents accept AI SDK model objects, so the same provider object works there:
+
+\`\`\`ts
+import { Agent } from '@mastra/core/agent';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+
+const openpaths = createOpenAICompatible({
+  name: 'openpaths',
+  apiKey: 'op-...',
+  baseURL: 'https://openpaths.io/v1',
+});
+
+export const supportAgent = new Agent({
+  id: 'support-agent',
+  name: 'Support Agent',
+  instructions: 'Answer in one short paragraph.',
+  model: openpaths('auto-medium-task'),
+});
+\`\`\`
+
+This keeps Mastra workflows, memory, tools, and observability intact while making the model layer portable.
+
+## Langfuse
+
+Langfuse can trace OpenPaths calls through its OpenAI wrapper:
+
+\`\`\`python
+from langfuse import observe
+from langfuse.openai import openai
+
+openai.api_key = 'op-...'
+openai.base_url = 'https://openpaths.io/v1'
+
+@observe()
+def run():
+    response = openai.chat.completions.create(
+        model='openai-chat-latest',
+        messages=[{'role': 'user', 'content': 'say hi and nothing else'}],
+    )
+    return response.choices[0].message.content
+
+print(run())
+\`\`\`
+
+This gives teams traces, latency, model IDs, usage, and application context around calls routed through OpenPaths.
+
+## LiveKit Agents
+
+LiveKit's OpenAI plugin accepts \`base_url\`, which makes OpenPaths usable for LLM turns in voice agents:
+
+\`\`\`python
+from livekit import agents
+from livekit.agents import Agent, AgentSession
+from livekit.plugins import openai
+
+async def entrypoint(ctx: agents.JobContext):
+    await ctx.connect()
+
+    session = AgentSession(
+        llm=openai.LLM(
+            model='openai-chat-latest',
+            api_key='op-...',
+            base_url='https://openpaths.io/v1',
+        ),
+    )
+
+    await session.start(
+        room=ctx.room,
+        agent=Agent(instructions='Say hi and nothing else.'),
+    )
+\`\`\`
+
+For provider-native realtime WebSocket audio, keep using the provider-specific LiveKit realtime plugin. For standard LLM turns, OpenPaths works through the OpenAI-compatible LLM plugin.
+
+## What we tested
+
+The integration page is covered by browser tests so the examples stay visible, syntax-highlighted, and populated with the stored OpenPaths API key when a user has one. Separately, the xAI provider integration tests call the real API for chat, TTS, STT, image generation, and image editing.
+
+The result is a cleaner integration story: OpenPaths is not asking developers to leave their stack. It is giving those stacks one routing layer for the models behind them.`
+  },
+  {
+    slug: 'how-openpaths-is-hosted-on-codex-infinity',
+    title: 'How OpenPaths Is Hosted on Codex Infinity',
+    excerpt: 'A quick look at how the OpenPaths source, deploy flow, and review loop live on Codex Infinity instead of a traditional static GitHub setup.',
+    date: '2026-04-24',
+    author: 'OpenPaths Team',
+    readTime: '5 min',
+    tags: ['engineering', 'hosting', 'codex', 'workflow'],
+    content: `OpenPaths is not just deployed from a repo. The site is also maintained through \`../codex-infinity-site\`, our companion workspace on [Codex Infinity](https://codex-infinity.com/), which acts more like an agentic GitHub alternative than a passive file host.
+
+That matters because the whole loop is tighter:
+
+- changes are made in the same place the site is reviewed
+- source and deployment stay close together
+- agentic edits can be discussed, queued, and checked before they land
+- the site can move quickly without turning every change into a separate, manual release chore
+
+## What lives there
+
+The site source, the deployed preview, and the review workflow are all designed to stay close enough that iteration feels like editing one system instead of stitching together three.
+
+- product copy lands in the repo
+- UI changes are reviewed in context
+- deploys are treated as part of the workflow, not an afterthought
+- the public site reflects the same source the team is actually changing
+
+## Why we like it
+
+Codex Infinity is useful because it behaves less like a passive code archive and more like an execution surface for real work. For a product like OpenPaths, that is a better fit than a workflow where the repo, the discussion, and the deploy target all drift apart.
+
+It keeps us honest about the code:
+
+- if the homepage changes, it shows up in the site flow immediately
+- if the blog changes, it ships through the same path
+- if we need to tighten a route, a card, or a docs link, we can do it in one place
+
+## How it shows up in OpenPaths
+
+You already see the result in the product:
+
+- [Models](/models) is the routing surface
+- [Providers](/providers) is the source index
+- [Pricing](/pricing) explains the economics
+- [Blog](/blog) gives us a place to document the system
+
+That is the main reason the setup works. The site is not pretending to be static infrastructure. It is a living product surface hosted with the same kind of agentic, reviewable flow that the product itself is built around.
+
+## Bottom line
+
+OpenPaths runs better when the code, the discussion, and the deploy path stay close together. Codex Infinity gives us that, and the public site at [codex-infinity.com/@lee101/openpaths](https://codex-infinity.com/@lee101/openpaths) is the visible end of the loop.`
+  },
+  {
     slug: 'gpt-image-2-on-openpaths',
     title: 'GPT Image 2 on OpenPaths: better text, cleaner edits, and layouts that hold together',
     excerpt: 'A practical look at GPT Image 2, the OpenAI image model surfaced through OpenPaths, and what changes when the model starts respecting layout, typography, and editing constraints.',

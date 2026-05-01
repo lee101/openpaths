@@ -252,10 +252,14 @@ func New(deps *Dependencies) *Server {
 			{"/models", "0.9", "weekly"},
 			{"/providers", "0.8", "weekly"},
 			{"/docs", "0.9", "weekly"},
+			{"/integrations", "0.9", "weekly"},
 			{"/playground", "0.7", "monthly"},
 			{"/blog", "0.8", "weekly"},
 		}
 		blogSlugs := []string{
+			"openpaths-agent-integrations-hermes-openclaw",
+			"openpaths-sdk-integrations",
+			"how-openpaths-is-hosted-on-codex-infinity",
 			"switch-to-openpaths-in-2-lines",
 			"state-of-ai-models-march-2026",
 			"how-auto-models-work",
