@@ -1,4 +1,4 @@
-# OpenPath
+# OpenPaths
 
 [openpaths.io](https://openpaths.io) -- AI model gateway -- unified API for chat, image, video, music, speech, embedding, and transcription across 15+ providers.
 
@@ -6,8 +6,8 @@
 
 ```bash
 # 1. Set up postgres
-sudo -u postgres psql -c "CREATE USER openpath WITH PASSWORD 'openpath';"
-sudo -u postgres psql -c "CREATE DATABASE openpath OWNER openpath;"
+sudo -u postgres psql -c "CREATE USER openpaths WITH PASSWORD 'openpaths';"
+sudo -u postgres psql -c "CREATE DATABASE openpaths OWNER openpaths;"
 
 # 2. Copy and edit .env
 cp .env.example .env
@@ -36,8 +36,8 @@ Or manually:
 export LD_LIBRARY_PATH="/home/lee/code/gobed/gpu:/usr/local/cuda-12.9/lib64:$LD_LIBRARY_PATH"
 GOMAXPROCS=3 go build -tags="gpu cuda" \
   -ldflags="-extldflags '-Wl,-rpath,/home/lee/code/gobed/gpu -Wl,-rpath,/usr/local/cuda-12.9/lib64'" \
-  -o bin/openpath-gpu ./cmd/openpaths/
-./bin/openpath-gpu
+  -o bin/openpaths-gpu ./cmd/openpaths/
+./bin/openpaths-gpu
 ```
 
 ## Environment Variables

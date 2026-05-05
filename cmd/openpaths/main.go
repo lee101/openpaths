@@ -17,14 +17,13 @@ import (
 	"github.com/openpaths/openpaths/internal/config"
 	"github.com/openpaths/openpaths/internal/cron"
 	"github.com/openpaths/openpaths/internal/crypto"
-	"github.com/openpaths/openpaths/internal/email"
 	"github.com/openpaths/openpaths/internal/db"
 	"github.com/openpaths/openpaths/internal/db/migrations"
 	"github.com/openpaths/openpaths/internal/db/queries"
 	"github.com/openpaths/openpaths/internal/discovery"
+	"github.com/openpaths/openpaths/internal/email"
 	"github.com/openpaths/openpaths/internal/metrics"
 	"github.com/openpaths/openpaths/internal/provider"
-	stripesvc "github.com/openpaths/openpaths/internal/stripe"
 	"github.com/openpaths/openpaths/internal/provider/anthropic"
 	"github.com/openpaths/openpaths/internal/provider/deepseek"
 	"github.com/openpaths/openpaths/internal/provider/fal"
@@ -46,6 +45,7 @@ import (
 	"github.com/openpaths/openpaths/internal/router"
 	"github.com/openpaths/openpaths/internal/server"
 	"github.com/openpaths/openpaths/internal/storage"
+	stripesvc "github.com/openpaths/openpaths/internal/stripe"
 )
 
 func main() {
@@ -145,6 +145,7 @@ func main() {
 			p = zai.New(provCfg.APIKey, provCfg.BaseURL)
 		case "fireworks":
 			p = fireworks.New(provCfg.APIKey, provCfg.BaseURL)
+			transcribers = append(transcribers, fireworks.NewTranscriber(provCfg.APIKey, provCfg.BaseURL))
 		case "fal":
 			f := fal.New(provCfg.APIKey)
 			transcribers = append(transcribers, f)
@@ -268,28 +269,28 @@ func main() {
 	}
 
 	srv := server.New(&server.Dependencies{
-		Config:       cfg,
-		Router:       modelRouter,
-		Billing:      billingEngine,
-		Recorder:     recorder,
-		JWTService:   jwtService,
-		UserQ:        userQ,
-		APIKeyQ:      apiKeyQ,
-		CreditQ:      creditQ,
-		StripeDepositQ: stripeDepositQ,
+		Config:           cfg,
+		Router:           modelRouter,
+		Billing:          billingEngine,
+		Recorder:         recorder,
+		JWTService:       jwtService,
+		UserQ:            userQ,
+		APIKeyQ:          apiKeyQ,
+		CreditQ:          creditQ,
+		StripeDepositQ:   stripeDepositQ,
 		StripeReconciler: stripeReconciler,
-		StatsQ:       statsQ,
-		Transcribers: transcribers,
-		Embedders:    embedders,
-		CryptoSvc:    cryptoSvc,
-		Storage:      store,
-		StripeSvc:    stripe,
-		Discovery:      disc,
-		ModelMetaQ:     modelMetaQ,
-		FineTuneQ:      ftQ,
-		FineTuneProvs:  ftProviders,
-		ProviderKeyQ:   providerKeyQ,
-		OnRegister:     onRegister,
+		StatsQ:           statsQ,
+		Transcribers:     transcribers,
+		Embedders:        embedders,
+		CryptoSvc:        cryptoSvc,
+		Storage:          store,
+		StripeSvc:        stripe,
+		Discovery:        disc,
+		ModelMetaQ:       modelMetaQ,
+		FineTuneQ:        ftQ,
+		FineTuneProvs:    ftProviders,
+		ProviderKeyQ:     providerKeyQ,
+		OnRegister:       onRegister,
 	})
 
 	done := make(chan os.Signal, 1)

@@ -94,7 +94,7 @@ export const providers: Provider[] = [
     slug: 'groq',
     name: 'Groq',
     url: 'https://groq.com',
-    description: 'Ultra-fast LPU inference for Llama 3.3, Llama 3.1, and Mixtral models.',
+    description: 'Ultra-fast LPU inference for Llama 3.3, Llama 3.1, Mixtral, and Whisper speech-to-text at 228x real-time.',
     featured: false,
     logo: '/logos/groq.svg'
   },
@@ -134,7 +134,7 @@ export const providers: Provider[] = [
     slug: 'fireworks',
     name: 'Fireworks AI',
     url: 'https://fireworks.ai',
-    description: 'Fast inference platform hosting GPT-OSS 120B, GLM-5, and other open-source models.',
+    description: 'Fast inference platform hosting GPT-OSS 120B, GLM-5, and Whisper speech-to-text models.',
     featured: false,
     logo: '/logos/fireworks.svg'
   },
@@ -150,7 +150,7 @@ export const providers: Provider[] = [
     slug: 'fal',
     name: 'Fal',
     url: 'https://fal.ai',
-    description: 'Fast serverless inference. Home of FLUX Klein 4B compact image generation.',
+    description: 'Fast serverless inference. FLUX Klein 4B image generation and Whisper speech-to-text with chunk timestamps.',
     featured: false,
     logo: '/logos/fal.svg'
   },

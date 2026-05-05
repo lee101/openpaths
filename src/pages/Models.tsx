@@ -5,7 +5,7 @@ import { providersByName, getProviderLogo } from '../data/providers';
 import { Search, Tag as TagIcon, Cpu, Zap, Image as ImageIcon, Code2, BrainCircuit, MessageSquare, Globe, ArrowUpDown, Video, Gift, Database } from 'lucide-react';
 import { motion } from 'motion/react';
 
-const ALL_TAGS: Tag[] = ['programming', 'reasoning', 'general', 'vision', 'fast', 'embedding', 'open-source', 'free', 'art generation', 'video generation', 'roleplay'];
+const ALL_TAGS: Tag[] = ['programming', 'reasoning', 'agentic', 'general', 'vision', 'fast', 'embedding', 'open-source', 'free', 'art generation', 'video generation', 'roleplay'];
 
 const TAG_ICONS: Record<Tag, React.ReactNode> = {
   'programming': <Code2 className="w-3 h-3" />,
@@ -17,6 +17,7 @@ const TAG_ICONS: Record<Tag, React.ReactNode> = {
   'vision': <ImageIcon className="w-3 h-3" />,
   'fast': <Zap className="w-3 h-3" />,
   'reasoning': <BrainCircuit className="w-3 h-3" />,
+  'agentic': <BrainCircuit className="w-3 h-3" />,
   'open-source': <Cpu className="w-3 h-3" />,
   'free': <Gift className="w-3 h-3" />
 };

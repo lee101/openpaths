@@ -1,5 +1,5 @@
 server:
-  port: 8090
+  port: 8092
   read_timeout_seconds: 30
   write_timeout_seconds: 300
   max_request_body_mb: 25

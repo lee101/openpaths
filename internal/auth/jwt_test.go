@@ -110,7 +110,7 @@ func TestValidate_ClaimsContainCorrectUserIDAndEmail(t *testing.T) {
 		email  string
 	}{
 		{"basic user", "user-123", "user@example.com"},
-		{"uuid user", "550e8400-e29b-41d4-a716-446655440000", "admin@openpath.io"},
+		{"uuid user", "550e8400-e29b-41d4-a716-446655440000", "admin@openpaths.io"},
 		{"empty fields", "", ""},
 	}
 

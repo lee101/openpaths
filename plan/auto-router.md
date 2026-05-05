@@ -17,7 +17,7 @@ Replace static fallback chains for "auto" models with intelligent routing via co
 - `internal/handler/image.go` - Applies auto result (model)
 - `internal/handler/video.go` - Applies auto result (model)
 - `config.yaml` - Added gpt-5.3, gemini-flash-lite, auto-image, auto-video
-- `cmd/openpath/main.go` - Wires AutoRouter with first available embedder
+- `cmd/openpaths/main.go` - Wires AutoRouter with first available embedder
 
 ## Text Routing Table (modality: "text")
 

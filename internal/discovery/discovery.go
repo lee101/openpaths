@@ -233,8 +233,10 @@ func (s *Service) discoverOpenAICompat(ctx context.Context, p model.ProviderConf
 		modType := "chat"
 		if strings.Contains(m.ID, "embed") {
 			modType = "embedding"
-		} else if strings.Contains(m.ID, "tts") || strings.Contains(m.ID, "whisper") {
-			modType = "audio"
+		} else if strings.Contains(m.ID, "tts") {
+			modType = "tts"
+		} else if strings.Contains(m.ID, "whisper") || strings.Contains(m.ID, "transcribe") {
+			modType = "stt"
 		} else if strings.Contains(m.ID, "dall-e") || strings.Contains(m.ID, "image") {
 			modType = "image"
 		}
@@ -675,4 +677,3 @@ func parseTokenPrice(s string) float64 {
 	f, _ := strconv.ParseFloat(s, 64)
 	return f
 }
-

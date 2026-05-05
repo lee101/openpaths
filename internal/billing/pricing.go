@@ -82,6 +82,30 @@ func (pt *PricingTable) CalculateVideoCost(modelID string) (int64, error) {
 	return totalCents, nil
 }
 
+// CalculateTranscriptionCost returns cost in hundredths-of-a-cent for audio transcription.
+// durationSecs is the audio duration in seconds.
+func (pt *PricingTable) CalculateTranscriptionCost(modelID string, durationSecs float64) (int64, error) {
+	cfg, ok := pt.models[modelID]
+	if !ok {
+		return 0, fmt.Errorf("unknown model %q for pricing", modelID)
+	}
+	if cfg.PricePerMinute <= 0 {
+		return 0, fmt.Errorf("model %q has no per-minute pricing", modelID)
+	}
+	minutes := durationSecs / 60.0
+	totalDollars := cfg.PricePerMinute * minutes
+	totalCents := int64(totalDollars * 10000)
+	if totalCents < 1 && durationSecs > 0 {
+		totalCents = 1
+	}
+	return totalCents, nil
+}
+
+// LookupModel returns the ModelConfig for a given model ID, or nil if not found.
+func (pt *PricingTable) LookupModel(modelID string) *model.ModelConfig {
+	return pt.models[modelID]
+}
+
 // EstimateMaxCost returns a conservative cost estimate for balance pre-check.
 func (pt *PricingTable) EstimateMaxCost(modelID string, maxOutputTokens int) (int64, error) {
 	if maxOutputTokens <= 0 {

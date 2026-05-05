@@ -1,4 +1,4 @@
-package openai
+package fireworks
 
 import (
 	"bytes"
@@ -8,32 +8,33 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/openpaths/openpaths/internal/model"
 	"github.com/openpaths/openpaths/internal/provider"
 )
 
-type OpenAITranscriber struct {
+type FireworksTranscriber struct {
 	apiKey  string
 	baseURL string
 	client  *http.Client
 }
 
-func NewTranscriber(apiKey, baseURL string) *OpenAITranscriber {
+func NewTranscriber(apiKey, baseURL string) *FireworksTranscriber {
 	if baseURL == "" {
-		baseURL = "https://api.openai.com"
+		baseURL = "https://api.fireworks.ai/inference"
 	}
-	return &OpenAITranscriber{
+	return &FireworksTranscriber{
 		apiKey:  apiKey,
-		baseURL: baseURL,
+		baseURL: strings.TrimRight(baseURL, "/"),
 		client:  &http.Client{Timeout: 2 * time.Minute},
 	}
 }
 
-func (t *OpenAITranscriber) Name() string { return "openai" }
+func (t *FireworksTranscriber) Name() string { return "fireworks" }
 
-func (t *OpenAITranscriber) Transcribe(ctx context.Context, req *model.TranscriptionRequest) (*model.TranscriptionResponse, error) {
+func (t *FireworksTranscriber) Transcribe(ctx context.Context, req *model.TranscriptionRequest) (*model.TranscriptionResponse, error) {
 	var buf bytes.Buffer
 	w := multipart.NewWriter(&buf)
 
@@ -47,7 +48,7 @@ func (t *OpenAITranscriber) Transcribe(ctx context.Context, req *model.Transcrip
 
 	mdl := req.Model
 	if mdl == "" || mdl == "auto" {
-		mdl = "gpt-4o-mini-transcribe"
+		mdl = "whisper-v3-large-turbo"
 	}
 	w.WriteField("model", mdl)
 
@@ -67,7 +68,7 @@ func (t *OpenAITranscriber) Transcribe(ctx context.Context, req *model.Transcrip
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", t.baseURL+"/v1/audio/transcriptions", &buf)
 	if err != nil {
 		return nil, &provider.ProviderError{
-			Provider: "openai", StatusCode: 502, Message: err.Error(), Retryable: true, Err: err,
+			Provider: "fireworks", StatusCode: 502, Message: err.Error(), Retryable: true, Err: err,
 		}
 	}
 	httpReq.Header.Set("Content-Type", w.FormDataContentType())
@@ -76,7 +77,7 @@ func (t *OpenAITranscriber) Transcribe(ctx context.Context, req *model.Transcrip
 	resp, err := t.client.Do(httpReq)
 	if err != nil {
 		return nil, &provider.ProviderError{
-			Provider: "openai", StatusCode: 502, Message: err.Error(), Retryable: true, Err: err,
+			Provider: "fireworks", StatusCode: 502, Message: err.Error(), Retryable: true, Err: err,
 		}
 	}
 	defer resp.Body.Close()
@@ -84,13 +85,13 @@ func (t *OpenAITranscriber) Transcribe(ctx context.Context, req *model.Transcrip
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, &provider.ProviderError{
-			Provider: "openai", StatusCode: 502, Message: "read response: " + err.Error(), Retryable: true, Err: err,
+			Provider: "fireworks", StatusCode: 502, Message: "read response: " + err.Error(), Retryable: true, Err: err,
 		}
 	}
 
 	if resp.StatusCode != 200 {
 		return nil, &provider.ProviderError{
-			Provider:   "openai",
+			Provider:   "fireworks",
 			StatusCode: resp.StatusCode,
 			Message:    string(respBody),
 			Retryable:  resp.StatusCode >= 500 || resp.StatusCode == 429,
@@ -100,7 +101,7 @@ func (t *OpenAITranscriber) Transcribe(ctx context.Context, req *model.Transcrip
 	var result model.TranscriptionResponse
 	if err := json.Unmarshal(respBody, &result); err != nil {
 		return nil, &provider.ProviderError{
-			Provider: "openai", StatusCode: 502, Message: "unmarshal: " + err.Error(), Retryable: false,
+			Provider: "fireworks", StatusCode: 502, Message: "unmarshal: " + err.Error(), Retryable: false,
 		}
 	}
 

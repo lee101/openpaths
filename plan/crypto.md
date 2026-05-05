@@ -32,7 +32,7 @@ Add Solana (SOL) and CODEX token payments to OpenPath. Adapted from codex-infini
 #### Modified Files
 - `internal/config/config.go` - Add CryptoConfig
 - `internal/server/server.go` - Wire crypto routes
-- `cmd/openpath/main.go` - Initialize crypto subsystem
+- `cmd/openpaths/main.go` - Initialize crypto subsystem
 - `go.mod` / `go.sum` - Add base58 dep
 
 ### Database Schema

@@ -4,9 +4,9 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: openpath
-      POSTGRES_PASSWORD: openpath
-      POSTGRES_DB: openpath
+      POSTGRES_USER: openpaths
+      POSTGRES_PASSWORD: openpaths
+      POSTGRES_DB: openpaths
     ports:
       - "5432:5432"
     volumes:

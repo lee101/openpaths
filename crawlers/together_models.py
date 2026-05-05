@@ -127,7 +127,7 @@ def main():
         print('TOGETHER_API_KEY not set')
         sys.exit(1)
 
-    db_url = os.environ.get('DATABASE_URL', 'postgres://openpath:openpath@localhost:5432/openpath?sslmode=disable')
+    db_url = os.environ.get('DATABASE_URL', 'postgres://openpaths:openpaths@localhost:5432/openpaths?sslmode=disable')
     json_only = '--json' in sys.argv
 
     print(f'Fetching models from Together AI...', file=sys.stderr)

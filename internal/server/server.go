@@ -267,7 +267,7 @@ func New(deps *Dependencies) *Server {
 			"choosing-the-right-llm",
 			"image-resolution-handling",
 			"video-generation-guide",
-			"openpath-vs-openrouter",
+			"openpaths-vs-openrouter",
 			"music-and-speech-models",
 			"free-ai-models",
 			"provider-openai",

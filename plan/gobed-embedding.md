@@ -9,7 +9,7 @@ Local GPU inference at ~1ms per embedding makes this extremely cheap to operate.
 - Latency: ~0.15ms per embedding on CPU, faster on GPU
 - Memory: ~15MB model size
 - Provider name: `gobed`
-- Model ID: `openpath-embed`
+- Model ID: `openpaths-embed`
 - Aliases: `gobed`, `gobed-embed`, `op-embed`
 
 ## Pricing
@@ -25,6 +25,6 @@ Local GPU inference at ~1ms per embedding makes this extremely cheap to operate.
 
 ## Files Changed
 - `internal/provider/gobed/gobed.go` - New provider
-- `cmd/openpath/main.go` - Gobed init + import
+- `cmd/openpaths/main.go` - Gobed init + import
 - `config.yaml` - Model config entry
 - `go.mod` - Added github.com/lee101/gobed dependency

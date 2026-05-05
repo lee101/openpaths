@@ -1078,7 +1078,7 @@ response = requests.post(
 \`\`\``
   },
   {
-    slug: 'openpath-vs-openrouter',
+    slug: 'openpaths-vs-openrouter',
     title: 'OpenPaths vs OpenRouter: Why We Built Another Model Router',
     excerpt: 'There are other model routers out there. Here is what makes OpenPaths different and why we think it matters.',
     date: '2026-02-15',
@@ -1177,9 +1177,25 @@ response = requests.post(
 # response contains audio data
 \`\`\`
 
-## Transcription
+## Transcription (Speech-to-Text)
 
-For the reverse direction -- audio to text -- we support Whisper through both Groq (fast) and Fal (accurate):
+Audio to text through four providers with automatic model-based routing. Specify a model and we route to the right provider. Default is Groq's whisper-large-v3-turbo (fastest and cheapest multilingual option).
+
+**Groq** -- Fastest inference (228x real-time). Three Whisper variants:
+- \`whisper-large-v3-turbo\` -- $0.00067/min ($0.04/hr) -- best default
+- \`whisper-large-v3\` -- $0.00185/min ($0.111/hr) -- highest quality multilingual
+- \`distil-whisper-large-v3-en\` -- $0.00033/min ($0.02/hr) -- English only, absolute cheapest
+
+**OpenAI** -- Best accuracy models:
+- \`gpt-4o-mini-transcribe\` -- $0.003/min ($0.18/hr) -- recommended cost/quality balance
+- \`gpt-4o-transcribe\` -- $0.006/min ($0.36/hr) -- lowest word error rate
+- \`whisper-1\` -- $0.006/min ($0.36/hr) -- legacy
+
+**Fireworks AI** -- Good middle ground:
+- \`whisper-v3-large-turbo\` -- $0.0009/min ($0.054/hr)
+- \`whisper-v3-large\` -- $0.0015/min ($0.09/hr)
+
+**Fal** -- Serverless Whisper with chunk-level timestamps.
 
 \`\`\`python
 with open("recording.mp3", "rb") as f:
@@ -1192,16 +1208,23 @@ with open("recording.mp3", "rb") as f:
 print(response.json()["text"])
 \`\`\`
 
+Supported formats: mp3, mp4, mpeg, mpga, m4a, wav, webm, ogg, flac. Optional parameters: \`language\` (ISO-639 hint), \`prompt\` (vocabulary hint), \`response_format\` (json, text, srt, verbose_json, vtt).
+
 ## Pricing Summary
 
-| Model | Price | Use Case |
-|-------|-------|----------|
-| Music 2.5 | $0.01/gen | Music generation |
-| Music 2.0 | $0.008/gen | Budget music gen |
-| Speech 2.8 HD | $100/1M chars | Premium TTS |
-| Speech 2.8 Turbo | $60/1M chars | Fast TTS |
-| Whisper (Groq) | ~$0.01/min | Fast transcription |
-| Whisper (Fal) | ~$0.01/min | Accurate transcription |`
+| Model | Provider | Price | Use Case |
+|-------|----------|-------|----------|
+| Music 2.5 | MiniMax | $0.01/gen | Music generation |
+| Music 2.0 | MiniMax | $0.008/gen | Budget music gen |
+| Speech 2.8 HD | MiniMax | $100/1M chars | Premium TTS |
+| Speech 2.8 Turbo | MiniMax | $60/1M chars | Fast TTS |
+| distil-whisper-large-v3-en | Groq | $0.00033/min | Cheapest STT (English) |
+| whisper-large-v3-turbo | Groq | $0.00067/min | Fast STT (default) |
+| whisper-v3-large-turbo | Fireworks | $0.0009/min | Mid-tier STT |
+| whisper-v3-large | Fireworks | $0.0015/min | Quality STT |
+| whisper-large-v3 | Groq | $0.00185/min | Best multilingual STT |
+| gpt-4o-mini-transcribe | OpenAI | $0.003/min | Best cost/accuracy |
+| gpt-4o-transcribe | OpenAI | $0.006/min | Highest accuracy STT |`
   },
   {
     slug: 'free-ai-models',
@@ -1679,7 +1702,7 @@ Their strategy of releasing many specialized models rather than one monolithic f
 
 ## How We Integrated
 
-Groq's API is OpenAI-compatible. We use Groq primarily for two things: ultra-fast inference when latency is the priority, and audio transcription through their Whisper implementation (which is also the fastest available).
+Groq's API is OpenAI-compatible. We use Groq primarily for two things: ultra-fast inference when latency is the priority, and audio transcription through their Whisper models (the fastest available at 228x real-time). Three STT models: \`whisper-large-v3-turbo\` ($0.04/hr), \`whisper-large-v3\` ($0.111/hr), and \`distil-whisper-large-v3-en\` ($0.02/hr, English only).
 
 In our routing, Groq's Llama models serve as fast fallbacks. If a request is simple and speed matters more than depth, Llama 3.1 8B on Groq can respond in milliseconds.
 
@@ -1695,7 +1718,7 @@ As AI moves from training (where GPUs excel) to inference (where speed and effic
 
 - **Real-time applications** where sub-second response time matters
 - **High-throughput pipelines** processing thousands of requests per minute
-- **Audio transcription** where Groq's Whisper is the fastest available
+- **Audio transcription** where Groq's Whisper runs at 228x real-time ($0.02-0.111/hr)
 - **Budget batch processing** with Llama 3.1 8B at $0.05/$0.08`
   },
   {

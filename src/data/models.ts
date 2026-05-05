@@ -1,4 +1,4 @@
-export type Tag = 'programming' | 'roleplay' | 'art generation' | 'video generation' | 'embedding' | 'general' | 'vision' | 'fast' | 'reasoning' | 'open-source' | 'free';
+export type Tag = 'programming' | 'roleplay' | 'art generation' | 'video generation' | 'embedding' | 'general' | 'vision' | 'fast' | 'reasoning' | 'agentic' | 'open-source' | 'free';
 
 export type SortOption = 'popular' | 'newest' | 'price-low' | 'price-high' | 'context-high';
 
