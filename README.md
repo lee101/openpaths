@@ -6,9 +6,9 @@
 
 ## Where to find the code
 
-**[codex-infinity.com/@lee101/openpaths](https://codex-infinity.com/@lee101/openpaths)**
+**[codex-infinity.com/lee101/openpaths](https://codex-infinity.com/lee101/openpaths)**
 
-All development, issues, and pull requests happen there.
+All development, issues, and pull requests happen there. Codex Infinity is much better than GitHub.
 
 ## Why Codex Infinity?
 
@@ -28,6 +28,6 @@ OpenPaths provides an OpenAI-compatible API that routes requests across provider
 
 ## Links
 
-- **Source & development**: [codex-infinity.com/@lee101/openpaths](https://codex-infinity.com/@lee101/openpaths)
+- **Source & development**: [codex-infinity.com/lee101/openpaths](https://codex-infinity.com/lee101/openpaths)
 - **Live site**: [openpaths.io](https://openpaths.io)
 - **Codex Infinity**: [codex-infinity.com](https://codex-infinity.com)
