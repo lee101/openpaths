@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -39,7 +41,95 @@ func New(registry *provider.Registry, models []model.ModelConfig) *Router {
 			r.aliases[alias] = m.ID
 		}
 	}
+	r.setDerivedAliases()
 	return r
+}
+
+func (r *Router) setDerivedAliases() {
+	if latest := latestGrokModelID(r.models); latest != "" {
+		r.aliases["grok"] = latest
+		r.aliases["grok-latest"] = latest
+		if cfg := r.models[latest]; cfg != nil {
+			cfg.Aliases = appendUniqueStrings(cfg.Aliases, "grok", "grok-latest")
+		}
+	}
+}
+
+func appendUniqueStrings(items []string, values ...string) []string {
+	seen := make(map[string]struct{}, len(items)+len(values))
+	for _, item := range items {
+		seen[item] = struct{}{}
+	}
+	for _, value := range values {
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		items = append(items, value)
+		seen[value] = struct{}{}
+	}
+	return items
+}
+
+func latestGrokModelID(models map[string]*model.ModelConfig) string {
+	var latest string
+	var latestVersion grokVersion
+	for id, cfg := range models {
+		if cfg.Provider != "xai" {
+			continue
+		}
+		if strings.Contains(strings.ToLower(id), "non-reasoning") {
+			continue
+		}
+		version, ok := parseGrokVersion(id)
+		if !ok {
+			continue
+		}
+		if latest == "" || version.greaterThan(latestVersion) {
+			latest = id
+			latestVersion = version
+		}
+	}
+	return latest
+}
+
+type grokVersion struct {
+	major int
+	minor int
+}
+
+func (v grokVersion) greaterThan(other grokVersion) bool {
+	if v.major != other.major {
+		return v.major > other.major
+	}
+	return v.minor > other.minor
+}
+
+func parseGrokVersion(id string) (grokVersion, bool) {
+	rest, ok := strings.CutPrefix(strings.ToLower(id), "grok-")
+	if !ok {
+		return grokVersion{}, false
+	}
+
+	parts := strings.FieldsFunc(rest, func(r rune) bool {
+		return r == '-' || r == '.'
+	})
+	if len(parts) == 0 {
+		return grokVersion{}, false
+	}
+
+	major, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return grokVersion{}, false
+	}
+
+	minor := 0
+	if len(parts) > 1 && len(parts[1]) <= 2 {
+		if parsed, err := strconv.Atoi(parts[1]); err == nil {
+			minor = parsed
+		}
+	}
+
+	return grokVersion{major: major, minor: minor}, true
 }
 
 func (r *Router) Resolve(modelName string) (*model.ModelConfig, provider.Provider, error) {
@@ -184,11 +274,15 @@ func (r *Router) ListModels() []model.ModelInfo {
 			Aliases:         cfg.Aliases,
 			SupportedSizes:  cfg.SupportedSizes,
 			Pricing: &model.ModelPricing{
-				InputPer1M:  cfg.InputPricePer1M,
-				OutputPer1M: cfg.OutputPricePer1M,
-				PerRequest:  cfg.PricePerRequest,
-				PerImage:    cfg.PricePerImage,
-				PerVideo:    cfg.PricePerVideo,
+				InputPer1M:              cfg.InputPricePer1M,
+				OutputPer1M:             cfg.OutputPricePer1M,
+				PerRequest:              cfg.PricePerRequest,
+				PerImage:                cfg.PricePerImage,
+				PerMegapixel:            cfg.PricePerMegapixel,
+				PerInputImage:           cfg.PricePerInputImage,
+				PerVideo:                cfg.PricePerVideo,
+				PerSecond:               cfg.PricePerSecond,
+				PerSecondWithVideoInput: cfg.PricePerSecondWithVideoInput,
 			},
 			Capabilities: &model.ModelCapabilities{
 				Streaming: cfg.SupportsStreaming,
@@ -228,11 +322,15 @@ func (r *Router) GetModelInfo(modelName string) (model.ModelInfo, bool) {
 		Aliases:         cfg.Aliases,
 		SupportedSizes:  cfg.SupportedSizes,
 		Pricing: &model.ModelPricing{
-			InputPer1M:  cfg.InputPricePer1M,
-			OutputPer1M: cfg.OutputPricePer1M,
-			PerRequest:  cfg.PricePerRequest,
-			PerImage:    cfg.PricePerImage,
-			PerVideo:    cfg.PricePerVideo,
+			InputPer1M:              cfg.InputPricePer1M,
+			OutputPer1M:             cfg.OutputPricePer1M,
+			PerRequest:              cfg.PricePerRequest,
+			PerImage:                cfg.PricePerImage,
+			PerMegapixel:            cfg.PricePerMegapixel,
+			PerInputImage:           cfg.PricePerInputImage,
+			PerVideo:                cfg.PricePerVideo,
+			PerSecond:               cfg.PricePerSecond,
+			PerSecondWithVideoInput: cfg.PricePerSecondWithVideoInput,
 		},
 		Capabilities: &model.ModelCapabilities{
 			Streaming: cfg.SupportsStreaming,
@@ -250,6 +348,19 @@ func (r *Router) SetAutoRouter(ar *AutoRouter) {
 
 func (r *Router) MaybeResolveAuto(ctx context.Context, modelName, modality, prompt string) AutoRouteResult {
 	return r.MaybeResolveAutoWithTier(ctx, modelName, modality, "", prompt)
+}
+
+func (r *Router) MaybeResolveAutoReasoning(ctx context.Context, prompt string) string {
+	if r.autoRouter == nil {
+		return ""
+	}
+
+	result, err := r.autoRouter.ResolveAuto(ctx, "think-task", prompt)
+	if err != nil {
+		log.Printf("autorouter: %v, using default reasoning", err)
+		return ""
+	}
+	return result.ReasoningEffort
 }
 
 // MaybeResolveAutoWithTier is MaybeResolveAuto extended with the cross-provider

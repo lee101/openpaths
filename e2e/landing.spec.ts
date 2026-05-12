@@ -1,8 +1,18 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Landing Page', () => {
+  let pageErrors: Error[] = [];
+
   test.beforeEach(async ({ page }) => {
+    pageErrors = [];
+    page.on('pageerror', error => {
+      pageErrors.push(error);
+    });
     await page.goto('/');
+  });
+
+  test.afterEach(async () => {
+    expect(pageErrors, pageErrors.map(error => error.message).join('\n')).toHaveLength(0);
   });
 
   test('hero section renders with title and CTA', async ({ page }) => {
@@ -12,8 +22,9 @@ test.describe('Landing Page', () => {
     await expect(page.locator('text=View Source')).toBeVisible();
   });
 
-  test('version badge is visible', async ({ page }) => {
-    await expect(page.locator('text=v1.1.0 is now live')).toBeVisible();
+  test('art playground and api sections render', async ({ page }) => {
+    await expect(page.getByText('Live Art Playground')).toBeVisible();
+    await expect(page.getByRole('heading', { name: '100% OpenAI Compatible' })).toBeVisible();
   });
 
   test('stats bar shows metrics', async ({ page }) => {
@@ -23,25 +34,20 @@ test.describe('Landing Page', () => {
     await expect(page.locator('text=Intelligent Fallbacks')).toBeVisible();
   });
 
-  test('code snippet tabs toggle between openai python, anthropic python, and curl', async ({ page }) => {
+  test('code snippet tabs toggle between python and curl', async ({ page }) => {
     const codeSection = page.locator('#api');
-    await expect(codeSection.locator('text=OpenAI And Anthropic SDK Compatible')).toBeVisible();
+    await expect(codeSection.locator('text=100% OpenAI Compatible')).toBeVisible();
 
     // openai python tab active by default
     await expect(codeSection.locator('text=import')).toBeVisible();
     await expect(codeSection.locator('text=openai.OpenAI')).toBeVisible();
 
-    // switch to anthropic
-    await codeSection.locator('button:has-text("Anthropic Python")').click();
-    await expect(codeSection.locator('text=client.messages.create')).toBeVisible();
-    await expect(codeSection.locator('text=Anthropic(')).toBeVisible();
-
-    // switch to curl
+    // switch to cURL
     await codeSection.locator('button:has-text("cURL")').click();
     await expect(codeSection.locator('pre >> text=curl')).toBeVisible();
 
-    // switch back to openai
-    await codeSection.locator('button:has-text("OpenAI Python")').click();
+    // switch back to Python
+    await codeSection.locator('button:has-text("Python")').click();
     await expect(codeSection.locator('text=openai.OpenAI')).toBeVisible();
   });
 
@@ -50,6 +56,15 @@ test.describe('Landing Page', () => {
     await expect(page.getByRole('heading', { name: 'Universal API' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Auto Models' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Solana Payments' })).toBeVisible();
+  });
+
+  test('feature cards navigate to related pages', async ({ page }) => {
+    await page.getByRole('link', { name: /Millisecond Routing/ }).click();
+    await expect(page).toHaveURL('/models');
+
+    await page.goto('/');
+    await page.getByRole('link', { name: /Solana Payments/ }).click();
+    await expect(page).toHaveURL('/pricing');
   });
 
   test('CTA section at bottom', async ({ page }) => {

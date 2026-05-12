@@ -11,8 +11,35 @@ func newTestPricingTable() *PricingTable {
 		{ID: "gpt-4o", InputPricePer1M: 2.50, OutputPricePer1M: 10.00},
 		{ID: "gpt-4o-mini", InputPricePer1M: 0.15, OutputPricePer1M: 0.60},
 		{ID: "openpaths-embed", PricePerRequest: 0.001},
+		{ID: "grok-imagine-image", PricePerImage: 0.02, PricePerInputImage: 0.002},
+		{ID: "hidream-o1-image-dev", PricePerMegapixel: 0.006},
+		{ID: "seedance-fast", PricePerSecond: 0.26609, PricePerSecondWithVideoInput: 0.15972},
+		{ID: "xai-tts", InputPricePer1M: 15.00},
+		{ID: "whisper-1", PricePerMinute: 0.006},
+		{ID: "xai-stt", PricePerHour: 0.20},
+		{ID: "free-model", InputPricePer1M: 0, OutputPricePer1M: 0, Aliases: []string{"free-alias"}},
 	}
 	return NewPricingTable(models)
+}
+
+func TestCalculateVideoCost_PerSecond(t *testing.T) {
+	pt := newTestPricingTable()
+
+	cost, err := pt.CalculateVideoCost("seedance-fast", 10, false)
+	if err != nil {
+		t.Fatalf("CalculateVideoCost() error = %v", err)
+	}
+	if cost != 26609 {
+		t.Fatalf("cost = %d, want 26609", cost)
+	}
+
+	withVideo, err := pt.CalculateVideoCost("seedance-fast", 10, true)
+	if err != nil {
+		t.Fatalf("CalculateVideoCost(with video) error = %v", err)
+	}
+	if withVideo != 15972 {
+		t.Fatalf("cost with video = %d, want 15972", withVideo)
+	}
 }
 
 func TestNewPricingTable_IndexesModels(t *testing.T) {
@@ -23,6 +50,9 @@ func TestNewPricingTable_IndexesModels(t *testing.T) {
 	}
 	if _, ok := pt.models["gpt-4o-mini"]; !ok {
 		t.Error("expected gpt-4o-mini to be present in pricing table")
+	}
+	if _, ok := pt.models["free-alias"]; !ok {
+		t.Error("expected free-alias to be present in pricing table")
 	}
 	if _, ok := pt.models["nonexistent"]; ok {
 		t.Error("expected nonexistent model not to be in pricing table")
@@ -144,6 +174,30 @@ func TestCalculateCost(t *testing.T) {
 			wantErr:      false,
 		},
 		{
+			name:         "free model stays free with token usage",
+			modelID:      "free-model",
+			inputTokens:  50000,
+			outputTokens: 50000,
+			wantCost:     0,
+			wantErr:      false,
+		},
+		{
+			name:         "xai tts bills input characters at GA price",
+			modelID:      "xai-tts",
+			inputTokens:  1_000_000,
+			outputTokens: 0,
+			wantCost:     150000,
+			wantErr:      false,
+		},
+		{
+			name:         "free model alias stays free with token usage",
+			modelID:      "free-alias",
+			inputTokens:  50000,
+			outputTokens: 50000,
+			wantCost:     0,
+			wantErr:      false,
+		},
+		{
 			name:         "unknown model returns error",
 			modelID:      "unknown-model",
 			inputTokens:  100,
@@ -185,6 +239,78 @@ func TestCalculateCost(t *testing.T) {
 			}
 			if cost != tt.wantCost {
 				t.Errorf("got cost %d, want %d", cost, tt.wantCost)
+			}
+		})
+	}
+}
+
+func TestCalculateImageCostWithInputs(t *testing.T) {
+	pt := newTestPricingTable()
+	cost, err := pt.CalculateImageCostWithInputs("grok-imagine-image", 1, 2)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// output: $0.02, inputs: 2 * $0.002 = $0.004, total $0.024.
+	if cost != 240 {
+		t.Fatalf("cost = %d, want 240", cost)
+	}
+}
+
+func TestCalculateImageCostWithInputsAndSize_PerMegapixel(t *testing.T) {
+	pt := newTestPricingTable()
+	cost, err := pt.CalculateImageCostWithInputsAndSize("hidream-o1-image-dev", 2, 0, "1024x1024")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// 1024x1024 is 1.048576 MP; two images at $0.006/MP is $0.012582912.
+	if cost != 125 {
+		t.Fatalf("cost = %d, want 125", cost)
+	}
+}
+
+func TestCalculateAudioCost(t *testing.T) {
+	pt := newTestPricingTable()
+
+	tests := []struct {
+		name            string
+		modelID         string
+		durationSeconds int
+		wantCost        int64
+	}{
+		{
+			name:            "per minute pricing",
+			modelID:         "whisper-1",
+			durationSeconds: 60,
+			wantCost:        60,
+		},
+		{
+			name:            "per minute prorates seconds",
+			modelID:         "whisper-1",
+			durationSeconds: 30,
+			wantCost:        30,
+		},
+		{
+			name:            "per hour pricing",
+			modelID:         "xai-stt",
+			durationSeconds: 1800,
+			wantCost:        1000,
+		},
+		{
+			name:            "tiny audio has minimum charge",
+			modelID:         "whisper-1",
+			durationSeconds: 1,
+			wantCost:        1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cost, err := pt.CalculateAudioCost(tt.modelID, tt.durationSeconds)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if cost != tt.wantCost {
+				t.Fatalf("cost = %d, want %d", cost, tt.wantCost)
 			}
 		})
 	}
@@ -236,6 +362,41 @@ func TestEstimateMaxCost(t *testing.T) {
 			modelID:         "openpaths-embed",
 			maxOutputTokens: 0,
 			wantCost:        10,
+			wantErr:         false,
+		},
+		{
+			name:            "image priced model estimates one output",
+			modelID:         "grok-imagine-image",
+			maxOutputTokens: 0,
+			wantCost:        200,
+			wantErr:         false,
+		},
+		{
+			name:            "megapixel image model estimates 2k output",
+			modelID:         "hidream-o1-image-dev",
+			maxOutputTokens: 0,
+			wantCost:        251,
+			wantErr:         false,
+		},
+		{
+			name:            "audio priced model estimates one minute",
+			modelID:         "whisper-1",
+			maxOutputTokens: 0,
+			wantCost:        60,
+			wantErr:         false,
+		},
+		{
+			name:            "hour audio priced model estimates one minute",
+			modelID:         "xai-stt",
+			maxOutputTokens: 0,
+			wantCost:        33,
+			wantErr:         false,
+		},
+		{
+			name:            "free model estimates zero",
+			modelID:         "free-model",
+			maxOutputTokens: 16384,
+			wantCost:        0,
 			wantErr:         false,
 		},
 		{

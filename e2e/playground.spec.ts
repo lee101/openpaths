@@ -5,14 +5,13 @@ test.describe('Playground Page', () => {
     await page.goto('/playground');
   });
 
-  test('toolbar renders with Settings, Add Model, Clear buttons', async ({ page }) => {
+  test('toolbar renders with Settings and Compare buttons', async ({ page }) => {
     await expect(page.locator('button:has-text("Settings")')).toBeVisible();
-    await expect(page.locator('button:has-text("Add Model")')).toBeVisible();
-    await expect(page.locator('button:has-text("Clear")')).toBeVisible();
+    await expect(page.locator('button:has-text("Compare")')).toBeVisible();
+    await expect(page.locator('button:has-text("Clear")')).not.toBeVisible();
   });
 
   test('shows 1 default model pane', async ({ page }) => {
-    await expect(page.locator('text=1/4 models')).toBeVisible();
     await expect(page.locator('button:has-text("Auto (intelligent routing)")')).toBeVisible();
   });
 
@@ -23,19 +22,18 @@ test.describe('Playground Page', () => {
     await expect(page.locator('label:has-text("System Prompt")')).toBeVisible();
   });
 
-  test('add model pane up to 4', async ({ page }) => {
-    await page.click('button:has-text("Add Model")');
+  test('compare model pane up to 4', async ({ page }) => {
+    await page.click('button:has-text("Compare")');
     await expect(page.locator('text=2/4 models')).toBeVisible();
 
-    await page.click('button:has-text("Add Model")');
+    await page.click('button:has-text("Compare")');
     await expect(page.locator('text=3/4 models')).toBeVisible();
 
-    await page.click('button:has-text("Add Model")');
+    await page.click('button:has-text("Compare")');
     await expect(page.locator('text=4/4 models')).toBeVisible();
 
     // button should be disabled at 4
-    const addBtn = page.locator('button:has-text("Add Model")');
-    await expect(addBtn).toBeDisabled();
+    await expect(page.locator('button:has-text("Compare")')).toBeDisabled();
   });
 
   test('input is disabled without API key', async ({ page }) => {
@@ -60,7 +58,91 @@ test.describe('Playground Page', () => {
   });
 
   test('clear button resets messages', async ({ page }) => {
+    await page.evaluate(() => {
+      localStorage.setItem('op_pg_pane_auto', JSON.stringify([{ role: 'user', content: 'hello' }]));
+    });
+    await page.reload();
     await page.click('button:has-text("Clear")');
-    await expect(page.locator('text=Send a message to start').first()).toBeVisible();
+    await expect(page.locator('button:has-text("Clear")')).not.toBeVisible();
+    await expect(page.locator('text=Sign in to start comparing models').first()).toBeVisible();
+  });
+
+  test('copy code panel highlights snippets and injects stored API key', async ({ page }) => {
+    await page.evaluate(() => {
+      localStorage.setItem('op_api_key', 'op-playground-code-key');
+      localStorage.setItem('op_pg_pane_auto', JSON.stringify([{ role: 'user', content: 'hello from test' }]));
+    });
+    await page.reload();
+
+    await page.click('button:has-text("Copy Code")');
+
+    const generatedCode = page.getByTestId('playground-generated-code');
+    await expect(generatedCode).toContainText('op-playground-code-key');
+    await expect(generatedCode).not.toContainText('YOUR_OPENPATHS_API_KEY');
+    await expect(generatedCode.locator('.hljs-string').first()).toBeVisible();
+
+    await page.click('button:has-text("JavaScript")');
+    await expect(generatedCode).toContainText('apiKey: "op-playground-code-key"');
+
+    await page.click('button:has-text("Go")');
+    await expect(generatedCode).toContainText('Bearer op-playground-code-key');
+
+    await page.click('button:has-text("cURL")');
+    await expect(generatedCode).toContainText('Authorization: Bearer op-playground-code-key');
+  });
+
+  test('image playground exposes generation settings and image code', async ({ page }) => {
+    await page.evaluate(() => {
+      localStorage.setItem('op_api_key', 'op-image-code-key');
+    });
+    await page.goto('/playground?model=ra1&mode=image');
+
+    await expect(page.locator('button:has-text("RA1 Art Generator")')).toBeVisible();
+    await expect(page.getByTestId('image-size')).toBeVisible();
+    await page.getByTestId('image-size').selectOption('1360x768');
+    await page.getByTestId('image-quality').selectOption('high');
+    await page.getByTestId('image-count').fill('2');
+    await page.getByTestId('image-response-format').selectOption('b64_json');
+
+    await page.locator('textarea[placeholder*="Describe the image"]').fill('A black espresso machine on a marble counter');
+    await page.click('button:has-text("Copy Code")');
+
+    const generatedCode = page.getByTestId('playground-generated-code');
+    await expect(generatedCode).toContainText('op-image-code-key');
+    await expect(generatedCode).toContainText('client.post');
+    await expect(generatedCode).toContainText('/images/generations');
+    await expect(generatedCode).toContainText('"model": "ra1"');
+    await expect(generatedCode).toContainText('"size": "1360x768"');
+    await expect(generatedCode).toContainText('"quality": "high"');
+
+    await page.click('button:has-text("cURL")');
+    await expect(generatedCode).toContainText('/images/generations');
+    await expect(generatedCode).toContainText('Authorization: Bearer op-image-code-key');
+    await expect(generatedCode).toContainText('"response_format": "b64_json"');
+  });
+
+  test('speech playground exposes voice settings and speech code', async ({ page }) => {
+    await page.evaluate(() => {
+      localStorage.setItem('op_api_key', 'op-speech-code-key');
+    });
+    await page.goto('/playground?model=xai-tts');
+
+    await expect(page.getByTestId('speech-voice')).toBeVisible();
+    await page.getByTestId('speech-voice').selectOption('ara');
+    await page.getByTestId('speech-language').selectOption('en');
+    await expect(page.locator('text=$15.00 / 1M input characters')).toBeVisible();
+
+    await page.locator('textarea[placeholder*="Enter text to synthesize"]').fill('Hello from Grok text to speech.');
+    await page.click('button:has-text("Copy Code")');
+
+    const generatedCode = page.getByTestId('playground-generated-code');
+    await expect(generatedCode).toContainText('op-speech-code-key');
+    await expect(generatedCode).toContainText('/audio/speech');
+    await expect(generatedCode).toContainText('"model": "xai-tts"');
+    await expect(generatedCode).toContainText('"voice": "ara"');
+
+    await page.click('button:has-text("cURL")');
+    await expect(generatedCode).toContainText('Authorization: Bearer op-speech-code-key');
+    await expect(generatedCode).toContainText('"input": "Hello from Grok text to speech."');
   });
 });

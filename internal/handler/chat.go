@@ -48,8 +48,18 @@ func (h *ChatHandler) HandleChatCompletion(ctx *fasthttp.RequestCtx) {
 	}
 
 	autoResult := h.router.MaybeResolveAutoWithTier(ctx, req.Model, "", req.TaskTier, extractChatPrompt(req.Messages))
-	if autoResult.ReasoningEffort != "" && req.ReasoningEffort == "" {
+	useAutoReasoning := router.IsAutoReasoningEffort(req.ReasoningEffort) ||
+		(req.Thinking != nil && router.IsAutoReasoningEffort(req.Thinking.Type))
+	if autoResult.ReasoningEffort != "" && (req.ReasoningEffort == "" || useAutoReasoning || router.IsAutoThinkModel(originalModel) || req.TaskTier == "think") {
 		req.ReasoningEffort = autoResult.ReasoningEffort
+	} else if useAutoReasoning {
+		req.ReasoningEffort = h.router.MaybeResolveAutoReasoning(ctx, extractChatPrompt(req.Messages))
+		if req.ReasoningEffort == "" {
+			req.ReasoningEffort = "medium"
+		}
+	}
+	if req.Thinking != nil && router.IsAutoReasoningEffort(req.Thinking.Type) {
+		req.Thinking = nil
 	}
 	candidates, err := h.router.ResolveForRequest(originalModel, autoResult.ModelID)
 	if err != nil {

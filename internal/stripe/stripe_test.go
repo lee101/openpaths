@@ -6,6 +6,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 )
@@ -65,6 +67,63 @@ func TestConstructWebhookEvent_RequiresSecret(t *testing.T) {
 	_, err := svc.ConstructWebhookEvent(payload, signedHeader(payload, "whsec_test", time.Now()), "")
 	if err == nil {
 		t.Fatal("expected missing secret error, got nil")
+	}
+}
+
+func TestCreateCheckoutSession_SavesPaymentMethodForOffSessionUse(t *testing.T) {
+	var gotSetupFutureUsage string
+	var gotPaymentMethodType string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v1/checkout/sessions" {
+			t.Fatalf("path = %q, want /v1/checkout/sessions", r.URL.Path)
+		}
+		if err := r.ParseForm(); err != nil {
+			t.Fatalf("parse form: %v", err)
+		}
+		gotSetupFutureUsage = r.Form.Get("payment_intent_data[setup_future_usage]")
+		gotPaymentMethodType = r.Form.Get("payment_method_types[]")
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"id":"cs_test","client_secret":"cs_secret_test"}`))
+	}))
+	defer srv.Close()
+
+	svc := NewService("sk_test")
+	svc.apiBaseURL = srv.URL
+
+	secret, err := svc.CreateCheckoutSession("cus_test", "price_test", "https://example.test/return", 2500, map[string]string{"user_id": "user1"})
+	if err != nil {
+		t.Fatalf("CreateCheckoutSession() error = %v", err)
+	}
+	if secret != "cs_secret_test" {
+		t.Fatalf("client secret = %q, want cs_secret_test", secret)
+	}
+	if gotSetupFutureUsage != "off_session" {
+		t.Fatalf("setup_future_usage = %q, want off_session", gotSetupFutureUsage)
+	}
+	if gotPaymentMethodType != "card" {
+		t.Fatalf("payment_method_types[] = %q, want card", gotPaymentMethodType)
+	}
+}
+
+func TestRetrievePaymentIntent_ReturnsPaymentMethod(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v1/payment_intents/pi_test" {
+			t.Fatalf("path = %q, want /v1/payment_intents/pi_test", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"id":"pi_test","payment_method":"pm_test"}`))
+	}))
+	defer srv.Close()
+
+	svc := NewService("sk_test")
+	svc.apiBaseURL = srv.URL
+
+	pi, err := svc.RetrievePaymentIntent("pi_test")
+	if err != nil {
+		t.Fatalf("RetrievePaymentIntent() error = %v", err)
+	}
+	if pi.PaymentMethod != "pm_test" {
+		t.Fatalf("payment method = %q, want pm_test", pi.PaymentMethod)
 	}
 }
 

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/openpaths/openpaths/internal/audio"
 	"github.com/openpaths/openpaths/internal/auth"
 	"github.com/openpaths/openpaths/internal/billing"
 	"github.com/openpaths/openpaths/internal/config"
@@ -121,7 +122,9 @@ func main() {
 				groq.NewTranscriber(provCfg.APIKey, provCfg.BaseURL),
 			}, transcribers...)
 		case "xai":
-			p = xai.New(provCfg.APIKey, provCfg.BaseURL)
+			xp := xai.New(provCfg.APIKey, provCfg.BaseURL)
+			transcribers = append(transcribers, xp)
+			p = xp
 		case "deepseek":
 			p = deepseek.New(provCfg.APIKey, provCfg.BaseURL)
 		case "openrouter":
@@ -168,6 +171,17 @@ func main() {
 		} else {
 			modelRouter.SetAutoRouter(ar)
 			log.Printf("AutoRouter enabled with embedding-based model selection")
+		}
+	}
+
+	var autoEmotion *audio.AutoEmotion
+	if len(embedders) > 0 {
+		autoEmotion = audio.NewAutoEmotion(embedders[0])
+		if err := autoEmotion.Init(ctx); err != nil {
+			log.Printf("AutoEmotion init failed (auto_emotion disabled): %v", err)
+			autoEmotion = nil
+		} else {
+			log.Printf("AutoEmotion enabled with embedding-based expressive tag selection")
 		}
 	}
 
@@ -282,6 +296,7 @@ func main() {
 		StatsQ:           statsQ,
 		Transcribers:     transcribers,
 		Embedders:        embedders,
+		AutoEmotion:      autoEmotion,
 		CryptoSvc:        cryptoSvc,
 		Storage:          store,
 		StripeSvc:        stripe,

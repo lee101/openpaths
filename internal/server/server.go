@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"html"
 	"log"
@@ -14,6 +15,7 @@ import (
 	fasthttprouter "github.com/fasthttp/router"
 	"github.com/valyala/fasthttp"
 
+	"github.com/openpaths/openpaths/internal/audio"
 	"github.com/openpaths/openpaths/internal/auth"
 	"github.com/openpaths/openpaths/internal/billing"
 	"github.com/openpaths/openpaths/internal/config"
@@ -48,6 +50,7 @@ type Dependencies struct {
 	StatsQ           *queries.StatsQueries
 	Transcribers     []provider.TranscriptionProvider
 	Embedders        []provider.EmbeddingProvider
+	AutoEmotion      *audio.AutoEmotion
 	CryptoSvc        *crypto.Service
 	Storage          storage.Store
 	StripeSvc        *stripesvc.Service
@@ -103,7 +106,9 @@ func New(deps *Dependencies) *Server {
 	log.Printf("Anthropic-compatible /v1/messages endpoint enabled")
 
 	imageH := handler.NewImageHandler(deps.Router, deps.Billing, deps.Recorder)
+	imageH.SetStorage(deps.Storage)
 	r.POST("/v1/images/generations", apiKeyChain(imageH.HandleImageGeneration))
+	r.POST("/v1/images/edits", apiKeyChain(imageH.HandleImageGeneration))
 	log.Printf("Image generation endpoint enabled")
 
 	videoH := handler.NewVideoHandler(deps.Router, deps.Billing, deps.Recorder)
@@ -115,7 +120,9 @@ func New(deps *Dependencies) *Server {
 	log.Printf("Music generation endpoint enabled")
 
 	speechH := handler.NewSpeechHandler(deps.Router, deps.Billing, deps.Recorder)
+	speechH.SetAutoEmotion(deps.AutoEmotion)
 	r.POST("/v1/audio/speech", apiKeyChain(speechH.HandleSpeechGeneration))
+	r.POST("/v1/tts", apiKeyChain(speechH.HandleSpeechGeneration))
 	log.Printf("Speech generation endpoint enabled")
 
 	embeddingH := handler.NewEmbeddingHandler(deps.Router, deps.Billing, deps.Recorder, deps.Embedders)
@@ -123,8 +130,9 @@ func New(deps *Dependencies) *Server {
 	log.Printf("Embedding endpoint enabled (%d fallback providers)", len(deps.Embedders))
 
 	if len(deps.Transcribers) > 0 {
-		transcriptionH := handler.NewTranscriptionHandler(deps.Transcribers, deps.Router.HealthTracker(), deps.Recorder)
+		transcriptionH := handler.NewTranscriptionHandler(deps.Router, deps.Billing, deps.Transcribers, deps.Recorder)
 		r.POST("/v1/audio/transcriptions", apiKeyChain(transcriptionH.HandleTranscription))
+		r.POST("/v1/stt", apiKeyChain(transcriptionH.HandleTranscription))
 		log.Printf("Transcription endpoint enabled (%d providers)", len(deps.Transcribers))
 	}
 
@@ -243,8 +251,18 @@ func New(deps *Dependencies) *Server {
 		ctx.SetStatusCode(200)
 		ctx.SetBodyString(`{"status":"ok"}`)
 	})
+	r.POST("/monitoring/frontend-errors", publicChain(handleFrontendErrorReport))
 
 	r.GET("/sitemap.xml", func(ctx *fasthttp.RequestCtx) {
+		if staticDir := deps.Config.Server.StaticDir; staticDir != "" {
+			if data, err := os.ReadFile(filepath.Join(staticDir, "sitemap.xml")); err == nil {
+				ctx.SetContentType("application/xml; charset=utf-8")
+				ctx.SetStatusCode(200)
+				ctx.SetBody(data)
+				return
+			}
+		}
+
 		const base = "https://openpaths.io"
 		pages := []struct{ loc, priority, freq string }{
 			{"/", "1.0", "daily"},
@@ -359,6 +377,7 @@ func spaHandler(dir string, api fasthttp.RequestHandler, apiKeyQ *queries.APIKey
 			strings.HasPrefix(path, "/admin/") ||
 			strings.HasPrefix(path, "/uploads/") ||
 			strings.HasPrefix(path, "/openrouter/") ||
+			strings.HasPrefix(path, "/monitoring/") ||
 			path == "/health" ||
 			path == "/sitemap.xml" {
 			api(ctx)
@@ -386,6 +405,54 @@ func spaHandler(dir string, api fasthttp.RequestHandler, apiKeyQ *queries.APIKey
 			ctx.Response.SetBody(injectUserData(body, ctx, apiKeyQ, userQ))
 		}
 	}
+}
+
+func handleFrontendErrorReport(ctx *fasthttp.RequestCtx) {
+	const maxBody = 64 * 1024
+	body := ctx.PostBody()
+	if len(body) == 0 || len(body) > maxBody {
+		ctx.SetStatusCode(fasthttp.StatusNoContent)
+		return
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(body, &payload); err != nil {
+		ctx.SetStatusCode(fasthttp.StatusNoContent)
+		return
+	}
+
+	entry := map[string]any{
+		"received_at": time.Now().UTC().Format(time.RFC3339Nano),
+		"remote_addr": string(ctx.RemoteAddr().String()),
+		"user_agent":  string(ctx.UserAgent()),
+		"payload":     payload,
+	}
+	line, err := json.Marshal(entry)
+	if err != nil {
+		ctx.SetStatusCode(fasthttp.StatusNoContent)
+		return
+	}
+
+	logPath := os.Getenv("OPENPATHS_FRONTEND_ERROR_LOG")
+	if logPath == "" {
+		logPath = filepath.Join("monitoring", "errors", "frontend_client.jsonl")
+	}
+	if err := os.MkdirAll(filepath.Dir(logPath), 0o755); err != nil {
+		log.Printf("frontend error log mkdir: %v", err)
+		ctx.SetStatusCode(fasthttp.StatusNoContent)
+		return
+	}
+	f, err := os.OpenFile(logPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	if err != nil {
+		log.Printf("frontend error log open: %v", err)
+		ctx.SetStatusCode(fasthttp.StatusNoContent)
+		return
+	}
+	defer f.Close()
+	if _, err := f.Write(append(line, '\n')); err != nil {
+		log.Printf("frontend error log write: %v", err)
+	}
+	ctx.SetStatusCode(fasthttp.StatusNoContent)
 }
 
 func isSPARoute(path string) bool {
@@ -452,7 +519,7 @@ func pageMetaForPath(path string) pageMeta {
 	default:
 		return pageMeta{
 			Title:       "OpenPaths - The Open Source Model Router",
-			Description: "Search and we shall find open pathways. Millisecond routing between 432+ large model providers and art generators.",
+			Description: "Search and we shall find. Neural learned paths for 1ms routing across 432+ large model providers and art generators. Try Open Pathways.",
 			URL:         "https://openpaths.io" + path,
 		}
 	}

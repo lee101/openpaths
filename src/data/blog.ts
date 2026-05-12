@@ -1,5 +1,6 @@
 export interface BlogPost {
   slug: string;
+  alternativePath?: string;
   title: string;
   excerpt: string;
   date: string;
@@ -10,6 +11,297 @@ export interface BlogPost {
 }
 
 export const posts: BlogPost[] = [
+  {
+    slug: 'openrouter-alternative-pool-credits-across-ai-providers',
+    alternativePath: '/alternatives/openrouter',
+    title: 'OpenRouter Alternative: Pool Credits Across AI Providers With OpenPaths',
+    excerpt: 'OpenPaths gives teams one balance for OpenAI, Anthropic, Google, xAI, DeepSeek, Mistral, Netwrck, Fal, and more, with auto-thinking routes that pick the right model instead of making you pre-buy every provider.',
+    date: '2026-05-11',
+    author: 'OpenPaths Team',
+    readTime: '6 min',
+    tags: ['alternatives', 'openrouter', 'providers', 'auto-routing'],
+    content: `OpenRouter is useful when you want one API surface for many models. The next question is usually harder: how do you budget across providers without scattering prepaid credits, invoices, keys, and fallback rules across every vendor?
+
+That is the problem OpenPaths is designed to solve. Instead of buying separate credits for OpenAI, Anthropic, Google, xAI, DeepSeek, Mistral, Fal, Netwrck, MiniMax, Together, and other providers, you fund one OpenPaths balance and spend it across the catalog.
+
+## The practical difference
+
+| Need | OpenRouter-style marketplace | OpenPaths |
+|------|------------------------------|-----------|
+| One API key | Yes | Yes |
+| Many model providers | Yes | Yes |
+| Shared credit pool | Usually marketplace-scoped | OpenPaths balance across routed providers |
+| First-party media providers | Depends on catalog | Netwrck, Text-Generator.io, OpenPaths embeddings |
+| Task routing | Mostly model selection | Auto models, auto-thinking, fallback chains |
+| OpenAI-compatible API | Yes | Yes |
+
+The win is not just "more models." The win is liquidity. A single pool of credits can move between text, image, video, speech, transcription, and embedding workloads as product needs change.
+
+## Why pooled credits matter
+
+Most teams do not know in advance which model mix they will need next month. A launch week may be mostly GPT-5.4 Mini and Claude Sonnet. A new media feature may suddenly shift spend into RA1, Sora, Hailuo, Wan, or FLUX. A search feature may move spend into embeddings.
+
+With separate accounts, that means unused credits in one place and urgent top-ups somewhere else. With OpenPaths, the same balance can fund all of those calls.
+
+## Auto-thinking is the second win
+
+OpenPaths includes task-tier aliases like:
+
+- \`auto\`
+- \`auto-easy-task\`
+- \`auto-medium-task\`
+- \`auto-hard-task\`
+- \`auto-think\`
+- \`autothink\`
+
+The point is to stop hard-coding expensive reasoning models for easy requests and stop underpowering hard requests because the cheap model happened to be the default.
+
+For example, an agent can use \`auto-medium-task\` for routine work, then switch to \`auto-think\` when the prompt needs deeper reasoning. You keep one API key and one balance while the router chooses from the configured provider pool.
+
+## Where OpenPaths is a better fit
+
+OpenPaths is a strong OpenRouter alternative when your team cares about:
+
+- pooling credits across providers instead of managing many prepaid balances
+- using direct provider models and first-party OpenPaths partner models together
+- routing by task difficulty instead of selecting every model manually
+- fallback chains when a provider is rate-limited, down, expensive, or unhealthy
+- moving between chat, image, video, audio, and embeddings without changing billing systems
+
+## Example: one balance, several workloads
+
+\`\`\`bash
+curl https://openpaths.io/v1/chat/completions \\
+  -H "Authorization: Bearer op-..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "model": "auto-think",
+    "messages": [{"role": "user", "content": "Design a fallback strategy for a multi-provider AI app."}]
+  }'
+\`\`\`
+
+That same OpenPaths key can also call image, video, speech, transcription, and embedding endpoints. The product team does not need to decide how much budget belongs to each upstream provider before the month starts.
+
+## When OpenRouter may still be the right choice
+
+Use the tool that matches the job. If your whole workflow depends on a niche OpenRouter-only model or a marketplace feature specific to OpenRouter, keep using it. OpenPaths is better when the main goal is production routing, pooled credits, first-party media lanes, and simple provider switching under one OpenAI-compatible API.
+
+## Bottom line
+
+The alternative is not just another model list. The alternative is a pooled-credit model gateway: one key, one balance, multiple providers, and auto routes that can spend intelligently across the catalog.`
+  },
+  {
+    slug: 'together-ai-alternative-for-production-model-routing',
+    alternativePath: '/alternatives/together-ai',
+    title: 'Together AI Alternative: Route Open Models and Frontier APIs From One Balance',
+    excerpt: 'Together AI is excellent for open-model hosting. OpenPaths is different: it lets you combine Together-hosted models with OpenAI, Anthropic, Google, DeepSeek, MiniMax, Netwrck media models, and auto routes under one credit pool.',
+    date: '2026-05-11',
+    author: 'OpenPaths Team',
+    readTime: '5 min',
+    tags: ['alternatives', 'together-ai', 'open-source', 'providers'],
+    content: `Together AI is a strong platform for open models. If your workload is mainly Qwen, Kimi, GLM, DeepSeek, MiniMax, or FLUX hosted on Together infrastructure, it is a natural place to start.
+
+OpenPaths solves a different production problem: what happens when open-model hosting is only part of the stack?
+
+## The production model mix is rarely one provider
+
+A real app may use:
+
+- GPT-5.4 Mini for fast product copy
+- Claude Sonnet for coding and careful long-form reasoning
+- Gemini for large-context summarization
+- DeepSeek for low-cost reasoning
+- Together-hosted open models for open-source coverage
+- Netwrck or Fal for image and video generation
+- Text-Generator.io or OpenPaths embeddings for search
+
+If each provider has its own account and balance, your model strategy becomes a finance and ops problem. OpenPaths turns that into one OpenAI-compatible gateway.
+
+## Together AI vs OpenPaths
+
+| Need | Together AI | OpenPaths |
+|------|-------------|-----------|
+| Hosted open models | Strong | Available through catalog and fallbacks |
+| Frontier closed providers | Limited by platform | OpenAI, Anthropic, Google, xAI, and more |
+| Media generation | Some model coverage | Netwrck, Fal, OpenAI, MiniMax, xAI, Z.AI |
+| One credit pool across providers | Provider-specific | OpenPaths balance across routed calls |
+| Task-based model selection | Manual | Auto models and auto-thinking routes |
+
+OpenPaths does not replace Together for every team. It sits above provider choice when the app needs a larger model portfolio.
+
+## Why use OpenPaths if you like Together-hosted models?
+
+Because you can still use them. OpenPaths includes Together-hosted options and can pair them with direct provider fallbacks.
+
+That means you can start with an open model, fail over when capacity changes, or route to a frontier provider when the task needs more reliability or depth.
+
+## The auto route pattern
+
+Instead of deciding that every request must use one model, route by intent:
+
+- \`auto-easy-task\` for cheap classifiers, rewrites, extraction, and small support tasks
+- \`auto-medium-task\` for normal agent and application work
+- \`auto-hard-task\` for deeper coding, planning, and analysis
+- \`auto-think\` when reasoning quality matters more than raw cost
+
+The routing layer can use provider diversity without asking every product feature to manage that diversity itself.
+
+## Credit pooling changes how teams experiment
+
+With separate provider balances, experimentation has friction. Someone has to add billing, keys, limits, monitoring, and fallback logic before the team can test a new model.
+
+With OpenPaths, a new model is just another model ID or route behind the same key and balance.
+
+## Bottom line
+
+Together AI is excellent open-model infrastructure. OpenPaths is a better fit when you want open models, closed frontier APIs, media providers, embeddings, and auto-thinking routes behind one production gateway and one pooled credit balance.`
+  },
+  {
+    slug: 'openai-api-alternative-for-multi-provider-ai-apps',
+    alternativePath: '/alternatives/openai-api',
+    title: 'OpenAI API Alternative: Keep OpenAI Compatibility, Add Multi-Provider Routing',
+    excerpt: 'OpenPaths keeps the OpenAI SDK shape but lets one API key reach OpenAI, Anthropic, Google, xAI, DeepSeek, Mistral, MiniMax, Netwrck, Fal, and more.',
+    date: '2026-05-11',
+    author: 'OpenPaths Team',
+    readTime: '5 min',
+    tags: ['alternatives', 'openai', 'api', 'models'],
+    content: `The OpenAI API set the standard shape for modern AI apps. Most SDKs, agent frameworks, and examples already know how to call \`/v1/chat/completions\`, \`/v1/images/generations\`, \`/v1/audio/transcriptions\`, and \`/v1/embeddings\`.
+
+OpenPaths keeps that shape and expands what sits behind it.
+
+## The migration is intentionally boring
+
+\`\`\`python
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://openpaths.io/v1",
+    api_key="op-...",
+)
+
+response = client.chat.completions.create(
+    model="auto-medium-task",
+    messages=[{"role": "user", "content": "Summarize this incident report."}],
+)
+\`\`\`
+
+The code still looks like OpenAI. The routing options are broader.
+
+## Why teams outgrow one provider
+
+Single-provider setups are simple until they are not. Common reasons teams add a model gateway include:
+
+- cost control across easy and hard tasks
+- provider outages or rate limits
+- better coding, reasoning, vision, or media models from different labs
+- separate image, video, speech, and embedding needs
+- regional, latency, or product-specific provider preferences
+
+The hard part is not finding a second provider. The hard part is operating five providers without making every feature team think about five providers.
+
+## OpenPaths as an OpenAI-compatible alternative
+
+| Need | Direct OpenAI API | OpenPaths |
+|------|-------------------|-----------|
+| OpenAI SDK support | Yes | Yes |
+| OpenAI models | Yes | Yes |
+| Anthropic, Google, xAI, DeepSeek, Mistral | No | Yes |
+| One pooled balance across providers | No | Yes |
+| Auto-routing by task difficulty | No | Yes |
+| First-party media and embedding lanes | No | Yes |
+
+You can still call OpenAI models directly through OpenPaths when that is the right model. The difference is that OpenAI becomes one strong provider in the pool, not the only path.
+
+## Auto-thinking for agents
+
+Agents are a good example. Some turns are tiny: classify, rewrite, extract. Other turns require planning, debugging, or long reasoning. Hard-coding one expensive model wastes money; hard-coding one cheap model lowers quality.
+
+OpenPaths auto-thinking routes give agents a stable model name while the gateway chooses more appropriate candidates underneath:
+
+- \`auto-medium-task\` for the default agent loop
+- \`auto-hard-task\` for complex implementation and investigation
+- \`auto-think\` or \`autothink\` for reasoning-heavy calls
+
+## Credit pooling is the budget advantage
+
+With direct provider accounts, OpenAI credits do not help when your app suddenly needs more Anthropic, Gemini, or video generation capacity. OpenPaths credits can be spent across routed providers, which makes experimentation and spikes easier to absorb.
+
+## Bottom line
+
+OpenPaths is an OpenAI API alternative for teams that like the OpenAI-compatible developer experience but do not want their architecture, fallback plan, and credit balance locked to one provider.`
+  },
+  {
+    slug: 'anthropic-api-alternative-with-claude-and-multi-model-fallbacks',
+    alternativePath: '/alternatives/anthropic-api',
+    title: 'Anthropic API Alternative: Use Claude Alongside Auto-Routed Model Fallbacks',
+    excerpt: 'Claude is excellent for careful reasoning and coding. OpenPaths lets you keep Claude in the stack while adding OpenAI-compatible routing, pooled credits, and fallbacks across other model providers.',
+    date: '2026-05-11',
+    author: 'OpenPaths Team',
+    readTime: '5 min',
+    tags: ['alternatives', 'anthropic', 'claude', 'fallbacks'],
+    content: `Anthropic's Claude models are excellent for careful writing, coding, analysis, and agent workflows. Many teams want Claude in production. Fewer teams want their entire model strategy to depend on one provider account, one rate-limit envelope, and one billing pool.
+
+OpenPaths lets Claude be part of a larger model routing system.
+
+## Claude is a model choice, not the whole architecture
+
+There are many cases where Claude should be the first choice:
+
+- complex code edits
+- long-context review
+- policy-sensitive writing
+- structured reasoning
+- agent planning
+
+There are also cases where another provider may be faster, cheaper, more available, or better suited to the modality. Image generation, video generation, embeddings, transcription, and ultra-low-cost extraction are not all Claude-shaped problems.
+
+## Anthropic direct vs OpenPaths
+
+| Need | Direct Anthropic API | OpenPaths |
+|------|----------------------|-----------|
+| Claude access | Yes | Yes |
+| OpenAI-compatible route | No | Yes |
+| Other providers in same app | Separate keys and billing | Same OpenPaths key and balance |
+| Model fallbacks | Build yourself | Gateway-level fallback chains |
+| Auto task routing | Build yourself | Auto models and auto-thinking routes |
+
+OpenPaths is useful when your team wants Claude quality without making the product brittle around one provider.
+
+## A better agent default
+
+Instead of making every agent turn a Claude call, you can use:
+
+- \`auto-easy-task\` for small extraction and classification
+- \`auto-medium-task\` for the default loop
+- \`auto-hard-task\` for deeper implementation and debugging
+- \`auto-think\` when the request should bias toward reasoning
+
+Claude can be part of that pool where it makes sense. So can OpenAI, Google, DeepSeek, Mistral, xAI, and other providers.
+
+## Pooled credits reduce provider lock-in
+
+Direct Anthropic billing is simple if every task should be Claude. Most production apps are more mixed. One feature may need Claude. Another may need embeddings. Another may need image or video generation. Another may need a cheap model for background jobs.
+
+With OpenPaths, those calls draw from one balance. That makes model testing easier and keeps unused budget from getting stranded inside a single provider account.
+
+## Migration shape
+
+OpenPaths supports OpenAI-compatible calls and provider docs for Anthropic-style usage. For many apps, the change is as small as switching base URL, API key, and model ID:
+
+\`\`\`bash
+curl https://openpaths.io/v1/chat/completions \\
+  -H "Authorization: Bearer op-..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "model": "claude-sonnet-latest",
+    "messages": [{"role": "user", "content": "Review this API design."}]
+  }'
+\`\`\`
+
+## Bottom line
+
+OpenPaths is not anti-Claude. It is pro-routing. Use Claude where Claude wins, then use the same API key and credit pool for the rest of the model stack.`
+  },
   {
     slug: 'openpaths-agent-integrations-hermes-openclaw',
     title: 'OpenPaths Agent Integrations: Hermes Agent and OpenClaw',

@@ -1,4 +1,4 @@
-export type Tag = 'programming' | 'roleplay' | 'art generation' | 'video generation' | 'embedding' | 'general' | 'vision' | 'fast' | 'reasoning' | 'agentic' | 'open-source' | 'free';
+export type Tag = 'programming' | 'roleplay' | 'art generation' | 'video generation' | 'audio' | 'embedding' | 'general' | 'vision' | 'fast' | 'reasoning' | 'open-source' | 'free' | 'agentic';
 
 export type SortOption = 'popular' | 'newest' | 'price-low' | 'price-high' | 'context-high';
 
@@ -13,7 +13,7 @@ export interface Model {
   tags: Tag[];
   released: string;
   popularity: number;
-  pricingType?: 'token' | 'request';
+  pricingType?: 'token' | 'request' | 'chars' | 'hour' | 'second' | 'megapixel';
 }
 
 export function parseContextLength(ctx: string): number {
@@ -46,7 +46,7 @@ export const models: Model[] = [
     id: 'openpaths-embed',
     name: 'OpenPaths Embed',
     provider: 'OpenPaths',
-    description: 'First-party gobed embeddings served locally on this machine. Default mode auto-truncates long input; optional long_text_mode can average chunk embeddings across the full text.',
+    description: 'An extremely efficient local embedding model for the lowest-cost text embeddings and similarity checks. Open source at lee101/gobed, so it is portable across environments.',
     contextLength: '256',
     priceInput: 0.001,
     priceOutput: 0,
@@ -97,7 +97,7 @@ export const models: Model[] = [
     id: 'auto-easy-task',
     name: 'Auto Easy Task',
     provider: 'OpenPaths',
-    description: 'Low-cost routing across GPT-5.4 Nano, Gemini Flash tiers, and Claude Haiku for simple tasks.',
+    description: 'Low-cost routing across GPT-5.4 Nano, Gemini Flash tiers, Claude Haiku, and DeepSeek V4 Flash for simple or sensitive classifiers.',
     contextLength: '1M',
     priceInput: 0.02,
     priceOutput: 0.10,
@@ -109,7 +109,7 @@ export const models: Model[] = [
     id: 'auto-medium-task',
     name: 'Auto Medium Task',
     provider: 'OpenPaths',
-    description: 'Balanced routing led by GPT-5.4 Mini with Claude Sonnet, Gemini 2.5 Flash, and DeepSeek fallbacks.',
+    description: 'Balanced routing led by GPT-5.4 Mini with Claude Sonnet, Gemini 2.5 Flash, and DeepSeek V4 Flash for sensitive roleplay, fringe, and policy-heavy prompts.',
     contextLength: '400K',
     priceInput: 0.75,
     priceOutput: 4.50,
@@ -121,7 +121,7 @@ export const models: Model[] = [
     id: 'auto-think',
     name: 'Auto Think',
     provider: 'OpenPaths',
-    description: 'Embedding-routed reasoning tier that picks none, low, medium, or high thinking across GPT-5.4 Nano, GPT-5.4 Mini, and GPT-5.4 with cross-provider fallbacks.',
+    description: 'Embedding-routed reasoning tier that picks none, low, medium, or high thinking; direct thinking models can use the same classifier with reasoning_effort="auto".',
     contextLength: '400K',
     priceInput: 0.75,
     priceOutput: 4.50,
@@ -423,30 +423,42 @@ export const models: Model[] = [
     released: '2025-09-01',
     popularity: 26
   },
+  {
+    id: 'gemini-3.1-flash-tts-preview',
+    name: 'Gemini 3.1 Flash TTS Preview',
+    provider: 'Google',
+    description: 'Low-latency Gemini speech generation with natural outputs, steerable prompts, expressive audio tags, and multi-speaker voice control.',
+    contextLength: 'Jan 2025 cutoff',
+    priceInput: 1.00,
+    priceOutput: 20.00,
+    tags: ['audio', 'fast'],
+    released: '2026-04-16',
+    popularity: 7
+  },
 
   // --- xAI Grok ---
   {
-    id: 'grok-4-0709',
-    name: 'Grok 4',
+    id: 'grok-4.3',
+    name: 'Grok 4.3',
     provider: 'xAI',
-    description: 'xAI flagship with strong reasoning, coding, and 256K context.',
-    contextLength: '256K',
-    priceInput: 3.00,
-    priceOutput: 15.00,
+    description: 'xAI recommended reasoning model with 1M context and low-cost frontier generation.',
+    contextLength: '1M',
+    priceInput: 1.25,
+    priceOutput: 2.50,
     tags: ['reasoning', 'programming', 'general', 'vision'],
-    released: '2025-07-09',
-    popularity: 7
+    released: '2026-05-01',
+    popularity: 6
   },
   {
-    id: 'grok-4-1-fast-reasoning',
-    name: 'Grok 4.1 Fast',
+    id: 'grok-4.20-non-reasoning',
+    name: 'Grok 4.20 Non-Reasoning',
     provider: 'xAI',
-    description: 'Ultra-fast reasoning model with 2M context at very low cost.',
+    description: 'xAI recommended non-reasoning model for fast direct responses and tool-calling workloads.',
     contextLength: '2M',
-    priceInput: 0.20,
-    priceOutput: 0.50,
-    tags: ['reasoning', 'fast', 'vision'],
-    released: '2026-01-20',
+    priceInput: 1.25,
+    priceOutput: 2.50,
+    tags: ['fast', 'programming', 'general'],
+    released: '2026-03-09',
     popularity: 18
   },
   {
@@ -461,8 +473,110 @@ export const models: Model[] = [
     released: '2025-03-15',
     popularity: 27
   },
+  {
+    id: 'grok-voice-think-fast-1.0',
+    name: 'Grok Voice Think Fast',
+    provider: 'xAI',
+    description: 'Realtime speech-to-speech voice agent API with sub-second latency, tool use, and five built-in voices.',
+    contextLength: 'N/A',
+    priceInput: 3.00,
+    priceOutput: 0,
+    tags: ['audio', 'fast', 'agentic'],
+    released: '2026-05-01',
+    popularity: 6,
+    pricingType: 'hour'
+  },
+  {
+    id: 'xai-tts',
+    name: 'xAI Text to Speech',
+    provider: 'xAI',
+    description: 'Generate expressive speech with Eve, Ara, Rex, Sal, and Leo voices plus telephony-friendly codecs.',
+    contextLength: '15K chars',
+    priceInput: 15.00,
+    priceOutput: 0,
+    tags: ['audio'],
+    released: '2026-05-01',
+    popularity: 6,
+    pricingType: 'chars'
+  },
+  {
+    id: 'xai-stt',
+    name: 'xAI Speech to Text',
+    provider: 'xAI',
+    description: 'Transcribe audio in 25 languages with batch uploads, streaming mode, word timestamps, and diarization options.',
+    contextLength: '500 MB',
+    priceInput: 0.20,
+    priceOutput: 0,
+    tags: ['audio'],
+    released: '2026-05-01',
+    popularity: 6,
+    pricingType: 'hour'
+  },
+  {
+    id: 'lyria-3-pro-preview',
+    name: 'Lyria 3 Pro Preview',
+    provider: 'Google',
+    description: 'Full-song music generation with deep compositional understanding, structural control, and complex transitions across musical styles.',
+    contextLength: 'Jan 2025 cutoff',
+    priceInput: 0.08,
+    priceOutput: 0,
+    tags: ['audio'],
+    released: '2026-03-25',
+    popularity: 6,
+    pricingType: 'request'
+  },
+  {
+    id: 'lyria-3-clip-preview',
+    name: 'Lyria 3 Clip Preview',
+    provider: 'Google',
+    description: 'Low-latency music generation optimized for high-fidelity audio clips and precise rhythmic control.',
+    contextLength: 'Jan 2025 cutoff',
+    priceInput: 0.04,
+    priceOutput: 0,
+    tags: ['audio', 'fast'],
+    released: '2026-03-25',
+    popularity: 6,
+    pricingType: 'request'
+  },
+  {
+    id: 'grok-imagine-image',
+    name: 'Grok Imagine Image',
+    provider: 'xAI',
+    description: 'xAI image generation and image-to-image editing model with aspect ratio control and multi-image merge support.',
+    contextLength: 'N/A',
+    priceInput: 0.02,
+    priceOutput: 0,
+    tags: ['art generation', 'vision'],
+    released: '2026-03-23',
+    popularity: 7,
+    pricingType: 'request'
+  },
 
   // --- DeepSeek ---
+  {
+    id: 'deepseek-v4-flash',
+    name: 'DeepSeek V4 Flash',
+    provider: 'DeepSeek',
+    description: 'Direct DeepSeek V4 Flash with 1M context, thinking/non-thinking modes, JSON output, and tool calls at very low cost.',
+    contextLength: '1M',
+    priceInput: 0.14,
+    priceOutput: 0.28,
+    tags: ['general', 'programming', 'reasoning', 'fast', 'roleplay', 'open-source'],
+    released: '2026-04-24',
+    popularity: 3
+  },
+  {
+    id: 'deepseek-v4-pro',
+    name: 'DeepSeek V4 Pro',
+    provider: 'DeepSeek',
+    description: 'Direct DeepSeek V4 Pro with 1M context and 384K max output for difficult reasoning, sensitive policy handling, roleplay, and bio/fringe-style requests.',
+    contextLength: '1M',
+    priceInput: 1.74,
+    priceOutput: 3.48,
+    tags: ['general', 'programming', 'reasoning', 'roleplay', 'open-source'],
+    released: '2026-04-24',
+    popularity: 4
+  },
   {
     id: 'deepseek-chat',
     name: 'DeepSeek V3.2',
@@ -810,6 +924,18 @@ export const models: Model[] = [
     popularity: 26
   },
   {
+    id: 'nvidia/deepseek-v4-pro',
+    name: 'DeepSeek V4 Pro (NVIDIA)',
+    provider: 'NVIDIA',
+    description: 'Free NVIDIA-hosted DeepSeek V4 Pro with high reasoning enabled through chat_template_kwargs.',
+    contextLength: '1M',
+    priceInput: 0,
+    priceOutput: 0,
+    tags: ['general', 'programming', 'reasoning', 'open-source', 'free'],
+    released: '2026-04-24',
+    popularity: 24
+  },
+  {
     id: 'nvidia/devstral-2-123b',
     name: 'Devstral 2 123B (NVIDIA)',
     provider: 'NVIDIA',
@@ -1052,6 +1178,19 @@ export const models: Model[] = [
     popularity: 59,
     pricingType: 'request'
   },
+  {
+    id: 'hidream-o1-image-dev',
+    name: 'HiDream O1 Image Dev',
+    provider: 'Fal',
+    description: 'Unified image generation, editing, and subject personalization up to about 2K output.',
+    contextLength: 'N/A',
+    priceInput: 0.006,
+    priceOutput: 0,
+    tags: ['art generation', 'vision'],
+    released: '2026-05-01',
+    popularity: 60,
+    pricingType: 'megapixel'
+  },
 
   // --- Video Generation ---
   {
@@ -1101,5 +1240,70 @@ export const models: Model[] = [
     tags: ['video generation'],
     released: '2025-10-01',
     popularity: 63
+  },
+  {
+    id: 'seedance-2.0-fast-text-to-video',
+    name: 'Seedance 2.0 Fast Text to Video',
+    provider: 'Fal',
+    description: 'Fast ByteDance Seedance text-to-video with 720p cinematic output and optional synchronized audio.',
+    contextLength: 'N/A',
+    priceInput: 0.26609,
+    priceOutput: 0,
+    tags: ['video generation', 'fast'],
+    released: '2026-04-09',
+    popularity: 64,
+    pricingType: 'second'
+  },
+  {
+    id: 'seedance-2.0-text-to-video',
+    name: 'Seedance 2.0 Text to Video',
+    provider: 'Fal',
+    description: 'Standard Seedance 2.0 text-to-video endpoint for cinematic prompt-only video generation.',
+    contextLength: 'N/A',
+    priceInput: 0.33374,
+    priceOutput: 0,
+    tags: ['video generation'],
+    released: '2026-04-09',
+    popularity: 65,
+    pricingType: 'second'
+  },
+  {
+    id: 'seedance-2.0-image-to-video',
+    name: 'Seedance 2.0 Image to Video',
+    provider: 'Fal',
+    description: 'Animate a still image into cinematic video with motion prompts, optional end frame control, and synchronized audio.',
+    contextLength: 'N/A',
+    priceInput: 0.33264,
+    priceOutput: 0,
+    tags: ['video generation', 'vision'],
+    released: '2026-04-09',
+    popularity: 66,
+    pricingType: 'second'
+  },
+  {
+    id: 'seedance-2.0-fast-reference-to-video',
+    name: 'Seedance 2.0 Fast Reference to Video',
+    provider: 'Fal',
+    description: 'Fast Seedance reference-to-video from prompt plus image, video, and audio URLs.',
+    contextLength: 'N/A',
+    priceInput: 0.26609,
+    priceOutput: 0,
+    tags: ['video generation', 'vision', 'fast'],
+    released: '2026-04-09',
+    popularity: 67,
+    pricingType: 'second'
+  },
+  {
+    id: 'seedance-2.0-reference-to-video',
+    name: 'Seedance 2.0 Reference to Video',
+    provider: 'Fal',
+    description: 'Seedance reference-to-video with image, video, and audio references and 1080p support.',
+    contextLength: 'N/A',
+    priceInput: 0.33264,
+    priceOutput: 0,
+    tags: ['video generation', 'vision'],
+    released: '2026-04-09',
+    popularity: 68,
+    pricingType: 'second'
   },
 ];

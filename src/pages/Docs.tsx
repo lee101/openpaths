@@ -3,14 +3,18 @@ import { BookOpen, Copy, Check, KeyRound } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getAPIBaseURL, getStoredAPIKey } from '../lib/session';
 import { CodeBlock } from '../components/CodeBlock';
+import { Seo } from '../components/Seo';
 
 const ENDPOINTS = [
   { method: 'POST', path: '/v1/chat/completions', description: 'OpenAI-compatible chat completions (streaming + tools).' },
   { method: 'GET', path: '/v1/models', description: 'List all available models and capabilities.' },
   { method: 'POST', path: '/v1/images/generations', description: 'Generate images (GPT Image 2, Flux, RA1, Klein, and more).' },
+  { method: 'POST', path: '/v1/images/edits', description: 'Edit images and image-to-image workflows (GPT Image 2, Grok Imagine Image).' },
   { method: 'POST', path: '/v1/videos/generations', description: 'Generate videos (Sora 2, Hailuo, Wan, LTX).' },
   { method: 'POST', path: '/v1/audio/transcriptions', description: 'Transcribe speech to text (Whisper, GPT-4o Transcribe).' },
-  { method: 'POST', path: '/v1/audio/speech', description: 'Text-to-speech (MiniMax Speech 2.8 HD).' },
+  { method: 'POST', path: '/v1/audio/speech', description: 'Text-to-speech (xAI TTS, MiniMax Speech 2.8 HD).' },
+  { method: 'POST', path: '/v1/stt', description: 'xAI Speech to Text shortcut; defaults to xai-stt.' },
+  { method: 'POST', path: '/v1/tts', description: 'xAI Text to Speech shortcut; defaults to xai-tts.' },
   { method: 'POST', path: '/v1/embeddings', description: 'Generate vector embeddings (OpenPaths, Google Gemini, Mistral, Nemotron).' },
 ];
 
@@ -39,7 +43,14 @@ export function Docs() {
   };
 
   return (
-    <section className="max-w-6xl mx-auto px-6 py-16">
+    <>
+      <Seo
+        title="OpenPaths API Docs | OpenAI-Compatible AI Gateway"
+        description="OpenPaths API docs for chat completions, images, videos, speech, transcription, embeddings, provider routing, and OpenAI-compatible SDK setup."
+        path="/docs"
+      />
+
+      <section className="max-w-6xl mx-auto px-6 py-16">
       <div className="mb-12">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/[0.04] text-xs font-mono text-white/60 mb-6">
           <BookOpen className="w-3.5 h-3.5" />
@@ -48,7 +59,7 @@ export function Docs() {
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">OpenAI And Anthropic SDK Compatible Docs</h1>
         <p className="text-white/60 max-w-3xl font-light leading-relaxed">
           Use the same base URL pattern for chat, images, video, music, speech, and models from either SDK. If you are signed in on this device,
-          your API key is injected into the examples automatically.
+          your API key is injected into the examples automatically. For framework-specific setup, see the <Link to="/integrations" className="text-white underline underline-offset-4">integrations guide</Link>.
         </p>
       </div>
 
@@ -87,24 +98,22 @@ export function Docs() {
           <div className="mb-2 text-xs font-mono text-white/40">{active.description}</div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <div className="text-xs font-mono text-white/40 mb-2">Python</div>
-              <CodeBlock
-                code={active.python}
-                language="python"
-                preClassName="rounded-xl border border-white/10 bg-black/60 p-4 text-xs leading-6"
-                testId="docs-python"
-              />
-            </div>
-            <div>
-              <div className="text-xs font-mono text-white/40 mb-2">cURL</div>
-              <CodeBlock
-                code={active.curl}
-                language="bash"
-                preClassName="rounded-xl border border-white/10 bg-black/60 p-4 text-xs leading-6"
-                testId="docs-curl"
-              />
-            </div>
+            {[
+              { label: 'Python', language: 'python', code: active.python, testId: 'docs-python' },
+              { label: 'JavaScript', language: 'javascript', code: active.javascript, testId: 'docs-javascript' },
+              { label: 'Go', language: 'go', code: active.go, testId: 'docs-go' },
+              { label: 'cURL', language: 'bash', code: active.curl, testId: 'docs-curl' },
+            ].map(sample => (
+              <div key={sample.label}>
+                <div className="text-xs font-mono text-white/40 mb-2">{sample.label}</div>
+                <CodeBlock
+                  code={sample.code}
+                  language={sample.language}
+                  preClassName="rounded-xl border border-white/10 bg-black/60 p-4 text-xs leading-6"
+                  testId={sample.testId}
+                />
+              </div>
+            ))}
           </div>
         </div>
 
@@ -173,7 +182,8 @@ export function Docs() {
           ))}
         </div>
       </div>
-    </section>
+      </section>
+    </>
   );
 }
 
@@ -275,25 +285,219 @@ print(transcript.text)`,
   -F file=@meeting.mp3`,
   };
 
+  const javascript = {
+    chat: `import OpenAI from "openai";
+
+const client = new OpenAI({
+  baseURL: "${apiBase}",
+  apiKey: "${exampleKey}",
+});
+
+const response = await client.chat.completions.create({
+  model: "openai-chat-latest",
+  messages: [{ role: "user", content: "Write a tiny SSE server in Go." }],
+});
+
+console.log(response.choices[0].message.content);`,
+    images: `import OpenAI from "openai";
+import { writeFile } from "node:fs/promises";
+
+const client = new OpenAI({ baseURL: "${apiBase}", apiKey: "${exampleKey}" });
+
+const result = await client.images.generate({
+  model: "gpt-image-2",
+  prompt: "A beige coffee mug on a wooden table, natural light, editorial photo",
+  size: "1024x1024",
+  quality: "high",
+  n: 1,
+});
+
+await writeFile("mug.png", Buffer.from(result.data[0].b64_json, "base64"));
+console.log("wrote mug.png");`,
+    videos: `const response = await fetch("${apiBase}/videos/generations", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: "Bearer ${exampleKey}",
+  },
+  body: JSON.stringify({
+    model: "sora-2",
+    prompt: "A cinematic fly-through of a neon-lit cyberpunk street at night.",
+    resolution: "1280x720",
+    num_frames: 48,
+    frames_per_second: 24,
+  }),
+});
+
+const result = await response.json();
+console.log(result.video_url);`,
+    transcription: `import OpenAI from "openai";
+import fs from "node:fs";
+
+const client = new OpenAI({ baseURL: "${apiBase}", apiKey: "${exampleKey}" });
+
+const transcript = await client.audio.transcriptions.create({
+  model: "gpt-4o-transcribe",
+  file: fs.createReadStream("meeting.mp3"),
+});
+
+console.log(transcript.text);`,
+  };
+
+  const go = {
+    chat: `package main
+
+import (
+	"bytes"
+	"fmt"
+	"io"
+	"net/http"
+)
+
+func main() {
+	body := []byte(\`{
+  "model": "openai-chat-latest",
+  "messages": [{"role": "user", "content": "Write a tiny SSE server in Go."}]
+}\`)
+
+	req, _ := http.NewRequest("POST", "${apiBase}/chat/completions", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer ${exampleKey}")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	out, _ := io.ReadAll(resp.Body)
+	fmt.Println(string(out))
+}`,
+    images: `package main
+
+import (
+	"bytes"
+	"fmt"
+	"io"
+	"net/http"
+)
+
+func main() {
+	body := []byte(\`{
+  "model": "gpt-image-2",
+  "prompt": "A beige coffee mug on a wooden table",
+  "size": "1024x1024",
+  "quality": "high",
+  "n": 1
+}\`)
+
+	req, _ := http.NewRequest("POST", "${apiBase}/images/generations", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer ${exampleKey}")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	out, _ := io.ReadAll(resp.Body)
+	fmt.Println(string(out))
+}`,
+    videos: `package main
+
+import (
+	"bytes"
+	"fmt"
+	"io"
+	"net/http"
+)
+
+func main() {
+	body := []byte(\`{
+  "model": "sora-2",
+  "prompt": "A cinematic fly-through of a neon-lit cyberpunk street at night.",
+  "resolution": "1280x720",
+  "num_frames": 48,
+  "frames_per_second": 24
+}\`)
+
+	req, _ := http.NewRequest("POST", "${apiBase}/videos/generations", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer ${exampleKey}")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	out, _ := io.ReadAll(resp.Body)
+	fmt.Println(string(out))
+}`,
+    transcription: `package main
+
+import (
+	"bytes"
+	"fmt"
+	"io"
+	"mime/multipart"
+	"net/http"
+	"os"
+)
+
+func main() {
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	writer.WriteField("model", "gpt-4o-transcribe")
+	file, _ := os.Open("meeting.mp3")
+	defer file.Close()
+	part, _ := writer.CreateFormFile("file", "meeting.mp3")
+	io.Copy(part, file)
+	writer.Close()
+
+	req, _ := http.NewRequest("POST", "${apiBase}/audio/transcriptions", &body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("Authorization", "Bearer ${exampleKey}")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	out, _ := io.ReadAll(resp.Body)
+	fmt.Println(string(out))
+}`,
+  };
+
   return {
     chat: {
       description: 'Send messages, receive streamed tokens. OpenAI SDK drop-in.',
       python: python.chat,
+      javascript: javascript.chat,
+      go: go.chat,
       curl: curl.chat,
     },
     images: {
       description: 'Generate images with GPT Image 2, Flux, Netwrck RA1, and more.',
       python: python.images,
+      javascript: javascript.images,
+      go: go.images,
       curl: curl.images,
     },
     videos: {
       description: 'Generate video clips with Sora 2, Hailuo, Wan, and LTX.',
       python: python.videos,
+      javascript: javascript.videos,
+      go: go.videos,
       curl: curl.videos,
     },
     transcription: {
       description: 'Upload an audio file and receive a JSON transcript.',
       python: python.transcription,
+      javascript: javascript.transcription,
+      go: go.transcription,
       curl: curl.transcription,
     },
   } as const;

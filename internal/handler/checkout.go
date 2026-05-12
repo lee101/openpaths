@@ -170,6 +170,25 @@ func (h *CheckoutHandler) handleCheckoutCompleted(ctx *fasthttp.RequestCtx, raw 
 	} else {
 		log.Printf("webhook: session %s already credited, no-op", session.ID)
 	}
+
+	h.saveCheckoutPaymentMethod(ctx, userID, session.PaymentIntent)
+}
+
+func (h *CheckoutHandler) saveCheckoutPaymentMethod(ctx *fasthttp.RequestCtx, userID, paymentIntentID string) {
+	if paymentIntentID == "" {
+		return
+	}
+	pi, err := h.stripe.RetrievePaymentIntent(paymentIntentID)
+	if err != nil {
+		log.Printf("webhook: payment method lookup failed for pi %s: %v", paymentIntentID, err)
+		return
+	}
+	if pi.PaymentMethod == "" {
+		return
+	}
+	if err := h.userQ.SetStripePaymentMethod(ctx, userID, pi.PaymentMethod); err != nil {
+		log.Printf("webhook: failed to save payment method for user %s: %v", userID, err)
+	}
 }
 
 func (h *CheckoutHandler) handleChargeRefunded(ctx *fasthttp.RequestCtx, eventID string, raw json.RawMessage) {

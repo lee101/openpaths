@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -14,6 +16,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/openpaths/openpaths/internal/model"
 	"github.com/openpaths/openpaths/internal/provider"
+	"google.golang.org/genai"
 )
 
 type GoogleProvider struct {
@@ -34,6 +37,269 @@ func New(apiKey, baseURL string) *GoogleProvider {
 }
 
 func (p *GoogleProvider) Name() string { return "google" }
+
+func (p *GoogleProvider) GenerateMusic(ctx context.Context, req *model.MusicGenerationRequest) (*model.MusicGenerationResponse, error) {
+	prompt := strings.TrimSpace(req.Lyrics)
+	if prompt == "" {
+		prompt = strings.TrimSpace(req.Prompt)
+	}
+	if prompt == "" {
+		return nil, &provider.ProviderError{Provider: "google", StatusCode: 400, Message: "lyrics or prompt is required", Retryable: false}
+	}
+
+	baseURL := p.baseURL
+	if !strings.HasSuffix(baseURL, "/") {
+		baseURL += "/"
+	}
+	client, err := genai.NewClient(ctx, &genai.ClientConfig{
+		APIKey:  p.apiKey,
+		Backend: genai.BackendGeminiAPI,
+		HTTPOptions: genai.HTTPOptions{
+			BaseURL: baseURL,
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("create genai client: %w", err)
+	}
+
+	config := &genai.GenerateContentConfig{
+		ResponseModalities: []string{"AUDIO"},
+	}
+
+	audio, mimeType, err := collectAudioFromGenerateContentStream(ctx, client, req.Model, prompt, config)
+	if err != nil {
+		return nil, err
+	}
+	if len(audio) == 0 {
+		return nil, &provider.ProviderError{Provider: "google", StatusCode: 502, Message: "no audio returned", Retryable: true}
+	}
+
+	return &model.MusicGenerationResponse{
+		Data: &model.MusicData{
+			Status: 2,
+			Audio:  base64.StdEncoding.EncodeToString(audio),
+		},
+		ExtraInfo: &model.MusicExtraInfo{
+			Size: len(audio),
+		},
+		AnalysisInfo: map[string]string{
+			"mime_type": mimeType,
+		},
+		BaseResp: &model.MusicBaseResponse{
+			StatusCode: 0,
+			StatusMsg:  "success",
+		},
+	}, nil
+}
+
+func (p *GoogleProvider) GenerateSpeech(ctx context.Context, req *model.SpeechRequest) (*model.SpeechResponse, error) {
+	text := strings.TrimSpace(req.Input)
+	if text == "" {
+		text = strings.TrimSpace(req.Text)
+	}
+	if text == "" {
+		return nil, &provider.ProviderError{Provider: "google", StatusCode: 400, Message: "input is required", Retryable: false}
+	}
+
+	baseURL := p.baseURL
+	if !strings.HasSuffix(baseURL, "/") {
+		baseURL += "/"
+	}
+	client, err := genai.NewClient(ctx, &genai.ClientConfig{
+		APIKey:  p.apiKey,
+		Backend: genai.BackendGeminiAPI,
+		HTTPOptions: genai.HTTPOptions{
+			BaseURL: baseURL,
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("create genai client: %w", err)
+	}
+
+	config := &genai.GenerateContentConfig{
+		ResponseModalities: []string{"AUDIO"},
+		SpeechConfig:       buildGeminiSpeechConfig(req),
+	}
+	if req.Temperature != nil {
+		temp := float32(*req.Temperature)
+		config.Temperature = &temp
+	}
+
+	audio, mimeType, err := collectAudioFromGenerateContentStream(ctx, client, req.Model, text, config)
+	if err != nil {
+		return nil, err
+	}
+	if len(audio) == 0 {
+		return nil, &provider.ProviderError{Provider: "google", StatusCode: 502, Message: "no audio returned", Retryable: true}
+	}
+
+	return &model.SpeechResponse{
+		Audio:      base64.StdEncoding.EncodeToString(audio),
+		Format:     audioFormatFromMime(mimeType),
+		Characters: len(text),
+	}, nil
+}
+
+func buildGeminiSpeechConfig(req *model.SpeechRequest) *genai.SpeechConfig {
+	cfg := &genai.SpeechConfig{}
+	if req.Language != "" {
+		cfg.LanguageCode = req.Language
+	}
+	if len(req.SpeakerVoices) > 0 {
+		speakers := make([]*genai.SpeakerVoiceConfig, 0, len(req.SpeakerVoices))
+		for _, speaker := range req.SpeakerVoices {
+			if strings.TrimSpace(speaker.Speaker) == "" {
+				continue
+			}
+			speakers = append(speakers, &genai.SpeakerVoiceConfig{
+				Speaker: speaker.Speaker,
+				VoiceConfig: &genai.VoiceConfig{
+					PrebuiltVoiceConfig: &genai.PrebuiltVoiceConfig{VoiceName: normalizeGeminiTTSVoice(speaker.Voice)},
+				},
+			})
+		}
+		if len(speakers) > 0 {
+			cfg.MultiSpeakerVoiceConfig = &genai.MultiSpeakerVoiceConfig{SpeakerVoiceConfigs: speakers}
+			return cfg
+		}
+	}
+
+	voice := req.Voice
+	if voice == "" {
+		voice = req.VoiceID
+	}
+	cfg.VoiceConfig = &genai.VoiceConfig{
+		PrebuiltVoiceConfig: &genai.PrebuiltVoiceConfig{VoiceName: normalizeGeminiTTSVoice(voice)},
+	}
+	return cfg
+}
+
+func normalizeGeminiTTSVoice(voice string) string {
+	switch strings.ToLower(strings.TrimSpace(voice)) {
+	case "achernar":
+		return "Achernar"
+	case "achird":
+		return "Achird"
+	case "algenib":
+		return "Algenib"
+	case "algieba":
+		return "Algieba"
+	case "alnilam":
+		return "Alnilam"
+	case "aoede":
+		return "Aoede"
+	case "autonoe":
+		return "Autonoe"
+	case "callirrhoe":
+		return "Callirrhoe"
+	case "charon":
+		return "Charon"
+	case "despina":
+		return "Despina"
+	case "enceladus":
+		return "Enceladus"
+	case "erinome":
+		return "Erinome"
+	case "fenrir":
+		return "Fenrir"
+	case "gacrux":
+		return "Gacrux"
+	case "iapetus":
+		return "Iapetus"
+	case "kore":
+		return "Kore"
+	case "laomedeia":
+		return "Laomedeia"
+	case "leda":
+		return "Leda"
+	case "orus":
+		return "Orus"
+	case "puck":
+		return "Puck"
+	case "pulcherrima":
+		return "Pulcherrima"
+	case "rasalgethi":
+		return "Rasalgethi"
+	case "sadachbia":
+		return "Sadachbia"
+	case "sadaltager":
+		return "Sadaltager"
+	case "schedar":
+		return "Schedar"
+	case "sulafat":
+		return "Sulafat"
+	case "umbriel":
+		return "Umbriel"
+	case "vindemiatrix":
+		return "Vindemiatrix"
+	case "zephyr":
+		return "Zephyr"
+	case "zubenelgenubi":
+		return "Zubenelgenubi"
+	default:
+		return "Puck"
+	}
+}
+
+func audioFormatFromMime(mimeType string) string {
+	switch {
+	case strings.Contains(mimeType, "wav"):
+		return "wav"
+	case strings.Contains(mimeType, "ogg"):
+		return "ogg"
+	case strings.Contains(mimeType, "flac"):
+		return "flac"
+	case strings.Contains(mimeType, "mp4"):
+		return "mp4"
+	case strings.Contains(mimeType, "webm"):
+		return "webm"
+	case strings.Contains(mimeType, "mpeg"), strings.Contains(mimeType, "mp3"):
+		return "mp3"
+	default:
+		return "wav"
+	}
+}
+
+func collectAudioFromGenerateContentStream(ctx context.Context, client *genai.Client, modelName, prompt string, config *genai.GenerateContentConfig) ([]byte, string, error) {
+	var audio []byte
+	var mimeType string
+
+	for chunk, err := range client.Models.GenerateContentStream(ctx, modelName, genai.Text(prompt), config) {
+		if err != nil {
+			return nil, "", googleProviderError(err)
+		}
+		for _, cand := range chunk.Candidates {
+			if cand == nil || cand.Content == nil {
+				continue
+			}
+			for _, part := range cand.Content.Parts {
+				if part == nil || part.InlineData == nil || len(part.InlineData.Data) == 0 {
+					continue
+				}
+				if mimeType == "" {
+					mimeType = part.InlineData.MIMEType
+				}
+				audio = append(audio, part.InlineData.Data...)
+			}
+		}
+	}
+
+	return audio, mimeType, nil
+}
+
+func googleProviderError(err error) error {
+	var apiErr genai.APIError
+	if errors.As(err, &apiErr) {
+		return &provider.ProviderError{
+			Provider:   "google",
+			StatusCode: apiErr.Code,
+			Message:    apiErr.Message,
+			Retryable:  apiErr.Code >= 500 || apiErr.Code == 429,
+			Err:        err,
+		}
+	}
+	return &provider.ProviderError{Provider: "google", StatusCode: 502, Message: err.Error(), Retryable: true, Err: err}
+}
 
 // Gemini API types
 type geminiRequest struct {

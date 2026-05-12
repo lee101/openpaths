@@ -99,11 +99,13 @@ echo ""
 
 # --- xAI ---
 echo "=== xAI ==="
-test_chat "Grok 3 Mini" "grok-3-mini"
+test_chat "Grok 4.20 Non-Reasoning" "grok-4.20-non-reasoning"
 echo ""
 
 # --- DeepSeek ---
 echo "=== DeepSeek ==="
+test_chat "DeepSeek V4 Flash" "deepseek-v4-flash"
+test_chat "DeepSeek V4 Pro" "deepseek-v4-pro"
 test_chat "DeepSeek V3.2" "deepseek-chat"
 echo ""
 

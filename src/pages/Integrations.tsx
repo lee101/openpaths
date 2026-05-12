@@ -3,6 +3,7 @@ import { Check, Copy, Network, PlugZap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { CodeBlock } from '../components/CodeBlock';
 import { getAPIBaseURL, getStoredAPIKey } from '../lib/session';
+import { Seo } from '../components/Seo';
 
 type Integration = {
   id: string;
@@ -251,7 +252,14 @@ export function Integrations() {
   };
 
   return (
-    <section className="max-w-6xl mx-auto px-6 py-16">
+    <>
+      <Seo
+        title="OpenPaths Integrations | LangChain, Vercel AI SDK, Agents"
+        description="Copy-paste OpenPaths integration examples for LangChain, Vercel AI SDK, PydanticAI, Mastra, Langfuse, LiveKit, Hermes Agent, and OpenClaw."
+        path="/integrations"
+      />
+
+      <section className="max-w-6xl mx-auto px-6 py-16">
       <div className="mb-12">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/[0.04] text-xs font-mono text-white/60 mb-6">
           <PlugZap className="w-3.5 h-3.5" />
@@ -331,6 +339,7 @@ export function Integrations() {
           );
         })}
       </div>
-    </section>
+      </section>
+    </>
   );
 }

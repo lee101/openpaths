@@ -1,9 +1,10 @@
 import React, { useMemo } from 'react';
-import { useParams, Link, Navigate } from 'react-router-dom';
+import { useParams, Link, Navigate, useLocation } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowLeft, Calendar, Clock, User } from 'lucide-react';
 import { posts } from '../data/blog';
 import { CodeBlock } from '../components/CodeBlock';
+import { Seo } from '../components/Seo';
 
 function renderMarkdown(content: string): React.ReactNode[] {
   const lines = content.split('\n');
@@ -133,12 +134,35 @@ function renderInline(text: string): React.ReactNode[] {
   let k = 0;
 
   while (remaining.length > 0) {
+    const linkMatch = remaining.match(/\[([^\]]+)\]\(([^)]+)\)/);
     // Bold
     const boldMatch = remaining.match(/\*\*(.+?)\*\*/);
     // Inline code
     const codeMatch = remaining.match(/`([^`]+)`/);
 
     let nextMatch: { idx: number; len: number; node: React.ReactNode; raw: string } | null = null;
+
+    if (linkMatch && linkMatch.index !== undefined) {
+      const href = linkMatch[2];
+      const isExternal = /^https?:\/\//.test(href);
+      const candidate = {
+        idx: linkMatch.index,
+        len: linkMatch[0].length,
+        node: (
+          <a
+            key={`l${k++}`}
+            href={href}
+            className="text-white underline underline-offset-4 decoration-white/25 hover:decoration-white"
+            target={isExternal ? '_blank' : undefined}
+            rel={isExternal ? 'noreferrer noopener' : undefined}
+          >
+            {linkMatch[1]}
+          </a>
+        ),
+        raw: linkMatch[0],
+      };
+      if (!nextMatch || candidate.idx < nextMatch.idx) nextMatch = candidate;
+    }
 
     if (boldMatch && boldMatch.index !== undefined) {
       const candidate = { idx: boldMatch.index, len: boldMatch[0].length, node: <strong key={`b${k++}`} className="text-white font-medium">{boldMatch[1]}</strong>, raw: boldMatch[0] };
@@ -166,7 +190,13 @@ function renderInline(text: string): React.ReactNode[] {
 
 export function BlogPost() {
   const { slug } = useParams<{ slug: string }>();
-  const post = useMemo(() => posts.find(p => p.slug === slug), [slug]);
+  const location = useLocation();
+  const post = useMemo(() => {
+    if (location.pathname.startsWith('/alternatives/')) {
+      return posts.find(p => p.alternativePath === location.pathname);
+    }
+    return posts.find(p => p.slug === slug);
+  }, [location.pathname, slug]);
 
   if (!post) {
     return <Navigate to="/blog" replace />;
@@ -175,12 +205,19 @@ export function BlogPost() {
   const rendered = useMemo(() => renderMarkdown(post.content), [post.content]);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className="max-w-3xl mx-auto px-6 py-12"
-    >
+    <>
+      <Seo
+        title={`${post.title} | OpenPaths Blog`}
+        description={post.excerpt}
+        path={location.pathname.startsWith('/alternatives/') ? location.pathname : `/blog/${post.slug}`}
+      />
+
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="max-w-3xl mx-auto px-6 py-12"
+      >
       <Link to="/blog" className="inline-flex items-center gap-2 text-sm font-mono text-white/40 hover:text-white transition-colors mb-12">
         <ArrowLeft className="w-4 h-4" /> All Posts
       </Link>
@@ -210,6 +247,7 @@ export function BlogPost() {
           <ArrowLeft className="w-4 h-4" /> Back to all posts
         </Link>
       </div>
-    </motion.div>
+      </motion.div>
+    </>
   );
 }

@@ -5,6 +5,7 @@ import { providers, FALLBACK_LOGO } from '../data/providers';
 import { models } from '../data/models';
 import { getAPIBaseURL, getStoredAPIKey } from '../lib/session';
 import { CodeBlock } from '../components/CodeBlock';
+import { Seo } from '../components/Seo';
 
 interface ProviderExample {
   description: string;
@@ -12,8 +13,10 @@ interface ProviderExample {
   chatModel?: string;
   imageModel?: string;
   videoModel?: string;
+  speechModel?: string;
   transcriptionModel?: string;
   embeddingModel?: string;
+  realtimeModel?: string;
   provides?: Array<{
     title: string;
     description: string;
@@ -57,9 +60,36 @@ const EXAMPLES: Record<string, ProviderExample> = {
     ],
   },
   xai: {
-    description: 'Grok 4, Grok 4.1 Fast Reasoning (2M context), Grok 3 Mini.',
+    description: 'Grok 4.3 reasoning, Grok 4.20 Non-Reasoning, Grok Imagine Image, plus xAI Voice Agent, Text to Speech, and Speech to Text APIs.',
     endpoint: '/v1',
-    chatModel: 'grok-4-0709',
+    chatModel: 'grok-latest',
+    imageModel: 'grok-imagine-image',
+    speechModel: 'xai-tts',
+    transcriptionModel: 'xai-stt',
+    realtimeModel: 'grok-voice-think-fast-1.0',
+    provides: [
+      {
+        title: 'Voice Agent API',
+        description: 'Realtime speech-to-speech conversations with tool use over xAI’s `/v1/realtime` WebSocket API, powered by `grok-voice-think-fast-1.0` at $3.00 per hour.',
+      },
+      {
+        title: 'Text to Speech',
+        description: 'Generate speech from text through `/v1/tts` or `/v1/audio/speech` with five expressive voices: eve, ara, rex, sal, and leo. Priced at $15.00 per 1M input characters.',
+      },
+      {
+        title: 'Speech to Text',
+        description: 'Transcribe audio through `/v1/stt` or `/v1/audio/transcriptions` with batch uploads, streaming upstream support, and 25 language-formatting options at $0.20 per hour.',
+      },
+      {
+        title: 'Grok Imagine Image',
+        description: 'Generate images through `/v1/images/generations` or edit one to five input images through `/v1/images/edits`. Output images are $0.02 each and image inputs are $0.002 each.',
+      },
+    ],
+    notes: [
+      '`grok-latest` resolves automatically to the highest configured xAI Grok text model.',
+      '`/v1/tts` defaults to `xai-tts`; `/v1/stt` defaults to `xai-stt`.',
+      'Realtime voice uses xAI’s WebSocket shape: `wss://.../v1/realtime?model=grok-voice-think-fast-1.0`.',
+    ],
   },
   deepseek: {
     description: 'DeepSeek V3 Chat and Reasoner — frontier-level performance, extremely cheap.',
@@ -118,9 +148,16 @@ const EXAMPLES: Record<string, ProviderExample> = {
     ],
   },
   fal: {
-    description: 'FLUX Klein 4B, FLUX Schnell, FLUX Dev, FLUX Pro — fast serverless image generation.',
+    description: 'FLUX image generation plus ByteDance Seedance 2.0 text-to-video and reference-to-video through OpenPaths.',
     endpoint: '/v1',
     imageModel: 'flux-pro',
+    videoModel: 'seedance-2.0-fast-text-to-video',
+    notes: [
+      '`seedance-2.0-fast-text-to-video` accepts prompt, resolution, duration, aspect_ratio, generate_audio, seed, and end_user_id.',
+      '`seedance-2.0-image-to-video` accepts image_url plus optional end_image_url for start/end frame control.',
+      '`seedance-2.0-reference-to-video` and `seedance-2.0-fast-reference-to-video` also accept image_urls, video_urls, and audio_urls. Reference them in prompts as @Image1, @Video1, and @Audio1.',
+      'OpenPaths exposes these through `/v1/videos/generations`; you do not call Fal directly or send a Fal key.',
+    ],
   },
   minimax: {
     description: 'MiniMax M2.5 chat, Hailuo 2.3 video, and Speech 2.8 HD TTS.',
@@ -143,7 +180,7 @@ const EXAMPLES: Record<string, ProviderExample> = {
   nvidia: {
     description: 'NVIDIA NIM hosts frontier open models on accelerated infra. OpenPaths wires each one into a circuit-breaker fallback chain with the original provider so healthy capacity is used first and traffic cuts over on saturation.',
     endpoint: '/v1',
-    chatModel: 'nvidia/minimax-m2.7',
+    chatModel: 'nvidia/deepseek-v4-pro',
     provides: [
       {
         title: 'MiniMax M2.7',
@@ -154,6 +191,10 @@ const EXAMPLES: Record<string, ProviderExample> = {
         description: 'DeepSeek V3.2 with reasoning_content streaming. Aliases `deepseek-v3.2` / `deepseek-3.2`. Circuit-broken with `deepseek-chat`, Together V3.1, and OpenRouter.',
       },
       {
+        title: 'DeepSeek V4 Pro',
+        description: 'Free DeepSeek V4 Pro endpoint. Use `nvidia/deepseek-v4-pro` or alias `deepseek-v4-pro-free`; OpenPaths sends NVIDIA `chat_template_kwargs` with thinking and high reasoning enabled.',
+      },
+      {
         title: 'Devstral 2 123B',
         description: 'Mistral Devstral 2 123B-instruct, tuned for code. Aliases `devstral-2` / `devstral-2-123b`. Balanced with Mistral `devstral-medium-latest` and `codestral-latest`.',
       },
@@ -161,7 +202,7 @@ const EXAMPLES: Record<string, ProviderExample> = {
     notes: [
       'Health-tracker circuit breakers mark each provider+model key unhealthy on 5xx/429 with a 30s–2min exponential cooldown; traffic automatically shifts to the next healthy candidate.',
       'Use the direct `nvidia/*` IDs to force NVIDIA routing; use the short aliases (e.g. `deepseek-v3.2`) when you want the full balanced pool.',
-      'DeepSeek V3.2 supports `chat_template_kwargs={"thinking": true}` for reasoning_content streaming when called against nvidia/deepseek-v3.2 directly.',
+      'NVIDIA DeepSeek routes use `chat_template_kwargs={"thinking": true, "reasoning_effort": "high"}` for reasoning_content streaming when called directly.',
     ],
   },
   nous: {
@@ -197,13 +238,14 @@ const EXAMPLES: Record<string, ProviderExample> = {
     ],
   },
   openpaths: {
-    description: 'First-party auto-routing tiers (auto, auto-easy, auto-medium, auto-think) plus the gobed embedding model.',
+    description: 'First-party auto-routing tiers (auto, auto-easy, auto-medium, auto-think) plus our local embedding model.',
     endpoint: '/v1',
     chatModel: 'auto',
     embeddingModel: 'openpaths-embed',
     notes: [
-      '`openpaths-embed` is billed per request rather than per token.',
-      'Long inputs default to truncation; set `long_text_mode=average_chunks` if you want OpenPaths to average chunk embeddings across the full text.',
+      '`openpaths-embed` is billed per request and optimized for cost-effective local embeddings.',
+      '`reasoning_effort="auto"` can be used on any thinking-capable direct chat model to keep that model while auto-selecting none, low, medium, or high thinking.',
+      'Use `long_text_mode=average_chunks` when you want full-text averaging on longer inputs.',
     ],
   },
 };
@@ -245,7 +287,14 @@ export function ProviderDocs() {
   };
 
   return (
-    <section className="max-w-6xl mx-auto px-6 py-16">
+    <>
+      <Seo
+        title={`${providerName} API Docs | OpenPaths`}
+        description={example?.description || provider?.description || `${providerName} API examples and model documentation for OpenPaths.`}
+        path={`/${slug}/docs`}
+      />
+
+      <section className="max-w-6xl mx-auto px-6 py-16">
       <div className="mb-6">
         <Link to="/docs" className="inline-flex items-center gap-1.5 text-xs font-mono text-white/50 hover:text-white transition-colors">
           <ArrowLeft className="w-3.5 h-3.5" /> All docs
@@ -374,7 +423,8 @@ export function ProviderDocs() {
           </div>
         </div>
       )}
-    </section>
+      </section>
+    </>
   );
 }
 
@@ -415,7 +465,7 @@ print(completion.choices[0].message.content)`,
       title: 'Image Generation',
       description: `Default image model: ${ex.imageModel}`,
       python: `from openai import OpenAI
-import base64, pathlib
+import base64, pathlib, requests
 
 client = OpenAI(base_url="${apiBase}", api_key="${key}")
 
@@ -426,7 +476,11 @@ img = client.images.generate(
     n=1,
 )
 
-pathlib.Path("out.png").write_bytes(base64.b64decode(img.data[0].b64_json))`,
+image = img.data[0]
+if image.b64_json:
+    pathlib.Path("out.png").write_bytes(base64.b64decode(image.b64_json))
+else:
+    pathlib.Path("out.png").write_bytes(requests.get(image.url).content)`,
       curl: `curl ${apiBase}/images/generations \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer ${key}" \\
@@ -437,6 +491,44 @@ pathlib.Path("out.png").write_bytes(base64.b64decode(img.data[0].b64_json))`,
     "n": 1
   }'`,
     });
+    if (ex.imageModel === 'grok-imagine-image') {
+      out.push({
+        title: 'Image Edit',
+        description: 'Edit one or more source images with Grok Imagine.',
+        python: `import requests
+
+resp = requests.post(
+    "${apiBase}/images/edits",
+    headers={
+        "Authorization": "Bearer ${key}",
+        "Content-Type": "application/json",
+    },
+    json={
+        "model": "grok-imagine-image",
+        "prompt": "Show all subjects sitting together on the grass in a sunny park.",
+        "images": [
+            {"type": "image_url", "url": "https://docs.x.ai/assets/api-examples/images/image-merge/woman.jpg"},
+            {"type": "image_url", "url": "https://docs.x.ai/assets/api-examples/images/image-merge/man.jpg"},
+        ],
+        "aspect_ratio": "3:2",
+    },
+)
+resp.raise_for_status()
+print(resp.json()["data"][0]["url"])`,
+        curl: `curl ${apiBase}/images/edits \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer ${key}" \\
+  -d '{
+    "model": "grok-imagine-image",
+    "prompt": "Show all subjects sitting together on the grass in a sunny park.",
+    "images": [
+      { "type": "image_url", "url": "https://docs.x.ai/assets/api-examples/images/image-merge/woman.jpg" },
+      { "type": "image_url", "url": "https://docs.x.ai/assets/api-examples/images/image-merge/man.jpg" }
+    ],
+    "aspect_ratio": "3:2"
+  }'`,
+      });
+    }
   }
   if (ex?.videoModel) {
     out.push({
@@ -470,6 +562,39 @@ print(resp.json()["video_url"])`,
   }'`,
     });
   }
+  if (ex?.speechModel) {
+    out.push({
+      title: 'Text To Speech',
+      description: `Default speech model: ${ex.speechModel}`,
+      python: `import base64
+import requests
+
+resp = requests.post(
+    "${apiBase}/tts",
+    headers={
+        "Authorization": "Bearer ${key}",
+        "Content-Type": "application/json",
+    },
+    json={
+        "text": "Hello from xAI text to speech.",
+        "voice_id": "eve",
+        "language": "en",
+    },
+)
+resp.raise_for_status()
+
+audio = resp.json()["audio"]
+open("hello.mp3", "wb").write(base64.b64decode(audio))`,
+      curl: `curl ${apiBase}/tts \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer ${key}" \\
+  -d '{
+    "text": "Hello from xAI text to speech.",
+    "voice_id": "eve",
+    "language": "en"
+  }'`,
+    });
+  }
   if (ex?.transcriptionModel) {
     out.push({
       title: 'Transcription',
@@ -489,6 +614,46 @@ print(transcript.text)`,
   -H "Authorization: Bearer ${key}" \\
   -F model=${ex.transcriptionModel} \\
   -F file=@meeting.mp3`,
+    });
+  }
+  if (ex?.realtimeModel) {
+    out.push({
+      title: 'Realtime Voice',
+      description: `Default realtime model: ${ex.realtimeModel}`,
+      python: `import asyncio
+import json
+import os
+import websockets
+
+async def main():
+    async with websockets.connect(
+        "wss://api.x.ai/v1/realtime?model=${ex.realtimeModel}",
+        additional_headers={"Authorization": f"Bearer {os.environ['XAI_API_KEY']}"},
+    ) as ws:
+        await ws.send(json.dumps({
+            "type": "session.update",
+            "session": {
+                "voice": "eve",
+                "instructions": "You are a concise voice assistant.",
+                "turn_detection": {"type": "server_vad"},
+            },
+        }))
+        await ws.send(json.dumps({
+            "type": "conversation.item.create",
+            "item": {
+                "type": "message",
+                "role": "user",
+                "content": [{"type": "input_text", "text": "Hello!"}],
+            },
+        }))
+        await ws.send(json.dumps({"type": "response.create"}))
+        async for message in ws:
+            print(json.loads(message)["type"])
+
+asyncio.run(main())`,
+      curl: `# Realtime voice is a WebSocket endpoint.
+# Use an xAI API key with a WebSocket client and connect to:
+wss://api.x.ai/v1/realtime?model=${ex.realtimeModel}`,
     });
   }
   if (ex?.embeddingModel) {

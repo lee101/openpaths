@@ -8,17 +8,41 @@ import (
 	"time"
 
 	"github.com/openpaths/openpaths/internal/db/queries"
+	"github.com/openpaths/openpaths/internal/model"
 	"github.com/openpaths/openpaths/internal/stripe"
 )
 
+const (
+	autoTopupSuccessDebounce = 60 * time.Second
+	autoTopupFailureDebounce = 6 * time.Hour
+)
+
+type autoTopupUserStore interface {
+	GetAutotopupInfo(ctx context.Context, userID string) (*model.User, int64, error)
+	SetAutotopupLastAt(ctx context.Context, userID string) error
+}
+
+type autoTopupChargeStore interface {
+	LastChargeForUser(ctx context.Context, userID string) (*queries.AutotopupCharge, error)
+	LogCharge(ctx context.Context, userID string, amountCents int64, amountUSD float64, stripePI, status, errMsg string) error
+}
+
+type autoTopupCharger interface {
+	ChargeOffSession(customerID, paymentMethodID string, amountUSDCents int64, idempotencyKey string) (string, error)
+}
+
+type autoTopupDepositor interface {
+	Deposit(ctx context.Context, userID string, amountCents int64, description string) error
+}
+
 type AutoTopupService struct {
-	userQ      *queries.UserQueries
-	creditQ    *queries.CreditQueries
-	topupQ     *queries.AutotopupQueries
-	stripe     *stripe.Service
-	engine     *Engine
-	mu         sync.Mutex
-	inFlight   map[string]bool // prevent concurrent topups per user
+	userQ    autoTopupUserStore
+	creditQ  *queries.CreditQueries
+	topupQ   autoTopupChargeStore
+	stripe   autoTopupCharger
+	engine   autoTopupDepositor
+	mu       sync.Mutex
+	inFlight map[string]bool // prevent concurrent topups per user
 }
 
 func NewAutoTopupService(
@@ -90,8 +114,13 @@ func (s *AutoTopupService) doTopup(ctx context.Context, userID string) error {
 		return nil
 	}
 
-	// Rate limit: no more than once per 60 seconds
-	if user.AutotopupLastAt != nil && time.Since(*user.AutotopupLastAt) < 60*time.Second {
+	// Short success debounce handles rapid balance checks after a successful charge.
+	if user.AutotopupLastAt != nil && time.Since(*user.AutotopupLastAt) < autoTopupSuccessDebounce {
+		return nil
+	}
+	if skip, err := s.recentFailureDebounced(ctx, userID, user.UpdatedAt); err != nil {
+		return err
+	} else if skip {
 		return nil
 	}
 
@@ -103,7 +132,7 @@ func (s *AutoTopupService) doTopup(ctx context.Context, userID string) error {
 	}
 	amountUSD := float64(amountUSDCents) / 100.0
 
-	idempotencyKey := fmt.Sprintf("autotopup-%s-%d", userID, time.Now().Unix()/60)
+	idempotencyKey := fmt.Sprintf("autotopup-%s-%d", userID, time.Now().Unix()/int64(autoTopupFailureDebounce.Seconds()))
 
 	piID, err := s.stripe.ChargeOffSession(
 		*user.StripeCustomerID,
@@ -129,6 +158,23 @@ func (s *AutoTopupService) doTopup(ctx context.Context, userID string) error {
 
 	log.Printf("autotopup: user=%s amount=$%.2f pi=%s", userID, amountUSD, piID)
 	return nil
+}
+
+func (s *AutoTopupService) recentFailureDebounced(ctx context.Context, userID string, userUpdatedAt time.Time) (bool, error) {
+	if s.topupQ == nil {
+		return false, nil
+	}
+	last, err := s.topupQ.LastChargeForUser(ctx, userID)
+	if err != nil {
+		return false, err
+	}
+	if last == nil || last.Status != "failed" {
+		return false, nil
+	}
+	if userUpdatedAt.After(last.CreatedAt) {
+		return false, nil
+	}
+	return time.Since(last.CreatedAt) < autoTopupFailureDebounce, nil
 }
 
 func truncateStr(s string, n int) string {

@@ -16,23 +16,34 @@ import (
 )
 
 type OpenAIProvider struct {
-	apiKey  string
-	baseURL string
-	client  *http.Client
+	apiKey       string
+	baseURL      string
+	providerName string
+	sanitizeChat func(*model.ChatCompletionRequest)
+	client       *http.Client
 }
 
 func New(apiKey, baseURL string) *OpenAIProvider {
+	return NewCompatible("openai", apiKey, baseURL, sanitizeForOpenAI)
+}
+
+func NewCompatible(providerName, apiKey, baseURL string, sanitizeChat func(*model.ChatCompletionRequest)) *OpenAIProvider {
 	if baseURL == "" {
 		baseURL = "https://api.openai.com"
 	}
+	if providerName == "" {
+		providerName = "openai"
+	}
 	return &OpenAIProvider{
-		apiKey:  apiKey,
-		baseURL: strings.TrimRight(baseURL, "/"),
-		client:  &http.Client{Timeout: 5 * time.Minute},
+		apiKey:       apiKey,
+		baseURL:      strings.TrimRight(baseURL, "/"),
+		providerName: providerName,
+		sanitizeChat: sanitizeChat,
+		client:       &http.Client{Timeout: 5 * time.Minute},
 	}
 }
 
-func (p *OpenAIProvider) Name() string { return "openai" }
+func (p *OpenAIProvider) Name() string { return p.providerName }
 
 // sanitizeForOpenAI removes cross-provider hints that OpenAI's API does not
 // recognize. OpenAI has no native "prefill" or "task_tier" fields and may
@@ -41,6 +52,8 @@ func (p *OpenAIProvider) Name() string { return "openai" }
 func sanitizeForOpenAI(req *model.ChatCompletionRequest) {
 	req.Prefill = ""
 	req.TaskTier = ""
+	req.Thinking = nil
+	req.ChatTemplateKwargs = nil
 }
 
 // normalizeMaxTokens converts max_tokens to max_completion_tokens for newer
@@ -57,9 +70,13 @@ func normalizeMaxTokens(req *model.ChatCompletionRequest) {
 }
 
 func (p *OpenAIProvider) ChatCompletion(ctx context.Context, req *model.ChatCompletionRequest) (*model.ChatCompletionResponse, error) {
-	normalizeMaxTokens(req)
-	sanitizeForOpenAI(req)
-	body, err := json.Marshal(req)
+	outReq := *req
+	outReq.ChatTemplateKwargs = cloneMap(req.ChatTemplateKwargs)
+	normalizeMaxTokens(&outReq)
+	if p.sanitizeChat != nil {
+		p.sanitizeChat(&outReq)
+	}
+	body, err := json.Marshal(&outReq)
 	if err != nil {
 		return nil, fmt.Errorf("marshal request: %w", err)
 	}
@@ -74,7 +91,7 @@ func (p *OpenAIProvider) ChatCompletion(ctx context.Context, req *model.ChatComp
 	resp, err := p.client.Do(httpReq)
 	if err != nil {
 		return nil, &provider.ProviderError{
-			Provider: "openai", StatusCode: 502, Message: err.Error(), Retryable: true, Err: err,
+			Provider: p.providerName, StatusCode: 502, Message: err.Error(), Retryable: true, Err: err,
 		}
 	}
 	defer resp.Body.Close()
@@ -86,7 +103,7 @@ func (p *OpenAIProvider) ChatCompletion(ctx context.Context, req *model.ChatComp
 
 	if resp.StatusCode != 200 {
 		return nil, &provider.ProviderError{
-			Provider:   "openai",
+			Provider:   p.providerName,
 			StatusCode: resp.StatusCode,
 			Message:    string(respBody),
 			Retryable:  resp.StatusCode >= 500 || resp.StatusCode == 429,
@@ -102,14 +119,18 @@ func (p *OpenAIProvider) ChatCompletion(ctx context.Context, req *model.ChatComp
 }
 
 func (p *OpenAIProvider) ChatCompletionStream(ctx context.Context, req *model.ChatCompletionRequest) (<-chan provider.StreamEvent, error) {
-	req.Stream = true
-	if req.StreamOptions == nil {
-		req.StreamOptions = &model.StreamOptions{IncludeUsage: true}
+	outReq := *req
+	outReq.ChatTemplateKwargs = cloneMap(req.ChatTemplateKwargs)
+	outReq.Stream = true
+	if outReq.StreamOptions == nil {
+		outReq.StreamOptions = &model.StreamOptions{IncludeUsage: true}
 	}
-	normalizeMaxTokens(req)
-	sanitizeForOpenAI(req)
+	normalizeMaxTokens(&outReq)
+	if p.sanitizeChat != nil {
+		p.sanitizeChat(&outReq)
+	}
 
-	body, err := json.Marshal(req)
+	body, err := json.Marshal(&outReq)
 	if err != nil {
 		return nil, fmt.Errorf("marshal request: %w", err)
 	}
@@ -124,7 +145,7 @@ func (p *OpenAIProvider) ChatCompletionStream(ctx context.Context, req *model.Ch
 	resp, err := p.client.Do(httpReq)
 	if err != nil {
 		return nil, &provider.ProviderError{
-			Provider: "openai", StatusCode: 502, Message: err.Error(), Retryable: true, Err: err,
+			Provider: p.providerName, StatusCode: 502, Message: err.Error(), Retryable: true, Err: err,
 		}
 	}
 
@@ -132,7 +153,7 @@ func (p *OpenAIProvider) ChatCompletionStream(ctx context.Context, req *model.Ch
 		respBody, _ := io.ReadAll(resp.Body)
 		resp.Body.Close()
 		return nil, &provider.ProviderError{
-			Provider:   "openai",
+			Provider:   p.providerName,
 			StatusCode: resp.StatusCode,
 			Message:    string(respBody),
 			Retryable:  resp.StatusCode >= 500 || resp.StatusCode == 429,
@@ -179,6 +200,17 @@ func (p *OpenAIProvider) ChatCompletionStream(ctx context.Context, req *model.Ch
 	}()
 
 	return ch, nil
+}
+
+func cloneMap(in map[string]any) map[string]any {
+	if in == nil {
+		return nil
+	}
+	out := make(map[string]any, len(in))
+	for k, v := range in {
+		out[k] = v
+	}
+	return out
 }
 
 func (p *OpenAIProvider) HealthCheck(ctx context.Context) error {

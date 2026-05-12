@@ -2,16 +2,19 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { models, Tag, SortOption, parseContextLength } from '../data/models';
 import { providersByName, getProviderLogo } from '../data/providers';
-import { Search, Tag as TagIcon, Cpu, Zap, Image as ImageIcon, Code2, BrainCircuit, MessageSquare, Globe, ArrowUpDown, Video, Gift, Database } from 'lucide-react';
+import { Search, Tag as TagIcon, Cpu, Zap, Image as ImageIcon, Code2, BrainCircuit, MessageSquare, Globe, ArrowUpDown, Video, Gift, Database, AudioLines } from 'lucide-react';
 import { motion } from 'motion/react';
+import { Seo } from '../components/Seo';
+import { modelPath, providerPath } from '../lib/paths';
 
-const ALL_TAGS: Tag[] = ['programming', 'reasoning', 'agentic', 'general', 'vision', 'fast', 'embedding', 'open-source', 'free', 'art generation', 'video generation', 'roleplay'];
+const ALL_TAGS: Tag[] = ['programming', 'reasoning', 'agentic', 'general', 'vision', 'fast', 'audio', 'embedding', 'open-source', 'free', 'art generation', 'video generation', 'roleplay'];
 
 const TAG_ICONS: Record<Tag, React.ReactNode> = {
   'programming': <Code2 className="w-3 h-3" />,
   'roleplay': <MessageSquare className="w-3 h-3" />,
   'art generation': <ImageIcon className="w-3 h-3" />,
   'video generation': <Video className="w-3 h-3" />,
+  'audio': <AudioLines className="w-3 h-3" />,
   'embedding': <Database className="w-3 h-3" />,
   'general': <Globe className="w-3 h-3" />,
   'vision': <ImageIcon className="w-3 h-3" />,
@@ -48,9 +51,13 @@ function sortModels(items: typeof models, sort: SortOption) {
   }
 }
 
-const CHAT_TAGS: Tag[] = ['art generation', 'video generation', 'embedding'];
+const CHAT_TAGS: Tag[] = ['art generation', 'video generation', 'audio', 'embedding'];
 function isChatModel(model: typeof models[0]) {
   return !model.tags.every(t => CHAT_TAGS.includes(t)) && model.contextLength !== 'N/A';
+}
+
+function isImageGenerationModel(model: typeof models[0]) {
+  return model.tags.includes('art generation');
 }
 
 export function Models() {
@@ -85,7 +92,14 @@ export function Models() {
   }, [searchQuery, selectedTags, sortBy]);
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-12">
+    <>
+      <Seo
+        title="AI Model Directory | OpenPaths"
+        description={`Compare ${models.length}+ AI models by provider, price, context window, and capability across chat, image, video, audio, and embedding APIs.`}
+        path="/models"
+      />
+
+      <div className="max-w-7xl mx-auto px-6 py-12">
       <div className="mb-12">
         <h1 className="text-4xl font-bold tracking-tight mb-4">Model Directory</h1>
         <p className="text-white/60 text-lg max-w-2xl font-light">
@@ -168,21 +182,17 @@ export function Models() {
                 <div className="text-xs font-mono text-white/40 mb-1 flex items-center gap-1.5">
                   <img src={getProviderLogo(model.provider)} alt="" className="w-4 h-4 rounded-sm" />
                   {providersByName[model.provider] ? (
-                    providersByName[model.provider].url !== '/' ? (
-                      <a href={providersByName[model.provider].url} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors underline underline-offset-2 decoration-white/20">
-                        {model.provider}
-                      </a>
-                    ) : (
-                      <Link to="/providers" className="hover:text-white transition-colors underline underline-offset-2 decoration-white/20">
-                        {model.provider}
-                      </Link>
-                    )
+                    <Link to={providerPath(providersByName[model.provider].slug)} className="hover:text-white transition-colors underline underline-offset-2 decoration-white/20">
+                      {model.provider}
+                    </Link>
                   ) : model.provider}
                 </div>
-                <h3 className="text-xl font-bold tracking-tight">{model.name}</h3>
+                <Link to={modelPath(model.id)} className="text-xl font-bold tracking-tight hover:underline underline-offset-4">
+                  {model.name}
+                </Link>
               </div>
               <div className="px-2 py-1 bg-white/10 rounded text-[10px] font-mono text-white/60">
-                {model.contextLength !== 'N/A' ? `${model.contextLength} ctx` : 'Image'}
+                {model.contextLength !== 'N/A' ? `${model.contextLength} ctx` : model.tags.includes('audio') ? 'Audio' : 'Image'}
               </div>
             </div>
 
@@ -203,6 +213,18 @@ export function Models() {
                 {model.pricingType === 'request' ? (
                   <div className="text-white/40">
                     <span className="text-white">${model.priceInput < 0.01 ? model.priceInput.toFixed(3) : model.priceInput.toFixed(2)}</span> / request
+                  </div>
+                ) : model.pricingType === 'chars' ? (
+                  <div className="text-white/40">
+                    <span className="text-white">${model.priceInput.toFixed(2)}</span> / 1M chars
+                  </div>
+                ) : model.pricingType === 'hour' ? (
+                  <div className="text-white/40">
+                    <span className="text-white">${model.priceInput.toFixed(2)}</span> / hour
+                  </div>
+                ) : model.pricingType === 'megapixel' ? (
+                  <div className="text-white/40">
+                    <span className="text-white">${model.priceInput.toFixed(3)}</span> / MP
                   </div>
                 ) : (
                   <>
@@ -229,6 +251,15 @@ export function Models() {
                     <MessageSquare className="w-3 h-3" /> Chat
                   </button>
                 )}
+                {isImageGenerationModel(model) && (
+                  <button
+                    onClick={() => navigate(`/playground?model=${encodeURIComponent(model.id)}&mode=image`)}
+                    title="Generate images with this model"
+                    className="shrink-0 flex items-center gap-1 px-2.5 py-2 bg-white/5 border border-white/10 rounded text-[10px] font-mono text-white/50 hover:text-white hover:bg-white/10 hover:border-white/25 transition-colors"
+                  >
+                    <ImageIcon className="w-3 h-3" /> Generate
+                  </button>
+                )}
               </div>
             </div>
           </motion.div>
@@ -242,6 +273,7 @@ export function Models() {
           <p className="text-white/40 font-mono text-sm">Try adjusting your search or filters.</p>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }

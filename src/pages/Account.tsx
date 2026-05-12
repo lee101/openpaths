@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Activity,
   ArrowUpRight,
@@ -597,6 +597,8 @@ export function Account() {
   const [billingNotice, setBillingNotice] = useState<string | null>(null);
   const [billingError, setBillingError] = useState<string | null>(null);
   const [savingAutotopup, setSavingAutotopup] = useState(false);
+  const [postTopupPrompt, setPostTopupPrompt] = useState(false);
+  const autotopupCardRef = useRef<HTMLDivElement | null>(null);
   const [cardModalOpen, setCardModalOpen] = useState(false);
   const [cardSetupSecret, setCardSetupSecret] = useState<string | null>(null);
   const [cardSetupLoading, setCardSetupLoading] = useState(false);
@@ -614,7 +616,8 @@ export function Account() {
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success') {
       setActiveTab('billing');
-      setBillingNotice('Funds added successfully. Your balance will refresh in a moment.');
+      setPostTopupPrompt(true);
+      setBillingNotice('Funds added successfully. Set up auto-topup next so this balance keeps itself ready.');
       window.history.replaceState({}, '', '/account');
     }
   }, []);
@@ -708,6 +711,13 @@ export function Account() {
   const refreshBilling = useCallback(async () => {
     await Promise.all([fetchBalance(), fetchTransactions(), fetchPaymentMethods(), fetchAutotopup()]);
   }, [fetchAutotopup, fetchBalance, fetchPaymentMethods, fetchTransactions]);
+
+  useEffect(() => {
+    if (!postTopupPrompt || activeTab !== 'billing') return;
+    window.setTimeout(() => {
+      autotopupCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 150);
+  }, [activeTab, postTopupPrompt]);
 
   const fetchAnalytics = useCallback(async (period: string) => {
     if (!apiKey) return;
@@ -819,7 +829,11 @@ export function Account() {
   const handleCardSaved = async () => {
     setCardModalOpen(false);
     setCardSetupSecret(null);
-    setBillingNotice('Card saved. Auto-topup can now be enabled.');
+    setBillingNotice(
+      postTopupPrompt
+        ? 'Card saved. Review the recommended auto-topup rule and save it to finish setup.'
+        : 'Card saved. Auto-topup can now be enabled.',
+    );
     await refreshBilling();
   };
 
@@ -855,6 +869,39 @@ export function Account() {
           ? `Auto-topup will add ${formatBalanceUnits(autotopupSettings.amount_cents)} when your balance falls below ${formatBalanceUnits(autotopupSettings.threshold_cents)}.`
           : 'Auto-topup disabled.',
       );
+      if (autotopupSettings.enabled) {
+        setPostTopupPrompt(false);
+      }
+      await refreshBilling();
+    } catch {
+      setBillingError('Network error');
+    } finally {
+      setSavingAutotopup(false);
+    }
+  };
+
+  const enableRecommendedAutotopup = async () => {
+    const recommended = {
+      enabled: true,
+      threshold_cents: usdToUnits(RECOMMENDED_THRESHOLD_USD),
+      amount_cents: usdToUnits(RECOMMENDED_TOPUP_USD),
+    };
+    setAutotopupSettings(recommended);
+    setSavingAutotopup(true);
+    setBillingNotice(null);
+    setBillingError(null);
+    try {
+      const res = await api('/account/autotopup/settings', {
+        method: 'POST',
+        body: JSON.stringify(recommended),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setBillingError(data.error?.message || 'Failed to save auto-topup');
+        return;
+      }
+      setPostTopupPrompt(false);
+      setBillingNotice(`Auto-topup will add ${formatUsdWhole(RECOMMENDED_TOPUP_USD)} when your balance falls below ${formatUsdWhole(RECOMMENDED_THRESHOLD_USD)}.`);
       await refreshBilling();
     } catch {
       setBillingError('Network error');
@@ -1208,7 +1255,52 @@ export function Account() {
               </div>
 
               <div className="grid gap-6">
-                <div className="border border-white/10 bg-white/[0.02] rounded-[28px] p-6" data-testid="autotopup-card">
+                {postTopupPrompt && !autotopupSettings.enabled && (
+                  <div className="rounded-[28px] border border-emerald-400/25 bg-[linear-gradient(135deg,rgba(16,185,129,0.16),rgba(255,255,255,0.025))] p-6" data-testid="post-topup-autotopup-prompt">
+                    <div className="flex items-start gap-4">
+                      <div className="rounded-2xl bg-emerald-400/15 p-3">
+                        <Repeat className="w-5 h-5 text-emerald-200" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-mono uppercase tracking-[0.18em] text-emerald-100/60 mb-2">Next step</p>
+                        <h2 className="text-xl font-semibold tracking-tight">Keep credits topped up automatically</h2>
+                        <p className="text-sm text-white/65 mt-2">
+                          Use the recommended rule: add {formatUsdWhole(RECOMMENDED_TOPUP_USD)} whenever your balance falls below {formatUsdWhole(RECOMMENDED_THRESHOLD_USD)}.
+                        </p>
+                        <div className="mt-4 flex flex-wrap gap-3">
+                          {hasCards ? (
+                            <button
+                              onClick={enableRecommendedAutotopup}
+                              disabled={savingAutotopup}
+                              className="rounded-2xl bg-white text-black px-4 py-3 text-sm font-mono font-bold hover:bg-white/90 transition-colors disabled:opacity-50"
+                              data-testid="post-topup-enable-autotopup"
+                            >
+                              {savingAutotopup ? 'Saving...' : 'Enable recommended rule'}
+                            </button>
+                          ) : (
+                            <button
+                              onClick={startCardSetup}
+                              disabled={!stripePk}
+                              className="rounded-2xl bg-white text-black px-4 py-3 text-sm font-mono font-bold hover:bg-white/90 transition-colors disabled:opacity-50"
+                              data-testid="post-topup-save-card"
+                            >
+                              Save card for auto-topup
+                            </button>
+                          )}
+                          <button
+                            onClick={() => setPostTopupPrompt(false)}
+                            className="rounded-2xl border border-white/15 bg-black/20 px-4 py-3 text-sm font-mono text-white hover:border-white/30 transition-colors"
+                            data-testid="post-topup-dismiss"
+                          >
+                            Not now
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div ref={autotopupCardRef} className="border border-white/10 bg-white/[0.02] rounded-[28px] p-6" data-testid="autotopup-card">
                   <div className="flex items-start justify-between gap-4 mb-5">
                     <div>
                       <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-[0.18em] text-white/35 mb-2">

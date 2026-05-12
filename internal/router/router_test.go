@@ -232,10 +232,10 @@ func TestResolve_UnregisteredProvider(t *testing.T) {
 
 func TestListModels(t *testing.T) {
 	tests := []struct {
-		name       string
-		models     []model.ModelConfig
-		wantCount  int
-		wantIDs    map[string]bool
+		name        string
+		models      []model.ModelConfig
+		wantCount   int
+		wantIDs     map[string]bool
 		wantOwnedBy map[string]string
 	}{
 		{
@@ -261,14 +261,14 @@ func TestListModels(t *testing.T) {
 			},
 			wantCount: 3,
 			wantIDs: map[string]bool{
-				"gpt-4o":       true,
+				"gpt-4o":        true,
 				"claude-3-opus": true,
-				"gemini-pro":   true,
+				"gemini-pro":    true,
 			},
 			wantOwnedBy: map[string]string{
-				"gpt-4o":       "openai",
+				"gpt-4o":        "openai",
 				"claude-3-opus": "anthropic",
-				"gemini-pro":   "google",
+				"gemini-pro":    "google",
 			},
 		},
 	}
@@ -320,12 +320,12 @@ func TestGetModelConfig(t *testing.T) {
 	}
 
 	tests := []struct {
-		name            string
-		modelName       string
-		wantFound       bool
-		wantID          string
-		wantProvider    string
-		wantContext     int
+		name         string
+		modelName    string
+		wantFound    bool
+		wantID       string
+		wantProvider string
+		wantContext  int
 	}{
 		{
 			name:         "find by exact ID",
@@ -388,9 +388,9 @@ func TestGetModelConfig(t *testing.T) {
 func TestNew_AliasMapping(t *testing.T) {
 	models := []model.ModelConfig{
 		{
-			ID:      "model-a",
+			ID:       "model-a",
 			Provider: "provider-a",
-			Aliases: []string{"alias-1", "alias-2", "alias-3"},
+			Aliases:  []string{"alias-1", "alias-2", "alias-3"},
 		},
 	}
 
@@ -407,6 +407,56 @@ func TestNew_AliasMapping(t *testing.T) {
 			t.Errorf("GetModelConfig(%q) ID = %q, want %q", name, cfg.ID, "model-a")
 		}
 	}
+}
+
+func TestNew_DerivesGrokLatestAliasFromHighestVersion(t *testing.T) {
+	models := []model.ModelConfig{
+		{ID: "grok-4.20-non-reasoning", Provider: "xai", Aliases: []string{"grok-fast", "grok-latest-non-reasoning"}},
+		{ID: "grok-4.3", Provider: "xai"},
+		{ID: "grok-3-mini", Provider: "xai", Aliases: []string{"grok-mini"}},
+		{ID: "grok-9-fake", Provider: "openrouter"},
+	}
+
+	r := newTestRouter(models, "xai", "openrouter")
+
+	for _, name := range []string{"grok", "grok-latest"} {
+		cfg, found := r.GetModelConfig(name)
+		if !found {
+			t.Fatalf("GetModelConfig(%q) not found", name)
+		}
+		if cfg.ID != "grok-4.3" {
+			t.Errorf("GetModelConfig(%q) ID = %q, want grok-4.3", name, cfg.ID)
+		}
+	}
+
+	info, found := r.GetModelInfo("grok-4.3")
+	if !found {
+		t.Fatal("GetModelInfo(\"grok-4.3\") not found")
+	}
+	for _, alias := range []string{"grok", "grok-latest"} {
+		if !containsString(info.Aliases, alias) {
+			t.Errorf("GetModelInfo(\"grok-4.3\") aliases = %v, want %q", info.Aliases, alias)
+		}
+	}
+
+	for _, name := range []string{"grok-fast", "grok-latest-non-reasoning"} {
+		cfg, found := r.GetModelConfig(name)
+		if !found {
+			t.Fatalf("GetModelConfig(%q) not found", name)
+		}
+		if cfg.ID != "grok-4.20-non-reasoning" {
+			t.Errorf("GetModelConfig(%q) ID = %q, want grok-4.20-non-reasoning", name, cfg.ID)
+		}
+	}
+}
+
+func containsString(items []string, value string) bool {
+	for _, item := range items {
+		if item == value {
+			return true
+		}
+	}
+	return false
 }
 
 func TestNew_EmptyModels(t *testing.T) {

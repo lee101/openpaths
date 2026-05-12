@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { CodeBlock } from '../components/CodeBlock';
 import { artGallery } from '../data/artGallery';
 import { getProviderLogo, providersByName } from '../data/providers';
+import { Seo } from '../components/Seo';
 
 export function Landing() {
   const [activeTab, setActiveTab] = useState<'python' | 'curl'>('python');
@@ -14,6 +15,12 @@ export function Landing() {
 
   return (
     <>
+      <Seo
+        title="OpenPaths | Open Source AI Model Router"
+        description="OpenPaths is an OpenAI-compatible model router for chat, image, video, speech, transcription, and embeddings across leading AI providers."
+        path="/"
+      />
+
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-white/10">
         <HeroMeshCanvas />
@@ -30,7 +37,7 @@ export function Landing() {
             <span className="text-white/40">Model Router.</span>
           </h1>
           <p className="text-lg md:text-xl text-white/60 max-w-2xl mx-auto mb-10 font-light leading-relaxed">
-            <span className="text-white font-medium">Search and we shall find open pathways.</span> Newly learned pathways for millisecond routing between large model providers or art generators.
+            <span className="text-white font-medium">Search and we shall find.</span> Neural learned paths for 1ms routing to find the best model. Try Open Pathways.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link to="/models" className="w-full sm:w-auto bg-white text-black px-8 py-4 font-mono font-bold flex items-center justify-center gap-2 hover:bg-white/90 transition-colors rounded">
@@ -88,13 +95,13 @@ export function Landing() {
               <CodeBlock
                 language="python"
                 preClassName="p-6"
-                code={`import openai\n\nclient = openai.OpenAI(\n  base_url="https://openpaths.io/v1",\n  api_key="${apiKey}"\n)\n\nresponse = client.chat.completions.create(\n  model="auto-think",\n  messages=[\n    {"role": "user", "content": "Write a python script to reverse a string."}\n  ],\n  # Ignored for auto-think.\n  # OpenPaths picks reasoning automatically.\n  reasoning_effort="low",\n)`}
+                code={`import openai\n\nclient = openai.OpenAI(\n  base_url="https://openpaths.io/v1",\n  api_key="${apiKey}"\n)\n\nresponse = client.chat.completions.create(\n  model="nvidia/deepseek-v4-pro",\n  messages=[\n    {"role": "user", "content": "Make a 3D simulation of cogs in a clock."}\n  ],\n  reasoning_effort="auto",\n)`}
               />
             ) : (
               <CodeBlock
                 language="bash"
                 preClassName="p-6"
-                code={`curl https://openpaths.io/v1/chat/completions \\\n  -H "Content-Type: application/json" \\\n  -H "Authorization: Bearer ${apiKey}" \\\n  -d '{\n    "model": "auto-think",\n    "messages": [\n      {\n        "role": "user",\n        "content": "Write a python script to reverse a string."\n      }\n    ],\n    "reasoning_effort": "low"\n  }'`}
+                code={`curl https://openpaths.io/v1/chat/completions \\\n  -H "Content-Type: application/json" \\\n  -H "Authorization: Bearer ${apiKey}" \\\n  -d '{\n    "model": "nvidia/deepseek-v4-pro",\n    "messages": [\n      {\n        "role": "user",\n        "content": "Make a 3D simulation of cogs in a clock."\n      }\n    ],\n    "reasoning_effort": "auto"\n  }'`}
               />
             )}
           </div>
@@ -104,7 +111,7 @@ export function Landing() {
             OpenAI-compatible params: <span className="text-white">model</span>, <span className="text-white">messages</span>, <span className="text-white">temperature</span>, <span className="text-white">top_p</span>, <span className="text-white">max_tokens</span>, <span className="text-white">stream</span>, <span className="text-white">tools</span>, <span className="text-white">response_format</span>, <span className="text-white">reasoning_effort</span>.
           </div>
           <div className="border border-white/10 rounded-lg p-4 bg-white/[0.02]">
-            <span className="text-white">reasoning_effort</span> supports <span className="text-white">none</span>, <span className="text-white">low</span>, <span className="text-white">medium</span>, and <span className="text-white">high</span>. <span className="text-white">auto-think</span> chooses the tier automatically.
+            <span className="text-white">reasoning_effort</span> supports <span className="text-white">none</span>, <span className="text-white">low</span>, <span className="text-white">medium</span>, <span className="text-white">high</span>, and <span className="text-white">auto</span>. <span className="text-white">auto</span> uses the same embedding table as <span className="text-white">auto-think</span>.
           </div>
         </div>
       </section>
@@ -215,6 +222,7 @@ export function Landing() {
                   ))}
                 </div>
               </div>
+
             </div>
           </div>
         </div>
@@ -232,21 +240,25 @@ export function Landing() {
             icon={<Zap className="w-6 h-6" />}
             title="Millisecond Routing"
             description="Intelligent pathways find the lowest latency and highest throughput provider for your request instantly."
+            to="/models"
           />
           <FeatureCard 
             icon={<Code2 className="w-6 h-6" />}
             title="Universal API"
             description="One API key for OpenAI, Anthropic, Meta, Mistral, and dozens of art generators like RA1 and Stable Diffusion."
+            to="/docs"
           />
           <FeatureCard
             icon={<Sparkles className="w-6 h-6" />}
             title="Auto Models"
             description="Always on the price frontier. Static embedding model-based routing picks the best frontier model for every task — just use auto-coding-latest and stay ahead automatically."
+            to="/blog/how-auto-models-work"
           />
           <FeatureCard 
             icon={<svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 3h-10l-2 5h10l2-5Z"/><path d="M11.5 11h-10l-2 5h10l2-5Z"/><path d="M14.5 19h-10l-2 5h10l2-5Z"/></svg>}
             title="Solana Payments"
             description="Prefer decentralization? Fund your API usage instantly with Solana (SOL) or USDC on the world's fastest blockchain."
+            to="/pricing"
           />
         </div>
       </section>
@@ -414,14 +426,15 @@ function PromptText({ text, className = '' }: { text: string; className?: string
   );
 }
 
-function FeatureCard({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) {
+function FeatureCard({ icon, title, description, to }: { icon: React.ReactNode, title: string, description: string, to: string }) {
   return (
-    <div className="bg-black p-8 group hover:bg-white/[0.02] transition-colors h-full">
-      <div className="mb-6 text-white/40 group-hover:text-white transition-colors">
+    <Link to={to} className="bg-black p-8 group hover:bg-white/[0.02] transition-colors h-full block focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40">
+      <div className="mb-6 text-white/40 group-hover:text-white transition-colors flex items-start justify-between gap-4">
         {icon}
+        <ArrowUpRight className="w-4 h-4 text-white/20 group-hover:text-white/60 transition-colors shrink-0" />
       </div>
       <h3 className="text-xl font-bold mb-3 tracking-tight">{title}</h3>
       <p className="text-sm text-white/60 leading-relaxed font-light">{description}</p>
-    </div>
+    </Link>
   );
 }

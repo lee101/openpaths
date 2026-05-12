@@ -129,10 +129,12 @@ models:
     supports_vision: true
     fallback_models:
       - "gpt-5.5"
+      - "deepseek-v4-pro"
       - "gpt-5-chat-latest"
+      - "deepseek-v4-flash"
       - "deepseek-chat"
       - "claude-sonnet-4-6"
-      - "grok-4-0709"
+      - "grok-4.3"
       - "or/gemini-3.1"
       - "or/gpt-5.5"
 
@@ -149,6 +151,7 @@ models:
     supports_tools: false
     supports_vision: true
     fallback_models:
+      - "deepseek-v4-flash"
       - "gpt-5.4-nano"
       - "gemini-2.5-flash"
       - "claude-haiku-4-5-20251001"
@@ -168,6 +171,7 @@ models:
     supports_tools: true
     supports_vision: true
     fallback_models:
+      - "deepseek-v4-flash"
       - "claude-sonnet-4-6"
       - "gemini-2.5-flash"
       - "deepseek-chat"
@@ -187,7 +191,9 @@ models:
     supports_vision: true
     fallback_models:
       - "gpt-5.4-nano"
+      - "deepseek-v4-flash"
       - "gpt-5.5"
+      - "deepseek-v4-pro"
       - "claude-sonnet-4-6"
       - "gemini-2.5-flash"
       - "gemini-2.5-pro"
@@ -337,6 +343,68 @@ models:
     supports_tools: false
     supports_vision: false
 
+  - id: "hidream-o1-image-dev"
+    provider: fal
+    provider_model_id: "fal-ai/hidream-o1-image/dev"
+    price_per_megapixel: 0.006
+    aliases: ["hidream-o1", "hidream-image", "hidream-dev", "fal-hidream-o1-image-dev"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  # --- Fal / ByteDance Seedance 2.0 (Video Generation) ---
+  - id: "seedance-2.0-fast-text-to-video"
+    provider: fal
+    provider_model_id: "bytedance/seedance-2.0/fast/text-to-video"
+    price_per_second: 0.26609
+    input_price_per_1m: 12.32
+    aliases: ["seedance-fast", "seedance-2-fast", "seedance-text-video-fast"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "seedance-2.0-text-to-video"
+    provider: fal
+    provider_model_id: "bytedance/seedance-2.0/text-to-video"
+    price_per_second: 0.33374
+    input_price_per_1m: 15.40
+    aliases: ["seedance", "seedance-2", "seedance-text-video"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "seedance-2.0-image-to-video"
+    provider: fal
+    provider_model_id: "bytedance/seedance-2.0/image-to-video"
+    price_per_second: 0.33264
+    input_price_per_1m: 15.40
+    aliases: ["seedance-image-to-video", "seedance-i2v", "seedance-2-i2v"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "seedance-2.0-fast-reference-to-video"
+    provider: fal
+    provider_model_id: "bytedance/seedance-2.0/fast/reference-to-video"
+    price_per_second: 0.26609
+    price_per_second_with_video_input: 0.15972
+    input_price_per_1m: 15.40
+    aliases: ["seedance-fast-reference", "seedance-reference-fast"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "seedance-2.0-reference-to-video"
+    provider: fal
+    provider_model_id: "bytedance/seedance-2.0/reference-to-video"
+    price_per_second: 0.33264
+    price_per_second_with_video_input: 0.19954
+    input_price_per_1m: 15.40
+    aliases: ["seedance-reference", "seedance-ref"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
   # --- Netwrck (Video Generation) ---
   - id: "wan"
     provider: netwrck
@@ -400,6 +468,7 @@ models:
     supports_vision: true
     fallback_models:
       - "claude-opus-latest"
+      - "deepseek-v4-pro"
       - "claude-sonnet-4-6"
       - "gemini-2.5-pro"
       - "deepseek-reasoner"
@@ -419,6 +488,7 @@ models:
     fallback_models:
       - "claude-sonnet-4-6"
       - "gemini-2.5-pro"
+      - "deepseek-v4-pro"
       - "deepseek-reasoner"
       - "or/gpt-5.4"
 
@@ -434,6 +504,7 @@ models:
     supports_tools: true
     supports_vision: true
     fallback_models:
+      - "deepseek-v4-flash"
       - "claude-sonnet-4-6"
       - "gemini-2.5-flash"
       - "deepseek-chat"
@@ -810,25 +881,35 @@ models:
     supports_tools: false
     supports_vision: true
 
+  - id: "gemini-3.1-flash-tts-preview"
+    provider: google
+    provider_model_id: "gemini-3.1-flash-tts-preview"
+    input_price_per_1m: 1.00
+    output_price_per_1m: 20.00
+    aliases: ["gemini-flash-tts", "google-tts", "gemini-tts"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
   # --- xAI Grok ---
-  - id: "grok-4-0709"
+  - id: "grok-4.3"
     provider: xai
-    provider_model_id: "grok-4-0709"
-    input_price_per_1m: 3.00
-    output_price_per_1m: 15.00
-    aliases: ["grok-4", "grok"]
-    context_window: 256000
+    provider_model_id: "grok-4.3"
+    input_price_per_1m: 1.25
+    output_price_per_1m: 2.50
+    aliases: ["grok-4", "grok-reasoning", "grok-4-0709", "grok-4-1-fast-reasoning", "grok-4-fast-reasoning", "grok-code-fast-1", "grok-3"]
+    context_window: 1000000
     max_output_tokens: 16384
     supports_streaming: true
     supports_tools: true
     supports_vision: true
 
-  - id: "grok-4-1-fast-reasoning"
+  - id: "grok-4.20-non-reasoning"
     provider: xai
-    provider_model_id: "grok-4-1-fast-reasoning"
-    input_price_per_1m: 0.20
-    output_price_per_1m: 0.50
-    aliases: ["grok-fast"]
+    provider_model_id: "grok-4.20-non-reasoning"
+    input_price_per_1m: 1.25
+    output_price_per_1m: 2.50
+    aliases: ["grok-latest-non-reasoning", "grok-non-reasoning", "grok-fast", "grok-4-1-fast-non-reasoning", "grok-4-fast-non-reasoning"]
     context_window: 2000000
     max_output_tokens: 16384
     supports_streaming: true
@@ -847,7 +928,60 @@ models:
     supports_tools: true
     supports_vision: false
 
+  - id: "grok-voice-think-fast-1.0"
+    provider: xai
+    provider_model_id: "grok-voice-think-fast-1.0"
+    price_per_hour: 3.00
+    aliases: ["grok-voice", "xai-realtime"]
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "grok-imagine-image"
+    provider: xai
+    provider_model_id: "grok-imagine-image"
+    price_per_image: 0.02
+    price_per_input_image: 0.002
+    aliases: ["grok-image", "xai-image", "grok-imagine-image-pro"]
+    supported_sizes: ["1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "2:1", "1:2", "19.5:9", "9:19.5", "20:9", "9:20", "auto"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
   # --- DeepSeek ---
+  - id: "deepseek-v4-flash"
+    provider: deepseek
+    provider_model_id: "deepseek-v4-flash"
+    input_price_per_1m: 0.14
+    output_price_per_1m: 0.28
+    aliases: ["deepseek-flash", "deepseek-v4"]
+    context_window: 1000000
+    max_output_tokens: 384000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+    fallback_models:
+      - "deepseek-chat"
+      - "nvidia/deepseek-v3.2"
+      - "together/deepseek-v3.1"
+
+  - id: "deepseek-v4-pro"
+    provider: deepseek
+    provider_model_id: "deepseek-v4-pro"
+    input_price_per_1m: 1.74
+    output_price_per_1m: 3.48
+    aliases: ["deepseek-pro", "deepseek-v4-reasoning"]
+    context_window: 1000000
+    max_output_tokens: 384000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+    fallback_models:
+      - "nvidia/deepseek-v4-pro"
+      - "deepseek-reasoner"
+      - "nvidia/deepseek-v3.2"
+      - "together/deepseek-r1"
+
   - id: "deepseek-chat"
     provider: deepseek
     provider_model_id: "deepseek-chat"
@@ -1693,6 +1827,25 @@ models:
     supports_tools: false
     supports_vision: false
 
+  # --- Google (Music Generation) ---
+  - id: "lyria-3-pro-preview"
+    provider: google
+    provider_model_id: "lyria-3-pro-preview"
+    price_per_image: 0.08
+    aliases: ["lyria-pro", "google-lyria-pro"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "lyria-3-clip-preview"
+    provider: google
+    provider_model_id: "lyria-3-clip-preview"
+    price_per_image: 0.04
+    aliases: ["lyria-clip", "google-lyria-clip"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
   # --- MiniMax (Speech/TTS) ---
   - id: "speech-2.8-hd"
     provider: minimax
@@ -1732,7 +1885,25 @@ models:
     supports_tools: false
     supports_vision: false
 
+  - id: "xai-tts"
+    provider: xai
+    provider_model_id: "tts"
+    input_price_per_1m: 15.00
+    output_price_per_1m: 0
+    aliases: ["grok-tts", "tts"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
   # --- Transcription (Speech-to-Text) ---
+  - id: "xai-stt"
+    provider: xai
+    provider_model_id: "stt"
+    price_per_hour: 0.20
+    aliases: ["grok-stt", "stt"]
+    supports_streaming: true
+    supports_tools: false
+    supports_vision: false
 
   # Groq Whisper models (fastest, cheapest)
   - id: "whisper-large-v3-turbo"
@@ -1902,6 +2073,18 @@ models:
       - "deepseek-chat"
       - "together/deepseek-v3.1"
       - "or/deepseek-chat"
+
+  - id: "nvidia/deepseek-v4-pro"
+    provider: nvidia
+    provider_model_id: "deepseek-ai/deepseek-v4-pro"
+    input_price_per_1m: 0
+    output_price_per_1m: 0
+    aliases: ["nvidia-deepseek-v4-pro", "deepseek-v4-pro-free"]
+    context_window: 1000000
+    max_output_tokens: 16384
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
 
   - id: "nvidia/devstral-2-123b"
     provider: nvidia

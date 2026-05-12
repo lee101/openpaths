@@ -3,10 +3,18 @@ import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowRight, Calendar, Clock } from 'lucide-react';
 import { posts } from '../data/blog';
+import { Seo } from '../components/Seo';
 
 export function Blog() {
   return (
-    <div className="max-w-4xl mx-auto px-6 py-12">
+    <>
+      <Seo
+        title="OpenPaths Blog | AI Model Routing Guides"
+        description="Engineering deep dives, AI model comparisons, integration guides, and production notes for building with OpenPaths."
+        path="/blog"
+      />
+
+      <div className="max-w-4xl mx-auto px-6 py-12">
       <div className="mb-16">
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">Blog</h1>
         <p className="text-white/60 text-lg font-light max-w-2xl">
@@ -55,6 +63,7 @@ export function Blog() {
           </motion.div>
         ))}
       </div>
-    </div>
+      </div>
+    </>
   );
 }

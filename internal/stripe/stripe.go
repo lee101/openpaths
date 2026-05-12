@@ -4,8 +4,8 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"crypto/subtle"
-	"encoding/json"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -17,14 +17,16 @@ import (
 )
 
 type Service struct {
-	secretKey string
-	client    *http.Client
+	secretKey  string
+	apiBaseURL string
+	client     *http.Client
 }
 
 func NewService(secretKey string) *Service {
 	return &Service{
-		secretKey: secretKey,
-		client:    &http.Client{},
+		secretKey:  secretKey,
+		apiBaseURL: "https://api.stripe.com",
+		client:     &http.Client{},
 	}
 }
 
@@ -44,9 +46,9 @@ func (s *Service) CreateCustomer(email, name string) (string, error) {
 
 func (s *Service) CreateSetupIntent(customerID string) (string, string, error) {
 	vals := url.Values{
-		"customer":             {customerID},
+		"customer":               {customerID},
 		"payment_method_types[]": {"card"},
-		"usage":                {"off_session"},
+		"usage":                  {"off_session"},
 	}
 	var resp struct {
 		ID           string `json:"id"`
@@ -87,12 +89,14 @@ func (s *Service) DetachPaymentMethod(paymentMethodID string) error {
 // quantity is how many units of the price to buy (e.g. 2500 for $25 at $0.01/unit).
 func (s *Service) CreateCheckoutSession(customerID, priceID, returnURL string, quantity int64, metadata map[string]string) (string, error) {
 	vals := url.Values{
-		"customer":   {customerID},
-		"mode":       {"payment"},
-		"ui_mode":    {"embedded"},
-		"return_url": {returnURL},
+		"customer":                {customerID},
+		"mode":                    {"payment"},
+		"ui_mode":                 {"embedded"},
+		"return_url":              {returnURL},
+		"payment_method_types[]":  {"card"},
 		"line_items[0][price]":    {priceID},
 		"line_items[0][quantity]": {fmt.Sprintf("%d", quantity)},
+		"payment_intent_data[setup_future_usage]": {"off_session"},
 	}
 	i := 0
 	for k, v := range metadata {
@@ -107,6 +111,20 @@ func (s *Service) CreateCheckoutSession(customerID, priceID, returnURL string, q
 		return "", fmt.Errorf("create checkout session: %w", err)
 	}
 	return resp.ClientSecret, nil
+}
+
+type PaymentIntent struct {
+	ID            string `json:"id"`
+	PaymentMethod string `json:"payment_method"`
+}
+
+// RetrievePaymentIntent gets the payment method used for a completed payment.
+func (s *Service) RetrievePaymentIntent(paymentIntentID string) (*PaymentIntent, error) {
+	var resp PaymentIntent
+	if err := s.get("/v1/payment_intents/"+paymentIntentID, &resp); err != nil {
+		return nil, fmt.Errorf("retrieve payment intent: %w", err)
+	}
+	return &resp, nil
 }
 
 // RetrieveCheckoutSession gets a checkout session by ID.
@@ -186,15 +204,15 @@ type WebhookEvent struct {
 // amountUSDCents is in real USD cents (e.g. 1000 = $10.00).
 func (s *Service) ChargeOffSession(customerID, paymentMethodID string, amountUSDCents int64, idempotencyKey string) (string, error) {
 	vals := url.Values{
-		"amount":                    {fmt.Sprintf("%d", amountUSDCents)},
-		"currency":                  {"usd"},
-		"customer":                  {customerID},
-		"payment_method":            {paymentMethodID},
-		"confirm":                   {"true"},
-		"off_session":               {"true"},
-		"error_on_requires_action":  {"true"},
-		"description":               {"OpenPath auto-topup"},
-		"metadata[type]":            {"auto_topup"},
+		"amount":                   {fmt.Sprintf("%d", amountUSDCents)},
+		"currency":                 {"usd"},
+		"customer":                 {customerID},
+		"payment_method":           {paymentMethodID},
+		"confirm":                  {"true"},
+		"off_session":              {"true"},
+		"error_on_requires_action": {"true"},
+		"description":              {"OpenPath auto-topup"},
+		"metadata[type]":           {"auto_topup"},
 	}
 	var resp struct {
 		ID     string `json:"id"`
@@ -229,7 +247,7 @@ func (s *Service) postWithHeaders(path string, vals url.Values, out any, headers
 	if vals != nil {
 		body = strings.NewReader(vals.Encode())
 	}
-	req, err := http.NewRequest("POST", "https://api.stripe.com"+path, body)
+	req, err := http.NewRequest("POST", s.apiBaseURL+path, body)
 	if err != nil {
 		return err
 	}
@@ -251,7 +269,7 @@ func (s *Service) postWithHeaders(path string, vals url.Values, out any, headers
 }
 
 func (s *Service) get(path string, out any) error {
-	req, err := http.NewRequest("GET", "https://api.stripe.com"+path, nil)
+	req, err := http.NewRequest("GET", s.apiBaseURL+path, nil)
 	if err != nil {
 		return err
 	}
@@ -301,7 +319,7 @@ func parseSignatureHeader(sigHeader string) (time.Time, []string, error) {
 	}
 
 	var (
-		timestamp time.Time
+		timestamp  time.Time
 		signatures []string
 	)
 

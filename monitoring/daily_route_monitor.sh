@@ -2,7 +2,7 @@
 #
 # Daily Route Monitor with Auto-Fix
 #
-# Tests all API routes on local and production. On failure, spawns Claude
+# Tests all API routes on local and production. On failure, spawns Codex
 # to diagnose, fix, retest locally, redeploy, and retest production.
 #
 # Usage:
@@ -42,9 +42,6 @@ for arg in "$@"; do
 done
 
 log() { echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $*" | tee -a "$LOG_FILE"; }
-
-# Make sure ANTHROPIC_API_KEY is unset so Claude uses its default auth
-unset ANTHROPIC_API_KEY
 
 log "=========================================="
 log "Daily Route Monitor"
@@ -91,7 +88,7 @@ fi
 
 # --- Phase 3: Auto-fix if failures ---
 if ($LOCAL_FAILED || $PROD_FAILED) && $AUTO_FIX && ! $DRY_RUN; then
-    log "=== Phase 3: Auto-Fix with Claude ==="
+    log "=== Phase 3: Auto-Fix with Codex ==="
 
     FAIL_CONTEXT=""
     if $LOCAL_FAILED; then
@@ -129,9 +126,9 @@ Key files:
 
 Fix the issue and verify everything works end to end."
 
-    log "Spawning Claude auto-fix agent..."
+    log "Spawning Codex auto-fix agent..."
     cd "$PROJECT_DIR"
-    if claude --dangerously-skip-permissions -p "$FIX_PROMPT" 2>&1 | tee -a "$LOG_FILE"; then
+    if bash "$SCRIPT_DIR/run_codex_agent.sh" "$FIX_PROMPT" 2>&1 | tee -a "$LOG_FILE"; then
         log "Auto-fix agent: Completed"
 
         # Re-run tests after fix

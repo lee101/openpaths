@@ -42,6 +42,7 @@ func (p *OpenRouterProvider) Name() string { return "openrouter" }
 func sanitizeForOpenRouter(req *model.ChatCompletionRequest) {
 	req.Prefill = ""
 	req.TaskTier = ""
+	req.Thinking = nil
 }
 
 func (p *OpenRouterProvider) ChatCompletion(ctx context.Context, req *model.ChatCompletionRequest) (*model.ChatCompletionResponse, error) {

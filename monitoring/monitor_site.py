@@ -10,7 +10,7 @@ from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 LOG_FILE = SCRIPT_DIR / "logs" / "monitor.log"
-CLAUDE_FIX_LOG = SCRIPT_DIR / "logs" / "claude_fix.log"
+CODEX_FIX_LOG = SCRIPT_DIR / "logs" / "codex_fix.log"
 PROJECT_DIR = SCRIPT_DIR.parent
 
 SITES = [
@@ -30,7 +30,7 @@ SSH_PASS = "ka3iMI4OSNvgFcREuDaQyLguFxuP"
 API_HOST = "administrator@93.127.141.100"
 REMOTE_DIR = "/nvme0n1-disk/code/openpaths"
 
-CLAUDE_FIX_PROMPT = """Site {url} is DOWN. Investigate and fix.
+CODEX_FIX_PROMPT = """Site {url} is DOWN. Investigate and fix.
 
 Info:
 - Server: administrator@93.127.141.100
@@ -103,15 +103,15 @@ def check_js_errors(url="https://openpaths.io", timeout=30):
 def notify_down(url):
     subprocess.run(["espeak", f"{url} is down"], check=False,
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    log(f"Spawning Claude to fix {url}")
-    prompt = CLAUDE_FIX_PROMPT.format(
+    log(f"Spawning Codex to fix {url}")
+    prompt = CODEX_FIX_PROMPT.format(
         url=url, ssh_pass=SSH_PASS, host=API_HOST, remote_dir=REMOTE_DIR,
     )
-    CLAUDE_FIX_LOG.parent.mkdir(parents=True, exist_ok=True)
+    CODEX_FIX_LOG.parent.mkdir(parents=True, exist_ok=True)
     subprocess.Popen(
-        ["claude", "--dangerously-skip-permissions", "-p", prompt],
+        [str(SCRIPT_DIR / "run_codex_agent.sh"), prompt],
         cwd=str(PROJECT_DIR),
-        stdout=open(CLAUDE_FIX_LOG, "a"),
+        stdout=open(CODEX_FIX_LOG, "a"),
         stderr=subprocess.STDOUT,
     )
 

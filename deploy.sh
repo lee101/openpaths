@@ -9,7 +9,7 @@ API_HOST="${API_HOST:-openpaths-prod}"
 API_SERVICE="openpaths"
 REMOTE_DIR="/nvme0n1-disk/code/openpaths"
 DIST_DIR="dist"
-CF_ZONE_ID="${CLOUDFLARE_ZONE_OPENPATHS:-}"
+CF_ZONE_ID="${CLOUDFLARE_ZONE_OPENPATHS:-${CLOUDFLARE_ZONE_OPENPATH:-}}"
 SSH_PASS="${SSH_PASS:-}"
 
 export AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID:-${CLOUDFLARE_R2_ACCESS_KEY_ID:-}}"
@@ -57,17 +57,41 @@ rsync_cmd() {
     fi
 }
 
+FRONTEND_BUILT=false
+
+build_frontend() {
+    if [[ "$FRONTEND_BUILT" == true ]]; then
+        return
+    fi
+
+    green "cleaning frontend output..."
+    npm run clean
+
+    green "building frontend..."
+    npm run build
+
+    green "verifying stable asset names..."
+    npm run verify:assets
+
+    FRONTEND_BUILT=true
+}
+
 purge_cf_cache() {
     local email="${CLOUDFLARE_EMAIL:-}"
     local key="${CLOUDFLARE_API_KEY:-}"
     if [[ -n "$email" && -n "$key" && -n "$CF_ZONE_ID" ]]; then
         green "purging cloudflare cache..."
-        curl -s -X POST \
+        local response
+        response=$(curl -fsS -X POST \
             "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache" \
             -H "X-Auth-Email: ${email}" \
             -H "X-Auth-Key: ${key}" \
             -H "Content-Type: application/json" \
-            --data '{"purge_everything":true}' >/dev/null
+            --data '{"purge_everything":true}')
+        if ! grep -q '"success":true' <<<"$response"; then
+            red "cloudflare cache purge failed: $response"
+            exit 1
+        fi
     else
         yellow "cloudflare cache purge skipped (missing credentials or zone id)"
     fi
@@ -75,8 +99,7 @@ purge_cf_cache() {
 
 # --- Site deploy: build frontend + sync to R2 ---
 deploy_site() {
-    green "building frontend..."
-    npm run build
+    build_frontend
 
     green "syncing to R2 (${STATIC_BUCKET})..."
     require_cmd aws
@@ -95,6 +118,8 @@ deploy_site() {
 
 # --- API deploy: build Go binary + deploy to server ---
 deploy_api() {
+    build_frontend
+
     green "building api..."
     CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o dist/openpaths-api ./cmd/openpaths/
 

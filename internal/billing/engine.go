@@ -46,10 +46,12 @@ func (e *Engine) PreCheck(ctx context.Context, userID, modelID string, estimated
 		if balance > 0 {
 			return nil
 		}
+		e.triggerAutoTopup(userID)
 		return ErrInsufficientBalance
 	}
 
 	if balance < estimatedCost {
+		e.triggerAutoTopup(userID)
 		return ErrInsufficientBalance
 	}
 	return nil
@@ -77,7 +79,8 @@ func (e *Engine) Deduct(ctx context.Context, userID, modelID string, inputTokens
 		refID,
 	)
 	if err != nil {
-		return 0, err
+		e.triggerAutoTopup(userID)
+		return cost, err
 	}
 	e.triggerAutoTopup(userID)
 	return cost, nil
@@ -85,7 +88,15 @@ func (e *Engine) Deduct(ctx context.Context, userID, modelID string, inputTokens
 
 // DeductImage calculates image generation cost and atomically deducts from balance.
 func (e *Engine) DeductImage(ctx context.Context, userID, modelID string, imageCount int, usageLogID string) (int64, error) {
-	cost, err := e.pricing.CalculateImageCost(modelID, imageCount)
+	return e.DeductImageWithInputs(ctx, userID, modelID, imageCount, 0, usageLogID)
+}
+
+func (e *Engine) DeductImageWithInputs(ctx context.Context, userID, modelID string, outputImageCount, inputImageCount int, usageLogID string) (int64, error) {
+	return e.DeductImageWithInputsAndSize(ctx, userID, modelID, outputImageCount, inputImageCount, "", usageLogID)
+}
+
+func (e *Engine) DeductImageWithInputsAndSize(ctx context.Context, userID, modelID string, outputImageCount, inputImageCount int, size, usageLogID string) (int64, error) {
+	cost, err := e.pricing.CalculateImageCostWithInputsAndSize(modelID, outputImageCount, inputImageCount, size)
 	if err != nil {
 		return 0, err
 	}
@@ -98,19 +109,32 @@ func (e *Engine) DeductImage(ctx context.Context, userID, modelID string, imageC
 	}
 	err = e.credits.DeductWithTransaction(ctx, userID, cost,
 		model.TxTypeUsageDeduction,
-		fmt.Sprintf("Image: %s, count: %d", modelID, imageCount),
+		formatImageUsageDescription(modelID, outputImageCount, inputImageCount, size),
 		refID,
 	)
 	if err != nil {
-		return 0, err
+		e.triggerAutoTopup(userID)
+		return cost, err
 	}
 	e.triggerAutoTopup(userID)
 	return cost, nil
 }
 
+func formatImageUsageDescription(modelID string, outputImageCount, inputImageCount int, size string) string {
+	parts := []string{
+		fmt.Sprintf("Image: %s", modelID),
+		fmt.Sprintf("outputs: %d", outputImageCount),
+		fmt.Sprintf("inputs: %d", inputImageCount),
+	}
+	if size != "" {
+		parts = append(parts, fmt.Sprintf("size: %s", size))
+	}
+	return strings.Join(parts, ", ")
+}
+
 // DeductVideo calculates video generation cost and atomically deducts from balance.
-func (e *Engine) DeductVideo(ctx context.Context, userID, modelID string, usageLogID string) (int64, error) {
-	cost, err := e.pricing.CalculateVideoCost(modelID)
+func (e *Engine) DeductVideo(ctx context.Context, userID, modelID string, durationSeconds int, hasVideoInput bool, usageLogID string) (int64, error) {
+	cost, err := e.pricing.CalculateVideoCost(modelID, durationSeconds, hasVideoInput)
 	if err != nil {
 		return 0, err
 	}
@@ -127,7 +151,34 @@ func (e *Engine) DeductVideo(ctx context.Context, userID, modelID string, usageL
 		refID,
 	)
 	if err != nil {
+		e.triggerAutoTopup(userID)
+		return cost, err
+	}
+	e.triggerAutoTopup(userID)
+	return cost, nil
+}
+
+// DeductAudio calculates audio/transcription cost and atomically deducts from balance.
+func (e *Engine) DeductAudio(ctx context.Context, userID, modelID string, durationSeconds int, usageLogID string) (int64, error) {
+	cost, err := e.pricing.CalculateAudioCost(modelID, durationSeconds)
+	if err != nil {
 		return 0, err
+	}
+	if cost == 0 {
+		return 0, nil
+	}
+	var refID *string
+	if usageLogID != "" {
+		refID = &usageLogID
+	}
+	err = e.credits.DeductWithTransaction(ctx, userID, cost,
+		model.TxTypeUsageDeduction,
+		fmt.Sprintf("Audio: %s, duration_seconds: %d", modelID, durationSeconds),
+		refID,
+	)
+	if err != nil {
+		e.triggerAutoTopup(userID)
+		return cost, err
 	}
 	e.triggerAutoTopup(userID)
 	return cost, nil

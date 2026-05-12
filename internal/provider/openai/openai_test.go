@@ -24,6 +24,7 @@ func TestSanitizeForOpenAI_StripsPrefillAndTaskTier(t *testing.T) {
 		Messages: []model.ChatMessage{{Role: "user", Content: "Hi"}},
 		Prefill:  "{",
 		TaskTier: "hard",
+		Thinking: &model.ThinkingConfig{Type: "enabled"},
 	}
 
 	sanitizeForOpenAI(req)
@@ -34,13 +35,16 @@ func TestSanitizeForOpenAI_StripsPrefillAndTaskTier(t *testing.T) {
 	if req.TaskTier != "" {
 		t.Errorf("TaskTier not stripped: %q", req.TaskTier)
 	}
+	if req.Thinking != nil {
+		t.Errorf("Thinking not stripped: %#v", req.Thinking)
+	}
 
 	// And ensure the marshaled body never contains those keys.
 	body, err := json.Marshal(req)
 	if err != nil {
 		t.Fatalf("marshal: %v", err)
 	}
-	if bytes := string(body); containsAny(bytes, "prefill", "task_tier") {
+	if bytes := string(body); containsAny(bytes, "prefill", "task_tier", "thinking") {
 		t.Errorf("marshaled body still references prefill/task_tier: %s", bytes)
 	}
 }

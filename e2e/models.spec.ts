@@ -71,4 +71,20 @@ test.describe('Models Page', () => {
   test('model count is displayed', async ({ page }) => {
     await expect(page.locator('text=/\\d+ models?/')).toBeVisible();
   });
+
+  test('image models launch the image playground', async ({ page }) => {
+    await page.evaluate(() => {
+      localStorage.setItem('op_api_key', 'op-models-image-key');
+    });
+    await page.reload();
+    await page.locator('input[placeholder*="Search models"]').fill('RA1');
+    await page.locator('text=RA1 Art Generator').waitFor();
+    await page.locator('button:has-text("Generate")').first().click();
+
+    await expect(page).toHaveURL(/\/playground\?model=ra1&mode=image/);
+    await expect(page.locator('button:has-text("RA1 Art Generator")')).toBeVisible();
+    await expect(page.getByTestId('image-size')).toBeVisible();
+    await expect(page.locator('textarea[placeholder*="Describe the image"]')).toBeVisible();
+    await expect(page.locator('button:has-text("Copy Code")')).toBeVisible();
+  });
 });

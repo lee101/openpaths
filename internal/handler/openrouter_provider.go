@@ -91,7 +91,7 @@ func configToORModel(cfg *model.ModelConfig) *ORModel {
 		outputMod = []string{"image"}
 		inputMod = []string{"text"}
 	}
-	if cfg.PricePerVideo > 0 {
+	if cfg.PricePerVideo > 0 || cfg.PricePerSecond > 0 {
 		outputMod = []string{"video"}
 		inputMod = []string{"text"}
 	}
@@ -168,7 +168,8 @@ var orModelDisplayNames = map[string]string{
 	"gemini-2.5-pro":            "Google: Gemini 2.5 Pro",
 	"gemini-2.5-flash":          "Google: Gemini 2.5 Flash",
 	"gemini-flash-lite":         "Google: Gemini Flash Lite",
-	"grok-4-0709":               "xAI: Grok 4",
+	"grok-4.3":                  "xAI: Grok 4.3",
+	"grok-4.20-non-reasoning":   "xAI: Grok 4.20 Non-Reasoning",
 	"grok-3-mini":               "xAI: Grok 3 Mini",
 	"deepseek-chat":             "DeepSeek: Chat",
 	"deepseek-reasoner":         "DeepSeek: Reasoner",

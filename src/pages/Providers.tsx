@@ -4,6 +4,8 @@ import { providers, FALLBACK_LOGO } from '../data/providers';
 import { models } from '../data/models';
 import { ExternalLink, ArrowRight, Star } from 'lucide-react';
 import { motion } from 'motion/react';
+import { Seo } from '../components/Seo';
+import { providerDocsPath, providerPath } from '../lib/paths';
 
 function modelCountFor(providerName: string) {
   return models.filter(m => m.provider === providerName).length;
@@ -14,12 +16,34 @@ export function Providers() {
   const others = providers.filter(p => !p.featured);
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-12">
+    <>
+      <Seo
+        title="AI Providers | OpenPaths"
+        description={`Browse ${providers.length} AI providers available through OpenPaths, including OpenAI, Anthropic, Google, xAI, Netwrck, Text-Generator.io, Fal, and more.`}
+        path="/providers"
+      />
+
+      <div className="max-w-7xl mx-auto px-6 py-12">
       <div className="mb-12">
         <h1 className="text-4xl font-bold tracking-tight mb-4">Providers</h1>
         <p className="text-white/60 text-lg max-w-2xl font-light">
           {providers.length} providers powering {models.length}+ models. Direct API access to leading AI labs and first-party partners.
         </p>
+      </div>
+
+      <div className="mb-12">
+        <div className="mb-4 text-xs font-mono uppercase tracking-[0.22em] text-white/40">Jump to provider</div>
+        <div className="flex flex-wrap gap-2">
+          {providers.map(provider => (
+            <a
+              key={provider.slug}
+              href={`#${provider.slug}`}
+              className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 font-mono text-xs text-white/65 hover:border-white/30 hover:bg-white/[0.06] hover:text-white transition-colors"
+            >
+              {provider.name}
+            </a>
+          ))}
+        </div>
       </div>
 
       {/* Featured / First-Party */}
@@ -36,12 +60,14 @@ export function Providers() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: idx * 0.05 }}
               id={provider.slug}
-              className="border border-white/20 bg-white/[0.04] rounded-xl p-6 hover:bg-white/[0.06] hover:border-white/30 transition-all flex flex-col"
+              className="scroll-mt-24 border border-white/20 bg-white/[0.04] rounded-xl p-6 hover:bg-white/[0.06] hover:border-white/30 transition-all flex flex-col"
             >
               <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-3">
                   <img src={provider.logo || FALLBACK_LOGO} alt="" className="w-8 h-8 rounded object-contain" />
-                  <h3 className="text-xl font-bold tracking-tight">{provider.name}</h3>
+                  <Link to={providerPath(provider.slug)} className="text-xl font-bold tracking-tight hover:underline underline-offset-4">
+                    {provider.name}
+                  </Link>
                 </div>
                 <span className="px-2 py-0.5 bg-white/10 rounded text-[10px] font-mono text-white/60">
                   {modelCountFor(provider.name)} model{modelCountFor(provider.name) !== 1 ? 's' : ''}
@@ -62,10 +88,16 @@ export function Providers() {
                   </a>
                 )}
                 <Link
-                  to={`/${provider.slug}/docs`}
+                  to={providerDocsPath(provider.slug)}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white/60 border border-white/10 rounded hover:text-white hover:border-white/30 transition-colors"
                 >
                   <ArrowRight className="w-3 h-3" /> Docs
+                </Link>
+                <Link
+                  to={providerPath(provider.slug)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white/60 border border-white/10 rounded hover:text-white hover:border-white/30 transition-colors"
+                >
+                  <ArrowRight className="w-3 h-3" /> Provider Page
                 </Link>
                 <Link
                   to={`/models?q=${encodeURIComponent(provider.name)}`}
@@ -90,12 +122,14 @@ export function Providers() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: idx * 0.05 }}
               id={provider.slug}
-              className="border border-white/10 bg-white/[0.02] rounded-xl p-6 hover:bg-white/[0.04] hover:border-white/20 transition-all flex flex-col"
+              className="scroll-mt-24 border border-white/10 bg-white/[0.02] rounded-xl p-6 hover:bg-white/[0.04] hover:border-white/20 transition-all flex flex-col"
             >
               <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-3">
                   <img src={provider.logo || FALLBACK_LOGO} alt="" className="w-7 h-7 rounded object-contain" />
-                  <h3 className="text-lg font-bold tracking-tight">{provider.name}</h3>
+                  <Link to={providerPath(provider.slug)} className="text-lg font-bold tracking-tight hover:underline underline-offset-4">
+                    {provider.name}
+                  </Link>
                 </div>
                 <span className="px-2 py-0.5 bg-white/10 rounded text-[10px] font-mono text-white/60">
                   {modelCountFor(provider.name)} model{modelCountFor(provider.name) !== 1 ? 's' : ''}
@@ -114,10 +148,16 @@ export function Providers() {
                   <ExternalLink className="w-3 h-3" /> Website
                 </a>
                 <Link
-                  to={`/${provider.slug}/docs`}
+                  to={providerDocsPath(provider.slug)}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white/60 border border-white/10 rounded hover:text-white hover:border-white/30 transition-colors"
                 >
                   <ArrowRight className="w-3 h-3" /> Docs
+                </Link>
+                <Link
+                  to={providerPath(provider.slug)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white/60 border border-white/10 rounded hover:text-white hover:border-white/30 transition-colors"
+                >
+                  <ArrowRight className="w-3 h-3" /> Provider Page
                 </Link>
                 <Link
                   to={`/models?q=${encodeURIComponent(provider.name)}`}
@@ -130,6 +170,7 @@ export function Providers() {
           ))}
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

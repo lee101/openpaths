@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"encoding/json"
+
 	"github.com/valyala/fasthttp"
 
 	"github.com/openpaths/openpaths/internal/billing"
@@ -26,7 +28,8 @@ func BalanceCheck(engine *billing.Engine) Middleware {
 				return
 			}
 
-			err := engine.PreCheck(ctx, userID, "", 100)
+			modelID := requestModel(ctx)
+			err := engine.PreCheck(ctx, userID, modelID, 100)
 			if err != nil {
 				ctx.SetStatusCode(402)
 				ctx.SetContentType("application/json")
@@ -37,4 +40,14 @@ func BalanceCheck(engine *billing.Engine) Middleware {
 			next(ctx)
 		}
 	}
+}
+
+func requestModel(ctx *fasthttp.RequestCtx) string {
+	var body struct {
+		Model string `json:"model"`
+	}
+	if err := json.Unmarshal(ctx.PostBody(), &body); err != nil {
+		return ""
+	}
+	return body.Model
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/valyala/fasthttp"
 
+	"github.com/openpaths/openpaths/internal/audio"
 	"github.com/openpaths/openpaths/internal/billing"
 	"github.com/openpaths/openpaths/internal/metrics"
 	"github.com/openpaths/openpaths/internal/middleware"
@@ -19,10 +20,15 @@ type SpeechHandler struct {
 	router   *router.Router
 	billing  *billing.Engine
 	recorder *metrics.Recorder
+	emotions *audio.AutoEmotion
 }
 
 func NewSpeechHandler(r *router.Router, b *billing.Engine, rec *metrics.Recorder) *SpeechHandler {
 	return &SpeechHandler{router: r, billing: b, recorder: rec}
+}
+
+func (h *SpeechHandler) SetAutoEmotion(marker *audio.AutoEmotion) {
+	h.emotions = marker
 }
 
 func (h *SpeechHandler) HandleSpeechGeneration(ctx *fasthttp.RequestCtx) {
@@ -38,6 +44,15 @@ func (h *SpeechHandler) HandleSpeechGeneration(ctx *fasthttp.RequestCtx) {
 		writeError(ctx, 400, "invalid_request", "Invalid JSON: "+err.Error())
 		return
 	}
+	if req.Model == "" && string(ctx.Path()) == "/v1/tts" {
+		req.Model = "xai-tts"
+	}
+	if req.Input == "" {
+		req.Input = req.Text
+	}
+	if req.Voice == "" {
+		req.Voice = req.VoiceID
+	}
 	if req.Model == "" {
 		writeError(ctx, 400, "invalid_request", "model is required")
 		return
@@ -45,6 +60,19 @@ func (h *SpeechHandler) HandleSpeechGeneration(ctx *fasthttp.RequestCtx) {
 	if req.Input == "" {
 		writeError(ctx, 400, "invalid_request", "input is required")
 		return
+	}
+	if req.AutoEmotion {
+		if h.emotions == nil {
+			writeError(ctx, 400, "invalid_request", "auto_emotion is not available on this server")
+			return
+		}
+		marked, err := h.emotions.Markup(ctx, req.Input)
+		if err != nil {
+			writeError(ctx, 500, "auto_emotion_error", err.Error())
+			return
+		}
+		req.Input = marked
+		req.Text = marked
 	}
 
 	originalModel := req.Model

@@ -7,6 +7,8 @@ import (
 
 	"github.com/valyala/fasthttp"
 
+	audioinfo "github.com/openpaths/openpaths/internal/audio"
+	"github.com/openpaths/openpaths/internal/billing"
 	"github.com/openpaths/openpaths/internal/metrics"
 	"github.com/openpaths/openpaths/internal/middleware"
 	"github.com/openpaths/openpaths/internal/model"
@@ -31,18 +33,27 @@ var modelToProvider = map[string]string{
 }
 
 type TranscriptionHandler struct {
+	router      *router.Router
+	billing     *billing.Engine
 	providers   []provider.TranscriptionProvider
 	providerMap map[string]provider.TranscriptionProvider
 	health      *router.HealthTracker
 	recorder    *metrics.Recorder
 }
 
-func NewTranscriptionHandler(providers []provider.TranscriptionProvider, health *router.HealthTracker, rec *metrics.Recorder) *TranscriptionHandler {
+func NewTranscriptionHandler(r *router.Router, b *billing.Engine, providers []provider.TranscriptionProvider, rec *metrics.Recorder) *TranscriptionHandler {
 	pm := make(map[string]provider.TranscriptionProvider, len(providers))
 	for _, p := range providers {
 		pm[p.Name()] = p
 	}
-	return &TranscriptionHandler{providers: providers, providerMap: pm, health: health, recorder: rec}
+	return &TranscriptionHandler{
+		router:      r,
+		billing:     b,
+		providers:   providers,
+		providerMap: pm,
+		health:      r.HealthTracker(),
+		recorder:    rec,
+	}
 }
 
 func (h *TranscriptionHandler) HandleTranscription(ctx *fasthttp.RequestCtx) {
@@ -83,6 +94,9 @@ func (h *TranscriptionHandler) HandleTranscription(ctx *fasthttp.RequestCtx) {
 	if vals, ok := form.Value["model"]; ok && len(vals) > 0 {
 		reqModel = vals[0]
 	}
+	if reqModel == "" && string(ctx.Path()) == "/v1/stt" {
+		reqModel = "xai-stt"
+	}
 	lang := ""
 	if vals, ok := form.Value["language"]; ok && len(vals) > 0 {
 		lang = vals[0]
@@ -105,10 +119,84 @@ func (h *TranscriptionHandler) HandleTranscription(ctx *fasthttp.RequestCtx) {
 		Format:   respFmt,
 	}
 
-	modelName := strings.ToLower(reqModel)
+	originalModel := reqModel
+	if originalModel == "" || originalModel == "auto" {
+		originalModel = "whisper"
+	}
+	if reqModel != "" && reqModel != "auto" {
+		if h.handleRoutedTranscription(ctx, userID, apiKeyID, reqModel, req) {
+			return
+		}
+	}
 
-	// Build ordered provider list: preferred provider first (if model-matched), then default chain
-	ordered := h.buildProviderOrder(modelName)
+	h.handleFallbackTranscription(ctx, userID, apiKeyID, req, originalModel)
+}
+
+func (h *TranscriptionHandler) handleRoutedTranscription(ctx *fasthttp.RequestCtx, userID, apiKeyID, originalModel string, req *model.TranscriptionRequest) bool {
+	candidates, err := h.router.ResolveWithRetries(originalModel)
+	if err != nil {
+		return false
+	}
+
+	for i, cand := range candidates {
+		transcriptionProv, ok := cand.Provider.(provider.TranscriptionProvider)
+		if !ok {
+			transcriptionProv, ok = h.transcriberByName(cand.Provider.Name())
+			if !ok {
+				log.Printf("transcription: %s does not support transcription", cand.Provider.Name())
+				continue
+			}
+		}
+
+		req.Model = cand.ModelCfg.ProviderModelID
+		start := time.Now()
+		resp, err := transcriptionProv.Transcribe(ctx, req)
+		latency := time.Since(start)
+
+		if err != nil {
+			statusCode := 502
+			errMsg := "upstream error"
+			if pe, ok := err.(*provider.ProviderError); ok {
+				statusCode = pe.StatusCode
+				errMsg = pe.Message
+				if !pe.Retryable {
+					h.recorder.RecordError(userID, apiKeyID, originalModel, cand.Provider.Name(),
+						int(latency.Milliseconds()), statusCode, errMsg, false)
+					writeError(ctx, statusCode, "provider_error", errMsg)
+					return true
+				}
+			}
+			h.router.MarkModelUnhealthy(cand.Provider.Name(), cand.ModelCfg.ID)
+			h.recorder.RecordError(userID, apiKeyID, originalModel, cand.Provider.Name(),
+				int(latency.Milliseconds()), statusCode, errMsg, false)
+			if i < len(candidates)-1 {
+				log.Printf("transcription fallback: %s/%s -> %s/%s",
+					cand.Provider.Name(), cand.ModelCfg.ID,
+					candidates[i+1].Provider.Name(), candidates[i+1].ModelCfg.ID)
+			}
+			continue
+		}
+
+		h.router.MarkModelHealthy(cand.Provider.Name(), cand.ModelCfg.ID)
+		durationSeconds := audioinfo.EstimateDurationSeconds(req.Filename, req.File)
+		cost, _ := h.billing.DeductAudio(ctx, userID, cand.ModelCfg.ID, durationSeconds, "")
+		h.recorder.RecordSuccess(userID, apiKeyID, originalModel, cand.Provider.Name(),
+			durationSeconds, 0, int(latency.Milliseconds()), 0, cost, false)
+		writeJSON(ctx, 200, resp)
+		return true
+	}
+
+	writeError(ctx, 502, "provider_error", "all providers failed for model "+originalModel)
+	return true
+}
+
+func (h *TranscriptionHandler) transcriberByName(name string) (provider.TranscriptionProvider, bool) {
+	p, ok := h.providerMap[name]
+	return p, ok
+}
+
+func (h *TranscriptionHandler) handleFallbackTranscription(ctx *fasthttp.RequestCtx, userID, apiKeyID string, req *model.TranscriptionRequest, originalModel string) {
+	ordered := h.buildProviderOrder(strings.ToLower(req.Model))
 
 	for i, p := range ordered {
 		key := "transcription:" + p.Name()
@@ -124,7 +212,7 @@ func (h *TranscriptionHandler) HandleTranscription(ctx *fasthttp.RequestCtx) {
 			h.health.MarkUnhealthy(key)
 			log.Printf("transcription: %s failed (%dms): %v", p.Name(), latency.Milliseconds(), err)
 			if pe, ok := err.(*provider.ProviderError); ok && !pe.Retryable {
-				h.recorder.RecordError(userID, apiKeyID, reqModel, p.Name(),
+				h.recorder.RecordError(userID, apiKeyID, originalModel, p.Name(),
 					int(latency.Milliseconds()), pe.StatusCode, pe.Message, false)
 				writeError(ctx, pe.StatusCode, "provider_error", pe.Message)
 				return
@@ -136,9 +224,12 @@ func (h *TranscriptionHandler) HandleTranscription(ctx *fasthttp.RequestCtx) {
 		}
 
 		h.health.MarkHealthy(key)
-		log.Printf("transcription: %s model=%s ok (%dms)", p.Name(), reqModel, latency.Milliseconds())
-		h.recorder.RecordSuccess(userID, apiKeyID, reqModel, p.Name(),
-			0, 0, int(latency.Milliseconds()), 0, 0, false)
+		log.Printf("transcription: %s ok (%dms)", p.Name(), latency.Milliseconds())
+		durationSeconds := audioinfo.EstimateDurationSeconds(req.Filename, req.File)
+		billingModel := defaultTranscriptionModel(p.Name())
+		cost, _ := h.billing.DeductAudio(ctx, userID, billingModel, durationSeconds, "")
+		h.recorder.RecordSuccess(userID, apiKeyID, originalModel, p.Name(),
+			durationSeconds, 0, int(latency.Milliseconds()), 0, cost, false)
 		writeJSON(ctx, 200, resp)
 		return
 	}
@@ -169,4 +260,19 @@ func (h *TranscriptionHandler) buildProviderOrder(modelName string) []provider.T
 		}
 	}
 	return ordered
+}
+
+func defaultTranscriptionModel(providerName string) string {
+	switch providerName {
+	case "groq":
+		return "whisper-large-v3-turbo"
+	case "openai":
+		return "whisper-1"
+	case "xai":
+		return "xai-stt"
+	case "fireworks":
+		return "whisper-v3-large-turbo"
+	default:
+		return providerName
+	}
 }

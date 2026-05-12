@@ -61,6 +61,7 @@ GOMAXPROCS=3 go build -tags="gpu cuda" \
 | `Z_API_KEY` | Z.AI API key |
 | `TEXTGENERATOR_API_KEY` | Text-Generator.io API key |
 | `MISTRAL_API_KEY` | Mistral API key |
+| `NVIDIA_API_KEY` | NVIDIA API key |
 
 ## API Endpoints
 
@@ -89,7 +90,8 @@ GOMAXPROCS=3 go build -tags="gpu cuda" \
 | `stream` | Full support | Streaming SSE responses |
 | `tools`, `tool_choice` | Full support | Function/tool calling |
 | `response_format` | Full support | Structured outputs / JSON mode where supported |
-| `reasoning_effort` | Full support | Supported values: `none`, `low`, `medium`, `high` |
+| `reasoning_effort` | Full support | Supported values: `none`, `low`, `medium`, `high`, `auto` |
+| `thinking` | Provider-specific | Passed through for direct DeepSeek V4 models; mapped for Anthropic-compatible requests |
 
 `reasoning_effort` can be set directly on compatible OpenAI-format requests:
 
@@ -104,7 +106,21 @@ GOMAXPROCS=3 go build -tags="gpu cuda" \
 }
 ```
 
+Set `reasoning_effort: "auto"` on any thinking-capable direct model to keep that model while letting OpenPaths choose `none`, `low`, `medium`, or `high` from the same embedding table used by `auto-think`:
+
+```json
+{
+  "model": "nvidia/deepseek-v4-pro",
+  "messages": [
+    {"role": "user", "content": "Make a 3D simulation of cogs in a clock."}
+  ],
+  "reasoning_effort": "auto"
+}
+```
+
 The Anthropic-compatible `POST /v1/messages` endpoint also accepts `thinking`, which we map onto the same internal reasoning controls.
+Direct DeepSeek models `deepseek-v4-flash` and `deepseek-v4-pro` use the DeepSeek API and support `thinking: {"type":"enabled"}` or `{"type":"disabled"}` on chat completions.
+The free NVIDIA-hosted DeepSeek Pro route is available as `nvidia/deepseek-v4-pro`; OpenPaths sends NVIDIA `chat_template_kwargs` for high-reasoning thinking mode automatically.
 
 ## Frontend
 

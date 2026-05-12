@@ -44,7 +44,8 @@ type anthRequest struct {
 	Thinking    any           `json:"thinking,omitempty"`
 
 	// Non-standard cross-provider hints — see model.ChatCompletionRequest.
-	TaskTier string `json:"task_tier,omitempty"`
+	TaskTier        string `json:"task_tier,omitempty"`
+	ReasoningEffort string `json:"reasoning_effort,omitempty"`
 }
 
 type anthMessage struct {
@@ -119,8 +120,14 @@ func (h *AnthropicHandler) HandleMessages(ctx *fasthttp.RequestCtx) {
 	chatReq := anthToInternal(&req)
 
 	autoResult := h.router.MaybeResolveAutoWithTier(ctx, chatReq.Model, "", chatReq.TaskTier, extractChatPrompt(chatReq.Messages))
-	if autoResult.ReasoningEffort != "" && chatReq.ReasoningEffort == "" {
+	useAutoReasoning := router.IsAutoReasoningEffort(chatReq.ReasoningEffort)
+	if autoResult.ReasoningEffort != "" && (chatReq.ReasoningEffort == "" || useAutoReasoning || router.IsAutoThinkModel(originalModel) || chatReq.TaskTier == "think") {
 		chatReq.ReasoningEffort = autoResult.ReasoningEffort
+	} else if useAutoReasoning {
+		chatReq.ReasoningEffort = h.router.MaybeResolveAutoReasoning(ctx, extractChatPrompt(chatReq.Messages))
+		if chatReq.ReasoningEffort == "" {
+			chatReq.ReasoningEffort = "medium"
+		}
 	}
 	candidates, err := h.router.ResolveForRequest(originalModel, autoResult.ModelID)
 	if err != nil {
@@ -379,6 +386,9 @@ func anthToInternal(req *anthRequest) *model.ChatCompletionRequest {
 		ReasoningEffort: parseAnthropicThinking(req.Thinking),
 		TaskTier:        req.TaskTier,
 	}
+	if req.ReasoningEffort != "" {
+		chatReq.ReasoningEffort = req.ReasoningEffort
+	}
 
 	// System message
 	switch s := req.System.(type) {
@@ -435,6 +445,9 @@ func parseAnthropicThinking(thinking any) string {
 	}
 
 	thinkingType, _ := m["type"].(string)
+	if router.IsAutoReasoningEffort(thinkingType) {
+		return "auto"
+	}
 	if thinkingType == "disabled" {
 		return "none"
 	}

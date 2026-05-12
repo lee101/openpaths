@@ -19,6 +19,8 @@ type ChatCompletionRequest struct {
 	Tools               []Tool          `json:"tools,omitempty"`
 	ToolChoice          any             `json:"tool_choice,omitempty"`
 	ReasoningEffort     string          `json:"reasoning_effort,omitempty"`
+	Thinking            *ThinkingConfig `json:"thinking,omitempty"`
+	ChatTemplateKwargs  map[string]any  `json:"chat_template_kwargs,omitempty"`
 
 	// Prefill is a non-standard cross-provider hint: the assistant response
 	// should start with this exact string. Anthropic and Google Gemini support
@@ -35,11 +37,13 @@ type ChatCompletionRequest struct {
 }
 
 type ChatMessage struct {
-	Role       string     `json:"role"`
-	Content    any        `json:"content"`
-	Name       string     `json:"name,omitempty"`
-	ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
-	ToolCallID string     `json:"tool_call_id,omitempty"`
+	Role             string     `json:"role"`
+	Content          any        `json:"content"`
+	Name             string     `json:"name,omitempty"`
+	ToolCalls        []ToolCall `json:"tool_calls,omitempty"`
+	ToolCallID       string     `json:"tool_call_id,omitempty"`
+	Reasoning        string     `json:"reasoning,omitempty"`
+	ReasoningContent string     `json:"reasoning_content,omitempty"`
 }
 
 type ChatCompletionResponse struct {
@@ -85,6 +89,11 @@ type JsonSchema struct {
 	Description string `json:"description,omitempty"`
 	Schema      any    `json:"schema,omitempty"`
 	Strict      *bool  `json:"strict,omitempty"`
+}
+
+type ThinkingConfig struct {
+	Type         string `json:"type,omitempty"`
+	BudgetTokens *int   `json:"budget_tokens,omitempty"`
 }
 
 type StreamOptions struct {
@@ -139,11 +148,15 @@ type ModelInfo struct {
 }
 
 type ModelPricing struct {
-	InputPer1M  float64 `json:"input_per_1m_tokens,omitempty"`
-	OutputPer1M float64 `json:"output_per_1m_tokens,omitempty"`
-	PerRequest  float64 `json:"per_request,omitempty"`
-	PerImage    float64 `json:"per_image,omitempty"`
-	PerVideo    float64 `json:"per_video,omitempty"`
+	InputPer1M              float64 `json:"input_per_1m_tokens,omitempty"`
+	OutputPer1M             float64 `json:"output_per_1m_tokens,omitempty"`
+	PerRequest              float64 `json:"per_request,omitempty"`
+	PerImage                float64 `json:"per_image,omitempty"`
+	PerMegapixel            float64 `json:"per_megapixel,omitempty"`
+	PerInputImage           float64 `json:"per_input_image,omitempty"`
+	PerVideo                float64 `json:"per_video,omitempty"`
+	PerSecond               float64 `json:"per_second,omitempty"`
+	PerSecondWithVideoInput float64 `json:"per_second_with_video_input,omitempty"`
 }
 
 type ModelCapabilities struct {

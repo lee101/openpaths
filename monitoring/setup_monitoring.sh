@@ -18,17 +18,26 @@ else
     npx playwright install chromium 2>/dev/null || echo "playwright install skipped"
 fi
 
-# Setup cron job - every 30 min
+# Setup cron job - every 30 min: site health + supervisor restart on hard down
 CRON_CMD="cd $PROJECT_DIR && bash monitoring/autofix_agent.sh >> monitoring/logs/cron.log 2>&1"
 if crontab -l 2>/dev/null | grep -q "autofix_agent"; then
-    echo "cron already configured"
+    echo "autofix cron already configured"
 else
     (crontab -l 2>/dev/null || true; echo "*/30 * * * * $CRON_CMD") | crontab -
-    echo "cron installed: every 30 min"
+    echo "autofix cron installed: every 30 min"
+fi
+
+# Setup error watcher cron - every 30 min, internally debounced to once / 12h
+WATCHER_CMD="cd $PROJECT_DIR && bash monitoring/error_watcher.sh >> monitoring/logs/watcher_cron.log 2>&1"
+if crontab -l 2>/dev/null | grep -q "error_watcher"; then
+    echo "error_watcher cron already configured"
+else
+    (crontab -l 2>/dev/null || true; echo "*/30 * * * * $WATCHER_CMD") | crontab -
+    echo "error_watcher cron installed: every 30 min (12h debounce on Codex spawn)"
 fi
 
 # Setup daily route monitor cron - daily at 7 AM
-ROUTE_CRON="cd $PROJECT_DIR && unset ANTHROPIC_API_KEY && bash monitoring/daily_route_monitor.sh >> monitoring/logs/daily.log 2>&1"
+ROUTE_CRON="cd $PROJECT_DIR && bash monitoring/daily_route_monitor.sh >> monitoring/logs/daily.log 2>&1"
 if crontab -l 2>/dev/null | grep -q "daily_route_monitor"; then
     echo "daily route monitor cron already configured"
 else

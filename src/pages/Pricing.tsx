@@ -107,7 +107,7 @@ export function Pricing() {
               Pricing built to stay as close to <span className="text-white/45">0 markup</span> as possible.
             </h1>
             <p className="mt-6 max-w-3xl text-lg leading-relaxed text-white/65 md:text-xl">
-              OpenPaths is designed to be a routing layer, not a heavy-tax marketplace. We keep pass-through pricing as tight as practical and make a meaningful share of revenue when requests land on AI services we operate ourselves, including Netwrck image and video models plus local gobed and Text-Generator.io embeddings.
+              OpenPaths is designed to be a routing layer, not a heavy-tax marketplace. We keep pass-through pricing as tight as practical and make a meaningful share of revenue when requests land on AI services we operate ourselves, including Netwrck image and video models plus our local embedding model and Text-Generator.io embeddings.
             </p>
             <div className="mt-10 flex flex-col gap-3 sm:flex-row">
               <Link
@@ -136,7 +136,7 @@ export function Pricing() {
             />
             <ValueCard
               title="First-party revenue where it belongs"
-              body="We can afford tighter routing margins because we also operate some of the AI services in the catalog ourselves, including local gobed embeddings."
+              body="We can keep routing margins tight because we also operate some of the AI services in the catalog ourselves, including our local embedding model."
             />
           </div>
         </section>
@@ -152,8 +152,8 @@ export function Pricing() {
             <WorkloadCard
               icon={<Database className="h-5 w-5" />}
               title="Embeddings"
-              body="Request-priced local embeddings plus token-priced provider embeddings for search, retrieval, clustering, and reranking pipelines."
-              pricing="Per request for gobed, per 1M tokens for provider models"
+              body="Fast local embeddings plus token-priced provider embeddings for search, retrieval, clustering, and reranking pipelines."
+              pricing="Per request for the local model, per 1M tokens for provider models"
             />
             <WorkloadCard
               icon={<ImageIcon className="h-5 w-5" />}
@@ -175,7 +175,7 @@ export function Pricing() {
             <div className="mb-3 font-mono text-xs uppercase tracking-[0.24em] text-white/45">How OpenPaths makes money</div>
             <h2 className="text-3xl font-bold tracking-tight md:text-4xl">Closer to provider pricing by design.</h2>
             <p className="mt-4 text-base leading-relaxed text-white/65 md:text-lg">
-              Many AI gateways add a noticeable markup across every single model. We want the default experience to be cleaner than that. OpenPaths can keep pricing tight because some of the inventory is first-party: when you use services like Netwrck, gobed, or Text-Generator.io through OpenPaths, we are not paying another gateway on top.
+              Many AI gateways add a noticeable markup across every single model. We want the default experience to be cleaner than that. OpenPaths can keep pricing tight because some of the inventory is first-party: when you use services like Netwrck, our local embedding model, or Text-Generator.io through OpenPaths, we are not paying another gateway on top.
             </p>
           </div>
 
@@ -218,7 +218,7 @@ export function Pricing() {
               <SectionHeading
                 icon={<Database className="h-4 w-4" />}
                 title="Embeddings"
-                body="OpenPaths includes a local request-priced gobed model plus token-priced Google and Text-Generator.io embedding options."
+                body="OpenPaths includes a fast local embedding model plus token-priced Google and Text-Generator.io options."
               />
               <RequestPricingTable
                 rows={localEmbeddingModels.map((model) => ({
@@ -235,7 +235,7 @@ export function Pricing() {
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <DetailCard
                   title="OpenPaths Embed modes"
-                  body="`openpaths-embed` defaults to `long_text_mode=truncate` for cheap, predictable local embeddings. Set `long_text_mode=average_chunks` to average chunk embeddings across the full text instead."
+                  body="Use `openpaths-embed` for the fastest, lowest-cost local embeddings. Keep `long_text_mode=truncate` for speed, or switch to `average_chunks` when you want the full text represented across chunks."
                 />
                 <DetailCard
                   title="Gemini 2 preview pricing"

@@ -103,20 +103,20 @@ func (q *UserQueries) SetAutotopupLastAt(ctx context.Context, userID string) err
 }
 
 type AutotopupInfo struct {
-	Enabled           bool
-	ThresholdCents    int64
-	AmountCents       int64
-	StripeCustomerID  *string
-	PaymentMethodID   *string
-	LastAt            *interface{}
-	BalanceCents      int64
+	Enabled          bool
+	ThresholdCents   int64
+	AmountCents      int64
+	StripeCustomerID *string
+	PaymentMethodID  *string
+	LastAt           *interface{}
+	BalanceCents     int64
 }
 
 func (q *UserQueries) GetAutotopupInfo(ctx context.Context, userID string) (*model.User, int64, error) {
 	var u model.User
 	var balance int64
 	err := q.pool.QueryRow(ctx,
-		`SELECT u.id, u.stripe_customer_id, u.stripe_payment_method_id,
+		`SELECT u.id, u.updated_at, u.stripe_customer_id, u.stripe_payment_method_id,
 		        u.autotopup_enabled, u.autotopup_threshold_cents, u.autotopup_amount_cents, u.autotopup_last_at,
 		        COALESCE(cb.balance_cents, 0)
 		 FROM users u
@@ -124,7 +124,7 @@ func (q *UserQueries) GetAutotopupInfo(ctx context.Context, userID string) (*mod
 		 WHERE u.id = $1`,
 		userID,
 	).Scan(
-		&u.ID, &u.StripeCustomerID, &u.StripePaymentMethodID,
+		&u.ID, &u.UpdatedAt, &u.StripeCustomerID, &u.StripePaymentMethodID,
 		&u.AutotopupEnabled, &u.AutotopupThresholdCents, &u.AutotopupAmountCents, &u.AutotopupLastAt,
 		&balance,
 	)

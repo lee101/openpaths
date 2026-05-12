@@ -4,10 +4,17 @@ type VideoGenerationRequest struct {
 	Model               string   `json:"model"`
 	Prompt              string   `json:"prompt"`
 	ImageURL            string   `json:"image_url,omitempty"`
+	EndImageURL         string   `json:"end_image_url,omitempty"`
+	ImageURLs           []string `json:"image_urls,omitempty"`
+	VideoURLs           []string `json:"video_urls,omitempty"`
+	AudioURLs           []string `json:"audio_urls,omitempty"`
 	NumFrames           int      `json:"num_frames,omitempty"`
 	FramesPerSecond     int      `json:"frames_per_second,omitempty"`
 	Resolution          string   `json:"resolution,omitempty"`
+	Duration            string   `json:"duration,omitempty"`
 	AspectRatio         string   `json:"aspect_ratio,omitempty"`
+	GenerateAudio       *bool    `json:"generate_audio,omitempty"`
+	EndUserID           string   `json:"end_user_id,omitempty"`
 	NegativePrompt      string   `json:"negative_prompt,omitempty"`
 	Seed                *int     `json:"seed,omitempty"`
 	NumInferenceSteps   int      `json:"num_inference_steps,omitempty"`

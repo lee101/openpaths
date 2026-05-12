@@ -42,8 +42,8 @@ func (h *MusicHandler) HandleMusicGeneration(ctx *fasthttp.RequestCtx) {
 		writeError(ctx, 400, "invalid_request", "model is required")
 		return
 	}
-	if req.Lyrics == "" {
-		writeError(ctx, 400, "invalid_request", "lyrics is required")
+	if req.Lyrics == "" && req.Prompt == "" {
+		writeError(ctx, 400, "invalid_request", "lyrics or prompt is required")
 		return
 	}
 

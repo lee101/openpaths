@@ -3,6 +3,7 @@ package deepseek
 import (
 	"strings"
 
+	"github.com/openpaths/openpaths/internal/model"
 	"github.com/openpaths/openpaths/internal/provider/openai"
 )
 
@@ -15,8 +16,24 @@ func New(apiKey, baseURL string) *DeepSeekProvider {
 		baseURL = "https://api.deepseek.com"
 	}
 	return &DeepSeekProvider{
-		OpenAIProvider: openai.New(apiKey, strings.TrimRight(baseURL, "/")),
+		OpenAIProvider: openai.NewCompatible("deepseek", apiKey, strings.TrimRight(baseURL, "/"), sanitizeForDeepSeek),
 	}
 }
 
 func (p *DeepSeekProvider) Name() string { return "deepseek" }
+
+func sanitizeForDeepSeek(req *model.ChatCompletionRequest) {
+	req.Prefill = ""
+	req.TaskTier = ""
+
+	if !strings.HasPrefix(req.Model, "deepseek-v4-") || req.Thinking != nil {
+		return
+	}
+
+	switch req.ReasoningEffort {
+	case "none":
+		req.Thinking = &model.ThinkingConfig{Type: "disabled"}
+	case "low", "medium", "high":
+		req.Thinking = &model.ThinkingConfig{Type: "enabled"}
+	}
+}

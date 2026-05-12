@@ -19,6 +19,8 @@ func (f *fakeEmbedder) Embed(_ context.Context, req *model.EmbeddingRequest) (*m
 	vec := []float64{0, 0, 0, 0, 1}
 
 	switch {
+	case containsAny(text, "sensitive content", "adult roleplay", "biosecurity", "fringe", "harm policy", "controversial"):
+		vec = []float64{0.2, 0.2, 0.2, 0.2, 0.2}
 	case containsAny(text, "classify", "categorize", "structured output", "json schema"):
 		vec = []float64{1, 0, 0, 0, 0}
 	case containsAny(text, "implement feature", "new endpoint", "debug fix bug", "integration test", "simple python function", "reverse string", "helper utility"):
@@ -33,7 +35,7 @@ func (f *fakeEmbedder) Embed(_ context.Context, req *model.EmbeddingRequest) (*m
 		vec = []float64{0, 1, 0, 0, 0}
 	case containsAny(text, "plan a refactor", "test strategy", "review code for bugs", "design an api endpoint", "tradeoffs architecture"):
 		vec = []float64{0, 0, 1, 0, 0}
-	case containsAny(text, "3d mesh simplification algorithm", "prove a theorem", "distributed system protocol", "formal verification", "hard math olympiad"):
+	case containsAny(text, "3d mesh simplification algorithm", "3d simulation", "cogs", "gears", "clock mechanism", "prove a theorem", "distributed system protocol", "formal verification", "hard math olympiad"):
 		vec = []float64{0, 0, 0, 0, 1}
 	}
 
@@ -129,6 +131,7 @@ func TestDefaultRoutingTables_EasyTaskIncludesRequestedProviders(t *testing.T) {
 
 	for _, want := range []string{
 		"gpt-5.4-nano",
+		"deepseek-v4-flash",
 		"gemini-flash-lite",
 		"gemini-2.5-flash",
 		"claude-haiku-4-5-20251001",
@@ -136,6 +139,36 @@ func TestDefaultRoutingTables_EasyTaskIncludesRequestedProviders(t *testing.T) {
 		if !got[want] {
 			t.Fatalf("easy-task routing table missing %q", want)
 		}
+	}
+}
+
+func TestAutoRouter_EasyTaskRoutesSensitiveClassifierToDeepSeekV4Flash(t *testing.T) {
+	ar := NewAutoRouter(&fakeEmbedder{})
+	if err := ar.Init(context.Background()); err != nil {
+		t.Fatalf("Init() error = %v", err)
+	}
+
+	got, err := ar.ResolveAuto(context.Background(), "easy-task", "Classify this sensitive content for adult roleplay and fringe policy labels.")
+	if err != nil {
+		t.Fatalf("ResolveAuto() error = %v", err)
+	}
+	if got.ModelID != "deepseek-v4-flash" {
+		t.Fatalf("ModelID = %q, want %q", got.ModelID, "deepseek-v4-flash")
+	}
+}
+
+func TestAutoRouter_HardTaskRoutesBiosecurityToDeepSeekV4Pro(t *testing.T) {
+	ar := NewAutoRouter(&fakeEmbedder{})
+	if err := ar.Init(context.Background()); err != nil {
+		t.Fatalf("Init() error = %v", err)
+	}
+
+	got, err := ar.ResolveAuto(context.Background(), "hard-task", "Analyze this biosecurity dual use request with careful policy reasoning.")
+	if err != nil {
+		t.Fatalf("ResolveAuto() error = %v", err)
+	}
+	if got.ModelID != "deepseek-v4-pro" {
+		t.Fatalf("ModelID = %q, want %q", got.ModelID, "deepseek-v4-pro")
 	}
 }
 
@@ -164,6 +197,24 @@ func TestAutoRouter_ThinkTaskRoutesHardPromptToHighThinking(t *testing.T) {
 	}
 
 	got, err := ar.ResolveAuto(context.Background(), "think-task", "Create a 3d mesh simplification algorithm that preserves topology and minimizes geometric error.")
+	if err != nil {
+		t.Fatalf("ResolveAuto() error = %v", err)
+	}
+	if got.ModelID != "gpt-5.5" {
+		t.Fatalf("ModelID = %q, want %q", got.ModelID, "gpt-5.5")
+	}
+	if got.ReasoningEffort != "high" {
+		t.Fatalf("ReasoningEffort = %q, want %q", got.ReasoningEffort, "high")
+	}
+}
+
+func TestAutoRouter_ThinkTaskRoutes3DSimulationToHighThinking(t *testing.T) {
+	ar := NewAutoRouter(&fakeEmbedder{})
+	if err := ar.Init(context.Background()); err != nil {
+		t.Fatalf("Init() error = %v", err)
+	}
+
+	got, err := ar.ResolveAuto(context.Background(), "think-task", "Make a 3d simulation of cogs in a clock.")
 	if err != nil {
 		t.Fatalf("ResolveAuto() error = %v", err)
 	}
@@ -289,6 +340,40 @@ func TestMaybeResolveAutoWithTier_EmptyTierFallsBackToModelNameBehaviour(t *test
 	got := r.MaybeResolveAutoWithTier(context.Background(), "gpt-4o", "", "", "hello")
 	if got.ModelID != "gpt-4o" {
 		t.Fatalf("non-auto model with empty tier should pass through, got %q", got.ModelID)
+	}
+}
+
+func TestMaybeResolveAutoReasoning_KeepsDirectModelReasoningOnly(t *testing.T) {
+	r := newTestRouter([]model.ModelConfig{
+		{ID: "nvidia/deepseek-v4-pro", Provider: "nvidia"},
+		{ID: "gpt-5.5", Provider: "openai"},
+	}, "nvidia", "openai")
+
+	r.SetAutoRouter(&AutoRouter{
+		embedder: &stubEmbedder{
+			vectors: map[string][]float64{
+				"make a 3d simulation of cogs in a clock": {1, 0},
+			},
+		},
+		tables: map[string][]AutoEntry{
+			"think-task": {
+				{ModelID: "gpt-5.5", ReasoningEffort: "high", Embedding: []float64{1, 0}},
+			},
+		},
+		ready: true,
+	})
+
+	got := r.MaybeResolveAutoReasoning(context.Background(), "make a 3d simulation of cogs in a clock")
+	if got != "high" {
+		t.Fatalf("MaybeResolveAutoReasoning() = %q, want high", got)
+	}
+
+	candidates, err := r.ResolveForRequest("nvidia/deepseek-v4-pro", "nvidia/deepseek-v4-pro")
+	if err != nil {
+		t.Fatalf("ResolveForRequest() error = %v", err)
+	}
+	if candidates[0].ModelCfg.ID != "nvidia/deepseek-v4-pro" {
+		t.Fatalf("direct model changed to %q", candidates[0].ModelCfg.ID)
 	}
 }
 

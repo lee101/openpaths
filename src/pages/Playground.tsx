@@ -1,19 +1,28 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Send, Plus, X, Settings, ChevronDown, Loader2, Trash2, Square, Copy, Check, Zap, RotateCcw, Code2, Share2, Wallet, Eye, Wrench } from 'lucide-react';
+import { Send, Plus, X, Settings, ChevronDown, Loader2, Trash2, Square, Copy, Check, Zap, RotateCcw, Code2, Share2, Wallet, Eye, Wrench, Volume2 } from 'lucide-react';
+import { CodeBlock as HighlightedCodeBlock } from '../components/CodeBlock';
 
 interface Message {
   role: 'system' | 'user' | 'assistant';
   content: string;
   imageB64?: string;
   imageUrl?: string;
+  videoUrl?: string;
+  audioB64?: string;
+  audioUrl?: string;
+  audioFormat?: string;
 }
 
 interface ModelPricing {
   input_per_1m_tokens?: number;
   output_per_1m_tokens?: number;
+  per_request?: number;
   per_image?: number;
+  per_megapixel?: number;
   per_video?: number;
+  per_second?: number;
+  per_second_with_video_input?: number;
 }
 
 interface ModelCapabilities {
@@ -43,14 +52,67 @@ interface ModelPane {
   costUsd: number | null;
 }
 
+type CodeLanguage = 'python' | 'js' | 'go' | 'curl';
+type PromptExample = string | { label: string; prompt: string };
+
+const IMAGE_SIZES = ['1024x1024', '1152x768', '768x1152', '1360x768', '768x1360', '1280x720', '720x1280'] as const;
+const IMAGE_ASPECT_RATIOS = ['auto', '1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '2:1', '1:2'] as const;
+const IMAGE_QUALITIES = ['standard', 'high'] as const;
+const IMAGE_RESPONSE_FORMATS = ['url', 'b64_json'] as const;
+const VIDEO_RESOLUTIONS = ['480p', '720p', '1080p'] as const;
+const VIDEO_DURATIONS = ['auto', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15'] as const;
+const VIDEO_ASPECT_RATIOS = ['auto', '21:9', '16:9', '4:3', '1:1', '3:4', '9:16'] as const;
+const SPEECH_VOICES = ['eve', 'ara', 'rex', 'sal', 'leo'];
+const GEMINI_TTS_VOICE_INFO = [
+  { name: 'Achernar', style: 'Soft', pitch: 'Higher pitch' },
+  { name: 'Achird', style: 'Friendly', pitch: 'Lower middle pitch' },
+  { name: 'Algenib', style: 'Gravelly', pitch: 'Lower pitch' },
+  { name: 'Algieba', style: 'Smooth', pitch: 'Lower pitch' },
+  { name: 'Alnilam', style: 'Firm', pitch: 'Lower middle pitch' },
+  { name: 'Aoede', style: 'Breezy', pitch: 'Middle pitch' },
+  { name: 'Autonoe', style: 'Bright', pitch: 'Middle pitch' },
+  { name: 'Callirrhoe', style: 'Easy-going', pitch: 'Middle pitch' },
+  { name: 'Charon', style: 'Informative', pitch: 'Lower pitch' },
+  { name: 'Despina', style: 'Smooth', pitch: 'Middle pitch' },
+  { name: 'Enceladus', style: 'Breathy', pitch: 'Lower pitch' },
+  { name: 'Erinome', style: 'Clear', pitch: 'Middle pitch' },
+  { name: 'Fenrir', style: 'Excitable', pitch: 'Lower middle pitch' },
+  { name: 'Gacrux', style: 'Mature', pitch: 'Middle pitch' },
+  { name: 'Iapetus', style: 'Clear', pitch: 'Lower middle pitch' },
+  { name: 'Kore', style: 'Firm', pitch: 'Middle pitch' },
+  { name: 'Laomedeia', style: 'Upbeat', pitch: 'Higher pitch' },
+  { name: 'Leda', style: 'Youthful', pitch: 'Higher pitch' },
+  { name: 'Orus', style: 'Firm', pitch: 'Lower middle pitch' },
+  { name: 'Puck', style: 'Upbeat', pitch: 'Middle pitch' },
+  { name: 'Pulcherrima', style: 'Forward', pitch: 'Middle pitch' },
+  { name: 'Rasalgethi', style: 'Informative', pitch: 'Middle pitch' },
+  { name: 'Sadachbia', style: 'Lively', pitch: 'Lower pitch' },
+  { name: 'Sadaltager', style: 'Knowledgeable', pitch: 'Middle pitch' },
+  { name: 'Schedar', style: 'Even', pitch: 'Lower middle pitch' },
+  { name: 'Sulafat', style: 'Warm', pitch: 'Middle pitch' },
+  { name: 'Umbriel', style: 'Easy-going', pitch: 'Lower middle pitch' },
+  { name: 'Vindemiatrix', style: 'Gentle', pitch: 'Middle pitch' },
+  { name: 'Zephyr', style: 'Bright', pitch: 'Higher pitch' },
+  { name: 'Zubenelgenubi', style: 'Casual', pitch: 'Lower middle pitch' },
+] as const;
+const GEMINI_TTS_VOICES = GEMINI_TTS_VOICE_INFO.map(v => v.name);
+const TTS_STYLES = ['Natural', 'Deadpan', 'Empathetic', 'Dramatic', 'Whispering', 'Excited', 'Calm', 'Authoritative', 'Playful', 'Suspicious'] as const;
+const TTS_PACES = ['Natural', 'Slow', 'Measured', 'Fast', 'Staccato', 'Urgent'] as const;
+const TTS_ACCENTS = ['American (Gen)', 'British (RP)', 'Neutral', 'Australian', 'Indian English', 'Irish', 'Scottish'] as const;
+const SPEECH_LANGUAGES = ['en', 'es', 'fr', 'de', 'it', 'pt', 'ja', 'ko', 'zh'] as const;
+
 const FALLBACK_MODELS: CatalogModel[] = [
   { id: 'auto', label: 'Auto (intelligent routing)', provider: 'OpenPaths' },
+  { id: 'auto-image', label: 'Auto Image', provider: 'OpenPaths', pricing: { per_image: 0.04 } },
   { id: 'auto-easy-task', label: 'Auto Easy (cheapest)', provider: 'OpenPaths' },
   { id: 'auto-medium-task', label: 'Auto Medium (balanced)', provider: 'OpenPaths' },
   { id: 'auto-think', label: 'Auto Think (reasoning)', provider: 'OpenPaths' },
   { id: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro', provider: 'Google' },
   { id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', provider: 'Google' },
   { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', provider: 'Google' },
+  { id: 'gemini-3.1-flash-tts-preview', label: 'Gemini 3.1 Flash TTS Preview', provider: 'Google', pricing: { input_per_1m_tokens: 1.00, output_per_1m_tokens: 20.00 } },
+  { id: 'lyria-3-pro-preview', label: 'Lyria 3 Pro Preview', provider: 'Google', pricing: { per_request: 0.08 } },
+  { id: 'lyria-3-clip-preview', label: 'Lyria 3 Clip Preview', provider: 'Google', pricing: { per_request: 0.04 } },
   { id: 'gpt-5.5', label: 'GPT-5.5', provider: 'OpenAI' },
   { id: 'gpt-5.4', label: 'GPT-5.4', provider: 'OpenAI' },
   { id: 'o3', label: 'o3', provider: 'OpenAI' },
@@ -60,9 +122,13 @@ const FALLBACK_MODELS: CatalogModel[] = [
   { id: 'claude-sonnet-latest', label: 'Claude Sonnet (latest)', provider: 'Anthropic' },
   { id: 'claude-opus-latest', label: 'Claude Opus (latest)', provider: 'Anthropic' },
   { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku', provider: 'Anthropic' },
-  { id: 'grok-4-0709', label: 'Grok 4', provider: 'xAI' },
-  { id: 'grok-4-1-fast-reasoning', label: 'Grok 4.1 Fast', provider: 'xAI' },
+  { id: 'grok-4.3', label: 'Grok 4.3', provider: 'xAI' },
+  { id: 'grok-latest', label: 'Grok Latest', provider: 'xAI' },
+  { id: 'grok-4.20-non-reasoning', label: 'Grok 4.20 Non-Reasoning', provider: 'xAI' },
   { id: 'grok-3-mini', label: 'Grok 3 Mini', provider: 'xAI' },
+  { id: 'xai-tts', label: 'xAI Text to Speech', provider: 'xAI', pricing: { input_per_1m_tokens: 15.00 } },
+  { id: 'grok-imagine-image', label: 'Grok Imagine Image', provider: 'xAI', pricing: { per_image: 0.02 } },
+  { id: 'nvidia/deepseek-v4-pro', label: 'DeepSeek V4 Pro Free', provider: 'NVIDIA' },
   { id: 'deepseek-chat', label: 'DeepSeek Chat', provider: 'DeepSeek' },
   { id: 'deepseek-reasoner', label: 'DeepSeek Reasoner', provider: 'DeepSeek' },
   { id: 'mistral-large-latest', label: 'Mistral Large', provider: 'Mistral' },
@@ -72,34 +138,269 @@ const FALLBACK_MODELS: CatalogModel[] = [
   { id: 'minimax-m2.7', label: 'MiniMax M2.7', provider: 'MiniMax' },
   { id: 'minimax-m2.5-direct', label: 'MiniMax M2.5', provider: 'MiniMax' },
   { id: 'kimi-k2.5', label: 'Kimi K2.5', provider: 'Together' },
+  { id: 'ra1', label: 'RA1 Art Generator', provider: 'Netwrck', pricing: { per_image: 0.04 } },
+  { id: 'zimage', label: 'ZImage', provider: 'Netwrck', pricing: { per_image: 0.007 } },
+  { id: 'klein', label: 'FLUX Klein 4B', provider: 'Fal', pricing: { per_image: 0.02 } },
+  { id: 'flux-pro', label: 'FLUX.1 Pro', provider: 'Fal', pricing: { per_image: 0.04 } },
+  { id: 'flux-dev', label: 'FLUX Dev', provider: 'Fal', pricing: { per_image: 0.025 } },
+  { id: 'flux-schnell', label: 'FLUX Schnell', provider: 'Fal', pricing: { per_image: 0.003 } },
+  { id: 'stable-diffusion-3', label: 'Stable Diffusion 3', provider: 'Together', pricing: { per_image: 0.002 } },
+  { id: 'glm-image', label: 'GLM Image', provider: 'Z.AI', pricing: { per_image: 0.015 } },
+  { id: 'fal-gpt-image-2', label: 'GPT Image 2 via Fal', provider: 'Fal', pricing: { per_image: 0.22 } },
+  { id: 'hidream-o1-image-dev', label: 'HiDream O1 Image Dev', provider: 'Fal', pricing: { per_megapixel: 0.006 } },
+  { id: 'seedance-2.0-fast-text-to-video', label: 'Seedance 2.0 Fast Text to Video', provider: 'Fal', pricing: { per_second: 0.26609 } },
+  { id: 'seedance-2.0-text-to-video', label: 'Seedance 2.0 Text to Video', provider: 'Fal', pricing: { per_second: 0.33374 } },
+  { id: 'seedance-2.0-image-to-video', label: 'Seedance 2.0 Image to Video', provider: 'Fal', pricing: { per_second: 0.33264 } },
+  { id: 'seedance-2.0-fast-reference-to-video', label: 'Seedance 2.0 Fast Reference to Video', provider: 'Fal', pricing: { per_second: 0.26609, per_second_with_video_input: 0.15972 } },
+  { id: 'seedance-2.0-reference-to-video', label: 'Seedance 2.0 Reference to Video', provider: 'Fal', pricing: { per_second: 0.33264, per_second_with_video_input: 0.19954 } },
 ];
 
-const QUICK_PROMPTS = [
+const QUICK_PROMPTS: PromptExample[] = [
   'Explain quantum computing in simple terms',
   'Write a Python function to find prime numbers',
   'Compare REST vs GraphQL APIs',
   'Create a React hook for debouncing',
 ];
 
-const IMAGE_QUICK_PROMPTS = [
+const IMAGE_QUICK_PROMPTS: PromptExample[] = [
+  'A cinematic product photo of a translucent glass pathfinder compass on a matte black desk, thin luminous routing lines inside the glass, soft window light, shallow depth of field, premium AI infrastructure product photography, no text, no logo.',
   'A beige ceramic coffee mug on a wooden table, natural light',
   'Isometric illustration of a futuristic city at sunset',
   'Photorealistic gray tabby cat hugging an otter with an orange scarf',
   'Minimal line-art logo of a mountain over a flowing river',
 ];
 
+const SPEECH_QUICK_PROMPTS: PromptExample[] = [
+  'Welcome to OpenPaths. Your one API key can route text, image, video, and speech models.',
+  'This is a quick voice check for Grok text to speech in the OpenPaths playground.',
+  'Read this in a warm, concise product-demo voice with natural pacing.',
+  'The model is billed per input character, so this short sample stays inexpensive.',
+];
+
+const GEMINI_TTS_QUICK_PROMPTS: PromptExample[] = [
+  {
+    label: 'Fantasy RPG two-speaker scene',
+    prompt: `Read the following transcript based on the audio profile and director's note.
+
+# Audio Profile
+For Speaker 1: A stern and weary gatekeeper
+For Speaker 2: A determined and courageous traveler seeking answers.
+
+# Director's note
+For Speaker 1: Style: Deadpan. Pace: Natural. Accent: British (RP).
+For Speaker 2: Style: Empathetic. Pace: Staccato. Accent: American (Gen).
+
+## Scene:
+A dark, crumbling dungeon with dripping water echoing in the distance.
+
+## Sample Context:
+Fantasy RPG style. Pacing is measured, snapping into urgency at the end. Tone is tense and cautious.
+
+## Transcript:
+Speaker 1: [shouting] Halt, traveler! The northern pass is sealed by order of the council.
+Speaker 2: [determination] I carry a message for the elder. Step aside, or I will force my way through.
+Speaker 1: [caution] No one passes. [pensive] The elder is... he's no longer receiving visitors.
+Speaker 2: [suspicion] What do you mean? We don't have time for games.`,
+  },
+  {
+    label: 'Podcast cold open',
+    prompt: 'Read this as a polished documentary podcast cold open. [measured] The storm reached the harbor just after midnight. By morning, every clock in town had stopped, but one lighthouse was still flashing a signal no one could decode.',
+  },
+  {
+    label: 'Product demo narration',
+    prompt: 'Read in a confident, warm product-demo voice with clean pacing and slight emphasis on bracketed tags. [clear] OpenPaths routes text, image, video, music, and speech models through one API. [upbeat] Switch models without rewriting your app.',
+  },
+  {
+    label: 'Audiobook suspense',
+    prompt: 'Narrate with a low, intimate audiobook tone. [whispering] The hallway light flickered twice. Mira held her breath, because the second shadow on the wall did not belong to her.',
+  },
+];
+
+const MUSIC_QUICK_PROMPTS: PromptExample[] = [
+  {
+    label: 'Peak-time EDM full song',
+    prompt: `Again and Again!: Composition Breakdown
+[0:00 - 0:20] Intro: Intensity: 4/10. A driving, atmospheric EDM intro with a punchy four-on-the-floor kick, crisp sixteenth-note hi-hats, and a muffled rhythmic synth pluck that brightens as a low-pass filter opens. No vocals. Minor key, repetitive two-bar loop, expectant underground club atmosphere.
+[0:20 - 0:50] Verse: Intensity: 6/10. Lyrics: "Over and over, the feeling is new / Over and over, it's taking its cue / Over and over, the rhythm is true / Over and over, I'm finding it here." Hypnotic Tech House groove with deep side-chained sub-bass, snapping claps on beats two and four, metallic woodblock-like synth syncopation, and a bright crystalline female soprano chanting rhythmically.
+[0:50 - 1:30] Chorus: Intensity: 9/10. Lyrics: "Again and again! / Again and again! / Again and again! / Again and again!" Massive Big Room EDM drop with distorted kick, thunderous sub-bass, rapid snare rolls, crashing open hi-hats, supersaw anthem chords, heavy sidechain pumping, wide choral vocal layers, and euphoric festival energy.
+[1:30 - 2:00] Verse: Intensity: 6/10. Lyrics: "Over and over, the focus is clear / Over and over, I'm holding it near / Over and over, the sound is the cure / Over and over, it's making me pure." Return to tight Tech House percussion, digital shakers, rim-shots, metallic staccato synth lead, precise rhythmic vocal cadence, and relentless groove.
+[2:00 - 2:40] Chorus: Intensity: 10/10. Lyrics: "Again and again! / Again and again! / Again and again! / Again and again!" Final full-frequency Big Room drop with saturated low end, double-time snare hits, triumphant high-register supersaws, powerful belted female vocal, and total peak-time immersion.
+[2:40 - 3:04] Outro: Intensity: 4/10. Lyrics: "Again and again. / Again and again." Gradual subtraction of melodic layers, steady kick and hi-hats, fading synth echoes, filtered sub-bass, sparse dry whispered vocal repetitions, clean DJ-friendly mix-out.`,
+  },
+  {
+    label: 'Lo-fi house night drive',
+    prompt: 'A 90-second atmospheric lo-fi house track with warm vinyl texture, soft side-chained pads, a round kick, brushed percussion, dusty tape wobble, and a mellow Rhodes hook. Structure: 8-bar filtered intro, 16-bar groove, 8-bar breakdown with rain ambience, final 16-bar groove with a subtle vocal chop.',
+  },
+  {
+    label: 'Cinematic trailer cue',
+    prompt: 'A cinematic orchestral trailer cue that starts with quiet piano pulses and low cello drones, builds with staccato strings and taiko drums, then resolves into a bright brass theme. Use three clear acts: suspenseful intro, escalating midsection, heroic final climax with choir and cymbal swells.',
+  },
+  {
+    label: 'Cyberpunk drum and bass',
+    prompt: 'A dark cyberpunk drum and bass track at 174 BPM with razor-sharp breakbeats, reese bass, glitch percussion, metallic impacts, and distant vocoder phrases. Start with neon ambience, drop into a rolling bassline, add a half-time breakdown, then return with denser drums and distorted synth stabs.',
+  },
+  {
+    label: 'Indie folk duet',
+    prompt: 'A sparse acoustic indie folk song with fingerpicked guitar, intimate male and female harmony vocals, subtle cello swells, brushed snare, and a bittersweet chorus about coming home after years away. Keep the arrangement organic and close-mic, with a small lift in the final chorus.',
+  },
+  {
+    label: 'Latin pop summer hook',
+    prompt: 'A bright Latin pop song with nylon guitar, reggaeton-inspired dembow percussion, warm bass, hand claps, and a catchy bilingual chorus. Female lead vocal, confident and sunny. Build from a guitar intro into a danceable chorus, include a short percussion break, then finish with layered ad-libs.',
+  },
+  {
+    label: 'Synthwave credits theme',
+    prompt: 'A nostalgic 1980s synthwave end-credits theme with gated drums, pulsing analog bass, shimmering Juno-style pads, and a soaring lead melody. Medium tempo, cinematic and bittersweet, with a two-part structure: restrained first half, wide emotional final refrain.',
+  },
+  {
+    label: 'Afro house sunrise',
+    prompt: 'A warm Afro house track with organic hand percussion, deep kick, marimba-like plucks, airy vocal chants, and a rolling bass groove. Start minimal and sunrise-like, introduce call-and-response vocal fragments, then open into a spacious melodic drop with polyrhythmic percussion.',
+  },
+];
+
+function promptExampleLabel(example: PromptExample): string {
+  return typeof example === 'string' ? example : example.label;
+}
+
+function promptExampleText(example: PromptExample): string {
+  return typeof example === 'string' ? example : example.prompt;
+}
+
+const SEEDANCE_LOGO_URL = 'https://openpathsstatic.openpaths.io/static/uploads/playground/seedance/openpaths-logo.webp';
+
+interface ImageDemo {
+  prompt: string;
+  outputUrl: string;
+  size: typeof IMAGE_SIZES[number];
+}
+
+const IMAGE_DEMOS: Record<string, ImageDemo> = {
+  'hidream-o1-image-dev': {
+    prompt: 'A cinematic product photo of a translucent glass pathfinder compass on a matte black desk, thin luminous routing lines inside the glass, soft window light, shallow depth of field, premium AI infrastructure product photography, no text, no logo.',
+    outputUrl: 'https://openpathsstatic.openpaths.io/static/uploads/playground/hidream/hidream-o1-image-dev-demo.png',
+    size: '1024x1024',
+  },
+};
+
+interface VideoDemo {
+  prompt: string;
+  outputUrl: string;
+  resolution: typeof VIDEO_RESOLUTIONS[number];
+  duration: typeof VIDEO_DURATIONS[number];
+  aspectRatio: typeof VIDEO_ASPECT_RATIOS[number];
+  generateAudio: boolean;
+  imageUrl?: string;
+  endImageUrl?: string;
+  imageUrls?: string[];
+  videoUrls?: string[];
+  audioUrls?: string[];
+}
+
+const VIDEO_DEMOS: Record<string, VideoDemo> = {
+  'seedance-2.0-fast-text-to-video': {
+    prompt: 'A cinematic 4-second shot of a compact AI routing console on a dark workstation, luminous paths connecting model nodes across a glass interface, slow handheld push-in, realistic reflections, premium product demo lighting, no readable text.',
+    outputUrl: 'https://openpathsstatic.openpaths.io/static/uploads/playground/seedance/seedance-fast-text-to-video.mp4',
+    resolution: '720p',
+    duration: '4',
+    aspectRatio: '16:9',
+    generateAudio: false,
+  },
+  'seedance-2.0-text-to-video': {
+    prompt: 'A polished studio macro shot of an AI infrastructure dashboard represented as glowing fiber-optic routes inside a transparent cube, slow orbiting camera, cinematic depth of field, clean black background, no readable text.',
+    outputUrl: 'https://openpathsstatic.openpaths.io/static/uploads/playground/seedance/seedance-text-to-video.mp4',
+    resolution: '720p',
+    duration: '4',
+    aspectRatio: '16:9',
+    generateAudio: false,
+  },
+  'seedance-2.0-image-to-video': {
+    prompt: 'Animate the supplied OpenPaths logo as a premium product mark: subtle camera push-in, soft light sweep across the surface, tiny particles moving around it, clean dark studio background, elegant motion, no added text.',
+    outputUrl: 'https://openpathsstatic.openpaths.io/static/uploads/playground/seedance/seedance-image-to-video.mp4',
+    resolution: '720p',
+    duration: '4',
+    aspectRatio: '1:1',
+    generateAudio: false,
+    imageUrl: SEEDANCE_LOGO_URL,
+  },
+  'seedance-2.0-fast-reference-to-video': {
+    prompt: 'Use @Image1 as the exact brand mark on a small illuminated badge mounted to a matte black server rack. Slow dolly-in, shallow depth of field, cool white rim light, subtle cable movement, premium infrastructure commercial, no extra text.',
+    outputUrl: 'https://openpathsstatic.openpaths.io/static/uploads/playground/seedance/seedance-fast-reference-to-video.mp4',
+    resolution: '720p',
+    duration: '4',
+    aspectRatio: '16:9',
+    generateAudio: false,
+    imageUrls: [SEEDANCE_LOGO_URL],
+    audioUrls: [],
+  },
+  'seedance-2.0-reference-to-video': {
+    prompt: '@Image1 is projected as a crisp holographic interface element above a developer desk. Camera slides left to right, soft reflections on glass, realistic workstation lighting, cinematic product demo, no additional words or watermarks.',
+    outputUrl: 'https://openpathsstatic.openpaths.io/static/uploads/playground/seedance/seedance-reference-to-video.mp4',
+    resolution: '720p',
+    duration: '4',
+    aspectRatio: '16:9',
+    generateAudio: false,
+    imageUrls: [SEEDANCE_LOGO_URL],
+    audioUrls: [],
+  },
+};
+
 const MODELS_CACHE_KEY = 'op_models_cache_v1';
 const MODELS_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 const PANE_HISTORY_PREFIX = 'op_pg_pane_';
 // Models excluded from the chat selector. Image models remain available since
 // the playground now routes them to /v1/images/generations automatically.
-const NON_CHAT_PATTERNS = /^(wan|ltx|hailuo|kling|luma|ra2v|sora|whisper|tts-|speech-|music-|text-embedding|openpaths-embed|modernbert|mistral-embed|codestral-embed|nemotron-embed|gemini-embedding-001|gemini-embedding-2-preview|gemini-embedding-2|gpt-4o-transcribe|gpt-4o-mini-transcribe|distil-whisper|whisper-v3)/i;
-const IMAGE_MODEL_PATTERNS = /^(flux|klein|ra1|zimage|glm-image|gpt-image|dall-e|stable-diffusion|sd3|ideogram)/i;
+const NON_CHAT_PATTERNS = /^(whisper|xai-stt|grok-voice|text-embedding|openpaths-embed|modernbert|mistral-embed|codestral-embed|nemotron-embed|gemini-embedding-001|gemini-embedding-2-preview|gemini-embedding-2|gpt-4o-transcribe|gpt-4o-mini-transcribe|distil-whisper|whisper-v3)/i;
+const IMAGE_MODEL_PATTERNS = /^(auto-image|flux|klein|ra1|zimage|glm-image|grok-imagine-image|gpt-image|fal-gpt-image|hidream|dall-e|stable-diffusion|sd3|ideogram)/i;
+const VIDEO_MODEL_PATTERNS = /^(auto-video|wan|ltx|hailuo|kling|luma|ra2v|sora|seedance)/i;
+const SPEECH_MODEL_PATTERNS = /(tts|speech-)/i;
+const MUSIC_MODEL_PATTERNS = /^(music-|lyria-)/i;
 
 function isImageModel(m: CatalogModel | undefined): boolean {
   if (!m) return false;
+  if (MUSIC_MODEL_PATTERNS.test(m.id)) return false;
   if (m.pricing?.per_image && m.pricing.per_image > 0) return true;
+  if (m.pricing?.per_megapixel && m.pricing.per_megapixel > 0) return true;
   return IMAGE_MODEL_PATTERNS.test(m.id);
+}
+
+function isVideoModel(m: CatalogModel | undefined): boolean {
+  if (!m) return false;
+  if ((m.pricing?.per_video && m.pricing.per_video > 0) || (m.pricing?.per_second && m.pricing.per_second > 0)) return true;
+  return VIDEO_MODEL_PATTERNS.test(m.id);
+}
+
+function isSpeechModel(m: CatalogModel | undefined): boolean {
+  return !!m && SPEECH_MODEL_PATTERNS.test(m.id);
+}
+
+function isGeminiSpeechModel(m: CatalogModel | undefined): boolean {
+  return !!m && /gemini.*tts/i.test(m.id);
+}
+
+function hasTwoSpeakerTranscript(text: string): boolean {
+  return /Speaker\s*1\s*:/i.test(text) && /Speaker\s*2\s*:/i.test(text);
+}
+
+function geminiVoiceInfo(name: string) {
+  return GEMINI_TTS_VOICE_INFO.find(v => v.name.toLowerCase() === name.toLowerCase());
+}
+
+function isMusicModel(m: CatalogModel | undefined): boolean {
+  return !!m && MUSIC_MODEL_PATTERNS.test(m.id);
+}
+
+function isImageToVideoModel(m: CatalogModel | undefined): boolean {
+  return !!m && /image-to-video|i2v/i.test(m.id);
+}
+
+function isReferenceToVideoModel(m: CatalogModel | undefined): boolean {
+  return !!m && /reference-to-video|reference/i.test(m.id);
+}
+
+function parseImageInputUrls(value: string): string[] {
+  return value
+    .split(/[\n,]+/)
+    .map(v => v.trim())
+    .filter(Boolean);
 }
 
 let paneCounter = 0;
@@ -213,7 +514,7 @@ function renderMarkdown(text: string): React.ReactNode[] {
       }
       i++; // skip closing ```
       const code = codeLines.join('\n');
-      nodes.push(<CodeBlock key={nodes.length} code={code} lang={lang} />);
+      nodes.push(<MarkdownCodeBlock key={nodes.length} code={code} lang={lang} />);
       continue;
     }
 
@@ -308,7 +609,7 @@ function renderInline(text: string): React.ReactNode[] {
   return parts.length > 0 ? parts : [text];
 }
 
-function CodeBlock({ code, lang }: { code: string; lang: string; key?: React.Key }) {
+function MarkdownCodeBlock({ code, lang }: { code: string; lang: string; key?: React.Key }) {
   const [copied, setCopied] = useState(false);
 
   const copy = () => {
@@ -325,9 +626,11 @@ function CodeBlock({ code, lang }: { code: string; lang: string; key?: React.Key
           {copied ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
         </button>
       </div>
-      <pre className="p-3 overflow-x-auto text-[13px] font-mono leading-relaxed text-white/80">
-        <code>{code}</code>
-      </pre>
+      <HighlightedCodeBlock
+        code={code}
+        language={lang}
+        preClassName="p-3 overflow-x-auto text-[13px] font-mono leading-relaxed text-white/80"
+      />
     </div>
   );
 }
@@ -342,11 +645,40 @@ export function Playground() {
   const [maxTokens, setMaxTokens] = useState(4096);
   const [showSettings, setShowSettings] = useState(false);
   const [showCode, setShowCode] = useState(false);
-  const [codeLang, setCodeLang] = useState<'python' | 'js'>('python');
+  const [codeLang, setCodeLang] = useState<CodeLanguage>('python');
   const [codeCopied, setCodeCopied] = useState(false);
   const [input, setInput] = useState('');
   const [shareCopied, setShareCopied] = useState(false);
   const [balanceCents, setBalanceCents] = useState<number | null>(null);
+  const [imageSize, setImageSize] = useState<typeof IMAGE_SIZES[number]>('1024x1024');
+  const [imageQuality, setImageQuality] = useState<typeof IMAGE_QUALITIES[number]>('standard');
+  const [imageCount, setImageCount] = useState(1);
+  const [imageResponseFormat, setImageResponseFormat] = useState<typeof IMAGE_RESPONSE_FORMATS[number]>('url');
+  const [imageAspectRatio, setImageAspectRatio] = useState<typeof IMAGE_ASPECT_RATIOS[number]>('auto');
+  const [imageInputUrls, setImageInputUrls] = useState('');
+  const [videoResolution, setVideoResolution] = useState<typeof VIDEO_RESOLUTIONS[number]>('720p');
+  const [videoDuration, setVideoDuration] = useState<typeof VIDEO_DURATIONS[number]>('10');
+  const [videoAspectRatio, setVideoAspectRatio] = useState<typeof VIDEO_ASPECT_RATIOS[number]>('16:9');
+  const [videoGenerateAudio, setVideoGenerateAudio] = useState(true);
+  const [videoImageUrl, setVideoImageUrl] = useState('');
+  const [videoEndImageUrl, setVideoEndImageUrl] = useState('');
+  const [videoImageUrls, setVideoImageUrls] = useState('');
+  const [videoVideoUrls, setVideoVideoUrls] = useState('');
+  const [videoAudioUrls, setVideoAudioUrls] = useState('');
+  const [speechVoice, setSpeechVoice] = useState('eve');
+  const [speechLanguage, setSpeechLanguage] = useState<typeof SPEECH_LANGUAGES[number]>('en');
+  const [ttsSpeaker1Profile, setTtsSpeaker1Profile] = useState('A stern and weary gatekeeper');
+  const [ttsSpeaker2Profile, setTtsSpeaker2Profile] = useState('A determined and courageous traveler seeking answers.');
+  const [ttsSpeaker1Style, setTtsSpeaker1Style] = useState<typeof TTS_STYLES[number]>('Deadpan');
+  const [ttsSpeaker2Style, setTtsSpeaker2Style] = useState<typeof TTS_STYLES[number]>('Empathetic');
+  const [ttsSpeaker1Pace, setTtsSpeaker1Pace] = useState<typeof TTS_PACES[number]>('Natural');
+  const [ttsSpeaker2Pace, setTtsSpeaker2Pace] = useState<typeof TTS_PACES[number]>('Staccato');
+  const [ttsSpeaker1Accent, setTtsSpeaker1Accent] = useState<typeof TTS_ACCENTS[number]>('British (RP)');
+  const [ttsSpeaker2Accent, setTtsSpeaker2Accent] = useState<typeof TTS_ACCENTS[number]>('American (Gen)');
+  const [ttsSpeaker1Voice, setTtsSpeaker1Voice] = useState('Fenrir');
+  const [ttsSpeaker2Voice, setTtsSpeaker2Voice] = useState('Puck');
+  const [speechAutoEmotion, setSpeechAutoEmotion] = useState(false);
+  const [uploadingRefs, setUploadingRefs] = useState(false);
   const [dynamicModels, setDynamicModels] = useState<CatalogModel[] | null>(() => loadCachedModels());
   const [panes, setPanes] = useState<ModelPane[]>(() => {
     const modelParam = searchParams.get('model');
@@ -357,6 +689,8 @@ export function Playground() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRefs = useRef<Map<string, AbortController>>(new Map());
   const autoRanRef = useRef(false);
+  const lastAppliedVideoDemoPromptRef = useRef('');
+  const lastAppliedImageDemoPromptRef = useRef('');
 
   const catalog: CatalogModel[] = dynamicModels || FALLBACK_MODELS;
   const chatCatalog = useMemo(() => catalog.filter(m => !NON_CHAT_PATTERNS.test(m.id)), [catalog]);
@@ -367,6 +701,16 @@ export function Playground() {
   }, [catalog]);
 
   const anyStreaming = panes.some(p => p.streaming);
+  const primaryModel = modelIndex.get(panes[0]?.modelId || '');
+  const primaryIsImage = isImageModel(primaryModel) || IMAGE_MODEL_PATTERNS.test(panes[0]?.modelId || '');
+  const primaryIsVideo = isVideoModel(primaryModel) || VIDEO_MODEL_PATTERNS.test(panes[0]?.modelId || '');
+  const primaryIsSpeech = isSpeechModel(primaryModel) || SPEECH_MODEL_PATTERNS.test(panes[0]?.modelId || '');
+  const primaryIsGeminiSpeech = isGeminiSpeechModel(primaryModel);
+  const primaryIsMusic = isMusicModel(primaryModel) || MUSIC_MODEL_PATTERNS.test(panes[0]?.modelId || '');
+  const primaryIsImageToVideo = isImageToVideoModel(primaryModel);
+  const primaryIsReferenceToVideo = isReferenceToVideoModel(primaryModel);
+  const primaryImageDemo = IMAGE_DEMOS[panes[0]?.modelId || ''];
+  const primaryVideoDemo = VIDEO_DEMOS[panes[0]?.modelId || ''];
 
   useEffect(() => {
     const t = setTimeout(() => inputRef.current?.focus(), 100);
@@ -378,6 +722,67 @@ export function Playground() {
       localStorage.setItem('op_api_key', apiKey);
     }
   }, [apiKey]);
+
+  useEffect(() => {
+    if (!primaryImageDemo) return;
+    setImageSize(primaryImageDemo.size);
+    setInput(prev => {
+      if (prev.trim() && prev !== lastAppliedImageDemoPromptRef.current) return prev;
+      lastAppliedImageDemoPromptRef.current = primaryImageDemo.prompt;
+      return primaryImageDemo.prompt;
+    });
+  }, [primaryImageDemo]);
+
+  useEffect(() => {
+    if (!primaryVideoDemo) return;
+    setVideoResolution(primaryVideoDemo.resolution);
+    setVideoDuration(primaryVideoDemo.duration);
+    setVideoAspectRatio(primaryVideoDemo.aspectRatio);
+    setVideoGenerateAudio(primaryVideoDemo.generateAudio);
+    setVideoImageUrl(primaryVideoDemo.imageUrl || '');
+    setVideoEndImageUrl(primaryVideoDemo.endImageUrl || '');
+    setVideoImageUrls((primaryVideoDemo.imageUrls || []).join('\n'));
+    setVideoVideoUrls((primaryVideoDemo.videoUrls || []).join('\n'));
+    setVideoAudioUrls((primaryVideoDemo.audioUrls || []).join('\n'));
+    setInput(prev => {
+      if (prev.trim() && prev !== lastAppliedVideoDemoPromptRef.current) return prev;
+      lastAppliedVideoDemoPromptRef.current = primaryVideoDemo.prompt;
+      return primaryVideoDemo.prompt;
+    });
+  }, [primaryVideoDemo]);
+
+  useEffect(() => {
+    if (primaryIsGeminiSpeech && !GEMINI_TTS_VOICES.includes(speechVoice)) {
+      setSpeechVoice('Puck');
+    } else if (!primaryIsGeminiSpeech && !SPEECH_VOICES.includes(speechVoice)) {
+      setSpeechVoice('eve');
+    }
+  }, [primaryIsGeminiSpeech, speechVoice]);
+
+  const buildGeminiTTSPrompt = useCallback((text: string) => {
+    if (/#\s*Audio Profile/i.test(text) || /#\s*Director's note/i.test(text)) return text;
+    if (!hasTwoSpeakerTranscript(text)) return text;
+    return `Read the following transcript based on the audio profile and director's note.
+
+# Audio Profile
+For Speaker 1: ${ttsSpeaker1Profile}
+For Speaker 2: ${ttsSpeaker2Profile}
+
+# Director's note
+For Speaker 1: Style: ${ttsSpeaker1Style}. Pace: ${ttsSpeaker1Pace}. Accent: ${ttsSpeaker1Accent}.
+For Speaker 2: Style: ${ttsSpeaker2Style}. Pace: ${ttsSpeaker2Pace}. Accent: ${ttsSpeaker2Accent}.
+
+## Transcript:
+${text}`;
+  }, [ttsSpeaker1Accent, ttsSpeaker1Pace, ttsSpeaker1Profile, ttsSpeaker1Style, ttsSpeaker2Accent, ttsSpeaker2Pace, ttsSpeaker2Profile, ttsSpeaker2Style]);
+
+  const currentGeminiSpeakerVoices = useCallback((text: string) => {
+    if (!hasTwoSpeakerTranscript(text)) return undefined;
+    return [
+      { speaker: 'Speaker 1', voice: ttsSpeaker1Voice },
+      { speaker: 'Speaker 2', voice: ttsSpeaker2Voice },
+    ];
+  }, [ttsSpeaker1Voice, ttsSpeaker2Voice]);
 
   // Fetch model catalog from /v1/models (works with or without API key — endpoint is auth-gated).
   useEffect(() => {
@@ -435,6 +840,34 @@ export function Playground() {
 
   const baseUrl = window.location.origin;
 
+  const uploadReferenceFiles = useCallback(async (files: FileList | File[], target: 'image' | 'end-image' | 'images' | 'video' | 'audio') => {
+    if (!apiKey || files.length === 0) return;
+    setUploadingRefs(true);
+    try {
+      const urls: string[] = [];
+      for (const file of Array.from(files)) {
+        const form = new FormData();
+        form.append('file', file);
+        const resp = await fetch(`${baseUrl}/v1/files/upload`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${apiKey}` },
+          body: form,
+        });
+        if (!resp.ok) throw new Error(await resp.text());
+        const data = await resp.json();
+        if (data.url) urls.push(data.url);
+      }
+      const append = (prev: string) => [prev.trim(), ...urls].filter(Boolean).join('\n');
+      if (target === 'image') setVideoImageUrl(urls[0] || '');
+      if (target === 'end-image') setVideoEndImageUrl(urls[0] || '');
+      if (target === 'images') setVideoImageUrls(append);
+      if (target === 'video') setVideoVideoUrls(append);
+      if (target === 'audio') setVideoAudioUrls(append);
+    } finally {
+      setUploadingRefs(false);
+    }
+  }, [apiKey, baseUrl]);
+
   const sendToImageModel = useCallback(async (paneId: string, modelId: string, prompt: string) => {
     const controller = new AbortController();
     abortRefs.current.set(paneId, controller);
@@ -445,13 +878,29 @@ export function Playground() {
     ));
 
     try {
-      const resp = await fetch(`${baseUrl}/v1/images/generations`, {
+      const inputUrls = parseImageInputUrls(imageInputUrls);
+      const isEdit = inputUrls.length > 0;
+      const body: Record<string, unknown> = {
+        model: modelId,
+        prompt,
+        n: imageCount,
+        size: imageSize,
+        quality: imageQuality,
+        response_format: imageResponseFormat,
+      };
+      if (isEdit) {
+        body.images = inputUrls.map(url => ({ type: 'image_url', url }));
+        body.reference_image_urls = inputUrls;
+        body.aspect_ratio = imageAspectRatio;
+      }
+
+      const resp = await fetch(`${baseUrl}/v1/images/${isEdit ? 'edits' : 'generations'}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`,
         },
-        body: JSON.stringify({ model: modelId, prompt, n: 1, size: '1024x1024' }),
+        body: JSON.stringify(body),
         signal: controller.signal,
       });
       if (!resp.ok) {
@@ -463,7 +912,13 @@ export function Playground() {
       if (!first) throw new Error('No image returned');
       const latency = Math.round(performance.now() - start);
       const modelCfg = modelIndex.get(modelId);
-      const cost = modelCfg?.pricing?.per_image ?? null;
+      const requestedSize = imageSize.match(/^(\d+)x(\d+)$/);
+      const megapixels = requestedSize ? (Number(requestedSize[1]) * Number(requestedSize[2])) / 1_000_000 : 0.512 * 0.512;
+      const cost = modelCfg?.pricing?.per_image
+        ? modelCfg.pricing.per_image * Math.max(1, imageCount)
+        : modelCfg?.pricing?.per_megapixel
+          ? modelCfg.pricing.per_megapixel * megapixels * Math.max(1, imageCount)
+          : null;
 
       setPanes(prev => prev.map(p => {
         if (p.id !== paneId) return p;
@@ -498,14 +953,248 @@ export function Playground() {
     } finally {
       abortRefs.current.delete(paneId);
     }
+  }, [apiKey, baseUrl, imageAspectRatio, imageCount, imageInputUrls, imageQuality, imageResponseFormat, imageSize, modelIndex, refreshBalance]);
+
+  const sendToVideoModel = useCallback(async (paneId: string, modelId: string, prompt: string) => {
+    const controller = new AbortController();
+    abortRefs.current.set(paneId, controller);
+    const start = performance.now();
+
+    setPanes(prev => prev.map(p =>
+      p.id === paneId ? { ...p, streaming: true, error: null, latencyMs: null, tokensUsed: null, promptTokens: null, completionTokens: null, costUsd: null } : p
+    ));
+
+    try {
+      const imageUrls = parseImageInputUrls(videoImageUrls);
+      const videoUrls = parseImageInputUrls(videoVideoUrls);
+      const audioUrls = parseImageInputUrls(videoAudioUrls);
+      const body: Record<string, unknown> = {
+        model: modelId,
+        prompt,
+        resolution: videoResolution,
+        duration: videoDuration,
+        aspect_ratio: videoAspectRatio,
+        generate_audio: videoGenerateAudio,
+      };
+      const selectedModel = modelIndex.get(modelId);
+      if (isImageToVideoModel(selectedModel)) {
+        if (videoImageUrl.trim()) body.image_url = videoImageUrl.trim();
+        if (videoEndImageUrl.trim()) body.end_image_url = videoEndImageUrl.trim();
+      }
+      if (isReferenceToVideoModel(selectedModel)) {
+        if (imageUrls.length > 0) body.image_urls = imageUrls;
+        if (videoUrls.length > 0) body.video_urls = videoUrls;
+        if (audioUrls.length > 0) body.audio_urls = audioUrls;
+      }
+
+      const resp = await fetch(`${baseUrl}/v1/videos/generations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+      if (!resp.ok) {
+        const errText = await resp.text();
+        throw new Error(`${resp.status}: ${errText.slice(0, 200)}`);
+      }
+      const data = await resp.json();
+      if (!data?.video_url) throw new Error('No video returned');
+      const latency = Math.round(performance.now() - start);
+      const modelCfg = modelIndex.get(modelId);
+      const durationSeconds = videoDuration === 'auto' ? 10 : Number(videoDuration) || 10;
+      const perSecond = videoUrls.length > 0 && modelCfg?.pricing?.per_second_with_video_input
+        ? modelCfg.pricing.per_second_with_video_input
+        : modelCfg?.pricing?.per_second;
+      const cost = perSecond ? perSecond * durationSeconds : modelCfg?.pricing?.per_video || null;
+
+      setPanes(prev => prev.map(p => {
+        if (p.id !== paneId) return p;
+        const msgs = [...p.messages, { role: 'assistant' as const, content: '', videoUrl: data.video_url }];
+        savePaneHistory(modelId, msgs);
+        return { ...p, messages: msgs, streaming: false, latencyMs: latency, costUsd: cost, tokensUsed: null, promptTokens: null, completionTokens: null };
+      }));
+      refreshBalance();
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        setPanes(prev => prev.map(p => p.id === paneId ? { ...p, streaming: false } : p));
+        return;
+      }
+      setPanes(prev => prev.map(p => p.id === paneId ? { ...p, streaming: false, error: err.message } : p));
+    } finally {
+      abortRefs.current.delete(paneId);
+    }
+  }, [apiKey, baseUrl, modelIndex, refreshBalance, videoAspectRatio, videoAudioUrls, videoDuration, videoEndImageUrl, videoGenerateAudio, videoImageUrl, videoImageUrls, videoResolution, videoVideoUrls]);
+
+  const sendToSpeechModel = useCallback(async (paneId: string, modelId: string, text: string) => {
+    const controller = new AbortController();
+    abortRefs.current.set(paneId, controller);
+    const start = performance.now();
+
+    setPanes(prev => prev.map(p =>
+      p.id === paneId ? { ...p, streaming: true, error: null, latencyMs: null, tokensUsed: null, promptTokens: null, completionTokens: null, costUsd: null } : p
+    ));
+
+    try {
+      const selectedModel = modelIndex.get(modelId);
+      const isGeminiTTS = isGeminiSpeechModel(selectedModel);
+      const speechInput = isGeminiTTS ? buildGeminiTTSPrompt(text) : text;
+      const body: Record<string, unknown> = {
+        model: modelId,
+        input: speechInput,
+        voice: speechVoice,
+        language: speechLanguage,
+      };
+      if (speechAutoEmotion && isGeminiTTS) body.auto_emotion = true;
+      if (isGeminiTTS) {
+        body.temperature = 1;
+        const speakerVoices = currentGeminiSpeakerVoices(text);
+        if (speakerVoices) body.speaker_voices = speakerVoices;
+      }
+
+      const resp = await fetch(`${baseUrl}/v1/audio/speech`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+      if (!resp.ok) {
+        const errText = await resp.text();
+        throw new Error(`${resp.status}: ${errText.slice(0, 200)}`);
+      }
+      const data = await resp.json();
+      if (!data?.audio && !data?.audio_url) throw new Error('No audio returned');
+      const latency = Math.round(performance.now() - start);
+      const chars = typeof data.characters === 'number' ? data.characters : text.length;
+      const modelCfg = modelIndex.get(modelId);
+      const charPrice = modelCfg?.pricing?.input_per_1m_tokens;
+      const cost = charPrice ? charPrice * chars / 1_000_000 : null;
+
+      setPanes(prev => prev.map(p => {
+        if (p.id !== paneId) return p;
+        const msgs = [...p.messages, {
+          role: 'assistant' as const,
+          content: `${chars.toLocaleString()} characters synthesized with ${speechVoice}.`,
+          audioB64: data.audio,
+          audioUrl: data.audio_url,
+          audioFormat: data.format || 'mp3',
+        }];
+        savePaneHistory(modelId, msgs);
+        return {
+          ...p,
+          messages: msgs,
+          streaming: false,
+          latencyMs: latency,
+          tokensUsed: null,
+          promptTokens: chars,
+          completionTokens: null,
+          costUsd: cost,
+        };
+      }));
+      refreshBalance();
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        setPanes(prev => prev.map(p => p.id === paneId ? { ...p, streaming: false } : p));
+        return;
+      }
+      setPanes(prev => prev.map(p => paneId === p.id ? { ...p, streaming: false, error: err.message } : p));
+    } finally {
+      abortRefs.current.delete(paneId);
+    }
+  }, [apiKey, baseUrl, buildGeminiTTSPrompt, currentGeminiSpeakerVoices, modelIndex, refreshBalance, speechAutoEmotion, speechLanguage, speechVoice]);
+
+  const sendToMusicModel = useCallback(async (paneId: string, modelId: string, text: string) => {
+    const controller = new AbortController();
+    abortRefs.current.set(paneId, controller);
+    const start = performance.now();
+
+    setPanes(prev => prev.map(p =>
+      p.id === paneId ? { ...p, streaming: true, error: null, latencyMs: null, tokensUsed: null, promptTokens: null, completionTokens: null, costUsd: null } : p
+    ));
+
+    try {
+      const resp = await fetch(`${baseUrl}/v1/music/generations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: modelId,
+          prompt: text,
+          output_format: 'b64_json',
+        }),
+        signal: controller.signal,
+      });
+      if (!resp.ok) {
+        const errText = await resp.text();
+        throw new Error(`${resp.status}: ${errText.slice(0, 200)}`);
+      }
+      const data = await resp.json();
+      const audio = data?.data?.audio;
+      if (!audio) throw new Error('No audio returned');
+      const latency = Math.round(performance.now() - start);
+      const modelCfg = modelIndex.get(modelId);
+      const cost = modelCfg?.pricing?.per_request || modelCfg?.pricing?.per_image || null;
+
+      setPanes(prev => prev.map(p => {
+        if (p.id !== paneId) return p;
+        const msgs = [...p.messages, {
+          role: 'assistant' as const,
+          content: 'Generated music.',
+          audioB64: audio,
+          audioFormat: 'mpeg',
+        }];
+        savePaneHistory(modelId, msgs);
+        return {
+          ...p,
+          messages: msgs,
+          streaming: false,
+          latencyMs: latency,
+          tokensUsed: null,
+          promptTokens: null,
+          completionTokens: null,
+          costUsd: cost,
+        };
+      }));
+      refreshBalance();
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        setPanes(prev => prev.map(p => p.id === paneId ? { ...p, streaming: false } : p));
+        return;
+      }
+      setPanes(prev => prev.map(p => paneId === p.id ? { ...p, streaming: false, error: err.message } : p));
+    } finally {
+      abortRefs.current.delete(paneId);
+    }
   }, [apiKey, baseUrl, modelIndex, refreshBalance]);
 
   const sendToModel = useCallback(async (paneId: string, modelId: string, messages: Message[]) => {
     // Image models get routed to /v1/images/generations.
+    if (isMusicModel(modelIndex.get(modelId))) {
+      const lastUser = [...messages].reverse().find(m => m.role === 'user');
+      if (!lastUser) return;
+      return sendToMusicModel(paneId, modelId, lastUser.content);
+    }
     if (isImageModel(modelIndex.get(modelId))) {
       const lastUser = [...messages].reverse().find(m => m.role === 'user');
       if (!lastUser) return;
       return sendToImageModel(paneId, modelId, lastUser.content);
+    }
+    if (isVideoModel(modelIndex.get(modelId))) {
+      const lastUser = [...messages].reverse().find(m => m.role === 'user');
+      if (!lastUser) return;
+      return sendToVideoModel(paneId, modelId, lastUser.content);
+    }
+    if (isSpeechModel(modelIndex.get(modelId))) {
+      const lastUser = [...messages].reverse().find(m => m.role === 'user');
+      if (!lastUser) return;
+      return sendToSpeechModel(paneId, modelId, lastUser.content);
     }
 
     const controller = new AbortController();
@@ -619,9 +1308,9 @@ export function Playground() {
     } finally {
       abortRefs.current.delete(paneId);
     }
-  }, [apiKey, baseUrl, systemPrompt, temperature, maxTokens, modelIndex, refreshBalance, sendToImageModel]);
+  }, [apiKey, baseUrl, systemPrompt, temperature, maxTokens, modelIndex, refreshBalance, sendToImageModel, sendToVideoModel, sendToSpeechModel, sendToMusicModel]);
 
-  function generateCode(lang: 'python' | 'js'): string {
+  function generateCode(lang: CodeLanguage): string {
     const pane = panes[0];
     const model = pane.modelId;
     const allMessages: Message[] = [
@@ -629,15 +1318,164 @@ export function Playground() {
       ...pane.messages,
     ];
     const baseUrl = `${window.location.origin}/v1`;
+    const exampleApiKey = apiKey || 'op-...';
+    const isImageCode = primaryIsImage;
+    const isVideoCode = primaryIsVideo;
+    const isSpeechCode = primaryIsSpeech;
+    const isMusicCode = primaryIsMusic;
+    const payload = {
+      model,
+      messages: allMessages.map(({ role, content }) => ({ role, content })),
+      temperature,
+      max_tokens: maxTokens,
+    };
+    const imagePayload = {
+      model,
+      prompt: input.trim() || [...allMessages].reverse().find(m => m.role === 'user')?.content || 'A cinematic product photo of a matte black espresso machine on a marble counter',
+      n: imageCount,
+      size: imageSize,
+      quality: imageQuality,
+      response_format: imageResponseFormat,
+    };
+    const inputUrls = parseImageInputUrls(imageInputUrls);
+    const imageRequestPath = inputUrls.length > 0 ? 'images/edits' : 'images/generations';
+    const imageCodePayload = inputUrls.length > 0
+      ? {
+          model,
+          prompt: imagePayload.prompt,
+          images: inputUrls.map(url => ({ type: 'image_url', url })),
+          aspect_ratio: imageAspectRatio,
+        }
+      : imagePayload;
+    const videoPrompt = input.trim() || [...allMessages].reverse().find(m => m.role === 'user')?.content || 'A cinematic handheld shot of a rainy neon street at night';
+    const videoCodePayload: Record<string, unknown> = {
+      model,
+      prompt: videoPrompt,
+      resolution: videoResolution,
+      duration: videoDuration,
+      aspect_ratio: videoAspectRatio,
+      generate_audio: videoGenerateAudio,
+    };
+    const videoImages = parseImageInputUrls(videoImageUrls);
+    const videoVideos = parseImageInputUrls(videoVideoUrls);
+    const videoAudios = parseImageInputUrls(videoAudioUrls);
+    if (primaryIsImageToVideo) {
+      if (videoImageUrl.trim()) videoCodePayload.image_url = videoImageUrl.trim();
+      if (videoEndImageUrl.trim()) videoCodePayload.end_image_url = videoEndImageUrl.trim();
+    }
+    if (primaryIsReferenceToVideo) {
+      if (videoImages.length > 0) videoCodePayload.image_urls = videoImages;
+      if (videoVideos.length > 0) videoCodePayload.video_urls = videoVideos;
+      if (videoAudios.length > 0) videoCodePayload.audio_urls = videoAudios;
+    }
+    const rawSpeechText = input.trim() || [...allMessages].reverse().find(m => m.role === 'user')?.content || (primaryIsGeminiSpeech ? promptExampleText(GEMINI_TTS_QUICK_PROMPTS[0]) : 'Hello from Grok text to speech.');
+    const speechText = primaryIsGeminiSpeech ? buildGeminiTTSPrompt(rawSpeechText) : rawSpeechText;
+    const speechCodePayload: Record<string, unknown> = {
+      model,
+      input: speechText,
+      voice: speechVoice,
+      language: speechLanguage,
+    };
+    if (speechAutoEmotion && primaryIsGeminiSpeech) speechCodePayload.auto_emotion = true;
+    if (primaryIsGeminiSpeech) {
+      speechCodePayload.temperature = 1;
+      const speakerVoices = currentGeminiSpeakerVoices(rawSpeechText);
+      if (speakerVoices) speechCodePayload.speaker_voices = speakerVoices;
+    }
+    const musicPrompt = input.trim() || [...allMessages].reverse().find(m => m.role === 'user')?.content || promptExampleText(MUSIC_QUICK_PROMPTS[0]);
+    const musicCodePayload = {
+      model,
+      prompt: musicPrompt,
+      output_format: 'b64_json',
+    };
 
     if (lang === 'python') {
+      if (isMusicCode) {
+        return `from openai import OpenAI
+import base64
+import pathlib
+
+client = OpenAI(
+    api_key="${exampleApiKey}",
+    base_url="${baseUrl}",
+)
+
+result = client.post(
+    "/music/generations",
+    body=${JSON.stringify(musicCodePayload, null, 4)},
+    cast_to=dict,
+)
+
+pathlib.Path("openpaths-music.mp3").write_bytes(base64.b64decode(result["data"]["audio"]))
+print("wrote openpaths-music.mp3")`;
+      }
+      if (isSpeechCode) {
+        return `from openai import OpenAI
+import base64
+import pathlib
+
+client = OpenAI(
+    api_key="${exampleApiKey}",
+    base_url="${baseUrl}",
+)
+
+result = client.post(
+    "/audio/speech",
+    body=${JSON.stringify(speechCodePayload, null, 4)},
+    cast_to=dict,
+)
+
+pathlib.Path("openpaths-speech.mp3").write_bytes(base64.b64decode(result["audio"]))
+print("wrote openpaths-speech.mp3")`;
+      }
+      if (isVideoCode) {
+        return `from openai import OpenAI
+
+client = OpenAI(
+    api_key="${exampleApiKey}",
+    base_url="${baseUrl}",
+)
+
+result = client.post(
+    "/videos/generations",
+    body=${JSON.stringify(videoCodePayload, null, 4)},
+    cast_to=dict,
+)
+
+print(result["video_url"])`;
+      }
+      if (isImageCode) {
+        return `from openai import OpenAI
+import base64
+import pathlib
+import requests
+
+client = OpenAI(
+    api_key="${exampleApiKey}",
+    base_url="${baseUrl}",
+)
+
+result = client.post(
+    "/${imageRequestPath}",
+    body=${JSON.stringify(imageCodePayload, null, 4)},
+    cast_to=dict,
+)
+
+image = result["data"][0]
+if image.get("b64_json"):
+    pathlib.Path("openpaths-image.png").write_bytes(base64.b64decode(image["b64_json"]))
+else:
+    pathlib.Path("openpaths-image.png").write_bytes(requests.get(image["url"]).content)
+
+print("wrote openpaths-image.png")`;
+      }
       const messagesStr = allMessages
         .map(m => `        {"role": "${m.role}", "content": ${JSON.stringify(m.content)}},`)
         .join('\n');
       return `from openai import OpenAI
 
 client = OpenAI(
-    api_key="YOUR_OPENPATHS_API_KEY",
+    api_key="${exampleApiKey}",
     base_url="${baseUrl}",
 )
 
@@ -651,14 +1489,87 @@ ${messagesStr}
 )
 
 print(completion.choices[0].message.content)`;
-    } else {
+    } else if (lang === 'js') {
+      if (isMusicCode) {
+        return `import OpenAI from "openai";
+import { writeFile } from "node:fs/promises";
+
+const client = new OpenAI({
+  apiKey: "${exampleApiKey}",
+  baseURL: "${baseUrl}",
+});
+
+const result = await client.post("/music/generations", {
+  body: ${JSON.stringify(musicCodePayload, null, 2)},
+  cast_to: Object,
+});
+
+await writeFile("openpaths-music.mp3", Buffer.from(result.data.audio, "base64"));
+console.log("wrote openpaths-music.mp3");`;
+      }
+      if (isSpeechCode) {
+        return `import OpenAI from "openai";
+import { writeFile } from "node:fs/promises";
+
+const client = new OpenAI({
+  apiKey: "${exampleApiKey}",
+  baseURL: "${baseUrl}",
+});
+
+const result = await client.post("/audio/speech", {
+  body: ${JSON.stringify(speechCodePayload, null, 2)},
+  cast_to: Object,
+});
+
+await writeFile("openpaths-speech.mp3", Buffer.from(result.audio, "base64"));
+console.log("wrote openpaths-speech.mp3");`;
+      }
+      if (isVideoCode) {
+        return `import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: "${exampleApiKey}",
+  baseURL: "${baseUrl}",
+});
+
+const result = await client.post("/videos/generations", {
+  body: ${JSON.stringify(videoCodePayload, null, 2)},
+  cast_to: Object,
+});
+
+console.log(result.video_url);`;
+      }
+      if (isImageCode) {
+        return `import OpenAI from "openai";
+import { writeFile } from "node:fs/promises";
+
+const client = new OpenAI({
+  apiKey: "${exampleApiKey}",
+  baseURL: "${baseUrl}",
+});
+
+const result = await client.post("/${imageRequestPath}", {
+  body: ${JSON.stringify(imageCodePayload, null, 2)},
+  cast_to: Object,
+});
+
+const image = result.data[0];
+if (image.b64_json) {
+  await writeFile("openpaths-image.png", Buffer.from(image.b64_json, "base64"));
+} else {
+  const response = await fetch(image.url);
+  await writeFile("openpaths-image.png", Buffer.from(await response.arrayBuffer()));
+}
+
+console.log("wrote openpaths-image.png");`;
+      }
       const messagesStr = allMessages
         .map(m => `    { role: "${m.role}", content: ${JSON.stringify(m.content)} },`)
         .join('\n');
       return `import OpenAI from "openai";
 
 const client = new OpenAI({
-  apiKey: "YOUR_OPENPATHS_API_KEY",
+  apiKey: "${exampleApiKey}",
   baseURL: "${baseUrl}",
 });
 
@@ -668,10 +1579,304 @@ const completion = await client.chat.completions.create({
 ${messagesStr}
   ],
   temperature: ${temperature},
-  maxTokens: ${maxTokens},
+  max_tokens: ${maxTokens},
 });
 
 console.log(completion.choices[0].message.content);`;
+    } else if (lang === 'go') {
+      if (isMusicCode) {
+        return `package main
+
+import (
+	"bytes"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+)
+
+func main() {
+	payload := ${JSON.stringify(JSON.stringify(musicCodePayload, null, 2))}
+
+	req, err := http.NewRequest("POST", "${baseUrl}/music/generations", bytes.NewBufferString(payload))
+	if err != nil {
+		panic(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer ${exampleApiKey}")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		panic(err)
+	}
+	if resp.StatusCode >= 400 {
+		panic(fmt.Sprintf("%s: %s", resp.Status, body))
+	}
+
+	var result struct {
+		Data struct {
+			Audio string \`json:"audio"\`
+		} \`json:"data"\`
+	}
+	if err := json.Unmarshal(body, &result); err != nil {
+		panic(err)
+	}
+	decoded, err := base64.StdEncoding.DecodeString(result.Data.Audio)
+	if err != nil {
+		panic(err)
+	}
+	os.WriteFile("openpaths-music.mp3", decoded, 0644)
+}`;
+      }
+      if (isSpeechCode) {
+        return `package main
+
+import (
+	"bytes"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+)
+
+func main() {
+	payload := ${JSON.stringify(JSON.stringify(speechCodePayload, null, 2))}
+
+	req, err := http.NewRequest("POST", "${baseUrl}/audio/speech", bytes.NewBufferString(payload))
+	if err != nil {
+		panic(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer ${exampleApiKey}")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		panic(err)
+	}
+	if resp.StatusCode >= 400 {
+		panic(fmt.Sprintf("%s: %s", resp.Status, body))
+	}
+
+	var result struct {
+		Audio string \`json:"audio"\`
+	}
+	if err := json.Unmarshal(body, &result); err != nil {
+		panic(err)
+	}
+	decoded, err := base64.StdEncoding.DecodeString(result.Audio)
+	if err != nil {
+		panic(err)
+	}
+	os.WriteFile("openpaths-speech.mp3", decoded, 0644)
+}`;
+      }
+      if (isVideoCode) {
+        return `package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+)
+
+func main() {
+	payload := ${JSON.stringify(JSON.stringify(videoCodePayload, null, 2))}
+
+	req, err := http.NewRequest("POST", "${baseUrl}/videos/generations", bytes.NewBufferString(payload))
+	if err != nil {
+		panic(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer ${exampleApiKey}")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		panic(err)
+	}
+	if resp.StatusCode >= 400 {
+		panic(fmt.Sprintf("%s: %s", resp.Status, body))
+	}
+
+	var result struct {
+		VideoURL string \`json:"video_url"\`
+	}
+	if err := json.Unmarshal(body, &result); err != nil {
+		panic(err)
+	}
+	fmt.Println(result.VideoURL)
+}`;
+      }
+      if (isImageCode) {
+        return `package main
+
+import (
+	"bytes"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+)
+
+func main() {
+	payload := ${JSON.stringify(JSON.stringify(imageCodePayload, null, 2))}
+
+	req, err := http.NewRequest("POST", "${baseUrl}/${imageRequestPath}", bytes.NewBufferString(payload))
+	if err != nil {
+		panic(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer ${exampleApiKey}")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		panic(err)
+	}
+	if resp.StatusCode >= 400 {
+		panic(fmt.Sprintf("%s: %s", resp.Status, body))
+	}
+
+	var result struct {
+		Data []struct {
+			URL     string \`json:"url"\`
+			B64JSON string \`json:"b64_json"\`
+		} \`json:"data"\`
+	}
+	if err := json.Unmarshal(body, &result); err != nil {
+		panic(err)
+	}
+	if len(result.Data) == 0 {
+		panic("no image returned")
+	}
+	if result.Data[0].B64JSON != "" {
+		decoded, err := base64.StdEncoding.DecodeString(result.Data[0].B64JSON)
+		if err != nil {
+			panic(err)
+		}
+		os.WriteFile("openpaths-image.png", decoded, 0644)
+	} else {
+		fmt.Println(result.Data[0].URL)
+	}
+}`;
+      }
+      return `package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+)
+
+func main() {
+	payload := ${JSON.stringify(JSON.stringify(payload, null, 2))}
+
+	req, err := http.NewRequest("POST", "${baseUrl}/chat/completions", bytes.NewBufferString(payload))
+	if err != nil {
+		panic(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer ${exampleApiKey}")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		panic(err)
+	}
+	if resp.StatusCode >= 400 {
+		panic(fmt.Sprintf("%s: %s", resp.Status, body))
+	}
+
+	var result struct {
+		Choices []struct {
+			Message struct {
+				Content string \`json:"content"\`
+			} \`json:"message"\`
+		} \`json:"choices"\`
+	}
+	if err := json.Unmarshal(body, &result); err != nil {
+		panic(err)
+	}
+	if len(result.Choices) > 0 {
+		fmt.Println(result.Choices[0].Message.Content)
+	}
+}`;
+    } else {
+      if (isMusicCode) {
+        return `curl "${baseUrl}/music/generations" \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer ${exampleApiKey}" \\
+  -d @- <<'JSON'
+${JSON.stringify(musicCodePayload, null, 2)}
+JSON`;
+      }
+      if (isSpeechCode) {
+        return `curl "${baseUrl}/audio/speech" \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer ${exampleApiKey}" \\
+  -d @- <<'JSON'
+${JSON.stringify(speechCodePayload, null, 2)}
+JSON`;
+      }
+      if (isVideoCode) {
+        return `curl "${baseUrl}/videos/generations" \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer ${exampleApiKey}" \\
+  -d @- <<'JSON'
+${JSON.stringify(videoCodePayload, null, 2)}
+JSON`;
+      }
+      if (isImageCode) {
+        return `curl "${baseUrl}/${imageRequestPath}" \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer ${exampleApiKey}" \\
+  -d @- <<'JSON'
+${JSON.stringify(imageCodePayload, null, 2)}
+JSON`;
+      }
+      return `curl "${baseUrl}/chat/completions" \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer ${exampleApiKey}" \\
+  -d @- <<'JSON'
+${JSON.stringify(payload, null, 2)}
+JSON`;
     }
   }
 
@@ -806,7 +2011,7 @@ console.log(completion.choices[0].message.content);`;
             <Trash2 className="w-3.5 h-3.5" /> Clear
           </button>
         )}
-        {hasMessages && (
+        {(hasMessages || primaryIsImage || primaryIsVideo || primaryIsSpeech || primaryIsMusic) && (
           <button
             onClick={() => setShowCode(!showCode)}
             className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border transition-colors ${showCode ? 'border-white/30 bg-white/10 text-white' : 'border-white/10 text-white/60 hover:text-white hover:border-white/20'}`}
@@ -839,7 +2044,7 @@ console.log(completion.choices[0].message.content);`;
             <span className="text-[10px] font-mono text-white/25">{panes.length}/4 models</span>
           )}
           <span className="text-[10px] font-mono text-white/25">
-            temp {temperature} | max {maxTokens}
+            {primaryIsMusic ? 'music generation' : primaryIsSpeech ? `${speechVoice} | ${speechLanguage}` : primaryIsVideo ? `${videoResolution} | ${videoDuration}s | ${videoAspectRatio}` : primaryIsImage ? `${imageSize} | ${imageQuality} | ${imageCount} img` : `temp ${temperature} | max ${maxTokens}`}
           </span>
         </div>
       </div>
@@ -906,17 +2111,229 @@ console.log(completion.choices[0].message.content);`;
         </div>
       )}
 
+      {primaryIsImage && (
+        <div className="border-b border-white/10 px-4 py-3 bg-black/40">
+          <div className="max-w-5xl grid grid-cols-2 md:grid-cols-6 gap-3">
+            <label className="block">
+              <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Size</span>
+              <select
+                value={imageSize}
+                onChange={e => setImageSize(e.target.value as typeof IMAGE_SIZES[number])}
+                className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30"
+                data-testid="image-size"
+              >
+                {IMAGE_SIZES.map(size => <option key={size} value={size} className="bg-black text-white">{size}</option>)}
+              </select>
+            </label>
+            <label className="block">
+              <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Quality</span>
+              <select
+                value={imageQuality}
+                onChange={e => setImageQuality(e.target.value as typeof IMAGE_QUALITIES[number])}
+                className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30"
+                data-testid="image-quality"
+              >
+                {IMAGE_QUALITIES.map(q => <option key={q} value={q} className="bg-black text-white">{q}</option>)}
+              </select>
+            </label>
+            <label className="block">
+              <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Images</span>
+              <input
+                type="number"
+                min="1"
+                max="4"
+                value={imageCount}
+                onChange={e => setImageCount(Math.max(1, Math.min(4, Number(e.target.value) || 1)))}
+                className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30"
+                data-testid="image-count"
+              />
+            </label>
+            <label className="block">
+              <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Response</span>
+              <select
+                value={imageResponseFormat}
+                onChange={e => setImageResponseFormat(e.target.value as typeof IMAGE_RESPONSE_FORMATS[number])}
+                className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30"
+                data-testid="image-response-format"
+              >
+                {IMAGE_RESPONSE_FORMATS.map(format => <option key={format} value={format} className="bg-black text-white">{format}</option>)}
+              </select>
+            </label>
+            <label className="block">
+              <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Aspect</span>
+              <select
+                value={imageAspectRatio}
+                onChange={e => setImageAspectRatio(e.target.value as typeof IMAGE_ASPECT_RATIOS[number])}
+                className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30"
+                data-testid="image-aspect-ratio"
+              >
+                {IMAGE_ASPECT_RATIOS.map(ratio => <option key={ratio} value={ratio} className="bg-black text-white">{ratio}</option>)}
+              </select>
+            </label>
+            <label className="block col-span-2 md:col-span-1">
+              <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Input URLs</span>
+              <textarea
+                value={imageInputUrls}
+                onChange={e => setImageInputUrls(e.target.value)}
+                rows={1}
+                placeholder="Optional image URLs"
+                className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30 resize-none"
+                data-testid="image-input-urls"
+              />
+            </label>
+          </div>
+        </div>
+      )}
+
+      {primaryIsVideo && (
+        <div className="border-b border-white/10 px-4 py-3 bg-black/40">
+          <div className="max-w-5xl grid grid-cols-2 md:grid-cols-7 gap-3">
+            <label className="block">
+              <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Resolution</span>
+              <select value={videoResolution} onChange={e => setVideoResolution(e.target.value as typeof VIDEO_RESOLUTIONS[number])} className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30" data-testid="video-resolution">
+                {VIDEO_RESOLUTIONS.map(v => <option key={v} value={v} className="bg-black text-white">{v}</option>)}
+              </select>
+            </label>
+            <label className="block">
+              <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Duration</span>
+              <select value={videoDuration} onChange={e => setVideoDuration(e.target.value as typeof VIDEO_DURATIONS[number])} className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30" data-testid="video-duration">
+                {VIDEO_DURATIONS.map(v => <option key={v} value={v} className="bg-black text-white">{v}</option>)}
+              </select>
+            </label>
+            <label className="block">
+              <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Aspect</span>
+              <select value={videoAspectRatio} onChange={e => setVideoAspectRatio(e.target.value as typeof VIDEO_ASPECT_RATIOS[number])} className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30" data-testid="video-aspect-ratio">
+                {VIDEO_ASPECT_RATIOS.map(v => <option key={v} value={v} className="bg-black text-white">{v}</option>)}
+              </select>
+            </label>
+            <label className="block">
+              <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Audio</span>
+              <button type="button" onClick={() => setVideoGenerateAudio(v => !v)} className={`w-full border rounded px-3 py-2 text-xs font-mono transition-colors ${videoGenerateAudio ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' : 'border-white/10 bg-black text-white/50'}`} data-testid="video-generate-audio">
+                {videoGenerateAudio ? 'on' : 'off'}
+              </button>
+            </label>
+            {primaryIsImageToVideo ? (
+              <>
+                <label className="block col-span-2 md:col-span-2">
+                  <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Start image</span>
+                  <input value={videoImageUrl} onChange={e => setVideoImageUrl(e.target.value)} placeholder="https://..." className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30" data-testid="video-image-url" />
+                  <input type="file" accept="image/*" disabled={uploadingRefs} onChange={e => e.target.files && uploadReferenceFiles(e.target.files, 'image')} className="mt-1 block w-full text-[10px] font-mono text-white/35 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-white/60" />
+                </label>
+                <label className="block col-span-2 md:col-span-1">
+                  <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">End image</span>
+                  <input value={videoEndImageUrl} onChange={e => setVideoEndImageUrl(e.target.value)} placeholder="optional URL" className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30" data-testid="video-end-image-url" />
+                  <input type="file" accept="image/*" disabled={uploadingRefs} onChange={e => e.target.files && uploadReferenceFiles(e.target.files, 'end-image')} className="mt-1 block w-full text-[10px] font-mono text-white/35 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-white/60" />
+                </label>
+              </>
+            ) : primaryIsReferenceToVideo ? (
+              <>
+                <label className="block col-span-2 md:col-span-1">
+                  <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Images</span>
+                  <textarea value={videoImageUrls} onChange={e => setVideoImageUrls(e.target.value)} rows={1} placeholder="image URLs" className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30 resize-none" data-testid="video-image-urls" />
+                  <input type="file" accept="image/*" multiple disabled={uploadingRefs} onChange={e => e.target.files && uploadReferenceFiles(e.target.files, 'images')} className="mt-1 block w-full text-[10px] font-mono text-white/35 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-white/60" />
+                </label>
+                <label className="block col-span-2 md:col-span-1">
+                  <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Videos</span>
+                  <textarea value={videoVideoUrls} onChange={e => setVideoVideoUrls(e.target.value)} rows={1} placeholder="video URLs" className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30 resize-none" data-testid="video-video-urls" />
+                  <input type="file" accept="video/mp4,video/quicktime,video/*" multiple disabled={uploadingRefs} onChange={e => e.target.files && uploadReferenceFiles(e.target.files, 'video')} className="mt-1 block w-full text-[10px] font-mono text-white/35 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-white/60" />
+                </label>
+                <label className="block col-span-2 md:col-span-1">
+                  <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Audio refs</span>
+                  <textarea value={videoAudioUrls} onChange={e => setVideoAudioUrls(e.target.value)} rows={1} placeholder="audio URLs" className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30 resize-none" data-testid="video-audio-urls" />
+                  <input type="file" accept="audio/*" multiple disabled={uploadingRefs} onChange={e => e.target.files && uploadReferenceFiles(e.target.files, 'audio')} className="mt-1 block w-full text-[10px] font-mono text-white/35 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-white/60" />
+                </label>
+              </>
+            ) : null}
+          </div>
+        </div>
+      )}
+
+      {primaryIsSpeech && (
+        <div className="border-b border-white/10 px-4 py-3 bg-black/40">
+          {primaryIsGeminiSpeech ? (
+            <div className="max-w-5xl space-y-3">
+              <button
+                type="button"
+                onClick={() => setSpeechAutoEmotion(v => !v)}
+                className={`inline-flex items-center gap-2 border rounded px-3 py-2 text-xs font-mono transition-colors ${speechAutoEmotion ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' : 'border-white/10 bg-black text-white/50 hover:text-white/75'}`}
+                data-testid="speech-auto-emotion"
+              >
+                <span className={`w-2 h-2 rounded-full ${speechAutoEmotion ? 'bg-emerald-300' : 'bg-white/20'}`} />
+                Auto emotion
+              </button>
+              <datalist id="gemini-tts-voices">
+                {GEMINI_TTS_VOICE_INFO.map(voice => <option key={voice.name} value={voice.name}>{voice.style} · {voice.pitch}</option>)}
+              </datalist>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <GeminiSpeakerControls
+                  label="Speaker 1"
+                  profile={ttsSpeaker1Profile}
+                  onProfile={setTtsSpeaker1Profile}
+                  style={ttsSpeaker1Style}
+                  onStyle={v => setTtsSpeaker1Style(v as typeof TTS_STYLES[number])}
+                  pace={ttsSpeaker1Pace}
+                  onPace={v => setTtsSpeaker1Pace(v as typeof TTS_PACES[number])}
+                  accent={ttsSpeaker1Accent}
+                  onAccent={v => setTtsSpeaker1Accent(v as typeof TTS_ACCENTS[number])}
+                  voice={ttsSpeaker1Voice}
+                  onVoice={setTtsSpeaker1Voice}
+                />
+                <GeminiSpeakerControls
+                  label="Speaker 2"
+                  profile={ttsSpeaker2Profile}
+                  onProfile={setTtsSpeaker2Profile}
+                  style={ttsSpeaker2Style}
+                  onStyle={v => setTtsSpeaker2Style(v as typeof TTS_STYLES[number])}
+                  pace={ttsSpeaker2Pace}
+                  onPace={v => setTtsSpeaker2Pace(v as typeof TTS_PACES[number])}
+                  accent={ttsSpeaker2Accent}
+                  onAccent={v => setTtsSpeaker2Accent(v as typeof TTS_ACCENTS[number])}
+                  voice={ttsSpeaker2Voice}
+                  onVoice={setTtsSpeaker2Voice}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="max-w-xl grid grid-cols-2 gap-3">
+              <label className="block">
+                <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Voice</span>
+                <select
+                  value={speechVoice}
+                  onChange={e => setSpeechVoice(e.target.value)}
+                  className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30"
+                  data-testid="speech-voice"
+                >
+                  {SPEECH_VOICES.map(voice => <option key={voice} value={voice} className="bg-black text-white">{voice}</option>)}
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Language</span>
+                <select
+                  value={speechLanguage}
+                  onChange={e => setSpeechLanguage(e.target.value as typeof SPEECH_LANGUAGES[number])}
+                  className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30"
+                  data-testid="speech-language"
+                >
+                  {SPEECH_LANGUAGES.map(language => <option key={language} value={language} className="bg-black text-white">{language}</option>)}
+                </select>
+              </label>
+            </div>
+          )}
+          <p className="mt-2 text-[10px] font-mono text-white/30">{primaryIsGeminiSpeech ? '$1.00 input / $20.00 output per 1M tokens' : '$15.00 / 1M input characters'}</p>
+        </div>
+      )}
+
       {/* Code Panel */}
       {showCode && (
         <div className="border-b border-white/10 bg-white/[0.02]">
           <div className="flex items-center gap-1 px-4 pt-3 pb-0">
-            {(['python', 'js'] as const).map(lang => (
+            {(['python', 'js', 'go', 'curl'] as const).map(lang => (
               <button
                 key={lang}
                 onClick={() => setCodeLang(lang)}
                 className={`px-3 py-1.5 text-xs font-mono rounded-t border-t border-l border-r transition-colors ${codeLang === lang ? 'border-white/20 bg-black text-white' : 'border-transparent text-white/40 hover:text-white/70'}`}
               >
-                {lang === 'python' ? 'Python' : 'JavaScript'}
+                {lang === 'python' ? 'Python' : lang === 'js' ? 'JavaScript' : lang === 'go' ? 'Go' : 'cURL'}
               </button>
             ))}
             <button
@@ -926,9 +2343,12 @@ console.log(completion.choices[0].message.content);`;
               {codeCopied ? <><Check className="w-3 h-3 text-green-400" /> Copied</> : <><Copy className="w-3 h-3" /> Copy</>}
             </button>
           </div>
-          <pre className="px-4 pb-4 overflow-x-auto text-[12px] font-mono leading-relaxed text-white/80 bg-black mx-4 mb-3 rounded-b rounded-tr border border-white/10 pt-3">
-            <code>{generateCode(codeLang)}</code>
-          </pre>
+          <HighlightedCodeBlock
+            code={generateCode(codeLang)}
+            language={codeLang === 'js' ? 'javascript' : codeLang === 'curl' ? 'bash' : codeLang}
+            preClassName="px-4 pb-4 overflow-x-auto text-[12px] font-mono leading-relaxed text-white/80 bg-black mx-4 mb-3 rounded-b rounded-tr border border-white/10 pt-3"
+            testId="playground-generated-code"
+          />
         </div>
       )}
 
@@ -977,6 +2397,11 @@ console.log(completion.choices[0].message.content);`;
                   onPrompt={handleSend}
                   hasApiKey={!!apiKey}
                   isImage={isImageModel(modelIndex.get(pane.modelId))}
+                  isSpeech={isSpeechModel(modelIndex.get(pane.modelId))}
+                  isGeminiSpeech={isGeminiSpeechModel(modelIndex.get(pane.modelId))}
+                  isMusic={isMusicModel(modelIndex.get(pane.modelId))}
+                  imageDemo={IMAGE_DEMOS[pane.modelId]}
+                  videoDemo={VIDEO_DEMOS[pane.modelId]}
                 />
               ) : (
                 <div className="p-3 space-y-4">
@@ -1017,7 +2442,7 @@ console.log(completion.choices[0].message.content);`;
             }}
             onKeyDown={handleKeyDown}
             rows={1}
-            placeholder={apiKey ? 'Send a message... (Shift+Enter for newline)' : 'Set your API key in Settings first'}
+            placeholder={apiKey ? (primaryIsSpeech ? 'Enter text to synthesize...' : primaryIsVideo ? 'Describe the video you want to generate...' : primaryIsImage ? 'Describe the image you want to generate...' : 'Send a message... (Shift+Enter for newline)') : 'Set your API key in Settings first'}
             disabled={!apiKey}
             autoFocus
             data-testid="chat-input"
@@ -1056,8 +2481,82 @@ console.log(completion.choices[0].message.content);`;
 
 // --- Sub-components ---
 
-function EmptyState({ onPrompt, hasApiKey, isImage }: { onPrompt: (text: string) => void; hasApiKey: boolean; isImage?: boolean }) {
-  const prompts = isImage ? IMAGE_QUICK_PROMPTS : QUICK_PROMPTS;
+function GeminiSpeakerControls({
+  label,
+  profile,
+  onProfile,
+  style,
+  onStyle,
+  pace,
+  onPace,
+  accent,
+  onAccent,
+  voice,
+  onVoice,
+}: {
+  label: string;
+  profile: string;
+  onProfile: (value: string) => void;
+  style: string;
+  onStyle: (value: string) => void;
+  pace: string;
+  onPace: (value: string) => void;
+  accent: string;
+  onAccent: (value: string) => void;
+  voice: string;
+  onVoice: (value: string) => void;
+}) {
+  const info = geminiVoiceInfo(voice);
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] font-mono text-white/50 uppercase tracking-wider">{label}</span>
+        {info && <span className="text-[10px] font-mono text-white/30">{info.style} · {info.pitch}</span>}
+      </div>
+      <label className="block">
+        <span className="text-[10px] font-mono text-white/35 uppercase tracking-wider block mb-1">Audio profile</span>
+        <input
+          value={profile}
+          onChange={e => onProfile(e.target.value)}
+          className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30"
+        />
+      </label>
+      <div className="grid grid-cols-3 gap-2">
+        <label className="block">
+          <span className="text-[10px] font-mono text-white/35 uppercase tracking-wider block mb-1">Style</span>
+          <select value={style} onChange={e => onStyle(e.target.value)} className="w-full bg-black border border-white/10 rounded px-2 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30">
+            {TTS_STYLES.map(v => <option key={v} value={v} className="bg-black text-white">{v}</option>)}
+          </select>
+        </label>
+        <label className="block">
+          <span className="text-[10px] font-mono text-white/35 uppercase tracking-wider block mb-1">Pace</span>
+          <select value={pace} onChange={e => onPace(e.target.value)} className="w-full bg-black border border-white/10 rounded px-2 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30">
+            {TTS_PACES.map(v => <option key={v} value={v} className="bg-black text-white">{v}</option>)}
+          </select>
+        </label>
+        <label className="block">
+          <span className="text-[10px] font-mono text-white/35 uppercase tracking-wider block mb-1">Accent</span>
+          <select value={accent} onChange={e => onAccent(e.target.value)} className="w-full bg-black border border-white/10 rounded px-2 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30">
+            {TTS_ACCENTS.map(v => <option key={v} value={v} className="bg-black text-white">{v}</option>)}
+          </select>
+        </label>
+      </div>
+      <label className="block">
+        <span className="text-[10px] font-mono text-white/35 uppercase tracking-wider block mb-1">Voice</span>
+        <input
+          list="gemini-tts-voices"
+          value={voice}
+          onChange={e => onVoice(e.target.value)}
+          placeholder="Search voices"
+          className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30"
+        />
+      </label>
+    </div>
+  );
+}
+
+function EmptyState({ onPrompt, hasApiKey, isImage, isSpeech, isGeminiSpeech, isMusic, imageDemo, videoDemo }: { onPrompt: (text: string) => void; hasApiKey: boolean; isImage?: boolean; isSpeech?: boolean; isGeminiSpeech?: boolean; isMusic?: boolean; imageDemo?: ImageDemo; videoDemo?: VideoDemo }) {
+  const prompts = isMusic ? MUSIC_QUICK_PROMPTS : isGeminiSpeech ? GEMINI_TTS_QUICK_PROMPTS : isSpeech ? SPEECH_QUICK_PROMPTS : isImage ? IMAGE_QUICK_PROMPTS : QUICK_PROMPTS;
   return (
     <div className="h-full flex flex-col items-center justify-center px-6 py-12">
       <div className="text-white/10 mb-6">
@@ -1065,20 +2564,44 @@ function EmptyState({ onPrompt, hasApiKey, isImage }: { onPrompt: (text: string)
       </div>
       {hasApiKey ? (
         <>
-          <p className="text-sm font-mono text-white/20 mb-6">
-            {isImage ? 'Describe an image to generate' : 'Try a prompt to get started'}
-          </p>
-          <div className="flex flex-wrap gap-2 justify-center max-w-md">
-            {prompts.map((prompt, i) => (
+          {imageDemo && (
+            <div className="w-full max-w-sm mb-6 rounded-xl overflow-hidden border border-white/10 bg-black/40">
+              <img src={imageDemo.outputUrl} alt="Verified HiDream generated sample" className="w-full h-auto block" />
               <button
-                key={i}
-                onClick={() => onPrompt(prompt)}
-                className="text-xs font-mono text-white/40 border border-white/10 rounded-lg px-3 py-2 hover:border-white/25 hover:text-white/60 hover:bg-white/[0.02] transition-colors text-left"
+                onClick={() => onPrompt(imageDemo.prompt)}
+                className="w-full px-3 py-2 text-left text-xs font-mono text-white/45 hover:text-white/75 border-t border-white/10 transition-colors"
               >
-                {prompt}
+                Run this verified prompt
               </button>
-            ))}
-          </div>
+            </div>
+          )}
+          {videoDemo && (
+            <div className="w-full max-w-lg mb-6 rounded-xl overflow-hidden border border-white/10 bg-black/40">
+              <video src={videoDemo.outputUrl} controls muted loop playsInline className="w-full h-auto block" />
+              <button
+                onClick={() => onPrompt(videoDemo.prompt)}
+                className="w-full px-3 py-2 text-left text-xs font-mono text-white/45 hover:text-white/75 border-t border-white/10 transition-colors"
+              >
+                Run this verified prompt
+              </button>
+            </div>
+          )}
+          <p className="text-sm font-mono text-white/20 mb-6">
+            {imageDemo || videoDemo ? 'Verified sample output is loaded' : isMusic ? 'Describe a song or clip to generate' : isSpeech ? 'Enter text to synthesize' : isImage ? 'Describe an image to generate' : 'Try a prompt to get started'}
+          </p>
+          {!imageDemo && !videoDemo && (
+            <div className="flex flex-wrap gap-2 justify-center max-w-md">
+              {prompts.map((prompt, i) => (
+                <button
+                  key={i}
+                  onClick={() => onPrompt(promptExampleText(prompt))}
+                  className="text-xs font-mono text-white/40 border border-white/10 rounded-lg px-3 py-2 hover:border-white/25 hover:text-white/60 hover:bg-white/[0.02] transition-colors text-left"
+                >
+                  {promptExampleLabel(prompt)}
+                </button>
+              ))}
+            </div>
+          )}
         </>
       ) : (
         <>
@@ -1112,6 +2635,9 @@ function MessageBubble({ message }: { message: Message; key?: React.Key }) {
   const imageSrc = message.imageB64
     ? `data:image/png;base64,${message.imageB64}`
     : message.imageUrl || null;
+  const audioSrc = message.audioB64
+    ? `data:audio/${message.audioFormat || 'mpeg'};base64,${message.audioB64}`
+    : message.audioUrl || null;
 
   const copy = () => {
     navigator.clipboard.writeText(message.content);
@@ -1137,6 +2663,22 @@ function MessageBubble({ message }: { message: Message; key?: React.Key }) {
               >
                 <img src={imageSrc} alt={message.content || 'Generated image'} className="w-full h-auto block" />
               </a>
+            )}
+            {message.videoUrl && (
+              <div className="rounded-xl overflow-hidden border border-white/10 bg-black/40 max-w-2xl">
+                <video src={message.videoUrl} controls className="w-full h-auto block" />
+                <a href={message.videoUrl} target="_blank" rel="noopener noreferrer" className="block px-3 py-2 text-xs font-mono text-white/40 hover:text-white/70 border-t border-white/10">
+                  Open video
+                </a>
+              </div>
+            )}
+            {audioSrc && (
+              <div className="rounded-xl border border-white/10 bg-black/40 max-w-xl p-3">
+                <div className="flex items-center gap-2 mb-2 text-xs font-mono text-white/45">
+                  <Volume2 className="w-3.5 h-3.5" /> Generated speech
+                </div>
+                <audio src={audioSrc} controls className="w-full" />
+              </div>
             )}
             {message.content && renderMarkdown(message.content)}
           </div>
@@ -1221,6 +2763,7 @@ function ModelSelect({ value, onChange, models }: { value: string; onChange: (v:
                   {provModels.map(m => {
                     const pin = m.pricing?.input_per_1m_tokens;
                     const pout = m.pricing?.output_per_1m_tokens;
+                    const speech = isSpeechModel(m);
                     return (
                       <button
                         key={m.id}
@@ -1234,7 +2777,7 @@ function ModelSelect({ value, onChange, models }: { value: string; onChange: (v:
                         </span>
                         {(pin !== undefined || pout !== undefined) && (
                           <span className="text-[10px] font-mono text-white/30 shrink-0 tabular-nums">
-                            ${pin?.toFixed(2) ?? '?'}/${pout?.toFixed(2) ?? '?'}
+                            {speech ? `$${pin?.toFixed(2) ?? '?'}/chars` : `$${pin?.toFixed(2) ?? '?'}/${pout?.toFixed(2) ?? '?'}`}
                           </span>
                         )}
                       </button>
@@ -1245,7 +2788,7 @@ function ModelSelect({ value, onChange, models }: { value: string; onChange: (v:
             )}
           </div>
           <div className="px-3 py-1.5 border-t border-white/10 bg-white/[0.02]">
-            <p className="text-[9px] font-mono text-white/25">Prices are $ per 1M input / output tokens</p>
+            <p className="text-[9px] font-mono text-white/25">Token models show $ per 1M input / output tokens. Speech shows $ per 1M characters.</p>
           </div>
         </div>
       )}

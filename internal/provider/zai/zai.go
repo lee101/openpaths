@@ -44,6 +44,7 @@ func (p *ZAIProvider) chatURL() string {
 func sanitizeForZAI(req *model.ChatCompletionRequest) {
 	req.Prefill = ""
 	req.TaskTier = ""
+	req.Thinking = nil
 }
 
 func (p *ZAIProvider) ChatCompletion(ctx context.Context, req *model.ChatCompletionRequest) (*model.ChatCompletionResponse, error) {

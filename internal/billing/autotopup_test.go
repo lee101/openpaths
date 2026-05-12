@@ -3,21 +3,21 @@ package billing
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/openpaths/openpaths/internal/db/queries"
 	"github.com/openpaths/openpaths/internal/model"
 )
 
 // --- fakes ---
 
 type fakeUserQ struct {
-	mu   sync.Mutex
-	user *model.User
-	bal  int64
-	err  error
+	mu           sync.Mutex
+	user         *model.User
+	bal          int64
+	err          error
 	lastAtCalled bool
 }
 
@@ -38,8 +38,9 @@ func (f *fakeUserQ) SetAutotopupLastAt(_ context.Context, _ string) error {
 }
 
 type fakeTopupQ struct {
-	mu      sync.Mutex
-	charges []loggedCharge
+	mu         sync.Mutex
+	charges    []loggedCharge
+	lastCharge *queries.AutotopupCharge
 }
 
 type loggedCharge struct {
@@ -56,22 +57,29 @@ func (f *fakeTopupQ) LogCharge(_ context.Context, _ string, amountCents int64, a
 	return nil
 }
 
+func (f *fakeTopupQ) LastChargeForUser(_ context.Context, _ string) (*queries.AutotopupCharge, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.lastCharge, nil
+}
+
 type fakeStripe struct {
-	mu         sync.Mutex
-	charges    []chargeCall
-	err        error
+	mu      sync.Mutex
+	charges []chargeCall
+	err     error
 }
 
 type chargeCall struct {
-	customerID string
-	pmID       string
-	amount     int64
+	customerID     string
+	pmID           string
+	amount         int64
+	idempotencyKey string
 }
 
-func (f *fakeStripe) ChargeOffSession(customerID, pmID string, amount int64, _ string) (string, error) {
+func (f *fakeStripe) ChargeOffSession(customerID, pmID string, amount int64, idempotencyKey string) (string, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	f.charges = append(f.charges, chargeCall{customerID, pmID, amount})
+	f.charges = append(f.charges, chargeCall{customerID, pmID, amount, idempotencyKey})
 	if f.err != nil {
 		return "", f.err
 	}
@@ -97,19 +105,8 @@ func (f *fakeEngine) Deposit(_ context.Context, userID string, amount int64, des
 	return f.err
 }
 
-// --- autotopup service using fakes ---
-
-type testableTopupService struct {
-	userQ   *fakeUserQ
-	topupQ  *fakeTopupQ
-	stripe  *fakeStripe
-	engine  *fakeEngine
-	mu      sync.Mutex
-	inFlight map[string]bool
-}
-
-func newTestableTopup(user *model.User, balance int64) *testableTopupService {
-	return &testableTopupService{
+func newTestableTopup(user *model.User, balance int64) *AutoTopupService {
+	return &AutoTopupService{
 		userQ:    &fakeUserQ{user: user, bal: balance},
 		topupQ:   &fakeTopupQ{},
 		stripe:   &fakeStripe{},
@@ -118,59 +115,10 @@ func newTestableTopup(user *model.User, balance int64) *testableTopupService {
 	}
 }
 
-func (t *testableTopupService) doTopup(ctx context.Context, userID string) error {
-	user, balance, err := t.userQ.GetAutotopupInfo(ctx, userID)
-	if err != nil {
-		return fmt.Errorf("get info: %w", err)
-	}
-	if !user.AutotopupEnabled {
-		return nil
-	}
-	if balance > user.AutotopupThresholdCents {
-		return nil
-	}
-	if user.StripeCustomerID == nil || *user.StripeCustomerID == "" {
-		return nil
-	}
-	if user.StripePaymentMethodID == nil || *user.StripePaymentMethodID == "" {
-		return nil
-	}
-	if user.AutotopupAmountCents <= 0 {
-		return nil
-	}
-	if user.AutotopupLastAt != nil && time.Since(*user.AutotopupLastAt) < 60*time.Second {
-		return nil
-	}
-
-	amountUSDCents := user.AutotopupAmountCents / 100
-	if amountUSDCents < 50 {
-		amountUSDCents = 50
-	}
-	amountUSD := float64(amountUSDCents) / 100.0
-
-	idempotencyKey := fmt.Sprintf("autotopup-%s-%d", userID, time.Now().Unix()/60)
-
-	piID, err := t.stripe.ChargeOffSession(
-		*user.StripeCustomerID,
-		*user.StripePaymentMethodID,
-		amountUSDCents,
-		idempotencyKey,
-	)
-	if err != nil {
-		_ = t.topupQ.LogCharge(ctx, userID, user.AutotopupAmountCents, amountUSD, piID, "failed", err.Error())
-		return fmt.Errorf("stripe charge: %w", err)
-	}
-
-	desc := fmt.Sprintf("Auto-topup $%.2f (Stripe: %s)", amountUSD, truncateStr(piID, 20))
-	if err := t.engine.Deposit(ctx, userID, user.AutotopupAmountCents, desc); err != nil {
-		_ = t.topupQ.LogCharge(ctx, userID, user.AutotopupAmountCents, amountUSD, piID, "failed", "deposit failed: "+err.Error())
-		return fmt.Errorf("deposit: %w", err)
-	}
-
-	_ = t.userQ.SetAutotopupLastAt(ctx, userID)
-	_ = t.topupQ.LogCharge(ctx, userID, user.AutotopupAmountCents, amountUSD, piID, "succeeded", "")
-	return nil
-}
+func fakeUsers(s *AutoTopupService) *fakeUserQ     { return s.userQ.(*fakeUserQ) }
+func fakeTopups(s *AutoTopupService) *fakeTopupQ   { return s.topupQ.(*fakeTopupQ) }
+func fakeCharges(s *AutoTopupService) *fakeStripe  { return s.stripe.(*fakeStripe) }
+func fakeDeposits(s *AutoTopupService) *fakeEngine { return s.engine.(*fakeEngine) }
 
 // --- tests ---
 
@@ -178,7 +126,7 @@ func strPtr(s string) *string { return &s }
 
 func TestAutoTopup_ChargesWhenBelowThreshold(t *testing.T) {
 	svc := newTestableTopup(&model.User{
-		AutotopupEnabled:       true,
+		AutotopupEnabled:        true,
 		AutotopupThresholdCents: 50000,  // $5
 		AutotopupAmountCents:    100000, // $10
 		StripeCustomerID:        strPtr("cus_123"),
@@ -190,11 +138,11 @@ func TestAutoTopup_ChargesWhenBelowThreshold(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if len(svc.stripe.charges) != 1 {
-		t.Fatalf("expected 1 stripe charge, got %d", len(svc.stripe.charges))
+	if len(fakeCharges(svc).charges) != 1 {
+		t.Fatalf("expected 1 stripe charge, got %d", len(fakeCharges(svc).charges))
 	}
 
-	ch := svc.stripe.charges[0]
+	ch := fakeCharges(svc).charges[0]
 	if ch.customerID != "cus_123" {
 		t.Errorf("customer = %q, want cus_123", ch.customerID)
 	}
@@ -206,24 +154,24 @@ func TestAutoTopup_ChargesWhenBelowThreshold(t *testing.T) {
 		t.Errorf("amount = %d USD cents, want 1000", ch.amount)
 	}
 
-	if len(svc.engine.deposits) != 1 {
-		t.Fatalf("expected 1 deposit, got %d", len(svc.engine.deposits))
+	if len(fakeDeposits(svc).deposits) != 1 {
+		t.Fatalf("expected 1 deposit, got %d", len(fakeDeposits(svc).deposits))
 	}
-	if svc.engine.deposits[0].amount != 100000 {
-		t.Errorf("deposit amount = %d, want 100000", svc.engine.deposits[0].amount)
+	if fakeDeposits(svc).deposits[0].amount != 100000 {
+		t.Errorf("deposit amount = %d, want 100000", fakeDeposits(svc).deposits[0].amount)
 	}
 
-	if len(svc.topupQ.charges) != 1 || svc.topupQ.charges[0].status != "succeeded" {
+	if len(fakeTopups(svc).charges) != 1 || fakeTopups(svc).charges[0].status != "succeeded" {
 		t.Errorf("expected succeeded charge log")
 	}
-	if !svc.userQ.lastAtCalled {
+	if !fakeUsers(svc).lastAtCalled {
 		t.Error("expected SetAutotopupLastAt to be called")
 	}
 }
 
 func TestAutoTopup_SkipsWhenAboveThreshold(t *testing.T) {
 	svc := newTestableTopup(&model.User{
-		AutotopupEnabled:       true,
+		AutotopupEnabled:        true,
 		AutotopupThresholdCents: 50000,
 		AutotopupAmountCents:    100000,
 		StripeCustomerID:        strPtr("cus_123"),
@@ -234,14 +182,14 @@ func TestAutoTopup_SkipsWhenAboveThreshold(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(svc.stripe.charges) != 0 {
-		t.Errorf("expected no charges, got %d", len(svc.stripe.charges))
+	if len(fakeCharges(svc).charges) != 0 {
+		t.Errorf("expected no charges, got %d", len(fakeCharges(svc).charges))
 	}
 }
 
 func TestAutoTopup_SkipsWhenDisabled(t *testing.T) {
 	svc := newTestableTopup(&model.User{
-		AutotopupEnabled:       false,
+		AutotopupEnabled:        false,
 		AutotopupThresholdCents: 50000,
 		AutotopupAmountCents:    100000,
 		StripeCustomerID:        strPtr("cus_123"),
@@ -252,14 +200,14 @@ func TestAutoTopup_SkipsWhenDisabled(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(svc.stripe.charges) != 0 {
+	if len(fakeCharges(svc).charges) != 0 {
 		t.Errorf("expected no charges when disabled")
 	}
 }
 
 func TestAutoTopup_SkipsWithoutPaymentMethod(t *testing.T) {
 	svc := newTestableTopup(&model.User{
-		AutotopupEnabled:       true,
+		AutotopupEnabled:        true,
 		AutotopupThresholdCents: 50000,
 		AutotopupAmountCents:    100000,
 		StripeCustomerID:        strPtr("cus_123"),
@@ -270,14 +218,14 @@ func TestAutoTopup_SkipsWithoutPaymentMethod(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(svc.stripe.charges) != 0 {
+	if len(fakeCharges(svc).charges) != 0 {
 		t.Errorf("expected no charges without payment method")
 	}
 }
 
 func TestAutoTopup_SkipsWithoutCustomer(t *testing.T) {
 	svc := newTestableTopup(&model.User{
-		AutotopupEnabled:       true,
+		AutotopupEnabled:        true,
 		AutotopupThresholdCents: 50000,
 		AutotopupAmountCents:    100000,
 		StripeCustomerID:        nil,
@@ -288,7 +236,7 @@ func TestAutoTopup_SkipsWithoutCustomer(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(svc.stripe.charges) != 0 {
+	if len(fakeCharges(svc).charges) != 0 {
 		t.Errorf("expected no charges without customer")
 	}
 }
@@ -296,7 +244,7 @@ func TestAutoTopup_SkipsWithoutCustomer(t *testing.T) {
 func TestAutoTopup_RateLimits60Seconds(t *testing.T) {
 	recent := time.Now().Add(-30 * time.Second)
 	svc := newTestableTopup(&model.User{
-		AutotopupEnabled:       true,
+		AutotopupEnabled:        true,
 		AutotopupThresholdCents: 50000,
 		AutotopupAmountCents:    100000,
 		StripeCustomerID:        strPtr("cus_123"),
@@ -308,7 +256,7 @@ func TestAutoTopup_RateLimits60Seconds(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(svc.stripe.charges) != 0 {
+	if len(fakeCharges(svc).charges) != 0 {
 		t.Errorf("expected no charges within 60s rate limit")
 	}
 }
@@ -316,7 +264,7 @@ func TestAutoTopup_RateLimits60Seconds(t *testing.T) {
 func TestAutoTopup_AllowsAfterRateLimitExpires(t *testing.T) {
 	old := time.Now().Add(-90 * time.Second)
 	svc := newTestableTopup(&model.User{
-		AutotopupEnabled:       true,
+		AutotopupEnabled:        true,
 		AutotopupThresholdCents: 50000,
 		AutotopupAmountCents:    100000,
 		StripeCustomerID:        strPtr("cus_123"),
@@ -328,15 +276,15 @@ func TestAutoTopup_AllowsAfterRateLimitExpires(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(svc.stripe.charges) != 1 {
-		t.Errorf("expected 1 charge after rate limit expired, got %d", len(svc.stripe.charges))
+	if len(fakeCharges(svc).charges) != 1 {
+		t.Errorf("expected 1 charge after rate limit expired, got %d", len(fakeCharges(svc).charges))
 	}
 }
 
 func TestAutoTopup_MinimumStripeCharge(t *testing.T) {
 	// Amount is 4000 internal (= $0.40 = 40 USD cents, below Stripe $0.50 minimum)
 	svc := newTestableTopup(&model.User{
-		AutotopupEnabled:       true,
+		AutotopupEnabled:        true,
 		AutotopupThresholdCents: 50000,
 		AutotopupAmountCents:    4000,
 		StripeCustomerID:        strPtr("cus_123"),
@@ -347,64 +295,135 @@ func TestAutoTopup_MinimumStripeCharge(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(svc.stripe.charges) != 1 {
-		t.Fatalf("expected 1 charge, got %d", len(svc.stripe.charges))
+	if len(fakeCharges(svc).charges) != 1 {
+		t.Fatalf("expected 1 charge, got %d", len(fakeCharges(svc).charges))
 	}
-	if svc.stripe.charges[0].amount != 50 {
-		t.Errorf("amount = %d, want 50 (Stripe minimum)", svc.stripe.charges[0].amount)
+	if fakeCharges(svc).charges[0].amount != 50 {
+		t.Errorf("amount = %d, want 50 (Stripe minimum)", fakeCharges(svc).charges[0].amount)
 	}
 }
 
 func TestAutoTopup_StripeErrorLogsFailure(t *testing.T) {
 	svc := newTestableTopup(&model.User{
-		AutotopupEnabled:       true,
+		AutotopupEnabled:        true,
 		AutotopupThresholdCents: 50000,
 		AutotopupAmountCents:    100000,
 		StripeCustomerID:        strPtr("cus_123"),
 		StripePaymentMethodID:   strPtr("pm_123"),
 	}, 10000)
-	svc.stripe.err = errors.New("card_declined")
+	fakeCharges(svc).err = errors.New("card_declined")
 
 	err := svc.doTopup(context.Background(), "user1")
 	if err == nil {
 		t.Fatal("expected error on stripe failure")
 	}
-	if len(svc.topupQ.charges) != 1 {
-		t.Fatalf("expected 1 charge log, got %d", len(svc.topupQ.charges))
+	if len(fakeTopups(svc).charges) != 1 {
+		t.Fatalf("expected 1 charge log, got %d", len(fakeTopups(svc).charges))
 	}
-	if svc.topupQ.charges[0].status != "failed" {
-		t.Errorf("status = %q, want failed", svc.topupQ.charges[0].status)
+	if fakeTopups(svc).charges[0].status != "failed" {
+		t.Errorf("status = %q, want failed", fakeTopups(svc).charges[0].status)
 	}
-	if len(svc.engine.deposits) != 0 {
+	if len(fakeDeposits(svc).deposits) != 0 {
 		t.Error("no deposit should occur on stripe failure")
 	}
 }
 
-func TestAutoTopup_DepositErrorLogsFailure(t *testing.T) {
+func TestAutoTopup_DebouncesRecentFailedAttempt(t *testing.T) {
 	svc := newTestableTopup(&model.User{
-		AutotopupEnabled:       true,
+		AutotopupEnabled:        true,
 		AutotopupThresholdCents: 50000,
 		AutotopupAmountCents:    100000,
 		StripeCustomerID:        strPtr("cus_123"),
 		StripePaymentMethodID:   strPtr("pm_123"),
 	}, 10000)
-	svc.engine.err = errors.New("db error")
+	fakeTopups(svc).lastCharge = &queries.AutotopupCharge{
+		Status:    "failed",
+		CreatedAt: time.Now().Add(-30 * time.Minute),
+	}
+
+	err := svc.doTopup(context.Background(), "user1")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(fakeCharges(svc).charges) != 0 {
+		t.Fatalf("expected recent failed attempt to debounce charge, got %d", len(fakeCharges(svc).charges))
+	}
+}
+
+func TestAutoTopup_RetriesAfterFailedAttemptDebounceExpires(t *testing.T) {
+	svc := newTestableTopup(&model.User{
+		AutotopupEnabled:        true,
+		AutotopupThresholdCents: 50000,
+		AutotopupAmountCents:    100000,
+		StripeCustomerID:        strPtr("cus_123"),
+		StripePaymentMethodID:   strPtr("pm_123"),
+	}, 10000)
+	fakeTopups(svc).lastCharge = &queries.AutotopupCharge{
+		Status:    "failed",
+		CreatedAt: time.Now().Add(-7 * time.Hour),
+	}
+
+	err := svc.doTopup(context.Background(), "user1")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(fakeCharges(svc).charges) != 1 {
+		t.Fatalf("expected retry after debounce expires, got %d charges", len(fakeCharges(svc).charges))
+	}
+	if fakeCharges(svc).charges[0].idempotencyKey == "" {
+		t.Fatal("expected idempotency key")
+	}
+}
+
+func TestAutoTopup_RetriesAfterUserUpdatesBillingAfterFailure(t *testing.T) {
+	failedAt := time.Now().Add(-30 * time.Minute)
+	svc := newTestableTopup(&model.User{
+		UpdatedAt:               failedAt.Add(5 * time.Minute),
+		AutotopupEnabled:        true,
+		AutotopupThresholdCents: 50000,
+		AutotopupAmountCents:    100000,
+		StripeCustomerID:        strPtr("cus_123"),
+		StripePaymentMethodID:   strPtr("pm_123"),
+	}, 10000)
+	fakeTopups(svc).lastCharge = &queries.AutotopupCharge{
+		Status:    "failed",
+		CreatedAt: failedAt,
+	}
+
+	err := svc.doTopup(context.Background(), "user1")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(fakeCharges(svc).charges) != 1 {
+		t.Fatalf("expected retry after user billing update, got %d charges", len(fakeCharges(svc).charges))
+	}
+}
+
+func TestAutoTopup_DepositErrorLogsFailure(t *testing.T) {
+	svc := newTestableTopup(&model.User{
+		AutotopupEnabled:        true,
+		AutotopupThresholdCents: 50000,
+		AutotopupAmountCents:    100000,
+		StripeCustomerID:        strPtr("cus_123"),
+		StripePaymentMethodID:   strPtr("pm_123"),
+	}, 10000)
+	fakeDeposits(svc).err = errors.New("db error")
 
 	err := svc.doTopup(context.Background(), "user1")
 	if err == nil {
 		t.Fatal("expected error on deposit failure")
 	}
-	if len(svc.stripe.charges) != 1 {
+	if len(fakeCharges(svc).charges) != 1 {
 		t.Fatal("stripe should still have been called")
 	}
-	if len(svc.topupQ.charges) != 1 || svc.topupQ.charges[0].status != "failed" {
+	if len(fakeTopups(svc).charges) != 1 || fakeTopups(svc).charges[0].status != "failed" {
 		t.Error("expected failed charge log on deposit error")
 	}
 }
 
 func TestAutoTopup_SkipsZeroAmount(t *testing.T) {
 	svc := newTestableTopup(&model.User{
-		AutotopupEnabled:       true,
+		AutotopupEnabled:        true,
 		AutotopupThresholdCents: 50000,
 		AutotopupAmountCents:    0,
 		StripeCustomerID:        strPtr("cus_123"),
@@ -415,7 +434,7 @@ func TestAutoTopup_SkipsZeroAmount(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(svc.stripe.charges) != 0 {
+	if len(fakeCharges(svc).charges) != 0 {
 		t.Errorf("expected no charges with zero amount")
 	}
 }
@@ -437,7 +456,7 @@ func TestAutoTopup_UnitConversion(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := newTestableTopup(&model.User{
-				AutotopupEnabled:       true,
+				AutotopupEnabled:        true,
 				AutotopupThresholdCents: 50000,
 				AutotopupAmountCents:    tt.amountInternal,
 				StripeCustomerID:        strPtr("cus_123"),
@@ -448,11 +467,11 @@ func TestAutoTopup_UnitConversion(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			if svc.stripe.charges[0].amount != tt.wantUSDCents {
-				t.Errorf("stripe amount = %d USD cents, want %d", svc.stripe.charges[0].amount, tt.wantUSDCents)
+			if fakeCharges(svc).charges[0].amount != tt.wantUSDCents {
+				t.Errorf("stripe amount = %d USD cents, want %d", fakeCharges(svc).charges[0].amount, tt.wantUSDCents)
 			}
-			if svc.topupQ.charges[0].amountUSD != tt.wantUSD {
-				t.Errorf("logged USD = %.2f, want %.2f", svc.topupQ.charges[0].amountUSD, tt.wantUSD)
+			if fakeTopups(svc).charges[0].amountUSD != tt.wantUSD {
+				t.Errorf("logged USD = %.2f, want %.2f", fakeTopups(svc).charges[0].amountUSD, tt.wantUSD)
 			}
 		})
 	}

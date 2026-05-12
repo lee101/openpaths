@@ -1,6 +1,6 @@
 #!/bin/bash
 # Investigate OpenRouter models and integration
-# Usage: claude --dangerously-skip-permissions -p "$(cat creation/investigate-openrouter.sh)"
+# Usage: "$CODEX_LOCAL" --yolo3 -m gpt-5.5 --config model_reasoning_effort=medium exec "$(cat creation/investigate-openrouter.sh)"
 
 # Fetch current free models from OpenRouter
 echo "=== Fetching OpenRouter free models ==="

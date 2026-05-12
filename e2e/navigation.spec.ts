@@ -7,8 +7,9 @@ test.describe('Global Navigation', () => {
     await expect(nav).toBeVisible();
     await expect(nav.locator('text=OpenPath')).toBeVisible();
     await expect(nav.locator('text=Models')).toBeVisible();
+    await expect(nav.locator('text=Integrations')).toBeVisible();
     await expect(nav.locator('text=Playground')).toBeVisible();
-    await expect(nav.locator('text=Dashboard')).toBeVisible();
+    await expect(nav.getByTestId('nav-get-started').or(nav.getByTestId('nav-dashboard'))).toBeVisible();
   });
 
   test('navigate to /models', async ({ page }) => {
@@ -24,9 +25,17 @@ test.describe('Global Navigation', () => {
     await expect(page).toHaveURL('/playground');
   });
 
-  test('navigate to /account via Dashboard button', async ({ page }) => {
+  test('navigate to /integrations', async ({ page }) => {
     await page.goto('/');
-    await page.click('nav >> text=Dashboard');
+    await page.click('nav >> text=Integrations');
+    await expect(page).toHaveURL('/integrations');
+    await expect(page.locator('h1')).toContainText('Integrate OpenPaths');
+  });
+
+  test('navigate to /account via primary account button', async ({ page }) => {
+    await page.goto('/');
+    const primaryAccountButton = page.getByTestId('nav-get-started').or(page.getByTestId('nav-dashboard'));
+    await primaryAccountButton.click();
     await expect(page).toHaveURL('/account');
     // Shows login form when not authenticated
     await expect(page.locator('h1:has-text("Sign In")')).toBeVisible();
@@ -42,6 +51,6 @@ test.describe('Global Navigation', () => {
     await page.goto('/');
     const footer = page.locator('footer');
     await expect(footer).toBeVisible();
-    await expect(footer.locator('text=OpenPath')).toBeVisible();
+    await expect(footer.getByText('OpenPaths', { exact: true })).toBeVisible();
   });
 });

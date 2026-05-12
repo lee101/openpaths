@@ -62,7 +62,7 @@ export const providers: Provider[] = [
     slug: 'xai',
     name: 'xAI',
     url: 'https://x.ai',
-    description: 'Grok 4 flagship, Grok 4.1 Fast with 2M context, and Grok 3 Mini for affordable reasoning.',
+    description: 'Grok text models plus Voice Agent, Text to Speech, and Speech to Text APIs for realtime and batch audio.',
     featured: false,
     logo: '/logos/xai.svg'
   },
@@ -120,7 +120,7 @@ export const providers: Provider[] = [
     url: 'https://nousresearch.com',
     description: 'Open-source AI research lab. Hermes 4 70B and 405B models with deep thinking and tool use at ultra-low cost.',
     featured: false,
-    logo: '/logos/nous.svg'
+    logo: '/logos/nous.webp'
   },
   {
     slug: 'openrouter',
@@ -142,7 +142,7 @@ export const providers: Provider[] = [
     slug: 'nvidia',
     name: 'NVIDIA',
     url: 'https://build.nvidia.com',
-    description: 'NVIDIA NIM inference hosting MiniMax M2.7 and other frontier open models on accelerated infra.',
+    description: 'NVIDIA NIM inference hosting free DeepSeek V4 Pro, MiniMax M2.7, and other frontier open models.',
     featured: false,
     logo: '/logos/nvidia.svg'
   },

@@ -1,19 +1,38 @@
 #!/bin/bash
-# Cron-friendly auto-fix: check site, fix if down, verify JS, redeploy if needed
+# Cron-friendly auto-fix: check site, fix if down, verify JS, redeploy if needed.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 LOG_DIR="$SCRIPT_DIR/logs"
 LOG_FILE="$LOG_DIR/autofix_$(date +%Y%m%d_%H%M%S).log"
+STATE_DIR="$SCRIPT_DIR/state"
+DEBOUNCE_FILE="$STATE_DIR/last_codex_fix_at"
+DEBOUNCE_SECONDS="${DEBOUNCE_SECONDS:-43200}"
 SSH_PASS="ka3iMI4OSNvgFcREuDaQyLguFxuP"
 HOST="administrator@93.127.141.100"
 SITE="https://openpaths.io"
 
-mkdir -p "$LOG_DIR"
+mkdir -p "$LOG_DIR" "$STATE_DIR"
 exec > >(tee -a "$LOG_FILE") 2>&1
 
 log() { echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $*"; }
+
+can_spawn_codex() {
+    local now last elapsed remain
+    now=$(date -u +%s)
+    last=0
+    [ -f "$DEBOUNCE_FILE" ] && last=$(tr -d '[:space:]' < "$DEBOUNCE_FILE")
+    [ -z "$last" ] && last=0
+    elapsed=$((now - last))
+    if [ "$last" -gt 0 ] && [ "$elapsed" -lt "$DEBOUNCE_SECONDS" ]; then
+        remain=$((DEBOUNCE_SECONDS - elapsed))
+        log "Codex spawn debounced (${elapsed}s since last run, ${remain}s remaining)"
+        return 1
+    fi
+    echo "$now" > "$DEBOUNCE_FILE"
+    return 0
+}
 
 ssh_cmd() {
     sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no "$HOST" "$@"
@@ -44,10 +63,11 @@ if ! check_site; then
     ssh_cmd 'sudo supervisorctl restart openpaths' || true
     sleep 5
     if ! check_site; then
-        log "SITE STILL DOWN after restart - spawning claude agent"
+        log "SITE STILL DOWN after restart - spawning Codex agent"
         SITE_OK=false
         cd "$PROJECT_DIR"
-        claude --dangerously-skip-permissions -p "
+        if can_spawn_codex; then
+            bash "$SCRIPT_DIR/run_codex_agent.sh" "
 Site $SITE is DOWN even after supervisor restart. Fully diagnose and fix.
 
 Server: $HOST (ssh pass: $SSH_PASS)
@@ -59,13 +79,14 @@ Config: config.yaml, .env
 
 Investigate the error logs, fix the root cause, rebuild and redeploy if needed.
 Verify the site comes back: curl -s $SITE/v1/models
-" >> "$LOG_DIR/claude_fix.log" 2>&1
+" >> "$LOG_DIR/codex_fix.log" 2>&1
+        fi
         sleep 10
         if check_site; then
-            log "claude fixed it - site is back up"
+            log "Codex fixed it - site is back up"
             SITE_OK=true
         else
-            log "claude could not fix it - manual intervention needed"
+            log "Codex could not fix it - manual intervention needed"
         fi
     else
         log "site recovered after restart"
@@ -87,10 +108,11 @@ fi
 if $SITE_OK; then
     log "checking for JS errors..."
     if ! check_js; then
-        log "JS ERRORS detected - spawning claude agent"
+        log "JS ERRORS detected - spawning Codex agent"
         cd "$PROJECT_DIR"
         JS_ERRORS=$(node monitoring/check_js.mjs "$SITE" 2>&1 || true)
-        claude --dangerously-skip-permissions -p "
+        if can_spawn_codex; then
+            bash "$SCRIPT_DIR/run_codex_agent.sh" "
 JS errors detected on $SITE homepage:
 
 $JS_ERRORS
@@ -101,7 +123,8 @@ After fixing, rebuild and redeploy:
   bash deploy.sh site
 
 Verify no JS errors remain.
-" >> "$LOG_DIR/claude_fix.log" 2>&1
+" >> "$LOG_DIR/codex_fix.log" 2>&1
+        fi
     else
         log "JS check clean"
     fi

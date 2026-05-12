@@ -1,8 +1,15 @@
 package handler
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
+	"fmt"
+	"io"
 	"log"
+	"net/http"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/valyala/fasthttp"
@@ -14,16 +21,22 @@ import (
 	"github.com/openpaths/openpaths/internal/model"
 	"github.com/openpaths/openpaths/internal/provider"
 	"github.com/openpaths/openpaths/internal/router"
+	"github.com/openpaths/openpaths/internal/storage"
 )
 
 type ImageHandler struct {
 	router   *router.Router
 	billing  *billing.Engine
 	recorder *metrics.Recorder
+	store    storage.Store
 }
 
 func NewImageHandler(r *router.Router, b *billing.Engine, rec *metrics.Recorder) *ImageHandler {
 	return &ImageHandler{router: r, billing: b, recorder: rec}
+}
+
+func (h *ImageHandler) SetStorage(store storage.Store) {
+	h.store = store
 }
 
 func (h *ImageHandler) HandleImageGeneration(ctx *fasthttp.RequestCtx) {
@@ -132,10 +145,12 @@ func (h *ImageHandler) HandleImageGeneration(ctx *fasthttp.RequestCtx) {
 				}
 			}
 		}
+		h.rehostImageURLs(ctx, resp)
 
 		h.router.MarkModelHealthy(cand.Provider.Name(), cand.ModelCfg.ID)
 		imageCount := len(resp.Data)
-		cost, _ := h.billing.DeductImage(ctx, userID, cand.ModelCfg.ID, imageCount, "")
+		inputImageCount := countInputImages(&req)
+		cost, _ := h.billing.DeductImageWithInputsAndSize(ctx, userID, cand.ModelCfg.ID, imageCount, inputImageCount, req.Size, "")
 		h.recorder.RecordSuccess(userID, apiKeyID, originalModel, cand.Provider.Name(),
 			0, imageCount, int(latency.Milliseconds()), 0, cost, false)
 
@@ -144,4 +159,78 @@ func (h *ImageHandler) HandleImageGeneration(ctx *fasthttp.RequestCtx) {
 	}
 
 	writeError(ctx, 502, "provider_error", "all providers failed for model "+originalModel)
+}
+
+func (h *ImageHandler) rehostImageURLs(ctx context.Context, resp *model.ImageGenerationResponse) {
+	if h.store == nil || resp == nil {
+		return
+	}
+	for i := range resp.Data {
+		if resp.Data[i].URL == "" {
+			continue
+		}
+		url, err := h.rehostImageURL(ctx, resp.Data[i].URL, i)
+		if err != nil {
+			log.Printf("image rehost [%d]: %v, keeping upstream URL", i, err)
+			continue
+		}
+		resp.Data[i].URL = url
+	}
+}
+
+func (h *ImageHandler) rehostImageURL(ctx context.Context, sourceURL string, index int) (string, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, sourceURL, nil)
+	if err != nil {
+		return "", err
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return "", fmt.Errorf("download status %d", resp.StatusCode)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	contentType := resp.Header.Get("Content-Type")
+	ext := extFromContentType(contentType)
+	if ext == "" {
+		ext = filepath.Ext(strings.Split(sourceURL, "?")[0])
+	}
+	if ext == "" {
+		ext = ".png"
+	}
+	return h.store.Upload(ctx, fmt.Sprintf("generated-%d%s", index+1, ext), contentType, bytes.NewReader(body))
+}
+
+func extFromContentType(contentType string) string {
+	if idx := strings.Index(contentType, ";"); idx != -1 {
+		contentType = strings.TrimSpace(contentType[:idx])
+	}
+	switch contentType {
+	case "image/png":
+		return ".png"
+	case "image/jpeg":
+		return ".jpg"
+	case "image/webp":
+		return ".webp"
+	case "image/gif":
+		return ".gif"
+	default:
+		return ""
+	}
+}
+
+func countInputImages(req *model.ImageGenerationRequest) int {
+	count := len(req.ReferenceImageURLs) + len(req.Images) + len(req.ImageURLs)
+	if req.Image != nil {
+		count++
+	}
+	if req.ImageURL != "" {
+		count++
+	}
+	return count
 }

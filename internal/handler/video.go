@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/valyala/fasthttp"
@@ -94,7 +95,7 @@ func (h *VideoHandler) HandleVideoGeneration(ctx *fasthttp.RequestCtx) {
 
 		h.router.MarkModelHealthy(cand.Provider.Name(), cand.ModelCfg.ID)
 		resp.Model = originalModel
-		cost, _ := h.billing.DeductVideo(ctx, userID, cand.ModelCfg.ID, "")
+		cost, _ := h.billing.DeductVideo(ctx, userID, cand.ModelCfg.ID, videoDurationSeconds(req.Duration), len(req.VideoURLs) > 0, "")
 		h.recorder.RecordSuccess(userID, apiKeyID, originalModel, cand.Provider.Name(),
 			0, 1, int(latency.Milliseconds()), 0, cost, false)
 
@@ -103,4 +104,15 @@ func (h *VideoHandler) HandleVideoGeneration(ctx *fasthttp.RequestCtx) {
 	}
 
 	writeError(ctx, 502, "provider_error", "all providers failed for model "+originalModel)
+}
+
+func videoDurationSeconds(duration string) int {
+	if duration == "" || duration == "auto" {
+		return 10
+	}
+	n, err := strconv.Atoi(duration)
+	if err != nil || n <= 0 {
+		return 10
+	}
+	return n
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"strings"
 	"sync"
 
 	"github.com/openpaths/openpaths/internal/model"
@@ -177,6 +178,19 @@ func IsAutoModel(modelName string) (modality string, ok bool) {
 	return m, ok
 }
 
+func IsAutoThinkModel(modelName string) bool {
+	modality, ok := IsAutoModel(modelName)
+	return ok && modality == "think-task"
+}
+
+func IsAutoReasoningEffort(effort string) bool {
+	switch strings.ToLower(strings.TrimSpace(effort)) {
+	case "auto", "automatic", "auto-think", "autothink":
+		return true
+	}
+	return false
+}
+
 // TaskTierToModality maps the cross-provider `task_tier` hint on
 // ChatCompletionRequest to the autorouter modality that should service it.
 // Returns ok=false for unknown or empty tiers so callers can fall back to
@@ -313,6 +327,12 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			// ===== DEEP REASONING - O3 =====
 			{Description: "logic puzzle complex reasoning brain teaser riddle deduction", ModelID: "o3", ReasoningEffort: "high"},
 			{Description: "competitive programming contest challenge leetcode codeforces problem", ModelID: "o3", ReasoningEffort: "high"},
+
+			// ===== SENSITIVE / POLICY-HEAVY CONTENT - DeepSeek V4 direct =====
+			{Description: "adult roleplay mature romance intimate character dialogue sensitive creative writing", ModelID: "deepseek-v4-flash", ReasoningEffort: "low"},
+			{Description: "fringe controversial taboo conspiracy ideology politics sensitive social content", ModelID: "deepseek-v4-flash", ReasoningEffort: "medium"},
+			{Description: "harm classification safety policy boundary adult self harm extremist weapons drugs", ModelID: "deepseek-v4-pro", ReasoningEffort: "high"},
+			{Description: "biosecurity biology pathogen lab protocol virology genetics medical dual use risk", ModelID: "deepseek-v4-pro", ReasoningEffort: "high"},
 		},
 
 		"easy-task": {
@@ -340,6 +360,8 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			{Description: "shell command bash script terminal automation cron", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
 			{Description: "install package dependency npm pip cargo go get", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
 			{Description: "regex pattern match replace string manipulation text", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
+			// DeepSeek V4 Flash - cheap direct path for lightweight sensitive classifiers
+			{Description: "classify sensitive content harm category adult roleplay biosecurity fringe policy", ModelID: "deepseek-v4-flash", ReasoningEffort: "none"},
 			// Gemini 2.5 Flash - lightweight but stronger general replies
 			{Description: "general conversation chat casual discussion help advice", ModelID: "gemini-2.5-flash", ReasoningEffort: "none"},
 			{Description: "explain concept teach tutorial guide how to learn", ModelID: "gemini-2.5-flash", ReasoningEffort: "none"},
@@ -370,6 +392,8 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			{Description: "data visualization chart graph dashboard d3 plotly", ModelID: "gemini-2.5-flash", ReasoningEffort: "low"},
 			// DeepSeek - cheap coding fallback
 			{Description: "networking protocol tcp udp websocket grpc protobuf", ModelID: "deepseek-chat", ReasoningEffort: "low"},
+			{Description: "adult roleplay romance mature creative writing character dialogue sensitive style", ModelID: "deepseek-v4-flash", ReasoningEffort: "low"},
+			{Description: "sensitive policy handling harm classifier controversial fringe biology medical question", ModelID: "deepseek-v4-flash", ReasoningEffort: "medium"},
 			// GPT-5.4 Mini - general mid-tier (replaces GPT-4o)
 			{Description: "creative writing story translation copywriting blog post", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
 			{Description: "compare pros cons tradeoffs evaluate alternatives", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
@@ -391,6 +415,9 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			{Description: "design a distributed system protocol with consensus recovery and adversarial failures", ModelID: "gpt-5.5", ReasoningEffort: "high"},
 			{Description: "complex debugging race condition deadlock memory leak concurrency bug", ModelID: "gpt-5-codex", ReasoningEffort: "high"},
 			{Description: "implement complex algorithm data structure tree graph trie heap", ModelID: "gpt-5-codex", ReasoningEffort: "high"},
+			// DeepSeek V4 Pro - strong price/perf for sensitive and policy-heavy judgement.
+			{Description: "sensitive adult roleplay fringe controversial content careful boundary judgement", ModelID: "deepseek-v4-pro", ReasoningEffort: "high"},
+			{Description: "biosecurity dual use biology pathogen wet lab protocol synthesis toxin dangerous technical details", ModelID: "deepseek-v4-pro", ReasoningEffort: "high"},
 		},
 
 		"think-task": {
@@ -411,12 +438,15 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			{Description: "review code for bugs security and behavioral regressions", ModelID: "gpt-5.4-mini", ReasoningEffort: "medium"},
 			{Description: "plan a refactor migration or test strategy across several files", ModelID: "gpt-5.4-mini", ReasoningEffort: "medium"},
 			{Description: "analyze tradeoffs architecture performance bottlenecks and failure modes", ModelID: "gpt-5.4-mini", ReasoningEffort: "medium"},
+			{Description: "classify or handle sensitive adult roleplay fringe harm policy content carefully", ModelID: "deepseek-v4-flash", ReasoningEffort: "medium"},
 
 			// HIGH - hard algorithmic or research-grade work that should spend real reasoning budget.
 			{Description: "create a 3d mesh simplification algorithm with error metrics and topology preservation", ModelID: "gpt-5.5", ReasoningEffort: "high"},
 			{Description: "prove a theorem derive a formula or solve a hard math olympiad style problem", ModelID: "gpt-5.5", ReasoningEffort: "high"},
 			{Description: "design a distributed system protocol with consensus recovery and adversarial failures", ModelID: "gpt-5.5", ReasoningEffort: "high"},
 			{Description: "formal verification compiler design cryptography research deep scientific reasoning", ModelID: "gpt-5.5", ReasoningEffort: "high"},
+			{Description: "make a 3d simulation of cogs gears clock mechanism physics animation webgl threejs", ModelID: "gpt-5.5", ReasoningEffort: "high"},
+			{Description: "biosecurity dual use biology pathogen lab protocol dangerous technical policy reasoning", ModelID: "deepseek-v4-pro", ReasoningEffort: "high"},
 		},
 	}
 }

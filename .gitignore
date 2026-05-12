@@ -16,6 +16,8 @@ crawlers/*.pyc
 crawlers/.venv/
 test-results/
 monitoring/logs/
+monitoring/state/
+monitoring/errors/
 /model
 /openpaths-api
 /openpaths

@@ -1,10 +1,21 @@
 package model
 
 type SpeechRequest struct {
-	Model string  `json:"model"`
-	Input string  `json:"input"`
-	Voice string  `json:"voice,omitempty"`
-	Speed float64 `json:"speed,omitempty"`
+	Model         string               `json:"model"`
+	Input         string               `json:"input"`
+	Text          string               `json:"text,omitempty"`
+	Voice         string               `json:"voice,omitempty"`
+	VoiceID       string               `json:"voice_id,omitempty"`
+	Language      string               `json:"language,omitempty"`
+	Speed         float64              `json:"speed,omitempty"`
+	Temperature   *float64             `json:"temperature,omitempty"`
+	AutoEmotion   bool                 `json:"auto_emotion,omitempty"`
+	SpeakerVoices []SpeechSpeakerVoice `json:"speaker_voices,omitempty"`
+}
+
+type SpeechSpeakerVoice struct {
+	Speaker string `json:"speaker"`
+	Voice   string `json:"voice"`
 }
 
 type SpeechResponse struct {

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Investigate text-generator.io embedding API
-# Usage: claude --dangerously-skip-permissions -p "$(cat creation/investigate-textgenerator.sh)"
+# Usage: "$CODEX_LOCAL" --yolo3 -m gpt-5.5 --config model_reasoning_effort=medium exec "$(cat creation/investigate-textgenerator.sh)"
 
 echo "=== Test text-generator.io feature extraction ==="
 curl -s 'https://api.text-generator.io/api/v1/feature-extraction' \

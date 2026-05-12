@@ -593,6 +593,63 @@ test.describe('Account Page', () => {
       expect(capturedBody).toEqual({ enabled: true, threshold_cents: 1000000, amount_cents: 2000000 });
     });
 
+    test('post-topup return prompts for auto-topup setup', async ({ page }) => {
+      await page.goto('/account?payment=success&session_id=cs_test');
+
+      await expect(page.locator('h1:has-text("Billing & Payments")')).toBeVisible();
+      await expect(page.getByTestId('post-topup-autotopup-prompt')).toBeVisible();
+      await expect(page.getByTestId('post-topup-autotopup-prompt')).toContainText('Keep credits topped up automatically');
+      await expect(page.getByTestId('post-topup-save-card')).toBeVisible();
+    });
+
+    test('post-topup prompt enables recommended auto-topup when card is saved', async ({ page }) => {
+      let capturedBody: any = null;
+      await page.unroute('**/account/stripe/payment-methods');
+      await page.route('**/account/stripe/payment-methods', (route: any) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            payment_methods: [{ id: 'pm_saved_1', card: { brand: 'visa', last4: '4242', exp_month: 12, exp_year: 2030 } }],
+            default_payment_method_id: 'pm_saved_1',
+          }),
+        })
+      );
+      await page.unroute('**/account/autotopup/settings');
+      await page.route('**/account/autotopup/settings', (route: any) => {
+        if (route.request().method() === 'GET') {
+          return route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              enabled: false,
+              threshold_cents: 1000000,
+              amount_cents: 2000000,
+              has_payment_method: true,
+            }),
+          });
+        }
+        capturedBody = route.request().postDataJSON();
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            enabled: true,
+            threshold_cents: 1000000,
+            amount_cents: 2000000,
+            has_payment_method: true,
+          }),
+        });
+      });
+
+      await page.goto('/account?payment=success&session_id=cs_test');
+      await page.getByTestId('post-topup-enable-autotopup').click();
+
+      await expect(page.getByTestId('post-topup-autotopup-prompt')).not.toBeVisible();
+      await expect(page.locator('text=Auto-topup will add $200 when your balance falls below $100.')).toBeVisible();
+      expect(capturedBody).toEqual({ enabled: true, threshold_cents: 1000000, amount_cents: 2000000 });
+    });
+
     test('logout clears auth and shows login form', async ({ page }) => {
       await expect(page.getByTestId('logout-btn')).toBeVisible();
       await page.getByTestId('logout-btn').click();

@@ -98,7 +98,7 @@ draw.text(
 y += 42
 draw.text(
     (x, y),
-    "Newly learned pathways for millisecond routing",
+    "Neural learned paths for 1ms routing",
     fill="#ffffffaa",
     font=font_sub,
 )
