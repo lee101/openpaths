@@ -1,6 +1,16 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Blog', () => {
+  test('agent SDK migration post renders and links', async ({ page }) => {
+    await page.goto('/blog');
+    await page.getByRole('link', { name: /Migrate OpenAI Agents SDK and Anthropic Agent SDK/ }).click();
+
+    await expect(page).toHaveURL('/blog/migrate-openai-anthropic-agent-sdks-to-openpaths');
+    await expect(page.getByRole('heading', { name: 'Migrate OpenAI Agents SDK and Anthropic Agent SDK to OpenPaths' })).toBeVisible();
+    await expect(page.getByRole('article').getByRole('link', { name: 'OpenAI Agents SDK' })).toBeVisible();
+    await expect(page.getByRole('article').getByRole('link', { name: 'Anthropic Agent SDK' })).toBeVisible();
+  });
+
   test('agent integrations post renders and links', async ({ page }) => {
     await page.goto('/blog');
     await page.getByRole('link', { name: /OpenPaths Agent Integrations/ }).click();

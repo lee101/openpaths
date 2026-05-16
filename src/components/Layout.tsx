@@ -45,6 +45,7 @@ export function Layout() {
           <Link to="/models" className={`transition-colors ${location.pathname === '/models' ? 'text-white' : 'hover:text-white'}`}>Models</Link>
           <Link to="/pricing" className={`transition-colors ${location.pathname === '/pricing' ? 'text-white' : 'hover:text-white'}`}>Pricing</Link>
           <Link to="/providers" className={`transition-colors ${location.pathname === '/providers' ? 'text-white' : 'hover:text-white'}`}>Providers</Link>
+          <Link to="/stats" className={`transition-colors ${location.pathname === '/stats' ? 'text-white' : 'hover:text-white'}`}>Stats</Link>
           <Link to="/docs" className={`transition-colors ${location.pathname === '/docs' ? 'text-white' : 'hover:text-white'}`}>Docs</Link>
           <Link to="/integrations" className={`transition-colors ${location.pathname === '/integrations' ? 'text-white' : 'hover:text-white'}`}>Integrations</Link>
           <Link to="/playground" className={`transition-colors ${isPlayground ? 'text-white' : 'hover:text-white'}`}>Playground</Link>
@@ -90,6 +91,7 @@ export function Layout() {
                 <ul className="space-y-2 text-sm font-mono text-white/40">
                   <li><Link to="/models" className="hover:text-white transition-colors">Models</Link></li>
                   <li><Link to="/providers" className="hover:text-white transition-colors">Providers</Link></li>
+                  <li><Link to="/stats" className="hover:text-white transition-colors">Stats</Link></li>
                   <li><Link to="/pricing" className="hover:text-white transition-colors">Pricing</Link></li>
                   <li><Link to="/integrations" className="hover:text-white transition-colors">Integrations</Link></li>
                   <li><Link to="/playground" className="hover:text-white transition-colors">Playground</Link></li>
@@ -118,6 +120,7 @@ export function Layout() {
               <span>© {new Date().getFullYear()} OpenPaths. Open source model routing.</span>
               <div className="flex gap-4">
                 <Link to="/docs" className="hover:text-white transition-colors">Docs</Link>
+                <Link to="/stats" className="hover:text-white transition-colors">Stats</Link>
                 <Link to="/integrations" className="hover:text-white transition-colors">Integrations</Link>
                 <Link to="/account" className="hover:text-white transition-colors">Account</Link>
               </div>

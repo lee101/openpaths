@@ -130,9 +130,9 @@ func imageResponse(imageURL string) *model.ImageGenerationResponse {
 }
 
 func (p *NetwrckProvider) generateViaFalFallback(ctx context.Context, req *model.ImageGenerationRequest) (string, error) {
-	key := os.Getenv("FAL_KEY")
+	key := os.Getenv("FAL_API_KEY")
 	if key == "" {
-		key = os.Getenv("FAL_API_KEY")
+		key = os.Getenv("FAL_KEY")
 	}
 	if key == "" {
 		return "", fmt.Errorf("fal fallback key not configured")

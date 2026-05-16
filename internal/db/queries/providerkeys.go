@@ -95,3 +95,17 @@ func (q *ProviderKeyQueries) ListUsersWithProvider(ctx context.Context, provider
 	}
 	return keys, nil
 }
+
+func (q *ProviderKeyQueries) ShouldSendCredentialAlert(ctx context.Context, userID, provider, credentialHash string) (bool, error) {
+	tag, err := q.pool.Exec(ctx, `
+		INSERT INTO credential_failure_notifications (user_id, provider, credential_hash, last_sent_at)
+		VALUES ($1, $2, $3, now())
+		ON CONFLICT (user_id, provider, credential_hash)
+		DO UPDATE SET last_sent_at = now()
+		WHERE credential_failure_notifications.last_sent_at < now() - interval '24 hours'
+	`, userID, provider, credentialHash)
+	if err != nil {
+		return false, err
+	}
+	return tag.RowsAffected() > 0, nil
+}

@@ -65,7 +65,7 @@ type Dependencies struct {
 func New(deps *Dependencies) *Server {
 	r := fasthttprouter.New()
 
-	chatH := handler.NewChatHandler(deps.Router, deps.Billing, deps.Recorder)
+	chatH := handler.NewChatHandler(deps.Router, deps.Billing, deps.Recorder, deps.UserQ, deps.ProviderKeyQ)
 	modelsH := handler.NewModelsHandler(deps.Router)
 	authH := handler.NewAuthHandler(deps.UserQ, deps.CreditQ, deps.APIKeyQ)
 	if deps.OnRegister != nil {
@@ -75,6 +75,7 @@ func New(deps *Dependencies) *Server {
 	creditsH := handler.NewCreditsHandler(deps.Billing)
 	statsH := handler.NewStatsHandler(deps.StatsQ)
 	acctStatsH := handler.NewAccountStatsHandler(deps.StatsQ)
+	adminH := handler.NewAdminHandler(deps.UserQ)
 
 	apiKeyChain := middleware.Chain(
 		middleware.Recovery(),
@@ -192,6 +193,7 @@ func New(deps *Dependencies) *Server {
 
 	r.GET("/stats/models", publicChain(statsH.HandleModelStats))
 	r.GET("/stats/providers", publicChain(statsH.HandleProviderStats))
+	r.GET("/stats/breakdown", publicChain(statsH.HandleUsageBreakdown))
 	r.GET("/stats/timeseries", publicChain(statsH.HandleTimeSeries))
 
 	r.GET("/account/stats/timeseries", accountChain(acctStatsH.HandleUserTimeSeries))
@@ -199,6 +201,7 @@ func New(deps *Dependencies) *Server {
 	r.GET("/account/stats/by-provider", accountChain(acctStatsH.HandleUserSpendByProvider))
 	r.GET("/account/stats/by-api-key/{key_id}/models", accountChain(acctStatsH.HandleUserAPIKeyDrilldown))
 	r.GET("/account/stats/by-provider/{provider}/models", accountChain(acctStatsH.HandleUserProviderDrilldown))
+	r.GET("/admin/users/spend", accountChain(adminH.HandleUserSpend))
 
 	if deps.FineTuneQ != nil && len(deps.FineTuneProvs) > 0 {
 		ftH := handler.NewFineTuneHandler(deps.FineTuneQ, deps.FineTuneProvs, deps.Storage)
@@ -215,15 +218,15 @@ func New(deps *Dependencies) *Server {
 	if deps.Discovery != nil {
 		disc := deps.Discovery
 		metaQ := deps.ModelMetaQ
-		r.POST("/admin/discovery/run", apiKeyChain(func(ctx *fasthttp.RequestCtx) {
+		r.POST("/admin/discovery/run", accountChain(adminH.RequireAdmin(func(ctx *fasthttp.RequestCtx) {
 			n, err := disc.DiscoverAll(ctx)
 			if err != nil {
 				handler.WriteJSONPublic(ctx, 500, map[string]any{"error": err.Error()})
 				return
 			}
 			handler.WriteJSONPublic(ctx, 200, map[string]any{"indexed": n})
-		}))
-		r.GET("/admin/discovery/models", publicChain(func(ctx *fasthttp.RequestCtx) {
+		})))
+		r.GET("/admin/discovery/models", accountChain(adminH.RequireAdmin(func(ctx *fasthttp.RequestCtx) {
 			prov := string(ctx.QueryArgs().Peek("provider"))
 			var models []*queries.ModelMetadata
 			var err error
@@ -237,7 +240,7 @@ func New(deps *Dependencies) *Server {
 				return
 			}
 			handler.WriteJSONPublic(ctx, 200, map[string]any{"object": "list", "data": models, "count": len(models)})
-		}))
+		})))
 		log.Printf("Model discovery endpoints enabled")
 	}
 
@@ -269,6 +272,7 @@ func New(deps *Dependencies) *Server {
 			{"/pricing", "0.9", "weekly"},
 			{"/models", "0.9", "weekly"},
 			{"/providers", "0.8", "weekly"},
+			{"/stats", "0.7", "daily"},
 			{"/docs", "0.9", "weekly"},
 			{"/integrations", "0.9", "weekly"},
 			{"/playground", "0.7", "monthly"},
@@ -515,6 +519,12 @@ func pageMetaForPath(path string) pageMeta {
 			Title:       "OpenPaths Pricing | Near-Zero Markup AI Model Routing",
 			Description: "OpenPaths keeps AI pricing as close to zero markup as practical, makes money from first-party AI services, and supports transparent pay-as-you-go pricing across text, embeddings, image, and video models.",
 			URL:         "https://openpaths.io/pricing",
+		}
+	case "/stats":
+		return pageMeta{
+			Title:       "OpenPaths Stats | Anonymous AI Model Usage",
+			Description: "Anonymous aggregate OpenPaths usage by task, provider, and model without exposing users, API keys, or prompt data.",
+			URL:         "https://openpaths.io/stats",
 		}
 	default:
 		return pageMeta{

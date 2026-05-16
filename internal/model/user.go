@@ -10,13 +10,14 @@ type User struct {
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
 	Disabled     bool      `json:"disabled"`
+	IsAdmin      bool      `json:"is_admin"`
 
-	StripeCustomerID      *string    `json:"stripe_customer_id,omitempty"`
-	StripePaymentMethodID *string    `json:"stripe_payment_method_id,omitempty"`
-	AutotopupEnabled      bool       `json:"autotopup_enabled"`
-	AutotopupThresholdCents int64    `json:"autotopup_threshold_cents"`
-	AutotopupAmountCents  int64      `json:"autotopup_amount_cents"`
-	AutotopupLastAt       *time.Time `json:"autotopup_last_at,omitempty"`
+	StripeCustomerID        *string    `json:"stripe_customer_id,omitempty"`
+	StripePaymentMethodID   *string    `json:"stripe_payment_method_id,omitempty"`
+	AutotopupEnabled        bool       `json:"autotopup_enabled"`
+	AutotopupThresholdCents int64      `json:"autotopup_threshold_cents"`
+	AutotopupAmountCents    int64      `json:"autotopup_amount_cents"`
+	AutotopupLastAt         *time.Time `json:"autotopup_last_at,omitempty"`
 }
 
 type APIKey struct {

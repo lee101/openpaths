@@ -34,6 +34,7 @@ export default defineConfig(({mode}) => {
       proxy: {
         '/auth/': 'http://localhost:8090',
         '/account/': 'http://localhost:8090',
+        '/admin/': 'http://localhost:8090',
         '/stripe/': 'http://localhost:8090',
         '/v1/': 'http://localhost:8090',
         '/crypto/': 'http://localhost:8090',

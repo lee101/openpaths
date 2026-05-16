@@ -12,6 +12,149 @@ export interface BlogPost {
 
 export const posts: BlogPost[] = [
   {
+    slug: 'migrate-openai-anthropic-agent-sdks-to-openpaths',
+    title: 'Migrate OpenAI Agents SDK and Anthropic Agent SDK to OpenPaths',
+    excerpt: 'OpenPaths now documents first-class setup paths for OpenAI Agents SDK and Anthropic Agent SDK: keep the agent framework, change the model endpoint, and route agent calls through one OpenPaths key.',
+    date: '2026-05-16',
+    author: 'OpenPaths Team',
+    readTime: '7 min',
+    tags: ['integrations', 'agents', 'openai', 'anthropic'],
+    content: `Agent frameworks are where model routing starts to matter quickly. A single session may contain cheap classification, normal implementation work, hard debugging, and reasoning-heavy planning. If that whole loop is pinned to one provider account, cost and fallback behavior become part of every agent decision.
+
+We added direct examples for the [OpenAI Agents SDK](/integrations) and [Anthropic Agent SDK](/integrations) so teams can keep their agent framework while moving model traffic to OpenPaths.
+
+## What changed
+
+The OpenPaths integration surface now covers:
+
+- OpenAI Agents SDK through \`OpenAIChatCompletionsModel\`
+- Anthropic Agent SDK through \`ANTHROPIC_BASE_URL\` and \`ANTHROPIC_AUTH_TOKEN\`
+- existing agent stacks like Hermes Agent, OpenClaw, LangChain, Vercel AI SDK, PydanticAI, Mastra, Langfuse, and LiveKit
+
+The API layer was already there: OpenPaths accepts OpenAI-style \`/v1/chat/completions\` requests and Anthropic-style \`/v1/messages\` requests. The new work was documenting the exact agent SDK setup, putting the examples on the integrations page, and adding browser coverage so those cards stay visible.
+
+## Migrate from OpenAI Agents SDK
+
+The OpenAI Agents SDK supports OpenAI-compatible endpoints by accepting an \`AsyncOpenAI\` client with a custom \`base_url\`. Because OpenPaths exposes Chat Completions, use \`OpenAIChatCompletionsModel\` instead of the default Responses model path.
+
+\`\`\`python
+import asyncio
+from openai import AsyncOpenAI
+from agents import Agent, Runner, OpenAIChatCompletionsModel, set_tracing_disabled
+
+client = AsyncOpenAI(
+    base_url="https://openpaths.io/v1",
+    api_key="op-...",
+)
+
+set_tracing_disabled(True)
+
+agent = Agent(
+    name="OpenPaths agent",
+    instructions="Answer in one concise paragraph.",
+    model=OpenAIChatCompletionsModel(
+        model="auto-medium-task",
+        openai_client=client,
+    ),
+)
+
+async def main():
+    result = await Runner.run(agent, "Explain why model routing helps agents.")
+    print(result.final_output)
+
+asyncio.run(main())
+\`\`\`
+
+The important migration details:
+
+- install \`openai-agents\` and \`openai\`
+- set \`base_url\` to \`https://openpaths.io/v1\`
+- replace the OpenAI key with an OpenPaths key
+- use an OpenPaths model ID such as \`auto-medium-task\`, \`auto-hard-task\`, \`auto-think\`, or \`openai-chat-latest\`
+- disable OpenAI trace export unless you also configure a separate OpenAI tracing key
+
+That last point matters because OpenAI Agents tracing is separate from model calls. OpenPaths can handle the model request, but trace export is still an OpenAI Agents SDK concern.
+
+## Migrate from Anthropic Agent SDK
+
+The Anthropic Agent SDK runs through Claude Code and accepts process environment configuration through \`ClaudeAgentOptions.env\`. Point the Anthropic base URL at OpenPaths root, not \`/v1\`, because the SDK appends the Anthropic paths itself.
+
+\`\`\`python
+import asyncio
+from claude_agent_sdk import query, ClaudeAgentOptions
+
+options = ClaudeAgentOptions(
+    model="auto-medium-task",
+    allowed_tools=["Read", "Grep", "Glob"],
+    permission_mode="acceptEdits",
+    env={
+        "ANTHROPIC_BASE_URL": "https://openpaths.io",
+        "ANTHROPIC_AUTH_TOKEN": "op-...",
+        "ANTHROPIC_API_KEY": "",
+    },
+)
+
+async def main():
+    async for message in query(
+        prompt="Review this project structure and suggest one improvement.",
+        options=options,
+    ):
+        print(message)
+
+asyncio.run(main())
+\`\`\`
+
+The migration details are:
+
+- install \`claude-agent-sdk\`
+- set \`ANTHROPIC_BASE_URL\` to \`https://openpaths.io\`
+- set \`ANTHROPIC_AUTH_TOKEN\` to your OpenPaths key
+- leave \`ANTHROPIC_API_KEY\` empty when the SDK expects auth-token mode
+- choose an OpenPaths model ID that fits the task
+
+OpenPaths accepts Anthropic-style Messages requests and translates them into the routed backend call. That lets Claude-flavored agent loops use the same model router as OpenAI-flavored loops.
+
+## Which OpenPaths model should agents use?
+
+Start with \`auto-medium-task\`. It is the practical default for coding, review, analysis, and application work.
+
+Use \`auto-easy-task\` for cheap, repetitive, low-risk turns. Use \`auto-hard-task\` when the prompt is clearly complex. Use \`auto-think\` or \`autothink\` when reasoning depth matters more than latency.
+
+You can also pin direct aliases:
+
+- \`openai-chat-latest\`
+- \`openai-coding-latest\`
+- \`anthropic-opus-latest\`
+- \`claude-sonnet-latest\`
+
+The agent code does not need to know which upstream provider eventually wins the route. It keeps one SDK interface and one OpenPaths key.
+
+## What we tested
+
+We verified the current SDK configuration paths before writing the examples. OpenAI Agents SDK documents custom \`AsyncOpenAI\` clients, \`OPENAI_BASE_URL\`, and the Chat Completions model path. Anthropic Agent SDK documents \`query()\`, \`ClaudeSDKClient\`, and \`ClaudeAgentOptions\`, including environment injection for SDK runs.
+
+On this site, we added the examples to the integrations page and extended the Playwright coverage so the OpenAI Agents SDK and Anthropic Agent SDK cards render with the same stored-key substitution as the other SDK examples.
+
+## Why this is better than forking
+
+Forking agent frameworks is sometimes necessary when a project has no provider escape hatch. These two SDKs do not need that for the basic OpenPaths path. Both expose enough configuration to route model calls through a compatible endpoint.
+
+That is the migration we prefer:
+
+- keep the upstream SDK
+- keep its tools, sessions, hooks, and orchestration
+- change endpoint and key configuration
+- move model choice and fallback behavior into OpenPaths
+
+Fork only when you need deeper behavior than endpoint configuration can provide, such as custom trace sinks, provider-native realtime transports, or SDK internals that hard-code a vendor-only feature.
+
+## Bottom line
+
+Migrating an agent SDK should not mean rewriting the agent. For OpenAI Agents SDK, swap in an OpenPaths-backed \`AsyncOpenAI\` client and use \`OpenAIChatCompletionsModel\`. For Anthropic Agent SDK, pass OpenPaths Anthropic-compatible environment variables through \`ClaudeAgentOptions.env\`.
+
+The result is the same agent framework with a broader model layer: one OpenPaths key, task-tier routing, provider fallbacks, and room to move between OpenAI, Anthropic, Google, DeepSeek, xAI, Mistral, MiniMax, and other providers without rewriting the agent loop.`
+  },
+  {
     slug: 'openrouter-alternative-pool-credits-across-ai-providers',
     alternativePath: '/alternatives/openrouter',
     title: 'OpenRouter Alternative: Pool Credits Across AI Providers With OpenPaths',

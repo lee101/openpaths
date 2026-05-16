@@ -897,7 +897,7 @@ models:
     provider_model_id: "grok-4.3"
     input_price_per_1m: 1.25
     output_price_per_1m: 2.50
-    aliases: ["grok-4", "grok-reasoning", "grok-4-0709", "grok-4-1-fast-reasoning", "grok-4-fast-reasoning", "grok-code-fast-1", "grok-3"]
+    aliases: ["grok-4", "grok-reasoning", "grok-4-0709", "grok-4-1-fast-reasoning", "grok-4-1-fast-non-reasoning", "grok-4-fast-reasoning", "grok-4-fast-non-reasoning", "grok-code-fast-1", "grok-3"]
     context_window: 1000000
     max_output_tokens: 16384
     supports_streaming: true
@@ -909,7 +909,7 @@ models:
     provider_model_id: "grok-4.20-non-reasoning"
     input_price_per_1m: 1.25
     output_price_per_1m: 2.50
-    aliases: ["grok-latest-non-reasoning", "grok-non-reasoning", "grok-fast", "grok-4-1-fast-non-reasoning", "grok-4-fast-non-reasoning"]
+    aliases: ["grok-latest-non-reasoning", "grok-non-reasoning", "grok-fast"]
     context_window: 2000000
     max_output_tokens: 16384
     supports_streaming: true
@@ -1304,7 +1304,7 @@ models:
 
   - id: "or/grok-4"
     provider: openrouter
-    provider_model_id: "x-ai/grok-4-0709"
+    provider_model_id: "x-ai/grok-4.3"
     input_price_per_1m: 3.00
     output_price_per_1m: 15.00
     context_window: 256000

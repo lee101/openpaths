@@ -9,6 +9,7 @@ import (
 	"github.com/valyala/fasthttp"
 
 	"github.com/openpaths/openpaths/internal/billing"
+	"github.com/openpaths/openpaths/internal/db/queries"
 	"github.com/openpaths/openpaths/internal/metrics"
 	"github.com/openpaths/openpaths/internal/middleware"
 	"github.com/openpaths/openpaths/internal/model"
@@ -17,13 +18,15 @@ import (
 )
 
 type ChatHandler struct {
-	router   *router.Router
-	billing  *billing.Engine
-	recorder *metrics.Recorder
+	router       *router.Router
+	billing      *billing.Engine
+	recorder     *metrics.Recorder
+	userQ        *queries.UserQueries
+	providerKeyQ *queries.ProviderKeyQueries
 }
 
-func NewChatHandler(r *router.Router, b *billing.Engine, rec *metrics.Recorder) *ChatHandler {
-	return &ChatHandler{router: r, billing: b, recorder: rec}
+func NewChatHandler(r *router.Router, b *billing.Engine, rec *metrics.Recorder, userQ *queries.UserQueries, providerKeyQ *queries.ProviderKeyQueries) *ChatHandler {
+	return &ChatHandler{router: r, billing: b, recorder: rec, userQ: userQ, providerKeyQ: providerKeyQ}
 }
 
 func (h *ChatHandler) HandleChatCompletion(ctx *fasthttp.RequestCtx) {
@@ -69,24 +72,35 @@ func (h *ChatHandler) HandleChatCompletion(ctx *fasthttp.RequestCtx) {
 
 	for i, cand := range candidates {
 		req.Model = cand.ModelCfg.ProviderModelID
-		start := time.Now()
-
-		activeProv := cand.Provider
-		byok := false
-		if bp, ok := getBYOKProvider(ctx, cand.Provider.Name()); ok {
-			activeProv = bp
-			byok = true
+		attempts := getProviderAttempts(ctx, userID, cand.Provider.Name())
+		if len(attempts) > 0 && cand.Provider.Name() == "openai" {
+			attempts = append(attempts, selectedProvider{provider: cand.Provider})
+		}
+		if len(attempts) == 0 {
+			attempts = []selectedProvider{{provider: cand.Provider}}
 		}
 
-		if req.Stream {
-			if h.tryStreamingBYOK(ctx, &req, cand.ModelCfg, activeProv, userID, apiKeyID, originalModel, start, byok) {
+		for j, attempt := range attempts {
+			start := time.Now()
+			var handled bool
+			var attemptErr error
+			if req.Stream {
+				handled, attemptErr = h.tryStreamingBYOK(ctx, &req, cand.ModelCfg, attempt.provider, userID, apiKeyID, originalModel, start, attempt.byok)
+			} else {
+				handled, attemptErr = h.tryNonStreamingBYOK(ctx, &req, cand.ModelCfg, attempt.provider, userID, apiKeyID, originalModel, start, attempt.byok)
+			}
+			if handled {
+				if attemptErr == nil && attempt.cred != nil {
+					markOpenAIMaxPlanCredentialHealthy(attempt.cred.ID)
+				}
 				h.router.MarkModelHealthy(cand.Provider.Name(), cand.ModelCfg.ID)
 				return
 			}
-		} else {
-			if h.tryNonStreamingBYOK(ctx, &req, cand.ModelCfg, activeProv, userID, apiKeyID, originalModel, start, byok) {
-				h.router.MarkModelHealthy(cand.Provider.Name(), cand.ModelCfg.ID)
-				return
+			if attempt.cred != nil {
+				h.handleOpenAIMaxPlanCredentialFailure(ctx, userID, attempt.cred, attemptErr)
+				if j < len(attempts)-1 {
+					log.Printf("openai max plan credential fallback: %s failed, trying next credential/key", attempt.cred.Label)
+				}
 			}
 		}
 
@@ -120,7 +134,8 @@ func (h *ChatHandler) tryNonStreaming(
 	userID, apiKeyID, originalModel string,
 	start time.Time,
 ) bool {
-	return h.tryNonStreamingBYOK(ctx, req, modelCfg, prov, userID, apiKeyID, originalModel, start, false)
+	ok, _ := h.tryNonStreamingBYOK(ctx, req, modelCfg, prov, userID, apiKeyID, originalModel, start, false)
+	return ok
 }
 
 func (h *ChatHandler) tryNonStreamingBYOK(
@@ -131,7 +146,7 @@ func (h *ChatHandler) tryNonStreamingBYOK(
 	userID, apiKeyID, originalModel string,
 	start time.Time,
 	byok bool,
-) bool {
+) (bool, error) {
 	resp, err := prov.ChatCompletion(ctx, req)
 	latency := time.Since(start)
 
@@ -144,18 +159,18 @@ func (h *ChatHandler) tryNonStreamingBYOK(
 			if statusCode == 401 || statusCode == 403 {
 				h.recorder.RecordError(userID, apiKeyID, originalModel, prov.Name(),
 					int(latency.Milliseconds()), statusCode, errMsg, false)
-				return false
+				return false, err
 			}
 			if !pe.Retryable {
 				h.recorder.RecordError(userID, apiKeyID, originalModel, prov.Name(),
 					int(latency.Milliseconds()), statusCode, errMsg, false)
 				writeError(ctx, statusCode, "provider_error", errMsg)
-				return true
+				return true, err
 			}
 		}
 		h.recorder.RecordError(userID, apiKeyID, originalModel, prov.Name(),
 			int(latency.Milliseconds()), statusCode, errMsg, false)
-		return false
+		return false, err
 	}
 
 	resp.Model = originalModel
@@ -178,7 +193,7 @@ func (h *ChatHandler) tryNonStreamingBYOK(
 		tokensIn, tokensOut, int(latency.Milliseconds()), tps, cost, false)
 
 	writeJSON(ctx, 200, resp)
-	return true
+	return true, nil
 }
 
 func (h *ChatHandler) tryStreaming(
@@ -189,7 +204,8 @@ func (h *ChatHandler) tryStreaming(
 	userID, apiKeyID, originalModel string,
 	start time.Time,
 ) bool {
-	return h.tryStreamingBYOK(ctx, req, modelCfg, prov, userID, apiKeyID, originalModel, start, false)
+	ok, _ := h.tryStreamingBYOK(ctx, req, modelCfg, prov, userID, apiKeyID, originalModel, start, false)
+	return ok
 }
 
 func (h *ChatHandler) tryStreamingBYOK(
@@ -200,7 +216,7 @@ func (h *ChatHandler) tryStreamingBYOK(
 	userID, apiKeyID, originalModel string,
 	start time.Time,
 	byok bool,
-) bool {
+) (bool, error) {
 	streamCh, err := prov.ChatCompletionStream(ctx, req)
 	if err != nil {
 		statusCode := 502
@@ -209,14 +225,14 @@ func (h *ChatHandler) tryStreamingBYOK(
 			statusCode = pe.StatusCode
 			errMsg = pe.Message
 			if statusCode == 401 || statusCode == 403 {
-				return false
+				return false, err
 			}
 			if !pe.Retryable {
 				writeError(ctx, statusCode, "provider_error", errMsg)
-				return true
+				return true, err
 			}
 		}
-		return false
+		return false, err
 	}
 
 	ctx.SetContentType("text/event-stream")
@@ -269,5 +285,5 @@ func (h *ChatHandler) tryStreamingBYOK(
 				int(latency.Milliseconds()), tps, cost, true)
 		}
 	})
-	return true
+	return true, nil
 }

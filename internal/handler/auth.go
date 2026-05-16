@@ -97,9 +97,10 @@ func (h *AuthHandler) HandleRegister(ctx *fasthttp.RequestCtx) {
 		Token:  rawKey,
 		APIKey: rawKey,
 		User: map[string]any{
-			"id":    user.ID,
-			"email": user.Email,
-			"name":  user.Name,
+			"id":       user.ID,
+			"email":    user.Email,
+			"name":     user.Name,
+			"is_admin": user.IsAdmin,
 		},
 	})
 
@@ -152,9 +153,10 @@ func (h *AuthHandler) HandleLogin(ctx *fasthttp.RequestCtx) {
 		Token:  rawKey,
 		APIKey: rawKey,
 		User: map[string]any{
-			"id":    user.ID,
-			"email": user.Email,
-			"name":  user.Name,
+			"id":       user.ID,
+			"email":    user.Email,
+			"name":     user.Name,
+			"is_admin": user.IsAdmin,
 		},
 	})
 }

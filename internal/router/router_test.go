@@ -450,6 +450,62 @@ func TestNew_DerivesGrokLatestAliasFromHighestVersion(t *testing.T) {
 	}
 }
 
+func TestNew_RoutesRetiredGrokAliasesToCurrentModels(t *testing.T) {
+	models := []model.ModelConfig{
+		{
+			ID:       "grok-4.3",
+			Provider: "xai",
+			Aliases: []string{
+				"grok-4-1-fast-reasoning",
+				"grok-4-1-fast-non-reasoning",
+				"grok-4-fast-reasoning",
+				"grok-4-fast-non-reasoning",
+				"grok-4-0709",
+				"grok-code-fast-1",
+				"grok-3",
+			},
+		},
+		{
+			ID:       "grok-4.20-non-reasoning",
+			Provider: "xai",
+			Aliases:  []string{"grok-latest-non-reasoning"},
+		},
+		{
+			ID:       "grok-imagine-image",
+			Provider: "xai",
+			Aliases:  []string{"grok-imagine-image-pro"},
+		},
+	}
+
+	r := newTestRouter(models, "xai")
+
+	for _, name := range []string{
+		"grok-4-1-fast-reasoning",
+		"grok-4-1-fast-non-reasoning",
+		"grok-4-fast-reasoning",
+		"grok-4-fast-non-reasoning",
+		"grok-4-0709",
+		"grok-code-fast-1",
+		"grok-3",
+	} {
+		cfg, found := r.GetModelConfig(name)
+		if !found {
+			t.Fatalf("GetModelConfig(%q) not found", name)
+		}
+		if cfg.ID != "grok-4.3" {
+			t.Errorf("GetModelConfig(%q) ID = %q, want grok-4.3", name, cfg.ID)
+		}
+	}
+
+	cfg, found := r.GetModelConfig("grok-imagine-image-pro")
+	if !found {
+		t.Fatal("GetModelConfig(\"grok-imagine-image-pro\") not found")
+	}
+	if cfg.ID != "grok-imagine-image" {
+		t.Errorf("GetModelConfig(\"grok-imagine-image-pro\") ID = %q, want grok-imagine-image", cfg.ID)
+	}
+}
+
 func containsString(items []string, value string) bool {
 	for _, item := range items {
 		if item == value {

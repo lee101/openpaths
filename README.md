@@ -48,6 +48,8 @@ GOMAXPROCS=3 go build -tags="gpu cuda" \
 | `DATABASE_URL` | Postgres connection string |
 | `JWT_SECRET` | Required. Secret for JWT tokens |
 | `OPENAI_API_KEY` | OpenAI API key |
+| `OPENAI_ADMIN_API_KEY` | Optional. OpenAI admin key used by `rotation/rotate_provider_key.py` to create a replacement service account key |
+| `OPENAI_PROJECT_ID` | Optional. OpenAI project ID used by `rotation/rotate_provider_key.py` |
 | `ANTHROPIC_API_KEY` | Anthropic API key |
 | `GEMINI_API_KEY` | Google Gemini API key |
 | `GROQ_API_KEY` | Groq API key |
@@ -58,10 +60,13 @@ GOMAXPROCS=3 go build -tags="gpu cuda" \
 | `MINIMAX_API_KEY` | MiniMax API key |
 | `NETWRCK_API_KEY` | Netwrck API key |
 | `FAL_API_KEY` | Fal API key |
+| `FAL_ADMIN_API_KEY` | Optional. fal admin key used by `rotation/rotate_provider_key.py`; falls back to `FAL_API_KEY` if unset |
 | `Z_API_KEY` | Z.AI API key |
 | `TEXTGENERATOR_API_KEY` | Text-Generator.io API key |
 | `MISTRAL_API_KEY` | Mistral API key |
 | `NVIDIA_API_KEY` | NVIDIA API key |
+
+Provider key creation scripts live in `rotation/`. They create a new supported provider key and update the matching `.env` value, but intentionally do not revoke the old key.
 
 ## API Endpoints
 

@@ -69,10 +69,19 @@ func (cr *CodexRefresher) refreshOne(k *queries.UserProviderKey) {
 	token := k.APIKey
 	if token == "" && k.AuthJSON != "" {
 		var auth struct {
-			Token string `json:"token"`
+			Token        string `json:"token"`
+			OpenAIAPIKey string `json:"OPENAI_API_KEY"`
+			APIKey       string `json:"api_key"`
 		}
-		if json.Unmarshal([]byte(k.AuthJSON), &auth) == nil && auth.Token != "" {
-			token = auth.Token
+		if json.Unmarshal([]byte(k.AuthJSON), &auth) == nil {
+			switch {
+			case auth.OpenAIAPIKey != "":
+				token = auth.OpenAIAPIKey
+			case auth.APIKey != "":
+				token = auth.APIKey
+			case auth.Token != "":
+				token = auth.Token
+			}
 		}
 	}
 	if token == "" {

@@ -7,6 +7,7 @@ import { Seo } from '../components/Seo';
 
 const ENDPOINTS = [
   { method: 'POST', path: '/v1/chat/completions', description: 'OpenAI-compatible chat completions (streaming + tools).' },
+  { method: 'POST', path: '/v1/messages', description: 'Anthropic-compatible Messages API for Claude SDKs and agent SDKs.' },
   { method: 'GET', path: '/v1/models', description: 'List all available models and capabilities.' },
   { method: 'POST', path: '/v1/images/generations', description: 'Generate images (GPT Image 2, Flux, RA1, Klein, and more).' },
   { method: 'POST', path: '/v1/images/edits', description: 'Edit images and image-to-image workflows (GPT Image 2, Grok Imagine Image).' },

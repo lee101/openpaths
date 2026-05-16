@@ -116,6 +116,63 @@ func (q *StatsQueries) GetProviderStats(ctx context.Context, period string) ([]m
 	return stats, nil
 }
 
+func (q *StatsQueries) GetUsageBreakdown(ctx context.Context, period string) ([]model.UsageBreakdown, error) {
+	since := time.Now().Add(-parsePeriod(period))
+
+	rows, err := q.pool.Query(ctx,
+		`SELECT
+			CASE
+				WHEN model IN ('auto-easy-task', 'auto-easy') THEN 'easy-task'
+				WHEN model IN ('auto-medium-task', 'auto-medium') THEN 'medium-task'
+				WHEN model IN ('auto-think', 'auto-think-task', 'autothink') THEN 'think-task'
+				WHEN model IN ('auto-hard', 'auto-hard-task', 'auto-opus') THEN 'hard-task'
+				WHEN model IN ('auto-image', 'auto-video', 'auto-music', 'auto-speech', 'auto-transcription', 'auto-embedding') THEN model
+				WHEN model = 'auto' THEN 'auto'
+				ELSE 'direct'
+			END AS task,
+			provider,
+			model,
+			COUNT(*)::bigint AS total_requests,
+			COALESCE(SUM(tokens_in), 0)::bigint AS total_tokens_in,
+			COALESCE(SUM(tokens_out), 0)::bigint AS total_tokens_out,
+			COALESCE(SUM(cost_cents), 0)::bigint AS total_cost_cents,
+			COALESCE(AVG(latency_ms), 0) AS avg_latency_ms,
+			COALESCE(SUM(CASE WHEN error IS NOT NULL THEN 1 ELSE 0 END)::float / NULLIF(COUNT(*), 0), 0) AS error_rate
+		 FROM usage_logs
+		 WHERE created_at >= $1
+		 GROUP BY task, provider, model
+		 ORDER BY total_requests DESC, task ASC, provider ASC, model ASC`,
+		since,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("get usage breakdown: %w", err)
+	}
+	defer rows.Close()
+
+	var stats []model.UsageBreakdown
+	for rows.Next() {
+		var s model.UsageBreakdown
+		if err := rows.Scan(
+			&s.Task,
+			&s.Provider,
+			&s.Model,
+			&s.TotalRequests,
+			&s.TotalTokensIn,
+			&s.TotalTokensOut,
+			&s.TotalCostCents,
+			&s.AvgLatencyMs,
+			&s.ErrorRate,
+		); err != nil {
+			return nil, fmt.Errorf("scan usage breakdown: %w", err)
+		}
+		stats = append(stats, s)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate usage breakdown: %w", err)
+	}
+	return stats, nil
+}
+
 func (q *StatsQueries) GetTimeSeries(ctx context.Context, period, interval, metricName string, modelFilter string) ([]model.TimeSeriesPoint, error) {
 	since := time.Now().Add(-parsePeriod(period))
 

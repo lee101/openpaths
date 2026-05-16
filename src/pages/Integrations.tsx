@@ -17,6 +17,78 @@ type Integration = {
 
 const INTEGRATIONS: Integration[] = [
   {
+    id: 'openai-agents-sdk',
+    name: 'OpenAI Agents SDK',
+    install: 'pip install openai-agents openai',
+    summary: 'Use the OpenAI Agents SDK with OpenPaths by giving it an AsyncOpenAI client pointed at the OpenAI-compatible endpoint.',
+    language: 'python',
+    code: (apiBase, apiKey) => `import asyncio
+from openai import AsyncOpenAI
+from agents import Agent, Runner, OpenAIChatCompletionsModel, set_tracing_disabled
+
+client = AsyncOpenAI(
+    base_url="${apiBase}",
+    api_key="${apiKey}",
+)
+
+# OpenPaths exposes Chat Completions today; disable OpenAI trace export unless
+# you also configure a separate OpenAI tracing key.
+set_tracing_disabled(True)
+
+agent = Agent(
+    name="OpenPaths agent",
+    instructions="Answer in one concise paragraph.",
+    model=OpenAIChatCompletionsModel(
+        model="auto-medium-task",
+        openai_client=client,
+    ),
+)
+
+async def main():
+    result = await Runner.run(agent, "Explain why model routing helps agents.")
+    print(result.final_output)
+
+asyncio.run(main())`,
+    notes: [
+      'Use OpenAIChatCompletionsModel because OpenPaths is OpenAI Chat Completions compatible.',
+      'OpenAI Agents tracing is separate from model traffic; keep it disabled or set a dedicated OpenAI trace exporter key.',
+    ],
+  },
+  {
+    id: 'anthropic-agent-sdk',
+    name: 'Anthropic Agent SDK',
+    install: 'pip install claude-agent-sdk',
+    summary: 'Route Claude Agent SDK sessions through the Anthropic-compatible OpenPaths Messages endpoint.',
+    language: 'python',
+    code: (_apiBase, apiKey) => `import asyncio
+from claude_agent_sdk import query, ClaudeAgentOptions
+
+options = ClaudeAgentOptions(
+    model="auto-medium-task",
+    allowed_tools=["Read", "Grep", "Glob"],
+    permission_mode="acceptEdits",
+    env={
+        # Do not include /v1 here. The Agent SDK appends Anthropic paths itself.
+        "ANTHROPIC_BASE_URL": "https://openpaths.io",
+        "ANTHROPIC_AUTH_TOKEN": "${apiKey}",
+        "ANTHROPIC_API_KEY": "",
+    },
+)
+
+async def main():
+    async for message in query(
+        prompt="Review this project structure and suggest one improvement.",
+        options=options,
+    ):
+        print(message)
+
+asyncio.run(main())`,
+    notes: [
+      'Use the root OpenPaths URL for ANTHROPIC_BASE_URL, not https://openpaths.io/v1.',
+      'The Agent SDK passes endpoint configuration through ClaudeAgentOptions.env, so the same script can keep provider settings local to the run.',
+    ],
+  },
+  {
     id: 'hermes-agent',
     name: 'Hermes Agent',
     install: 'git clone https://github.com/lee101/hermes-agent && cd hermes-agent && pip install -e .',
@@ -254,8 +326,8 @@ export function Integrations() {
   return (
     <>
       <Seo
-        title="OpenPaths Integrations | LangChain, Vercel AI SDK, Agents"
-        description="Copy-paste OpenPaths integration examples for LangChain, Vercel AI SDK, PydanticAI, Mastra, Langfuse, LiveKit, Hermes Agent, and OpenClaw."
+        title="OpenPaths Integrations | OpenAI Agents, Anthropic, LangChain"
+        description="Copy-paste OpenPaths integration examples for OpenAI Agents SDK, Anthropic Agent SDK, LangChain, Vercel AI SDK, PydanticAI, Mastra, Langfuse, LiveKit, Hermes Agent, and OpenClaw."
         path="/integrations"
       />
 
@@ -268,7 +340,7 @@ export function Integrations() {
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">Integrate OpenPaths With Your Agent Stack</h1>
         <p className="text-white/60 max-w-3xl font-light leading-relaxed">
           OpenPaths speaks OpenAI-compatible chat, image, audio, and embedding APIs. These examples cover agent runtimes like Hermes Agent
-          and OpenClaw plus SDK patterns from LangChain, Vercel AI SDK, PydanticAI, Mastra, Langfuse, and LiveKit.
+          and OpenClaw plus SDK patterns from OpenAI Agents, Anthropic Agent SDK, LangChain, Vercel AI SDK, PydanticAI, Mastra, Langfuse, and LiveKit.
         </p>
       </div>
 

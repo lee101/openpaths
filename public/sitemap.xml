@@ -731,6 +731,11 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/blog/migrate-openai-anthropic-agent-sdks-to-openpaths</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/blog/openrouter-alternative-pool-credits-across-ai-providers</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -806,7 +811,7 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://openpaths.io/blog/openpath-vs-openrouter</loc>
+    <loc>https://openpaths.io/blog/openpaths-vs-openrouter</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>

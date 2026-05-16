@@ -95,13 +95,13 @@ export function Landing() {
               <CodeBlock
                 language="python"
                 preClassName="p-6"
-                code={`import openai\n\nclient = openai.OpenAI(\n  base_url="https://openpaths.io/v1",\n  api_key="${apiKey}"\n)\n\nresponse = client.chat.completions.create(\n  model="nvidia/deepseek-v4-pro",\n  messages=[\n    {"role": "user", "content": "Make a 3D simulation of cogs in a clock."}\n  ],\n  reasoning_effort="auto",\n)`}
+                code={`import openai\n\nclient = openai.OpenAI(\n  base_url="https://openpaths.io/v1",\n  api_key="${apiKey}"\n)\n\nresponse = client.chat.completions.create(\n  model="auto-hard-task",\n  messages=[\n    {"role": "user", "content": "Make a 3D simulation of cogs in a clock."}\n  ],\n  reasoning_effort="auto",\n)`}
               />
             ) : (
               <CodeBlock
                 language="bash"
                 preClassName="p-6"
-                code={`curl https://openpaths.io/v1/chat/completions \\\n  -H "Content-Type: application/json" \\\n  -H "Authorization: Bearer ${apiKey}" \\\n  -d '{\n    "model": "nvidia/deepseek-v4-pro",\n    "messages": [\n      {\n        "role": "user",\n        "content": "Make a 3D simulation of cogs in a clock."\n      }\n    ],\n    "reasoning_effort": "auto"\n  }'`}
+                code={`curl https://openpaths.io/v1/chat/completions \\\n  -H "Content-Type: application/json" \\\n  -H "Authorization: Bearer ${apiKey}" \\\n  -d '{\n    "model": "auto-hard-task",\n    "messages": [\n      {\n        "role": "user",\n        "content": "Make a 3D simulation of cogs in a clock."\n      }\n    ],\n    "reasoning_effort": "auto"\n  }'`}
               />
             )}
           </div>
@@ -111,7 +111,7 @@ export function Landing() {
             OpenAI-compatible params: <span className="text-white">model</span>, <span className="text-white">messages</span>, <span className="text-white">temperature</span>, <span className="text-white">top_p</span>, <span className="text-white">max_tokens</span>, <span className="text-white">stream</span>, <span className="text-white">tools</span>, <span className="text-white">response_format</span>, <span className="text-white">reasoning_effort</span>.
           </div>
           <div className="border border-white/10 rounded-lg p-4 bg-white/[0.02]">
-            <span className="text-white">reasoning_effort</span> supports <span className="text-white">none</span>, <span className="text-white">low</span>, <span className="text-white">medium</span>, <span className="text-white">high</span>, and <span className="text-white">auto</span>. <span className="text-white">auto</span> uses the same embedding table as <span className="text-white">auto-think</span>.
+            <span className="text-white">reasoning_effort</span> supports <span className="text-white">none</span>, <span className="text-white">low</span>, <span className="text-white">medium</span>, <span className="text-white">high</span>, and <span className="text-white">auto</span>.
           </div>
         </div>
       </section>

@@ -14,6 +14,8 @@ import { Integrations } from './pages/Integrations';
 import { ProviderDocs } from './pages/ProviderDocs';
 import { Pricing } from './pages/Pricing';
 import { ModelPage } from './pages/ModelPage';
+import { AdminLee } from './pages/AdminLee';
+import { Stats } from './pages/Stats';
 
 export default function App() {
   return (
@@ -31,6 +33,8 @@ export default function App() {
           <Route path=":slug/docs" element={<ProviderDocs />} />
           <Route path="playground" element={<Playground />} />
           <Route path="account" element={<Account />} />
+          <Route path="admin" element={<AdminLee />} />
+          <Route path="stats" element={<Stats />} />
           <Route path="blog" element={<Blog />} />
           <Route path="blog/:slug" element={<BlogPost />} />
           <Route path="alternatives/:slug" element={<BlogPost />} />

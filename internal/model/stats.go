@@ -31,6 +31,18 @@ type StatsResponse struct {
 	ErrorRate []TimeSeriesPoint `json:"error_rate,omitempty"`
 }
 
+type UsageBreakdown struct {
+	Task           string  `json:"task"`
+	Provider       string  `json:"provider"`
+	Model          string  `json:"model"`
+	TotalRequests  int64   `json:"total_requests"`
+	TotalTokensIn  int64   `json:"total_tokens_in"`
+	TotalTokensOut int64   `json:"total_tokens_out"`
+	TotalCostCents int64   `json:"total_cost_cents"`
+	AvgLatencyMs   float64 `json:"avg_latency_ms"`
+	ErrorRate      float64 `json:"error_rate"`
+}
+
 // APIKeySpend is spend/usage aggregated per API key.
 type APIKeySpend struct {
 	APIKeyID       string `json:"api_key_id"`
@@ -45,4 +57,23 @@ type ProviderSpend struct {
 	Provider       string `json:"provider"`
 	TotalRequests  int64  `json:"total_requests"`
 	TotalCostCents int64  `json:"total_cost_cents"`
+}
+
+// AdminUserSpend is the per-user rollup shown in the admin spend dashboard.
+type AdminUserSpend struct {
+	UserID                string     `json:"user_id"`
+	Email                 string     `json:"email"`
+	Name                  string     `json:"name"`
+	CreatedAt             time.Time  `json:"created_at"`
+	LastRequestAt         *time.Time `json:"last_request_at,omitempty"`
+	Disabled              bool       `json:"disabled"`
+	IsAdmin               bool       `json:"is_admin"`
+	BalanceCents          int64      `json:"balance_cents"`
+	StripeGrossCents      int64      `json:"stripe_gross_cents"`
+	StripeRefundedCents   int64      `json:"stripe_refunded_cents"`
+	StripeNetCents        int64      `json:"stripe_net_cents"`
+	APIRequests           int64      `json:"api_requests"`
+	APISpendCents         int64      `json:"api_spend_cents"`
+	ProviderBaseCostCents int64      `json:"provider_base_cost_cents"`
+	ProviderEstimated     bool       `json:"provider_estimated"`
 }
