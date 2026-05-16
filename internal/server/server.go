@@ -86,6 +86,14 @@ func New(deps *Dependencies) *Server {
 		middleware.BalanceCheck(deps.Billing),
 	)
 
+	searchChain := middleware.Chain(
+		middleware.Recovery(),
+		middleware.Logging(),
+		middleware.APIKeyAuth(deps.APIKeyQ),
+		middleware.BYOKLoader(deps.ProviderKeyQ),
+		middleware.RateLimit(),
+	)
+
 	// accountChain: API key auth only — no balance check for account management
 	accountChain := middleware.Chain(
 		middleware.Recovery(),
@@ -101,6 +109,16 @@ func New(deps *Dependencies) *Server {
 	r.POST("/v1/chat/completions", apiKeyChain(chatH.HandleChatCompletion))
 	r.GET("/v1/models", apiKeyChain(modelsH.HandleListModels))
 	r.GET("/v1/models/{model_id}", apiKeyChain(modelsH.HandleGetModel))
+
+	searchH := handler.NewSearchHandler(
+		handler.ExaSearchProviderConfig(deps.Config.Providers),
+		handler.PapersSearchProviderConfig(deps.Config.Providers),
+		deps.Billing,
+		deps.Recorder,
+	)
+	r.POST("/v1/search", searchChain(searchH.HandleSearch))
+	handler.LogExaSearchPricing()
+	log.Printf("Search endpoint enabled at /v1/search")
 
 	anthH := handler.NewAnthropicHandler(deps.Router, deps.Billing, deps.Recorder)
 	r.POST("/v1/messages", apiKeyChain(anthH.HandleMessages))
@@ -276,6 +294,7 @@ func New(deps *Dependencies) *Server {
 			{"/docs", "0.9", "weekly"},
 			{"/integrations", "0.9", "weekly"},
 			{"/playground", "0.7", "monthly"},
+			{"/search", "0.7", "monthly"},
 			{"/blog", "0.8", "weekly"},
 		}
 		blogSlugs := []string{

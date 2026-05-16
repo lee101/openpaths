@@ -57,6 +57,22 @@ func (e *Engine) PreCheck(ctx context.Context, userID, modelID string, estimated
 	return nil
 }
 
+// PreCheckFixed verifies the user can cover a precomputed request cost.
+func (e *Engine) PreCheckFixed(ctx context.Context, userID string, estimatedCost int64) error {
+	if estimatedCost <= 0 {
+		return nil
+	}
+	balance, err := e.credits.GetBalance(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("balance lookup: %w", err)
+	}
+	if balance < estimatedCost {
+		e.triggerAutoTopup(userID)
+		return ErrInsufficientBalance
+	}
+	return nil
+}
+
 // Deduct calculates actual cost and atomically deducts from balance.
 func (e *Engine) Deduct(ctx context.Context, userID, modelID string, inputTokens, outputTokens int, reasoningEffort, usageLogID string) (int64, error) {
 	cost, err := e.pricing.CalculateCost(modelID, inputTokens, outputTokens)
@@ -182,6 +198,31 @@ func (e *Engine) DeductAudio(ctx context.Context, userID, modelID string, durati
 	}
 	e.triggerAutoTopup(userID)
 	return cost, nil
+}
+
+// DeductFixed atomically deducts a precomputed usage charge in hundredths-of-a-cent.
+func (e *Engine) DeductFixed(ctx context.Context, userID, modelID string, cost int64, description, usageLogID string) error {
+	if cost <= 0 {
+		return nil
+	}
+	var refID *string
+	if usageLogID != "" {
+		refID = &usageLogID
+	}
+	if description == "" {
+		description = fmt.Sprintf("Usage: %s", modelID)
+	}
+	err := e.credits.DeductWithTransaction(ctx, userID, cost,
+		model.TxTypeUsageDeduction,
+		description,
+		refID,
+	)
+	if err != nil {
+		e.triggerAutoTopup(userID)
+		return err
+	}
+	e.triggerAutoTopup(userID)
+	return nil
 }
 
 // Deposit adds credits to a user's balance.

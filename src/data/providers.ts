@@ -154,6 +154,22 @@ export const providers: Provider[] = [
     featured: false,
     logo: '/logos/fal.svg'
   },
+  {
+    slug: 'exa',
+    name: 'Exa',
+    url: 'https://exa.ai',
+    description: 'Search API for AI applications with fast web search, highlights, full-page text, structured outputs, livecrawl freshness controls, domain filters, and date filtering.',
+    featured: false,
+    logo: '/logos/exa.svg'
+  },
+  {
+    slug: 'papers',
+    name: 'Papers',
+    url: 'https://papers.app.nz',
+    description: 'Applied AI NZ research search for agents. Search papers, methods, datasets, and GitHub code with markdown output and app.nz API key billing.',
+    featured: false,
+    logo: '/logos/papers.webp'
+  },
 ];
 
 export const providersByName: Record<string, Provider> = Object.fromEntries(

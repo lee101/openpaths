@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Coins, Database, Image as ImageIcon, Sparkles, Video, Wand2 } from 'lucide-react';
+import { ArrowRight, Coins, Database, Image as ImageIcon, Search, Sparkles, Video, Wand2 } from 'lucide-react';
 import { Seo } from '../components/Seo';
 import { models, type Model } from '../data/models';
 
@@ -77,6 +77,41 @@ const VIDEO_MODELS: VideoPrice[] = [
     provider: 'Netwrck',
     pricePerVideo: 1.00,
     notes: 'Scene-aware video generation with first-party economics.',
+  },
+];
+
+const SEARCH_ROWS = [
+  {
+    id: 'exa-search-base',
+    name: 'Exa Search',
+    provider: 'Exa',
+    unitPrice: 0.0077,
+    unitLabel: '/ request',
+    notes: 'Instant, Fast, Auto, or Deep search with 1-10 results. Includes the OpenPaths 10% markup.',
+  },
+  {
+    id: 'exa-search-extra-result',
+    name: 'Additional Search Result',
+    provider: 'Exa',
+    unitPrice: 0.0011,
+    unitLabel: '/ result',
+    notes: 'Applied to each requested result beyond the first 10.',
+  },
+  {
+    id: 'exa-content-page',
+    name: 'Content Extraction',
+    provider: 'Exa',
+    unitPrice: 0.0011,
+    unitLabel: '/ page',
+    notes: 'Applied when requesting highlights, full webpage text, or structured content extraction.',
+  },
+  {
+    id: 'papers-search',
+    name: 'Papers Search',
+    provider: 'Papers',
+    unitPrice: 0.001,
+    unitLabel: '/ search',
+    notes: 'Applied AI NZ papers.app.nz research search. Equivalent to $1 per 1,000 searches.',
   },
 ];
 
@@ -166,6 +201,12 @@ export function Pricing() {
               title="Video generation"
               body="Text-to-video and scene-aware video models with routing support across OpenPaths and partner providers."
               pricing="Priced per video request"
+            />
+            <WorkloadCard
+              icon={<Search className="h-5 w-5" />}
+              title="Web search"
+              body="Exa-powered search for AI applications with highlights, content extraction, and freshness controls."
+              pricing="Priced per search request and extracted page"
             />
           </div>
         </section>
@@ -279,6 +320,15 @@ export function Pricing() {
                 }))}
               />
             </div>
+
+            <div>
+              <SectionHeading
+                icon={<Search className="h-4 w-4" />}
+                title="Search"
+                body="Exa search is available through `/v1/search` and the `/search` playground. Prices include the requested 10% OpenPaths markup."
+              />
+              <RequestPricingTable rows={SEARCH_ROWS} />
+            </div>
           </div>
         </section>
 
@@ -299,7 +349,7 @@ export function Pricing() {
               />
               <FaqCard
                 question="Which model types are supported?"
-                answer="Text generation, reasoning, coding, embeddings, image generation, and video generation are all supported in the current catalog."
+                answer="Text generation, reasoning, coding, embeddings, image generation, video generation, and Exa web search are all supported in the current catalog."
               />
             </div>
           </div>

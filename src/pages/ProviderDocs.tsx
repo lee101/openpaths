@@ -159,6 +159,60 @@ const EXAMPLES: Record<string, ProviderExample> = {
       'OpenPaths exposes these through `/v1/videos/generations`; you do not call Fal directly or send a Fal key.',
     ],
   },
+  exa: {
+    description: 'Exa Search API through OpenPaths. Search the web with fast search modes, result categories, domain and date filters, highlights, full webpage text, structured outputs, and livecrawl freshness controls.',
+    endpoint: '/v1',
+    provides: [
+      {
+        title: 'Search API',
+        description: 'POST `/v1/search` with an Exa-compatible JSON body. OpenPaths forwards the request to Exa and returns the original Exa response shape.',
+      },
+      {
+        title: 'Search Types',
+        description: 'Use `instant`, `fast`, `auto`, or `deep`. Auto is the recommended default for quality and latency balance.',
+      },
+      {
+        title: 'Result Controls',
+        description: 'Tune `numResults`, `category`, `includeDomains`, `excludeDomains`, `startPublishedDate`, `endPublishedDate`, and `userLocation`.',
+      },
+      {
+        title: 'Content Extraction',
+        description: 'Request token-efficient `highlights`, full `text`, or structured outputs inside the `contents` object.',
+      },
+    ],
+    notes: [
+      'OpenPaths pricing adds 10% to Exa public rates: $0.0077 per search request for 1-10 results, $0.0011 per additional result beyond 10, and $0.0011 per requested content page.',
+      'Users can store a provider key named `exa` for BYOK search requests.',
+      'The dedicated UI lives at `/search`.',
+    ],
+  },
+  papers: {
+    description: 'Papers by Applied AI NZ through OpenPaths. Search papers, methods, datasets, and GitHub code from papers.app.nz with agent-friendly markdown output.',
+    endpoint: '/v1',
+    provides: [
+      {
+        title: 'Research Search',
+        description: 'POST `/v1/search` with `provider: "papers"` to route to papers.app.nz search over papers, methods, datasets, or GitHub code.',
+      },
+      {
+        title: 'Markdown For Agents',
+        description: 'Set `format: "markdown"` to receive compact markdown search results designed for LLM and agent context windows.',
+      },
+      {
+        title: 'Papers API Keys',
+        description: 'Create an app.nz API key from `https://app.nz/account`, then use it as `APP_API_KEY` or store a BYOK provider key named `papers`.',
+      },
+      {
+        title: 'Search Credits',
+        description: 'Papers API credits cost $1 per 1,000 searches. OpenPaths prices the routed provider at $0.001 per search request.',
+      },
+    ],
+    notes: [
+      'Set `APP_API_KEY` from https://app.nz/account for OpenPaths platform routing.',
+      'Supported `type` values are `papers`, `methods`, `datasets`, and `github_code`.',
+      'Optional request fields include `sort: "recent"`, `hasCode: true`, `includeGithubCode: true`, and `format: "markdown"`.',
+    ],
+  },
   minimax: {
     description: 'MiniMax M2.5 chat, Hailuo 2.3 video, and Speech 2.8 HD TTS.',
     endpoint: '/v1',
@@ -676,6 +730,78 @@ print(len(resp.data[0].embedding))`,
   -d '{
     "model": "${ex.embeddingModel}",
     "input": "the quick brown fox"
+  }'`,
+    });
+  }
+  if (ex && ex === EXAMPLES.exa) {
+    out.push({
+      title: 'Search',
+      description: 'Run an Exa web search through OpenPaths.',
+      python: `import requests
+
+resp = requests.post(
+    "${apiBase}/search",
+    headers={
+        "Authorization": "Bearer ${key}",
+        "Content-Type": "application/json",
+    },
+    json={
+        "query": "Latest news on Nvidia",
+        "numResults": 10,
+        "type": "auto",
+        "contents": {
+            "highlights": True
+        },
+    },
+)
+resp.raise_for_status()
+print(resp.json()["results"][0]["title"])`,
+      curl: `curl ${apiBase}/search \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer ${key}" \\
+  -d '{
+    "query": "Latest news on Nvidia",
+    "numResults": 10,
+    "type": "auto",
+    "contents": {
+      "highlights": true
+    }
+  }'`,
+    });
+  }
+  if (ex && ex === EXAMPLES.papers) {
+    out.push({
+      title: 'Research Search',
+      description: 'Search papers.app.nz through OpenPaths.',
+      python: `import requests
+
+resp = requests.post(
+    "${apiBase}/search",
+    headers={
+        "Authorization": "Bearer ${key}",
+        "Content-Type": "application/json",
+    },
+    json={
+        "provider": "papers",
+        "query": "diffusion transformers",
+        "numResults": 5,
+        "type": "papers",
+        "format": "markdown",
+        "hasCode": True,
+    },
+)
+resp.raise_for_status()
+print(resp.text)`,
+      curl: `curl ${apiBase}/search \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer ${key}" \\
+  -d '{
+    "provider": "papers",
+    "query": "diffusion transformers",
+    "numResults": 5,
+    "type": "papers",
+    "format": "markdown",
+    "hasCode": true
   }'`,
     });
   }

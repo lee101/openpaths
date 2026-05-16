@@ -19,6 +19,7 @@ const entries: SitemapEntry[] = [
   { path: '/docs', changefreq: 'weekly', priority: '0.8' },
   { path: '/integrations', changefreq: 'weekly', priority: '0.8' },
   { path: '/playground', changefreq: 'monthly', priority: '0.5' },
+  { path: '/search', changefreq: 'monthly', priority: '0.7' },
   { path: '/blog', changefreq: 'weekly', priority: '0.8' },
   ...providers.map(provider => ({
     path: `/providers/${encodeURIComponent(provider.slug)}`,

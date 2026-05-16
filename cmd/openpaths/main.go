@@ -153,6 +153,12 @@ func main() {
 			f := fal.New(provCfg.APIKey)
 			transcribers = append(transcribers, f)
 			p = f
+		case "exa":
+			log.Printf("Registered search provider: exa")
+			continue
+		case "papers":
+			log.Printf("Registered search provider: papers")
+			continue
 		default:
 			log.Printf("Unknown provider: %s", provCfg.Name)
 			continue

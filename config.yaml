@@ -114,6 +114,16 @@ providers:
     api_key: "${FAL_API_KEY}"
     enabled: true
 
+  - name: exa
+    base_url: "https://api.exa.ai"
+    api_key: "${EXA_API_KEY}"
+    enabled: true
+
+  - name: papers
+    base_url: "https://papers.app.nz"
+    api_key: "${APP_API_KEY}"
+    enabled: true
+
 models:
   # --- Auto (Gemini 3.1 primary, cross-provider fallbacks) ---
   - id: "auto"

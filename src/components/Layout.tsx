@@ -32,6 +32,7 @@ function useIsLoggedIn() {
 export function Layout() {
   const location = useLocation();
   const isPlayground = location.pathname === '/playground';
+  const isSearch = location.pathname === '/search';
   const isLoggedIn = useIsLoggedIn();
 
   return (
@@ -49,6 +50,7 @@ export function Layout() {
           <Link to="/docs" className={`transition-colors ${location.pathname === '/docs' ? 'text-white' : 'hover:text-white'}`}>Docs</Link>
           <Link to="/integrations" className={`transition-colors ${location.pathname === '/integrations' ? 'text-white' : 'hover:text-white'}`}>Integrations</Link>
           <Link to="/playground" className={`transition-colors ${isPlayground ? 'text-white' : 'hover:text-white'}`}>Playground</Link>
+          <Link to="/search" className={`transition-colors ${isSearch ? 'text-white' : 'hover:text-white'}`}>Search</Link>
           <Link to="/blog" className={`transition-colors ${location.pathname.startsWith('/blog') ? 'text-white' : 'hover:text-white'}`}>Blog</Link>
           <a href="/#api" className="hover:text-white transition-colors">API</a>
         </div>
@@ -95,6 +97,7 @@ export function Layout() {
                   <li><Link to="/pricing" className="hover:text-white transition-colors">Pricing</Link></li>
                   <li><Link to="/integrations" className="hover:text-white transition-colors">Integrations</Link></li>
                   <li><Link to="/playground" className="hover:text-white transition-colors">Playground</Link></li>
+                  <li><Link to="/search" className="hover:text-white transition-colors">Search</Link></li>
                   <li><Link to="/blog" className="hover:text-white transition-colors">Blog</Link></li>
                   <li><a href="/#api" className="hover:text-white transition-colors">API Docs</a></li>
                 </ul>
