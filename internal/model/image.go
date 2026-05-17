@@ -20,6 +20,10 @@ type ImageGenerationRequest struct {
 	GuidanceScale       *float64     `json:"guidance_scale,omitempty"`
 	EnableSafetyChecker *bool        `json:"enable_safety_checker,omitempty"`
 	KeepOriginalAspect  *bool        `json:"keep_original_aspect,omitempty"`
+	TargetSizes         []string     `json:"target_sizes,omitempty"`
+	NumImagesPerSize    int          `json:"num_images_per_size,omitempty"`
+	Resolution          string       `json:"resolution,omitempty"`
+	SafetyTolerance     string       `json:"safety_tolerance,omitempty"`
 }
 
 type ImageGenerationResponse struct {

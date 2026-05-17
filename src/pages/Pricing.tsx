@@ -33,6 +33,7 @@ const IMAGE_MODEL_IDS = [
   'glm-image',
   'flux-pro',
   'ra1',
+  'smart-resize',
 ];
 
 const VIDEO_MODELS: VideoPrice[] = [

@@ -79,6 +79,10 @@ func mimeType(filename string) string {
 }
 
 func (p *FalProvider) GenerateImage(ctx context.Context, req *model.ImageGenerationRequest) (*model.ImageGenerationResponse, error) {
+	if strings.Contains(strings.ToLower(req.Model), "smart-resize") {
+		return p.smartResize(ctx, req)
+	}
+
 	falReq := falImageRequest(req)
 	body, err := json.Marshal(falReq)
 	if err != nil {
@@ -243,11 +247,147 @@ func parseFalImageResult(respBody []byte) (*model.ImageGenerationResponse, error
 		return nil, fmt.Errorf("unmarshal: %w", err)
 	}
 
+	images := falImageData(raw)
+	if len(images) == 0 {
+		return nil, &provider.ProviderError{
+			Provider: "fal", StatusCode: 502, Message: "no images in response", Retryable: false,
+		}
+	}
+
+	return &model.ImageGenerationResponse{
+		Created: time.Now().Unix(),
+		Data:    images,
+	}, nil
+}
+
+func (p *FalProvider) smartResize(ctx context.Context, req *model.ImageGenerationRequest) (*model.ImageGenerationResponse, error) {
+	if req.ImageURL == "" {
+		return nil, &provider.ProviderError{Provider: "fal", StatusCode: 400, Message: "image_url is required", Retryable: false}
+	}
+	if len(req.TargetSizes) == 0 {
+		return nil, &provider.ProviderError{Provider: "fal", StatusCode: 400, Message: "target_sizes is required", Retryable: false}
+	}
+
+	payload := map[string]any{
+		"image_url":    req.ImageURL,
+		"target_sizes": req.TargetSizes,
+		"prompt":       req.Prompt,
+	}
+	if req.NumImagesPerSize > 0 {
+		payload["num_images_per_size"] = req.NumImagesPerSize
+	}
+	if req.Resolution != "" {
+		payload["resolution"] = req.Resolution
+	}
+	if req.OutputFormat != "" {
+		payload["output_format"] = req.OutputFormat
+	}
+	if req.SafetyTolerance != "" {
+		payload["safety_tolerance"] = req.SafetyTolerance
+	}
+	if req.Seed != nil {
+		payload["seed"] = *req.Seed
+	}
+
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return nil, fmt.Errorf("marshal: %w", err)
+	}
+	endpoint := "https://queue.fal.run/" + req.Model
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("create request: %w", err)
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Authorization", "Key "+p.apiKey)
+
+	resp, err := p.client.Do(httpReq)
+	if err != nil {
+		return nil, &provider.ProviderError{Provider: "fal", StatusCode: 502, Message: err.Error(), Retryable: true, Err: err}
+	}
+	defer resp.Body.Close()
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("read response: %w", err)
+	}
+	if resp.StatusCode >= 300 {
+		return nil, &provider.ProviderError{Provider: "fal", StatusCode: resp.StatusCode, Message: string(respBody), Retryable: resp.StatusCode >= 500 || resp.StatusCode == 429}
+	}
+
+	var handle struct {
+		ResponseURL string `json:"response_url"`
+		StatusURL   string `json:"status_url"`
+	}
+	if err := json.Unmarshal(respBody, &handle); err != nil {
+		return nil, fmt.Errorf("unmarshal queue response: %w", err)
+	}
+	if handle.ResponseURL == "" || handle.StatusURL == "" {
+		return nil, &provider.ProviderError{Provider: "fal", StatusCode: 502, Message: "missing fal queue urls", Retryable: true}
+	}
+
+	for range 90 {
+		statusReq, err := http.NewRequestWithContext(ctx, "GET", handle.StatusURL, nil)
+		if err != nil {
+			return nil, err
+		}
+		statusReq.Header.Set("Authorization", "Key "+p.apiKey)
+		statusResp, err := p.client.Do(statusReq)
+		if err != nil {
+			return nil, &provider.ProviderError{Provider: "fal", StatusCode: 502, Message: err.Error(), Retryable: true, Err: err}
+		}
+		var status struct {
+			Status string `json:"status"`
+			Error  any    `json:"error"`
+		}
+		decodeErr := json.NewDecoder(statusResp.Body).Decode(&status)
+		statusResp.Body.Close()
+		if decodeErr != nil {
+			return nil, decodeErr
+		}
+		if status.Status == "COMPLETED" {
+			break
+		}
+		if status.Status == "FAILED" {
+			return nil, &provider.ProviderError{Provider: "fal", StatusCode: 502, Message: fmt.Sprintf("smart resize failed: %v", status.Error), Retryable: false}
+		}
+		time.Sleep(2 * time.Second)
+	}
+
+	resultReq, err := http.NewRequestWithContext(ctx, "GET", handle.ResponseURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	resultReq.Header.Set("Authorization", "Key "+p.apiKey)
+	resultResp, err := p.client.Do(resultReq)
+	if err != nil {
+		return nil, &provider.ProviderError{Provider: "fal", StatusCode: 502, Message: err.Error(), Retryable: true, Err: err}
+	}
+	defer resultResp.Body.Close()
+	resultBody, err := io.ReadAll(resultResp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("read result: %w", err)
+	}
+	if resultResp.StatusCode >= 300 {
+		return nil, &provider.ProviderError{Provider: "fal", StatusCode: resultResp.StatusCode, Message: string(resultBody), Retryable: resultResp.StatusCode >= 500 || resultResp.StatusCode == 429}
+	}
+	var raw map[string]any
+	if err := json.Unmarshal(resultBody, &raw); err != nil {
+		return nil, fmt.Errorf("unmarshal result: %w", err)
+	}
+
+	images := falImageData(raw)
+	if len(images) == 0 {
+		return nil, &provider.ProviderError{Provider: "fal", StatusCode: 502, Message: "no images in response", Retryable: false}
+	}
+	return &model.ImageGenerationResponse{Created: time.Now().Unix(), Data: images}, nil
+}
+
+func falImageData(raw map[string]any) []model.ImageData {
 	var images []model.ImageData
-	if imgs, ok := raw["images"].([]any); ok {
-		for _, img := range imgs {
+	appendImages := func(items []any) {
+		for _, img := range items {
 			if m, ok := img.(map[string]any); ok {
-				if url, ok := m["url"].(string); ok {
+				if url, ok := m["url"].(string); ok && url != "" {
 					if strings.HasPrefix(url, "data:image/") {
 						if b64, err := dataURIToBase64(url); err == nil {
 							images = append(images, model.ImageData{B64JSON: b64})
@@ -259,16 +399,19 @@ func parseFalImageResult(respBody []byte) (*model.ImageGenerationResponse, error
 			}
 		}
 	}
-	if len(images) == 0 {
-		return nil, &provider.ProviderError{
-			Provider: "fal", StatusCode: 502, Message: "no images in response", Retryable: false,
+	if items, ok := raw["images"].([]any); ok {
+		appendImages(items)
+	}
+	if results, ok := raw["results"].([]any); ok {
+		for _, item := range results {
+			if m, ok := item.(map[string]any); ok {
+				if items, ok := m["images"].([]any); ok {
+					appendImages(items)
+				}
+			}
 		}
 	}
-
-	return &model.ImageGenerationResponse{
-		Created: time.Now().Unix(),
-		Data:    images,
-	}, nil
+	return images
 }
 
 func (p *FalProvider) GenerateVideo(ctx context.Context, req *model.VideoGenerationRequest) (*model.VideoGenerationResponse, error) {

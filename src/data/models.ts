@@ -43,6 +43,19 @@ export const models: Model[] = [
     pricingType: 'request'
   },
   {
+    id: 'smart-resize',
+    name: 'Smart Resize',
+    provider: 'Fal',
+    description: 'Composition-aware image resize to exact target dimensions using fal-ai/smart-resize and Nano Banana Pro recomposition.',
+    contextLength: 'N/A',
+    priceInput: 0.18,
+    priceOutput: 0,
+    tags: ['art generation', 'vision'],
+    released: '2026-05-05',
+    popularity: -2,
+    pricingType: 'request'
+  },
+  {
     id: 'openpaths-embed',
     name: 'OpenPaths Embed',
     provider: 'OpenPaths',

@@ -150,7 +150,7 @@ export const providers: Provider[] = [
     slug: 'fal',
     name: 'Fal',
     url: 'https://fal.ai',
-    description: 'Fast serverless inference. FLUX Klein 4B image generation and Whisper speech-to-text with chunk timestamps.',
+    description: 'Fast serverless inference. FLUX image generation, Smart Resize image recomposition, and Whisper speech-to-text with chunk timestamps.',
     featured: false,
     logo: '/logos/fal.svg'
   },

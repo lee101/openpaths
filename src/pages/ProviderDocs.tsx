@@ -148,7 +148,7 @@ const EXAMPLES: Record<string, ProviderExample> = {
     ],
   },
   fal: {
-    description: 'FLUX image generation plus ByteDance Seedance 2.0 text-to-video and reference-to-video through OpenPaths.',
+    description: 'FLUX image generation, Smart Resize image recomposition, and ByteDance Seedance 2.0 text-to-video/reference-to-video through OpenPaths.',
     endpoint: '/v1',
     imageModel: 'flux-pro',
     videoModel: 'seedance-2.0-fast-text-to-video',

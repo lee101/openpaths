@@ -362,6 +362,15 @@ models:
     supports_tools: false
     supports_vision: true
 
+  - id: "smart-resize"
+    provider: fal
+    provider_model_id: "fal-ai/smart-resize"
+    price_per_image: 0.18
+    aliases: ["fal-smart-resize", "image-smart-resize"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
   # --- Fal / ByteDance Seedance 2.0 (Video Generation) ---
   - id: "seedance-2.0-fast-text-to-video"
     provider: fal
