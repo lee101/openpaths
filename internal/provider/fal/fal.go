@@ -131,13 +131,54 @@ func (p *FalProvider) GenerateImage(ctx context.Context, req *model.ImageGenerat
 }
 
 func falImageRequest(req *model.ImageGenerationRequest) map[string]any {
+	if falImageIsOutpaint(req.Model) {
+		falReq := map[string]any{}
+		if req.ImageURL != "" {
+			falReq["image_url"] = req.ImageURL
+		} else if len(req.ImageURLs) > 0 {
+			falReq["image_url"] = req.ImageURLs[0]
+		} else if req.Image != nil && req.Image.URL != "" {
+			falReq["image_url"] = req.Image.URL
+		} else if len(req.Images) > 0 && req.Images[0].URL != "" {
+			falReq["image_url"] = req.Images[0].URL
+		} else if len(req.ReferenceImageURLs) > 0 {
+			falReq["image_url"] = req.ReferenceImageURLs[0]
+		}
+		if req.ExpandTop != nil {
+			falReq["expand_top"] = *req.ExpandTop
+		}
+		if req.ExpandBottom != nil {
+			falReq["expand_bottom"] = *req.ExpandBottom
+		}
+		if req.ExpandLeft != nil {
+			falReq["expand_left"] = *req.ExpandLeft
+		}
+		if req.ExpandRight != nil {
+			falReq["expand_right"] = *req.ExpandRight
+		}
+		if req.AutoCrop != nil {
+			falReq["auto_crop"] = *req.AutoCrop
+		}
+		if req.EnableSafetyChecker != nil {
+			falReq["enable_safety_checker"] = *req.EnableSafetyChecker
+		} else {
+			falReq["enable_safety_checker"] = true
+		}
+		if req.OutputFormat != "" {
+			falReq["output_format"] = strings.ToLower(strings.TrimSpace(req.OutputFormat))
+		}
+		return falReq
+	}
+
 	falReq := map[string]any{
 		"prompt": req.Prompt,
 	}
 	if req.Quality != "" {
 		falReq["quality"] = req.Quality
 	}
-	if req.Size != "" {
+	if req.ImageSize != nil {
+		falReq["image_size"] = req.ImageSize
+	} else if req.Size != "" {
 		parts := strings.SplitN(req.Size, "x", 2)
 		if len(parts) == 2 {
 			var w, h int
@@ -203,7 +244,132 @@ func falReferenceImageURLs(req *model.ImageGenerationRequest) []string {
 }
 
 func falImageUsesQueue(modelID string) bool {
-	return strings.Contains(strings.ToLower(modelID), "hidream-o1-image")
+	modelName := strings.ToLower(modelID)
+	return strings.Contains(modelName, "hidream-o1-image") || falImageIsOutpaint(modelName)
+}
+
+func falImageIsOutpaint(modelID string) bool {
+	return strings.Contains(strings.ToLower(modelID), "flux-2-pro/outpaint")
+}
+
+func (p *FalProvider) Generate3D(ctx context.Context, req *model.Model3DGenerationRequest) (*model.Model3DGenerationResponse, error) {
+	falReq := fal3DRequest(req)
+	body, err := json.Marshal(falReq)
+	if err != nil {
+		return nil, fmt.Errorf("marshal: %w", err)
+	}
+
+	resultBody, err := p.submitFalImageQueue(ctx, req.Model, body)
+	if err != nil {
+		return nil, err
+	}
+	return parseFal3DResult(resultBody, normalizePixalTextureSize(req.TextureSize))
+}
+
+func fal3DRequest(req *model.Model3DGenerationRequest) map[string]any {
+	textureSize := normalizePixalTextureSize(req.TextureSize)
+	falReq := map[string]any{
+		"image_url":                    req.ImageURL,
+		"resolution":                   normalizePixalResolution(req.Resolution),
+		"ss_guidance_strength":         floatOrDefault(req.SSGuidanceStrength, 7.5),
+		"ss_guidance_rescale":          floatOrDefault(req.SSGuidanceRescale, 0.7),
+		"ss_sampling_steps":            intOrDefault(req.SSSamplingSteps, 12),
+		"ss_rescale_t":                 floatOrDefault(req.SSRescaleT, 5),
+		"shape_slat_guidance_strength": floatOrDefault(req.ShapeSlatGuidanceStrength, 7.5),
+		"shape_slat_guidance_rescale":  floatOrDefault(req.ShapeSlatGuidanceRescale, 0.5),
+		"shape_slat_sampling_steps":    intOrDefault(req.ShapeSlatSamplingSteps, 12),
+		"shape_slat_rescale_t":         floatOrDefault(req.ShapeSlatRescaleT, 3),
+		"tex_slat_guidance_strength":   floatOrDefault(req.TexSlatGuidanceStrength, 1),
+		"tex_slat_sampling_steps":      intOrDefault(req.TexSlatSamplingSteps, 12),
+		"tex_slat_rescale_t":           floatOrDefault(req.TexSlatRescaleT, 3),
+		"mesh_scale":                   floatOrDefault(req.MeshScale, 1),
+		"max_num_tokens":               intOrDefault(req.MaxNumTokens, 49152),
+		"decimation_target":            intOrDefault(req.DecimationTarget, 200000),
+		"texture_size":                 textureSize,
+		"remesh":                       boolOrDefault(req.Remesh, true),
+	}
+	if req.Seed != nil {
+		falReq["seed"] = *req.Seed
+	}
+	if req.TexSlatGuidanceRescale != nil && *req.TexSlatGuidanceRescale > 0 {
+		falReq["tex_slat_guidance_rescale"] = *req.TexSlatGuidanceRescale
+	}
+	return falReq
+}
+
+func normalizePixalResolution(value int) int {
+	if value == 1536 {
+		return 1536
+	}
+	return 1024
+}
+
+func normalizePixalTextureSize(value int) int {
+	switch value {
+	case 2048, 4096:
+		return value
+	default:
+		return 1024
+	}
+}
+
+func pixalExternalCostCents(textureSize int) int {
+	if normalizePixalTextureSize(textureSize) == 1024 {
+		return 30
+	}
+	return 42
+}
+
+func floatOrDefault(value *float64, fallback float64) float64 {
+	if value != nil && *value > 0 {
+		return *value
+	}
+	return fallback
+}
+
+func intOrDefault(value, fallback int) int {
+	if value > 0 {
+		return value
+	}
+	return fallback
+}
+
+func intOrDefaultString(value string, fallback int) int {
+	var parsed int
+	if _, err := fmt.Sscanf(value, "%d", &parsed); err == nil && parsed > 0 {
+		return parsed
+	}
+	return fallback
+}
+
+func boolOrDefault(value *bool, fallback bool) bool {
+	if value == nil {
+		return fallback
+	}
+	return *value
+}
+
+func parseFal3DResult(body []byte, textureSize int) (*model.Model3DGenerationResponse, error) {
+	var raw struct {
+		ModelGLB *model.FileAsset `json:"model_glb"`
+		Seed     *int             `json:"seed,omitempty"`
+	}
+	if err := json.Unmarshal(body, &raw); err != nil {
+		return nil, fmt.Errorf("unmarshal result: %w", err)
+	}
+	if raw.ModelGLB == nil || strings.TrimSpace(raw.ModelGLB.URL) == "" {
+		return nil, &provider.ProviderError{Provider: "fal", StatusCode: 502, Message: "no model_glb url in response: " + string(body), Retryable: false}
+	}
+	cents := pixalExternalCostCents(textureSize)
+	return &model.Model3DGenerationResponse{
+		ModelGLB: *raw.ModelGLB,
+		Seed:     raw.Seed,
+		Billing: &model.Model3DBilling{
+			TextureSize:       normalizePixalTextureSize(textureSize),
+			ExternalCostUSD:   float64(cents) / 100,
+			ExternalCostCents: cents,
+		},
+	}, nil
 }
 
 func (p *FalProvider) submitFalImageQueue(ctx context.Context, modelID string, body []byte) ([]byte, error) {
@@ -394,7 +560,7 @@ func falImageData(raw map[string]any) []model.ImageData {
 							continue
 						}
 					}
-					images = append(images, model.ImageData{URL: url})
+					images = append(images, model.ImageData{URL: url, Width: intFromAny(m["width"]), Height: intFromAny(m["height"])})
 				}
 			}
 		}
@@ -414,6 +580,17 @@ func falImageData(raw map[string]any) []model.ImageData {
 	return images
 }
 
+func intFromAny(value any) int {
+	switch v := value.(type) {
+	case float64:
+		return int(v)
+	case int:
+		return v
+	default:
+		return 0
+	}
+}
+
 func (p *FalProvider) GenerateVideo(ctx context.Context, req *model.VideoGenerationRequest) (*model.VideoGenerationResponse, error) {
 	falReq := map[string]any{
 		"prompt": req.Prompt,
@@ -422,7 +599,11 @@ func (p *FalProvider) GenerateVideo(ctx context.Context, req *model.VideoGenerat
 		falReq["resolution"] = req.Resolution
 	}
 	if req.Duration != "" {
-		falReq["duration"] = req.Duration
+		if strings.Contains(strings.ToLower(req.Model), "alibaba/happy-horse/") {
+			falReq["duration"] = intOrDefaultString(string(req.Duration), 5)
+		} else {
+			falReq["duration"] = string(req.Duration)
+		}
 	}
 	if req.AspectRatio != "" {
 		falReq["aspect_ratio"] = req.AspectRatio
@@ -450,6 +631,9 @@ func (p *FalProvider) GenerateVideo(ctx context.Context, req *model.VideoGenerat
 	}
 	if len(req.AudioURLs) > 0 {
 		falReq["audio_urls"] = req.AudioURLs
+	}
+	if req.EnableSafetyChecker != nil {
+		falReq["enable_safety_checker"] = *req.EnableSafetyChecker
 	}
 
 	body, err := json.Marshal(falReq)
@@ -548,8 +732,14 @@ func (p *FalProvider) falQueueRequestBases(modelID, requestID string) []string {
 	if strings.Contains(modelID, "bytedance/seedance-2.0") {
 		bases = append(bases, queueBase+"/bytedance/seedance-2.0/requests/"+requestID)
 	}
+	if strings.Contains(modelID, "alibaba/happy-horse/") {
+		bases = append(bases, queueBase+"/alibaba/happy-horse/requests/"+requestID)
+	}
 	if strings.Contains(modelID, "fal-ai/hidream-o1-image/") {
 		bases = append(bases, queueBase+"/fal-ai/hidream-o1-image/requests/"+requestID)
+	}
+	if strings.Contains(modelID, "fal-ai/flux-2-pro/outpaint") {
+		bases = append(bases, queueBase+"/fal-ai/flux-2-pro/requests/"+requestID)
 	}
 	return bases
 }

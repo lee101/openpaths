@@ -33,15 +33,26 @@ type R2Config struct {
 }
 
 func NewR2Store(cfg R2Config) *R2Store {
-	log.Printf("storage: r2 bucket=%s endpoint=%s", cfg.Bucket, cfg.Endpoint)
+	publicURL := strings.TrimRight(cfg.PublicURL, "/")
+	if publicURL == "" {
+		publicURL = defaultR2PublicURL(cfg.Bucket)
+	}
+	log.Printf("storage: r2 bucket=%s endpoint=%s public=%s", cfg.Bucket, cfg.Endpoint, publicURL)
 	return &R2Store{
 		endpoint:  strings.TrimRight(cfg.Endpoint, "/"),
 		bucket:    cfg.Bucket,
 		accessKey: cfg.AccessKey,
 		secretKey: cfg.SecretKey,
-		publicURL: strings.TrimRight(cfg.PublicURL, "/"),
+		publicURL: publicURL,
 		client:    &http.Client{Timeout: 60 * time.Second},
 	}
+}
+
+func defaultR2PublicURL(bucket string) string {
+	if bucket == "openpathsstatic" {
+		return "https://openpathsstatic.openpaths.io"
+	}
+	return ""
 }
 
 func (s *R2Store) Upload(ctx context.Context, filename string, contentType string, r io.Reader) (string, error) {

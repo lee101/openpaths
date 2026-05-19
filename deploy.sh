@@ -11,6 +11,8 @@ REMOTE_DIR="/nvme0n1-disk/code/openpaths"
 DIST_DIR="dist"
 CF_ZONE_ID="${CLOUDFLARE_ZONE_OPENPATHS:-${CLOUDFLARE_ZONE_OPENPATH:-}}"
 SSH_PASS="${SSH_PASS:-}"
+API_HEALTH_URL="${API_HEALTH_URL:-http://127.0.0.1:8092/health}"
+API_DRAIN_TIMEOUT_SECONDS="${API_DRAIN_TIMEOUT_SECONDS:-600}"
 
 export AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID:-${CLOUDFLARE_R2_ACCESS_KEY_ID:-}}"
 export AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY:-${CLOUDFLARE_R2_SECRET_ACCESS_KEY:-}}"
@@ -55,6 +57,73 @@ rsync_cmd() {
     else
         rsync -az "$@"
     fi
+}
+
+is_local_api_host() {
+    local host="${API_HOST#*@}"
+    if command -v ssh >/dev/null 2>&1; then
+        local ssh_host
+        ssh_host=$(ssh -G "${API_HOST}" 2>/dev/null | awk '$1 == "hostname" { print $2; exit }' || true)
+        if [[ -n "$ssh_host" ]]; then
+            host="$ssh_host"
+        fi
+    fi
+    case "$host" in
+        localhost|127.0.0.1|::1|"$(hostname)"|"$(hostname -f 2>/dev/null || true)")
+            return 0
+            ;;
+    esac
+
+    local local_ips
+    local_ips=" $(hostname -I 2>/dev/null || true) "
+    if [[ -n "$host" && "$local_ips" == *" ${host} "* ]]; then
+        return 0
+    fi
+
+    if command -v getent >/dev/null 2>&1; then
+        local ip
+        while read -r ip _; do
+            [[ -n "$ip" ]] || continue
+            if ip route get "$ip" 2>/dev/null | grep -q " dev lo "; then
+                return 0
+            fi
+        done < <(getent ahostsv4 "$host" 2>/dev/null || true)
+    fi
+
+    return 1
+}
+
+restart_api_local() {
+    wait_for_local_api_idle
+    cd "${REMOTE_DIR}"
+    mv openpaths-api.new openpaths-api
+    chmod +x openpaths-api
+    if sudo supervisorctl status "${API_SERVICE}" >/dev/null 2>&1; then
+        sudo supervisorctl restart "${API_SERVICE}"
+    else
+        kill "$(pgrep -x openpaths-api)" 2>/dev/null || true
+        sleep 1
+        nohup ./openpaths-api > "/var/log/supervisor/${API_SERVICE}.log" 2>&1 &
+    fi
+    echo "api deployed"
+}
+
+wait_for_local_api_idle() {
+    local deadline=$((SECONDS + API_DRAIN_TIMEOUT_SECONDS))
+    while true; do
+        local response active
+        response=$(curl -fsS "${API_HEALTH_URL}" 2>/dev/null || true)
+        active=$(python3 -c 'import json,sys; d=json.loads(sys.stdin.read() or "{}"); print(int(d.get("active_long_requests", 0)))' <<<"$response" 2>/dev/null || echo 0)
+        if [[ "$active" -eq 0 ]]; then
+            return
+        fi
+        if (( SECONDS >= deadline )); then
+            yellow "continuing deploy with ${active} long request(s) still active after ${API_DRAIN_TIMEOUT_SECONDS}s"
+            return
+        fi
+        yellow "waiting for ${active} active video/3d request(s) before restart..."
+        sleep 5
+    done
 }
 
 FRONTEND_BUILT=false
@@ -124,6 +193,16 @@ deploy_api() {
     CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o dist/openpaths-api ./cmd/openpaths/
 
     green "deploying api to ${API_HOST}..."
+
+    if is_local_api_host && [[ "$(pwd -P)" == "${REMOTE_DIR}" ]]; then
+        green "api host is local; installing without ssh/scp..."
+        cp dist/openpaths-api "${REMOTE_DIR}/openpaths-api.new"
+        green "config already local: ${REMOTE_DIR}/config.yaml"
+        green "swapping binary + restarting locally..."
+        restart_api_local
+        green "api deployed locally"
+        return
+    fi
 
     scp_cmd dist/openpaths-api "${API_HOST}:${REMOTE_DIR}/openpaths-api.new"
 

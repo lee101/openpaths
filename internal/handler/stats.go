@@ -101,3 +101,28 @@ func (h *StatsHandler) HandleTimeSeries(ctx *fasthttp.RequestCtx) {
 		"data":     points,
 	})
 }
+
+// HandleModelDailyUsage handles GET /stats/models/timeseries?period=30d&limit=8.
+func (h *StatsHandler) HandleModelDailyUsage(ctx *fasthttp.RequestCtx) {
+	period := string(ctx.QueryArgs().Peek("period"))
+	if period == "" {
+		period = "30d"
+	}
+
+	limit := ctx.QueryArgs().GetUintOrZero("limit")
+	if limit == 0 {
+		limit = 8
+	}
+
+	points, err := h.statsQ.GetModelDailyUsage(ctx, period, limit)
+	if err != nil {
+		writeError(ctx, 500, "server_error", "Failed to get model usage over time")
+		return
+	}
+
+	writeJSON(ctx, 200, map[string]any{
+		"period": period,
+		"limit":  limit,
+		"data":   points,
+	})
+}

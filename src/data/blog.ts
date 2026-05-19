@@ -12,6 +12,88 @@ export interface BlogPost {
 
 export const posts: BlogPost[] = [
   {
+    slug: 'image-to-3d-api-pixal3d-openpaths',
+    title: 'Image to 3D on OpenPaths: Pixal3D GLB Generation From One API Key',
+    excerpt: 'OpenPaths now exposes Fal Pixal3D as an authenticated image-to-3D endpoint, with a browser viewer, public upload flow, and a real sword GLB default example.',
+    date: '2026-05-16',
+    author: 'OpenPaths Team',
+    readTime: '5 min',
+    tags: ['3d', 'fal', 'pixal3d', 'api'],
+    content: `OpenPaths now has a dedicated image-to-3D space at [openpaths.io/image-to-3d](/image-to-3d). It takes one public object image and returns a textured GLB through Fal Pixal3D.
+
+The default example is not a mock. We generated a sword reference image, hosted it on OpenPaths static storage, sent that image through Pixal3D, and published the resulting GLB as the default viewer model.
+
+## Endpoint
+
+\`\`\`bash
+curl https://openpaths.io/v1/3d/generations \\
+  -H "Authorization: Bearer op-..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "model": "pixal3d-image-to-3d",
+    "image_url": "https://openpathsstatic.openpaths.io/static/uploads/image-to-3d/sword-reference.jpg",
+    "resolution": 1024,
+    "texture_size": 1024,
+    "remesh": true
+  }'
+\`\`\`
+
+The response includes a downloadable GLB:
+
+\`\`\`json
+{
+  "model_glb": {
+    "url": "https://openpathsstatic.openpaths.io/static/uploads/image-to-3d/sword-pixal3d.glb",
+    "content_type": "model/gltf-binary"
+  },
+  "billing": {
+    "texture_size": 1024,
+    "external_cost_usd": 0.3,
+    "external_cost_cents": 30
+  }
+}
+\`\`\`
+
+## Billing tiers
+
+Pixal3D pricing is texture-tier based:
+
+| Texture size | Fal cost |
+|--------------|----------|
+| 1024 | $0.30 |
+| 2048 | $0.42 |
+| 4096 | $0.42 |
+
+OpenPaths pre-checks and deducts the actual texture tier selected in the request. The model catalog entry uses the normal 1024 tier, while the handler enforces the higher tier for 2048 and 4096 requests.
+
+## Viewer
+
+The new Image to 3D page includes:
+
+- an OpenPaths API key field using the same local key storage as the playground
+- a public image URL field
+- upload support through \`/v1/files/upload\`
+- texture and structure controls
+- a live GLB viewer backed by \`model-viewer\`
+- direct links to open or download the GLB
+
+The default viewer loads the generated sword model from:
+
+\`\`\`text
+https://openpathsstatic.openpaths.io/static/uploads/image-to-3d/sword-pixal3d.glb
+\`\`\`
+
+## Why this is a separate endpoint
+
+Image-to-3D does not fit cleanly into \`/v1/images/generations\`. The output is a model file, not a raster image, and the billing tier depends on texture resolution rather than image count. Keeping it under \`/v1/3d/generations\` makes the response shape explicit while preserving the same OpenPaths authentication, billing, BYOK, and provider routing patterns.
+
+## Practical input guidance
+
+Pixal3D works best when the reference image is a single centered object on a clean background. Product shots, game assets, props, furniture, toys, weapons, tools, and collectible-style renders are good fits. Busy scenes and partially hidden objects are much weaker inputs.
+
+The sword default follows that pattern: full object, centered, white background, no text, no hands, and no extra props.`
+  },
+  {
     slug: 'migrate-openai-anthropic-agent-sdks-to-openpaths',
     title: 'Migrate OpenAI Agents SDK and Anthropic Agent SDK to OpenPaths',
     excerpt: 'OpenPaths now documents first-class setup paths for OpenAI Agents SDK and Anthropic Agent SDK: keep the agent framework, change the model endpoint, and route agent calls through one OpenPaths key.',
@@ -926,7 +1008,7 @@ MiniMax supports both OpenAI and Anthropic SDK formats. If you're already using 
 
 **Auto-routing.** Send to \`auto\` and we pick the best model for your prompt. Or use the new tiers:
 
-- \`auto-easy-task\` -- Routes to cheapest models (Gemini Flash Lite, MiniMax M2.5 Highspeed, GPT-4o Mini). For simple lookups, formatting, summarization. Starting at $0.02/1M input tokens.
+- \`auto-easy-task\` -- Routes to cheapest models (Gemini 3.1 Flash Lite, MiniMax M2.5 Highspeed, GPT-4o Mini). For simple lookups, formatting, summarization. Starting at $0.25/1M input tokens.
 - \`auto-medium-task\` -- Routes to mid-tier models (Claude Sonnet, Gemini Flash, DeepSeek, MiniMax M2.5). For coding, analysis, moderate complexity.
 - \`auto-think\` -- Routes by reasoning depth and assigns \`none\`, \`low\`, \`medium\`, or \`high\` thinking automatically.
 - \`auto\` -- Full intelligent routing across all tiers based on task complexity.
@@ -942,7 +1024,7 @@ We added two new auto-routing models designed for cost optimization:
 ### auto-easy-task
 
 For simple tasks that don't need a $15/1M-token model. The router picks from:
-- **Gemini Flash Lite** -- $0.02 input, 1M context, vision
+- **Gemini 3.1 Flash Lite** -- -e.25 input, .50 output, 1M context, vision
 - **MiniMax M2.5 Highspeed** -- $0.30 input, 1M context, 100 tps
 - **GPT-4o Mini** -- $0.15 input, 128K context, tools
 
@@ -1042,7 +1124,7 @@ OpenAI has the most models but also the highest average price -- nearly 23x more
 
 Here's the distribution of all 342 models by price tier:
 
-**Free:** 29 models (8%) -- Completely free to use. Qwen leads with 6 free models, Google has 5. These aren't toy models either -- Gemini Flash Lite gives you a 1M context window at zero cost.
+**Free:** 29 models (8%) -- Completely free to use. Qwen leads with 6 free models, Google has 5. These aren't toy models either -- Gemini 3.1 Flash Lite gives you a 1M context window at low cost.
 
 **Budget (<$0.50/1M):** 179 models (52%) -- Over half of all available models cost less than fifty cents per million input tokens. This tier barely existed 18 months ago.
 
@@ -1068,7 +1150,7 @@ Remember when 4K tokens was standard? The context window distribution tells a st
 
 The median context window is now in the 128K-256K range. 36% of all models support at least 128K tokens. xAI's Grok 4.1 Fast leads the pack at 2 million tokens.
 
-The 1M+ club includes nearly every Gemini model, several Grok variants, and a few Qwen models. Google is clearly betting that massive context is a competitive advantage -- and at $0.10/1M tokens for Gemini Flash Lite, they might be right.
+The 1M+ club includes nearly every Gemini model, several Grok variants, and a few Qwen models. Google is clearly betting that massive context is a competitive advantage -- and at $0.25/1M input tokens for Gemini 3.1 Flash Lite, they might be right.
 
 ## The Best Value in AI
 
@@ -1082,7 +1164,7 @@ We calculated a "value score" -- context window size divided by price per millio
 | Grok 4.1 Fast | 2M | $0.20 | 10.0M |
 | GPT-5 Nano | 400K | $0.05 | 8.0M |
 
-Google dominates value. Their Flash Lite models give you a million tokens of context for seven cents. For comparison, o1-pro gives you 200K context for $150 -- a value score of just 1,333. That's a 10,000x difference in tokens-per-dollar.
+Google dominates value. Their Flash Lite models give you a million tokens of context with low-cost pricing. For comparison, o1-pro gives you 200K context for $150 -- a value score of just 1,333. That's a 10,000x difference in tokens-per-dollar.
 
 Of course, value isn't everything. o1-pro solves problems that Flash Lite can't touch. But for document processing, RAG, and summarization, the value tier models are absurdly capable for their price.
 
@@ -1111,7 +1193,7 @@ Text-only models are becoming the minority:
 
 57 unique providers. Here's what stands out:
 
-**The Big 5** (OpenAI, Anthropic, Google, Meta, Mistral) still dominate quality benchmarks. Gemini 3.1 Pro leads OpenRouter's intelligence rankings at 57.2, followed by GPT-5.3 Codex (54.0) and Claude Opus 4.6 (53.0).
+**The Big 5** (OpenAI, Anthropic, Google, Meta, Mistral) still dominate quality benchmarks. Gemini 3.5 Flash leads OpenRouter's intelligence rankings at 57.2, followed by GPT-5.3 Codex (54.0) and Claude Opus 4.6 (53.0).
 
 **The Chinese Wave** (Qwen, DeepSeek, MiniMax, Z.AI, Baidu, ByteDance, Moonshot/Kimi, Xiaomi) now collectively offer more models than any single Western provider. They compete on price and increasingly on quality. Xiaomi's MiMo-V2-Flash claims SWE-bench scores comparable to Claude Sonnet 4.5 at 3.5% of the cost.
 
@@ -1161,7 +1243,7 @@ Auto routing is a three-step pipeline:
 
 **2. Score against model profiles** -- Each model in the fallback chain has a capability profile. The router computes similarity between your prompt embedding and these profiles, weighted by factors like task type (code, creative, analytical), expected output length, and whether tools or vision are needed.
 
-**3. Pick the winner** -- The highest-scoring model gets the request. If it fails or is unhealthy, the router falls back through the chain: for \`auto\` chat, that's Gemini 3.1 Pro -> GPT-5.2 -> DeepSeek -> Claude Sonnet -> Grok -> OpenRouter fallbacks.
+**3. Pick the winner** -- The highest-scoring model gets the request. If it fails or is unhealthy, the router falls back through the chain: for \`auto\` chat, that's Gemini 3.5 Flash -> GPT-5.5 -> DeepSeek -> Claude Sonnet -> Grok -> OpenRouter fallbacks.
 
 ## Auto Image
 
@@ -1300,7 +1382,7 @@ Start with \`auto-image\` and let the router pick. For explicit control:
 
 These are the models you reach for when quality is everything.
 
-**Gemini 3.1 Pro** ($2.00/$12.00 per 1M) -- Our default auto model for good reason. 1M context window, strong reasoning, great at code. Google's latest and it shows. Best overall value at the frontier level.
+**Gemini 3.5 Flash** ($1.50/$9.00 per 1M) -- Our default auto model for good reason. 1M context window, strong reasoning, great at code. Google's latest and it shows. Best overall value at the frontier level.
 
 **Claude Opus 4.6** ($5.00/$25.00) -- The deepest thinker. When you need nuanced analysis, careful reasoning, or writing that doesn't sound like AI, Opus delivers. 128K output tokens means it can generate entire codebases in one shot. Expensive but worth it for complex tasks.
 
@@ -1340,7 +1422,7 @@ For math, logic, and multi-step problem solving.
 
 Yes, actually free. These run through OpenRouter's free tier.
 
-**Gemini Flash Lite** ($0.00/$0.00) -- Free vision model from Google. 1M context. Great for prototyping.
+**Gemini 3.1 Flash Lite** (-e.25/.50) -- Low-cost Google model with 1M context. Great for high-volume simple tasks.
 
 **GLM 4.6v Flash** ($0.00/$0.00) -- Free vision model from Z.AI. Solid for basic visual tasks.
 
@@ -1358,7 +1440,7 @@ Yes, actually free. These run through OpenRouter's free tier.
 
 Ask yourself these questions:
 
-1. **Does quality matter most?** -> Gemini 3.1 Pro or Claude Opus 4.6
+1. **Does quality matter most?** -> Gemini 3.5 Flash or Claude Opus 4.6
 2. **Is it a production app?** -> Claude Sonnet 4.6 or GPT-5.2
 3. **Budget constrained?** -> DeepSeek Chat
 4. **Need speed?** -> Gemini Flash or Haiku
@@ -1664,7 +1746,7 @@ Supported formats: mp3, mp4, mpeg, mpga, m4a, wav, webm, ogg, flac. Optional par
   {
     slug: 'free-ai-models',
     title: 'Free AI Models You Can Use Right Now on OpenPaths',
-    excerpt: 'Several high-quality models are available at zero cost through OpenPaths. Here is what they are and what they can do.',
+    excerpt: 'Several high-quality models are available at low cost through OpenPaths. Here is what they are and what they can do.',
     date: '2026-02-05',
     author: 'OpenPaths Team',
     readTime: '3 min',
@@ -1675,7 +1757,7 @@ Supported formats: mp3, mp4, mpeg, mpga, m4a, wav, webm, ogg, flac. Optional par
 
 **GLM 4.6v Flash** (Z.AI) -- A free vision model that accepts both text and images. 128K context. Good for basic visual analysis, OCR, and image description tasks. Surprisingly capable for free.
 
-**Gemini Flash Lite** (Google) -- 1M context window at zero cost. Fast, supports vision. The best free model for processing large documents.
+**Gemini 3.1 Flash Lite** (Google) -- 1M context window at low cost. Fast, supports vision. The best low-cost model for processing large documents.
 
 **Step Flash** (StepFun) -- 256K context, tool support. A solid general-purpose free model.
 
@@ -1765,11 +1847,11 @@ We route to 11 OpenAI models spanning four distinct tiers:
 
 ## Weaknesses
 
-**Price at the top.** GPT-5.4 at $2.50/$15.00 is competitive with Gemini 3.1 Pro but significantly more expensive than DeepSeek V3.2 ($0.28/$0.42) for tasks where the quality difference is negligible.
+**Price at the top.** GPT-5.4 at $2.50/$15.00 is competitive with Gemini 3.5 Flash but significantly more expensive than DeepSeek V3.2 ($0.28/$0.42) for tasks where the quality difference is negligible.
 
 **Context window limitations on older models.** GPT-4o and GPT-4o Mini are stuck at 128K. If you need more context from OpenAI, you have to jump to the GPT-5 family.
 
-**No free tier.** Unlike Google (Gemini Flash Lite) or Z.AI (GLM-4.6v Flash), OpenAI offers nothing at zero cost. The cheapest entry point is GPT-4o Mini at $0.15/1M.
+**No free tier.** Unlike Google (Gemini 3.1 Flash Lite) or Z.AI (GLM-4.6v Flash), OpenAI offers nothing at low cost. The cheapest entry point is GPT-4o Mini at $0.15/1M.
 
 ## How We Integrated
 
@@ -1828,7 +1910,7 @@ Or use \`auto\` and let us pick when GPT-5 is the right backend for your specifi
 
 **No free tier.** The cheapest Claude model is Haiku at $1.00/$5.00 -- more expensive than many competitors' mid-tier models.
 
-**Speed at the top.** Opus 4.6 is slower than GPT-5.4 or Gemini 3.1 Pro for equivalent tasks. The quality-per-token is higher, but latency-sensitive applications may prefer faster alternatives.
+**Speed at the top.** Opus 4.6 is slower than GPT-5.4 or Gemini 3.5 Flash for equivalent tasks. The quality-per-token is higher, but latency-sensitive applications may prefer faster alternatives.
 
 ## How We Integrated
 
@@ -1868,16 +1950,16 @@ If you are migrating from the Anthropic SDK, OpenPaths is a drop-in replacement.
 
 | Model | Price (In/Out per 1M) | Context | Best For |
 |-------|----------------------|---------|----------|
-| Gemini 3.1 Pro | $2.00/$12.00 | 1M | Flagship, default auto |
+| Gemini 3.5 Flash | $1.50/$9.00 | 1M | Flagship, default auto |
 | Gemini 2.5 Pro | $1.25/$10.00 | 2M | Massive context processing |
 | Gemini 2.5 Flash | $0.30/$2.50 | 1M | Fast, high-throughput |
-| Gemini Flash Lite | $0.02/$0.10 | 1M | Near-free, prototyping |
+| Gemini 3.1 Flash Lite | $0.25/$1.50 | 1M | High-volume simple tasks |
 
 ## Strengths
 
-**Context windows that redefine what is possible.** Gemini 2.5 Pro accepts 2 million tokens in a single request. That is roughly 1,500 pages of text, or an entire large codebase, or hours of transcribed audio. Gemini 3.1 Pro and Flash both handle 1 million tokens. No other provider comes close at these price points.
+**Context windows that redefine what is possible.** Gemini 2.5 Pro accepts 2 million tokens in a single request. That is roughly 1,500 pages of text, or an entire large codebase, or hours of transcribed audio. Gemini 3.5 Flash and Gemini 2.5 Flash both handle 1 million tokens. No other provider comes close at these price points.
 
-**Value.** Gemini Flash Lite gives you a 1M context window for $0.02/$0.10 per million tokens. That is essentially free. Our value analysis shows Gemini models occupy 3 of the top 5 positions for tokens-per-dollar -- a 10,000x advantage over premium models.
+**Value.** Gemini 3.1 Flash Lite gives you a 1M context window for $0.25/$1.50 per million tokens. That remains inexpensive for high-volume workloads. Our value analysis shows Gemini models occupy 3 of the top 5 positions for tokens-per-dollar -- a 10,000x advantage over premium models.
 
 **Multimodal breadth.** Gemini natively handles text, images, audio, video, and PDFs. You can feed it a YouTube video transcript, a set of images, and a text prompt in a single request. No other model family matches this breadth of input modalities.
 
@@ -1895,15 +1977,15 @@ If you are migrating from the Anthropic SDK, OpenPaths is a drop-in replacement.
 
 Google uses a custom API format -- not OpenAI-compatible. Our integration translates between OpenAI's chat completions format and Google's \`generateContent\` endpoint, handling content parts, safety settings, tool declarations, thinking configuration, and streaming.
 
-Gemini 3.1 Pro is the first model in our \`auto\` routing chain. It is our default "smart" model -- when the router cannot confidently classify a task as needing a specialist, Gemini 3.1 Pro handles it. The reasoning: best overall value at the frontier tier with a massive context window.
+Gemini 3.5 Flash is the first model in our \`auto\` routing chain. It is our default "smart" model -- when the router cannot confidently classify a task as needing a specialist, Gemini 3.5 Flash handles it. The reasoning: best overall value at the frontier tier with a massive context window.
 
-Gemini Flash Lite powers \`auto-easy-task\` -- the routing tier for simple lookups, formatting, and summarization where spending more than $0.02/1M tokens is wasteful.
+Gemini 3.1 Flash Lite powers \`auto-easy-task\` -- the routing tier for simple lookups, formatting, and summarization where spending more than $0.25/1M tokens is wasteful.
 
 ## The Google Advantage
 
 Google's real moat is infrastructure. They designed Gemini to run on TPUs they built themselves, in data centers they own, connected by networks they control. This vertical integration means they can offer prices that would be unprofitable for competitors using rented GPU clusters.
 
-The result is a provider that competes on both quality AND price simultaneously. Gemini 3.1 Pro is not just cheap -- it ranks #1 on OpenRouter's intelligence benchmark at 57.2, ahead of GPT-5.3 Codex and Claude Opus 4.6. That combination of top-tier quality and competitive pricing makes Google the value king of the AI industry.
+The result is a provider that competes on both quality AND price simultaneously. Gemini 3.5 Flash is not just cheap -- it ranks #1 on OpenRouter's intelligence benchmark at 57.2, ahead of GPT-5.3 Codex and Claude Opus 4.6. That combination of top-tier quality and competitive pricing makes Google the value king of the AI industry.
 
 ## The Context Revolution
 
@@ -1917,7 +1999,7 @@ A year ago, 128K tokens was considered generous. Google normalized 1M+ context w
 
 - **Large document processing** where context window size matters
 - **Budget-conscious applications** that need good quality at low cost
-- **Prototyping** with Flash Lite at near-zero cost
+- **Prototyping** with Gemini 3.1 Flash Lite for high-volume cost efficiency
 - **Multimodal applications** processing images, audio, and video
 - **High-throughput pipelines** where Flash delivers speed at scale`
   },
@@ -2069,13 +2151,13 @@ The competitive pressure from DeepSeek has made AI cheaper for everyone. That is
 
 **Open-source commitment.** Several Mistral models (Nemo, Ministral 8B/14B) are open-weight, enabling self-hosting and fine-tuning. Their open-source releases have been some of the most downloaded models on Hugging Face.
 
-**Pricing.** Mistral Large 3 at $0.50/$1.50 significantly undercuts Claude Sonnet ($3.00/$15.00) and GPT-5 ($1.25/$10.00) while delivering competitive quality. Their budget models are among the cheapest available -- Nemo at $0.02/$0.04 rivals Gemini Flash Lite.
+**Pricing.** Mistral Large 3 at $0.50/$1.50 significantly undercuts Claude Sonnet ($3.00/$15.00) and GPT-5 ($1.25/$10.00) while delivering competitive quality. Their budget models are among the cheapest available -- Nemo at $0.02/$0.04 rivals Gemini 3.1 Flash Lite.
 
 ## Weaknesses
 
 **Brand recognition.** Outside the developer community, Mistral is less known than OpenAI, Google, or Anthropic. This means fewer tutorials, fewer Stack Overflow answers, and a smaller community for troubleshooting.
 
-**Frontier ceiling.** While Mistral Large 3 is excellent, it does not quite reach the peak performance of Claude Opus 4.6, Gemini 3.1 Pro, or GPT-5.4 on the hardest benchmarks. Mistral wins on value, not raw capability at the very top.
+**Frontier ceiling.** While Mistral Large 3 is excellent, it does not quite reach the peak performance of Claude Opus 4.6, Gemini 3.5 Flash, or GPT-5.4 on the hardest benchmarks. Mistral wins on value, not raw capability at the very top.
 
 **Vision model pricing.** Pixtral Large at $2.00/$6.00 is competitive but not cheap. For vision-heavy workloads, Google's free Flash Lite or Z.AI's free GLM-4.6v Flash may be more cost-effective.
 
@@ -2329,7 +2411,7 @@ Note: GLM-5 and GLM-4.7 are also available through Together AI for improved reli
 
 ## Strengths
 
-**Free vision.** GLM-4.6v Flash is a free model that accepts images. It handles OCR, image description, visual Q&A, and basic image analysis at zero cost. For prototyping multimodal applications or processing images at scale without budget, it is the best option available.
+**Free vision.** GLM-4.6v Flash is a free model that accepts images. It handles OCR, image description, visual Q&A, and basic image analysis at low cost. For prototyping multimodal applications or processing images at scale with a tight budget, it is the best option available.
 
 **202K context.** GLM-5 and GLM-4.7 both offer 202K token context windows -- larger than Anthropic's 200K, suitable for long documents and extended conversations.
 

@@ -1,7 +1,7 @@
 server:
   port: 8092
   read_timeout_seconds: 30
-  write_timeout_seconds: 300
+  write_timeout_seconds: 600
   max_request_body_mb: 25
   static_dir: "./dist"
 
@@ -125,12 +125,12 @@ providers:
     enabled: true
 
 models:
-  # --- Auto (Gemini 3.1 primary, cross-provider fallbacks) ---
+  # --- Auto (Gemini 3.5 primary, cross-provider fallbacks) ---
   - id: "auto"
     provider: google
-    provider_model_id: "gemini-3.1-pro-preview"
-    input_price_per_1m: 2.00
-    output_price_per_1m: 12.00
+    provider_model_id: "gemini-3.5-flash"
+    input_price_per_1m: 1.50
+    output_price_per_1m: 9.00
     aliases: ["auto-chat", "auto-text"]
     context_window: 1000000
     max_output_tokens: 64000
@@ -145,20 +145,20 @@ models:
       - "deepseek-chat"
       - "claude-sonnet-4-6"
       - "grok-4.3"
-      - "or/gemini-3.1"
+      - "gemini-2.5-pro"
       - "or/gpt-5.5"
 
   # --- Auto Easy Task (cheapest models only) ---
   - id: "auto-easy-task"
     provider: google
-    provider_model_id: "gemini-flash-lite-latest"
-    input_price_per_1m: 0.02
-    output_price_per_1m: 0.10
+    provider_model_id: "gemini-3.1-flash-lite"
+    input_price_per_1m: 0.25
+    output_price_per_1m: 1.50
     aliases: ["auto-easy"]
     context_window: 1000000
     max_output_tokens: 8192
     supports_streaming: true
-    supports_tools: false
+    supports_tools: true
     supports_vision: true
     fallback_models:
       - "deepseek-v4-flash"
@@ -166,7 +166,7 @@ models:
       - "gemini-2.5-flash"
       - "claude-haiku-4-5-20251001"
       - "or/gpt-5.4-nano"
-      - "gemini-flash-lite"
+      - "gemini-3.1-flash-lite"
 
   # --- Auto Medium Task (mid-tier models) ---
   - id: "auto-medium-task"
@@ -356,8 +356,17 @@ models:
   - id: "hidream-o1-image-dev"
     provider: fal
     provider_model_id: "fal-ai/hidream-o1-image/dev"
-    price_per_megapixel: 0.006
+    price_per_megapixel: 0.011
     aliases: ["hidream-o1", "hidream-image", "hidream-dev", "fal-hidream-o1-image-dev"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "fal-ai/hidream-o1-image/edit"
+    provider: fal
+    provider_model_id: "fal-ai/hidream-o1-image/edit"
+    price_per_megapixel: 0.011
+    aliases: ["hidream-o1-image-edit", "hidream-edit", "fal-hidream-o1-image-edit", "image-edit"]
     supports_streaming: false
     supports_tools: false
     supports_vision: true
@@ -367,6 +376,25 @@ models:
     provider_model_id: "fal-ai/smart-resize"
     price_per_image: 0.18
     aliases: ["fal-smart-resize", "image-smart-resize"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "fal-ai/flux-2-pro/outpaint"
+    provider: fal
+    provider_model_id: "fal-ai/flux-2-pro/outpaint"
+    price_first_megapixel: 0.033
+    price_extra_megapixel: 0.0165
+    aliases: ["flux-2-pro-outpaint", "flux-outpaint", "outpaint", "fal-outpaint"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "pixal3d-image-to-3d"
+    provider: fal
+    provider_model_id: "fal-ai/pixal3d"
+    price_per_request: 0.30
+    aliases: ["pixal3d", "image-to-3d", "fal-pixal3d"]
     supports_streaming: false
     supports_tools: false
     supports_vision: true
@@ -420,6 +448,16 @@ models:
     price_per_second_with_video_input: 0.19954
     input_price_per_1m: 15.40
     aliases: ["seedance-reference", "seedance-ref"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  # --- Alibaba Happy Horse via Fal (Video Generation) ---
+  - id: "alibaba/happy-horse/image-to-video"
+    provider: fal
+    provider_model_id: "alibaba/happy-horse/image-to-video"
+    price_per_second: 0.28
+    aliases: ["happy-horse", "happy-horse-image-to-video", "alibaba-happy-horse"]
     supports_streaming: false
     supports_tools: false
     supports_vision: true
@@ -479,7 +517,7 @@ models:
     provider_model_id: "gpt-5.5"
     input_price_per_1m: 5.00
     output_price_per_1m: 30.00
-    aliases: ["gpt5", "gpt55", "gpt-5-5", "openai-latest", "openai-chat-latest", "auto-hard", "auto-opus", "auto-hard-task"]
+    aliases: ["gpt5", "gpt55", "gpt-5-5", "openai-latest", "openai-chat-latest"]
     context_window: 1050000
     max_output_tokens: 128000
     supports_streaming: true
@@ -489,6 +527,7 @@ models:
       - "claude-opus-latest"
       - "deepseek-v4-pro"
       - "claude-sonnet-4-6"
+      - "gemini-3.5-flash"
       - "gemini-2.5-pro"
       - "deepseek-reasoner"
       - "or/gpt-5.5"
@@ -541,7 +580,7 @@ models:
     supports_tools: true
     supports_vision: true
     fallback_models:
-      - "gemini-flash-lite"
+      - "gemini-3.1-flash-lite"
       - "gemini-2.5-flash"
       - "claude-haiku-4-5-20251001"
       - "or/gpt-5.4-nano"
@@ -853,14 +892,26 @@ models:
     supports_vision: true
 
   # --- Google Gemini ---
-  - id: "gemini-3.1-pro-preview"
+  - id: "gemini-latest"
     provider: google
-    provider_model_id: "gemini-3.1-pro-preview"
-    input_price_per_1m: 2.00
-    output_price_per_1m: 12.00
-    aliases: ["gemini-3.1", "gemini-pro"]
+    provider_model_id: "gemini-3.5-flash"
+    input_price_per_1m: 1.50
+    output_price_per_1m: 9.00
+    aliases: ["google-latest", "google-gemini-latest"]
     context_window: 1000000
-    max_output_tokens: 64000
+    max_output_tokens: 65536
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "gemini-3.5-flash"
+    provider: google
+    provider_model_id: "gemini-3.5-flash"
+    input_price_per_1m: 1.50
+    output_price_per_1m: 9.00
+    aliases: ["gemini-3.5", "gemini-flash-frontier", "auto-hard", "auto-opus", "auto-hard-task"]
+    context_window: 1000000
+    max_output_tokens: 65536
     supports_streaming: true
     supports_tools: true
     supports_vision: true
@@ -888,16 +939,16 @@ models:
     supports_tools: true
     supports_vision: true
 
-  - id: "gemini-flash-lite"
+  - id: "gemini-3.1-flash-lite"
     provider: google
-    provider_model_id: "gemini-flash-lite-latest"
-    input_price_per_1m: 0.02
-    output_price_per_1m: 0.10
-    aliases: ["flash-lite", "gemini-lite"]
+    provider_model_id: "gemini-3.1-flash-lite"
+    input_price_per_1m: 0.25
+    output_price_per_1m: 1.50
+    aliases: ["gemini-flash-lite", "flash-lite", "gemini-lite"]
     context_window: 1000000
     max_output_tokens: 8192
     supports_streaming: true
-    supports_tools: false
+    supports_tools: true
     supports_vision: true
 
   - id: "gemini-3.1-flash-tts-preview"
@@ -1299,13 +1350,13 @@ models:
     supports_tools: true
     supports_vision: true
 
-  - id: "or/gemini-3.1"
+  - id: "or/gemini-3.5-flash"
     provider: openrouter
-    provider_model_id: "google/gemini-3.1-pro-preview"
-    input_price_per_1m: 2.00
-    output_price_per_1m: 12.00
+    provider_model_id: "google/gemini-3.5-flash"
+    input_price_per_1m: 1.50
+    output_price_per_1m: 9.00
     context_window: 1000000
-    max_output_tokens: 64000
+    max_output_tokens: 65536
     supports_streaming: true
     supports_tools: true
     supports_vision: true
@@ -1421,6 +1472,9 @@ models:
     supports_streaming: true
     supports_tools: true
     supports_vision: false
+    fallback_models:
+      - "glm-4.6v-flashx"
+      - "nvidia/deepseek-v4-pro"
 
   - id: "or/nemotron-nano"
     provider: openrouter
@@ -1433,6 +1487,9 @@ models:
     supports_streaming: true
     supports_tools: true
     supports_vision: false
+    fallback_models:
+      - "nvidia/deepseek-v4-pro"
+      - "glm-4.6v-flashx"
 
   - id: "or/arcee-trinity"
     provider: openrouter
@@ -1445,6 +1502,9 @@ models:
     supports_streaming: true
     supports_tools: true
     supports_vision: false
+    fallback_models:
+      - "glm-4.6v-flashx"
+      - "nvidia/deepseek-v4-pro"
 
   - id: "or/arcee-trinity-mini"
     provider: openrouter
@@ -1557,6 +1617,9 @@ models:
     aliases: ["glm-vision-flash"]
     context_window: 128000
     max_output_tokens: 8192
+    fallback_models:
+      - "glm-4.6v-flashx"
+      - "zai/glm-5.1"
     supports_streaming: true
     supports_tools: true
     supports_vision: true

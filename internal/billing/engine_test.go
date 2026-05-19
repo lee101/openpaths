@@ -11,8 +11,8 @@ func TestFormatUsageDescription(t *testing.T) {
 }
 
 func TestFormatUsageDescriptionWithoutReasoning(t *testing.T) {
-	got := formatUsageDescription("gemini-flash-lite", 12, 3, "")
-	want := "Model: gemini-flash-lite, in: 12, out: 3"
+	got := formatUsageDescription("gemini-3.1-flash-lite", 12, 3, "")
+	want := "Model: gemini-3.1-flash-lite, in: 12, out: 3"
 	if got != want {
 		t.Fatalf("formatUsageDescription() = %q, want %q", got, want)
 	}

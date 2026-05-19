@@ -191,12 +191,13 @@ function renderInline(text: string): React.ReactNode[] {
 export function BlogPost() {
   const { slug } = useParams<{ slug: string }>();
   const location = useLocation();
+  const isAlternative = location.pathname.startsWith('/alternatives/');
   const post = useMemo(() => {
-    if (location.pathname.startsWith('/alternatives/')) {
+    if (isAlternative) {
       return posts.find(p => p.alternativePath === location.pathname);
     }
     return posts.find(p => p.slug === slug);
-  }, [location.pathname, slug]);
+  }, [isAlternative, location.pathname, slug]);
 
   if (!post) {
     return <Navigate to="/blog" replace />;
@@ -209,7 +210,7 @@ export function BlogPost() {
       <Seo
         title={`${post.title} | OpenPaths Blog`}
         description={post.excerpt}
-        path={location.pathname.startsWith('/alternatives/') ? location.pathname : `/blog/${post.slug}`}
+        path={isAlternative ? location.pathname : `/blog/${post.slug}`}
       />
 
       <motion.div
@@ -218,8 +219,8 @@ export function BlogPost() {
         transition={{ duration: 0.3 }}
         className="max-w-3xl mx-auto px-6 py-12"
       >
-      <Link to="/blog" className="inline-flex items-center gap-2 text-sm font-mono text-white/40 hover:text-white transition-colors mb-12">
-        <ArrowLeft className="w-4 h-4" /> All Posts
+      <Link to={isAlternative ? '/alternatives' : '/blog'} className="inline-flex items-center gap-2 text-sm font-mono text-white/40 hover:text-white transition-colors mb-12">
+        <ArrowLeft className="w-4 h-4" /> {isAlternative ? 'All Alternatives' : 'All Posts'}
       </Link>
 
       <div className="flex flex-wrap gap-2 mb-6">
@@ -243,8 +244,8 @@ export function BlogPost() {
       </article>
 
       <div className="mt-16 pt-8 border-t border-white/10">
-        <Link to="/blog" className="inline-flex items-center gap-2 text-sm font-mono text-white/40 hover:text-white transition-colors">
-          <ArrowLeft className="w-4 h-4" /> Back to all posts
+        <Link to={isAlternative ? '/alternatives' : '/blog'} className="inline-flex items-center gap-2 text-sm font-mono text-white/40 hover:text-white transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Back to {isAlternative ? 'alternatives' : 'all posts'}
         </Link>
       </div>
       </motion.div>

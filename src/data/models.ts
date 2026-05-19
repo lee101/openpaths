@@ -1,4 +1,4 @@
-export type Tag = 'programming' | 'roleplay' | 'art generation' | 'video generation' | 'audio' | 'embedding' | 'general' | 'vision' | 'fast' | 'reasoning' | 'open-source' | 'free' | 'agentic';
+export type Tag = 'programming' | 'roleplay' | 'art generation' | 'text-to-image' | 'image-to-image' | 'image-to-3d' | 'outpainting' | 'video generation' | 'audio' | 'embedding' | 'general' | 'vision' | 'fast' | 'reasoning' | 'open-source' | 'free' | 'agentic';
 
 export type SortOption = 'popular' | 'newest' | 'price-low' | 'price-high' | 'context-high';
 
@@ -11,6 +11,7 @@ export interface Model {
   priceInput: number;
   priceOutput: number;
   tags: Tag[];
+  aliases?: string[];
   released: string;
   popularity: number;
   pricingType?: 'token' | 'request' | 'chars' | 'hour' | 'second' | 'megapixel';
@@ -37,7 +38,7 @@ export const models: Model[] = [
     contextLength: 'N/A',
     priceInput: 0.04,
     priceOutput: 0,
-    tags: ['art generation'],
+    tags: ['art generation', 'text-to-image'],
     released: '2025-06-01',
     popularity: -2,
     pricingType: 'request'
@@ -50,8 +51,34 @@ export const models: Model[] = [
     contextLength: 'N/A',
     priceInput: 0.18,
     priceOutput: 0,
-    tags: ['art generation', 'vision'],
+    tags: ['art generation', 'image-to-image', 'vision'],
     released: '2026-05-05',
+    popularity: -2,
+    pricingType: 'request'
+  },
+  {
+    id: 'fal-ai/flux-2-pro/outpaint',
+    name: 'FLUX 2 Pro Outpaint',
+    provider: 'Fal',
+    description: 'Expand an image beyond its borders with FLUX 2 Pro outpainting. Billed from $0.033 for the first output megapixel plus $0.0165 per additional rounded input or output megapixel.',
+    contextLength: 'N/A',
+    priceInput: 0.033,
+    priceOutput: 0,
+    tags: ['art generation', 'image-to-image', 'outpainting', 'vision'],
+    released: '2026-05-19',
+    popularity: -2,
+    pricingType: 'request'
+  },
+  {
+    id: 'pixal3d-image-to-3d',
+    name: 'Pixal3D Image to 3D',
+    provider: 'Fal',
+    description: 'Generate textured GLB models from a single object image using Fal Pixal3D.',
+    contextLength: 'N/A',
+    priceInput: 0.30,
+    priceOutput: 0,
+    tags: ['image-to-3d', 'image-to-image', 'vision'],
+    released: '2026-05-14',
     popularity: -2,
     pricingType: 'request'
   },
@@ -389,15 +416,29 @@ export const models: Model[] = [
 
   // --- Google Gemini ---
   {
-    id: 'gemini-3.1-pro-preview',
-    name: 'Gemini 3.1 Pro',
+    id: 'gemini-latest',
+    name: 'Gemini Latest',
     provider: 'Google',
-    description: 'Latest Google flagship with 1M context window and multimodal capabilities.',
+    description: 'Tracks the current recommended Gemini frontier model. Today this routes to Gemini 3.5 Flash.',
     contextLength: '1M',
-    priceInput: 2.00,
-    priceOutput: 12.00,
+    priceInput: 1.50,
+    priceOutput: 9.00,
     tags: ['general', 'vision', 'programming', 'reasoning'],
-    released: '2026-02-20',
+    aliases: ['gemini-3.5-flash', 'auto-hard', 'auto-hard-task'],
+    released: '2026-05-20',
+    popularity: 4
+  },
+  {
+    id: 'gemini-3.5-flash',
+    name: 'Gemini 3.5 Flash',
+    provider: 'Google',
+    description: 'Google frontier Flash model for sustained agentic and coding tasks. Also available through the gemini-latest alias.',
+    contextLength: '1M',
+    priceInput: 1.50,
+    priceOutput: 9.00,
+    tags: ['general', 'vision', 'programming', 'reasoning'],
+    aliases: ['gemini-latest', 'auto-hard', 'auto-hard-task'],
+    released: '2026-05-20',
     popularity: 5
   },
   {
@@ -425,15 +466,15 @@ export const models: Model[] = [
     popularity: 9
   },
   {
-    id: 'gemini-flash-lite',
-    name: 'Gemini Flash Lite',
+    id: 'gemini-3.1-flash-lite',
+    name: 'Gemini 3.1 Flash Lite',
     provider: 'Google',
-    description: 'Cheapest Google model. Ideal for classification, routing, and simple tasks.',
+    description: 'Google’s cost-efficient model for high-volume agentic tasks, translation, and simple data processing.',
     contextLength: '1M',
-    priceInput: 0.02,
-    priceOutput: 0.10,
+    priceInput: 0.25,
+    priceOutput: 1.50,
     tags: ['fast', 'general', 'vision'],
-    released: '2025-09-01',
+    released: '2026-05-08',
     popularity: 26
   },
   {
@@ -559,7 +600,7 @@ export const models: Model[] = [
     contextLength: 'N/A',
     priceInput: 0.02,
     priceOutput: 0,
-    tags: ['art generation', 'vision'],
+    tags: ['art generation', 'text-to-image', 'image-to-image', 'vision'],
     released: '2026-03-23',
     popularity: 7,
     pricingType: 'request'
@@ -1108,7 +1149,7 @@ export const models: Model[] = [
     contextLength: 'N/A',
     priceInput: 0.04,
     priceOutput: 0,
-    tags: ['art generation'],
+    tags: ['art generation', 'text-to-image'],
     released: '2024-08-01',
     popularity: 53,
     pricingType: 'request'
@@ -1121,7 +1162,7 @@ export const models: Model[] = [
     contextLength: 'N/A',
     priceInput: 0.015,
     priceOutput: 0,
-    tags: ['art generation', 'open-source'],
+    tags: ['art generation', 'text-to-image', 'open-source'],
     released: '2025-11-25',
     popularity: 54,
     pricingType: 'request'
@@ -1134,7 +1175,7 @@ export const models: Model[] = [
     contextLength: 'N/A',
     priceInput: 0.003,
     priceOutput: 0,
-    tags: ['art generation', 'open-source', 'fast'],
+    tags: ['art generation', 'text-to-image', 'open-source', 'fast'],
     released: '2024-08-01',
     popularity: 55,
     pricingType: 'request'
@@ -1147,7 +1188,7 @@ export const models: Model[] = [
     contextLength: 'N/A',
     priceInput: 0.02,
     priceOutput: 0,
-    tags: ['art generation', 'fast'],
+    tags: ['art generation', 'text-to-image', 'fast'],
     released: '2025-10-01',
     popularity: 56,
     pricingType: 'request'
@@ -1160,7 +1201,7 @@ export const models: Model[] = [
     contextLength: 'N/A',
     priceInput: 0.002,
     priceOutput: 0,
-    tags: ['art generation', 'open-source'],
+    tags: ['art generation', 'text-to-image', 'open-source'],
     released: '2024-06-12',
     popularity: 57,
     pricingType: 'request'
@@ -1173,7 +1214,7 @@ export const models: Model[] = [
     contextLength: 'N/A',
     priceInput: 0.015,
     priceOutput: 0,
-    tags: ['art generation'],
+    tags: ['art generation', 'text-to-image'],
     released: '2025-05-01',
     popularity: 58,
     pricingType: 'request'
@@ -1186,7 +1227,7 @@ export const models: Model[] = [
     contextLength: 'N/A',
     priceInput: 0.007,
     priceOutput: 0,
-    tags: ['art generation', 'fast'],
+    tags: ['art generation', 'text-to-image', 'fast'],
     released: '2025-03-01',
     popularity: 59,
     pricingType: 'request'
@@ -1197,10 +1238,23 @@ export const models: Model[] = [
     provider: 'Fal',
     description: 'Unified image generation, editing, and subject personalization up to about 2K output.',
     contextLength: 'N/A',
-    priceInput: 0.006,
+    priceInput: 0.011,
     priceOutput: 0,
-    tags: ['art generation', 'vision'],
+    tags: ['art generation', 'text-to-image', 'image-to-image', 'vision'],
     released: '2026-05-01',
+    popularity: 60,
+    pricingType: 'megapixel'
+  },
+  {
+    id: 'fal-ai/hidream-o1-image/edit',
+    name: 'HiDream O1 Image Edit',
+    provider: 'Fal',
+    description: 'Prompt-driven image editing with one or more reference images through HiDream O1. Replace objects, restyle products, or personalize scenes while preserving composition.',
+    contextLength: 'N/A',
+    priceInput: 0.011,
+    priceOutput: 0,
+    tags: ['art generation', 'image-to-image', 'vision'],
+    released: '2026-05-19',
     popularity: 60,
     pricingType: 'megapixel'
   },
@@ -1317,6 +1371,19 @@ export const models: Model[] = [
     tags: ['video generation', 'vision'],
     released: '2026-04-09',
     popularity: 68,
+    pricingType: 'second'
+  },
+  {
+    id: 'alibaba/happy-horse/image-to-video',
+    name: 'Happy Horse Image to Video',
+    provider: 'Alibaba',
+    description: 'Alibaba Happy Horse 1.0 image-to-video for 1080p animation with native audio, lip-sync capable motion, and prompt-guided scene life.',
+    contextLength: 'N/A',
+    priceInput: 0.28,
+    priceOutput: 0,
+    tags: ['video generation', 'vision'],
+    released: '2026-04-01',
+    popularity: 69,
     pricingType: 'second'
   },
 ];

@@ -54,7 +54,7 @@ export const providers: Provider[] = [
     slug: 'google',
     name: 'Google',
     url: 'https://deepmind.google',
-    description: 'Gemini 3.1 Pro, 2.5 Pro/Flash with up to 2M context windows and multimodal capabilities.',
+    description: 'Gemini 3.5 Flash, 2.5 Pro/Flash with up to 2M context windows and multimodal capabilities.',
     featured: false,
     logo: '/logos/google.svg'
   },
@@ -153,6 +153,14 @@ export const providers: Provider[] = [
     description: 'Fast serverless inference. FLUX image generation, Smart Resize image recomposition, and Whisper speech-to-text with chunk timestamps.',
     featured: false,
     logo: '/logos/fal.svg'
+  },
+  {
+    slug: 'alibaba',
+    name: 'Alibaba',
+    url: 'https://www.alibabacloud.com',
+    description: 'Alibaba video generation models exposed through OpenPaths, including Happy Horse image-to-video on Fal infrastructure.',
+    featured: false,
+    logo: '/logos/alibaba.webp'
   },
   {
     slug: 'exa',

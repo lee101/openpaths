@@ -12,6 +12,7 @@ const SEARCH_TYPES = [
 ] as const;
 
 const CATEGORIES = ['', 'company', 'research paper', 'news article', 'github', 'personal site', 'people', 'financial report'] as const;
+const PAPERS_TYPES = ['papers', 'methods', 'datasets', 'github_code'] as const;
 
 type Result = {
   id?: string;
@@ -39,6 +40,7 @@ function toIsoOrUndefined(value: string, endOfDay = false): string | undefined {
 
 export function Search() {
   const [apiKey, setApiKey] = useState(() => getStoredAPIKey());
+  const [provider, setProvider] = useState<'exa' | 'papers'>('exa');
   const [query, setQuery] = useState('Latest news on Nvidia');
   const [numResults, setNumResults] = useState(10);
   const [type, setType] = useState<typeof SEARCH_TYPES[number]['value']>('auto');
@@ -69,12 +71,30 @@ export function Search() {
   const [livecrawl, setLivecrawl] = useState('');
   const [livecrawlTimeout, setLivecrawlTimeout] = useState(30000);
   const [maxAge, setMaxAge] = useState('');
+  const [papersType, setPapersType] = useState<typeof PAPERS_TYPES[number]>('papers');
+  const [papersFormat, setPapersFormat] = useState<'json' | 'markdown'>('markdown');
+  const [papersRecent, setPapersRecent] = useState(false);
+  const [papersHasCode, setPapersHasCode] = useState(false);
+  const [papersIncludeGithubCode, setPapersIncludeGithubCode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [response, setResponse] = useState<any>(null);
   const [copied, setCopied] = useState(false);
 
   const body = useMemo(() => {
+    if (provider === 'papers') {
+      return {
+        provider: 'papers',
+        query,
+        numResults,
+        type: papersType,
+        ...(papersFormat === 'markdown' ? { format: 'markdown' } : {}),
+        ...(papersRecent ? { sort: 'recent' } : {}),
+        ...(papersHasCode ? { hasCode: true } : {}),
+        ...(papersIncludeGithubCode ? { includeGithubCode: true } : {}),
+      };
+    }
+
     const contents: Record<string, unknown> = {};
     if (highlights) {
       const h: Record<string, unknown> = {};
@@ -111,7 +131,7 @@ export function Search() {
       ...(livecrawlTimeout > 0 && livecrawl ? { livecrawlTimeout } : {}),
       ...(Object.keys(contents).length ? { contents } : {}),
     };
-  }, [category, endDate, excludeDomains, fullText, highlightChars, highlightQuery, highlights, includeDomains, livecrawl, livecrawlTimeout, mainContentOnly, maxAge, numResults, query, startDate, structuredOutputs, summaryQuery, summarySchema, textChars, type, userLocation]);
+  }, [category, endDate, excludeDomains, fullText, highlightChars, highlightQuery, highlights, includeDomains, livecrawl, livecrawlTimeout, mainContentOnly, maxAge, numResults, papersFormat, papersHasCode, papersIncludeGithubCode, papersRecent, papersType, provider, query, startDate, structuredOutputs, summaryQuery, summarySchema, textChars, type, userLocation]);
 
   const curl = useMemo(() => `curl ${window.location.origin}/v1/search \\
   -H "Content-Type: application/json" \\
@@ -119,11 +139,12 @@ export function Search() {
   -d '${JSON.stringify(body, null, 2)}'`, [apiKey, body]);
 
   const estimatedCost = useMemo(() => {
+    if (provider === 'papers') return 0.001;
     let cost = 0.0077;
     if (numResults > 10) cost += (numResults - 10) * 0.0011;
     if (body.contents) cost += numResults * 0.0011;
     return cost;
-  }, [body.contents, numResults]);
+  }, [body.contents, numResults, provider]);
 
   const runSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,9 +161,10 @@ export function Search() {
         body: JSON.stringify(body),
       });
       const text = await resp.text();
-      const data = text ? JSON.parse(text) : null;
+      const contentType = resp.headers.get('content-type') || '';
+      const data = contentType.includes('application/json') && text ? JSON.parse(text) : text;
       if (!resp.ok) {
-        throw new Error(data?.error?.message || text || `HTTP ${resp.status}`);
+        throw new Error((typeof data === 'object' && data?.error?.message) || text || `HTTP ${resp.status}`);
       }
       setResponse(data);
     } catch (err: any) {
@@ -158,6 +180,7 @@ export function Search() {
     window.setTimeout(() => setCopied(false), 1500);
   };
 
+  const responseText = typeof response === 'string' ? response : '';
   const results: Result[] = Array.isArray(response?.results) ? response.results : [];
 
   return (
@@ -173,16 +196,16 @@ export function Search() {
             <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
               <div className="max-w-3xl">
                 <div className="mb-4 flex items-center gap-3">
-                  <img src="/logos/exa.svg" alt="" className="h-9 w-9 rounded-lg border border-white/10 bg-white p-2" />
+                  <img src={provider === 'exa' ? '/logos/exa.svg' : '/logos/papers.webp'} alt="" className="h-9 w-9 rounded-lg border border-white/10 bg-white p-2" />
                   <div className="font-mono text-xs uppercase tracking-[0.22em] text-white/45">Search API</div>
                 </div>
-                <h1 className="text-4xl font-bold tracking-tight md:text-6xl">Exa search playground</h1>
+                <h1 className="text-4xl font-bold tracking-tight md:text-6xl">{provider === 'exa' ? 'Exa' : 'Papers'} search playground</h1>
                 <p className="mt-4 max-w-2xl text-base leading-relaxed text-white/62">
-                  Test OpenPaths `/v1/search` with Exa-compatible request bodies, including highlights, full text, structured outputs, livecrawl, and filters.
+                  Test OpenPaths `/v1/search` with Exa web search or Papers research search from Applied AI NZ.
                 </p>
               </div>
               <a
-                href="/exa/docs"
+                href={provider === 'exa' ? '/exa/docs' : '/papers/docs'}
                 className="inline-flex items-center justify-center gap-2 rounded border border-white/15 bg-white/[0.03] px-4 py-3 font-mono text-sm text-white/70 hover:border-white/30 hover:text-white"
               >
                 Docs <ExternalLink className="h-4 w-4" />
@@ -194,6 +217,15 @@ export function Search() {
         <form onSubmit={runSearch} className="mx-auto grid max-w-7xl gap-6 px-6 py-8 lg:grid-cols-[420px_1fr]">
           <aside className="space-y-4">
             <Panel title="Request" icon={<SearchIcon className="h-4 w-4" />}>
+              <label className="block text-xs font-mono text-white/45">Provider</label>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <button type="button" onClick={() => setProvider('exa')} className={`rounded border px-3 py-2 text-sm ${provider === 'exa' ? 'border-white bg-white text-black' : 'border-white/10 bg-white/[0.03] text-white/65 hover:border-white/25'}`}>
+                  Exa
+                </button>
+                <button type="button" onClick={() => setProvider('papers')} className={`rounded border px-3 py-2 text-sm ${provider === 'papers' ? 'border-white bg-white text-black' : 'border-white/10 bg-white/[0.03] text-white/65 hover:border-white/25'}`}>
+                  Papers
+                </button>
+              </div>
               <label className="block text-xs font-mono text-white/45">OpenPaths API key</label>
               <input
                 value={apiKey}
@@ -208,32 +240,65 @@ export function Search() {
                 rows={3}
                 className="mt-2 w-full resize-none rounded border border-white/10 bg-black px-3 py-2.5 text-sm outline-none focus:border-white/35"
               />
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                <Field label="Results">
-                  <input type="number" min={1} max={100} value={numResults} onChange={e => setNumResults(Number(e.target.value))} className="input" />
-                </Field>
-                <Field label="Category">
-                  <select value={category} onChange={e => setCategory(e.target.value)} className="input">
-                    {CATEGORIES.map(c => <option key={c} value={c}>{c || 'Any'}</option>)}
-                  </select>
-                </Field>
-              </div>
-              <div className="mt-4 grid grid-cols-4 gap-2">
-                {SEARCH_TYPES.map(item => (
-                  <button
-                    key={item.value}
-                    type="button"
-                    onClick={() => setType(item.value)}
-                    className={`rounded border px-2 py-2 text-left transition-colors ${type === item.value ? 'border-white bg-white text-black' : 'border-white/10 bg-white/[0.03] text-white/65 hover:border-white/25'}`}
-                  >
-                    <div className="text-xs font-bold">{item.label}</div>
-                    <div className="text-[10px] opacity-65">{item.latency}</div>
-                  </button>
-                ))}
-              </div>
+              {provider === 'exa' ? (
+                <>
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+                    <Field label="Results">
+                      <input type="number" min={1} max={100} value={numResults} onChange={e => setNumResults(Number(e.target.value))} className="input" />
+                    </Field>
+                    <Field label="Category">
+                      <select value={category} onChange={e => setCategory(e.target.value)} className="input">
+                        {CATEGORIES.map(c => <option key={c} value={c}>{c || 'Any'}</option>)}
+                      </select>
+                    </Field>
+                  </div>
+                  <div className="mt-4 grid grid-cols-4 gap-2">
+                    {SEARCH_TYPES.map(item => (
+                      <button
+                        key={item.value}
+                        type="button"
+                        onClick={() => setType(item.value)}
+                        className={`rounded border px-2 py-2 text-left transition-colors ${type === item.value ? 'border-white bg-white text-black' : 'border-white/10 bg-white/[0.03] text-white/65 hover:border-white/25'}`}
+                      >
+                        <div className="text-xs font-bold">{item.label}</div>
+                        <div className="text-[10px] opacity-65">{item.latency}</div>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <Field label="Results">
+                    <input type="number" min={1} max={100} value={numResults} onChange={e => setNumResults(Number(e.target.value))} className="input" />
+                  </Field>
+                  <Field label="Type">
+                    <select value={papersType} onChange={e => setPapersType(e.target.value as typeof PAPERS_TYPES[number])} className="input">
+                      {PAPERS_TYPES.map(item => <option key={item} value={item}>{item}</option>)}
+                    </select>
+                  </Field>
+                  <Field label="Format">
+                    <select value={papersFormat} onChange={e => setPapersFormat(e.target.value as 'json' | 'markdown')} className="input">
+                      <option value="markdown">Markdown</option>
+                      <option value="json">JSON</option>
+                    </select>
+                  </Field>
+                  <label className="flex items-end gap-2 pb-2 text-xs text-white/60">
+                    <input type="checkbox" checked={papersRecent} onChange={e => setPapersRecent(e.target.checked)} />
+                    Recent first
+                  </label>
+                  <label className="flex items-end gap-2 pb-2 text-xs text-white/60">
+                    <input type="checkbox" checked={papersHasCode} onChange={e => setPapersHasCode(e.target.checked)} />
+                    Has code
+                  </label>
+                  <label className="flex items-end gap-2 pb-2 text-xs text-white/60">
+                    <input type="checkbox" checked={papersIncludeGithubCode} onChange={e => setPapersIncludeGithubCode(e.target.checked)} />
+                    Include GitHub code
+                  </label>
+                </div>
+              )}
             </Panel>
 
-            <Panel title="Contents" icon={<SlidersHorizontal className="h-4 w-4" />}>
+            {provider === 'exa' && <Panel title="Contents" icon={<SlidersHorizontal className="h-4 w-4" />}>
               <Toggle label="Highlights" checked={highlights} onChange={setHighlights} />
               {highlights && (
                 <div className="mt-3 grid grid-cols-2 gap-3">
@@ -272,9 +337,9 @@ export function Search() {
                   </Field>
                 </div>
               )}
-            </Panel>
+            </Panel>}
 
-            <Panel title="Filters">
+            {provider === 'exa' && <Panel title="Filters">
               <Field label="Include domains">
                 <textarea value={includeDomains} onChange={e => setIncludeDomains(e.target.value)} rows={2} placeholder="exa.ai, docs.exa.ai/reference" className="textarea" />
               </Field>
@@ -296,9 +361,9 @@ export function Search() {
                   <input value={userLocation} onChange={e => setUserLocation(e.target.value)} placeholder="US" className="input" />
                 </Field>
               </div>
-            </Panel>
+            </Panel>}
 
-            <Panel title="Livecrawl">
+            {provider === 'exa' && <Panel title="Livecrawl">
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Mode">
                   <select value={livecrawl} onChange={e => setLivecrawl(e.target.value)} className="input">
@@ -318,7 +383,7 @@ export function Search() {
                   <input type="number" min={0} value={maxAge} onChange={e => setMaxAge(e.target.value)} placeholder="24" className="input" />
                 </Field>
               </div>
-            </Panel>
+            </Panel>}
 
             <button
               type="submit"
@@ -333,7 +398,7 @@ export function Search() {
           <main className="space-y-6">
             <div className="grid gap-3 md:grid-cols-3">
               <Stat label="Estimated cost" value={`$${estimatedCost.toFixed(4)}`} />
-              <Stat label="Search type" value={type} />
+              <Stat label="Provider" value={provider} />
               <Stat label="Results" value={String(numResults)} />
             </div>
 
@@ -365,6 +430,9 @@ export function Search() {
                 </div>
                 {response?.resolvedSearchType && <span className="rounded bg-white/10 px-2 py-1 font-mono text-xs text-white/60">{response.resolvedSearchType}</span>}
               </div>
+              {responseText && (
+                <CodeBlock code={responseText} language="markdown" preClassName="rounded-xl border border-white/10 bg-black/60 p-4 text-xs leading-6" />
+              )}
               <div className="space-y-3">
                 {results.map((result, idx) => (
                   <article key={result.id || result.url || idx} className="rounded-xl border border-white/10 bg-black/35 p-4">

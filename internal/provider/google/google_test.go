@@ -48,6 +48,25 @@ func TestTranslateRequest_ClampsThinkingBudgetToMaxOutput(t *testing.T) {
 	}
 }
 
+func TestTranslateRequest_Gemini35UsesThinkingLevel(t *testing.T) {
+	req := &model.ChatCompletionRequest{
+		Model:           "gemini-3.5-flash",
+		ReasoningEffort: "medium",
+		Messages:        []model.ChatMessage{{Role: "user", Content: "Solve this carefully."}},
+	}
+
+	gemReq := translateRequest(req)
+	if gemReq.GenerationConfig == nil || gemReq.GenerationConfig.ThinkingConfig == nil {
+		t.Fatal("expected thinking config to be set")
+	}
+	if got := gemReq.GenerationConfig.ThinkingConfig.ThinkingLevel; got != "MEDIUM" {
+		t.Fatalf("thinking level = %q, want MEDIUM", got)
+	}
+	if gemReq.GenerationConfig.ThinkingConfig.ThinkingBudget != nil {
+		t.Fatalf("thinking budget should be omitted for Gemini 3.5 Flash")
+	}
+}
+
 func TestTranslateUsage_CountsThoughtTokensAsBillableOutput(t *testing.T) {
 	usage := translateUsage(&geminiUsage{
 		PromptTokenCount:     100,

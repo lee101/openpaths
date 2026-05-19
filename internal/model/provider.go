@@ -15,6 +15,8 @@ type ModelConfig struct {
 	PricePerRequest              float64  `yaml:"price_per_request,omitempty" json:"price_per_request,omitempty"`
 	PricePerImage                float64  `yaml:"price_per_image,omitempty" json:"price_per_image,omitempty"`
 	PricePerMegapixel            float64  `yaml:"price_per_megapixel,omitempty" json:"price_per_megapixel,omitempty"`
+	PriceFirstMegapixel          float64  `yaml:"price_first_megapixel,omitempty" json:"price_first_megapixel,omitempty"`
+	PriceExtraMegapixel          float64  `yaml:"price_extra_megapixel,omitempty" json:"price_extra_megapixel,omitempty"`
 	PricePerInputImage           float64  `yaml:"price_per_input_image,omitempty" json:"price_per_input_image,omitempty"`
 	PricePerVideo                float64  `yaml:"price_per_video,omitempty" json:"price_per_video,omitempty"`
 	PricePerSecond               float64  `yaml:"price_per_second,omitempty" json:"price_per_second,omitempty"`

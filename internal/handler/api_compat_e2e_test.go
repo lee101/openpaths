@@ -12,7 +12,7 @@
 //   - Server running (localhost:8080 by default, or set SERVER_URL)
 //   - Valid API key set as OPENPATHS_API_KEY in .env or environment
 //
-// Uses cheap/fast models: gemini-flash-lite, claude-haiku, gpt-5-mini
+// Uses cheap/fast models: gemini-3.1-flash-lite, claude-haiku, gpt-5-mini
 
 package handler_test
 
@@ -78,7 +78,7 @@ func TestAPICompatOpenAIChatBasic(t *testing.T) {
 	apiKey := getAPIKey(t)
 	serverURL := getServerURL()
 
-	models := []string{"gemini-flash-lite", "gpt-5-mini", "claude-haiku"}
+	models := []string{"gemini-3.1-flash-lite", "gpt-5-mini", "claude-haiku"}
 
 	for _, model := range models {
 		t.Run(model, func(t *testing.T) {
@@ -154,7 +154,7 @@ func TestAPICompatOpenAISystemPrompt(t *testing.T) {
 	serverURL := getServerURL()
 
 	body, _ := json.Marshal(map[string]any{
-		"model": "gemini-flash-lite",
+		"model": "gemini-3.1-flash-lite",
 		"messages": []map[string]string{
 			{"role": "system", "content": "You are a pirate. Always respond with 'Arrr' in your answer."},
 			{"role": "user", "content": "Say hi"},
@@ -200,7 +200,7 @@ func TestAPICompatOpenAIStreaming(t *testing.T) {
 	serverURL := getServerURL()
 
 	body, _ := json.Marshal(map[string]any{
-		"model": "gemini-flash-lite",
+		"model": "gemini-3.1-flash-lite",
 		"messages": []map[string]string{
 			{"role": "user", "content": "Say hello"},
 		},
@@ -281,7 +281,7 @@ func TestAPICompatAnthropicBasic(t *testing.T) {
 	serverURL := getServerURL()
 
 	// Test that Anthropic API format works with different provider models
-	models := []string{"claude-haiku", "gemini-flash-lite", "gpt-5-mini"}
+	models := []string{"claude-haiku", "gemini-3.1-flash-lite", "gpt-5-mini"}
 
 	for _, model := range models {
 		t.Run(model, func(t *testing.T) {
@@ -519,10 +519,10 @@ func TestAPICompatCrossProvider(t *testing.T) {
 		format string // "openai" or "anthropic"
 		model  string
 	}{
-		{"openai/gemini-flash-lite", "openai", "gemini-flash-lite"},
+		{"openai/gemini-3.1-flash-lite", "openai", "gemini-3.1-flash-lite"},
 		{"openai/gpt-5-mini", "openai", "gpt-5-mini"},
 		{"openai/claude-haiku", "openai", "claude-haiku"},
-		{"anthropic/gemini-flash-lite", "anthropic", "gemini-flash-lite"},
+		{"anthropic/gemini-3.1-flash-lite", "anthropic", "gemini-3.1-flash-lite"},
 		{"anthropic/gpt-5-mini", "anthropic", "gpt-5-mini"},
 		{"anthropic/claude-haiku", "anthropic", "claude-haiku"},
 	}
@@ -600,7 +600,7 @@ func TestAPICompatAliasResolution(t *testing.T) {
 		{"haiku", "claude-haiku-4-5-20251001"},
 		{"sonnet", "claude-sonnet-latest"},
 		{"opus", "claude-opus-latest"},
-		{"flash-lite", "gemini-flash-lite"},
+		{"flash-lite", "gemini-3.1-flash-lite"},
 	}
 
 	for _, tc := range aliases {
@@ -744,7 +744,7 @@ func TestAPICompatOpenAIPrefill(t *testing.T) {
 
 	// Some models support continuing from an assistant message
 	// This tests that the gateway passes it through correctly
-	models := []string{"claude-haiku", "gemini-flash-lite"}
+	models := []string{"claude-haiku", "gemini-3.1-flash-lite"}
 
 	for _, model := range models {
 		t.Run(model, func(t *testing.T) {
@@ -847,7 +847,7 @@ func TestAPICompatMultiTurn(t *testing.T) {
 
 	// Multi-turn conversation
 	body, _ := json.Marshal(map[string]any{
-		"model": "gemini-flash-lite",
+		"model": "gemini-3.1-flash-lite",
 		"messages": []map[string]string{
 			{"role": "user", "content": "My name is TestBot."},
 			{"role": "assistant", "content": "Nice to meet you, TestBot!"},
@@ -932,7 +932,7 @@ func TestAPICompatModelsList(t *testing.T) {
 		modelSet[m.ID] = true
 	}
 
-	required := []string{"gpt-5.5", "gpt-5.4", "claude-sonnet-latest", "claude-opus-latest", "gemini-flash-lite", "claude-haiku-4-5-20251001"}
+	required := []string{"gpt-5.5", "gpt-5.4", "claude-sonnet-latest", "claude-opus-latest", "gemini-3.1-flash-lite", "claude-haiku-4-5-20251001"}
 	for _, id := range required {
 		if !modelSet[id] {
 			t.Errorf("expected model %q in /v1/models list", id)

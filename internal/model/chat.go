@@ -153,6 +153,8 @@ type ModelPricing struct {
 	PerRequest              float64 `json:"per_request,omitempty"`
 	PerImage                float64 `json:"per_image,omitempty"`
 	PerMegapixel            float64 `json:"per_megapixel,omitempty"`
+	FirstMegapixel          float64 `json:"first_megapixel,omitempty"`
+	ExtraMegapixel          float64 `json:"extra_megapixel,omitempty"`
 	PerInputImage           float64 `json:"per_input_image,omitempty"`
 	PerVideo                float64 `json:"per_video,omitempty"`
 	PerSecond               float64 `json:"per_second,omitempty"`

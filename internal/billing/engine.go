@@ -136,6 +136,31 @@ func (e *Engine) DeductImageWithInputsAndSize(ctx context.Context, userID, model
 	return cost, nil
 }
 
+func (e *Engine) DeductOutpaint(ctx context.Context, userID, modelID string, inputWidth, inputHeight, outputWidth, outputHeight, outputImageCount int, usageLogID string) (int64, error) {
+	cost, err := e.pricing.CalculateOutpaintCost(modelID, inputWidth, inputHeight, outputWidth, outputHeight, outputImageCount)
+	if err != nil {
+		return 0, err
+	}
+	if cost == 0 {
+		return 0, nil
+	}
+	var refID *string
+	if usageLogID != "" {
+		refID = &usageLogID
+	}
+	err = e.credits.DeductWithTransaction(ctx, userID, cost,
+		model.TxTypeUsageDeduction,
+		formatOutpaintUsageDescription(modelID, inputWidth, inputHeight, outputWidth, outputHeight, outputImageCount),
+		refID,
+	)
+	if err != nil {
+		e.triggerAutoTopup(userID)
+		return cost, err
+	}
+	e.triggerAutoTopup(userID)
+	return cost, nil
+}
+
 func formatImageUsageDescription(modelID string, outputImageCount, inputImageCount int, size string) string {
 	parts := []string{
 		fmt.Sprintf("Image: %s", modelID),
@@ -146,6 +171,15 @@ func formatImageUsageDescription(modelID string, outputImageCount, inputImageCou
 		parts = append(parts, fmt.Sprintf("size: %s", size))
 	}
 	return strings.Join(parts, ", ")
+}
+
+func formatOutpaintUsageDescription(modelID string, inputWidth, inputHeight, outputWidth, outputHeight, outputImageCount int) string {
+	return strings.Join([]string{
+		fmt.Sprintf("Image: %s", modelID),
+		fmt.Sprintf("outputs: %d", outputImageCount),
+		fmt.Sprintf("input: %dx%d", inputWidth, inputHeight),
+		fmt.Sprintf("output: %dx%d", outputWidth, outputHeight),
+	}, ", ")
 }
 
 // DeductVideo calculates video generation cost and atomically deducts from balance.

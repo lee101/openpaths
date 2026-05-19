@@ -157,8 +157,9 @@ func (h *ChatHandler) tryNonStreamingBYOK(
 			statusCode = pe.StatusCode
 			errMsg = pe.Message
 			if statusCode == 401 || statusCode == 403 {
-				h.recorder.RecordError(userID, apiKeyID, originalModel, prov.Name(),
-					int(latency.Milliseconds()), statusCode, errMsg, false)
+				return false, err
+			}
+			if pe.Retryable {
 				return false, err
 			}
 			if !pe.Retryable {
@@ -225,6 +226,9 @@ func (h *ChatHandler) tryStreamingBYOK(
 			statusCode = pe.StatusCode
 			errMsg = pe.Message
 			if statusCode == 401 || statusCode == 403 {
+				return false, err
+			}
+			if pe.Retryable {
 				return false, err
 			}
 			if !pe.Retryable {

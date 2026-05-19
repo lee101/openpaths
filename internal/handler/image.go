@@ -3,8 +3,13 @@ package handler
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
 	"io"
 	"log"
 	"net/http"
@@ -56,9 +61,16 @@ func (h *ImageHandler) HandleImageGeneration(ctx *fasthttp.RequestCtx) {
 		writeError(ctx, 400, "invalid_request", "model is required")
 		return
 	}
-	if req.Prompt == "" {
+	if req.Prompt == "" && !isPromptlessImageModel(req.Model) {
 		writeError(ctx, 400, "invalid_request", "prompt is required")
 		return
+	}
+	if isPromptlessImageModel(req.Model) && !hasImageInput(req) {
+		writeError(ctx, 400, "invalid_request", "image_url is required")
+		return
+	}
+	if req.N <= 0 && req.NumImages > 0 {
+		req.N = req.NumImages
 	}
 	if req.N <= 0 {
 		req.N = 1
@@ -150,7 +162,7 @@ func (h *ImageHandler) HandleImageGeneration(ctx *fasthttp.RequestCtx) {
 		h.router.MarkModelHealthy(cand.Provider.Name(), cand.ModelCfg.ID)
 		imageCount := len(resp.Data)
 		inputImageCount := countInputImages(&req)
-		cost, _ := h.billing.DeductImageWithInputsAndSize(ctx, userID, cand.ModelCfg.ID, imageCount, inputImageCount, req.Size, "")
+		cost, _ := h.deductImageCost(ctx, userID, cand.ModelCfg.ID, &req, resp, imageCount, inputImageCount)
 		h.recorder.RecordSuccess(userID, apiKeyID, originalModel, cand.Provider.Name(),
 			0, imageCount, int(latency.Milliseconds()), 0, cost, false)
 
@@ -161,6 +173,83 @@ func (h *ImageHandler) HandleImageGeneration(ctx *fasthttp.RequestCtx) {
 	writeError(ctx, 502, "provider_error", "all providers failed for model "+originalModel)
 }
 
+func (h *ImageHandler) deductImageCost(ctx context.Context, userID, modelID string, req *model.ImageGenerationRequest, resp *model.ImageGenerationResponse, imageCount, inputImageCount int) (int64, error) {
+	if isOutpaintModel(modelID) && len(resp.Data) > 0 {
+		inputW, inputH := h.firstInputImageDimensions(ctx, req)
+		outputW, outputH := resp.Data[0].Width, resp.Data[0].Height
+		return h.billing.DeductOutpaint(ctx, userID, modelID, inputW, inputH, outputW, outputH, imageCount, "")
+	}
+	return h.billing.DeductImageWithInputsAndSize(ctx, userID, modelID, imageCount, inputImageCount, req.Size, "")
+}
+
+func isPromptlessImageModel(modelID string) bool {
+	return strings.Contains(strings.ToLower(modelID), "outpaint")
+}
+
+func hasImageInput(req model.ImageGenerationRequest) bool {
+	if req.ImageURL != "" || len(req.ImageURLs) > 0 || len(req.ReferenceImageURLs) > 0 {
+		return true
+	}
+	if req.Image != nil && req.Image.URL != "" {
+		return true
+	}
+	if len(req.Images) > 0 && req.Images[0].URL != "" {
+		return true
+	}
+	return false
+}
+
+func isOutpaintModel(modelID string) bool {
+	return strings.Contains(strings.ToLower(modelID), "flux-2-pro/outpaint")
+}
+
+func (h *ImageHandler) firstInputImageDimensions(ctx context.Context, req *model.ImageGenerationRequest) (int, int) {
+	for _, url := range inputImageURLs(req) {
+		if width, height := downloadImageDimensions(ctx, url); width > 0 && height > 0 {
+			return width, height
+		}
+	}
+	return 0, 0
+}
+
+func inputImageURLs(req *model.ImageGenerationRequest) []string {
+	var urls []string
+	if req.ImageURL != "" {
+		urls = append(urls, req.ImageURL)
+	}
+	urls = append(urls, req.ReferenceImageURLs...)
+	urls = append(urls, req.ImageURLs...)
+	if req.Image != nil && req.Image.URL != "" {
+		urls = append(urls, req.Image.URL)
+	}
+	for _, img := range req.Images {
+		if img.URL != "" {
+			urls = append(urls, img.URL)
+		}
+	}
+	return urls
+}
+
+func downloadImageDimensions(ctx context.Context, sourceURL string) (int, int) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, sourceURL, nil)
+	if err != nil {
+		return 0, 0
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return 0, 0
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return 0, 0
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return 0, 0
+	}
+	return imageDimensions(body)
+}
+
 func (h *ImageHandler) rehostImageURLs(ctx context.Context, resp *model.ImageGenerationResponse) {
 	if h.store == nil || resp == nil {
 		return
@@ -169,32 +258,39 @@ func (h *ImageHandler) rehostImageURLs(ctx context.Context, resp *model.ImageGen
 		if resp.Data[i].URL == "" {
 			continue
 		}
-		url, err := h.rehostImageURL(ctx, resp.Data[i].URL, i)
+		url, width, height, err := h.rehostImageURL(ctx, resp.Data[i].URL, i)
 		if err != nil {
 			log.Printf("image rehost [%d]: %v, keeping upstream URL", i, err)
 			continue
 		}
 		resp.Data[i].URL = url
+		if resp.Data[i].Width == 0 {
+			resp.Data[i].Width = width
+		}
+		if resp.Data[i].Height == 0 {
+			resp.Data[i].Height = height
+		}
 	}
 }
 
-func (h *ImageHandler) rehostImageURL(ctx context.Context, sourceURL string, index int) (string, error) {
+func (h *ImageHandler) rehostImageURL(ctx context.Context, sourceURL string, index int) (string, int, int, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, sourceURL, nil)
 	if err != nil {
-		return "", err
+		return "", 0, 0, err
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return "", err
+		return "", 0, 0, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return "", fmt.Errorf("download status %d", resp.StatusCode)
+		return "", 0, 0, fmt.Errorf("download status %d", resp.StatusCode)
 	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", err
+		return "", 0, 0, err
 	}
+	width, height := imageDimensions(body)
 	contentType := resp.Header.Get("Content-Type")
 	ext := extFromContentType(contentType)
 	if ext == "" {
@@ -203,7 +299,8 @@ func (h *ImageHandler) rehostImageURL(ctx context.Context, sourceURL string, ind
 	if ext == "" {
 		ext = ".png"
 	}
-	return h.store.Upload(ctx, fmt.Sprintf("generated-%d%s", index+1, ext), contentType, bytes.NewReader(body))
+	url, err := h.store.Upload(ctx, fmt.Sprintf("generated-%d%s", index+1, ext), contentType, bytes.NewReader(body))
+	return url, width, height, err
 }
 
 func extFromContentType(contentType string) string {
@@ -222,6 +319,50 @@ func extFromContentType(contentType string) string {
 	default:
 		return ""
 	}
+}
+
+func imageDimensions(body []byte) (int, int) {
+	if cfg, _, err := image.DecodeConfig(bytes.NewReader(body)); err == nil {
+		return cfg.Width, cfg.Height
+	}
+	return webpDimensions(body)
+}
+
+func webpDimensions(body []byte) (int, int) {
+	if len(body) < 30 || string(body[:4]) != "RIFF" || string(body[8:12]) != "WEBP" {
+		return 0, 0
+	}
+	for offset := 12; offset+8 <= len(body); {
+		chunkType := string(body[offset : offset+4])
+		chunkSize := int(binary.LittleEndian.Uint32(body[offset+4 : offset+8]))
+		data := offset + 8
+		if data+chunkSize > len(body) {
+			return 0, 0
+		}
+		switch chunkType {
+		case "VP8X":
+			if chunkSize >= 10 {
+				w := 1 + int(body[data+4]) + int(body[data+5])<<8 + int(body[data+6])<<16
+				h := 1 + int(body[data+7]) + int(body[data+8])<<8 + int(body[data+9])<<16
+				return w, h
+			}
+		case "VP8 ":
+			if chunkSize >= 10 {
+				w := int(binary.LittleEndian.Uint16(body[data+6:data+8])) & 0x3fff
+				h := int(binary.LittleEndian.Uint16(body[data+8:data+10])) & 0x3fff
+				return w, h
+			}
+		case "VP8L":
+			if chunkSize >= 5 {
+				b0, b1, b2, b3 := uint32(body[data+1]), uint32(body[data+2]), uint32(body[data+3]), uint32(body[data+4])
+				w := int(1 + (((b1 & 0x3f) << 8) | b0))
+				h := int(1 + (((b3 & 0x0f) << 10) | (b2 << 2) | ((b1 & 0xc0) >> 6)))
+				return w, h
+			}
+		}
+		offset = data + chunkSize + chunkSize%2
+	}
+	return 0, 0
 }
 
 func countInputImages(req *model.ImageGenerationRequest) int {

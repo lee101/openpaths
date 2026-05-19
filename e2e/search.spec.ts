@@ -52,4 +52,31 @@ test.describe('Search Playground', () => {
       contents: { highlights: true },
     });
   });
+
+  test('submits mocked Papers search and renders markdown', async ({ page }) => {
+    let requestBody: any = null;
+    await page.route('**/v1/search', async route => {
+      requestBody = route.request().postDataJSON();
+      await route.fulfill({
+        status: 200,
+        contentType: 'text/markdown; charset=utf-8',
+        body: '# Papers Search\n\n- Query: diffusion transformers\n- Count: 1\n',
+      });
+    });
+
+    await page.goto('/search');
+    await page.locator('input[placeholder="op-..."]').fill('op-search-test-key');
+    await page.getByRole('button', { name: 'Papers' }).click();
+    await page.locator('textarea').first().fill('diffusion transformers');
+    await page.getByRole('button', { name: 'Run Search' }).click();
+
+    await expect(page.locator('pre').filter({ hasText: 'Papers Search' })).toBeVisible();
+    expect(requestBody).toMatchObject({
+      provider: 'papers',
+      query: 'diffusion transformers',
+      numResults: 10,
+      type: 'papers',
+      format: 'markdown',
+    });
+  });
 });

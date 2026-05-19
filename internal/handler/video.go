@@ -1,11 +1,15 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"strconv"
+	"sync/atomic"
 	"time"
 
+	"github.com/openpaths/openpaths/internal/db/queries"
 	"github.com/valyala/fasthttp"
 
 	"github.com/openpaths/openpaths/internal/billing"
@@ -16,14 +20,22 @@ import (
 	"github.com/openpaths/openpaths/internal/router"
 )
 
+var activeVideoJobs int64
+
+func ActiveVideoJobs() int64 {
+	return atomic.LoadInt64(&activeVideoJobs)
+}
+
 type VideoHandler struct {
 	router   *router.Router
 	billing  *billing.Engine
 	recorder *metrics.Recorder
+	jobs     *videoJobCache
+	jobQ     *queries.VideoJobQueries
 }
 
-func NewVideoHandler(r *router.Router, b *billing.Engine, rec *metrics.Recorder) *VideoHandler {
-	return &VideoHandler{router: r, billing: b, recorder: rec}
+func NewVideoHandler(r *router.Router, b *billing.Engine, rec *metrics.Recorder, jobQ *queries.VideoJobQueries) *VideoHandler {
+	return &VideoHandler{router: r, billing: b, recorder: rec, jobs: newVideoJobCache(), jobQ: jobQ}
 }
 
 func (h *VideoHandler) HandleVideoGeneration(ctx *fasthttp.RequestCtx) {
@@ -48,12 +60,180 @@ func (h *VideoHandler) HandleVideoGeneration(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
+	async := req.Async || string(ctx.QueryArgs().Peek("async")) == "true" || string(ctx.Request.Header.Peek("Prefer")) == "respond-async"
+	if h.jobQ != nil {
+		h.handleDurableVideoGeneration(ctx, req, userID, apiKeyID, async)
+		return
+	}
+	job, cached := h.jobs.getOrCreate(req)
+	if !cached {
+		go h.runVideoJob(job.ID, req, userID, apiKeyID)
+	}
+	if async {
+		writeJSON(ctx, 202, videoJobPayload(job, cached))
+		return
+	}
+	if job.Status == videoJobCompleted && job.Result != nil {
+		writeJSON(ctx, 200, job.Result)
+		return
+	}
+	if job.Status == videoJobFailed {
+		writeError(ctx, videoJobHTTPStatus(job), job.ErrorType, job.Error)
+		return
+	}
+
+	waited, ok := h.jobs.wait(job.ID, 85*time.Second)
+	if !ok {
+		writeError(ctx, 404, "job_not_found", "video generation job not found")
+		return
+	}
+	switch waited.Status {
+	case videoJobCompleted:
+		writeJSON(ctx, 200, waited.Result)
+	case videoJobFailed:
+		writeError(ctx, videoJobHTTPStatus(waited), waited.ErrorType, waited.Error)
+	default:
+		ctx.Response.Header.Set("Retry-After", "2")
+		writeJSON(ctx, 202, videoJobPayload(waited, cached))
+	}
+}
+
+func videoJobHTTPStatus(job *videoJob) int {
+	if job.StatusCode >= 400 {
+		return job.StatusCode
+	}
+	return 502
+}
+
+func (h *VideoHandler) HandleVideoGenerationJob(ctx *fasthttp.RequestCtx) {
+	jobID, _ := ctx.UserValue("job_id").(string)
+	if jobID == "" {
+		writeError(ctx, 400, "invalid_request", "job_id is required")
+		return
+	}
+	if h.jobQ != nil {
+		job, err := h.jobQ.GetByID(ctx, jobID)
+		if err != nil {
+			writeError(ctx, 404, "not_found", "video generation job not found")
+			return
+		}
+		writeJSON(ctx, 200, durableVideoJobPayload(job, true))
+		return
+	}
+	job, ok := h.jobs.get(jobID)
+	if !ok {
+		writeError(ctx, 404, "not_found", "video generation job not found")
+		return
+	}
+	writeJSON(ctx, 200, videoJobPayload(job, true))
+}
+
+func (h *VideoHandler) handleDurableVideoGeneration(ctx *fasthttp.RequestCtx, req model.VideoGenerationRequest, userID, apiKeyID string, async bool) {
+	req.Async = false
+	requestJSON, _ := json.Marshal(req)
+	job, created, err := h.jobQ.GetOrCreate(ctx, &queries.VideoJob{
+		ID:          newVideoJobID(),
+		RequestHash: videoRequestCacheKey(req),
+		UserID:      userID,
+		APIKeyID:    apiKeyID,
+		Model:       req.Model,
+		Status:      string(videoJobQueued),
+		RequestJSON: requestJSON,
+	})
+	if err != nil {
+		writeError(ctx, 500, "server_error", "failed to create video generation job")
+		return
+	}
+	if created {
+		go h.runDurableVideoJob(job.ID, req, userID, apiKeyID)
+	}
+	if async {
+		writeJSON(ctx, 202, durableVideoJobPayload(job, !created))
+		return
+	}
+	switch job.Status {
+	case string(videoJobCompleted):
+		resp, err := durableVideoJobResult(job)
+		if err != nil {
+			writeError(ctx, 502, "provider_error", "stored video result is invalid")
+			return
+		}
+		writeJSON(ctx, 200, resp)
+		return
+	case string(videoJobFailed):
+		writeError(ctx, 502, stringPtrValue(job.ErrorType, "provider_error"), stringPtrValue(job.ErrorMessage, "video generation failed"))
+		return
+	}
+
+	waited, ok := h.waitDurableVideoJob(job.ID, 85*time.Second)
+	if !ok {
+		writeError(ctx, 404, "job_not_found", "video generation job not found")
+		return
+	}
+	switch waited.Status {
+	case string(videoJobCompleted):
+		resp, err := durableVideoJobResult(waited)
+		if err != nil {
+			writeError(ctx, 502, "provider_error", "stored video result is invalid")
+			return
+		}
+		writeJSON(ctx, 200, resp)
+	case string(videoJobFailed):
+		writeError(ctx, 502, stringPtrValue(waited.ErrorType, "provider_error"), stringPtrValue(waited.ErrorMessage, "video generation failed"))
+	default:
+		ctx.Response.Header.Set("Retry-After", "2")
+		writeJSON(ctx, 202, durableVideoJobPayload(waited, !created))
+	}
+}
+
+func (h *VideoHandler) waitDurableVideoJob(jobID string, timeout time.Duration) (*queries.VideoJob, bool) {
+	deadline := time.Now().Add(timeout)
+	for {
+		job, err := h.jobQ.GetByID(context.Background(), jobID)
+		if err != nil {
+			return nil, false
+		}
+		if job.Status == string(videoJobCompleted) || job.Status == string(videoJobFailed) || time.Now().After(deadline) {
+			return job, true
+		}
+		time.Sleep(2 * time.Second)
+	}
+}
+
+func (h *VideoHandler) runDurableVideoJob(jobID string, req model.VideoGenerationRequest, userID, apiKeyID string) {
+	atomic.AddInt64(&activeVideoJobs, 1)
+	defer atomic.AddInt64(&activeVideoJobs, -1)
+	bg, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	defer cancel()
+	_ = h.jobQ.MarkRunning(bg, jobID)
+	result := h.executeVideoGeneration(bg, req, userID, apiKeyID)
+	if result.Response != nil && result.StatusCode < 400 {
+		body, _ := json.Marshal(result.Response)
+		_ = h.jobQ.Complete(context.Background(), jobID, body)
+		return
+	}
+	errType := result.ErrorType
+	if errType == "" {
+		errType = "provider_error"
+	}
+	_ = h.jobQ.Fail(context.Background(), jobID, errType, result.ErrorMessage)
+}
+
+func (h *VideoHandler) runVideoJob(jobID string, req model.VideoGenerationRequest, userID, apiKeyID string) {
+	atomic.AddInt64(&activeVideoJobs, 1)
+	defer atomic.AddInt64(&activeVideoJobs, -1)
+	h.jobs.markRunning(jobID)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	defer cancel()
+	h.jobs.complete(jobID, h.executeVideoGeneration(ctx, req, userID, apiKeyID))
+}
+
+func (h *VideoHandler) executeVideoGeneration(ctx context.Context, req model.VideoGenerationRequest, userID, apiKeyID string) videoExecutionResult {
 	originalModel := req.Model
 	autoResult := h.router.MaybeResolveAuto(ctx, req.Model, "video", req.Prompt)
 	candidates, err := h.router.ResolveForRequest(originalModel, autoResult.ModelID)
 	if err != nil {
-		writeError(ctx, 404, "model_not_found", err.Error())
-		return
+		return videoExecutionResult{StatusCode: 404, ErrorType: "model_not_found", ErrorMessage: err.Error()}
 	}
 
 	for i, cand := range candidates {
@@ -70,21 +250,33 @@ func (h *VideoHandler) HandleVideoGeneration(ctx *fasthttp.RequestCtx) {
 		latency := time.Since(start)
 
 		if err != nil {
+			log.Printf("video provider error: provider=%s model=%s status_latency_ms=%d err=%v",
+				cand.Provider.Name(), cand.ModelCfg.ID, int(latency.Milliseconds()), err)
+			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+				if h.recorder != nil {
+					h.recorder.RecordError(userID, apiKeyID, originalModel, cand.Provider.Name(),
+						int(latency.Milliseconds()), 499, err.Error(), false)
+				}
+				return videoExecutionResult{StatusCode: 499, ErrorType: "request_canceled", ErrorMessage: "request canceled"}
+			}
 			statusCode := 502
 			errMsg := "upstream error"
 			if pe, ok := err.(*provider.ProviderError); ok {
 				statusCode = pe.StatusCode
 				errMsg = pe.Message
 				if !pe.Retryable {
-					h.recorder.RecordError(userID, apiKeyID, originalModel, cand.Provider.Name(),
-						int(latency.Milliseconds()), statusCode, errMsg, false)
-					writeError(ctx, statusCode, "provider_error", errMsg)
-					return
+					if h.recorder != nil {
+						h.recorder.RecordError(userID, apiKeyID, originalModel, cand.Provider.Name(),
+							int(latency.Milliseconds()), statusCode, errMsg, false)
+					}
+					return videoExecutionResult{StatusCode: statusCode, ErrorType: "provider_error", ErrorMessage: errMsg}
 				}
 			}
 			h.router.MarkModelUnhealthy(cand.Provider.Name(), cand.ModelCfg.ID)
-			h.recorder.RecordError(userID, apiKeyID, originalModel, cand.Provider.Name(),
-				int(latency.Milliseconds()), statusCode, errMsg, false)
+			if h.recorder != nil {
+				h.recorder.RecordError(userID, apiKeyID, originalModel, cand.Provider.Name(),
+					int(latency.Milliseconds()), statusCode, errMsg, false)
+			}
 			if i < len(candidates)-1 {
 				log.Printf("video fallback: %s/%s -> %s/%s",
 					cand.Provider.Name(), cand.ModelCfg.ID,
@@ -95,15 +287,19 @@ func (h *VideoHandler) HandleVideoGeneration(ctx *fasthttp.RequestCtx) {
 
 		h.router.MarkModelHealthy(cand.Provider.Name(), cand.ModelCfg.ID)
 		resp.Model = originalModel
-		cost, _ := h.billing.DeductVideo(ctx, userID, cand.ModelCfg.ID, videoDurationSeconds(req.Duration), len(req.VideoURLs) > 0, "")
-		h.recorder.RecordSuccess(userID, apiKeyID, originalModel, cand.Provider.Name(),
-			0, 1, int(latency.Milliseconds()), 0, cost, false)
+		var cost int64
+		if h.billing != nil {
+			cost, _ = h.billing.DeductVideo(ctx, userID, cand.ModelCfg.ID, videoDurationSeconds(string(req.Duration)), len(req.VideoURLs) > 0, "")
+		}
+		if h.recorder != nil {
+			h.recorder.RecordSuccess(userID, apiKeyID, originalModel, cand.Provider.Name(),
+				0, 1, int(latency.Milliseconds()), 0, cost, false)
+		}
 
-		writeJSON(ctx, 200, resp)
-		return
+		return videoExecutionResult{Response: resp, StatusCode: 200}
 	}
 
-	writeError(ctx, 502, "provider_error", "all providers failed for model "+originalModel)
+	return videoExecutionResult{StatusCode: 502, ErrorType: "provider_error", ErrorMessage: "all providers failed for model " + originalModel}
 }
 
 func videoDurationSeconds(duration string) int {

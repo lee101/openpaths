@@ -240,6 +240,52 @@ func (q *StatsQueries) GetTimeSeries(ctx context.Context, period, interval, metr
 	return points, nil
 }
 
+func (q *StatsQueries) GetModelDailyUsage(ctx context.Context, period string, limit int) ([]model.ModelDailyUsagePoint, error) {
+	since := time.Now().Add(-parsePeriod(period))
+	if limit <= 0 || limit > 12 {
+		limit = 8
+	}
+
+	rows, err := q.pool.Query(ctx,
+		`WITH top_models AS (
+			SELECT model, provider, COUNT(*) AS total_requests
+			FROM usage_logs
+			WHERE created_at >= $1
+			GROUP BY model, provider
+			ORDER BY total_requests DESC
+			LIMIT $2
+		)
+		SELECT
+			date_trunc('day', ul.created_at)::date AS day,
+			ul.model,
+			ul.provider,
+			COUNT(*)::bigint AS requests
+		FROM usage_logs ul
+		JOIN top_models tm ON tm.model = ul.model AND tm.provider = ul.provider
+		WHERE ul.created_at >= $1
+		GROUP BY day, ul.model, ul.provider
+		ORDER BY day ASC, requests DESC, ul.model ASC`,
+		since, limit,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("get model daily usage: %w", err)
+	}
+	defer rows.Close()
+
+	var points []model.ModelDailyUsagePoint
+	for rows.Next() {
+		var p model.ModelDailyUsagePoint
+		if err := rows.Scan(&p.Date, &p.Model, &p.Provider, &p.Requests); err != nil {
+			return nil, fmt.Errorf("scan model daily usage: %w", err)
+		}
+		points = append(points, p)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate model daily usage: %w", err)
+	}
+	return points, nil
+}
+
 func (q *StatsQueries) GetUserSpendByAPIKey(ctx context.Context, userID, period string) ([]model.APIKeySpend, error) {
 	since := time.Now().Add(-parsePeriod(period))
 	rows, err := q.pool.Query(ctx,

@@ -2,6 +2,7 @@ package billing
 
 import (
 	"fmt"
+	"math"
 
 	imgutil "github.com/openpaths/openpaths/internal/image"
 	"github.com/openpaths/openpaths/internal/model"
@@ -92,6 +93,43 @@ func (pt *PricingTable) CalculateImageCostWithInputsAndSize(modelID string, outp
 		totalCents = 1
 	}
 	return totalCents, nil
+}
+
+func (pt *PricingTable) CalculateOutpaintCost(modelID string, inputWidth, inputHeight, outputWidth, outputHeight, outputImageCount int) (int64, error) {
+	cfg, ok := pt.models[modelID]
+	if !ok {
+		return 0, fmt.Errorf("unknown model %q for pricing", modelID)
+	}
+	if cfg.PriceFirstMegapixel <= 0 || cfg.PriceExtraMegapixel <= 0 {
+		return 0, fmt.Errorf("model %q has no outpaint pricing", modelID)
+	}
+	if outputImageCount <= 0 {
+		outputImageCount = 1
+	}
+	inputMP := roundedMegapixels(inputWidth, inputHeight)
+	outputMP := roundedMegapixels(outputWidth, outputHeight)
+	if outputMP < 1 {
+		outputMP = 1
+	}
+	extraMP := inputMP + max(0, outputMP-1)
+	totalDollars := (cfg.PriceFirstMegapixel + cfg.PriceExtraMegapixel*float64(extraMP)) * float64(outputImageCount)
+	totalCents := int64(totalDollars * 10000)
+	if totalCents < 1 {
+		totalCents = 1
+	}
+	return totalCents, nil
+}
+
+func roundedMegapixels(width, height int) int {
+	if width <= 0 || height <= 0 {
+		return 0
+	}
+	mp := float64(width*height) / 1_000_000.0
+	rounded := int(math.Round(mp))
+	if rounded < 1 {
+		return 1
+	}
+	return rounded
 }
 
 // CalculateVideoCost returns cost in hundredths-of-a-cent for video generation.
@@ -190,6 +228,9 @@ func (pt *PricingTable) EstimateMaxCost(modelID string, maxOutputTokens int) (in
 	}
 	if cfg.PricePerMegapixel > 0 {
 		return pt.CalculateImageCostWithInputsAndSize(modelID, 1, 0, "2048x2048")
+	}
+	if cfg.PriceFirstMegapixel > 0 && cfg.PriceExtraMegapixel > 0 {
+		return pt.CalculateOutpaintCost(modelID, 1024, 1024, 2048, 2048, 1)
 	}
 	if cfg.PricePerImage > 0 {
 		return pt.CalculateImageCostWithInputs(modelID, 1, 0)

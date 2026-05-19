@@ -39,8 +39,8 @@ func TestAutoTierConfig_PrimaryModels(t *testing.T) {
 	if got := models["auto-think"]; got != "gpt-5.4-mini" {
 		t.Fatalf("auto-think provider_model_id = %q, want %q", got, "gpt-5.4-mini")
 	}
-	if got := models["auto-easy-task"]; got != "gemini-flash-lite-latest" {
-		t.Fatalf("auto-easy-task provider_model_id = %q, want %q", got, "gemini-flash-lite-latest")
+	if got := models["auto-easy-task"]; got != "gemini-3.1-flash-lite" {
+		t.Fatalf("auto-easy-task provider_model_id = %q, want %q", got, "gemini-3.1-flash-lite")
 	}
 	if got := models["gpt-5.5"]; got != "gpt-5.5" {
 		t.Fatalf("gpt-5.5 provider_model_id = %q, want %q", got, "gpt-5.5")

@@ -1,25 +1,57 @@
 package model
 
+import (
+	"encoding/json"
+	"fmt"
+	"strconv"
+)
+
+type VideoDuration string
+
+func (d *VideoDuration) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" {
+		*d = ""
+		return nil
+	}
+	var s string
+	if err := json.Unmarshal(data, &s); err == nil {
+		*d = VideoDuration(s)
+		return nil
+	}
+	var n int
+	if err := json.Unmarshal(data, &n); err == nil {
+		*d = VideoDuration(strconv.Itoa(n))
+		return nil
+	}
+	var f float64
+	if err := json.Unmarshal(data, &f); err == nil {
+		*d = VideoDuration(strconv.Itoa(int(f)))
+		return nil
+	}
+	return fmt.Errorf("duration must be a string or number")
+}
+
 type VideoGenerationRequest struct {
-	Model               string   `json:"model"`
-	Prompt              string   `json:"prompt"`
-	ImageURL            string   `json:"image_url,omitempty"`
-	EndImageURL         string   `json:"end_image_url,omitempty"`
-	ImageURLs           []string `json:"image_urls,omitempty"`
-	VideoURLs           []string `json:"video_urls,omitempty"`
-	AudioURLs           []string `json:"audio_urls,omitempty"`
-	NumFrames           int      `json:"num_frames,omitempty"`
-	FramesPerSecond     int      `json:"frames_per_second,omitempty"`
-	Resolution          string   `json:"resolution,omitempty"`
-	Duration            string   `json:"duration,omitempty"`
-	AspectRatio         string   `json:"aspect_ratio,omitempty"`
-	GenerateAudio       *bool    `json:"generate_audio,omitempty"`
-	EndUserID           string   `json:"end_user_id,omitempty"`
-	NegativePrompt      string   `json:"negative_prompt,omitempty"`
-	Seed                *int     `json:"seed,omitempty"`
-	NumInferenceSteps   int      `json:"num_inference_steps,omitempty"`
-	GuidanceScale       *float64 `json:"guidance_scale,omitempty"`
-	EnableSafetyChecker *bool    `json:"enable_safety_checker,omitempty"`
+	Model               string        `json:"model"`
+	Prompt              string        `json:"prompt"`
+	Async               bool          `json:"async,omitempty"`
+	ImageURL            string        `json:"image_url,omitempty"`
+	EndImageURL         string        `json:"end_image_url,omitempty"`
+	ImageURLs           []string      `json:"image_urls,omitempty"`
+	VideoURLs           []string      `json:"video_urls,omitempty"`
+	AudioURLs           []string      `json:"audio_urls,omitempty"`
+	NumFrames           int           `json:"num_frames,omitempty"`
+	FramesPerSecond     int           `json:"frames_per_second,omitempty"`
+	Resolution          string        `json:"resolution,omitempty"`
+	Duration            VideoDuration `json:"duration,omitempty"`
+	AspectRatio         string        `json:"aspect_ratio,omitempty"`
+	GenerateAudio       *bool         `json:"generate_audio,omitempty"`
+	EndUserID           string        `json:"end_user_id,omitempty"`
+	NegativePrompt      string        `json:"negative_prompt,omitempty"`
+	Seed                *int          `json:"seed,omitempty"`
+	NumInferenceSteps   int           `json:"num_inference_steps,omitempty"`
+	GuidanceScale       *float64      `json:"guidance_scale,omitempty"`
+	EnableSafetyChecker *bool         `json:"enable_safety_checker,omitempty"`
 }
 
 type VideoGenerationResponse struct {

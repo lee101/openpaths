@@ -176,6 +176,124 @@ func TestGenerateImage_HiDreamUsesQueueAndReferenceImages(t *testing.T) {
 	}
 }
 
+func TestGenerateImage_HiDreamEditUsesQueueImageSizeAndSafetyDefault(t *testing.T) {
+	var gotSubmit map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/fal-ai/hidream-o1-image/edit":
+			if err := json.NewDecoder(r.Body).Decode(&gotSubmit); err != nil {
+				t.Fatalf("decode submit: %v", err)
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{"request_id": "req_edit"})
+		case "/fal-ai/hidream-o1-image/edit/requests/req_edit/status":
+			w.WriteHeader(http.StatusNotFound)
+		case "/fal-ai/hidream-o1-image/requests/req_edit/status":
+			_ = json.NewEncoder(w).Encode(map[string]any{"status": "COMPLETED"})
+		case "/fal-ai/hidream-o1-image/requests/req_edit":
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"images": []map[string]any{{"url": "https://example.com/edit.png"}},
+			})
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	p := New("test-key")
+	p.baseURL = server.URL
+	p.client = server.Client()
+	guidanceScale := 5.0
+
+	resp, err := p.GenerateImage(context.Background(), &model.ImageGenerationRequest{
+		Model:              "fal-ai/hidream-o1-image/edit",
+		Prompt:             "Replace the perfume bottle with a lipstick",
+		ReferenceImageURLs: []string{"https://example.com/perfume.jpg"},
+		ImageSize:          "landscape_16_9",
+		NumInferenceSteps:  50,
+		GuidanceScale:      &guidanceScale,
+		N:                  1,
+		OutputFormat:       "png",
+	})
+	if err != nil {
+		t.Fatalf("GenerateImage() error = %v", err)
+	}
+	if gotSubmit["prompt"] != "Replace the perfume bottle with a lipstick" ||
+		gotSubmit["image_size"] != "landscape_16_9" ||
+		gotSubmit["num_inference_steps"] != float64(50) ||
+		gotSubmit["guidance_scale"] != float64(5) ||
+		gotSubmit["num_images"] != float64(1) ||
+		gotSubmit["output_format"] != "png" ||
+		gotSubmit["enable_safety_checker"] != false {
+		t.Fatalf("submit = %#v", gotSubmit)
+	}
+	refs, ok := gotSubmit["reference_image_urls"].([]any)
+	if !ok || len(refs) != 1 || refs[0] != "https://example.com/perfume.jpg" {
+		t.Fatalf("reference_image_urls = %#v", gotSubmit["reference_image_urls"])
+	}
+	if resp.Data[0].URL != "https://example.com/edit.png" {
+		t.Fatalf("URL = %q", resp.Data[0].URL)
+	}
+}
+
+func TestGenerateImage_OutpaintUsesQueueAndImageURL(t *testing.T) {
+	var gotSubmit map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/fal-ai/flux-2-pro/outpaint":
+			if err := json.NewDecoder(r.Body).Decode(&gotSubmit); err != nil {
+				t.Fatalf("decode submit: %v", err)
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{"request_id": "req_outpaint"})
+		case "/fal-ai/flux-2-pro/outpaint/requests/req_outpaint/status":
+			w.WriteHeader(http.StatusNotFound)
+		case "/fal-ai/flux-2-pro/requests/req_outpaint/status":
+			_ = json.NewEncoder(w).Encode(map[string]any{"status": "COMPLETED"})
+		case "/fal-ai/flux-2-pro/requests/req_outpaint":
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"images": []map[string]any{{"url": "https://example.com/outpaint.jpg"}},
+			})
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	p := New("test-key")
+	p.baseURL = server.URL
+	p.client = server.Client()
+	left := 200
+	right := 200
+	bottom := 200
+	safety := true
+
+	resp, err := p.GenerateImage(context.Background(), &model.ImageGenerationRequest{
+		Model:               "fal-ai/flux-2-pro/outpaint",
+		ImageURL:            "https://example.com/input.png",
+		ExpandBottom:        &bottom,
+		ExpandLeft:          &left,
+		ExpandRight:         &right,
+		EnableSafetyChecker: &safety,
+		OutputFormat:        "jpeg",
+	})
+	if err != nil {
+		t.Fatalf("GenerateImage() error = %v", err)
+	}
+	if gotSubmit["image_url"] != "https://example.com/input.png" ||
+		gotSubmit["expand_bottom"] != float64(200) ||
+		gotSubmit["expand_left"] != float64(200) ||
+		gotSubmit["expand_right"] != float64(200) ||
+		gotSubmit["enable_safety_checker"] != true ||
+		gotSubmit["output_format"] != "jpeg" {
+		t.Fatalf("submit = %#v", gotSubmit)
+	}
+	if _, ok := gotSubmit["prompt"]; ok {
+		t.Fatalf("outpaint submit should not include prompt: %#v", gotSubmit)
+	}
+	if resp.Data[0].URL != "https://example.com/outpaint.jpg" {
+		t.Fatalf("URL = %q", resp.Data[0].URL)
+	}
+}
+
 func TestGenerateVideo_SubmitsSeedanceAndPollsResult(t *testing.T) {
 	var gotSubmit map[string]any
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -263,6 +381,57 @@ func TestGenerateVideo_FallsBackToSeedanceBaseQueuePath(t *testing.T) {
 	}
 	if resp.VideoURL != "https://example.com/out.mp4" {
 		t.Fatalf("VideoURL = %q", resp.VideoURL)
+	}
+}
+
+func TestGenerateVideo_FallsBackToHappyHorseBaseQueuePath(t *testing.T) {
+	var gotSubmit map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/alibaba/happy-horse/image-to-video":
+			if err := json.NewDecoder(r.Body).Decode(&gotSubmit); err != nil {
+				t.Fatalf("decode submit: %v", err)
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{"request_id": "req_horse"})
+		case "/alibaba/happy-horse/image-to-video/requests/req_horse/status":
+			w.WriteHeader(http.StatusMethodNotAllowed)
+		case "/alibaba/happy-horse/requests/req_horse/status":
+			_ = json.NewEncoder(w).Encode(map[string]any{"status": "COMPLETED"})
+		case "/alibaba/happy-horse/requests/req_horse":
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"video": map[string]any{"url": "https://example.com/happy-horse.mp4"},
+				"seed":  float64(2072132269),
+			})
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	p := New("test-key")
+	p.baseURL = server.URL
+	p.client = server.Client()
+	safety := true
+
+	resp, err := p.GenerateVideo(context.Background(), &model.VideoGenerationRequest{
+		Model:               "alibaba/happy-horse/image-to-video",
+		Prompt:              "Bring the scene in the image to life.",
+		ImageURL:            "https://example.com/rap.png",
+		Resolution:          "1080p",
+		Duration:            "5",
+		EnableSafetyChecker: &safety,
+	})
+	if err != nil {
+		t.Fatalf("GenerateVideo() error = %v", err)
+	}
+	if resp.VideoURL != "https://example.com/happy-horse.mp4" {
+		t.Fatalf("VideoURL = %q", resp.VideoURL)
+	}
+	if gotSubmit["image_url"] != "https://example.com/rap.png" || gotSubmit["enable_safety_checker"] != true {
+		t.Fatalf("submit = %#v", gotSubmit)
+	}
+	if gotSubmit["duration"] != float64(5) {
+		t.Fatalf("duration = %#v, want numeric 5", gotSubmit["duration"])
 	}
 }
 

@@ -130,7 +130,7 @@ export function Landing() {
                 <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                   <div className="max-w-3xl">
                     <h2 className="text-3xl md:text-5xl font-bold tracking-tight leading-[0.95] mb-4">
-                      Image generation with real providers, not mock thumbnails.
+                      Image, video, 3d generation with all the best providers.
                     </h2>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-3 lg:justify-end">

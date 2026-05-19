@@ -35,6 +35,12 @@ type ImageProvider interface {
 	GenerateImage(ctx context.Context, req *model.ImageGenerationRequest) (*model.ImageGenerationResponse, error)
 }
 
+// Model3DProvider defines the interface for image-to-3D generation.
+type Model3DProvider interface {
+	Name() string
+	Generate3D(ctx context.Context, req *model.Model3DGenerationRequest) (*model.Model3DGenerationResponse, error)
+}
+
 // VideoProvider defines the interface for video generation.
 type VideoProvider interface {
 	Name() string

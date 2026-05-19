@@ -296,7 +296,99 @@ def create_fal_key(alias: str, env_file_values: dict[str, str]) -> RotationResul
     )
 
 
+def anthropic_headers(api_key: str) -> dict[str, str]:
+    return {
+        "anthropic-version": "2023-06-01",
+        "x-api-key": api_key,
+    }
+
+
+def validate_anthropic_key(api_key: str) -> None:
+    data = request_json(
+        "GET",
+        "https://api.anthropic.com/v1/models?limit=1",
+        headers=anthropic_headers(api_key),
+    )
+    if not isinstance(data.get("data"), list):
+        raise RotationError("New Anthropic API key validation did not return a models list")
+
+
+def create_anthropic_key(alias: str, env_file_values: dict[str, str]) -> RotationResult:
+    # Anthropic's Admin API can list and update API keys, but does not document a
+    # create endpoint that returns a new one-time secret. Read the new secret from
+    # the environment so the rest of the rotation flow can still be validated.
+    del alias
+    source = "ANTHROPIC_NEW_API_KEY"
+    new_key = os.environ.get(source) or env_file_values.get(source) or ""
+    if not new_key:
+        source = "ANTHROPIC_REPLACEMENT_API_KEY"
+        new_key = os.environ.get(source) or env_file_values.get(source) or ""
+    if not new_key:
+        raise RotationError("Missing required environment variable: ANTHROPIC_NEW_API_KEY or ANTHROPIC_REPLACEMENT_API_KEY")
+    validate_anthropic_key(new_key)
+
+    return RotationResult(
+        provider="anthropic",
+        env_key="ANTHROPIC_API_KEY",
+        secret=new_key,
+        metadata={
+            "new_key_source": source,
+            "new_key_validated": True,
+        },
+    )
+
+
+def list_anthropic_api_keys(admin_key: str) -> list[dict[str, object]]:
+    keys: list[dict[str, object]] = []
+    after_id = ""
+    while True:
+        suffix = "?limit=1000"
+        if after_id:
+            suffix += f"&after_id={after_id}"
+        data = request_json(
+            "GET",
+            "https://api.anthropic.com/v1/organizations/api_keys" + suffix,
+            headers=anthropic_headers(admin_key),
+        )
+        page = data.get("data")
+        if not isinstance(page, list):
+            raise RotationError("Anthropic API keys response did not include data list")
+        keys.extend([k for k in page if isinstance(k, dict)])
+        if not data.get("has_more"):
+            return keys
+        last_id = data.get("last_id")
+        if not isinstance(last_id, str) or not last_id:
+            raise RotationError("Anthropic API keys response is missing pagination last_id")
+        after_id = last_id
+
+
+def revoke_anthropic_key(admin_key: str, old_secret: str) -> dict[str, object]:
+    if not old_secret:
+        return {"revoked": False, "reason": "no previous ANTHROPIC_API_KEY value found"}
+
+    matches = [
+        k
+        for k in list_anthropic_api_keys(admin_key)
+        if k.get("status") == "active" and redacted_key_matches(k.get("partial_key_hint"), old_secret)
+    ]
+    if len(matches) != 1:
+        return {"revoked": False, "reason": f"matched {len(matches)} active Anthropic API keys for previous ANTHROPIC_API_KEY"}
+
+    key_id = matches[0].get("id")
+    if not isinstance(key_id, str) or not key_id:
+        raise RotationError("Matched old Anthropic key is missing id")
+
+    request_json(
+        "POST",
+        f"https://api.anthropic.com/v1/organizations/api_keys/{key_id}",
+        headers=anthropic_headers(admin_key),
+        payload={"status": "inactive"},
+    )
+    return {"revoked": True, "method": "update_status_inactive", "api_key_id": key_id}
+
+
 ROTATORS: dict[str, Callable[[str, dict[str, str]], RotationResult]] = {
+    "anthropic": create_anthropic_key,
     "openai": create_openai_key,
     "fal": create_fal_key,
 }
@@ -315,12 +407,19 @@ def update_env_file(path: Path, key: str, value: str) -> Path:
     shutil.copy2(path, backup)
 
     replacement = f"{key}={shell_quote(value)}"
-    pattern = re.compile(rf"^({re.escape(key)}\s*=).*$", re.MULTILINE)
-    updated, count = pattern.subn(replacement, original, count=1)
-    if count == 0:
-        if updated and not updated.endswith("\n"):
-            updated += "\n"
-        updated += replacement + "\n"
+    pattern = re.compile(rf"^{re.escape(key)}\s*=.*$")
+    updated_lines: list[str] = []
+    replaced = False
+    for line in original.splitlines():
+        if pattern.match(line):
+            if not replaced:
+                updated_lines.append(replacement)
+                replaced = True
+            continue
+        updated_lines.append(line)
+    if not replaced:
+        updated_lines.append(replacement)
+    updated = "\n".join(updated_lines) + "\n"
 
     fd, tmp_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=str(path.parent), text=True)
     try:
@@ -337,6 +436,12 @@ def update_env_file(path: Path, key: str, value: str) -> Path:
 
 
 def revoke_previous_key(provider: str, result: RotationResult, env_file_values: dict[str, str]) -> dict[str, object]:
+    if provider == "anthropic":
+        admin_key = first_env_value(["ANTHROPIC_ADMIN_KEY", "ANTHROPIC_ADMIN_API_KEY"], env_file_values, required=False)
+        if not admin_key:
+            return {"revoked": False, "reason": "ANTHROPIC_ADMIN_KEY or ANTHROPIC_ADMIN_API_KEY is required to deactivate the previous key"}
+        return revoke_anthropic_key(admin_key, env_file_values.get(result.env_key, ""))
+
     if provider != "openai":
         return {"revoked": False, "reason": "provider revocation is not implemented"}
 

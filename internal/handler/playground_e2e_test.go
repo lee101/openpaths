@@ -32,7 +32,7 @@ func TestPlaygroundStreamingChat(t *testing.T) {
 	serverURL := getServerURL()
 
 	body, _ := json.Marshal(map[string]any{
-		"model": "gemini-flash-lite",
+		"model": "gemini-3.1-flash-lite",
 		"messages": []map[string]string{
 			{"role": "system", "content": "You are a helpful assistant."},
 			{"role": "user", "content": "say no"},
@@ -128,7 +128,7 @@ func TestPlaygroundMultiModel(t *testing.T) {
 	apiKey := getAPIKey(t)
 	serverURL := getServerURL()
 
-	models := []string{"gemini-flash-lite", "mistral-small-latest"}
+	models := []string{"gemini-3.1-flash-lite", "mistral-small-latest"}
 
 	type result struct {
 		model   string

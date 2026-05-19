@@ -243,16 +243,16 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			{Description: "realistic footage documentary natural environment wildlife nature", ModelID: "wan"},
 		},
 		"text": {
-			// ===== SUPER EASY - Gemini Flash Lite (cheapest, fastest, no thinking) =====
-			{Description: "find information lookup search what is define meaning of", ModelID: "gemini-flash-lite", ReasoningEffort: "none"},
-			{Description: "summarize tldr brief overview recap short summary of this", ModelID: "gemini-flash-lite", ReasoningEffort: "none"},
-			{Description: "simple question yes no answer quick fact check trivia", ModelID: "gemini-flash-lite", ReasoningEffort: "none"},
-			{Description: "list enumerate items categories options choices", ModelID: "gemini-flash-lite", ReasoningEffort: "none"},
-			{Description: "format convert reformat text json yaml xml markdown html", ModelID: "gemini-flash-lite", ReasoningEffort: "none"},
-			{Description: "spell check grammar fix proofread typo correction", ModelID: "gemini-flash-lite", ReasoningEffort: "none"},
-			{Description: "extract email phone url date number from text parse", ModelID: "gemini-flash-lite", ReasoningEffort: "none"},
-			{Description: "translate short phrase word sentence between languages", ModelID: "gemini-flash-lite", ReasoningEffort: "none"},
-			{Description: "what time weather date today current status check", ModelID: "gemini-flash-lite", ReasoningEffort: "none"},
+			// ===== SUPER EASY - Gemini 3.1 Flash Lite (cheapest, fastest, no thinking) =====
+			{Description: "find information lookup search what is define meaning of", ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none"},
+			{Description: "summarize tldr brief overview recap short summary of this", ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none"},
+			{Description: "simple question yes no answer quick fact check trivia", ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none"},
+			{Description: "list enumerate items categories options choices", ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none"},
+			{Description: "format convert reformat text json yaml xml markdown html", ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none"},
+			{Description: "spell check grammar fix proofread typo correction", ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none"},
+			{Description: "extract email phone url date number from text parse", ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none"},
+			{Description: "translate short phrase word sentence between languages", ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none"},
+			{Description: "what time weather date today current status check", ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none"},
 
 			// ===== EASY - GPT-5.4 Nano (cheap, fast, tool support) =====
 			{Description: "git commit push pull merge branch checkout status diff log", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
@@ -280,17 +280,17 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			{Description: "write comprehensive test suite integration test e2e coverage", ModelID: "gpt-5.4-mini", ReasoningEffort: "medium"},
 			{Description: "error handling validation input sanitization edge cases", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
 
-			// ===== DESIGN / FRONTEND - Gemini 3.1 Pro (best at visual/design) =====
-			{Description: "website design frontend ui ux layout page component react vue svelte", ModelID: "gemini-3.1-pro-preview", ReasoningEffort: "medium"},
-			{Description: "game design game mechanic level design gameplay system rules", ModelID: "gemini-3.1-pro-preview", ReasoningEffort: "medium"},
-			{Description: "3d object design model mesh texture render scene blender unity", ModelID: "gemini-3.1-pro-preview", ReasoningEffort: "medium"},
-			{Description: "css styling animation responsive design theme color palette tailwind", ModelID: "gemini-3.1-pro-preview", ReasoningEffort: "low"},
-			{Description: "mobile app design ios android interface navigation wireframe flutter", ModelID: "gemini-3.1-pro-preview", ReasoningEffort: "medium"},
-			{Description: "design system component library brand guide typography tokens figma", ModelID: "gemini-3.1-pro-preview", ReasoningEffort: "medium"},
-			{Description: "html template email newsletter landing page hero section form", ModelID: "gemini-3.1-pro-preview", ReasoningEffort: "low"},
-			{Description: "data visualization chart graph dashboard d3 plotly recharts", ModelID: "gemini-3.1-pro-preview", ReasoningEffort: "medium"},
-			{Description: "svg icon illustration vector graphic canvas webgl shader", ModelID: "gemini-3.1-pro-preview", ReasoningEffort: "low"},
-			{Description: "user experience flow onboarding accessibility aria wcag a11y", ModelID: "gemini-3.1-pro-preview", ReasoningEffort: "medium"},
+			// ===== DESIGN / FRONTEND - Gemini 3.5 Flash (best at visual/design) =====
+			{Description: "website design frontend ui ux layout page component react vue svelte", ModelID: "gemini-3.5-flash", ReasoningEffort: "medium"},
+			{Description: "game design game mechanic level design gameplay system rules", ModelID: "gemini-3.5-flash", ReasoningEffort: "medium"},
+			{Description: "3d object design model mesh texture render scene blender unity", ModelID: "gemini-3.5-flash", ReasoningEffort: "medium"},
+			{Description: "css styling animation responsive design theme color palette tailwind", ModelID: "gemini-3.5-flash", ReasoningEffort: "low"},
+			{Description: "mobile app design ios android interface navigation wireframe flutter", ModelID: "gemini-3.5-flash", ReasoningEffort: "medium"},
+			{Description: "design system component library brand guide typography tokens figma", ModelID: "gemini-3.5-flash", ReasoningEffort: "medium"},
+			{Description: "html template email newsletter landing page hero section form", ModelID: "gemini-3.5-flash", ReasoningEffort: "low"},
+			{Description: "data visualization chart graph dashboard d3 plotly recharts", ModelID: "gemini-3.5-flash", ReasoningEffort: "medium"},
+			{Description: "svg icon illustration vector graphic canvas webgl shader", ModelID: "gemini-3.5-flash", ReasoningEffort: "low"},
+			{Description: "user experience flow onboarding accessibility aria wcag a11y", ModelID: "gemini-3.5-flash", ReasoningEffort: "medium"},
 
 			// ===== ADVANCED CODING - GPT 5 Codex medium thinking =====
 			{Description: "architect system design infrastructure scale distributed microservice", ModelID: "gpt-5-codex", ReasoningEffort: "medium"},
@@ -318,11 +318,11 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			{Description: "copywriting marketing ad copy slogan tagline brand voice", ModelID: "gpt-5-chat-latest", ReasoningEffort: "low"},
 			{Description: "blog post article essay editorial opinion piece long form", ModelID: "gpt-5-chat-latest", ReasoningEffort: "low"},
 
-			// ===== GENERAL - Gemini 3.1 Pro =====
-			{Description: "general conversation chat casual discussion help advice recommendation", ModelID: "gemini-3.1-pro-preview", ReasoningEffort: "none"},
-			{Description: "explain concept teach tutorial guide how to learn introduction", ModelID: "gemini-3.1-pro-preview", ReasoningEffort: "low"},
-			{Description: "compare pros cons tradeoffs options evaluate alternatives", ModelID: "gemini-3.1-pro-preview", ReasoningEffort: "low"},
-			{Description: "brainstorm ideas suggestions creative solutions approach strategy", ModelID: "gemini-3.1-pro-preview", ReasoningEffort: "low"},
+			// ===== GENERAL - Gemini 3.5 Flash =====
+			{Description: "general conversation chat casual discussion help advice recommendation", ModelID: "gemini-3.5-flash", ReasoningEffort: "none"},
+			{Description: "explain concept teach tutorial guide how to learn introduction", ModelID: "gemini-3.5-flash", ReasoningEffort: "low"},
+			{Description: "compare pros cons tradeoffs options evaluate alternatives", ModelID: "gemini-3.5-flash", ReasoningEffort: "low"},
+			{Description: "brainstorm ideas suggestions creative solutions approach strategy", ModelID: "gemini-3.5-flash", ReasoningEffort: "low"},
 
 			// ===== DEEP REASONING - O3 =====
 			{Description: "logic puzzle complex reasoning brain teaser riddle deduction", ModelID: "o3", ReasoningEffort: "high"},
@@ -337,15 +337,15 @@ func defaultRoutingTables() map[string][]AutoEntry {
 
 		"easy-task": {
 			// Flash Lite - cheapest for trivial tasks
-			{Description: "find information lookup search what is define meaning", ModelID: "gemini-flash-lite", ReasoningEffort: "none"},
-			{Description: "summarize tldr brief overview recap short summary", ModelID: "gemini-flash-lite", ReasoningEffort: "none"},
-			{Description: "simple question yes no answer quick fact trivia", ModelID: "gemini-flash-lite", ReasoningEffort: "none"},
-			{Description: "list enumerate items categories options choices", ModelID: "gemini-flash-lite", ReasoningEffort: "none"},
-			{Description: "format convert reformat text json yaml xml markdown", ModelID: "gemini-flash-lite", ReasoningEffort: "none"},
-			{Description: "spell check grammar fix proofread typo correction", ModelID: "gemini-flash-lite", ReasoningEffort: "none"},
-			{Description: "extract email phone url date number from text", ModelID: "gemini-flash-lite", ReasoningEffort: "none"},
-			{Description: "translate short phrase word sentence between languages", ModelID: "gemini-flash-lite", ReasoningEffort: "none"},
-			{Description: "what time weather date today current status check", ModelID: "gemini-flash-lite", ReasoningEffort: "none"},
+			{Description: "find information lookup search what is define meaning", ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none"},
+			{Description: "summarize tldr brief overview recap short summary", ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none"},
+			{Description: "simple question yes no answer quick fact trivia", ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none"},
+			{Description: "list enumerate items categories options choices", ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none"},
+			{Description: "format convert reformat text json yaml xml markdown", ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none"},
+			{Description: "spell check grammar fix proofread typo correction", ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none"},
+			{Description: "extract email phone url date number from text", ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none"},
+			{Description: "translate short phrase word sentence between languages", ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none"},
+			{Description: "what time weather date today current status check", ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none"},
 			// GPT-5.4 Nano - fast and cheap with tool support
 			{Description: "classify categorize label tag sort rank items", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
 			{Description: "extract data parse structured output json schema", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
@@ -403,16 +403,16 @@ func defaultRoutingTables() map[string][]AutoEntry {
 
 		"hard-task": {
 			// Hard-reasoning / frontier generation tasks where a flagship model is worth it.
-			// Primary: GPT-5.5 high/medium reasoning.
-			{Description: "sankey diagram flow visualization network graph d3 custom force directed tree layout candlestick word cloud infographic", ModelID: "gpt-5.5", ReasoningEffort: "medium"},
-			{Description: "advanced data visualization complex chart layout multi-panel dashboard composition nuanced design judgement", ModelID: "gpt-5.5", ReasoningEffort: "medium"},
-			{Description: "non trivial json schema output structured generation prefill continuation careful formatting", ModelID: "gpt-5.5", ReasoningEffort: "medium"},
-			{Description: "architectural decision tradeoff analysis senior engineer judgement", ModelID: "gpt-5.5", ReasoningEffort: "high"},
-			{Description: "deep product reasoning subtle requirements ambiguous spec planning", ModelID: "gpt-5.5", ReasoningEffort: "high"},
+			// Primary: Gemini 3.5 Flash high/medium reasoning.
+			{Description: "sankey diagram flow visualization network graph d3 custom force directed tree layout candlestick word cloud infographic", ModelID: "gemini-3.5-flash", ReasoningEffort: "medium"},
+			{Description: "advanced data visualization complex chart layout multi-panel dashboard composition nuanced design judgement", ModelID: "gemini-3.5-flash", ReasoningEffort: "medium"},
+			{Description: "non trivial json schema output structured generation prefill continuation careful formatting", ModelID: "gemini-3.5-flash", ReasoningEffort: "medium"},
+			{Description: "architectural decision tradeoff analysis senior engineer judgement", ModelID: "gemini-3.5-flash", ReasoningEffort: "high"},
+			{Description: "deep product reasoning subtle requirements ambiguous spec planning", ModelID: "gemini-3.5-flash", ReasoningEffort: "high"},
 			// High-effort algorithmic / math / systems.
-			{Description: "formal verification compiler design cryptography research deep scientific reasoning", ModelID: "gpt-5.5", ReasoningEffort: "high"},
-			{Description: "prove a theorem derive a formula or solve a hard math olympiad style problem", ModelID: "gpt-5.5", ReasoningEffort: "high"},
-			{Description: "design a distributed system protocol with consensus recovery and adversarial failures", ModelID: "gpt-5.5", ReasoningEffort: "high"},
+			{Description: "formal verification compiler design cryptography research deep scientific reasoning", ModelID: "gemini-3.5-flash", ReasoningEffort: "high"},
+			{Description: "prove a theorem derive a formula or solve a hard math olympiad style problem", ModelID: "gemini-3.5-flash", ReasoningEffort: "high"},
+			{Description: "design a distributed system protocol with consensus recovery and adversarial failures", ModelID: "gemini-3.5-flash", ReasoningEffort: "high"},
 			{Description: "complex debugging race condition deadlock memory leak concurrency bug", ModelID: "gpt-5-codex", ReasoningEffort: "high"},
 			{Description: "implement complex algorithm data structure tree graph trie heap", ModelID: "gpt-5-codex", ReasoningEffort: "high"},
 			// DeepSeek V4 Pro - strong price/perf for sensitive and policy-heavy judgement.
@@ -441,11 +441,11 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			{Description: "classify or handle sensitive adult roleplay fringe harm policy content carefully", ModelID: "deepseek-v4-flash", ReasoningEffort: "medium"},
 
 			// HIGH - hard algorithmic or research-grade work that should spend real reasoning budget.
-			{Description: "create a 3d mesh simplification algorithm with error metrics and topology preservation", ModelID: "gpt-5.5", ReasoningEffort: "high"},
-			{Description: "prove a theorem derive a formula or solve a hard math olympiad style problem", ModelID: "gpt-5.5", ReasoningEffort: "high"},
-			{Description: "design a distributed system protocol with consensus recovery and adversarial failures", ModelID: "gpt-5.5", ReasoningEffort: "high"},
-			{Description: "formal verification compiler design cryptography research deep scientific reasoning", ModelID: "gpt-5.5", ReasoningEffort: "high"},
-			{Description: "make a 3d simulation of cogs gears clock mechanism physics animation webgl threejs", ModelID: "gpt-5.5", ReasoningEffort: "high"},
+			{Description: "create a 3d mesh simplification algorithm with error metrics and topology preservation", ModelID: "gemini-3.5-flash", ReasoningEffort: "high"},
+			{Description: "prove a theorem derive a formula or solve a hard math olympiad style problem", ModelID: "gemini-3.5-flash", ReasoningEffort: "high"},
+			{Description: "design a distributed system protocol with consensus recovery and adversarial failures", ModelID: "gemini-3.5-flash", ReasoningEffort: "high"},
+			{Description: "formal verification compiler design cryptography research deep scientific reasoning", ModelID: "gemini-3.5-flash", ReasoningEffort: "high"},
+			{Description: "make a 3d simulation of cogs gears clock mechanism physics animation webgl threejs", ModelID: "gemini-3.5-flash", ReasoningEffort: "high"},
 			{Description: "biosecurity dual use biology pathogen lab protocol dangerous technical policy reasoning", ModelID: "deepseek-v4-pro", ReasoningEffort: "high"},
 		},
 	}

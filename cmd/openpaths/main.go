@@ -83,6 +83,8 @@ func main() {
 	usageQ := queries.NewUsageQueries(database.Pool)
 	statsQ := queries.NewStatsQueries(database.Pool)
 	providerKeyQ := queries.NewProviderKeyQueries(database.Pool)
+	videoJobQ := queries.NewVideoJobQueries(database.Pool)
+	model3DJobQ := queries.NewModel3DJobQueries(database.Pool)
 
 	jwtService := auth.NewJWTService(cfg.JWT.Secret, cfg.JWT.ExpirationHours)
 
@@ -311,6 +313,8 @@ func main() {
 		FineTuneQ:        ftQ,
 		FineTuneProvs:    ftProviders,
 		ProviderKeyQ:     providerKeyQ,
+		VideoJobQ:        videoJobQ,
+		Model3DJobQ:      model3DJobQ,
 		OnRegister:       onRegister,
 	})
 

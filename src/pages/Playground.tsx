@@ -2,6 +2,9 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom';
 import { Send, Plus, X, Settings, ChevronDown, Loader2, Trash2, Square, Copy, Check, Zap, RotateCcw, Code2, Share2, Wallet, Eye, Wrench, Volume2 } from 'lucide-react';
 import { CodeBlock as HighlightedCodeBlock } from '../components/CodeBlock';
+import { VIDEO_DEMOS, type VideoDemo } from '../data/videoDemos';
+import { prepareUploadFile } from '../lib/imageUpload';
+import { normalizeUploadedAssetUrl } from '../lib/uploadUrls';
 
 interface Message {
   role: 'system' | 'user' | 'assistant';
@@ -20,6 +23,8 @@ interface ModelPricing {
   per_request?: number;
   per_image?: number;
   per_megapixel?: number;
+  first_megapixel?: number;
+  extra_megapixel?: number;
   per_video?: number;
   per_second?: number;
   per_second_with_video_input?: number;
@@ -54,6 +59,7 @@ interface ModelPane {
 
 type CodeLanguage = 'python' | 'js' | 'go' | 'curl';
 type PromptExample = string | { label: string; prompt: string };
+type ReferenceUploadTarget = 'image' | 'end-image' | 'images' | 'video' | 'audio';
 
 const IMAGE_SIZES = ['1024x1024', '1152x768', '768x1152', '1360x768', '768x1360', '1280x720', '720x1280'] as const;
 const IMAGE_ASPECT_RATIOS = ['auto', '1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '2:1', '1:2'] as const;
@@ -107,7 +113,9 @@ const FALLBACK_MODELS: CatalogModel[] = [
   { id: 'auto-easy-task', label: 'Auto Easy (cheapest)', provider: 'OpenPaths' },
   { id: 'auto-medium-task', label: 'Auto Medium (balanced)', provider: 'OpenPaths' },
   { id: 'auto-think', label: 'Auto Think (reasoning)', provider: 'OpenPaths' },
-  { id: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro', provider: 'Google' },
+  { id: 'gemini-latest', label: 'Gemini Latest', provider: 'Google', pricing: { input_per_1m_tokens: 1.50, output_per_1m_tokens: 9.00 } },
+  { id: 'gemini-3.5-flash', label: 'Gemini 3.5 Flash', provider: 'Google', pricing: { input_per_1m_tokens: 1.50, output_per_1m_tokens: 9.00 } },
+  { id: 'gemini-3.1-flash-lite', label: 'Gemini 3.1 Flash Lite', provider: 'Google', pricing: { input_per_1m_tokens: 0.25, output_per_1m_tokens: 1.50 } },
   { id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', provider: 'Google' },
   { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', provider: 'Google' },
   { id: 'gemini-3.1-flash-tts-preview', label: 'Gemini 3.1 Flash TTS Preview', provider: 'Google', pricing: { input_per_1m_tokens: 1.00, output_per_1m_tokens: 20.00 } },
@@ -147,12 +155,15 @@ const FALLBACK_MODELS: CatalogModel[] = [
   { id: 'stable-diffusion-3', label: 'Stable Diffusion 3', provider: 'Together', pricing: { per_image: 0.002 } },
   { id: 'glm-image', label: 'GLM Image', provider: 'Z.AI', pricing: { per_image: 0.015 } },
   { id: 'fal-gpt-image-2', label: 'GPT Image 2 via Fal', provider: 'Fal', pricing: { per_image: 0.22 } },
-  { id: 'hidream-o1-image-dev', label: 'HiDream O1 Image Dev', provider: 'Fal', pricing: { per_megapixel: 0.006 } },
+  { id: 'hidream-o1-image-dev', label: 'HiDream O1 Image Dev', provider: 'Fal', pricing: { per_megapixel: 0.011 } },
+  { id: 'fal-ai/hidream-o1-image/edit', label: 'HiDream O1 Image Edit', provider: 'Fal', pricing: { per_megapixel: 0.011 } },
+  { id: 'fal-ai/flux-2-pro/outpaint', label: 'FLUX 2 Pro Outpaint', provider: 'Fal', pricing: { first_megapixel: 0.033, extra_megapixel: 0.0165 } },
   { id: 'seedance-2.0-fast-text-to-video', label: 'Seedance 2.0 Fast Text to Video', provider: 'Fal', pricing: { per_second: 0.26609 } },
   { id: 'seedance-2.0-text-to-video', label: 'Seedance 2.0 Text to Video', provider: 'Fal', pricing: { per_second: 0.33374 } },
   { id: 'seedance-2.0-image-to-video', label: 'Seedance 2.0 Image to Video', provider: 'Fal', pricing: { per_second: 0.33264 } },
   { id: 'seedance-2.0-fast-reference-to-video', label: 'Seedance 2.0 Fast Reference to Video', provider: 'Fal', pricing: { per_second: 0.26609, per_second_with_video_input: 0.15972 } },
   { id: 'seedance-2.0-reference-to-video', label: 'Seedance 2.0 Reference to Video', provider: 'Fal', pricing: { per_second: 0.33264, per_second_with_video_input: 0.19954 } },
+  { id: 'alibaba/happy-horse/image-to-video', label: 'Happy Horse Image to Video', provider: 'Alibaba', pricing: { per_second: 0.28 } },
 ];
 
 const QUICK_PROMPTS: PromptExample[] = [
@@ -265,12 +276,23 @@ function promptExampleText(example: PromptExample): string {
   return typeof example === 'string' ? example : example.prompt;
 }
 
-const SEEDANCE_LOGO_URL = 'https://openpathsstatic.openpaths.io/static/uploads/playground/seedance/openpaths-logo.webp';
-
 interface ImageDemo {
   prompt: string;
   outputUrl: string;
   size: typeof IMAGE_SIZES[number];
+  imageUrl?: string;
+  imageSize?: string;
+  numInferenceSteps?: number;
+  guidanceScale?: number;
+  outputFormat?: 'jpeg' | 'png' | 'webp';
+  safetyChecker?: boolean;
+  outpaint?: {
+    expandTop: number;
+    expandBottom: number;
+    expandLeft: number;
+    expandRight: number;
+    outputFormat: 'jpeg' | 'png';
+  };
 }
 
 const IMAGE_DEMOS: Record<string, ImageDemo> = {
@@ -279,67 +301,29 @@ const IMAGE_DEMOS: Record<string, ImageDemo> = {
     outputUrl: 'https://openpathsstatic.openpaths.io/static/uploads/playground/hidream/hidream-o1-image-dev-demo.png',
     size: '1024x1024',
   },
-};
-
-interface VideoDemo {
-  prompt: string;
-  outputUrl: string;
-  resolution: typeof VIDEO_RESOLUTIONS[number];
-  duration: typeof VIDEO_DURATIONS[number];
-  aspectRatio: typeof VIDEO_ASPECT_RATIOS[number];
-  generateAudio: boolean;
-  imageUrl?: string;
-  endImageUrl?: string;
-  imageUrls?: string[];
-  videoUrls?: string[];
-  audioUrls?: string[];
-}
-
-const VIDEO_DEMOS: Record<string, VideoDemo> = {
-  'seedance-2.0-fast-text-to-video': {
-    prompt: 'A cinematic 4-second shot of a compact AI routing console on a dark workstation, luminous paths connecting model nodes across a glass interface, slow handheld push-in, realistic reflections, premium product demo lighting, no readable text.',
-    outputUrl: 'https://openpathsstatic.openpaths.io/static/uploads/playground/seedance/seedance-fast-text-to-video.mp4',
-    resolution: '720p',
-    duration: '4',
-    aspectRatio: '16:9',
-    generateAudio: false,
+  'fal-ai/hidream-o1-image/edit': {
+    prompt: 'Replace the perfume bottle with a lipstick',
+    imageUrl: 'https://openpathsstatic.openpaths.io/static/uploads/playground/hidream-edit/perfume.jpg',
+    outputUrl: 'https://openpathsstatic.openpaths.io/static/uploads/playground/hidream-edit/lipstick.png',
+    size: '1360x768',
+    imageSize: 'landscape_16_9',
+    numInferenceSteps: 50,
+    guidanceScale: 5,
+    outputFormat: 'png',
+    safetyChecker: false,
   },
-  'seedance-2.0-text-to-video': {
-    prompt: 'A polished studio macro shot of an AI infrastructure dashboard represented as glowing fiber-optic routes inside a transparent cube, slow orbiting camera, cinematic depth of field, clean black background, no readable text.',
-    outputUrl: 'https://openpathsstatic.openpaths.io/static/uploads/playground/seedance/seedance-text-to-video.mp4',
-    resolution: '720p',
-    duration: '4',
-    aspectRatio: '16:9',
-    generateAudio: false,
-  },
-  'seedance-2.0-image-to-video': {
-    prompt: 'Animate the supplied OpenPaths logo as a premium product mark: subtle camera push-in, soft light sweep across the surface, tiny particles moving around it, clean dark studio background, elegant motion, no added text.',
-    outputUrl: 'https://openpathsstatic.openpaths.io/static/uploads/playground/seedance/seedance-image-to-video.mp4',
-    resolution: '720p',
-    duration: '4',
-    aspectRatio: '1:1',
-    generateAudio: false,
-    imageUrl: SEEDANCE_LOGO_URL,
-  },
-  'seedance-2.0-fast-reference-to-video': {
-    prompt: 'Use @Image1 as the exact brand mark on a small illuminated badge mounted to a matte black server rack. Slow dolly-in, shallow depth of field, cool white rim light, subtle cable movement, premium infrastructure commercial, no extra text.',
-    outputUrl: 'https://openpathsstatic.openpaths.io/static/uploads/playground/seedance/seedance-fast-reference-to-video.mp4',
-    resolution: '720p',
-    duration: '4',
-    aspectRatio: '16:9',
-    generateAudio: false,
-    imageUrls: [SEEDANCE_LOGO_URL],
-    audioUrls: [],
-  },
-  'seedance-2.0-reference-to-video': {
-    prompt: '@Image1 is projected as a crisp holographic interface element above a developer desk. Camera slides left to right, soft reflections on glass, realistic workstation lighting, cinematic product demo, no additional words or watermarks.',
-    outputUrl: 'https://openpathsstatic.openpaths.io/static/uploads/playground/seedance/seedance-reference-to-video.mp4',
-    resolution: '720p',
-    duration: '4',
-    aspectRatio: '16:9',
-    generateAudio: false,
-    imageUrls: [SEEDANCE_LOGO_URL],
-    audioUrls: [],
+  'fal-ai/flux-2-pro/outpaint': {
+    prompt: 'Expand this image naturally beyond the frame.',
+    imageUrl: 'https://openpathsstatic.openpaths.io/static/uploads/playground/flux-outpaint/input.png',
+    outputUrl: 'https://openpathsstatic.openpaths.io/static/uploads/playground/flux-outpaint/output.jpg',
+    size: '1024x1024',
+    outpaint: {
+      expandTop: 0,
+      expandBottom: 200,
+      expandLeft: 200,
+      expandRight: 200,
+      outputFormat: 'jpeg',
+    },
   },
 };
 
@@ -349,7 +333,7 @@ const PANE_HISTORY_PREFIX = 'op_pg_pane_';
 // Models excluded from the chat selector. Image models remain available since
 // the playground now routes them to /v1/images/generations automatically.
 const NON_CHAT_PATTERNS = /^(whisper|xai-stt|grok-voice|text-embedding|openpaths-embed|modernbert|mistral-embed|codestral-embed|nemotron-embed|gemini-embedding-001|gemini-embedding-2-preview|gemini-embedding-2|gpt-4o-transcribe|gpt-4o-mini-transcribe|distil-whisper|whisper-v3)/i;
-const IMAGE_MODEL_PATTERNS = /^(auto-image|flux|klein|ra1|zimage|glm-image|grok-imagine-image|gpt-image|fal-gpt-image|hidream|dall-e|stable-diffusion|sd3|ideogram)/i;
+const IMAGE_MODEL_PATTERNS = /^(auto-image|flux|klein|ra1|zimage|glm-image|grok-imagine-image|gpt-image|fal-gpt-image|hidream|dall-e|stable-diffusion|sd3|ideogram|fal-ai\/flux-2-pro\/outpaint)/i;
 const VIDEO_MODEL_PATTERNS = /^(auto-video|wan|ltx|hailuo|kling|luma|ra2v|sora|seedance)/i;
 const SPEECH_MODEL_PATTERNS = /(tts|speech-)/i;
 const MUSIC_MODEL_PATTERNS = /^(music-|lyria-)/i;
@@ -359,6 +343,7 @@ function isImageModel(m: CatalogModel | undefined): boolean {
   if (MUSIC_MODEL_PATTERNS.test(m.id)) return false;
   if (m.pricing?.per_image && m.pricing.per_image > 0) return true;
   if (m.pricing?.per_megapixel && m.pricing.per_megapixel > 0) return true;
+  if (m.pricing?.first_megapixel && m.pricing.first_megapixel > 0) return true;
   return IMAGE_MODEL_PATTERNS.test(m.id);
 }
 
@@ -396,11 +381,51 @@ function isReferenceToVideoModel(m: CatalogModel | undefined): boolean {
   return !!m && /reference-to-video|reference/i.test(m.id);
 }
 
+function isHappyHorseVideoModel(m: CatalogModel | undefined): boolean {
+  return m?.id === 'alibaba/happy-horse/image-to-video';
+}
+
+function isOutpaintImageModel(m: CatalogModel | undefined): boolean {
+  return m?.id === 'fal-ai/flux-2-pro/outpaint';
+}
+
 function parseImageInputUrls(value: string): string[] {
   return value
     .split(/[\n,]+/)
     .map(v => v.trim())
     .filter(Boolean);
+}
+
+function normalizeUploadUrlText(value: string): string {
+  return value
+    .split('\n')
+    .map(line => normalizeUploadedAssetUrl(line))
+    .join('\n');
+}
+
+function ImagePreviewStrip({ urls, label }: { urls: string[]; label: string }) {
+  if (urls.length === 0) return null;
+  return (
+    <div className="mt-2 flex gap-2 overflow-x-auto pb-1" data-testid={`preview-${label}`}>
+      {urls.slice(0, 6).map((url, idx) => (
+        <a key={`${url}-${idx}`} href={url} target="_blank" rel="noreferrer" className="group relative h-16 w-16 flex-none overflow-hidden rounded border border-white/10 bg-black">
+          <img src={url} alt={`${label} ${idx + 1}`} className="h-full w-full object-cover transition-opacity group-hover:opacity-80" loading="lazy" />
+        </a>
+      ))}
+    </div>
+  );
+}
+
+function SingleImagePreview({ url, label }: { url: string; label: string }) {
+  const urls = parseImageInputUrls(url);
+  return <ImagePreviewStrip urls={urls.slice(0, 1)} label={label} />;
+}
+
+function resizeTextarea(el: HTMLTextAreaElement) {
+  el.style.height = 'auto';
+  const next = Math.min(el.scrollHeight, 200);
+  el.style.height = `${next}px`;
+  el.style.overflowY = el.scrollHeight > 200 ? 'auto' : 'hidden';
 }
 
 let paneCounter = 0;
@@ -656,6 +681,10 @@ export function Playground() {
   const [imageResponseFormat, setImageResponseFormat] = useState<typeof IMAGE_RESPONSE_FORMATS[number]>('url');
   const [imageAspectRatio, setImageAspectRatio] = useState<typeof IMAGE_ASPECT_RATIOS[number]>('auto');
   const [imageInputUrls, setImageInputUrls] = useState('');
+  const [outpaintTop, setOutpaintTop] = useState(0);
+  const [outpaintBottom, setOutpaintBottom] = useState(200);
+  const [outpaintLeft, setOutpaintLeft] = useState(200);
+  const [outpaintRight, setOutpaintRight] = useState(200);
   const [videoResolution, setVideoResolution] = useState<typeof VIDEO_RESOLUTIONS[number]>('720p');
   const [videoDuration, setVideoDuration] = useState<typeof VIDEO_DURATIONS[number]>('10');
   const [videoAspectRatio, setVideoAspectRatio] = useState<typeof VIDEO_ASPECT_RATIOS[number]>('16:9');
@@ -679,6 +708,7 @@ export function Playground() {
   const [ttsSpeaker2Voice, setTtsSpeaker2Voice] = useState('Puck');
   const [speechAutoEmotion, setSpeechAutoEmotion] = useState(false);
   const [uploadingRefs, setUploadingRefs] = useState(false);
+  const [dragTarget, setDragTarget] = useState<ReferenceUploadTarget | null>(null);
   const [dynamicModels, setDynamicModels] = useState<CatalogModel[] | null>(() => loadCachedModels());
   const [panes, setPanes] = useState<ModelPane[]>(() => {
     const modelParam = searchParams.get('model');
@@ -709,6 +739,8 @@ export function Playground() {
   const primaryIsMusic = isMusicModel(primaryModel) || MUSIC_MODEL_PATTERNS.test(panes[0]?.modelId || '');
   const primaryIsImageToVideo = isImageToVideoModel(primaryModel);
   const primaryIsReferenceToVideo = isReferenceToVideoModel(primaryModel);
+  const primaryIsHappyHorseVideo = isHappyHorseVideoModel(primaryModel);
+  const primaryIsOutpaintImage = isOutpaintImageModel(primaryModel) || panes[0]?.modelId === 'fal-ai/flux-2-pro/outpaint';
   const primaryImageDemo = IMAGE_DEMOS[panes[0]?.modelId || ''];
   const primaryVideoDemo = VIDEO_DEMOS[panes[0]?.modelId || ''];
 
@@ -716,6 +748,10 @@ export function Playground() {
     const t = setTimeout(() => inputRef.current?.focus(), 100);
     return () => clearTimeout(t);
   }, []);
+
+  useEffect(() => {
+    if (inputRef.current) resizeTextarea(inputRef.current);
+  }, [input, primaryIsImage, primaryIsSpeech, primaryIsVideo]);
 
   useEffect(() => {
     if (apiKey) {
@@ -726,6 +762,13 @@ export function Playground() {
   useEffect(() => {
     if (!primaryImageDemo) return;
     setImageSize(primaryImageDemo.size);
+    if (primaryImageDemo.imageUrl) setImageInputUrls(primaryImageDemo.imageUrl);
+    if (primaryImageDemo.outpaint) {
+      setOutpaintTop(primaryImageDemo.outpaint.expandTop);
+      setOutpaintBottom(primaryImageDemo.outpaint.expandBottom);
+      setOutpaintLeft(primaryImageDemo.outpaint.expandLeft);
+      setOutpaintRight(primaryImageDemo.outpaint.expandRight);
+    }
     setInput(prev => {
       if (prev.trim() && prev !== lastAppliedImageDemoPromptRef.current) return prev;
       lastAppliedImageDemoPromptRef.current = primaryImageDemo.prompt;
@@ -840,14 +883,15 @@ ${text}`;
 
   const baseUrl = window.location.origin;
 
-  const uploadReferenceFiles = useCallback(async (files: FileList | File[], target: 'image' | 'end-image' | 'images' | 'video' | 'audio') => {
+  const uploadReferenceFiles = useCallback(async (files: FileList | File[], target: ReferenceUploadTarget) => {
     if (!apiKey || files.length === 0) return;
     setUploadingRefs(true);
     try {
       const urls: string[] = [];
       for (const file of Array.from(files)) {
+        const uploadFile = await prepareUploadFile(file);
         const form = new FormData();
-        form.append('file', file);
+        form.append('file', uploadFile);
         const resp = await fetch(`${baseUrl}/v1/files/upload`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${apiKey}` },
@@ -855,7 +899,7 @@ ${text}`;
         });
         if (!resp.ok) throw new Error(await resp.text());
         const data = await resp.json();
-        if (data.url) urls.push(data.url);
+        if (data.url) urls.push(normalizeUploadedAssetUrl(data.url));
       }
       const append = (prev: string) => [prev.trim(), ...urls].filter(Boolean).join('\n');
       if (target === 'image') setVideoImageUrl(urls[0] || '');
@@ -868,6 +912,49 @@ ${text}`;
     }
   }, [apiKey, baseUrl]);
 
+  const referenceDropHandlers = useCallback((target: ReferenceUploadTarget) => ({
+    onDragEnter: (event: React.DragEvent<HTMLElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (!uploadingRefs) setDragTarget(target);
+    },
+    onDragOver: (event: React.DragEvent<HTMLElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+      event.dataTransfer.dropEffect = uploadingRefs ? 'none' : 'copy';
+      if (!uploadingRefs) setDragTarget(target);
+    },
+    onDragLeave: (event: React.DragEvent<HTMLElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+        setDragTarget(current => current === target ? null : current);
+      }
+    },
+    onDrop: (event: React.DragEvent<HTMLElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+      setDragTarget(null);
+      const files = Array.from(event.dataTransfer.files).filter(file => file.type.startsWith('image/'));
+      if (!uploadingRefs && files.length > 0) {
+        void uploadReferenceFiles(files, target);
+      }
+    },
+  }), [uploadReferenceFiles, uploadingRefs]);
+
+  useEffect(() => {
+    if (!primaryIsImageToVideo || !apiKey) return;
+    const handlePaste = (event: ClipboardEvent) => {
+      if (uploadingRefs) return;
+      const files = Array.from(event.clipboardData?.files || []).filter(file => file.type.startsWith('image/'));
+      if (files.length === 0) return;
+      event.preventDefault();
+      void uploadReferenceFiles(files.slice(0, 1), 'image');
+    };
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [apiKey, primaryIsImageToVideo, uploadReferenceFiles, uploadingRefs]);
+
   const sendToImageModel = useCallback(async (paneId: string, modelId: string, prompt: string) => {
     const controller = new AbortController();
     abortRefs.current.set(paneId, controller);
@@ -879,7 +966,9 @@ ${text}`;
 
     try {
       const inputUrls = parseImageInputUrls(imageInputUrls);
-      const isEdit = inputUrls.length > 0;
+      const isOutpaint = modelId === 'fal-ai/flux-2-pro/outpaint';
+      const imageDemo = IMAGE_DEMOS[modelId];
+      const isEdit = inputUrls.length > 0 && !isOutpaint;
       const body: Record<string, unknown> = {
         model: modelId,
         prompt,
@@ -892,6 +981,25 @@ ${text}`;
         body.images = inputUrls.map(url => ({ type: 'image_url', url }));
         body.reference_image_urls = inputUrls;
         body.aspect_ratio = imageAspectRatio;
+      }
+      if (imageDemo?.imageSize) body.image_size = imageDemo.imageSize;
+      if (imageDemo?.numInferenceSteps) body.num_inference_steps = imageDemo.numInferenceSteps;
+      if (imageDemo?.guidanceScale !== undefined) body.guidance_scale = imageDemo.guidanceScale;
+      if (imageDemo?.outputFormat) body.output_format = imageDemo.outputFormat;
+      if (imageDemo?.safetyChecker !== undefined) body.enable_safety_checker = imageDemo.safetyChecker;
+      if (imageDemo && isEdit) body.num_images = imageCount;
+      if (isOutpaint) {
+        body.image_url = inputUrls[0] || IMAGE_DEMOS['fal-ai/flux-2-pro/outpaint'].imageUrl;
+        body.expand_top = outpaintTop;
+        body.expand_bottom = outpaintBottom;
+        body.expand_left = outpaintLeft;
+        body.expand_right = outpaintRight;
+        body.enable_safety_checker = true;
+        body.output_format = 'jpeg';
+        delete body.n;
+        delete body.size;
+        delete body.quality;
+        delete body.response_format;
       }
 
       const resp = await fetch(`${baseUrl}/v1/images/${isEdit ? 'edits' : 'generations'}`, {
@@ -914,7 +1022,9 @@ ${text}`;
       const modelCfg = modelIndex.get(modelId);
       const requestedSize = imageSize.match(/^(\d+)x(\d+)$/);
       const megapixels = requestedSize ? (Number(requestedSize[1]) * Number(requestedSize[2])) / 1_000_000 : 0.512 * 0.512;
-      const cost = modelCfg?.pricing?.per_image
+      const cost = modelCfg?.pricing?.first_megapixel && modelCfg?.pricing?.extra_megapixel
+        ? modelCfg.pricing.first_megapixel + (modelCfg.pricing.extra_megapixel * 2)
+        : modelCfg?.pricing?.per_image
         ? modelCfg.pricing.per_image * Math.max(1, imageCount)
         : modelCfg?.pricing?.per_megapixel
           ? modelCfg.pricing.per_megapixel * megapixels * Math.max(1, imageCount)
@@ -953,7 +1063,7 @@ ${text}`;
     } finally {
       abortRefs.current.delete(paneId);
     }
-  }, [apiKey, baseUrl, imageAspectRatio, imageCount, imageInputUrls, imageQuality, imageResponseFormat, imageSize, modelIndex, refreshBalance]);
+  }, [apiKey, baseUrl, imageAspectRatio, imageCount, imageInputUrls, imageQuality, imageResponseFormat, imageSize, modelIndex, outpaintBottom, outpaintLeft, outpaintRight, outpaintTop, refreshBalance]);
 
   const sendToVideoModel = useCallback(async (paneId: string, modelId: string, prompt: string) => {
     const controller = new AbortController();
@@ -974,9 +1084,14 @@ ${text}`;
         resolution: videoResolution,
         duration: videoDuration,
         aspect_ratio: videoAspectRatio,
-        generate_audio: videoGenerateAudio,
       };
       const selectedModel = modelIndex.get(modelId);
+      if (isHappyHorseVideoModel(selectedModel)) {
+        body.duration = videoDuration === 'auto' ? 5 : Number(videoDuration) || 5;
+        body.enable_safety_checker = true;
+      } else {
+        body.generate_audio = videoGenerateAudio;
+      }
       if (isImageToVideoModel(selectedModel)) {
         if (videoImageUrl.trim()) body.image_url = videoImageUrl.trim();
         if (videoEndImageUrl.trim()) body.end_image_url = videoEndImageUrl.trim();
@@ -1000,7 +1115,16 @@ ${text}`;
         const errText = await resp.text();
         throw new Error(`${resp.status}: ${errText.slice(0, 200)}`);
       }
-      const data = await resp.json();
+      let data = await resp.json();
+      if (data?.result?.video_url) {
+        data = data.result;
+      } else if (data?.id && data?.status && data.status !== 'completed' && data.status !== 'failed') {
+        data = await pollVideoJob(baseUrl, apiKey, data.id, controller.signal);
+      } else if (data?.status === 'completed' && data?.result?.video_url) {
+        data = data.result;
+      } else if (data?.status === 'failed') {
+        throw new Error(data?.error?.message || 'Video generation failed');
+      }
       if (!data?.video_url) throw new Error('No video returned');
       const latency = Math.round(performance.now() - start);
       const modelCfg = modelIndex.get(modelId);
@@ -1338,13 +1462,33 @@ ${text}`;
       response_format: imageResponseFormat,
     };
     const inputUrls = parseImageInputUrls(imageInputUrls);
-    const imageRequestPath = inputUrls.length > 0 ? 'images/edits' : 'images/generations';
-    const imageCodePayload = inputUrls.length > 0
+    const imageIsOutpaint = model === 'fal-ai/flux-2-pro/outpaint';
+    const imageDemo = IMAGE_DEMOS[model];
+    const imageRequestPath = inputUrls.length > 0 && !imageIsOutpaint ? 'images/edits' : 'images/generations';
+    const imageCodePayload = imageIsOutpaint
+      ? {
+          model,
+          image_url: inputUrls[0] || IMAGE_DEMOS['fal-ai/flux-2-pro/outpaint'].imageUrl,
+          expand_top: outpaintTop,
+          expand_bottom: outpaintBottom,
+          expand_left: outpaintLeft,
+          expand_right: outpaintRight,
+          enable_safety_checker: true,
+          output_format: 'jpeg',
+        }
+      : inputUrls.length > 0
       ? {
           model,
           prompt: imagePayload.prompt,
           images: inputUrls.map(url => ({ type: 'image_url', url })),
+          reference_image_urls: inputUrls,
           aspect_ratio: imageAspectRatio,
+          ...(imageDemo?.imageSize ? { image_size: imageDemo.imageSize } : {}),
+          ...(imageDemo?.numInferenceSteps ? { num_inference_steps: imageDemo.numInferenceSteps } : {}),
+          ...(imageDemo?.guidanceScale !== undefined ? { guidance_scale: imageDemo.guidanceScale } : {}),
+          ...(imageDemo ? { num_images: imageCount } : {}),
+          ...(imageDemo?.outputFormat ? { output_format: imageDemo.outputFormat } : {}),
+          ...(imageDemo?.safetyChecker !== undefined ? { enable_safety_checker: imageDemo.safetyChecker } : {}),
         }
       : imagePayload;
     const videoPrompt = input.trim() || [...allMessages].reverse().find(m => m.role === 'user')?.content || 'A cinematic handheld shot of a rainy neon street at night';
@@ -1354,8 +1498,13 @@ ${text}`;
       resolution: videoResolution,
       duration: videoDuration,
       aspect_ratio: videoAspectRatio,
-      generate_audio: videoGenerateAudio,
     };
+    if (primaryIsHappyHorseVideo) {
+      videoCodePayload.duration = videoDuration === 'auto' ? 5 : Number(videoDuration) || 5;
+      videoCodePayload.enable_safety_checker = true;
+    } else {
+      videoCodePayload.generate_audio = videoGenerateAudio;
+    }
     const videoImages = parseImageInputUrls(videoImageUrls);
     const videoVideos = parseImageInputUrls(videoVideoUrls);
     const videoAudios = parseImageInputUrls(videoAudioUrls);
@@ -2114,7 +2263,7 @@ JSON`;
       {primaryIsImage && (
         <div className="border-b border-white/10 px-4 py-3 bg-black/40">
           <div className="max-w-5xl grid grid-cols-2 md:grid-cols-6 gap-3">
-            <label className="block">
+            {!primaryIsOutpaintImage && <label className="block">
               <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Size</span>
               <select
                 value={imageSize}
@@ -2124,8 +2273,8 @@ JSON`;
               >
                 {IMAGE_SIZES.map(size => <option key={size} value={size} className="bg-black text-white">{size}</option>)}
               </select>
-            </label>
-            <label className="block">
+            </label>}
+            {!primaryIsOutpaintImage && <label className="block">
               <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Quality</span>
               <select
                 value={imageQuality}
@@ -2135,8 +2284,8 @@ JSON`;
               >
                 {IMAGE_QUALITIES.map(q => <option key={q} value={q} className="bg-black text-white">{q}</option>)}
               </select>
-            </label>
-            <label className="block">
+            </label>}
+            {!primaryIsOutpaintImage && <label className="block">
               <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Images</span>
               <input
                 type="number"
@@ -2147,8 +2296,8 @@ JSON`;
                 className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30"
                 data-testid="image-count"
               />
-            </label>
-            <label className="block">
+            </label>}
+            {!primaryIsOutpaintImage && <label className="block">
               <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Response</span>
               <select
                 value={imageResponseFormat}
@@ -2158,8 +2307,8 @@ JSON`;
               >
                 {IMAGE_RESPONSE_FORMATS.map(format => <option key={format} value={format} className="bg-black text-white">{format}</option>)}
               </select>
-            </label>
-            <label className="block">
+            </label>}
+            {!primaryIsOutpaintImage && <label className="block">
               <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Aspect</span>
               <select
                 value={imageAspectRatio}
@@ -2169,17 +2318,36 @@ JSON`;
               >
                 {IMAGE_ASPECT_RATIOS.map(ratio => <option key={ratio} value={ratio} className="bg-black text-white">{ratio}</option>)}
               </select>
-            </label>
+            </label>}
+            {primaryIsOutpaintImage && [
+              ['Top', outpaintTop, setOutpaintTop],
+              ['Bottom', outpaintBottom, setOutpaintBottom],
+              ['Left', outpaintLeft, setOutpaintLeft],
+              ['Right', outpaintRight, setOutpaintRight],
+            ].map(([label, value, setter]) => (
+              <label key={label as string} className="block">
+                <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">{label as string}</span>
+                <input
+                  type="number"
+                  min="0"
+                  max="2048"
+                  value={value as number}
+                  onChange={e => (setter as React.Dispatch<React.SetStateAction<number>>)(Math.max(0, Math.min(2048, Number(e.target.value) || 0)))}
+                  className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30"
+                />
+              </label>
+            ))}
             <label className="block col-span-2 md:col-span-1">
-              <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Input URLs</span>
+              <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">{primaryIsOutpaintImage ? 'Source image' : 'Input URLs'}</span>
               <textarea
                 value={imageInputUrls}
-                onChange={e => setImageInputUrls(e.target.value)}
+                onChange={e => setImageInputUrls(normalizeUploadUrlText(e.target.value))}
                 rows={1}
-                placeholder="Optional image URLs"
+                placeholder={primaryIsOutpaintImage ? 'Required source image URL' : 'Optional image URLs'}
                 className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30 resize-none"
                 data-testid="image-input-urls"
               />
+              <ImagePreviewStrip urls={parseImageInputUrls(imageInputUrls)} label="image-input-urls" />
             </label>
           </div>
         </div>
@@ -2207,30 +2375,41 @@ JSON`;
               </select>
             </label>
             <label className="block">
-              <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Audio</span>
-              <button type="button" onClick={() => setVideoGenerateAudio(v => !v)} className={`w-full border rounded px-3 py-2 text-xs font-mono transition-colors ${videoGenerateAudio ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' : 'border-white/10 bg-black text-white/50'}`} data-testid="video-generate-audio">
-                {videoGenerateAudio ? 'on' : 'off'}
+              <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">{primaryIsHappyHorseVideo ? 'Safety' : 'Audio'}</span>
+              <button type="button" onClick={() => !primaryIsHappyHorseVideo && setVideoGenerateAudio(v => !v)} className={`w-full border rounded px-3 py-2 text-xs font-mono transition-colors ${(primaryIsHappyHorseVideo || videoGenerateAudio) ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' : 'border-white/10 bg-black text-white/50'}`} data-testid="video-generate-audio">
+                {primaryIsHappyHorseVideo || videoGenerateAudio ? 'on' : 'off'}
               </button>
             </label>
             {primaryIsImageToVideo ? (
               <>
-                <label className="block col-span-2 md:col-span-2">
+                <label
+                  className={`block col-span-2 md:col-span-2 rounded border p-2 transition-colors ${dragTarget === 'image' ? 'border-emerald-400/60 bg-emerald-400/10' : 'border-white/10 bg-white/[0.015]'}`}
+                  data-testid="video-start-image-dropzone"
+                  {...referenceDropHandlers('image')}
+                >
                   <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Start image</span>
-                  <input value={videoImageUrl} onChange={e => setVideoImageUrl(e.target.value)} placeholder="https://..." className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30" data-testid="video-image-url" />
+                  <input value={videoImageUrl} onChange={e => setVideoImageUrl(normalizeUploadedAssetUrl(e.target.value))} placeholder="https://..." className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30" data-testid="video-image-url" />
                   <input type="file" accept="image/*" disabled={uploadingRefs} onChange={e => e.target.files && uploadReferenceFiles(e.target.files, 'image')} className="mt-1 block w-full text-[10px] font-mono text-white/35 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-white/60" />
+                  <SingleImagePreview url={videoImageUrl} label="video-start-image" />
                 </label>
-                <label className="block col-span-2 md:col-span-1">
+                <label
+                  className={`block col-span-2 md:col-span-1 rounded border p-2 transition-colors ${dragTarget === 'end-image' ? 'border-emerald-400/60 bg-emerald-400/10' : 'border-white/10 bg-white/[0.015]'}`}
+                  data-testid="video-end-image-dropzone"
+                  {...referenceDropHandlers('end-image')}
+                >
                   <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">End image</span>
-                  <input value={videoEndImageUrl} onChange={e => setVideoEndImageUrl(e.target.value)} placeholder="optional URL" className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30" data-testid="video-end-image-url" />
+                  <input value={videoEndImageUrl} onChange={e => setVideoEndImageUrl(normalizeUploadedAssetUrl(e.target.value))} placeholder="optional URL" className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30" data-testid="video-end-image-url" />
                   <input type="file" accept="image/*" disabled={uploadingRefs} onChange={e => e.target.files && uploadReferenceFiles(e.target.files, 'end-image')} className="mt-1 block w-full text-[10px] font-mono text-white/35 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-white/60" />
+                  <SingleImagePreview url={videoEndImageUrl} label="video-end-image" />
                 </label>
               </>
             ) : primaryIsReferenceToVideo ? (
               <>
                 <label className="block col-span-2 md:col-span-1">
                   <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Images</span>
-                  <textarea value={videoImageUrls} onChange={e => setVideoImageUrls(e.target.value)} rows={1} placeholder="image URLs" className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30 resize-none" data-testid="video-image-urls" />
+                  <textarea value={videoImageUrls} onChange={e => setVideoImageUrls(normalizeUploadUrlText(e.target.value))} rows={1} placeholder="image URLs" className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30 resize-none" data-testid="video-image-urls" />
                   <input type="file" accept="image/*" multiple disabled={uploadingRefs} onChange={e => e.target.files && uploadReferenceFiles(e.target.files, 'images')} className="mt-1 block w-full text-[10px] font-mono text-white/35 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-white/60" />
+                  <ImagePreviewStrip urls={parseImageInputUrls(videoImageUrls)} label="video-image-urls" />
                 </label>
                 <label className="block col-span-2 md:col-span-1">
                   <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Videos</span>
@@ -2434,11 +2613,7 @@ JSON`;
             value={input}
             onChange={e => {
               setInput(e.target.value);
-              const el = e.target;
-              el.style.height = 'auto';
-              const next = Math.min(el.scrollHeight, 200);
-              el.style.height = next + 'px';
-              el.style.overflowY = el.scrollHeight > 200 ? 'auto' : 'hidden';
+              resizeTextarea(e.target);
             }}
             onKeyDown={handleKeyDown}
             rows={1}
@@ -2643,6 +2818,31 @@ function MessageBubble({ message }: { message: Message; key?: React.Key }) {
     navigator.clipboard.writeText(message.content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const pollVideoJob = async (baseUrl: string, apiKey: string, jobId: string, signal: AbortSignal) => {
+    const deadline = Date.now() + 15 * 60 * 1000;
+    while (Date.now() < deadline) {
+      await new Promise((resolve, reject) => {
+        const timer = window.setTimeout(resolve, 2000);
+        signal.addEventListener('abort', () => {
+          window.clearTimeout(timer);
+          reject(new DOMException('Aborted', 'AbortError'));
+        }, { once: true });
+      });
+      const resp = await fetch(`${baseUrl}/v1/videos/generations/${encodeURIComponent(jobId)}`, {
+        headers: { Authorization: `Bearer ${apiKey}` },
+        signal,
+      });
+      if (!resp.ok) {
+        const errText = await resp.text();
+        throw new Error(`${resp.status}: ${errText.slice(0, 200)}`);
+      }
+      const data = await resp.json();
+      if (data?.status === 'completed' && data?.result?.video_url) return data.result;
+      if (data?.status === 'failed') throw new Error(data?.error?.message || 'Video generation failed');
+    }
+    throw new Error('Video generation timed out');
   };
 
   return (

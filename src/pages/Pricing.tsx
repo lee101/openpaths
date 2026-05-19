@@ -19,7 +19,7 @@ const TEXT_MODEL_IDS = [
   'minimax-m2.7',
   'gpt-5.4-mini',
   'gpt-5.5',
-  'gemini-3.1-pro-preview',
+  'gemini-3.5-flash',
   'claude-opus-4-7',
 ];
 
@@ -326,7 +326,7 @@ export function Pricing() {
               <SectionHeading
                 icon={<Search className="h-4 w-4" />}
                 title="Search"
-                body="Exa search is available through `/v1/search` and the `/search` playground. Prices include the requested 10% OpenPaths markup."
+                body="Exa and Papers search are available through `/v1/search` and the `/search` playground. Exa prices include the requested 10% OpenPaths markup; Papers is $1 per 1,000 searches."
               />
               <RequestPricingTable rows={SEARCH_ROWS} />
             </div>

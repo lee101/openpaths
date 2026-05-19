@@ -17,6 +17,8 @@ import { ModelPage } from './pages/ModelPage';
 import { AdminLee } from './pages/AdminLee';
 import { Stats } from './pages/Stats';
 import { Search } from './pages/Search';
+import { ImageTo3D } from './pages/ImageTo3D';
+import { Alternatives } from './pages/Alternatives';
 
 export default function App() {
   return (
@@ -33,12 +35,14 @@ export default function App() {
           <Route path="integrations" element={<Integrations />} />
           <Route path=":slug/docs" element={<ProviderDocs />} />
           <Route path="playground" element={<Playground />} />
+          <Route path="image-to-3d" element={<ImageTo3D />} />
           <Route path="search" element={<Search />} />
           <Route path="account" element={<Account />} />
           <Route path="admin" element={<AdminLee />} />
           <Route path="stats" element={<Stats />} />
           <Route path="blog" element={<Blog />} />
           <Route path="blog/:slug" element={<BlogPost />} />
+          <Route path="alternatives" element={<Alternatives />} />
           <Route path="alternatives/:slug" element={<BlogPost />} />
         </Route>
       </Routes>

@@ -172,8 +172,8 @@ func TestHealthTracker_EscalatingCooldown(t *testing.T) {
 
 func TestHealthTracker_ModelProviderKey(t *testing.T) {
 	h := NewHealthTracker()
-	key := h.ModelProviderKey("google", "gemini-3.1-pro-preview")
-	if key != "google:gemini-3.1-pro-preview" {
-		t.Errorf("key = %q, want %q", key, "google:gemini-3.1-pro-preview")
+	key := h.ModelProviderKey("google", "gemini-3.5-flash")
+	if key != "google:gemini-3.5-flash" {
+		t.Errorf("key = %q, want %q", key, "google:gemini-3.5-flash")
 	}
 }

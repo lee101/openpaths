@@ -42,6 +42,7 @@ func TestSearchHandlerForwardsExaSearchWithBYOK(t *testing.T) {
 	h := NewSearchHandler(
 		SearchProviderConfig{BaseURL: upstream.URL, APIKey: "platform-key", Enabled: true},
 		SearchProviderConfig{},
+		nil,
 		metrics.NewRecorder(metrics.NewCollector(nil, time.Hour)),
 	)
 
@@ -96,6 +97,7 @@ func TestSearchHandlerValidatesQuery(t *testing.T) {
 	h := NewSearchHandler(
 		SearchProviderConfig{BaseURL: "https://api.exa.ai", APIKey: "platform-key", Enabled: true},
 		SearchProviderConfig{},
+		nil,
 		metrics.NewRecorder(metrics.NewCollector(nil, time.Hour)),
 	)
 	ctx := &fasthttp.RequestCtx{}
@@ -134,6 +136,7 @@ func TestSearchHandlerForwardsPapersSearchWithBYOK(t *testing.T) {
 	h := NewSearchHandler(
 		SearchProviderConfig{},
 		SearchProviderConfig{BaseURL: upstream.URL, APIKey: "platform-papers-key", Enabled: true},
+		nil,
 		metrics.NewRecorder(metrics.NewCollector(nil, time.Hour)),
 	)
 

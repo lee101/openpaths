@@ -65,6 +65,8 @@ GOMAXPROCS=3 go build -tags="gpu cuda" \
 | `TEXTGENERATOR_API_KEY` | Text-Generator.io API key |
 | `MISTRAL_API_KEY` | Mistral API key |
 | `NVIDIA_API_KEY` | NVIDIA API key |
+| `EXA_API_KEY` | Exa Search API key. Create or copy one from `https://exa.ai/account` |
+| `APP_API_KEY` | app.nz Papers API key for `papers.app.nz`. Create one at `https://app.nz/account` |
 
 Provider key creation scripts live in `rotation/`. They create a new supported provider key and update the matching `.env` value, but intentionally do not revoke the old key.
 
@@ -78,6 +80,7 @@ Provider key creation scripts live in `rotation/`. They create a new supported p
 - `POST /v1/audio/speech` -- Text-to-speech
 - `POST /v1/audio/transcriptions` -- Audio transcription
 - `POST /v1/embeddings` -- Text embeddings
+- `POST /v1/search` -- Search API for Exa and Papers providers
 - `POST /auth/register` -- Register user
 - `POST /auth/login` -- Login
 - `GET /health` -- Health check

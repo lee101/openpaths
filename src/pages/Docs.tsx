@@ -11,6 +11,7 @@ const ENDPOINTS = [
   { method: 'GET', path: '/v1/models', description: 'List all available models and capabilities.' },
   { method: 'POST', path: '/v1/images/generations', description: 'Generate images (GPT Image 2, Flux, RA1, Klein, and more).' },
   { method: 'POST', path: '/v1/images/edits', description: 'Edit images and image-to-image workflows (GPT Image 2, Grok Imagine Image).' },
+  { method: 'POST', path: '/v1/3d/generations', description: 'Generate textured GLB models from image URLs with Pixal3D.' },
   { method: 'POST', path: '/v1/videos/generations', description: 'Generate videos (Sora 2, Hailuo, Wan, LTX).' },
   { method: 'POST', path: '/v1/audio/transcriptions', description: 'Transcribe speech to text (Whisper, GPT-4o Transcribe).' },
   { method: 'POST', path: '/v1/audio/speech', description: 'Text-to-speech (xAI TTS, MiniMax Speech 2.8 HD).' },
@@ -19,7 +20,7 @@ const ENDPOINTS = [
   { method: 'POST', path: '/v1/embeddings', description: 'Generate vector embeddings (OpenPaths, Google Gemini, Mistral, Nemotron).' },
 ];
 
-type Tab = 'chat' | 'images' | 'videos' | 'transcription';
+type Tab = 'chat' | 'images' | '3d' | 'videos' | 'transcription';
 
 export function Docs() {
   const [apiKey, setApiKey] = useState(() => getStoredAPIKey());
@@ -82,7 +83,7 @@ export function Docs() {
           </div>
 
           <div className="flex gap-1 mb-4 border-b border-white/10">
-            {(['chat', 'images', 'videos', 'transcription'] as const).map(t => (
+            {(['chat', 'images', '3d', 'videos', 'transcription'] as const).map(t => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
@@ -223,7 +224,6 @@ print("wrote mug.png")`,
 
 client = OpenAI(base_url="${apiBase}", api_key="${exampleKey}")
 
-# Creates a Sora job and waits for it to complete, then returns a signed URL.
 result = client.post(
     "/videos/generations",
     body={
@@ -232,11 +232,32 @@ result = client.post(
         "resolution": "1280x720",
         "num_frames": 48,
         "frames_per_second": 24,
+        "async": True,
     },
     cast_to=dict,
 )
 
-print(result["video_url"])`,
+while result["status"] not in ("completed", "failed"):
+    result = client.get(f"/videos/generations/{result['id']}", cast_to=dict)
+
+print(result["result"]["video_url"])`,
+    '3d': `from openai import OpenAI
+
+client = OpenAI(base_url="${apiBase}", api_key="${exampleKey}")
+
+result = client.post(
+    "/3d/generations",
+    body={
+        "model": "pixal3d-image-to-3d",
+        "image_url": "https://openpathsstatic.openpaths.io/static/uploads/image-to-3d/sword-reference.jpg",
+        "resolution": 1024,
+        "texture_size": 1024,
+        "remesh": True,
+    },
+    cast_to=dict,
+)
+
+print(result["model_glb"]["url"])`,
     transcription: `from openai import OpenAI
 
 client = OpenAI(base_url="${apiBase}", api_key="${exampleKey}")
@@ -279,6 +300,16 @@ print(transcript.text)`,
     "resolution": "1280x720",
     "num_frames": 48,
     "frames_per_second": 24
+  }'`,
+    '3d': `curl ${apiBase}/3d/generations \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer ${exampleKey}" \\
+  -d '{
+    "model": "pixal3d-image-to-3d",
+    "image_url": "https://openpathsstatic.openpaths.io/static/uploads/image-to-3d/sword-reference.jpg",
+    "resolution": 1024,
+    "texture_size": 1024,
+    "remesh": true
   }'`,
     transcription: `curl ${apiBase}/audio/transcriptions \\
   -H "Authorization: Bearer ${exampleKey}" \\
@@ -327,11 +358,38 @@ console.log("wrote mug.png");`,
     resolution: "1280x720",
     num_frames: 48,
     frames_per_second: 24,
+    async: true,
+  }),
+});
+
+let result = await response.json();
+
+while (result.status && result.status !== "completed" && result.status !== "failed") {
+  await new Promise((resolve) => setTimeout(resolve, 2000));
+  const poll = await fetch("${apiBase}/videos/generations/" + result.id, {
+    headers: { Authorization: "Bearer ${exampleKey}" },
+  });
+  result = await poll.json();
+}
+
+console.log((result.result ?? result).video_url);`,
+    '3d': `const response = await fetch("${apiBase}/3d/generations", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: "Bearer ${exampleKey}",
+  },
+  body: JSON.stringify({
+    model: "pixal3d-image-to-3d",
+    image_url: "https://openpathsstatic.openpaths.io/static/uploads/image-to-3d/sword-reference.jpg",
+    resolution: 1024,
+    texture_size: 1024,
+    remesh: true,
   }),
 });
 
 const result = await response.json();
-console.log(result.video_url);`,
+console.log(result.model_glb.url);`,
     transcription: `import OpenAI from "openai";
 import fs from "node:fs";
 
@@ -436,6 +494,37 @@ func main() {
 	out, _ := io.ReadAll(resp.Body)
 	fmt.Println(string(out))
 }`,
+    '3d': `package main
+
+import (
+	"bytes"
+	"fmt"
+	"io"
+	"net/http"
+)
+
+func main() {
+	body := []byte(\`{
+  "model": "pixal3d-image-to-3d",
+  "image_url": "https://openpathsstatic.openpaths.io/static/uploads/image-to-3d/sword-reference.jpg",
+  "resolution": 1024,
+  "texture_size": 1024,
+  "remesh": true
+}\`)
+
+	req, _ := http.NewRequest("POST", "${apiBase}/3d/generations", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer ${exampleKey}")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	out, _ := io.ReadAll(resp.Body)
+	fmt.Println(string(out))
+}`,
     transcription: `package main
 
 import (
@@ -486,6 +575,13 @@ func main() {
       javascript: javascript.images,
       go: go.images,
       curl: curl.images,
+    },
+    '3d': {
+      description: 'Generate textured GLB models from a public object image.',
+      python: python['3d'],
+      javascript: javascript['3d'],
+      go: go['3d'],
+      curl: curl['3d'],
     },
     videos: {
       description: 'Generate video clips with Sora 2, Hailuo, Wan, and LTX.',

@@ -22,6 +22,13 @@ type TimeSeriesPoint struct {
 	Value     float64   `json:"value"`
 }
 
+type ModelDailyUsagePoint struct {
+	Date     time.Time `json:"date"`
+	Model    string    `json:"model"`
+	Provider string    `json:"provider"`
+	Requests int64     `json:"requests"`
+}
+
 type StatsResponse struct {
 	Period    string            `json:"period"`
 	Models    []ModelStats      `json:"models"`

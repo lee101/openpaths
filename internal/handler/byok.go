@@ -8,6 +8,7 @@ import (
 	"github.com/openpaths/openpaths/internal/provider"
 	"github.com/openpaths/openpaths/internal/provider/anthropic"
 	"github.com/openpaths/openpaths/internal/provider/deepseek"
+	"github.com/openpaths/openpaths/internal/provider/fal"
 	"github.com/openpaths/openpaths/internal/provider/google"
 	"github.com/openpaths/openpaths/internal/provider/groq"
 	"github.com/openpaths/openpaths/internal/provider/minimax"
@@ -33,6 +34,7 @@ var providerBaseURLs = map[string]string{
 	"minimax":    "https://api.minimax.io",
 	"netwrck":    "https://netwrck.com",
 	"zai":        "https://api.z.ai",
+	"fal":        "https://fal.run",
 }
 
 func getUserProviderKeys(ctx *fasthttp.RequestCtx) map[string]*queries.UserProviderKey {
@@ -67,6 +69,8 @@ func makeUserProvider(providerName, apiKey string) provider.Provider {
 		return netwrck.New(apiKey, baseURL)
 	case "zai":
 		return zai.New(apiKey, baseURL)
+	case "fal":
+		return fal.New(apiKey)
 	}
 	return nil
 }

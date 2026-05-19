@@ -49,9 +49,9 @@ const EXAMPLES: Record<string, ProviderExample> = {
     ],
   },
   google: {
-    description: 'Gemini 3.1 Pro, 2.5 Pro, 2.5 Flash, Flash Lite, plus Gemini embedding models.',
+    description: 'Gemini 3.5 Flash, 2.5 Pro, 2.5 Flash, Flash Lite, plus Gemini embedding models.',
     endpoint: '/v1',
-    chatModel: 'gemini-3.1-pro-preview',
+    chatModel: 'gemini-3.5-flash',
     embeddingModel: 'gemini-embedding-2-preview',
     notes: [
       'Pass image URLs as content parts for vision queries.',
@@ -159,6 +159,26 @@ const EXAMPLES: Record<string, ProviderExample> = {
       'OpenPaths exposes these through `/v1/videos/generations`; you do not call Fal directly or send a Fal key.',
     ],
   },
+  alibaba: {
+    description: 'Alibaba Happy Horse image-to-video exposed through OpenPaths with OpenPaths billing and Fal infrastructure under the hood.',
+    endpoint: '/v1',
+    videoModel: 'alibaba/happy-horse/image-to-video',
+    provides: [
+      {
+        title: 'Happy Horse Image to Video',
+        description: 'Animate a still image into a 720p or 1080p video using prompt-guided motion, native audio, and lip-sync capable generation.',
+      },
+      {
+        title: 'OpenPaths Gateway',
+        description: 'Call `/v1/videos/generations` with an OpenPaths key. OpenPaths signs and polls the underlying Fal queue request for you.',
+      },
+    ],
+    notes: [
+      '`alibaba/happy-horse/image-to-video` accepts image_url, prompt, resolution, duration, seed, and enable_safety_checker.',
+      'Duration can be sent as a number or string from 3 to 15 seconds.',
+      'The default OpenPaths demo uses a mirrored Alibaba sample input and the corresponding Happy Horse MP4 output.',
+    ],
+  },
   exa: {
     description: 'Exa Search API through OpenPaths. Search the web with fast search modes, result categories, domain and date filters, highlights, full webpage text, structured outputs, and livecrawl freshness controls.',
     endpoint: '/v1',
@@ -181,6 +201,7 @@ const EXAMPLES: Record<string, ProviderExample> = {
       },
     ],
     notes: [
+      'Set `EXA_API_KEY` from https://exa.ai/account for OpenPaths platform routing.',
       'OpenPaths pricing adds 10% to Exa public rates: $0.0077 per search request for 1-10 results, $0.0011 per additional result beyond 10, and $0.0011 per requested content page.',
       'Users can store a provider key named `exa` for BYOK search requests.',
       'The dedicated UI lives at `/search`.',
@@ -585,21 +606,33 @@ print(resp.json()["data"][0]["url"])`,
     }
   }
   if (ex?.videoModel) {
+    const isHappyHorse = ex.videoModel === 'alibaba/happy-horse/image-to-video';
+    const videoPayload = isHappyHorse
+      ? `{
+        "model": "${ex.videoModel}",
+        "image_url": "https://openpathsstatic.openpaths.io/static/uploads/playground/happy-horse/rap.png",
+        "prompt": "Bring the scene in the image to life.",
+        "resolution": "1080p",
+        "duration": 5,
+        "enable_safety_checker": true,
+    }`
+      : `{
+        "model": "${ex.videoModel}",
+        "prompt": "A cinematic fly-through of a neon city at night",
+        "resolution": "720p",
+        "duration": "5",
+        "aspect_ratio": "16:9",
+    }`;
     out.push({
       title: 'Video Generation',
       description: `Default video model: ${ex.videoModel}`,
-      python: `import httpx
+      python: `import json
+import httpx
 
 resp = httpx.post(
     "${apiBase}/videos/generations",
     headers={"Authorization": "Bearer ${key}"},
-    json={
-        "model": "${ex.videoModel}",
-        "prompt": "A cinematic fly-through of a neon city at night",
-        "resolution": "1280x720",
-        "num_frames": 48,
-        "frames_per_second": 24,
-    },
+    json=json.loads(r'''${videoPayload}'''),
     timeout=900,
 )
 
@@ -607,13 +640,7 @@ print(resp.json()["video_url"])`,
       curl: `curl ${apiBase}/videos/generations \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer ${key}" \\
-  -d '{
-    "model": "${ex.videoModel}",
-    "prompt": "A cinematic fly-through of a neon city at night",
-    "resolution": "1280x720",
-    "num_frames": 48,
-    "frames_per_second": 24
-  }'`,
+  -d '${videoPayload.replaceAll('\n    ', '\n  ')}'`,
     });
   }
   if (ex?.speechModel) {

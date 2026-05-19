@@ -339,7 +339,8 @@ type geminiGenerationCfg struct {
 }
 
 type geminiThinkingCfg struct {
-	ThinkingBudget *int `json:"thinkingBudget,omitempty"`
+	ThinkingBudget *int   `json:"thinkingBudget,omitempty"`
+	ThinkingLevel  string `json:"thinkingLevel,omitempty"`
 }
 
 type geminiToolDecl struct {
@@ -701,8 +702,12 @@ func translateRequest(req *model.ChatCompletionRequest) *geminiRequest {
 	}
 
 	if req.ReasoningEffort != "" {
-		budget := reasoningToBudget(req.ReasoningEffort, gemReq.GenerationConfig.MaxOutputTokens)
-		gemReq.GenerationConfig.ThinkingConfig = &geminiThinkingCfg{ThinkingBudget: &budget}
+		if level := reasoningToThinkingLevel(req.Model, req.ReasoningEffort); level != "" {
+			gemReq.GenerationConfig.ThinkingConfig = &geminiThinkingCfg{ThinkingLevel: level}
+		} else {
+			budget := reasoningToBudget(req.ReasoningEffort, gemReq.GenerationConfig.MaxOutputTokens)
+			gemReq.GenerationConfig.ThinkingConfig = &geminiThinkingCfg{ThinkingBudget: &budget}
+		}
 	}
 
 	for _, msg := range req.Messages {
@@ -836,6 +841,22 @@ func reasoningToBudget(effort string, maxOutputTokens *int) int {
 		return clamp(32768)
 	default:
 		return 0
+	}
+}
+
+func reasoningToThinkingLevel(modelID, effort string) string {
+	if !strings.Contains(strings.ToLower(modelID), "gemini-3.5-flash") {
+		return ""
+	}
+	switch strings.ToLower(strings.TrimSpace(effort)) {
+	case "low":
+		return "LOW"
+	case "medium", "auto":
+		return "MEDIUM"
+	case "high":
+		return "HIGH"
+	default:
+		return ""
 	}
 }
 

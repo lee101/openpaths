@@ -36,12 +36,22 @@
     <priority>0.5</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/image-to-3d</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/search</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/alternatives</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -136,7 +146,17 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/providers/alibaba</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/providers/exa</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/providers/papers</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -231,12 +251,37 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/alibaba/docs</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/exa/docs</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/papers/docs</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/models/ra1</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/smart-resize</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/fal-ai%2Fflux-2-pro%2Foutpaint</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/pixal3d-image-to-3d</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -376,7 +421,12 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://openpaths.io/models/gemini-3.1-pro-preview</loc>
+    <loc>https://openpaths.io/models/gemini-latest</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/gemini-3.5-flash</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -391,7 +441,7 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://openpaths.io/models/gemini-flash-lite</loc>
+    <loc>https://openpaths.io/models/gemini-3.1-flash-lite</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -701,6 +751,11 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/models/fal-ai%2Fhidream-o1-image%2Fedit</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/models/hailuo-2.3</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
@@ -744,6 +799,16 @@
     <loc>https://openpaths.io/models/seedance-2.0-reference-to-video</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/alibaba%2Fhappy-horse%2Fimage-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/blog/image-to-3d-api-pixal3d-openpaths</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/migrate-openai-anthropic-agent-sdks-to-openpaths</loc>

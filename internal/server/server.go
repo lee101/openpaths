@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	fasthttprouter "github.com/fasthttp/router"
@@ -30,6 +31,8 @@ import (
 	"github.com/openpaths/openpaths/internal/storage"
 	stripesvc "github.com/openpaths/openpaths/internal/stripe"
 )
+
+var activeLongRequests int64
 
 type Server struct {
 	httpServer *fasthttp.Server
@@ -59,6 +62,8 @@ type Dependencies struct {
 	FineTuneQ        *queries.FineTuneQueries
 	FineTuneProvs    map[string]provider.FineTuneProvider
 	ProviderKeyQ     *queries.ProviderKeyQueries
+	VideoJobQ        *queries.VideoJobQueries
+	Model3DJobQ      *queries.Model3DJobQueries
 	OnRegister       handler.OnRegisterFunc
 }
 
@@ -84,6 +89,7 @@ func New(deps *Dependencies) *Server {
 		middleware.BYOKLoader(deps.ProviderKeyQ),
 		middleware.RateLimit(),
 		middleware.BalanceCheck(deps.Billing),
+		middleware.NewRequestCoalescer(24*time.Hour),
 	)
 
 	searchChain := middleware.Chain(
@@ -130,8 +136,16 @@ func New(deps *Dependencies) *Server {
 	r.POST("/v1/images/edits", apiKeyChain(imageH.HandleImageGeneration))
 	log.Printf("Image generation endpoint enabled")
 
-	videoH := handler.NewVideoHandler(deps.Router, deps.Billing, deps.Recorder)
-	r.POST("/v1/videos/generations", apiKeyChain(videoH.HandleVideoGeneration))
+	model3DH := handler.NewModel3DHandler(deps.Router, deps.Billing, deps.Recorder, deps.Model3DJobQ)
+	r.POST("/v1/3d/generations", trackLongRequest(apiKeyChain(model3DH.HandleModel3DGeneration)))
+	r.GET("/v1/3d/generations/{job_id}", apiKeyChain(model3DH.HandleModel3DGenerationJob))
+	r.GET("/v1/3d/generations/{job_id}/status", apiKeyChain(model3DH.HandleModel3DGenerationJob))
+	log.Printf("3D generation endpoint enabled")
+
+	videoH := handler.NewVideoHandler(deps.Router, deps.Billing, deps.Recorder, deps.VideoJobQ)
+	r.POST("/v1/videos/generations", trackLongRequest(apiKeyChain(videoH.HandleVideoGeneration)))
+	r.GET("/v1/videos/generations/{job_id}", apiKeyChain(videoH.HandleVideoGenerationJob))
+	r.GET("/v1/videos/generations/{job_id}/status", apiKeyChain(videoH.HandleVideoGenerationJob))
 	log.Printf("Video generation endpoint enabled")
 
 	musicH := handler.NewMusicHandler(deps.Router, deps.Billing, deps.Recorder)
@@ -213,6 +227,7 @@ func New(deps *Dependencies) *Server {
 	r.GET("/stats/providers", publicChain(statsH.HandleProviderStats))
 	r.GET("/stats/breakdown", publicChain(statsH.HandleUsageBreakdown))
 	r.GET("/stats/timeseries", publicChain(statsH.HandleTimeSeries))
+	r.GET("/stats/models/timeseries", publicChain(statsH.HandleModelDailyUsage))
 
 	r.GET("/account/stats/timeseries", accountChain(acctStatsH.HandleUserTimeSeries))
 	r.GET("/account/stats/by-api-key", accountChain(acctStatsH.HandleUserSpendByAPIKey))
@@ -269,8 +284,11 @@ func New(deps *Dependencies) *Server {
 	log.Printf("OpenRouter provider models endpoint enabled at /openrouter/models")
 
 	r.GET("/health", func(ctx *fasthttp.RequestCtx) {
+		ctx.SetContentType("application/json")
 		ctx.SetStatusCode(200)
-		ctx.SetBodyString(`{"status":"ok"}`)
+		activeLong := atomic.LoadInt64(&activeLongRequests) + handler.ActiveVideoJobs()
+		ctx.SetBodyString(fmt.Sprintf(`{"status":"ok","active_long_requests":%d,"active_video_jobs":%d}`,
+			activeLong, handler.ActiveVideoJobs()))
 	})
 	r.POST("/monitoring/frontend-errors", publicChain(handleFrontendErrorReport))
 
@@ -374,6 +392,14 @@ func (s *Server) Start() error {
 
 func (s *Server) Shutdown() error {
 	return s.httpServer.Shutdown()
+}
+
+func trackLongRequest(next fasthttp.RequestHandler) fasthttp.RequestHandler {
+	return func(ctx *fasthttp.RequestCtx) {
+		atomic.AddInt64(&activeLongRequests, 1)
+		defer atomic.AddInt64(&activeLongRequests, -1)
+		next(ctx)
+	}
 }
 
 func spaHandler(dir string, api fasthttp.RequestHandler, apiKeyQ *queries.APIKeyQueries, userQ *queries.UserQueries) fasthttp.RequestHandler {
@@ -541,9 +567,15 @@ func pageMetaForPath(path string) pageMeta {
 		}
 	case "/stats":
 		return pageMeta{
-			Title:       "OpenPaths Stats | Anonymous AI Model Usage",
-			Description: "Anonymous aggregate OpenPaths usage by task, provider, and model without exposing users, API keys, or prompt data.",
+			Title:       "OpenPaths Stats | AI Model Usage",
+			Description: "Daily model usage and public OpenPaths request breakdowns.",
 			URL:         "https://openpaths.io/stats",
+		}
+	case "/alternatives":
+		return pageMeta{
+			Title:       "OpenPaths Alternatives | Compare AI Model Gateways",
+			Description: "Compare OpenPaths with OpenRouter, OpenAI API, Anthropic API, Together AI, and other AI model routing alternatives.",
+			URL:         "https://openpaths.io/alternatives",
 		}
 	default:
 		return pageMeta{

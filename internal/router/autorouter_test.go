@@ -132,7 +132,7 @@ func TestDefaultRoutingTables_EasyTaskIncludesRequestedProviders(t *testing.T) {
 	for _, want := range []string{
 		"gpt-5.4-nano",
 		"deepseek-v4-flash",
-		"gemini-flash-lite",
+		"gemini-3.1-flash-lite",
 		"gemini-2.5-flash",
 		"claude-haiku-4-5-20251001",
 	} {
@@ -200,8 +200,8 @@ func TestAutoRouter_ThinkTaskRoutesHardPromptToHighThinking(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ResolveAuto() error = %v", err)
 	}
-	if got.ModelID != "gpt-5.5" {
-		t.Fatalf("ModelID = %q, want %q", got.ModelID, "gpt-5.5")
+	if got.ModelID != "gemini-3.5-flash" {
+		t.Fatalf("ModelID = %q, want %q", got.ModelID, "gemini-3.5-flash")
 	}
 	if got.ReasoningEffort != "high" {
 		t.Fatalf("ReasoningEffort = %q, want %q", got.ReasoningEffort, "high")
@@ -218,8 +218,8 @@ func TestAutoRouter_ThinkTaskRoutes3DSimulationToHighThinking(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ResolveAuto() error = %v", err)
 	}
-	if got.ModelID != "gpt-5.5" {
-		t.Fatalf("ModelID = %q, want %q", got.ModelID, "gpt-5.5")
+	if got.ModelID != "gemini-3.5-flash" {
+		t.Fatalf("ModelID = %q, want %q", got.ModelID, "gemini-3.5-flash")
 	}
 	if got.ReasoningEffort != "high" {
 		t.Fatalf("ReasoningEffort = %q, want %q", got.ReasoningEffort, "high")
@@ -265,7 +265,7 @@ func (s *stubEmbedder) Embed(_ context.Context, req *model.EmbeddingRequest) (*m
 func TestMaybeResolveAuto_UsesNamedTierWhenModalityIsEmpty(t *testing.T) {
 	r := newTestRouter([]model.ModelConfig{
 		{ID: "auto-easy-task", Provider: "google"},
-		{ID: "gemini-flash-lite", Provider: "google"},
+		{ID: "gemini-3.1-flash-lite", Provider: "google"},
 		{ID: "gpt-4o", Provider: "openai"},
 	}, "google", "openai")
 
@@ -280,15 +280,15 @@ func TestMaybeResolveAuto_UsesNamedTierWhenModalityIsEmpty(t *testing.T) {
 				{ModelID: "gpt-4o", ReasoningEffort: "low", Embedding: []float64{1, 0}},
 			},
 			"easy-task": {
-				{ModelID: "gemini-flash-lite", ReasoningEffort: "none", Embedding: []float64{1, 0}},
+				{ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none", Embedding: []float64{1, 0}},
 			},
 		},
 		ready: true,
 	})
 
 	got := r.MaybeResolveAuto(context.Background(), "auto-easy-task", "", "quick cleanup")
-	if got.ModelID != "gemini-flash-lite" {
-		t.Fatalf("MaybeResolveAuto() model = %q, want %q", got.ModelID, "gemini-flash-lite")
+	if got.ModelID != "gemini-3.1-flash-lite" {
+		t.Fatalf("MaybeResolveAuto() model = %q, want %q", got.ModelID, "gemini-3.1-flash-lite")
 	}
 	if got.ReasoningEffort != "none" {
 		t.Fatalf("MaybeResolveAuto() reasoning = %q, want none", got.ReasoningEffort)
@@ -298,8 +298,8 @@ func TestMaybeResolveAuto_UsesNamedTierWhenModalityIsEmpty(t *testing.T) {
 func TestMaybeResolveAutoWithTier_HardTierOverridesNonAutoModel(t *testing.T) {
 	r := newTestRouter([]model.ModelConfig{
 		{ID: "gpt-4o", Provider: "openai"},
-		{ID: "gpt-5.5", Provider: "openai"},
-	}, "openai", "anthropic")
+		{ID: "gemini-3.5-flash", Provider: "google"},
+	}, "openai", "google", "anthropic")
 
 	r.SetAutoRouter(&AutoRouter{
 		embedder: &stubEmbedder{
@@ -309,7 +309,7 @@ func TestMaybeResolveAutoWithTier_HardTierOverridesNonAutoModel(t *testing.T) {
 		},
 		tables: map[string][]AutoEntry{
 			"hard-task": {
-				{ModelID: "gpt-5.5", ReasoningEffort: "medium", Embedding: []float64{1, 0}},
+				{ModelID: "gemini-3.5-flash", ReasoningEffort: "medium", Embedding: []float64{1, 0}},
 			},
 		},
 		ready: true,
@@ -317,8 +317,8 @@ func TestMaybeResolveAutoWithTier_HardTierOverridesNonAutoModel(t *testing.T) {
 
 	// Caller didn't use an auto-* model name — task_tier alone should promote.
 	got := r.MaybeResolveAutoWithTier(context.Background(), "gpt-4o", "", "hard", "build me a sankey flow diagram")
-	if got.ModelID != "gpt-5.5" {
-		t.Fatalf("task_tier=hard should route to gpt-5.5, got %q", got.ModelID)
+	if got.ModelID != "gemini-3.5-flash" {
+		t.Fatalf("task_tier=hard should route to gemini-3.5-flash, got %q", got.ModelID)
 	}
 	if got.ReasoningEffort != "medium" {
 		t.Fatalf("reasoning effort = %q, want medium", got.ReasoningEffort)
@@ -346,8 +346,8 @@ func TestMaybeResolveAutoWithTier_EmptyTierFallsBackToModelNameBehaviour(t *test
 func TestMaybeResolveAutoReasoning_KeepsDirectModelReasoningOnly(t *testing.T) {
 	r := newTestRouter([]model.ModelConfig{
 		{ID: "nvidia/deepseek-v4-pro", Provider: "nvidia"},
-		{ID: "gpt-5.5", Provider: "openai"},
-	}, "nvidia", "openai")
+		{ID: "gemini-3.5-flash", Provider: "google"},
+	}, "nvidia", "google")
 
 	r.SetAutoRouter(&AutoRouter{
 		embedder: &stubEmbedder{
@@ -357,7 +357,7 @@ func TestMaybeResolveAutoReasoning_KeepsDirectModelReasoningOnly(t *testing.T) {
 		},
 		tables: map[string][]AutoEntry{
 			"think-task": {
-				{ModelID: "gpt-5.5", ReasoningEffort: "high", Embedding: []float64{1, 0}},
+				{ModelID: "gemini-3.5-flash", ReasoningEffort: "high", Embedding: []float64{1, 0}},
 			},
 		},
 		ready: true,
@@ -408,8 +408,8 @@ func TestAutoRouter_HardTaskRoutesSankeyToGPT55(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ResolveAuto() error = %v", err)
 	}
-	if got.ModelID != "gpt-5.5" {
-		t.Fatalf("ModelID = %q, want gpt-5.5", got.ModelID)
+	if got.ModelID != "gemini-3.5-flash" {
+		t.Fatalf("ModelID = %q, want gemini-3.5-flash", got.ModelID)
 	}
 }
 
@@ -420,13 +420,13 @@ func TestDefaultRoutingTables_HardTaskIncludesGPT55(t *testing.T) {
 	}
 	var hasGPT55 bool
 	for _, e := range entries {
-		if e.ModelID == "gpt-5.5" {
+		if e.ModelID == "gemini-3.5-flash" {
 			hasGPT55 = true
 			break
 		}
 	}
 	if !hasGPT55 {
-		t.Fatal("hard-task routing table must include gpt-5.5")
+		t.Fatal("hard-task routing table must include gemini-3.5-flash")
 	}
 }
 

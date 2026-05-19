@@ -12,7 +12,8 @@ func newTestPricingTable() *PricingTable {
 		{ID: "gpt-4o-mini", InputPricePer1M: 0.15, OutputPricePer1M: 0.60},
 		{ID: "openpaths-embed", PricePerRequest: 0.001},
 		{ID: "grok-imagine-image", PricePerImage: 0.02, PricePerInputImage: 0.002},
-		{ID: "hidream-o1-image-dev", PricePerMegapixel: 0.006},
+		{ID: "hidream-o1-image-dev", PricePerMegapixel: 0.011},
+		{ID: "fal-ai/flux-2-pro/outpaint", PriceFirstMegapixel: 0.033, PriceExtraMegapixel: 0.0165},
 		{ID: "seedance-fast", PricePerSecond: 0.26609, PricePerSecondWithVideoInput: 0.15972},
 		{ID: "xai-tts", InputPricePer1M: 15.00},
 		{ID: "whisper-1", PricePerMinute: 0.006},
@@ -262,9 +263,21 @@ func TestCalculateImageCostWithInputsAndSize_PerMegapixel(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	// 1024x1024 is 1.048576 MP; two images at $0.006/MP is $0.012582912.
-	if cost != 125 {
-		t.Fatalf("cost = %d, want 125", cost)
+	// 1024x1024 is 1.048576 MP; two images at $0.011/MP is $0.023068672.
+	if cost != 230 {
+		t.Fatalf("cost = %d, want 230", cost)
+	}
+}
+
+func TestCalculateOutpaintCost(t *testing.T) {
+	pt := newTestPricingTable()
+	cost, err := pt.CalculateOutpaintCost("fal-ai/flux-2-pro/outpaint", 1024, 1024, 1424, 1216, 1)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// First output MP: $0.033. One input MP + one extra output MP at $0.0165 each.
+	if cost != 660 {
+		t.Fatalf("cost = %d, want 660", cost)
 	}
 }
 
@@ -375,7 +388,7 @@ func TestEstimateMaxCost(t *testing.T) {
 			name:            "megapixel image model estimates 2k output",
 			modelID:         "hidream-o1-image-dev",
 			maxOutputTokens: 0,
-			wantCost:        251,
+			wantCost:        461,
 			wantErr:         false,
 		},
 		{
