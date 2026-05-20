@@ -35,6 +35,16 @@ func (q *ProviderKeyQueries) Upsert(ctx context.Context, userID, provider, apiKe
 	return err
 }
 
+func (q *ProviderKeyQueries) UpsertAuthJSON(ctx context.Context, userID, provider, authJSON string) error {
+	_, err := q.pool.Exec(ctx, `
+		INSERT INTO user_provider_keys (user_id, provider, auth_json)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (user_id, provider)
+		DO UPDATE SET auth_json = $3, updated_at = now()
+	`, userID, provider, authJSON)
+	return err
+}
+
 func (q *ProviderKeyQueries) ListByUser(ctx context.Context, userID string) ([]*UserProviderKey, error) {
 	rows, err := q.pool.Query(ctx, `
 		SELECT id, user_id, provider, api_key, auth_json, created_at, updated_at

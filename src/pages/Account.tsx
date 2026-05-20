@@ -580,6 +580,7 @@ export function Account() {
   const [balanceUnits, setBalanceUnits] = useState<number | null>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [apiKeys, setApiKeys] = useState<any[]>([]);
+  const [providerKeys, setProviderKeys] = useState<any[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [hasPaymentMethod, setHasPaymentMethod] = useState(false);
   const [autotopupSettings, setAutotopupSettings] = useState<AutotopupSettings>({
@@ -593,6 +594,9 @@ export function Account() {
   const [checkoutAmount, setCheckoutAmount] = useState(RECOMMENDED_TOPUP_USD);
   const [newKeyName, setNewKeyName] = useState('');
   const [newKeyResult, setNewKeyResult] = useState<string | null>(null);
+  const [openAIAuthNotice, setOpenAIAuthNotice] = useState<string | null>(null);
+  const [openAIAuthError, setOpenAIAuthError] = useState<string | null>(null);
+  const [openAIAuthLoading, setOpenAIAuthLoading] = useState(false);
 
   const [billingNotice, setBillingNotice] = useState<string | null>(null);
   const [billingError, setBillingError] = useState<string | null>(null);
@@ -618,6 +622,17 @@ export function Account() {
       setActiveTab('billing');
       setPostTopupPrompt(true);
       setBillingNotice('Funds added successfully. Set up auto-topup next so this balance keeps itself ready.');
+      window.history.replaceState({}, '', '/account');
+    }
+    const openAIAuth = params.get('openai_auth');
+    if (openAIAuth) {
+      setActiveTab('keys');
+      const message = params.get('openai_auth_message') || (openAIAuth === 'success' ? 'OpenAI sign-in saved.' : 'OpenAI sign-in failed.');
+      if (openAIAuth === 'success') {
+        setOpenAIAuthNotice(message);
+      } else {
+        setOpenAIAuthError(message);
+      }
       window.history.replaceState({}, '', '/account');
     }
   }, []);
@@ -666,6 +681,16 @@ export function Account() {
       .then(r => r.json())
       .then(d => {
         if (d.keys) setApiKeys(d.keys);
+      })
+      .catch(() => {});
+  }, [apiKey]);
+
+  const fetchProviderKeys = useCallback(() => {
+    if (!apiKey) return Promise.resolve();
+    return api('/account/provider-keys')
+      .then(r => r.json())
+      .then(d => {
+        if (d.keys) setProviderKeys(d.keys);
       })
       .catch(() => {});
   }, [apiKey]);
@@ -750,8 +775,8 @@ export function Account() {
 
   useEffect(() => {
     if (!apiKey) return;
-    void Promise.all([fetchBalance(), fetchTransactions(), fetchKeys(), fetchPaymentMethods(), fetchAutotopup()]);
-  }, [apiKey, fetchAutotopup, fetchBalance, fetchKeys, fetchPaymentMethods, fetchTransactions]);
+    void Promise.all([fetchBalance(), fetchTransactions(), fetchKeys(), fetchProviderKeys(), fetchPaymentMethods(), fetchAutotopup()]);
+  }, [apiKey, fetchAutotopup, fetchBalance, fetchKeys, fetchProviderKeys, fetchPaymentMethods, fetchTransactions]);
 
   useEffect(() => {
     if (activeTab === 'analytics' && apiKey) {
@@ -797,6 +822,25 @@ export function Account() {
   const revokeKey = async (id: string) => {
     await api(`/account/keys/${id}`, { method: 'DELETE' });
     void fetchKeys();
+  };
+
+  const startOpenAIAuth = async () => {
+    setOpenAIAuthLoading(true);
+    setOpenAIAuthNotice(null);
+    setOpenAIAuthError(null);
+    try {
+      const res = await api('/account/openai/start', { method: 'POST', body: JSON.stringify({}) });
+      const data = await res.json();
+      if (!res.ok || !data.auth_url) {
+        setOpenAIAuthError(data.error?.message || 'Failed to start OpenAI sign-in');
+        return;
+      }
+      window.location.href = data.auth_url;
+    } catch {
+      setOpenAIAuthError('Network error');
+    } finally {
+      setOpenAIAuthLoading(false);
+    }
   };
 
   const openCheckout = (amountUSD: number) => {
@@ -1183,6 +1227,54 @@ export function Account() {
                 ))}
               </div>
             )}
+
+            <div className="mt-8 border border-white/10 bg-white/[0.02] rounded-3xl p-6">
+              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-[0.18em] text-white/35 mb-2">
+                    <ShieldCheck className="w-4 h-4" /> OpenAI Max plan
+                  </div>
+                  <h2 className="text-xl font-semibold tracking-tight">Sign in with OpenAI</h2>
+                  <p className="text-sm text-white/55 mt-2 max-w-2xl">
+                    Connect a ChatGPT Max or Codex-capable OpenAI account. OpenPaths stores the Codex auth tokens, refreshes them when OpenAI rejects a request, and falls back to another credential if refresh fails.
+                  </p>
+                </div>
+                <button
+                  onClick={startOpenAIAuth}
+                  disabled={openAIAuthLoading}
+                  className="rounded-2xl bg-white text-black px-4 py-3 text-sm font-mono font-bold hover:bg-white/90 transition-colors disabled:opacity-50"
+                  data-testid="openai-auth-start"
+                >
+                  {openAIAuthLoading ? 'Starting...' : 'Sign in with OpenAI'}
+                </button>
+              </div>
+              {openAIAuthNotice && (
+                <div className="mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+                  {openAIAuthNotice}
+                </div>
+              )}
+              {openAIAuthError && (
+                <div className="mt-4 rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                  {openAIAuthError}
+                </div>
+              )}
+              <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4">
+                <div className="text-xs font-mono uppercase tracking-[0.14em] text-white/35 mb-2">Status</div>
+                {providerKeys.some(k => k.provider === 'openai_codex' && k.has_auth) ? (
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm text-white/75">OpenAI Codex sign-in saved.</p>
+                      <p className="text-xs text-white/40 mt-1">
+                        Last updated {new Date(providerKeys.find(k => k.provider === 'openai_codex')?.updated_at).toLocaleString()}
+                      </p>
+                    </div>
+                    <span className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1 text-xs font-mono text-emerald-200">Connected</span>
+                  </div>
+                ) : (
+                  <p className="text-sm text-white/45">No OpenAI Max plan sign-in is connected.</p>
+                )}
+              </div>
+            </div>
 
             <p className="text-sm text-white/40 font-light mt-6">Do not share your API key in publicly accessible areas such as GitHub or client-side code.</p>
           </motion.div>

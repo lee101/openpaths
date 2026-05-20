@@ -194,6 +194,9 @@ func New(deps *Dependencies) *Server {
 		r.POST("/account/provider-keys", accountChain(pkH.HandleUpsert))
 		r.POST("/account/provider-keys/bulk", accountChain(pkH.HandleBulkUpsert))
 		r.DELETE("/account/provider-keys", accountChain(pkH.HandleDelete))
+		openAIAuthH := handler.NewOpenAIOAuthHandler(deps.ProviderKeyQ)
+		r.POST("/account/openai/start", accountChain(openAIAuthH.HandleStart))
+		r.GET("/account/openai/callback", publicChain(openAIAuthH.HandleCallback))
 		log.Printf("BYOK provider keys endpoints enabled")
 	}
 
