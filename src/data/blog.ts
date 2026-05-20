@@ -12,6 +12,98 @@ export interface BlogPost {
 
 export const posts: BlogPost[] = [
   {
+    slug: 'pelican-bicycle-animated-svg-model-comparison',
+    title: 'Pelican on a Bicycle: Animated SVG Comparison Across GPT-5.5 and Gemini 3.5 Flash',
+    excerpt: 'We asked GPT-5.5 with no thinking, GPT-5.5 with xhigh thinking, and Gemini 3.5 Flash to draw the same animated SVG: a pelican riding a bicycle.',
+    date: '2026-05-20',
+    author: 'OpenPaths Team',
+    readTime: '6 min',
+    tags: ['models', 'svg', 'gpt-5.5', 'gemini', 'creative-coding'],
+    content: `Creative coding prompts are a good stress test for model routing because they mix visual composition, syntax discipline, animation, and taste. A model has to understand the scene, choose a compact representation, and produce valid code in one shot.
+
+For this test we used a deliberately odd prompt:
+
+\`\`\`text
+Draw a pelican riding a bicycle as an animated SVG.
+Return only a complete standalone SVG document.
+\`\`\`
+
+We compared three routes:
+
+| Run | Model | Thinking setting | Completion tokens | Result size |
+|-----|-------|------------------|-------------------|-------------|
+| GPT-5.5 no thinking | gpt-5.5 | none | 1,831 | 4.6 KB |
+| GPT-5.5 xhigh thinking | gpt-5.5 | xhigh | 8,371 | 1.3 KB |
+| Gemini 3.5 Flash | gemini-3.5-flash | none | 4,677 | 9.9 KB |
+
+## GPT-5.5, no thinking
+
+![GPT-5.5 no thinking animated SVG pelican bicycle](/static/blog/pelican-svg/gpt55-none.svg)
+
+This was the cleanest single-pass result. It followed the instruction to return SVG only, included a recognizable pelican, built a real bicycle, and added animation without bloating the file.
+
+The style is simple but coherent: wheel spin, pedaling motion, bobbing body, and enough linework to read as a bird on a bike. For production use, this is the one I would start from because it is easy to edit.
+
+## GPT-5.5, xhigh thinking
+
+![GPT-5.5 xhigh thinking animated SVG pelican bicycle](/static/blog/pelican-svg/gpt55-xhigh.svg)
+
+The unconstrained xhigh request spent too much of its budget thinking and did not return a usable SVG before the edge timeout. Running the same model locally through OpenPaths avoided the CDN timeout, but the first full-size request still exhausted a 10,000-token completion budget with no final content.
+
+To get a visible artifact, we kept xhigh enabled and constrained the output to a tiny standalone SVG. That produced a compact result: fewer decorative details, smaller canvas, clear wheels, and an animated front wheel. It is less polished than the no-thinking output, but it shows the tradeoff: deeper reasoning does not automatically help when the task is mostly visual execution and strict final-code formatting.
+
+## Gemini 3.5 Flash
+
+![Gemini 3.5 Flash animated SVG pelican bicycle](/static/blog/pelican-svg/gemini35.svg)
+
+Gemini 3.5 Flash produced the largest SVG and leaned into scene design. It used gradients, a sky-like background, more complex animation, and a more illustrative composition.
+
+The first Gemini attempt returned planning notes instead of final SVG, so we reran it with a stricter system instruction: output only final code, no markdown, no prose. With that constraint, Gemini produced a complete SVG with animation and a more decorative look than GPT-5.5 no-thinking.
+
+## What this shows
+
+For animated SVG generation, the best model is not always the one with the deepest thinking setting.
+
+GPT-5.5 with no thinking was the most direct: valid SVG, recognizable subject, compact enough to edit, and no fuss. Gemini 3.5 Flash gave a richer illustration once forced into code-only mode. GPT-5.5 xhigh needed more operational care because hidden reasoning consumed the completion budget before final code appeared.
+
+The practical lesson is simple:
+
+- use a direct model with low or no thinking for small visual code artifacts
+- add strict output-format instructions when asking for SVG
+- increase completion budget for reasoning-heavy modes, or constrain the artifact size
+- treat xhigh thinking as a tool for hard planning, not a default for every creative-code task
+
+## API shape
+
+Here is the request shape we used for the direct SVG runs:
+
+\`\`\`bash
+curl https://openpaths.io/v1/chat/completions \\
+  -H "Authorization: Bearer op-..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "model": "gpt-5.5",
+    "reasoning_effort": "none",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Draw a pelican riding a bicycle as an animated SVG. Return only a complete standalone SVG document."
+      }
+    ],
+    "max_tokens": 4096
+  }'
+\`\`\`
+
+For the stricter reruns, the important addition was a system instruction:
+
+\`\`\`text
+You output only final code. Do not explain, plan, use markdown, or include prose.
+The first character of your response must be < and the response must be one complete standalone SVG document.
+\`\`\`
+
+That instruction mattered more than the model choice for preventing markdown wrappers and planning text.`
+  },
+  {
     slug: 'image-to-3d-api-pixal3d-openpaths',
     title: 'Image to 3D on OpenPaths: Pixal3D GLB Generation From One API Key',
     excerpt: 'OpenPaths now exposes Fal Pixal3D as an authenticated image-to-3D endpoint, with a browser viewer, public upload flow, and a real sword GLB default example.',
