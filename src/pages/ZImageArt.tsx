@@ -131,7 +131,11 @@ export function ZImageArt() {
 
           {featured && (
             <section className="mb-8 grid overflow-hidden rounded border border-white/10 bg-white/[0.02] lg:grid-cols-[minmax(0,1fr)_420px]">
-              <img src={featured.imageUrl} alt={featured.prompt} className="aspect-[16/10] h-full w-full bg-white/[0.03] object-cover" />
+              {featured.imageUrl ? (
+                <img src={featured.imageUrl} alt={featured.prompt} className="aspect-[16/10] h-full w-full bg-white/[0.03] object-cover" />
+              ) : (
+                <PromptPlaceholder prompt={featured.prompt} large />
+              )}
               <div className="flex flex-col justify-between gap-6 p-5">
                 <div>
                   <div className="mb-3 flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em] text-white/40">
@@ -157,7 +161,11 @@ export function ZImageArt() {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {results.map(item => (
                 <article key={item.id || item.slug} className="group overflow-hidden rounded border border-white/10 bg-white/[0.02]">
-                  <img src={item.thumbUrl || item.imageUrl} alt={item.prompt} loading="lazy" className="aspect-square w-full bg-white/[0.03] object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
+                  {item.thumbUrl || item.imageUrl ? (
+                    <img src={item.thumbUrl || item.imageUrl} alt={item.prompt} loading="lazy" className="aspect-square w-full bg-white/[0.03] object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
+                  ) : (
+                    <PromptPlaceholder prompt={item.prompt} />
+                  )}
                   <div className="p-4">
                     <div className="mb-2 flex items-center justify-between gap-3 font-mono text-[11px] uppercase tracking-[0.16em] text-white/35">
                       <span>{item.model || 'zimage'}</span>
@@ -175,6 +183,15 @@ export function ZImageArt() {
         </main>
       </div>
     </>
+  );
+}
+
+function PromptPlaceholder({ prompt, large = false }: { prompt: string; large?: boolean }) {
+  return (
+    <div className={`flex ${large ? 'aspect-[16/10] min-h-80' : 'aspect-square'} w-full flex-col justify-between bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.14),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))] p-5`}>
+      <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-white/35">Prompt queued</div>
+      <p className="line-clamp-5 text-sm leading-relaxed text-white/58">{prompt}</p>
+    </div>
   );
 }
 

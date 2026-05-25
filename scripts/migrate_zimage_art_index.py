@@ -269,9 +269,9 @@ def build_item(record: SourceRecord, image_url: str, thumb_url: str, steps: int)
 
 def process_record(record: SourceRecord, args, client, bucket: str | None) -> dict[str, Any]:
     image_url = record.image_url
-    if args.regenerate or not image_url:
+    if args.regenerate:
         image_url = generate_zimage(record.prompt, args.steps, args.openpaths_base_url)
-    if args.upload_images:
+    if args.upload_images and image_url:
         raw = download_image(image_url)
         webp = reencode_webp(raw, args.webp_quality)
         key = f"{args.image_prefix.rstrip('/')}/{stable_id(record.prompt)}.webp"

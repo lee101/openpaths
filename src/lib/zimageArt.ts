@@ -73,7 +73,7 @@ export function artPromptPlaygroundHref(item: ZImageArtItem): string {
 }
 
 function isUsableItem(item: ZImageArtItem): boolean {
-  return Boolean(item && item.prompt && item.imageUrl && item.model);
+  return Boolean(item && item.prompt && item.model);
 }
 
 function scoreItem(item: ZImageArtItem, terms: string[]): number {
