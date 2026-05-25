@@ -242,6 +242,8 @@ func New(deps *Dependencies) *Server {
 	r.GET("/og/apps/{slug}.svg", publicChain(statsH.HandleAppOGImage))
 	r.GET("/art/search", publicChain(artH.HandleSearch))
 	r.GET("/art/status", publicChain(artH.HandleStatus))
+	r.GET("/v1/art/search", publicChain(artH.HandleSearch))
+	r.GET("/v1/art/status", publicChain(artH.HandleStatus))
 
 	r.GET("/account/stats/timeseries", accountChain(acctStatsH.HandleUserTimeSeries))
 	r.GET("/account/stats/by-api-key", accountChain(acctStatsH.HandleUserSpendByAPIKey))

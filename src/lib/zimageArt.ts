@@ -43,7 +43,7 @@ export async function searchZImageArt(query: string, limit: number): Promise<ZIm
   const q = query.trim();
   if (!q) return null;
   try {
-    const resp = await fetch(`/art/search?q=${encodeURIComponent(q)}&limit=${limit}`, { headers: { Accept: 'application/json' } });
+    const resp = await fetch(`/v1/art/search?q=${encodeURIComponent(q)}&limit=${limit}`, { headers: { Accept: 'application/json' } });
     if (!resp.ok) return null;
     const data = await resp.json();
     if (!Array.isArray(data.results)) return null;

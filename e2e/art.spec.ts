@@ -42,7 +42,7 @@ test.describe('ZImage Art Search', () => {
       contentType: 'application/json',
       body: JSON.stringify(fixtureItems),
     }));
-    await page.route('/art/search**', route => route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"not ready"}' }));
+    await page.route('/v1/art/search**', route => route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"not ready"}' }));
   });
 
   test('loads indexed art and links prompts into the image playground', async ({ page }) => {
