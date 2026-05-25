@@ -68,6 +68,7 @@ const primaryNavLinks = [
   { label: 'Playground', to: '/playground', match: (path: string) => path === '/playground' },
   { label: 'Image to 3D', to: '/image-to-3d', match: (path: string) => path === '/image-to-3d' },
   { label: 'Search', to: '/search', match: (path: string) => path === '/search' },
+  { label: 'Art', to: '/art', match: (path: string) => path === '/art' },
   { label: 'Blog', to: '/blog', match: (path: string) => path.startsWith('/blog') },
   { label: 'Alternatives', to: '/alternatives', match: (path: string) => path.startsWith('/alternatives') },
 ];
@@ -195,6 +196,7 @@ export function Layout() {
                   <li><Link to="/playground" className="hover:text-white transition-colors">Playground</Link></li>
                   <li><Link to="/image-to-3d" className="hover:text-white transition-colors">Image to 3D</Link></li>
                   <li><Link to="/search" className="hover:text-white transition-colors">Search</Link></li>
+                  <li><Link to="/art" className="hover:text-white transition-colors">Art Search</Link></li>
                   <li><Link to="/blog" className="hover:text-white transition-colors">Blog</Link></li>
                   <li><Link to="/alternatives" className="hover:text-white transition-colors">Alternatives</Link></li>
                   <li><a href="/#api" className="hover:text-white transition-colors">API Docs</a></li>
@@ -227,6 +229,7 @@ export function Layout() {
                 <Link to="/docs" className="hover:text-white transition-colors">Docs</Link>
                 <Link to="/stats" className="hover:text-white transition-colors">Stats</Link>
                 <Link to="/apps/" className="hover:text-white transition-colors">Apps</Link>
+                <Link to="/art" className="hover:text-white transition-colors">Art</Link>
                 <Link to="/alternatives" className="hover:text-white transition-colors">Alternatives</Link>
                 <Link to="/integrations" className="hover:text-white transition-colors">Integrations</Link>
                 <Link to="/account" className="hover:text-white transition-colors">Account</Link>

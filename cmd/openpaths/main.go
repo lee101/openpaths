@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/openpaths/openpaths/internal/artindex"
 	"github.com/openpaths/openpaths/internal/audio"
 	"github.com/openpaths/openpaths/internal/auth"
 	"github.com/openpaths/openpaths/internal/billing"
@@ -92,11 +93,13 @@ func main() {
 	registry := provider.NewRegistry()
 	var transcribers []provider.TranscriptionProvider
 	var embedders []provider.EmbeddingProvider
+	var localEmbedder provider.EmbeddingProvider
 
 	if gp, err := gobedprov.New(); err != nil {
 		log.Printf("gobed: disabled (%v)", err)
 	} else {
 		embedders = append(embedders, gp)
+		localEmbedder = gp
 		log.Printf("Registered embedding provider: gobed")
 	}
 
@@ -274,6 +277,15 @@ func main() {
 	appUsageCrawler.Start()
 	defer appUsageCrawler.Stop()
 
+	var artIndex *artindex.Service
+	if localEmbedder != nil && os.Getenv("OPENPATHS_ART_INDEX_DISABLED") != "1" {
+		artIndex = artindex.New(os.Getenv("OPENPATHS_ZIMAGE_ART_INDEX_URL"), localEmbedder)
+		artIndex.Start(ctx)
+		log.Printf("ZImage art semantic index warming from %s", artIndex.Status().SourceURL)
+	} else {
+		log.Printf("ZImage art semantic index disabled (local gobed embedder unavailable or disabled)")
+	}
+
 	// Start drip email campaign scheduler.
 	var onRegister func(string, string)
 	if os.Getenv("AWS_SMTP_USERNAME") != "" {
@@ -322,6 +334,7 @@ func main() {
 		VideoJobQ:        videoJobQ,
 		Model3DJobQ:      model3DJobQ,
 		OnRegister:       onRegister,
+		ArtIndex:         artIndex,
 	})
 
 	done := make(chan os.Signal, 1)

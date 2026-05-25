@@ -2057,6 +2057,12 @@ JSON`;
     }
   }
 
+  useEffect(() => {
+    const promptParam = searchParams.get('prompt');
+    if (!promptParam || input.trim() || autoRanRef.current) return;
+    setInput(promptParam);
+  }, [input, searchParams]);
+
   function copyCode() {
     navigator.clipboard.writeText(generateCode(codeLang));
     setCodeCopied(true);

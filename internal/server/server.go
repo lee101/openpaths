@@ -16,6 +16,7 @@ import (
 	fasthttprouter "github.com/fasthttp/router"
 	"github.com/valyala/fasthttp"
 
+	"github.com/openpaths/openpaths/internal/artindex"
 	"github.com/openpaths/openpaths/internal/audio"
 	"github.com/openpaths/openpaths/internal/auth"
 	"github.com/openpaths/openpaths/internal/billing"
@@ -66,6 +67,7 @@ type Dependencies struct {
 	VideoJobQ        *queries.VideoJobQueries
 	Model3DJobQ      *queries.Model3DJobQueries
 	OnRegister       handler.OnRegisterFunc
+	ArtIndex         *artindex.Service
 }
 
 func New(deps *Dependencies) *Server {
@@ -80,6 +82,7 @@ func New(deps *Dependencies) *Server {
 	accountH := handler.NewAccountHandler(deps.APIKeyQ, deps.CreditQ, deps.Billing, deps.StripeReconciler)
 	creditsH := handler.NewCreditsHandler(deps.Billing)
 	statsH := handler.NewStatsHandler(deps.StatsQ, deps.AppQ)
+	artH := handler.NewArtHandler(deps.ArtIndex)
 	acctStatsH := handler.NewAccountStatsHandler(deps.StatsQ)
 	adminH := handler.NewAdminHandler(deps.UserQ)
 
@@ -237,6 +240,8 @@ func New(deps *Dependencies) *Server {
 	r.GET("/stats/apps/{slug}", publicChain(statsH.HandleAppDetailStats))
 	r.GET("/stats/apps", publicChain(statsH.HandleAppStats))
 	r.GET("/og/apps/{slug}.svg", publicChain(statsH.HandleAppOGImage))
+	r.GET("/art/search", publicChain(artH.HandleSearch))
+	r.GET("/art/status", publicChain(artH.HandleStatus))
 
 	r.GET("/account/stats/timeseries", accountChain(acctStatsH.HandleUserTimeSeries))
 	r.GET("/account/stats/by-api-key", accountChain(acctStatsH.HandleUserSpendByAPIKey))
@@ -323,6 +328,7 @@ func New(deps *Dependencies) *Server {
 			{"/integrations", "0.9", "weekly"},
 			{"/playground", "0.7", "monthly"},
 			{"/search", "0.7", "monthly"},
+			{"/art", "0.7", "daily"},
 			{"/blog", "0.8", "weekly"},
 		}
 		blogSlugs := []string{
@@ -433,6 +439,7 @@ func spaHandler(dir string, api fasthttp.RequestHandler, apiKeyQ *queries.APIKey
 			strings.HasPrefix(path, "/crypto/") ||
 			strings.HasPrefix(path, "/stripe/") ||
 			strings.HasPrefix(path, "/stats/") ||
+			strings.HasPrefix(path, "/art/") ||
 			strings.HasPrefix(path, "/og/") ||
 			strings.HasPrefix(path, "/admin/") ||
 			strings.HasPrefix(path, "/uploads/") ||
@@ -596,6 +603,12 @@ func pageMetaForPath(path string) pageMeta {
 			Title:       "OpenPaths Stats | AI Model Usage",
 			Description: "Daily model usage and public OpenPaths request breakdowns.",
 			URL:         "https://openpaths.io/stats",
+		}
+	case "/art":
+		return pageMeta{
+			Title:       "ZImage Prompt Search | OpenPaths",
+			Description: "Browse and search a large ZImage generated-art prompt index, then try any prompt against OpenPaths image generation models.",
+			URL:         "https://openpaths.io/art",
 		}
 	case "/alternatives":
 		return pageMeta{

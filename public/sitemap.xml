@@ -46,6 +46,11 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/art</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/stats</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>

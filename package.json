@@ -10,6 +10,7 @@
     "build": "vite build && tsx scripts/prerender-static-meta.ts",
     "generate:sitemap": "tsx scripts/generate-sitemap.ts",
     "crawl:artificial-analysis": "node crawlers/artificial_analysis.mjs --refresh",
+    "art:migrate": "python3 scripts/migrate_zimage_art_index.py",
     "verify:assets": "node scripts/verify-stable-assets.mjs",
     "preview": "vite preview",
     "clean": "rm -rf dist",

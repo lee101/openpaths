@@ -21,6 +21,7 @@ import { ImageTo3D } from './pages/ImageTo3D';
 import { Alternatives } from './pages/Alternatives';
 import { Evals } from './pages/Evals';
 import { Compare, CompareIndex } from './pages/Compare';
+import { ZImageArt } from './pages/ZImageArt';
 
 const Apps = lazy(() => import('./pages/Apps').then(module => ({ default: module.Apps })));
 const AppDetail = lazy(() => import('./pages/AppDetail').then(module => ({ default: module.AppDetail })));
@@ -42,6 +43,7 @@ export default function App() {
           <Route path="playground" element={<Playground />} />
           <Route path="image-to-3d" element={<ImageTo3D />} />
           <Route path="search" element={<Search />} />
+          <Route path="art" element={<ZImageArt />} />
           <Route path="account" element={<Account />} />
           <Route path="admin" element={<AdminLee />} />
           <Route path="stats" element={<Stats />} />
