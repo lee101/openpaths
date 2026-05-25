@@ -13,7 +13,7 @@ const args = process.argv.slice(2);
 const base = (args[0] || 'https://openpaths.io').replace(/\/$/, '');
 const jsonMode = args.includes('--json');
 const routesIdx = args.indexOf('--routes');
-const defaultRoutes = ['/', '/playground', '/models', '/pricing', '/providers'];
+const defaultRoutes = ['/', '/playground', '/models', '/pricing', '/providers', '/evals', '/compare', '/compare/gpt-5.5-vs-opus4.7'];
 const routes = routesIdx !== -1 && args[routesIdx + 1]
   ? args[routesIdx + 1].split(',').map(r => r.trim()).filter(Boolean)
   : (jsonMode ? defaultRoutes : ['/']);

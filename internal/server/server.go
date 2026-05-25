@@ -51,6 +51,7 @@ type Dependencies struct {
 	StripeDepositQ   *queries.StripeDepositQueries
 	StripeReconciler *billing.Reconciler
 	StatsQ           *queries.StatsQueries
+	AppQ             *queries.AppQueries
 	Transcribers     []provider.TranscriptionProvider
 	Embedders        []provider.EmbeddingProvider
 	AutoEmotion      *audio.AutoEmotion
@@ -78,7 +79,7 @@ func New(deps *Dependencies) *Server {
 	}
 	accountH := handler.NewAccountHandler(deps.APIKeyQ, deps.CreditQ, deps.Billing, deps.StripeReconciler)
 	creditsH := handler.NewCreditsHandler(deps.Billing)
-	statsH := handler.NewStatsHandler(deps.StatsQ)
+	statsH := handler.NewStatsHandler(deps.StatsQ, deps.AppQ)
 	acctStatsH := handler.NewAccountStatsHandler(deps.StatsQ)
 	adminH := handler.NewAdminHandler(deps.UserQ)
 
@@ -86,6 +87,7 @@ func New(deps *Dependencies) *Server {
 		middleware.Recovery(),
 		middleware.Logging(),
 		middleware.APIKeyAuth(deps.APIKeyQ),
+		middleware.AppAttribution(deps.AppQ),
 		middleware.BYOKLoader(deps.ProviderKeyQ),
 		middleware.RateLimit(),
 		middleware.BalanceCheck(deps.Billing),
@@ -96,6 +98,7 @@ func New(deps *Dependencies) *Server {
 		middleware.Recovery(),
 		middleware.Logging(),
 		middleware.APIKeyAuth(deps.APIKeyQ),
+		middleware.AppAttribution(deps.AppQ),
 		middleware.BYOKLoader(deps.ProviderKeyQ),
 		middleware.RateLimit(),
 	)
@@ -231,6 +234,9 @@ func New(deps *Dependencies) *Server {
 	r.GET("/stats/breakdown", publicChain(statsH.HandleUsageBreakdown))
 	r.GET("/stats/timeseries", publicChain(statsH.HandleTimeSeries))
 	r.GET("/stats/models/timeseries", publicChain(statsH.HandleModelDailyUsage))
+	r.GET("/stats/apps/{slug}", publicChain(statsH.HandleAppDetailStats))
+	r.GET("/stats/apps", publicChain(statsH.HandleAppStats))
+	r.GET("/og/apps/{slug}.svg", publicChain(statsH.HandleAppOGImage))
 
 	r.GET("/account/stats/timeseries", accountChain(acctStatsH.HandleUserTimeSeries))
 	r.GET("/account/stats/by-api-key", accountChain(acctStatsH.HandleUserSpendByAPIKey))
@@ -312,6 +318,7 @@ func New(deps *Dependencies) *Server {
 			{"/models", "0.9", "weekly"},
 			{"/providers", "0.8", "weekly"},
 			{"/stats", "0.7", "daily"},
+			{"/apps", "0.7", "daily"},
 			{"/docs", "0.9", "weekly"},
 			{"/integrations", "0.9", "weekly"},
 			{"/playground", "0.7", "monthly"},
@@ -426,6 +433,7 @@ func spaHandler(dir string, api fasthttp.RequestHandler, apiKeyQ *queries.APIKey
 			strings.HasPrefix(path, "/crypto/") ||
 			strings.HasPrefix(path, "/stripe/") ||
 			strings.HasPrefix(path, "/stats/") ||
+			strings.HasPrefix(path, "/og/") ||
 			strings.HasPrefix(path, "/admin/") ||
 			strings.HasPrefix(path, "/uploads/") ||
 			strings.HasPrefix(path, "/openrouter/") ||
@@ -511,6 +519,9 @@ func isSPARoute(path string) bool {
 	if path == "" || path == "/" {
 		return false
 	}
+	if path == "/compare" || strings.HasPrefix(path, "/compare/") {
+		return true
+	}
 	base := path
 	if i := strings.LastIndexByte(base, '/'); i >= 0 {
 		base = base[i+1:]
@@ -568,6 +579,18 @@ func pageMetaForPath(path string) pageMeta {
 			Description: "OpenPaths keeps AI pricing as close to zero markup as practical, makes money from first-party AI services, and supports transparent pay-as-you-go pricing across text, embeddings, image, and video models.",
 			URL:         "https://openpaths.io/pricing",
 		}
+	case "/evals":
+		return pageMeta{
+			Title:       "AI Model Evals, Pricing, and Speed | OpenPaths",
+			Description: "Compare frontier AI model intelligence, coding, agentic performance, speed, and token pricing using the OpenPaths Artificial Analysis benchmark snapshot.",
+			URL:         "https://openpaths.io/evals",
+		}
+	case "/compare":
+		return pageMeta{
+			Title:       "Compare AI Models by Evals, Speed, and Price | OpenPaths",
+			Description: "Compare frontier AI models head-to-head using Artificial Analysis evals, pricing, context windows, speed, and benchmark run costs.",
+			URL:         "https://openpaths.io/compare",
+		}
 	case "/stats":
 		return pageMeta{
 			Title:       "OpenPaths Stats | AI Model Usage",
@@ -581,6 +604,13 @@ func pageMetaForPath(path string) pageMeta {
 			URL:         "https://openpaths.io/alternatives",
 		}
 	default:
+		if strings.HasPrefix(path, "/compare/") {
+			return pageMeta{
+				Title:       "AI Model Comparison | OpenPaths",
+				Description: "Head-to-head AI model comparison with evals, pricing, context windows, speed, and benchmark run costs.",
+				URL:         "https://openpaths.io" + path,
+			}
+		}
 		return pageMeta{
 			Title:       "OpenPaths - The Open Source Model Router",
 			Description: "Search and we shall find. Neural learned paths for 1ms routing across 432+ large model providers and art generators. Try Open Pathways.",

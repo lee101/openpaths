@@ -82,6 +82,7 @@ func main() {
 	stripeDepositQ := queries.NewStripeDepositQueries(database.Pool)
 	usageQ := queries.NewUsageQueries(database.Pool)
 	statsQ := queries.NewStatsQueries(database.Pool)
+	appQ := queries.NewAppQueries(database.Pool)
 	providerKeyQ := queries.NewProviderKeyQueries(database.Pool)
 	videoJobQ := queries.NewVideoJobQueries(database.Pool)
 	model3DJobQ := queries.NewModel3DJobQueries(database.Pool)
@@ -130,7 +131,7 @@ func main() {
 		case "deepseek":
 			p = deepseek.New(provCfg.APIKey, provCfg.BaseURL)
 		case "openrouter":
-			p = openrouter.New(provCfg.APIKey, provCfg.BaseURL)
+			p = openrouter.NewWithAttribution(provCfg.APIKey, provCfg.BaseURL, provCfg.AppReferer, provCfg.AppTitle, provCfg.AppCategories)
 		case "together":
 			p = together.New(provCfg.APIKey, provCfg.BaseURL)
 		case "minimax":
@@ -142,10 +143,10 @@ func main() {
 		case "nvidia":
 			p = nvidia.New(provCfg.APIKey, provCfg.BaseURL)
 		case "textgenerator":
-			tg := textgenerator.New(provCfg.APIKey)
+			tg := textgenerator.New(provCfg.APIKey, provCfg.BaseURL)
 			embedders = append(embedders, tg)
+			p = tg
 			log.Printf("Registered embedding provider: textgenerator")
-			continue
 		case "zai":
 			p = zai.New(provCfg.APIKey, provCfg.BaseURL)
 		case "fireworks":
@@ -269,6 +270,10 @@ func main() {
 	codexRefresher.Start()
 	defer codexRefresher.Stop()
 
+	appUsageCrawler := cron.NewAppUsageCrawler(appQ)
+	appUsageCrawler.Start()
+	defer appUsageCrawler.Stop()
+
 	// Start drip email campaign scheduler.
 	var onRegister func(string, string)
 	if os.Getenv("AWS_SMTP_USERNAME") != "" {
@@ -302,6 +307,7 @@ func main() {
 		StripeDepositQ:   stripeDepositQ,
 		StripeReconciler: stripeReconciler,
 		StatsQ:           statsQ,
+		AppQ:             appQ,
 		Transcribers:     transcribers,
 		Embedders:        embedders,
 		AutoEmotion:      autoEmotion,

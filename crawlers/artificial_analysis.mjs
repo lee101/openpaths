@@ -1,0 +1,251 @@
+#!/usr/bin/env node
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import process from 'node:process';
+
+const BASE_URL = 'https://artificialanalysis.ai';
+const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+const CACHE_DIR = path.join(ROOT, 'artificial-analysis');
+const OUTPUT_PATH = path.join(ROOT, 'src/data/artificialAnalysis.ts');
+
+const DEFAULT_MODEL_SLUGS = [
+  'gpt-5-5',
+  'claude-opus-4-7',
+];
+
+const args = new Set(process.argv.slice(2));
+const refresh = args.has('--refresh');
+const modelSlugs = process.argv
+  .slice(2)
+  .filter(arg => !arg.startsWith('--'))
+  .flatMap(arg => arg.split(','))
+  .map(arg => arg.trim())
+  .filter(Boolean);
+
+async function readCached(urlPath, fileName) {
+  await fs.mkdir(CACHE_DIR, { recursive: true });
+  const filePath = path.join(CACHE_DIR, fileName);
+  if (!refresh) {
+    try {
+      return await fs.readFile(filePath, 'utf8');
+    } catch {
+      // Cache miss; fetch below.
+    }
+  }
+
+  const url = new URL(urlPath, BASE_URL);
+  const response = await fetch(url, {
+    headers: {
+      'user-agent': 'OpenPaths Artificial Analysis crawler (+https://openpaths.ai)',
+      accept: 'text/html,application/xhtml+xml',
+    },
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
+  }
+  const html = await response.text();
+  await fs.writeFile(filePath, html);
+  return html;
+}
+
+function decodeNextFlight(html) {
+  const chunks = [];
+  const pattern = /self\.__next_f\.push\(\[(\d+),"([\s\S]*?)"\]\)<\/script>/g;
+  for (const match of html.matchAll(pattern)) {
+    try {
+      chunks.push(JSON.parse(`"${match[2]}"`));
+    } catch {
+      // Keep going. A partial chunk is less useful than the rest of the page.
+    }
+  }
+  return chunks.join('\n');
+}
+
+function extractBalancedJson(text, start) {
+  const opener = text[start];
+  const closer = opener === '{' ? '}' : ']';
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let index = start; index < text.length; index += 1) {
+    const char = text[index];
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === '\\') {
+        escaped = true;
+      } else if (char === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inString = true;
+    } else if (char === opener) {
+      depth += 1;
+    } else if (char === closer) {
+      depth -= 1;
+      if (depth === 0) {
+        return text.slice(start, index + 1);
+      }
+    }
+  }
+  throw new Error(`Could not find balanced JSON starting at ${start}`);
+}
+
+function extractAfterMarker(text, marker, opener) {
+  const markerIndex = text.indexOf(marker);
+  if (markerIndex < 0) return null;
+  const start = text.indexOf(opener, markerIndex + marker.length);
+  if (start < 0) return null;
+  return JSON.parse(extractBalancedJson(text, start));
+}
+
+function normalizeModel(raw) {
+  const creator = raw.model_creators || raw.creator || {};
+  return {
+    id: raw.id,
+    slug: raw.slug,
+    name: raw.name,
+    shortName: raw.short_name || raw.shortName || raw.name,
+    modelUrl: raw.model_url || raw.url || `/models/${raw.slug}`,
+    hostsUrl: raw.hosts_url || raw.performanceDataSource?.providerUrl || null,
+    creator: {
+      id: creator.id || raw.model_creator_id || '',
+      name: creator.name || raw.creatorName || '',
+      slug: creator.slug || '',
+      color: creator.color || '#888888',
+      logoSmallUrl: creator.logo_small_url || creator.logo || null,
+    },
+    releaseDate: raw.release_date || null,
+    reasoning: Boolean(raw.reasoning_model || raw.isReasoning),
+    deprecated: Boolean(raw.deprecated),
+    frontier: Boolean(raw.frontier_model),
+    openWeights: Boolean(raw.is_open_weights),
+    openSourceCategorization: raw.open_source_categorization || null,
+    contextWindowTokens: raw.context_window_tokens || null,
+    prices: {
+      inputPerMTokens: numberOrNull(raw.price_1m_input_tokens),
+      outputPerMTokens: numberOrNull(raw.price_1m_output_tokens),
+      cacheHitPerMTokens: numberOrNull(raw.cache_hit_price),
+      blendedPerMTokens: numberOrNull(raw.price_1m_blended_7_2_1),
+      blendedNoCachePerMTokens: numberOrNull(raw.price_1m_blended_0_1_1),
+      cacheHitDiscountPercent: numberOrNull(raw.cache_hit_discount_percent),
+    },
+    performance: {
+      outputTokensPerSecond: numberOrNull(raw.timescaleData?.median_output_speed),
+      medianTotalTime: numberOrNull(raw.end_to_end_response_time_metrics?.total_time),
+      timeToFirstAnswerToken: numberOrNull(raw.time_to_first_answer_token_metrics?.total_time),
+    },
+    costs: {
+      intelligenceIndexTotal: numberOrNull(raw.intelligence_index_cost?.total_cost),
+      input: numberOrNull(raw.intelligence_index_cost?.input_cost),
+      output: numberOrNull(raw.intelligence_index_cost?.output_cost),
+      reasoning: numberOrNull(raw.intelligence_index_cost?.reasoning_cost),
+      answer: numberOrNull(raw.intelligence_index_cost?.answer_cost),
+    },
+    tokens: {
+      input: numberOrNull(raw.intelligence_index_token_counts?.input_tokens || raw.intelligence_index_token_counts?.input),
+      output: numberOrNull(raw.intelligence_index_token_counts?.output_tokens),
+      reasoning: numberOrNull(raw.intelligence_index_token_counts?.reasoning_tokens || raw.intelligence_index_token_counts?.reasoning),
+      answer: numberOrNull(raw.intelligence_index_token_counts?.answer_tokens || raw.intelligence_index_token_counts?.answer),
+      total: numberOrNull(raw.indexTokensTotal),
+    },
+    evaluations: {
+      intelligenceIndex: numberOrNull(raw.intelligence_index),
+      estimatedIntelligenceIndex: numberOrNull(raw.estimated_intelligence_index),
+      codingIndex: numberOrNull(raw.coding_index),
+      agenticIndex: numberOrNull(raw.agentic_index),
+      gdpvalElo: numberOrNull(raw.safeGdpval?.elo || raw.gdpval),
+      gdpvalNormalized: numberOrNull(raw.gdpval_normalized),
+      terminalBenchHard: numberOrNull(raw.terminalbench_hard),
+      tau2: numberOrNull(raw.tau2),
+      lcr: numberOrNull(raw.lcr),
+      hle: numberOrNull(raw.hle),
+      gpqa: numberOrNull(raw.gpqa),
+      liveCodeBench: numberOrNull(raw.livecodebench),
+      sciCode: numberOrNull(raw.scicode),
+      ifBench: numberOrNull(raw.ifbench),
+      aime25: numberOrNull(raw.aime25),
+      critPt: numberOrNull(raw.critpt),
+      mmmuPro: numberOrNull(raw.mmmu_pro),
+      apexAgents: numberOrNull(raw.apex_agents),
+      omniscience: numberOrNull(raw.omniscience),
+      omniscienceAccuracy: numberOrNull(raw.omniscience_breakdown?.total?.accuracy),
+      omniscienceHallucinationRate: numberOrNull(raw.omniscience_breakdown?.total?.hallucination_rate),
+    },
+  };
+}
+
+function numberOrNull(value) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function mergeModels(models) {
+  const bySlug = new Map();
+  for (const model of models) {
+    if (!model.slug) continue;
+    bySlug.set(model.slug, { ...bySlug.get(model.slug), ...model });
+  }
+  return Array.from(bySlug.values()).sort((a, b) => {
+    const aScore = a.evaluations.intelligenceIndex ?? -Infinity;
+    const bScore = b.evaluations.intelligenceIndex ?? -Infinity;
+    return bScore - aScore;
+  });
+}
+
+function renderTypeScript(snapshot) {
+  return `// Generated by crawlers/artificial_analysis.mjs. Do not edit by hand.\n` +
+    `export const ARTIFICIAL_ANALYSIS_SNAPSHOT = ${JSON.stringify(snapshot, null, 2)} as const;\n`;
+}
+
+async function extractHomeModels() {
+  const html = await readCached('/', 'home.html');
+  const flight = decodeNextFlight(html);
+  await fs.writeFile(path.join(CACHE_DIR, 'home.rsc.txt'), flight);
+
+  const initial = extractAfterMarker(flight, '"initialData":', '{');
+  if (!initial?.initialData?.length) {
+    throw new Error('Could not find home initialData models in Artificial Analysis page');
+  }
+  return initial.initialData.map(normalizeModel);
+}
+
+async function extractModelPageModels(slug) {
+  const html = await readCached(`/models/${slug}`, `model-${slug}.html`);
+  const flight = decodeNextFlight(html);
+  await fs.writeFile(path.join(CACHE_DIR, `model-${slug}.rsc.txt`), flight);
+  const models = extractAfterMarker(flight, '"selectModelsByDefault":', '[');
+  return Array.isArray(models) ? models.map(normalizeModel) : [];
+}
+
+async function main() {
+  const slugs = modelSlugs.length > 0 ? modelSlugs : DEFAULT_MODEL_SLUGS;
+  const gathered = [...await extractHomeModels()];
+
+  for (const slug of slugs) {
+    try {
+      gathered.push(...await extractModelPageModels(slug));
+    } catch (error) {
+      console.warn(`Skipping ${slug}: ${error.message}`);
+    }
+  }
+
+  const snapshot = {
+    source: 'Artificial Analysis',
+    sourceUrl: BASE_URL,
+    crawledAt: new Date().toISOString(),
+    modelCount: mergeModels(gathered).length,
+    models: mergeModels(gathered),
+  };
+
+  await fs.writeFile(OUTPUT_PATH, renderTypeScript(snapshot));
+  console.log(`Wrote ${snapshot.modelCount} Artificial Analysis models to ${path.relative(ROOT, OUTPUT_PATH)}`);
+}
+
+main().catch(error => {
+  console.error(error);
+  process.exit(1);
+});

@@ -64,9 +64,29 @@ type ChatChoice struct {
 }
 
 type UsageInfo struct {
-	PromptTokens     int `json:"prompt_tokens"`
-	CompletionTokens int `json:"completion_tokens"`
-	TotalTokens      int `json:"total_tokens"`
+	PromptTokens          int                  `json:"prompt_tokens"`
+	CompletionTokens      int                  `json:"completion_tokens"`
+	TotalTokens           int                  `json:"total_tokens"`
+	PromptCacheHitTokens  int                  `json:"prompt_cache_hit_tokens,omitempty"`
+	PromptCacheMissTokens int                  `json:"prompt_cache_miss_tokens,omitempty"`
+	PromptTokensDetails   *PromptTokensDetails `json:"prompt_tokens_details,omitempty"`
+}
+
+type PromptTokensDetails struct {
+	CachedTokens int `json:"cached_tokens,omitempty"`
+}
+
+func (u *UsageInfo) CachedPromptTokens() int {
+	if u == nil {
+		return 0
+	}
+	if u.PromptCacheHitTokens > 0 {
+		return u.PromptCacheHitTokens
+	}
+	if u.PromptTokensDetails != nil {
+		return u.PromptTokensDetails.CachedTokens
+	}
+	return 0
 }
 
 type ChatCompletionChunk struct {
@@ -149,6 +169,7 @@ type ModelInfo struct {
 
 type ModelPricing struct {
 	InputPer1M              float64 `json:"input_per_1m_tokens,omitempty"`
+	InputCacheHitPer1M      float64 `json:"input_cache_hit_per_1m_tokens,omitempty"`
 	OutputPer1M             float64 `json:"output_per_1m_tokens,omitempty"`
 	PerRequest              float64 `json:"per_request,omitempty"`
 	PerImage                float64 `json:"per_image,omitempty"`

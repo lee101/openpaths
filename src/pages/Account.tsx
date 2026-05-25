@@ -236,6 +236,8 @@ function AuthForms({ onAuth }: { onAuth: (token: string, user: any, apiKey?: str
           <button
             type="button"
             onClick={() => setShowPassword(v => !v)}
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            data-testid="auth-password-toggle"
             className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors"
           >
             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}

@@ -19,6 +19,7 @@ interface Message {
 
 interface ModelPricing {
   input_per_1m_tokens?: number;
+  input_cache_hit_per_1m_tokens?: number;
   output_per_1m_tokens?: number;
   per_request?: number;
   per_image?: number;
@@ -60,6 +61,31 @@ interface ModelPane {
 type CodeLanguage = 'python' | 'js' | 'go' | 'curl';
 type PromptExample = string | { label: string; prompt: string };
 type ReferenceUploadTarget = 'image' | 'end-image' | 'images' | 'video' | 'audio';
+
+async function pollVideoJob(baseUrl: string, apiKey: string, jobId: string, signal: AbortSignal) {
+  const deadline = Date.now() + 15 * 60 * 1000;
+  while (Date.now() < deadline) {
+    await new Promise<void>((resolve, reject) => {
+      const timer = window.setTimeout(resolve, 2000);
+      signal.addEventListener('abort', () => {
+        window.clearTimeout(timer);
+        reject(new DOMException('Aborted', 'AbortError'));
+      }, { once: true });
+    });
+    const resp = await fetch(`${baseUrl}/v1/videos/generations/${encodeURIComponent(jobId)}`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      signal,
+    });
+    if (!resp.ok) {
+      const errText = await resp.text();
+      throw new Error(`${resp.status}: ${errText.slice(0, 200)}`);
+    }
+    const data = await resp.json();
+    if (data?.status === 'completed' && data?.result?.video_url) return data.result;
+    if (data?.status === 'failed') throw new Error(data?.error?.message || 'Video generation failed');
+  }
+  throw new Error('Video generation timed out');
+}
 
 const IMAGE_SIZES = ['1024x1024', '1152x768', '768x1152', '1360x768', '768x1360', '1280x720', '720x1280'] as const;
 const IMAGE_ASPECT_RATIOS = ['auto', '1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '2:1', '1:2'] as const;
@@ -136,6 +162,8 @@ const FALLBACK_MODELS: CatalogModel[] = [
   { id: 'grok-3-mini', label: 'Grok 3 Mini', provider: 'xAI' },
   { id: 'xai-tts', label: 'xAI Text to Speech', provider: 'xAI', pricing: { input_per_1m_tokens: 15.00 } },
   { id: 'grok-imagine-image', label: 'Grok Imagine Image', provider: 'xAI', pricing: { per_image: 0.02 } },
+  { id: 'deepseek-v4-flash', label: 'DeepSeek V4 Flash', provider: 'DeepSeek', pricing: { input_per_1m_tokens: 0.14, input_cache_hit_per_1m_tokens: 0.0028, output_per_1m_tokens: 0.28 } },
+  { id: 'deepseek-v4-pro', label: 'DeepSeek V4 Pro', provider: 'DeepSeek', pricing: { input_per_1m_tokens: 0.435, input_cache_hit_per_1m_tokens: 0.003625, output_per_1m_tokens: 0.87 } },
   { id: 'nvidia/deepseek-v4-pro', label: 'DeepSeek V4 Pro Free', provider: 'NVIDIA' },
   { id: 'deepseek-chat', label: 'DeepSeek Chat', provider: 'DeepSeek' },
   { id: 'deepseek-reasoner', label: 'DeepSeek Reasoner', provider: 'DeepSeek' },
@@ -935,7 +963,7 @@ ${text}`;
       event.preventDefault();
       event.stopPropagation();
       setDragTarget(null);
-      const files = Array.from(event.dataTransfer.files).filter(file => file.type.startsWith('image/'));
+      const files = Array.from<File>(event.dataTransfer.files).filter(file => file.type.startsWith('image/'));
       if (!uploadingRefs && files.length > 0) {
         void uploadReferenceFiles(files, target);
       }
@@ -2818,31 +2846,6 @@ function MessageBubble({ message }: { message: Message; key?: React.Key }) {
     navigator.clipboard.writeText(message.content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  const pollVideoJob = async (baseUrl: string, apiKey: string, jobId: string, signal: AbortSignal) => {
-    const deadline = Date.now() + 15 * 60 * 1000;
-    while (Date.now() < deadline) {
-      await new Promise((resolve, reject) => {
-        const timer = window.setTimeout(resolve, 2000);
-        signal.addEventListener('abort', () => {
-          window.clearTimeout(timer);
-          reject(new DOMException('Aborted', 'AbortError'));
-        }, { once: true });
-      });
-      const resp = await fetch(`${baseUrl}/v1/videos/generations/${encodeURIComponent(jobId)}`, {
-        headers: { Authorization: `Bearer ${apiKey}` },
-        signal,
-      });
-      if (!resp.ok) {
-        const errText = await resp.text();
-        throw new Error(`${resp.status}: ${errText.slice(0, 200)}`);
-      }
-      const data = await resp.json();
-      if (data?.status === 'completed' && data?.result?.video_url) return data.result;
-      if (data?.status === 'failed') throw new Error(data?.error?.message || 'Video generation failed');
-    }
-    throw new Error('Video generation timed out');
   };
 
   return (

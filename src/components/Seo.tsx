@@ -4,15 +4,17 @@ interface SeoProps {
   title: string;
   description: string;
   path?: string;
+  image?: string;
 }
 
 const BASE_URL = 'https://openpaths.io';
 const DEFAULT_OG_IMAGE = `${BASE_URL}/og-image.png`;
 
-export function Seo({ title, description, path = '/' }: SeoProps) {
+export function Seo({ title, description, path = '/', image }: SeoProps) {
   useEffect(() => {
     const normalizedPath = path.startsWith('/') ? path : `/${path}`;
     const canonicalUrl = `${BASE_URL}${normalizedPath}`;
+    const imageUrl = image ? absoluteUrl(image) : DEFAULT_OG_IMAGE;
 
     document.title = title;
     upsertMeta('name', 'description', description);
@@ -20,15 +22,20 @@ export function Seo({ title, description, path = '/' }: SeoProps) {
     upsertMeta('property', 'og:url', canonicalUrl);
     upsertMeta('property', 'og:title', title);
     upsertMeta('property', 'og:description', description);
-    upsertMeta('property', 'og:image', DEFAULT_OG_IMAGE);
+    upsertMeta('property', 'og:image', imageUrl);
     upsertMeta('name', 'twitter:card', 'summary_large_image');
     upsertMeta('name', 'twitter:title', title);
     upsertMeta('name', 'twitter:description', description);
-    upsertMeta('name', 'twitter:image', DEFAULT_OG_IMAGE);
+    upsertMeta('name', 'twitter:image', imageUrl);
     upsertCanonical(canonicalUrl);
-  }, [description, path, title]);
+  }, [description, image, path, title]);
 
   return null;
+}
+
+function absoluteUrl(value: string) {
+  if (/^https?:\/\//i.test(value)) return value;
+  return `${BASE_URL}${value.startsWith('/') ? value : `/${value}`}`;
 }
 
 function upsertMeta(attrName: 'name' | 'property', attrValue: string, content: string) {

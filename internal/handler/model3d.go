@@ -58,7 +58,7 @@ func (h *Model3DHandler) HandleModel3DGeneration(ctx *fasthttp.RequestCtx) {
 			writeError(ctx, 402, "billing_error", "Insufficient credits. Please add credits to continue.")
 			return
 		}
-		go h.runModel3DJob(job.ID, req, userID, apiKeyID)
+		go h.runModel3DJob(job.ID, req, userID, apiKeyID, requestAppAttribution(ctx))
 	}
 	if async {
 		writeJSON(ctx, 202, model3DJobPayload(job, cached))
@@ -160,7 +160,7 @@ func (h *Model3DHandler) handleDurableModel3DGeneration(ctx *fasthttp.RequestCtx
 			writeError(ctx, 402, "billing_error", "Insufficient credits. Please add credits to continue.")
 			return
 		}
-		go h.runDurableModel3DJob(job.ID, req, userID, apiKeyID)
+		go h.runDurableModel3DJob(job.ID, req, userID, apiKeyID, requestAppAttribution(ctx))
 	}
 	if async {
 		writeJSON(ctx, 202, durableModel3DJobPayload(job, !created))
@@ -215,11 +215,11 @@ func (h *Model3DHandler) waitDurableModel3DJob(jobID string, timeout time.Durati
 	}
 }
 
-func (h *Model3DHandler) runDurableModel3DJob(jobID string, req model.Model3DGenerationRequest, userID, apiKeyID string) {
+func (h *Model3DHandler) runDurableModel3DJob(jobID string, req model.Model3DGenerationRequest, userID, apiKeyID string, app requestApp) {
 	bg, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer cancel()
 	_ = h.jobQ.MarkRunning(bg, jobID)
-	result := h.executeModel3DGeneration(bg, nil, req, userID, apiKeyID)
+	result := h.executeModel3DGeneration(bg, nil, req, userID, apiKeyID, app)
 	if result.Response != nil && result.StatusCode < 400 {
 		body, _ := json.Marshal(result.Response)
 		_ = h.jobQ.Complete(context.Background(), jobID, body)
@@ -232,14 +232,14 @@ func (h *Model3DHandler) runDurableModel3DJob(jobID string, req model.Model3DGen
 	_ = h.jobQ.Fail(context.Background(), jobID, errType, result.ErrorMessage)
 }
 
-func (h *Model3DHandler) runModel3DJob(jobID string, req model.Model3DGenerationRequest, userID, apiKeyID string) {
+func (h *Model3DHandler) runModel3DJob(jobID string, req model.Model3DGenerationRequest, userID, apiKeyID string, app requestApp) {
 	h.jobs.markRunning(jobID)
 	bg, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer cancel()
-	h.jobs.complete(jobID, h.executeModel3DGeneration(bg, nil, req, userID, apiKeyID))
+	h.jobs.complete(jobID, h.executeModel3DGeneration(bg, nil, req, userID, apiKeyID, app))
 }
 
-func (h *Model3DHandler) executeModel3DGeneration(ctx context.Context, byokCtx *fasthttp.RequestCtx, req model.Model3DGenerationRequest, userID, apiKeyID string) model3DExecutionResult {
+func (h *Model3DHandler) executeModel3DGeneration(ctx context.Context, byokCtx *fasthttp.RequestCtx, req model.Model3DGenerationRequest, userID, apiKeyID string, app requestApp) model3DExecutionResult {
 	originalModel := req.Model
 	textureSize := normalize3DTextureSize(req.TextureSize)
 	actualCost := pixal3DRequestCost(textureSize)
@@ -276,15 +276,15 @@ func (h *Model3DHandler) executeModel3DGeneration(ctx context.Context, byokCtx *
 					errMsg = pe.Message
 					if !pe.Retryable {
 						if h.recorder != nil {
-							h.recorder.RecordError(userID, apiKeyID, originalModel, attempt.Name(),
-								int(latency.Milliseconds()), statusCode, errMsg, false)
+							h.recorder.RecordErrorWithApp(userID, apiKeyID, originalModel, attempt.Name(),
+								int(latency.Milliseconds()), statusCode, errMsg, false, app.ID, app.URL, app.Title, app.Categories)
 						}
 						return model3DExecutionResult{StatusCode: statusCode, ErrorType: "provider_error", ErrorMessage: errMsg}
 					}
 				}
 				if h.recorder != nil {
-					h.recorder.RecordError(userID, apiKeyID, originalModel, attempt.Name(),
-						int(latency.Milliseconds()), statusCode, errMsg, false)
+					h.recorder.RecordErrorWithApp(userID, apiKeyID, originalModel, attempt.Name(),
+						int(latency.Milliseconds()), statusCode, errMsg, false, app.ID, app.URL, app.Title, app.Categories)
 				}
 				continue
 			}
@@ -306,8 +306,8 @@ func (h *Model3DHandler) executeModel3DGeneration(ctx context.Context, byokCtx *
 				}
 			}
 			if h.recorder != nil {
-				h.recorder.RecordSuccess(userID, apiKeyID, originalModel, attempt.Name(),
-					0, 1, int(latency.Milliseconds()), 0, actualCost, false)
+				h.recorder.RecordSuccessWithApp(userID, apiKeyID, originalModel, attempt.Name(),
+					0, 1, int(latency.Milliseconds()), 0, actualCost, false, app.ID, app.URL, app.Title, app.Categories)
 			}
 
 			return model3DExecutionResult{Response: resp, StatusCode: 200}

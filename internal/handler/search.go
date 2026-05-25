@@ -105,6 +105,7 @@ func (h *SearchHandler) HandleSearch(ctx *fasthttp.RequestCtx) {
 }
 
 func (h *SearchHandler) handleExaSearch(ctx *fasthttp.RequestCtx, raw []byte, payload map[string]any, numResults int, userID, apiKeyID string) {
+	app := requestAppAttribution(ctx)
 	upstreamKey, byok := h.resolveExaKey(ctx)
 	if upstreamKey == "" {
 		writeError(ctx, 503, "provider_unavailable", "Exa search is not configured")
@@ -114,7 +115,7 @@ func (h *SearchHandler) handleExaSearch(ctx *fasthttp.RequestCtx, raw []byte, pa
 	if !byok {
 		cost = estimateExaSearchCost(payload, numResults)
 		if err := h.billing.PreCheckFixed(ctx, userID, cost); err != nil {
-			h.recorder.RecordError(userID, apiKeyID, exaSearchModel, exaProviderName, 0, 402, err.Error(), false)
+			h.recorder.RecordErrorWithApp(userID, apiKeyID, exaSearchModel, exaProviderName, 0, 402, err.Error(), false, app.ID, app.URL, app.Title, app.Categories)
 			writeError(ctx, 402, "billing_error", "Insufficient credits. Please add credits to continue.")
 			return
 		}
@@ -132,7 +133,7 @@ func (h *SearchHandler) handleExaSearch(ctx *fasthttp.RequestCtx, raw []byte, pa
 	resp, err := h.client.Do(upstreamReq)
 	latency := time.Since(start)
 	if err != nil {
-		h.recorder.RecordError(userID, apiKeyID, exaSearchModel, exaProviderName, int(latency.Milliseconds()), 502, err.Error(), false)
+		h.recorder.RecordErrorWithApp(userID, apiKeyID, exaSearchModel, exaProviderName, int(latency.Milliseconds()), 502, err.Error(), false, app.ID, app.URL, app.Title, app.Categories)
 		writeError(ctx, 502, "provider_error", err.Error())
 		return
 	}
@@ -140,7 +141,7 @@ func (h *SearchHandler) handleExaSearch(ctx *fasthttp.RequestCtx, raw []byte, pa
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		h.recorder.RecordError(userID, apiKeyID, exaSearchModel, exaProviderName, int(latency.Milliseconds()), 502, err.Error(), false)
+		h.recorder.RecordErrorWithApp(userID, apiKeyID, exaSearchModel, exaProviderName, int(latency.Milliseconds()), 502, err.Error(), false, app.ID, app.URL, app.Title, app.Categories)
 		writeError(ctx, 502, "provider_error", err.Error())
 		return
 	}
@@ -149,7 +150,7 @@ func (h *SearchHandler) handleExaSearch(ctx *fasthttp.RequestCtx, raw []byte, pa
 		if msg == "" {
 			msg = fmt.Sprintf("Exa returned status %d", resp.StatusCode)
 		}
-		h.recorder.RecordError(userID, apiKeyID, exaSearchModel, exaProviderName, int(latency.Milliseconds()), resp.StatusCode, msg, false)
+		h.recorder.RecordErrorWithApp(userID, apiKeyID, exaSearchModel, exaProviderName, int(latency.Milliseconds()), resp.StatusCode, msg, false, app.ID, app.URL, app.Title, app.Categories)
 		ctx.SetStatusCode(resp.StatusCode)
 		ctx.SetContentType("application/json")
 		ctx.SetBody(body)
@@ -158,19 +159,20 @@ func (h *SearchHandler) handleExaSearch(ctx *fasthttp.RequestCtx, raw []byte, pa
 
 	if !byok {
 		if err := h.billing.DeductFixed(ctx, userID, exaSearchModel, cost, formatExaUsageDescription(payload, numResults), ""); err != nil {
-			h.recorder.RecordError(userID, apiKeyID, exaSearchModel, exaProviderName, int(latency.Milliseconds()), 402, err.Error(), false)
+			h.recorder.RecordErrorWithApp(userID, apiKeyID, exaSearchModel, exaProviderName, int(latency.Milliseconds()), 402, err.Error(), false, app.ID, app.URL, app.Title, app.Categories)
 			writeError(ctx, 402, "billing_error", "Insufficient credits. Please add credits to continue.")
 			return
 		}
 	}
 
-	h.recorder.RecordSuccess(userID, apiKeyID, exaSearchModel, exaProviderName, 0, numResults, int(latency.Milliseconds()), 0, cost, false)
+	h.recorder.RecordSuccessWithApp(userID, apiKeyID, exaSearchModel, exaProviderName, 0, numResults, int(latency.Milliseconds()), 0, cost, false, app.ID, app.URL, app.Title, app.Categories)
 	ctx.SetStatusCode(200)
 	ctx.SetContentType("application/json")
 	ctx.SetBody(body)
 }
 
 func (h *SearchHandler) handlePapersSearch(ctx *fasthttp.RequestCtx, payload map[string]any, query string, numResults int, userID, apiKeyID string) {
+	app := requestAppAttribution(ctx)
 	upstreamKey, byok := h.resolveProviderKey(ctx, papersProviderName, h.papers)
 	if upstreamKey == "" {
 		writeError(ctx, 503, "provider_unavailable", "Papers search is not configured")
@@ -181,7 +183,7 @@ func (h *SearchHandler) handlePapersSearch(ctx *fasthttp.RequestCtx, payload map
 	if !byok {
 		cost = estimatePapersSearchCost()
 		if err := h.billing.PreCheckFixed(ctx, userID, cost); err != nil {
-			h.recorder.RecordError(userID, apiKeyID, papersSearchModel, papersProviderName, 0, 402, err.Error(), false)
+			h.recorder.RecordErrorWithApp(userID, apiKeyID, papersSearchModel, papersProviderName, 0, 402, err.Error(), false, app.ID, app.URL, app.Title, app.Categories)
 			writeError(ctx, 402, "billing_error", "Insufficient credits. Please add credits to continue.")
 			return
 		}
@@ -199,7 +201,7 @@ func (h *SearchHandler) handlePapersSearch(ctx *fasthttp.RequestCtx, payload map
 	resp, err := h.client.Do(upstreamReq)
 	latency := time.Since(start)
 	if err != nil {
-		h.recorder.RecordError(userID, apiKeyID, papersSearchModel, papersProviderName, int(latency.Milliseconds()), 502, err.Error(), false)
+		h.recorder.RecordErrorWithApp(userID, apiKeyID, papersSearchModel, papersProviderName, int(latency.Milliseconds()), 502, err.Error(), false, app.ID, app.URL, app.Title, app.Categories)
 		writeError(ctx, 502, "provider_error", err.Error())
 		return
 	}
@@ -207,7 +209,7 @@ func (h *SearchHandler) handlePapersSearch(ctx *fasthttp.RequestCtx, payload map
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		h.recorder.RecordError(userID, apiKeyID, papersSearchModel, papersProviderName, int(latency.Milliseconds()), 502, err.Error(), false)
+		h.recorder.RecordErrorWithApp(userID, apiKeyID, papersSearchModel, papersProviderName, int(latency.Milliseconds()), 502, err.Error(), false, app.ID, app.URL, app.Title, app.Categories)
 		writeError(ctx, 502, "provider_error", err.Error())
 		return
 	}
@@ -216,7 +218,7 @@ func (h *SearchHandler) handlePapersSearch(ctx *fasthttp.RequestCtx, payload map
 		if msg == "" {
 			msg = fmt.Sprintf("Papers returned status %d", resp.StatusCode)
 		}
-		h.recorder.RecordError(userID, apiKeyID, papersSearchModel, papersProviderName, int(latency.Milliseconds()), resp.StatusCode, msg, false)
+		h.recorder.RecordErrorWithApp(userID, apiKeyID, papersSearchModel, papersProviderName, int(latency.Milliseconds()), resp.StatusCode, msg, false, app.ID, app.URL, app.Title, app.Categories)
 		ctx.SetStatusCode(resp.StatusCode)
 		ctx.SetContentType(contentTypeOrDefault(resp.Header.Get("Content-Type")))
 		ctx.SetBody(body)
@@ -225,13 +227,13 @@ func (h *SearchHandler) handlePapersSearch(ctx *fasthttp.RequestCtx, payload map
 
 	if !byok {
 		if err := h.billing.DeductFixed(ctx, userID, papersSearchModel, cost, formatPapersUsageDescription(payload, numResults), ""); err != nil {
-			h.recorder.RecordError(userID, apiKeyID, papersSearchModel, papersProviderName, int(latency.Milliseconds()), 402, err.Error(), false)
+			h.recorder.RecordErrorWithApp(userID, apiKeyID, papersSearchModel, papersProviderName, int(latency.Milliseconds()), 402, err.Error(), false, app.ID, app.URL, app.Title, app.Categories)
 			writeError(ctx, 402, "billing_error", "Insufficient credits. Please add credits to continue.")
 			return
 		}
 	}
 
-	h.recorder.RecordSuccess(userID, apiKeyID, papersSearchModel, papersProviderName, 0, numResults, int(latency.Milliseconds()), 0, cost, false)
+	h.recorder.RecordSuccessWithApp(userID, apiKeyID, papersSearchModel, papersProviderName, 0, numResults, int(latency.Milliseconds()), 0, cost, false, app.ID, app.URL, app.Title, app.Categories)
 	ctx.SetStatusCode(200)
 	ctx.SetContentType(contentTypeOrDefault(resp.Header.Get("Content-Type")))
 	ctx.SetBody(body)

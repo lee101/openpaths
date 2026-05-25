@@ -147,6 +147,7 @@ func (h *ChatHandler) tryNonStreamingBYOK(
 	start time.Time,
 	byok bool,
 ) (bool, error) {
+	app := requestAppAttribution(ctx)
 	resp, err := prov.ChatCompletion(ctx, req)
 	latency := time.Since(start)
 
@@ -163,24 +164,25 @@ func (h *ChatHandler) tryNonStreamingBYOK(
 				return false, err
 			}
 			if !pe.Retryable {
-				h.recorder.RecordError(userID, apiKeyID, originalModel, prov.Name(),
-					int(latency.Milliseconds()), statusCode, errMsg, false)
+				h.recorder.RecordErrorWithApp(userID, apiKeyID, originalModel, prov.Name(),
+					int(latency.Milliseconds()), statusCode, errMsg, false, app.ID, app.URL, app.Title, app.Categories)
 				writeError(ctx, statusCode, "provider_error", errMsg)
 				return true, err
 			}
 		}
-		h.recorder.RecordError(userID, apiKeyID, originalModel, prov.Name(),
-			int(latency.Milliseconds()), statusCode, errMsg, false)
+		h.recorder.RecordErrorWithApp(userID, apiKeyID, originalModel, prov.Name(),
+			int(latency.Milliseconds()), statusCode, errMsg, false, app.ID, app.URL, app.Title, app.Categories)
 		return false, err
 	}
 
 	resp.Model = originalModel
 
 	var tps float32
-	var tokensIn, tokensOut int
+	var tokensIn, tokensOut, cachedTokensIn int
 	if resp.Usage != nil {
 		tokensIn = resp.Usage.PromptTokens
 		tokensOut = resp.Usage.CompletionTokens
+		cachedTokensIn = resp.Usage.CachedPromptTokens()
 		if latency.Seconds() > 0 {
 			tps = float32(float64(tokensOut) / latency.Seconds())
 		}
@@ -188,10 +190,11 @@ func (h *ChatHandler) tryNonStreamingBYOK(
 
 	var cost int64
 	if !byok {
-		cost, _ = h.billing.Deduct(ctx, userID, modelCfg.ID, tokensIn, tokensOut, req.ReasoningEffort, "")
+		cost, _ = h.billing.DeductWithCachedInput(ctx, userID, modelCfg.ID,
+			tokensIn, tokensOut, cachedTokensIn, req.ReasoningEffort, "")
 	}
-	h.recorder.RecordSuccess(userID, apiKeyID, originalModel, prov.Name(),
-		tokensIn, tokensOut, int(latency.Milliseconds()), tps, cost, false)
+	h.recorder.RecordSuccessWithApp(userID, apiKeyID, originalModel, prov.Name(),
+		tokensIn, tokensOut, int(latency.Milliseconds()), tps, cost, false, app.ID, app.URL, app.Title, app.Categories)
 
 	writeJSON(ctx, 200, resp)
 	return true, nil
@@ -218,6 +221,7 @@ func (h *ChatHandler) tryStreamingBYOK(
 	start time.Time,
 	byok bool,
 ) (bool, error) {
+	app := requestAppAttribution(ctx)
 	streamCh, err := prov.ChatCompletionStream(ctx, req)
 	if err != nil {
 		statusCode := 502
@@ -281,12 +285,12 @@ func (h *ChatHandler) tryStreamingBYOK(
 			}
 			var cost int64
 			if !byok {
-				cost, _ = h.billing.Deduct(ctx, userID, modelCfg.ID,
-					usage.PromptTokens, usage.CompletionTokens, req.ReasoningEffort, "")
+				cost, _ = h.billing.DeductWithCachedInput(ctx, userID, modelCfg.ID,
+					usage.PromptTokens, usage.CompletionTokens, usage.CachedPromptTokens(), req.ReasoningEffort, "")
 			}
-			h.recorder.RecordSuccess(userID, apiKeyID, originalModel, prov.Name(),
+			h.recorder.RecordSuccessWithApp(userID, apiKeyID, originalModel, prov.Name(),
 				usage.PromptTokens, usage.CompletionTokens,
-				int(latency.Milliseconds()), tps, cost, true)
+				int(latency.Milliseconds()), tps, cost, true, app.ID, app.URL, app.Title, app.Categories)
 		}
 	})
 	return true, nil

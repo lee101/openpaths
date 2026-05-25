@@ -72,6 +72,9 @@ providers:
   - name: openrouter
     base_url: "https://openrouter.ai/api"
     api_key: "${OPENROUTER_API_KEY}"
+    app_referer: "${OPENROUTER_APP_REFERER}"
+    app_title: "${OPENROUTER_APP_TITLE}"
+    app_categories: "${OPENROUTER_APP_CATEGORIES}"
     enabled: true
 
   - name: together
@@ -1023,6 +1026,7 @@ models:
     provider: deepseek
     provider_model_id: "deepseek-v4-flash"
     input_price_per_1m: 0.14
+    input_cache_hit_price_per_1m: 0.0028
     output_price_per_1m: 0.28
     aliases: ["deepseek-flash", "deepseek-v4"]
     context_window: 1000000
@@ -1038,8 +1042,9 @@ models:
   - id: "deepseek-v4-pro"
     provider: deepseek
     provider_model_id: "deepseek-v4-pro"
-    input_price_per_1m: 1.74
-    output_price_per_1m: 3.48
+    input_price_per_1m: 0.435
+    input_cache_hit_price_per_1m: 0.003625
+    output_price_per_1m: 0.87
     aliases: ["deepseek-pro", "deepseek-v4-reasoning"]
     context_window: 1000000
     max_output_tokens: 384000
@@ -1442,6 +1447,18 @@ models:
     input_price_per_1m: 0.10
     output_price_per_1m: 0
     aliases: ["embed", "embedding"]
+    context_window: 8192
+    max_output_tokens: 0
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "textgenerator-speech"
+    provider: textgenerator
+    provider_model_id: "generate_speech"
+    input_price_per_1m: 0.50
+    output_price_per_1m: 0
+    aliases: ["textgenerator-tts", "text-generator-tts", "supertonic-tts", "tg-tts"]
     context_window: 8192
     max_output_tokens: 0
     supports_streaming: false

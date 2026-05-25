@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#030303"/>
+  <rect x="56" y="54" width="1088" height="522" rx="28" fill="#0a0a0a" stroke="#202020"/>
+  <circle cx="120" cy="122" r="21" fill="#0f172a" stroke="#38bdf8" stroke-width="3"/>
+  <path d="M112 122h16M120 114v16" stroke="#e5e7eb" stroke-width="3" stroke-linecap="round"/>
+  <text x="156" y="132" fill="#f8fafc" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="30" font-weight="700">OpenPaths</text>
+  <text x="56" y="608" fill="#525252" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18">openpaths.io/apps/mira</text>
+  <image href="https://t0.gstatic.com/faviconV2?client=SOCIAL&amp;type=FAVICON&amp;fallback_opts=TYPE,SIZE,URL&amp;url=https%3A%2F%2Fmira.tg%2F&amp;size=256" x="86" y="205" width="116" height="116" preserveAspectRatio="xMidYMid slice"/>
+  <text x="230" y="248" fill="#ffffff" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="64" font-weight="800">Mira</text>
+  <text x="232" y="292" fill="#94a3b8" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="24">mira.tg</text>
+  <text x="86" y="384" fill="#cbd5e1" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="30">Telegram-native AI assistant.</text>
+  <rect x="86" y="448" width="300" height="82" rx="16" fill="#111111" stroke="#262626"/>
+  <text x="112" y="482" fill="#64748b" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18">TOKENS</text>
+  <text x="112" y="518" fill="#ffffff" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="34" font-weight="800">12.70B tokens</text>
+  <rect x="414" y="448" width="574" height="82" rx="16" fill="#111111" stroke="#262626"/>
+  <text x="440" y="482" fill="#64748b" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18">APP PAGE</text>
+  <text x="440" y="518" fill="#ffffff" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="26" font-weight="700">OpenPaths app usage leaderboard</text>
+  <rect x="1010" y="448" width="88" height="82" rx="16" fill="#083344" stroke="#155e75"/>
+  <text x="1030" y="498" fill="#67e8f9" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="28" font-weight="800">APP</text>
+</svg>

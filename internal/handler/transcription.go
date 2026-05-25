@@ -133,6 +133,7 @@ func (h *TranscriptionHandler) HandleTranscription(ctx *fasthttp.RequestCtx) {
 }
 
 func (h *TranscriptionHandler) handleRoutedTranscription(ctx *fasthttp.RequestCtx, userID, apiKeyID, originalModel string, req *model.TranscriptionRequest) bool {
+	app := requestAppAttribution(ctx)
 	candidates, err := h.router.ResolveWithRetries(originalModel)
 	if err != nil {
 		return false
@@ -160,15 +161,15 @@ func (h *TranscriptionHandler) handleRoutedTranscription(ctx *fasthttp.RequestCt
 				statusCode = pe.StatusCode
 				errMsg = pe.Message
 				if !pe.Retryable {
-					h.recorder.RecordError(userID, apiKeyID, originalModel, cand.Provider.Name(),
-						int(latency.Milliseconds()), statusCode, errMsg, false)
+					h.recorder.RecordErrorWithApp(userID, apiKeyID, originalModel, cand.Provider.Name(),
+						int(latency.Milliseconds()), statusCode, errMsg, false, app.ID, app.URL, app.Title, app.Categories)
 					writeError(ctx, statusCode, "provider_error", errMsg)
 					return true
 				}
 			}
 			h.router.MarkModelUnhealthy(cand.Provider.Name(), cand.ModelCfg.ID)
-			h.recorder.RecordError(userID, apiKeyID, originalModel, cand.Provider.Name(),
-				int(latency.Milliseconds()), statusCode, errMsg, false)
+			h.recorder.RecordErrorWithApp(userID, apiKeyID, originalModel, cand.Provider.Name(),
+				int(latency.Milliseconds()), statusCode, errMsg, false, app.ID, app.URL, app.Title, app.Categories)
 			if i < len(candidates)-1 {
 				log.Printf("transcription fallback: %s/%s -> %s/%s",
 					cand.Provider.Name(), cand.ModelCfg.ID,
@@ -180,8 +181,8 @@ func (h *TranscriptionHandler) handleRoutedTranscription(ctx *fasthttp.RequestCt
 		h.router.MarkModelHealthy(cand.Provider.Name(), cand.ModelCfg.ID)
 		durationSeconds := audioinfo.EstimateDurationSeconds(req.Filename, req.File)
 		cost, _ := h.billing.DeductAudio(ctx, userID, cand.ModelCfg.ID, durationSeconds, "")
-		h.recorder.RecordSuccess(userID, apiKeyID, originalModel, cand.Provider.Name(),
-			durationSeconds, 0, int(latency.Milliseconds()), 0, cost, false)
+		h.recorder.RecordSuccessWithApp(userID, apiKeyID, originalModel, cand.Provider.Name(),
+			durationSeconds, 0, int(latency.Milliseconds()), 0, cost, false, app.ID, app.URL, app.Title, app.Categories)
 		writeJSON(ctx, 200, resp)
 		return true
 	}
@@ -196,6 +197,7 @@ func (h *TranscriptionHandler) transcriberByName(name string) (provider.Transcri
 }
 
 func (h *TranscriptionHandler) handleFallbackTranscription(ctx *fasthttp.RequestCtx, userID, apiKeyID string, req *model.TranscriptionRequest, originalModel string) {
+	app := requestAppAttribution(ctx)
 	ordered := h.buildProviderOrder(strings.ToLower(req.Model))
 
 	for i, p := range ordered {
@@ -212,8 +214,8 @@ func (h *TranscriptionHandler) handleFallbackTranscription(ctx *fasthttp.Request
 			h.health.MarkUnhealthy(key)
 			log.Printf("transcription: %s failed (%dms): %v", p.Name(), latency.Milliseconds(), err)
 			if pe, ok := err.(*provider.ProviderError); ok && !pe.Retryable {
-				h.recorder.RecordError(userID, apiKeyID, originalModel, p.Name(),
-					int(latency.Milliseconds()), pe.StatusCode, pe.Message, false)
+				h.recorder.RecordErrorWithApp(userID, apiKeyID, originalModel, p.Name(),
+					int(latency.Milliseconds()), pe.StatusCode, pe.Message, false, app.ID, app.URL, app.Title, app.Categories)
 				writeError(ctx, pe.StatusCode, "provider_error", pe.Message)
 				return
 			}
@@ -228,8 +230,8 @@ func (h *TranscriptionHandler) handleFallbackTranscription(ctx *fasthttp.Request
 		durationSeconds := audioinfo.EstimateDurationSeconds(req.Filename, req.File)
 		billingModel := defaultTranscriptionModel(p.Name())
 		cost, _ := h.billing.DeductAudio(ctx, userID, billingModel, durationSeconds, "")
-		h.recorder.RecordSuccess(userID, apiKeyID, originalModel, p.Name(),
-			durationSeconds, 0, int(latency.Milliseconds()), 0, cost, false)
+		h.recorder.RecordSuccessWithApp(userID, apiKeyID, originalModel, p.Name(),
+			durationSeconds, 0, int(latency.Milliseconds()), 0, cost, false, app.ID, app.URL, app.Title, app.Categories)
 		writeJSON(ctx, 200, resp)
 		return
 	}

@@ -275,6 +275,7 @@ func (r *Router) ListModels() []model.ModelInfo {
 			SupportedSizes:  cfg.SupportedSizes,
 			Pricing: &model.ModelPricing{
 				InputPer1M:              cfg.InputPricePer1M,
+				InputCacheHitPer1M:      cfg.InputCacheHitPricePer1M,
 				OutputPer1M:             cfg.OutputPricePer1M,
 				PerRequest:              cfg.PricePerRequest,
 				PerImage:                cfg.PricePerImage,
@@ -325,6 +326,7 @@ func (r *Router) GetModelInfo(modelName string) (model.ModelInfo, bool) {
 		SupportedSizes:  cfg.SupportedSizes,
 		Pricing: &model.ModelPricing{
 			InputPer1M:              cfg.InputPricePer1M,
+			InputCacheHitPer1M:      cfg.InputCacheHitPricePer1M,
 			OutputPer1M:             cfg.OutputPricePer1M,
 			PerRequest:              cfg.PricePerRequest,
 			PerImage:                cfg.PricePerImage,

@@ -5,9 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
-    "prebuild": "npm run generate:sitemap",
-    "build": "vite build",
+    "prebuild": "npm run generate:app-og && npm run generate:sitemap",
+    "generate:app-og": "tsx scripts/generate-app-og.ts",
+    "build": "vite build && tsx scripts/prerender-static-meta.ts",
     "generate:sitemap": "tsx scripts/generate-sitemap.ts",
+    "crawl:artificial-analysis": "node crawlers/artificial_analysis.mjs --refresh",
     "verify:assets": "node scripts/verify-stable-assets.mjs",
     "preview": "vite preview",
     "clean": "rm -rf dist",

@@ -623,10 +623,10 @@ export const models: Model[] = [
     id: 'deepseek-v4-pro',
     name: 'DeepSeek V4 Pro',
     provider: 'DeepSeek',
-    description: 'Direct DeepSeek V4 Pro with 1M context and 384K max output for difficult reasoning, sensitive policy handling, roleplay, and bio/fringe-style requests.',
+    description: 'Direct DeepSeek V4 Pro with 1M context, 384K max output, and discounted permanent API pricing for difficult reasoning, sensitive policy handling, roleplay, and bio/fringe-style requests.',
     contextLength: '1M',
-    priceInput: 1.74,
-    priceOutput: 3.48,
+    priceInput: 0.435,
+    priceOutput: 0.87,
     tags: ['general', 'programming', 'reasoning', 'roleplay', 'open-source'],
     released: '2026-04-24',
     popularity: 4

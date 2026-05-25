@@ -31,6 +31,10 @@ type ImageTo3DJob = {
   error?: { message?: string } | string;
 };
 
+type APIErrorBody = {
+  error?: { message?: string } | string;
+};
+
 function loadModelViewer() {
   if (document.querySelector('script[data-model-viewer]')) return;
   const script = document.createElement('script');
@@ -73,6 +77,12 @@ async function parseAPIResponse(resp: Response) {
     }
     throw new Error('Invalid JSON response: ' + text.slice(0, 160));
   }
+}
+
+function getAPIErrorMessage(data: unknown, fallback: string) {
+  const error = (data as APIErrorBody | null)?.error;
+  if (typeof error === 'string') return error;
+  return error?.message || fallback;
 }
 
 function getClipboardImageFiles(data: DataTransfer | null): File[] {
@@ -239,7 +249,7 @@ console.log(data.model_glb.url);`,
       event.stopPropagation();
       setDraggingReference(false);
       if (uploading) return;
-      const [file] = Array.from(event.dataTransfer.files).filter(item => item.type.startsWith('image/') || /\.(png|jpe?g|webp|gif|bmp|avif)$/i.test(item.name));
+      const [file] = Array.from<File>(event.dataTransfer.files).filter(item => item.type.startsWith('image/') || /\.(png|jpe?g|webp|gif|bmp|avif)$/i.test(item.name));
       if (file) void uploadReference(file);
     },
   };
@@ -278,7 +288,7 @@ console.log(data.model_glb.url);`,
         body: JSON.stringify(payload),
       });
       const data = await parseAPIResponse(resp) as ImageTo3DResult | ImageTo3DJob;
-      if (!resp.ok) throw new Error(data?.error?.message || data?.error || '3D generation failed');
+      if (!resp.ok) throw new Error(getAPIErrorMessage(data, '3D generation failed'));
       const finalResult = resp.status === 202 && 'id' in data && data.id ? await poll3DJob(data.id) : data as ImageTo3DResult;
       setResult(finalResult);
       if (finalResult?.model_glb?.url) setModelUrl(finalResult.model_glb.url);

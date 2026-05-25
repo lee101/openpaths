@@ -74,9 +74,12 @@ func TestChatCompletionSuccess(t *testing.T) {
 			},
 		}},
 		Usage: &model.UsageInfo{
-			PromptTokens:     10,
-			CompletionTokens: 5,
-			TotalTokens:      15,
+			PromptTokens:          10,
+			CompletionTokens:      5,
+			TotalTokens:           15,
+			PromptCacheHitTokens:  7,
+			PromptCacheMissTokens: 3,
+			PromptTokensDetails:   &model.PromptTokensDetails{CachedTokens: 7},
 		},
 	}
 
@@ -113,6 +116,9 @@ func TestChatCompletionSuccess(t *testing.T) {
 	}
 	if resp.Usage.TotalTokens != 15 {
 		t.Errorf("got total tokens %d, want 15", resp.Usage.TotalTokens)
+	}
+	if resp.Usage.PromptCacheHitTokens != 7 {
+		t.Errorf("got cache hit tokens %d, want 7", resp.Usage.PromptCacheHitTokens)
 	}
 }
 

@@ -27,6 +27,12 @@ func NewPricingTable(models []model.ModelConfig) *PricingTable {
 // CalculateCost returns cost in hundredths-of-a-cent for a given model usage.
 // $1.00 = 10000 units.
 func (pt *PricingTable) CalculateCost(modelID string, inputTokens, outputTokens int) (int64, error) {
+	return pt.CalculateCostWithCachedInput(modelID, inputTokens, outputTokens, 0)
+}
+
+// CalculateCostWithCachedInput returns cost in hundredths-of-a-cent, charging
+// cache-hit prompt tokens at the model's cache-hit input rate when configured.
+func (pt *PricingTable) CalculateCostWithCachedInput(modelID string, inputTokens, outputTokens, cachedInputTokens int) (int64, error) {
 	cfg, ok := pt.models[modelID]
 	if !ok {
 		return 0, fmt.Errorf("unknown model %q for pricing", modelID)
@@ -45,7 +51,19 @@ func (pt *PricingTable) CalculateCost(modelID string, inputTokens, outputTokens 
 		return 0, nil
 	}
 
-	inputCost := float64(inputTokens) * cfg.InputPricePer1M / 1_000_000.0
+	if cachedInputTokens < 0 {
+		cachedInputTokens = 0
+	}
+	if cachedInputTokens > inputTokens {
+		cachedInputTokens = inputTokens
+	}
+	if cfg.InputCacheHitPricePer1M <= 0 {
+		cachedInputTokens = 0
+	}
+
+	uncachedInputTokens := inputTokens - cachedInputTokens
+	inputCost := float64(uncachedInputTokens)*cfg.InputPricePer1M/1_000_000.0 +
+		float64(cachedInputTokens)*cfg.InputCacheHitPricePer1M/1_000_000.0
 	outputCost := float64(outputTokens) * cfg.OutputPricePer1M / 1_000_000.0
 	totalDollars := inputCost + outputCost
 

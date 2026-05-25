@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, BarChart3, Cpu, Database, RefreshCw } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { ArtificialAnalysisBenchmarkSection } from '../components/ArtificialAnalysisCharts';
 
 type UsageBreakdown = {
   task: string;
@@ -176,6 +177,8 @@ export function Stats() {
         <Metric label="Tokens" value={formatNumber(totals.tokens)} icon={<Cpu className="w-5 h-5" />} />
         <Metric label="Spend" value={formatCost(totals.cost)} icon={<BarChart3 className="w-5 h-5" />} />
       </div>
+
+      <ArtificialAnalysisBenchmarkSection compact />
 
       <section className="mb-8 overflow-hidden rounded-lg border border-white/10 bg-white/[0.02]">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 px-4 py-3">

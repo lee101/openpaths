@@ -152,6 +152,18 @@ export function Docs() {
             </div>
           </div>
 
+          <div className="rounded-xl border border-white/10 bg-black/40 p-4 mb-5">
+            <div className="text-xs font-mono text-white/40 mb-2">Opt-in app attribution</div>
+            <p className="text-sm text-white/60 mb-3">
+              Send `HTTP-Referer` with your app URL and `X-OpenRouter-Title` or `X-Title` with your app name. OpenPaths records app-level model and token stats only when those headers are present.
+            </p>
+            <CodeBlock
+              language="bash"
+              code={`-H "HTTP-Referer: https://your-app.example"\n-H "X-OpenRouter-Title: Your App"\n-H "X-OpenRouter-Categories: cli-agent,programming-app"`}
+              preClassName="rounded-lg border border-white/10 bg-black/60 p-3 text-xs leading-5"
+            />
+          </div>
+
           <div className="space-y-3">
             {ENDPOINTS.map(endpoint => (
               <div key={endpoint.path} className="rounded-xl border border-white/10 p-4">

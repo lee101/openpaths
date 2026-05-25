@@ -51,6 +51,7 @@ func (h *ImageHandler) HandleImageGeneration(ctx *fasthttp.RequestCtx) {
 	if apiKey != nil {
 		apiKeyID = apiKey.ID
 	}
+	app := requestAppAttribution(ctx)
 
 	var req model.ImageGenerationRequest
 	if err := json.Unmarshal(ctx.PostBody(), &req); err != nil {
@@ -120,15 +121,15 @@ func (h *ImageHandler) HandleImageGeneration(ctx *fasthttp.RequestCtx) {
 				statusCode = pe.StatusCode
 				errMsg = pe.Message
 				if !pe.Retryable && i == len(candidates)-1 {
-					h.recorder.RecordError(userID, apiKeyID, originalModel, cand.Provider.Name(),
-						int(latency.Milliseconds()), statusCode, errMsg, false)
+					h.recorder.RecordErrorWithApp(userID, apiKeyID, originalModel, cand.Provider.Name(),
+						int(latency.Milliseconds()), statusCode, errMsg, false, app.ID, app.URL, app.Title, app.Categories)
 					writeError(ctx, statusCode, "provider_error", errMsg)
 					return
 				}
 			}
 			h.router.MarkModelUnhealthy(cand.Provider.Name(), cand.ModelCfg.ID)
-			h.recorder.RecordError(userID, apiKeyID, originalModel, cand.Provider.Name(),
-				int(latency.Milliseconds()), statusCode, errMsg, false)
+			h.recorder.RecordErrorWithApp(userID, apiKeyID, originalModel, cand.Provider.Name(),
+				int(latency.Milliseconds()), statusCode, errMsg, false, app.ID, app.URL, app.Title, app.Categories)
 			if i < len(candidates)-1 {
 				log.Printf("image fallback: %s/%s -> %s/%s",
 					cand.Provider.Name(), cand.ModelCfg.ID,
@@ -163,8 +164,8 @@ func (h *ImageHandler) HandleImageGeneration(ctx *fasthttp.RequestCtx) {
 		imageCount := len(resp.Data)
 		inputImageCount := countInputImages(&req)
 		cost, _ := h.deductImageCost(ctx, userID, cand.ModelCfg.ID, &req, resp, imageCount, inputImageCount)
-		h.recorder.RecordSuccess(userID, apiKeyID, originalModel, cand.Provider.Name(),
-			0, imageCount, int(latency.Milliseconds()), 0, cost, false)
+		h.recorder.RecordSuccessWithApp(userID, apiKeyID, originalModel, cand.Provider.Name(),
+			0, imageCount, int(latency.Milliseconds()), 0, cost, false, app.ID, app.URL, app.Title, app.Categories)
 
 		writeJSON(ctx, 200, resp)
 		return

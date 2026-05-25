@@ -62,6 +62,7 @@ const primaryNavLinks = [
   { label: 'Pricing', to: '/pricing', match: (path: string) => path === '/pricing' },
   { label: 'Providers', to: '/providers', match: (path: string) => path.startsWith('/providers') },
   { label: 'Stats', to: '/stats', match: (path: string) => path === '/stats' },
+  { label: 'Apps', to: '/apps/', match: (path: string) => path === '/apps' || path.startsWith('/apps/') },
   { label: 'Docs', to: '/docs', match: (path: string) => path === '/docs' },
   { label: 'Integrations', to: '/integrations', match: (path: string) => path === '/integrations' },
   { label: 'Playground', to: '/playground', match: (path: string) => path === '/playground' },
@@ -188,6 +189,7 @@ export function Layout() {
                   <li><Link to="/models" className="hover:text-white transition-colors">Models</Link></li>
                   <li><Link to="/providers" className="hover:text-white transition-colors">Providers</Link></li>
                   <li><Link to="/stats" className="hover:text-white transition-colors">Stats</Link></li>
+                  <li><Link to="/apps/" className="hover:text-white transition-colors">Apps</Link></li>
                   <li><Link to="/pricing" className="hover:text-white transition-colors">Pricing</Link></li>
                   <li><Link to="/integrations" className="hover:text-white transition-colors">Integrations</Link></li>
                   <li><Link to="/playground" className="hover:text-white transition-colors">Playground</Link></li>
@@ -224,6 +226,7 @@ export function Layout() {
               <div className="flex gap-4">
                 <Link to="/docs" className="hover:text-white transition-colors">Docs</Link>
                 <Link to="/stats" className="hover:text-white transition-colors">Stats</Link>
+                <Link to="/apps/" className="hover:text-white transition-colors">Apps</Link>
                 <Link to="/alternatives" className="hover:text-white transition-colors">Alternatives</Link>
                 <Link to="/integrations" className="hover:text-white transition-colors">Integrations</Link>
                 <Link to="/account" className="hover:text-white transition-colors">Account</Link>

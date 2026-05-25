@@ -26,6 +26,6 @@ test.describe('Blog', () => {
 
     await expect(page).toHaveURL('/blog/how-openpaths-is-hosted-on-codex-infinity');
     await expect(page.getByRole('heading', { name: 'How OpenPaths Is Hosted on Codex Infinity' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Codex Infinity' })).toBeVisible();
+    await expect(page.getByRole('article').getByRole('link', { name: 'Codex Infinity' })).toBeVisible();
   });
 });

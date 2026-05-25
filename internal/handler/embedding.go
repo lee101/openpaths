@@ -45,6 +45,7 @@ func (h *EmbeddingHandler) HandleEmbedding(ctx *fasthttp.RequestCtx) {
 	}
 
 	originalModel := req.Model
+	app := requestAppAttribution(ctx)
 
 	// Try router-resolved providers first (OpenRouter embedding models etc)
 	if req.Model != "" {
@@ -62,8 +63,8 @@ func (h *EmbeddingHandler) HandleEmbedding(ctx *fasthttp.RequestCtx) {
 
 				if err != nil {
 					if pe, ok := err.(*provider.ProviderError); ok && !pe.Retryable {
-						h.recorder.RecordError(userID, apiKeyID, originalModel, cand.Provider.Name(),
-							int(latency.Milliseconds()), pe.StatusCode, pe.Message, false)
+						h.recorder.RecordErrorWithApp(userID, apiKeyID, originalModel, cand.Provider.Name(),
+							int(latency.Milliseconds()), pe.StatusCode, pe.Message, false, app.ID, app.URL, app.Title, app.Categories)
 						writeError(ctx, pe.StatusCode, "provider_error", pe.Message)
 						return
 					}
@@ -76,8 +77,8 @@ func (h *EmbeddingHandler) HandleEmbedding(ctx *fasthttp.RequestCtx) {
 					h.router.MarkModelHealthy(cand.Provider.Name(), cand.ModelCfg.ID)
 					resp.Model = originalModel
 					cost, _ := h.billing.Deduct(ctx, userID, cand.ModelCfg.ID, resp.Usage.TotalTokens, 0, "", "")
-					h.recorder.RecordSuccess(userID, apiKeyID, originalModel, cand.Provider.Name(),
-						resp.Usage.TotalTokens, 0, int(latency.Milliseconds()), 0, cost, false)
+					h.recorder.RecordSuccessWithApp(userID, apiKeyID, originalModel, cand.Provider.Name(),
+						resp.Usage.TotalTokens, 0, int(latency.Milliseconds()), 0, cost, false, app.ID, app.URL, app.Title, app.Categories)
 					writeJSON(ctx, 200, resp)
 					return
 				}
@@ -98,8 +99,8 @@ func (h *EmbeddingHandler) HandleEmbedding(ctx *fasthttp.RequestCtx) {
 
 		resp.Model = originalModel
 		log.Printf("embedding: %s ok (%dms)", ep.Name(), latency.Milliseconds())
-		h.recorder.RecordSuccess(userID, apiKeyID, originalModel, ep.Name(),
-			resp.Usage.TotalTokens, 0, int(latency.Milliseconds()), 0, 0, false)
+		h.recorder.RecordSuccessWithApp(userID, apiKeyID, originalModel, ep.Name(),
+			resp.Usage.TotalTokens, 0, int(latency.Milliseconds()), 0, 0, false, app.ID, app.URL, app.Title, app.Categories)
 		writeJSON(ctx, 200, resp)
 		return
 	}
