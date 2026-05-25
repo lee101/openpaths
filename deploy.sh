@@ -200,6 +200,7 @@ deploy_site() {
         --endpoint-url "${R2_ENDPOINT}" \
         --size-only \
         --delete \
+        --exclude "static/data/zimage-art/*" \
         --exclude "static/uploads/*" \
         --exclude "uploads/*" \
         --exclude "*.map"
