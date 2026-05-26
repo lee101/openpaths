@@ -59,7 +59,7 @@ interface ModelPane {
 
 type CodeLanguage = 'python' | 'js' | 'go' | 'curl';
 type PromptExample = string | { label: string; prompt: string };
-type ReferenceUploadTarget = 'image' | 'end-image' | 'images' | 'video' | 'audio';
+type ReferenceUploadTarget = 'image-inputs' | 'image' | 'end-image' | 'images' | 'video' | 'audio';
 
 const IMAGE_SIZES = ['1024x1024', '1152x768', '768x1152', '1360x768', '768x1360', '1280x720', '720x1280'] as const;
 const IMAGE_ASPECT_RATIOS = ['auto', '1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '2:1', '1:2'] as const;
@@ -136,6 +136,7 @@ const FALLBACK_MODELS: CatalogModel[] = [
   { id: 'grok-3-mini', label: 'Grok 3 Mini', provider: 'xAI' },
   { id: 'xai-tts', label: 'xAI Text to Speech', provider: 'xAI', pricing: { input_per_1m_tokens: 15.00 } },
   { id: 'grok-imagine-image', label: 'Grok Imagine Image', provider: 'xAI', pricing: { per_image: 0.02 } },
+  { id: 'grok-imagine-image-quality', label: 'Grok Imagine Image Quality', provider: 'xAI', pricing: { per_image: 0.02 } },
   { id: 'nvidia/deepseek-v4-pro', label: 'DeepSeek V4 Pro Free', provider: 'NVIDIA' },
   { id: 'deepseek-chat', label: 'DeepSeek Chat', provider: 'DeepSeek' },
   { id: 'deepseek-reasoner', label: 'DeepSeek Reasoner', provider: 'DeepSeek' },
@@ -274,6 +275,31 @@ function promptExampleLabel(example: PromptExample): string {
 
 function promptExampleText(example: PromptExample): string {
   return typeof example === 'string' ? example : example.prompt;
+}
+
+async function pollVideoJob(baseUrl: string, apiKey: string, jobId: string, signal: AbortSignal) {
+  const deadline = Date.now() + 15 * 60 * 1000;
+  while (Date.now() < deadline) {
+    await new Promise((resolve, reject) => {
+      const timer = window.setTimeout(resolve, 2000);
+      signal.addEventListener('abort', () => {
+        window.clearTimeout(timer);
+        reject(new DOMException('Aborted', 'AbortError'));
+      }, { once: true });
+    });
+    const resp = await fetch(`${baseUrl}/v1/videos/generations/${encodeURIComponent(jobId)}`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      signal,
+    });
+    if (!resp.ok) {
+      const errText = await resp.text();
+      throw new Error(`${resp.status}: ${errText.slice(0, 200)}`);
+    }
+    const data = await resp.json();
+    if (data?.status === 'completed' && data?.result?.video_url) return data.result;
+    if (data?.status === 'failed') throw new Error(data?.error?.message || 'Video generation failed');
+  }
+  throw new Error('Video generation timed out');
 }
 
 interface ImageDemo {
@@ -902,6 +928,7 @@ ${text}`;
         if (data.url) urls.push(normalizeUploadedAssetUrl(data.url));
       }
       const append = (prev: string) => [prev.trim(), ...urls].filter(Boolean).join('\n');
+      if (target === 'image-inputs') setImageInputUrls(append);
       if (target === 'image') setVideoImageUrl(urls[0] || '');
       if (target === 'end-image') setVideoEndImageUrl(urls[0] || '');
       if (target === 'images') setVideoImageUrls(append);
@@ -935,7 +962,7 @@ ${text}`;
       event.preventDefault();
       event.stopPropagation();
       setDragTarget(null);
-      const files = Array.from(event.dataTransfer.files).filter(file => file.type.startsWith('image/'));
+      const files = Array.from(event.dataTransfer.files as FileList).filter((file: File) => file.type.startsWith('image/'));
       if (!uploadingRefs && files.length > 0) {
         void uploadReferenceFiles(files, target);
       }
@@ -2347,6 +2374,15 @@ JSON`;
                 className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30 resize-none"
                 data-testid="image-input-urls"
               />
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                disabled={uploadingRefs || !apiKey}
+                onChange={e => e.target.files && uploadReferenceFiles(e.target.files, 'image-inputs')}
+                className="mt-1 block w-full text-[10px] font-mono text-white/35 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-white/60 disabled:opacity-40"
+                data-testid="image-input-upload"
+              />
               <ImagePreviewStrip urls={parseImageInputUrls(imageInputUrls)} label="image-input-urls" />
             </label>
           </div>
@@ -2818,31 +2854,6 @@ function MessageBubble({ message }: { message: Message; key?: React.Key }) {
     navigator.clipboard.writeText(message.content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  const pollVideoJob = async (baseUrl: string, apiKey: string, jobId: string, signal: AbortSignal) => {
-    const deadline = Date.now() + 15 * 60 * 1000;
-    while (Date.now() < deadline) {
-      await new Promise((resolve, reject) => {
-        const timer = window.setTimeout(resolve, 2000);
-        signal.addEventListener('abort', () => {
-          window.clearTimeout(timer);
-          reject(new DOMException('Aborted', 'AbortError'));
-        }, { once: true });
-      });
-      const resp = await fetch(`${baseUrl}/v1/videos/generations/${encodeURIComponent(jobId)}`, {
-        headers: { Authorization: `Bearer ${apiKey}` },
-        signal,
-      });
-      if (!resp.ok) {
-        const errText = await resp.text();
-        throw new Error(`${resp.status}: ${errText.slice(0, 200)}`);
-      }
-      const data = await resp.json();
-      if (data?.status === 'completed' && data?.result?.video_url) return data.result;
-      if (data?.status === 'failed') throw new Error(data?.error?.message || 'Video generation failed');
-    }
-    throw new Error('Video generation timed out');
   };
 
   return (

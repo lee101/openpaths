@@ -605,6 +605,19 @@ export const models: Model[] = [
     popularity: 7,
     pricingType: 'request'
   },
+  {
+    id: 'grok-imagine-image-quality',
+    name: 'Grok Imagine Image Quality',
+    provider: 'xAI',
+    description: 'High-quality OpenPaths route for xAI image generation and image-to-image editing, with GPT Image 2 as the fallback path.',
+    contextLength: 'N/A',
+    priceInput: 0.02,
+    priceOutput: 0,
+    tags: ['art generation', 'vision'],
+    released: '2026-05-26',
+    popularity: 7,
+    pricingType: 'request'
+  },
 
   // --- DeepSeek ---
   {
