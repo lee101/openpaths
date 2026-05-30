@@ -25,8 +25,10 @@ import (
 	"github.com/openpaths/openpaths/internal/discovery"
 	"github.com/openpaths/openpaths/internal/email"
 	"github.com/openpaths/openpaths/internal/metrics"
+	"github.com/openpaths/openpaths/internal/promptlib"
 	"github.com/openpaths/openpaths/internal/provider"
 	"github.com/openpaths/openpaths/internal/provider/anthropic"
+	"github.com/openpaths/openpaths/internal/provider/cursor"
 	"github.com/openpaths/openpaths/internal/provider/deepseek"
 	"github.com/openpaths/openpaths/internal/provider/fal"
 	"github.com/openpaths/openpaths/internal/provider/fireworks"
@@ -84,9 +86,11 @@ func main() {
 	usageQ := queries.NewUsageQueries(database.Pool)
 	statsQ := queries.NewStatsQueries(database.Pool)
 	appQ := queries.NewAppQueries(database.Pool)
+	modelProbeQ := queries.NewModelProbeQueries(database.Pool)
 	providerKeyQ := queries.NewProviderKeyQueries(database.Pool)
 	videoJobQ := queries.NewVideoJobQueries(database.Pool)
 	model3DJobQ := queries.NewModel3DJobQueries(database.Pool)
+	artImageQ := queries.NewArtImageQueries(database.Pool)
 
 	jwtService := auth.NewJWTService(cfg.JWT.Secret, cfg.JWT.ExpirationHours)
 
@@ -116,6 +120,8 @@ func main() {
 			transcribers = append(transcribers, openai.NewTranscriber(provCfg.APIKey, provCfg.BaseURL))
 		case "anthropic":
 			p = anthropic.New(provCfg.APIKey, provCfg.BaseURL)
+		case "cursor":
+			p = cursor.New(provCfg.APIKey, provCfg.BaseURL)
 		case "google":
 			p = google.New(provCfg.APIKey, provCfg.BaseURL)
 		case "mistral":
@@ -277,13 +283,27 @@ func main() {
 	appUsageCrawler.Start()
 	defer appUsageCrawler.Stop()
 
+	modelProber := cron.NewModelProber(modelProbeQ, cfg.Models)
+	modelProber.Start()
+	defer modelProber.Stop()
+
 	var artIndex *artindex.Service
 	if localEmbedder != nil && os.Getenv("OPENPATHS_ART_INDEX_DISABLED") != "1" {
 		artIndex = artindex.New(os.Getenv("OPENPATHS_ZIMAGE_ART_INDEX_URL"), localEmbedder)
+		artIndex.SetSource(artImageQ)
 		artIndex.Start(ctx)
 		log.Printf("ZImage art semantic index warming from %s", artIndex.Status().SourceURL)
 	} else {
 		log.Printf("ZImage art semantic index disabled (local gobed embedder unavailable or disabled)")
+	}
+
+	var promptIndex *promptlib.Index
+	if localEmbedder != nil && os.Getenv("OPENPATHS_PROMPT_INDEX_DISABLED") != "1" {
+		promptIndex = promptlib.New(localEmbedder)
+		promptIndex.Start(ctx)
+		log.Printf("Prompt library semantic index warming (%d prompts)", promptlib.Count())
+	} else {
+		log.Printf("Prompt library semantic index disabled (local gobed embedder unavailable or disabled); lexical search still available")
 	}
 
 	// Start drip email campaign scheduler.
@@ -320,6 +340,7 @@ func main() {
 		StripeReconciler: stripeReconciler,
 		StatsQ:           statsQ,
 		AppQ:             appQ,
+		ModelProbeQ:      modelProbeQ,
 		Transcribers:     transcribers,
 		Embedders:        embedders,
 		AutoEmotion:      autoEmotion,
@@ -335,6 +356,8 @@ func main() {
 		Model3DJobQ:      model3DJobQ,
 		OnRegister:       onRegister,
 		ArtIndex:         artIndex,
+		ArtImageQ:        artImageQ,
+		PromptIndex:      promptIndex,
 	})
 
 	done := make(chan os.Signal, 1)

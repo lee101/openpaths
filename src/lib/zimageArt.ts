@@ -1,4 +1,28 @@
-import { ZIMAGE_ART_MANIFEST_URL, fallbackZImageArt, type ZImageArtItem, type ZImageArtManifest } from '../data/zimageArt';
+import {
+  ZIMAGE_ART_MANIFEST_URL,
+  fallbackZImageArt,
+  type ArtListResponse,
+  type ArtTagFacet,
+  type ZImageArtItem,
+  type ZImageArtManifest,
+} from '../data/zimageArt';
+
+export type ArtSearchFilters = {
+  aspect?: string;
+  tag?: string;
+  limit?: number;
+  offset?: number;
+};
+
+function artQueryString(filters: ArtSearchFilters): string {
+  const params = new URLSearchParams();
+  if (filters.aspect) params.set('aspect', filters.aspect);
+  if (filters.tag) params.set('tag', filters.tag);
+  if (filters.limit) params.set('limit', String(filters.limit));
+  if (filters.offset) params.set('offset', String(filters.offset));
+  const qs = params.toString();
+  return qs ? `&${qs}` : '';
+}
 
 type LoadResult = {
   manifest: ZImageArtManifest | null;
@@ -39,17 +63,57 @@ async function fetchJson<T>(url: string): Promise<T> {
   }
 }
 
-export async function searchZImageArt(query: string, limit: number): Promise<ZImageArtItem[] | null> {
+export async function searchZImageArt(query: string, limit: number, filters: ArtSearchFilters = {}): Promise<ZImageArtItem[] | null> {
   const q = query.trim();
   if (!q) return null;
   try {
-    const resp = await fetch(`/v1/art/search?q=${encodeURIComponent(q)}&limit=${limit}`, { headers: { Accept: 'application/json' } });
+    const resp = await fetch(`/v1/art/search?q=${encodeURIComponent(q)}&limit=${limit}${artQueryString(filters)}`, { headers: { Accept: 'application/json' } });
     if (!resp.ok) return null;
     const data = await resp.json();
     if (!Array.isArray(data.results)) return null;
     return data.results.filter(isUsableItem);
   } catch {
     return null;
+  }
+}
+
+// fetchArtList browses the DB-backed gallery (no query) with aspect/tag filters + totals.
+export async function fetchArtList(filters: ArtSearchFilters = {}): Promise<ArtListResponse | null> {
+  try {
+    const resp = await fetch(`/v1/art/list?${artQueryString(filters).replace(/^&/, '')}`, { headers: { Accept: 'application/json' } });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    if (!Array.isArray(data.results)) return null;
+    return {
+      results: data.results.filter(isUsableItem),
+      total: typeof data.total === 'number' ? data.total : data.results.length,
+      aspects: data.aspects || {},
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchArtItem(slug: string): Promise<{ item: ZImageArtItem; related: ZImageArtItem[] } | null> {
+  try {
+    const resp = await fetch(`/v1/art/item?slug=${encodeURIComponent(slug)}`, { headers: { Accept: 'application/json' } });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    if (!data.item) return null;
+    return { item: data.item, related: Array.isArray(data.related) ? data.related.filter(isUsableItem) : [] };
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchArtTags(limit = 60): Promise<ArtTagFacet[]> {
+  try {
+    const resp = await fetch(`/v1/art/tags?limit=${limit}`, { headers: { Accept: 'application/json' } });
+    if (!resp.ok) return [];
+    const data = await resp.json();
+    return Array.isArray(data.tags) ? data.tags : [];
+  } catch {
+    return [];
   }
 }
 

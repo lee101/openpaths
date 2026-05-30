@@ -1,4 +1,5 @@
 node_modules/
+scripts/.cursor-sdk-deps/
 build/
 dist/
 bin/
@@ -31,3 +32,12 @@ servers.md
 tmp
 plan
 visualbench
+.venv-cursor-test/
+
+# Image prompt search: local-only bulk migration scripts + state (open-source repo keeps product code, not bulk gen)
+scripts/import_cutedsl_art.py
+scripts/generate_wide_tall_art.py
+scripts/art_migration_state/
+tmp/art-index-vectors.bin
+openpaths-api.prev.1780035281
+config.yaml.bak.extend

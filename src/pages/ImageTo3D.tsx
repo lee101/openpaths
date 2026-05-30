@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Box, Copy, Download, ExternalLink, Loader2, Upload, Wand2 } from 'lucide-react';
 import { Seo } from '../components/Seo';
 import { CodeBlock } from '../components/CodeBlock';
+import { ModelViewer } from '../components/ModelViewer';
+import { Model3DDrop } from '../components/Model3DDrop';
 import { prepareUploadFile } from '../lib/imageUpload';
 import { normalizeUploadedAssetUrl } from '../lib/uploadUrls';
 
@@ -34,27 +36,6 @@ type ImageTo3DJob = {
 type APIErrorBody = {
   error?: { message?: string } | string;
 };
-
-function loadModelViewer() {
-  if (document.querySelector('script[data-model-viewer]')) return;
-  const script = document.createElement('script');
-  script.type = 'module';
-  script.src = 'https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js';
-  script.setAttribute('data-model-viewer', 'true');
-  document.head.appendChild(script);
-}
-
-function ModelViewer({ src }: { src: string }) {
-  return React.createElement('model-viewer' as any, {
-    src,
-    alt: 'Generated 3D model',
-    'camera-controls': true,
-    'auto-rotate': true,
-    'shadow-intensity': '0.8',
-    exposure: '1',
-    style: { width: '100%', height: '100%', minHeight: '420px', background: 'linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02))' },
-  });
-}
 
 function getStoredAPIKey() {
   if (typeof window === 'undefined') return '';
@@ -112,10 +93,6 @@ export function ImageTo3D() {
   const [uploading, setUploading] = useState(false);
   const [draggingReference, setDraggingReference] = useState(false);
   const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    loadModelViewer();
-  }, []);
 
   useEffect(() => {
     if (apiKey) localStorage.setItem('op_api_key', apiKey);
@@ -505,11 +482,12 @@ console.log(data.model_glb.url);`,
               />
             </section>
             <section className="min-w-0 overflow-hidden rounded-lg border border-white/10 bg-white/[0.02] p-5">
-              <h2 className="mb-3 font-mono text-sm font-bold uppercase tracking-wider text-white/70">Sword default</h2>
-              <p className="text-sm leading-relaxed text-white/55">
-                Default: a sword image converted to a Pixal3D GLB.
+              <h2 className="mb-3 font-mono text-sm font-bold uppercase tracking-wider text-white/70">Preview your own 3D file</h2>
+              <p className="mb-4 text-sm leading-relaxed text-white/55">
+                Already have a model? Drop a <code className="text-white/70">.glb</code> or <code className="text-white/70">.gltf</code> to preview it instantly — nothing is uploaded.
               </p>
-              <p className="mt-3 break-words text-xs font-mono text-white/35">Prompt: {DEFAULT_PROMPT}</p>
+              <Model3DDrop minHeight={260} />
+              <p className="mt-4 break-words text-xs font-mono text-white/35">Sword default prompt: {DEFAULT_PROMPT}</p>
             </section>
           </div>
         </div>

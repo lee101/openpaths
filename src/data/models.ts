@@ -83,6 +83,19 @@ export const models: Model[] = [
     pricingType: 'request'
   },
   {
+    id: 'text-to-3d',
+    name: 'Text to 3D',
+    provider: 'OpenPaths',
+    description: 'Generate a textured GLB straight from a text prompt: OpenPaths auto-generates an image then converts it to 3D with Pixal3D. Billed at the image price plus the Pixal3D price.',
+    contextLength: 'N/A',
+    priceInput: 0.34,
+    priceOutput: 0,
+    tags: ['image-to-3d', 'text-to-image', 'vision'],
+    released: '2026-05-29',
+    popularity: -2,
+    pricingType: 'request'
+  },
+  {
     id: 'openpaths-embed',
     name: 'OpenPaths Embed',
     provider: 'OpenPaths',
@@ -132,50 +145,118 @@ export const models: Model[] = [
     popularity: 7
   },
 
-  // --- OpenPaths Auto Tiers ---
+  // --- OpenPaths Auto (hero product) ---
   {
-    id: 'auto-easy-task',
-    name: 'Auto Easy Task',
+    id: 'openpaths/auto',
+    name: 'OpenPaths Auto',
     provider: 'OpenPaths',
-    description: 'Low-cost routing across GPT-5.4 Nano, Gemini Flash tiers, Claude Haiku, and DeepSeek V4 Flash for simple or sensitive classifiers.',
+    description: 'Stop choosing models manually. One model ID — embedding-routed chat across GPT-5.5, Gemini 3.5 Flash, Claude, DeepSeek, and more based on your prompt.',
     contextLength: '1M',
-    priceInput: 0.02,
-    priceOutput: 0.10,
+    priceInput: 1.50,
+    priceOutput: 9.00,
+    tags: ['general', 'programming', 'reasoning', 'agentic'],
+    aliases: ['auto', 'auto-chat', 'auto-text'],
+    released: '2026-05-28',
+    popularity: -10
+  },
+  {
+    id: 'openpaths/auto-code',
+    name: 'OpenPaths Auto Code',
+    provider: 'OpenPaths',
+    description: 'Coding agents, bug fixes, and refactors. Routes easy git diffs to Nano, Three.js and frontend to Gemini 3.5 Flash, hard architecture to GPT-5.5 and Codex.',
+    contextLength: '1M',
+    priceInput: 5.00,
+    priceOutput: 30.00,
+    tags: ['programming', 'agentic', 'reasoning'],
+    aliases: ['auto-code', 'auto-medium-task', 'auto-medium'],
+    released: '2026-05-28',
+    popularity: -9
+  },
+  {
+    id: 'openpaths/auto-fast',
+    name: 'OpenPaths Auto Fast',
+    provider: 'OpenPaths',
+    description: 'Low-latency chat. Defaults to DeepSeek V4 Flash with Gemini Flash fallbacks for snappy assistants and agent loops.',
+    contextLength: '1M',
+    priceInput: 0.14,
+    priceOutput: 0.28,
+    tags: ['fast', 'general', 'programming'],
+    aliases: ['auto-fast'],
+    released: '2026-05-28',
+    popularity: -8
+  },
+  {
+    id: 'openpaths/auto-cheap',
+    name: 'OpenPaths Auto Cheap',
+    provider: 'OpenPaths',
+    description: 'Lowest acceptable cost. GPT-5.4 Nano and Gemini Flash Lite for classification, extraction, formatting, and trivial edits.',
+    contextLength: '400K',
+    priceInput: 0.20,
+    priceOutput: 1.25,
     tags: ['fast', 'general'],
-    released: '2026-03-03',
-    popularity: 0
+    aliases: ['auto-cheap', 'auto-easy-task', 'auto-easy'],
+    released: '2026-05-28',
+    popularity: -7
   },
   {
-    id: 'auto-medium-task',
-    name: 'Auto Medium Task',
+    id: 'openpaths/auto-reasoning',
+    name: 'OpenPaths Auto Reasoning',
     provider: 'OpenPaths',
-    description: 'Balanced routing led by GPT-5.4 Mini with Claude Sonnet, Gemini 2.5 Flash, and DeepSeek V4 Flash for sensitive roleplay, fringe, and policy-heavy prompts.',
+    description: 'Harder planning and reasoning. Picks none/low/medium/high thinking automatically — math, architecture, 3D simulations, and policy-heavy judgement.',
     contextLength: '400K',
     priceInput: 0.75,
     priceOutput: 4.50,
-    tags: ['programming', 'general', 'reasoning'],
-    released: '2026-03-03',
-    popularity: 0
+    tags: ['reasoning', 'programming', 'general'],
+    aliases: ['auto-reasoning', 'auto-think', 'auto-hard-task', 'auto-hard', 'auto-opus'],
+    released: '2026-05-28',
+    popularity: -6
   },
   {
-    id: 'auto-think',
-    name: 'Auto Think',
+    id: 'openpaths/auto-vision',
+    name: 'OpenPaths Auto Vision',
     provider: 'OpenPaths',
-    description: 'Embedding-routed reasoning tier that picks none, low, medium, or high thinking; direct thinking models can use the same classifier with reasoning_effort="auto".',
-    contextLength: '400K',
-    priceInput: 0.75,
-    priceOutput: 4.50,
-    tags: ['programming', 'general', 'reasoning'],
-    released: '2026-03-17',
-    popularity: 0
+    description: 'Image understanding. Gemini Flash for analysis and OCR; Flash Lite for low-res thumbnails and quick captions.',
+    contextLength: '1M',
+    priceInput: 0.30,
+    priceOutput: 2.50,
+    tags: ['vision', 'general'],
+    aliases: ['auto-vision'],
+    released: '2026-05-28',
+    popularity: -5
+  },
+  {
+    id: 'openpaths/auto-image',
+    name: 'OpenPaths Auto Image',
+    provider: 'OpenPaths',
+    description: 'Image generation. GPT Image 2 by default with automatic RA1 fallback.',
+    contextLength: 'N/A',
+    priceInput: 0.211,
+    priceOutput: 0,
+    tags: ['art generation', 'text-to-image'],
+    aliases: ['auto-image', 'auto-img'],
+    released: '2026-05-28',
+    popularity: -4,
+    pricingType: 'request'
   },
 
   // --- Anthropic ---
   {
+    id: 'claude-opus-4-8',
+    name: 'Claude Opus 4.8',
+    provider: 'Anthropic',
+    description: 'Latest flagship Claude model. State-of-the-art reasoning, coding, and long-horizon agentic tasks.',
+    contextLength: '200K',
+    priceInput: 5.00,
+    priceOutput: 25.00,
+    tags: ['programming', 'reasoning', 'general', 'vision'],
+    released: '2026-05-29',
+    popularity: 0
+  },
+  {
     id: 'claude-opus-4-7',
     name: 'Claude Opus 4.7',
     provider: 'Anthropic',
-    description: 'Latest flagship Claude model. State-of-the-art reasoning, coding, and long-horizon agentic tasks.',
+    description: 'Previous-gen flagship Claude model. State-of-the-art reasoning, coding, and long-horizon agentic tasks.',
     contextLength: '200K',
     priceInput: 5.00,
     priceOutput: 25.00,
@@ -292,6 +373,32 @@ export const models: Model[] = [
     tags: ['programming', 'reasoning', 'vision'],
     released: '2026-02-07',
     popularity: 15
+  },
+  {
+    id: 'composer-2.5',
+    name: 'Composer 2.5',
+    provider: 'Cursor',
+    description: 'Cursor agentic coding model (standard tier). Runs via Cursor Cloud Agents API with tool use.',
+    contextLength: '256K',
+    priceInput: 0.50,
+    priceOutput: 2.50,
+    tags: ['programming', 'agentic'],
+    aliases: ['cursor-composer-2.5', 'composer-2-5', 'composer-2.5-standard'],
+    released: '2026-05-18',
+    popularity: 17
+  },
+  {
+    id: 'composer-2.5-fast',
+    name: 'Composer 2.5 Fast',
+    provider: 'Cursor',
+    description: 'Cursor agentic coding model (fast tier). Runs via Cursor Cloud Agents API with tool use.',
+    contextLength: '256K',
+    priceInput: 3.00,
+    priceOutput: 15.00,
+    tags: ['programming', 'agentic', 'fast'],
+    aliases: ['cursor-composer-2.5-fast', 'composer-2-5-fast'],
+    released: '2026-05-18',
+    popularity: 16
   },
   {
     id: 'gpt5.3-codex',
@@ -424,7 +531,7 @@ export const models: Model[] = [
     priceInput: 1.50,
     priceOutput: 9.00,
     tags: ['general', 'vision', 'programming', 'reasoning'],
-    aliases: ['gemini-3.5-flash', 'auto-hard', 'auto-hard-task'],
+    aliases: ['gemini-3.5-flash'],
     released: '2026-05-20',
     popularity: 4
   },
@@ -437,7 +544,7 @@ export const models: Model[] = [
     priceInput: 1.50,
     priceOutput: 9.00,
     tags: ['general', 'vision', 'programming', 'reasoning'],
-    aliases: ['gemini-latest', 'auto-hard', 'auto-hard-task'],
+    aliases: ['gemini-latest'],
     released: '2026-05-20',
     popularity: 5
   },

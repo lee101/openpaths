@@ -361,7 +361,7 @@ func (r *Router) MaybeResolveAutoReasoning(ctx context.Context, prompt string) s
 		return ""
 	}
 
-	result, err := r.autoRouter.ResolveAuto(ctx, "think-task", prompt)
+	result, err := r.autoRouter.ResolveAuto(ctx, "reasoning-task", prompt)
 	if err != nil {
 		log.Printf("autorouter: %v, using default reasoning", err)
 		return ""

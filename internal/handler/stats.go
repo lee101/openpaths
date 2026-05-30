@@ -15,6 +15,7 @@ import (
 type StatsHandler struct {
 	statsQ *queries.StatsQueries
 	appQ   *queries.AppQueries
+	probeQ *queries.ModelProbeQueries
 }
 
 func (h *StatsHandler) HandleAppOGImage(ctx *fasthttp.RequestCtx) {
@@ -89,8 +90,43 @@ func (h *StatsHandler) HandleAppOGImage(ctx *fasthttp.RequestCtx) {
 	ctx.SetBodyString(svg)
 }
 
-func NewStatsHandler(statsQ *queries.StatsQueries, appQ *queries.AppQueries) *StatsHandler {
-	return &StatsHandler{statsQ: statsQ, appQ: appQ}
+func NewStatsHandler(statsQ *queries.StatsQueries, appQ *queries.AppQueries, probeQ *queries.ModelProbeQueries) *StatsHandler {
+	return &StatsHandler{statsQ: statsQ, appQ: appQ, probeQ: probeQ}
+}
+
+// HandleModelProbes handles GET /stats/model-probes.
+func (h *StatsHandler) HandleModelProbes(ctx *fasthttp.RequestCtx) {
+	if h.probeQ == nil {
+		writeError(ctx, 500, "server_error", "Model probes are not configured")
+		return
+	}
+
+	probes, err := h.probeQ.List(ctx)
+	if err != nil {
+		writeError(ctx, 500, "server_error", "Failed to get model probes")
+		return
+	}
+
+	var okCount, failCount int
+	for _, p := range probes {
+		if p.OK {
+			okCount++
+		} else {
+			failCount++
+		}
+	}
+
+	latest, _ := h.probeQ.LatestProbedAt(ctx)
+	setPublicStatsCache(ctx)
+	writeJSON(ctx, 200, map[string]any{
+		"probes": probes,
+		"summary": map[string]any{
+			"total":  len(probes),
+			"ok":     okCount,
+			"failed": failCount,
+		},
+		"latest_probed_at": latest,
+	})
 }
 
 // HandleModelStats handles GET /stats/models?period=24h.

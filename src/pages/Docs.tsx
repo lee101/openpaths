@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { BookOpen, Copy, Check, KeyRound } from 'lucide-react';
+import { BookOpen, Copy, Check, KeyRound, Play, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getAPIBaseURL, getStoredAPIKey } from '../lib/session';
 import { CodeBlock } from '../components/CodeBlock';
 import { Seo } from '../components/Seo';
+import { providers, FALLBACK_LOGO } from '../data/providers';
 
 const ENDPOINTS = [
   { method: 'POST', path: '/v1/chat/completions', description: 'OpenAI-compatible chat completions (streaming + tools).' },
@@ -12,6 +13,7 @@ const ENDPOINTS = [
   { method: 'POST', path: '/v1/images/generations', description: 'Generate images (GPT Image 2, Flux, RA1, Klein, and more).' },
   { method: 'POST', path: '/v1/images/edits', description: 'Edit images and image-to-image workflows (GPT Image 2, Grok Imagine Image).' },
   { method: 'POST', path: '/v1/3d/generations', description: 'Generate textured GLB models from image URLs with Pixal3D.' },
+  { method: 'POST', path: '/v1/3d/text-generations', description: 'Generate a GLB straight from a text prompt (auto image then Pixal3D).' },
   { method: 'POST', path: '/v1/videos/generations', description: 'Generate videos (Sora 2, Hailuo, Wan, LTX).' },
   { method: 'POST', path: '/v1/audio/transcriptions', description: 'Transcribe speech to text (Whisper, GPT-4o Transcribe).' },
   { method: 'POST', path: '/v1/audio/speech', description: 'Text-to-speech (xAI TTS, MiniMax Speech 2.8 HD).' },
@@ -20,7 +22,16 @@ const ENDPOINTS = [
   { method: 'POST', path: '/v1/embeddings', description: 'Generate vector embeddings (OpenPaths, Google Gemini, Mistral, Nemotron).' },
 ];
 
-type Tab = 'chat' | 'images' | '3d' | 'videos' | 'transcription';
+type Tab = 'chat' | 'images' | '3d' | 'text-to-3d' | 'videos' | 'transcription';
+
+const TAB_LABELS: Record<Tab, string> = {
+  chat: 'Chat',
+  images: 'Images',
+  '3d': '3D',
+  'text-to-3d': 'Text to 3D',
+  videos: 'Videos',
+  transcription: 'Transcription',
+};
 
 export function Docs() {
   const [apiKey, setApiKey] = useState(() => getStoredAPIKey());
@@ -59,10 +70,34 @@ export function Docs() {
           API Docs
         </div>
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">OpenAI And Anthropic SDK Compatible Docs</h1>
-        <p className="text-white/60 max-w-3xl font-light leading-relaxed">
+        <p className="text-white/60 max-w-3xl font-light leading-relaxed mb-6">
           Use the same base URL pattern for chat, images, video, music, speech, and models from either SDK. If you are signed in on this device,
           your API key is injected into the examples automatically. For framework-specific setup, see the <Link to="/integrations" className="text-white underline underline-offset-4">integrations guide</Link>.
         </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <Link
+            to="/playground"
+            className="inline-flex items-center gap-2 bg-white text-black px-4 py-2.5 rounded-lg text-sm font-mono font-bold hover:bg-white/90 transition-colors"
+            data-testid="docs-open-playground"
+          >
+            <Play className="w-4 h-4" /> Try it in the Playground
+          </Link>
+          {!apiKey && (
+            <Link
+              to="/account"
+              className="inline-flex items-center gap-2 border border-white/15 px-4 py-2.5 rounded-lg text-sm font-mono text-white/80 hover:text-white hover:border-white/30 transition-colors"
+              data-testid="docs-get-key"
+            >
+              <KeyRound className="w-4 h-4" /> Sign up for a free API key
+            </Link>
+          )}
+          <Link
+            to="/models"
+            className="inline-flex items-center gap-2 text-sm font-mono text-white/60 hover:text-white transition-colors"
+          >
+            Browse all models <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-6 mb-12">
@@ -83,16 +118,16 @@ export function Docs() {
           </div>
 
           <div className="flex gap-1 mb-4 border-b border-white/10">
-            {(['chat', 'images', '3d', 'videos', 'transcription'] as const).map(t => (
+            {(['chat', 'images', '3d', 'text-to-3d', 'videos', 'transcription'] as const).map(t => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
                 data-testid={`docs-tab-${t}`}
-                className={`px-3 py-2 text-xs font-mono capitalize transition-colors border-b-2 -mb-px ${
+                className={`px-3 py-2 text-xs font-mono transition-colors border-b-2 -mb-px ${
                   tab === t ? 'text-white border-white' : 'text-white/40 hover:text-white/70 border-transparent'
                 }`}
               >
-                {t}
+                {TAB_LABELS[t]}
               </button>
             ))}
           </div>
@@ -142,6 +177,16 @@ export function Docs() {
           )}
 
           <div className="rounded-xl border border-white/10 bg-black/40 p-4 mb-5">
+            <div className="text-xs font-mono text-white/40 mb-2">OpenPaths Auto (embedding-routed)</div>
+            <div className="space-y-1 text-sm text-white/70 font-mono mb-4" data-testid="docs-auto-models">
+              <div><code>openpaths/auto</code> — default chat; legacy <code>auto</code></div>
+              <div><code>openpaths/auto-code</code> — agents, refactors, bug fixes</div>
+              <div><code>openpaths/auto-fast</code> — low-latency chat (DeepSeek Flash)</div>
+              <div><code>openpaths/auto-cheap</code> — Nano / Flash Lite classifiers</div>
+              <div><code>openpaths/auto-reasoning</code> — planning, math, auto thinking depth</div>
+              <div><code>openpaths/auto-vision</code> — image understanding</div>
+              <div><code>openpaths/auto-image</code> — GPT Image 2, RA1 fallback</div>
+            </div>
             <div className="text-xs font-mono text-white/40 mb-2">Latest aliases</div>
             <div className="space-y-1 text-sm text-white/70 font-mono" data-testid="docs-latest-aliases">
               <div><code>openai-chat-latest</code>{' -> '}<code>gpt-5-chat-latest</code></div>
@@ -181,17 +226,30 @@ export function Docs() {
       <div className="border border-white/10 bg-white/[0.02] rounded-2xl p-6">
         <h2 className="text-xl font-bold tracking-tight mb-2">Provider guides</h2>
         <p className="text-sm text-white/60 font-light mb-5">
-          Each provider has its own endpoints and model list. Use these shortcuts to browse per-provider docs and examples.
+          Each provider has its own endpoints, default models, and copy-paste examples. Open a guide to see Python and cURL snippets,
+          then jump straight into the Playground to test any model.
         </p>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {['openai', 'anthropic', 'google', 'xai', 'deepseek', 'mistral', 'groq', 'together', 'openrouter', 'netwrck', 'text-generator', 'fal', 'minimax'].map(slug => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {providers.map(p => (
             <Link
-              key={slug}
-              to={`/${slug}/docs`}
-              className="rounded-xl border border-white/10 px-4 py-3 text-sm font-mono text-white/70 hover:text-white hover:border-white/30 transition-colors capitalize"
-              data-testid={`docs-provider-${slug}`}
+              key={p.slug}
+              to={`/${p.slug}/docs`}
+              className="group rounded-xl border border-white/10 bg-white/[0.01] p-4 hover:border-white/30 hover:bg-white/[0.04] transition-colors flex items-start gap-3"
+              data-testid={`docs-provider-${p.slug}`}
             >
-              /{slug}/docs
+              <img
+                src={p.logo || FALLBACK_LOGO}
+                alt=""
+                className="w-9 h-9 rounded-lg border border-white/10 bg-white/[0.04] p-1.5 object-contain shrink-0"
+              />
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm font-bold tracking-tight truncate">{p.name}</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-white/30 group-hover:text-white/70 transition-colors shrink-0" />
+                </div>
+                <div className="text-[11px] font-mono text-white/40 mb-1">/{p.slug}/docs</div>
+                <p className="text-xs text-white/50 leading-relaxed line-clamp-2">{p.description}</p>
+              </div>
             </Link>
           ))}
         </div>
@@ -213,6 +271,7 @@ client = OpenAI(
 response = client.chat.completions.create(
     model="openai-chat-latest",
     messages=[{"role": "user", "content": "Write a tiny SSE server in Go."}],
+    reasoning_effort="auto",  # none | low | medium | high | auto
 )
 
 print(response.choices[0].message.content)`,
@@ -270,6 +329,22 @@ result = client.post(
 )
 
 print(result["model_glb"]["url"])`,
+    'text-to-3d': `from openai import OpenAI
+
+client = OpenAI(base_url="${apiBase}", api_key="${exampleKey}")
+
+result = client.post(
+    "/3d/text-generations",
+    body={
+        "prompt": "A single ornate medieval longsword on a white background, 3D game asset",
+        "image_model": "openpaths/auto-image",
+        "texture_size": 1024,
+        "remesh": True,
+    },
+    cast_to=dict,
+)
+
+print(result["model_glb"]["url"])  # billed image price + Pixal3D price`,
     transcription: `from openai import OpenAI
 
 client = OpenAI(base_url="${apiBase}", api_key="${exampleKey}")
@@ -289,6 +364,7 @@ print(transcript.text)`,
   -H "Authorization: Bearer ${exampleKey}" \\
   -d '{
     "model": "openai-chat-latest",
+    "reasoning_effort": "auto",
     "messages": [
       {"role": "user", "content": "Write a tiny SSE server in Go."}
     ]
@@ -323,6 +399,15 @@ print(transcript.text)`,
     "texture_size": 1024,
     "remesh": true
   }'`,
+    'text-to-3d': `curl ${apiBase}/3d/text-generations \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer ${exampleKey}" \\
+  -d '{
+    "prompt": "A single ornate medieval longsword on a white background, 3D game asset",
+    "image_model": "openpaths/auto-image",
+    "texture_size": 1024,
+    "remesh": true
+  }'`,
     transcription: `curl ${apiBase}/audio/transcriptions \\
   -H "Authorization: Bearer ${exampleKey}" \\
   -F model=gpt-4o-transcribe \\
@@ -340,6 +425,7 @@ const client = new OpenAI({
 const response = await client.chat.completions.create({
   model: "openai-chat-latest",
   messages: [{ role: "user", content: "Write a tiny SSE server in Go." }],
+  reasoning_effort: "auto", // none | low | medium | high | auto
 });
 
 console.log(response.choices[0].message.content);`,
@@ -402,6 +488,22 @@ console.log((result.result ?? result).video_url);`,
 
 const result = await response.json();
 console.log(result.model_glb.url);`,
+    'text-to-3d': `const response = await fetch("${apiBase}/3d/text-generations", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: "Bearer ${exampleKey}",
+  },
+  body: JSON.stringify({
+    prompt: "A single ornate medieval longsword on a white background, 3D game asset",
+    image_model: "openpaths/auto-image",
+    texture_size: 1024,
+    remesh: true,
+  }),
+});
+
+const result = await response.json();
+console.log(result.model_glb.url); // billed image price + Pixal3D price`,
     transcription: `import OpenAI from "openai";
 import fs from "node:fs";
 
@@ -428,6 +530,7 @@ import (
 func main() {
 	body := []byte(\`{
   "model": "openai-chat-latest",
+  "reasoning_effort": "auto",
   "messages": [{"role": "user", "content": "Write a tiny SSE server in Go."}]
 }\`)
 
@@ -537,6 +640,36 @@ func main() {
 	out, _ := io.ReadAll(resp.Body)
 	fmt.Println(string(out))
 }`,
+    'text-to-3d': `package main
+
+import (
+	"bytes"
+	"fmt"
+	"io"
+	"net/http"
+)
+
+func main() {
+	body := []byte(\`{
+  "prompt": "A single ornate medieval longsword on a white background, 3D game asset",
+  "image_model": "openpaths/auto-image",
+  "texture_size": 1024,
+  "remesh": true
+}\`)
+
+	req, _ := http.NewRequest("POST", "${apiBase}/3d/text-generations", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer ${exampleKey}")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	out, _ := io.ReadAll(resp.Body)
+	fmt.Println(string(out))
+}`,
     transcription: `package main
 
 import (
@@ -594,6 +727,13 @@ func main() {
       javascript: javascript['3d'],
       go: go['3d'],
       curl: curl['3d'],
+    },
+    'text-to-3d': {
+      description: 'Prompt → auto image → textured GLB in one call. Billed image price + Pixal3D price.',
+      python: python['text-to-3d'],
+      javascript: javascript['text-to-3d'],
+      go: go['text-to-3d'],
+      curl: curl['text-to-3d'],
     },
     videos: {
       description: 'Generate video clips with Sora 2, Hailuo, Wan, and LTX.',

@@ -36,7 +36,22 @@
     <priority>0.5</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/tools</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/text-to-image</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/image-to-3d</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/text-to-3d</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -79,6 +94,81 @@
     <loc>https://openpaths.io/alternatives</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/prompts</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/prompts/category/coding-dev</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/prompts/category/art-illustration</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/prompts/category/logo-icon</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/prompts/category/graphic-design</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/prompts/category/productivity-writing</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/prompts/category/marketing-business</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/prompts/category/photography</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/prompts/category/video-motion</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/prompts/category/music-audio</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/prompts/type/text</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/prompts/type/image</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/prompts/type/video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/prompts/type/music</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/prompts/type/free</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/compare/gpt-5-5-vs-gpt-5-5-high</loc>
@@ -157,6 +247,11 @@
   </url>
   <url>
     <loc>https://openpaths.io/providers/openai</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/providers/cursor</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -262,6 +357,11 @@
   </url>
   <url>
     <loc>https://openpaths.io/openai/docs</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/cursor/docs</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -471,6 +571,11 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/models/text-to-3d</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/models/openpaths-embed</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -491,17 +596,42 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://openpaths.io/models/auto-easy-task</loc>
+    <loc>https://openpaths.io/models/openpaths%2Fauto</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://openpaths.io/models/auto-medium-task</loc>
+    <loc>https://openpaths.io/models/openpaths%2Fauto-code</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://openpaths.io/models/auto-think</loc>
+    <loc>https://openpaths.io/models/openpaths%2Fauto-fast</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/openpaths%2Fauto-cheap</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/openpaths%2Fauto-reasoning</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/openpaths%2Fauto-vision</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/openpaths%2Fauto-image</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/claude-opus-4-8</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -552,6 +682,16 @@
   </url>
   <url>
     <loc>https://openpaths.io/models/gpt-5-codex</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/composer-2.5</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/composer-2.5-fast</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>

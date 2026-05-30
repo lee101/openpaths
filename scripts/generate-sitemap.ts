@@ -21,7 +21,10 @@ const entries: SitemapEntry[] = [
   { path: '/docs', changefreq: 'weekly', priority: '0.8' },
   { path: '/integrations', changefreq: 'weekly', priority: '0.8' },
   { path: '/playground', changefreq: 'monthly', priority: '0.5' },
+  { path: '/tools', changefreq: 'weekly', priority: '0.8' },
+  { path: '/text-to-image', changefreq: 'monthly', priority: '0.7' },
   { path: '/image-to-3d', changefreq: 'monthly', priority: '0.7' },
+  { path: '/text-to-3d', changefreq: 'monthly', priority: '0.7' },
   { path: '/search', changefreq: 'monthly', priority: '0.7' },
   { path: '/art', changefreq: 'daily', priority: '0.7' },
   { path: '/stats', changefreq: 'weekly', priority: '0.6' },
@@ -30,6 +33,19 @@ const entries: SitemapEntry[] = [
   { path: '/compare', changefreq: 'weekly', priority: '0.8' },
   { path: '/blog', changefreq: 'weekly', priority: '0.8' },
   { path: '/alternatives', changefreq: 'weekly', priority: '0.8' },
+  // Prompt library directory (index + category/type sections). Individual prompt
+  // pages are also emitted by the server-side sitemap and discoverable via links.
+  { path: '/prompts', changefreq: 'weekly', priority: '0.8' },
+  ...['coding-dev', 'art-illustration', 'logo-icon', 'graphic-design', 'productivity-writing', 'marketing-business', 'photography', 'video-motion', 'music-audio'].map(slug => ({
+    path: `/prompts/category/${slug}`,
+    changefreq: 'weekly' as const,
+    priority: '0.7',
+  })),
+  ...['text', 'image', 'video', 'music', 'free'].map(slug => ({
+    path: `/prompts/type/${slug}`,
+    changefreq: 'weekly' as const,
+    priority: '0.7',
+  })),
   ...artificialAnalysisModels.slice(1, 12).map(model => ({
     path: `/compare/${encodeURIComponent(artificialAnalysisModels[0].slug)}-vs-${encodeURIComponent(model.slug)}`,
     changefreq: 'weekly' as const,

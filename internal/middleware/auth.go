@@ -23,6 +23,24 @@ func peekAuthHeader(ctx *fasthttp.RequestCtx) string {
 	return string(ctx.Request.Header.Peek("authorization"))
 }
 
+func peekBearerToken(ctx *fasthttp.RequestCtx) string {
+	authHeader := peekAuthHeader(ctx)
+	if strings.HasPrefix(authHeader, "Bearer ") {
+		return strings.TrimPrefix(authHeader, "Bearer ")
+	}
+	return ""
+}
+
+func peekSessionToken(ctx *fasthttp.RequestCtx) string {
+	if raw := peekBearerToken(ctx); raw != "" {
+		return raw
+	}
+	if v := ctx.Request.Header.Cookie("op_session"); len(v) > 0 {
+		return string(v)
+	}
+	return ""
+}
+
 // APIKeyAuth validates Bearer tokens or x-api-key header as API keys.
 func APIKeyAuth(apiKeyQ *queries.APIKeyQueries) Middleware {
 	return func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
@@ -49,6 +67,37 @@ func APIKeyAuth(apiKeyQ *queries.APIKeyQueries) Middleware {
 			ctx.SetUserValue(CtxKeyUserID, apiKey.UserID)
 			ctx.SetUserValue(CtxKeyAPIKey, apiKey)
 
+			next(ctx)
+		}
+	}
+}
+
+// DashboardAuth accepts OpenPaths API keys or dashboard JWTs (Bearer header or op_session cookie).
+func DashboardAuth(apiKeyQ *queries.APIKeyQueries, jwtService *auth.JWTService) Middleware {
+	return func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
+		return func(ctx *fasthttp.RequestCtx) {
+			raw := peekSessionToken(ctx)
+			if raw == "" {
+				writeAuthError(ctx, "Missing credentials", "missing_auth")
+				return
+			}
+			if strings.HasPrefix(raw, auth.APIKeyPrefix) {
+				apiKey, err := apiKeyQ.ValidateKey(ctx, auth.HashAPIKey(raw))
+				if err != nil {
+					writeAuthError(ctx, "Invalid API key", "invalid_api_key")
+					return
+				}
+				ctx.SetUserValue(CtxKeyUserID, apiKey.UserID)
+				ctx.SetUserValue(CtxKeyAPIKey, apiKey)
+				next(ctx)
+				return
+			}
+			claims, err := jwtService.Validate(raw)
+			if err != nil {
+				writeAuthError(ctx, "Invalid token", "invalid_token")
+				return
+			}
+			ctx.SetUserValue(CtxKeyUserID, claims.UserID)
 			next(ctx)
 		}
 	}

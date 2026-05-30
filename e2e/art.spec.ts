@@ -42,19 +42,23 @@ test.describe('ZImage Art Search', () => {
       contentType: 'application/json',
       body: JSON.stringify(fixtureItems),
     }));
+    // The DB-backed endpoints are unavailable in this fixture, so the page falls
+    // back to the static manifest index (mocked above).
     await page.route('/v1/art/search**', route => route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"not ready"}' }));
+    await page.route('/v1/art/list**', route => route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"not ready"}' }));
+    await page.route('/v1/art/tags**', route => route.fulfill({ status: 200, contentType: 'application/json', body: '{"tags":[]}' }));
   });
 
   test('loads indexed art and links prompts into the image playground', async ({ page }) => {
     await page.goto('/art');
 
-    await expect(page.getByRole('heading', { name: 'Search generated art by prompt' })).toBeVisible();
-    await expect(page.getByText('2 indexed prompts')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Search AI art by prompt' })).toBeVisible();
+    await expect(page.getByRole('article').filter({ hasText: 'Anime illustration of a lantern train station' })).toBeVisible();
 
     await page.getByPlaceholder('Search prompts, style, scene, character, mood...').fill('koi lantern');
     await expect(page.getByRole('article').filter({ hasText: 'Anime illustration of a lantern train station' })).toBeVisible();
 
-    await page.getByRole('link', { name: 'Try this prompt' }).click();
+    await page.getByRole('link', { name: 'Try prompt' }).first().click();
     await expect(page).toHaveURL(/\/playground\?model=zimage&prompt=/);
   });
 });

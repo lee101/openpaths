@@ -56,23 +56,66 @@ func sanitizeForOpenAI(req *model.ChatCompletionRequest) {
 	req.ChatTemplateKwargs = nil
 }
 
+// isReasoningModel reports whether the model is an OpenAI reasoning-class model
+// (o-series, or the GPT-5 family excluding the gpt-5-chat aliases). These
+// models reject the legacy max_tokens parameter and only accept the default
+// values for sampling parameters such as temperature and top_p.
+func isReasoningModel(m string) bool {
+	if strings.HasPrefix(m, "gpt-5-chat") {
+		// gpt-5-chat-latest is the conversational variant and supports the
+		// full set of sampling parameters.
+		return false
+	}
+	return strings.HasPrefix(m, "o1") || strings.HasPrefix(m, "o3") ||
+		strings.HasPrefix(m, "o4") || strings.HasPrefix(m, "gpt-5")
+}
+
 // normalizeMaxTokens converts max_tokens to max_completion_tokens for newer
 // OpenAI models (o-series, gpt-5.*) that reject the legacy parameter.
 func normalizeMaxTokens(req *model.ChatCompletionRequest) {
-	if req.MaxTokens != nil && req.MaxCompletionTokens == nil {
-		m := req.Model
-		if strings.HasPrefix(m, "o1") || strings.HasPrefix(m, "o3") || strings.HasPrefix(m, "o4") ||
-			strings.HasPrefix(m, "gpt-5.") || strings.HasPrefix(m, "gpt-5-codex") {
-			req.MaxCompletionTokens = req.MaxTokens
-			req.MaxTokens = nil
-		}
+	if req.MaxTokens != nil && req.MaxCompletionTokens == nil && isReasoningModel(req.Model) {
+		req.MaxCompletionTokens = req.MaxTokens
+		req.MaxTokens = nil
 	}
+}
+
+// normalizeSamplingParams drops sampling parameters that OpenAI reasoning
+// models reject. These models return a 400 such as "temperature does not
+// support 0.7 with this model. Only the default (1) value is supported." for
+// any non-default temperature, top_p, or penalty. Dropping them lets the API
+// apply its required defaults so a client using common defaults (e.g. the
+// Playground sending temperature 0.7) still works against every model.
+func normalizeSamplingParams(req *model.ChatCompletionRequest) {
+	if !isReasoningModel(req.Model) {
+		return
+	}
+	req.Temperature = nil
+	req.TopP = nil
+	req.PresencePenalty = nil
+	req.FrequencyPenalty = nil
+}
+
+// isRetryableStatus reports whether an upstream failure should let the router
+// fall back to the next candidate model/provider. Beyond the usual transient
+// 5xx/429 cases, some models (e.g. gpt-5-codex) are only served on the
+// /v1/responses endpoint and reject /v1/chat/completions with a 400. Treating
+// that specific 400 as retryable lets a configured fallback_models chain serve
+// the request through a chat-capable model instead of hard-failing.
+func isRetryableStatus(statusCode int, body string) bool {
+	if statusCode >= 500 || statusCode == 429 {
+		return true
+	}
+	if statusCode == 400 && strings.Contains(body, "v1/responses") {
+		return true
+	}
+	return false
 }
 
 func (p *OpenAIProvider) ChatCompletion(ctx context.Context, req *model.ChatCompletionRequest) (*model.ChatCompletionResponse, error) {
 	outReq := *req
 	outReq.ChatTemplateKwargs = cloneMap(req.ChatTemplateKwargs)
 	normalizeMaxTokens(&outReq)
+	normalizeSamplingParams(&outReq)
 	if p.sanitizeChat != nil {
 		p.sanitizeChat(&outReq)
 	}
@@ -106,7 +149,7 @@ func (p *OpenAIProvider) ChatCompletion(ctx context.Context, req *model.ChatComp
 			Provider:   p.providerName,
 			StatusCode: resp.StatusCode,
 			Message:    string(respBody),
-			Retryable:  resp.StatusCode >= 500 || resp.StatusCode == 429,
+			Retryable:  isRetryableStatus(resp.StatusCode, string(respBody)),
 		}
 	}
 
@@ -126,6 +169,7 @@ func (p *OpenAIProvider) ChatCompletionStream(ctx context.Context, req *model.Ch
 		outReq.StreamOptions = &model.StreamOptions{IncludeUsage: true}
 	}
 	normalizeMaxTokens(&outReq)
+	normalizeSamplingParams(&outReq)
 	if p.sanitizeChat != nil {
 		p.sanitizeChat(&outReq)
 	}
@@ -156,7 +200,7 @@ func (p *OpenAIProvider) ChatCompletionStream(ctx context.Context, req *model.Ch
 			Provider:   p.providerName,
 			StatusCode: resp.StatusCode,
 			Message:    string(respBody),
-			Retryable:  resp.StatusCode >= 500 || resp.StatusCode == 429,
+			Retryable:  isRetryableStatus(resp.StatusCode, string(respBody)),
 		}
 	}
 

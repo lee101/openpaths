@@ -108,6 +108,12 @@ func (e *Engine) DeductWithCachedInput(ctx context.Context, userID, modelID stri
 	return cost, nil
 }
 
+// ImageCost returns the cost (in hundredths-of-a-cent) of an image request
+// without deducting anything. Used for prechecks in multi-step pipelines.
+func (e *Engine) ImageCost(modelID string, outputImageCount, inputImageCount int, size string) (int64, error) {
+	return e.pricing.CalculateImageCostWithInputsAndSize(modelID, outputImageCount, inputImageCount, size)
+}
+
 // DeductImage calculates image generation cost and atomically deducts from balance.
 func (e *Engine) DeductImage(ctx context.Context, userID, modelID string, imageCount int, usageLogID string) (int64, error) {
 	return e.DeductImageWithInputs(ctx, userID, modelID, imageCount, 0, usageLogID)

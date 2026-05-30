@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Send, Plus, X, Settings, ChevronDown, Loader2, Trash2, Square, Copy, Check, Zap, RotateCcw, Code2, Share2, Wallet, Eye, Wrench, Volume2 } from 'lucide-react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Send, Plus, X, Settings, ChevronDown, Loader2, Trash2, Square, Copy, Check, Zap, RotateCcw, Code2, Share2, Wallet, Eye, Wrench, Volume2, Bookmark, BookmarkCheck } from 'lucide-react';
 import { CodeBlock as HighlightedCodeBlock } from '../components/CodeBlock';
 import { VIDEO_DEMOS, type VideoDemo } from '../data/videoDemos';
 import { prepareUploadFile } from '../lib/imageUpload';
 import { normalizeUploadedAssetUrl } from '../lib/uploadUrls';
+import { fetchPrompts, loadSavedPrompts, removeSavedPrompt, savePrompt, type SavedPrompt } from '../lib/promptLibrary';
+import type { LibraryPrompt } from '../data/promptLibrary';
 
 interface Message {
   role: 'system' | 'user' | 'assistant';
@@ -134,11 +136,13 @@ const TTS_ACCENTS = ['American (Gen)', 'British (RP)', 'Neutral', 'Australian', 
 const SPEECH_LANGUAGES = ['en', 'es', 'fr', 'de', 'it', 'pt', 'ja', 'ko', 'zh'] as const;
 
 const FALLBACK_MODELS: CatalogModel[] = [
-  { id: 'auto', label: 'Auto (intelligent routing)', provider: 'OpenPaths' },
-  { id: 'auto-image', label: 'Auto Image', provider: 'OpenPaths', pricing: { per_image: 0.04 } },
-  { id: 'auto-easy-task', label: 'Auto Easy (cheapest)', provider: 'OpenPaths' },
-  { id: 'auto-medium-task', label: 'Auto Medium (balanced)', provider: 'OpenPaths' },
-  { id: 'auto-think', label: 'Auto Think (reasoning)', provider: 'OpenPaths' },
+  { id: 'openpaths/auto', label: 'OpenPaths Auto (hero)', provider: 'OpenPaths' },
+  { id: 'openpaths/auto-code', label: 'OpenPaths Auto Code', provider: 'OpenPaths' },
+  { id: 'openpaths/auto-fast', label: 'OpenPaths Auto Fast', provider: 'OpenPaths' },
+  { id: 'openpaths/auto-cheap', label: 'OpenPaths Auto Cheap', provider: 'OpenPaths' },
+  { id: 'openpaths/auto-reasoning', label: 'OpenPaths Auto Reasoning', provider: 'OpenPaths' },
+  { id: 'openpaths/auto-vision', label: 'OpenPaths Auto Vision', provider: 'OpenPaths' },
+  { id: 'openpaths/auto-image', label: 'OpenPaths Auto Image', provider: 'OpenPaths', pricing: { per_image: 0.211 } },
   { id: 'gemini-latest', label: 'Gemini Latest', provider: 'Google', pricing: { input_per_1m_tokens: 1.50, output_per_1m_tokens: 9.00 } },
   { id: 'gemini-3.5-flash', label: 'Gemini 3.5 Flash', provider: 'Google', pricing: { input_per_1m_tokens: 1.50, output_per_1m_tokens: 9.00 } },
   { id: 'gemini-3.1-flash-lite', label: 'Gemini 3.1 Flash Lite', provider: 'Google', pricing: { input_per_1m_tokens: 0.25, output_per_1m_tokens: 1.50 } },
@@ -361,7 +365,7 @@ const PANE_HISTORY_PREFIX = 'op_pg_pane_';
 // Models excluded from the chat selector. Image models remain available since
 // the playground now routes them to /v1/images/generations automatically.
 const NON_CHAT_PATTERNS = /^(whisper|xai-stt|grok-voice|text-embedding|openpaths-embed|modernbert|mistral-embed|codestral-embed|nemotron-embed|gemini-embedding-001|gemini-embedding-2-preview|gemini-embedding-2|gpt-4o-transcribe|gpt-4o-mini-transcribe|distil-whisper|whisper-v3)/i;
-const IMAGE_MODEL_PATTERNS = /^(auto-image|flux|klein|ra1|zimage|glm-image|grok-imagine-image|gpt-image|fal-gpt-image|hidream|dall-e|stable-diffusion|sd3|ideogram|fal-ai\/flux-2-pro\/outpaint)/i;
+const IMAGE_MODEL_PATTERNS = /^(openpaths\/auto-image|auto-image|flux|klein|ra1|zimage|glm-image|grok-imagine-image|gpt-image|fal-gpt-image|hidream|dall-e|stable-diffusion|sd3|ideogram|fal-ai\/flux-2-pro\/outpaint)/i;
 const VIDEO_MODEL_PATTERNS = /^(auto-video|wan|ltx|hailuo|kling|luma|ra2v|sora|seedance)/i;
 const SPEECH_MODEL_PATTERNS = /(tts|speech-)/i;
 const MUSIC_MODEL_PATTERNS = /^(music-|lyria-)/i;
@@ -682,6 +686,7 @@ function MarkdownCodeBlock({ code, lang }: { code: string; lang: string; key?: R
       <HighlightedCodeBlock
         code={code}
         language={lang}
+        hideLabel
         preClassName="p-3 overflow-x-auto text-[13px] font-mono leading-relaxed text-white/80"
       />
     </div>
@@ -2160,6 +2165,35 @@ JSON`;
     sendToModel(paneId, pane.modelId, msgs);
   }
 
+  // Regenerate the turn at `index`. Whether the clicked message is the user
+  // prompt or the assistant reply, we re-send the conversation up to and
+  // including the preceding user message, dropping that turn's old output and
+  // anything after it (standard chat "regenerate" behaviour).
+  function retryMessage(paneId: string, index: number) {
+    const pane = panes.find(p => p.id === paneId);
+    if (!pane) return;
+    const ctrl = abortRefs.current.get(paneId);
+    if (ctrl) ctrl.abort();
+    const target = pane.messages[index];
+    if (!target) return;
+    // Cut point: keep everything strictly before the assistant reply. If the
+    // user clicked a user message, keep that message and drop what follows.
+    const cut = target.role === 'user' ? index + 1 : index;
+    const msgs = pane.messages.slice(0, cut);
+    if (!msgs.some(m => m.role === 'user')) return;
+    setPanes(prev => prev.map(p => p.id === paneId ? { ...p, messages: msgs, error: null } : p));
+    savePaneHistory(pane.modelId, msgs);
+    sendToModel(paneId, pane.modelId, msgs);
+  }
+
+  function deleteMessage(paneId: string, index: number) {
+    const pane = panes.find(p => p.id === paneId);
+    if (!pane) return;
+    const msgs = pane.messages.filter((_, i) => i !== index);
+    setPanes(prev => prev.map(p => p.id === paneId ? { ...p, messages: msgs } : p));
+    savePaneHistory(pane.modelId, msgs);
+  }
+
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -2172,7 +2206,7 @@ JSON`;
   return (
     <div className="flex flex-col h-full">
       {/* Toolbar */}
-      <div className="border-b border-white/10 px-4 py-2.5 flex items-center gap-2 bg-white/[0.02]">
+      <div className="border-b border-white/10 px-4 py-2.5 flex items-center gap-2 bg-white/[0.02] overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>*]:shrink-0">
         <button
           onClick={() => setShowSettings(!showSettings)}
           className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border transition-colors ${showSettings ? 'border-white/30 bg-white/10 text-white' : 'border-white/10 text-white/60 hover:text-white hover:border-white/20'}`}
@@ -2617,9 +2651,16 @@ JSON`;
                   videoDemo={VIDEO_DEMOS[pane.modelId]}
                 />
               ) : (
-                <div className="p-3 space-y-4">
+                <div className={`p-3 space-y-4 ${panes.length === 1 ? 'max-w-3xl mx-auto w-full' : ''}`}>
                   {pane.messages.map((msg, i) => (
-                    <MessageBubble key={i} message={msg} />
+                    <MessageBubble
+                      key={i}
+                      message={msg}
+                      streaming={pane.streaming}
+                      isLast={i === pane.messages.length - 1}
+                      onRetry={() => retryMessage(pane.id, i)}
+                      onDelete={() => deleteMessage(pane.id, i)}
+                    />
                   ))}
                   {pane.error && (
                     <div className="flex items-start gap-2">
@@ -2641,7 +2682,7 @@ JSON`;
 
       {/* Input */}
       <div className="border-t border-white/10 p-3 bg-white/[0.02]">
-        <div className="max-w-4xl mx-auto flex gap-2 items-end">
+        <div className={`mx-auto flex gap-2 items-end ${panes.length === 1 ? 'max-w-3xl' : 'max-w-4xl'}`}>
           <textarea
             ref={inputRef}
             value={input}
@@ -2657,6 +2698,11 @@ JSON`;
             data-testid="chat-input"
             className="flex-1 bg-black border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/10 resize-none overflow-y-hidden disabled:opacity-30 transition-colors"
             style={{ minHeight: '44px', maxHeight: '200px' }}
+          />
+          <SavePromptButton
+            text={input}
+            modelId={panes[0]?.modelId}
+            modality={primaryIsImage ? 'image' : primaryIsMusic ? 'music' : primaryIsVideo ? 'video' : 'text'}
           />
           {anyStreaming ? (
             <button
@@ -2765,7 +2811,28 @@ function GeminiSpeakerControls({
 }
 
 function EmptyState({ onPrompt, hasApiKey, isImage, isSpeech, isGeminiSpeech, isMusic, imageDemo, videoDemo }: { onPrompt: (text: string) => void; hasApiKey: boolean; isImage?: boolean; isSpeech?: boolean; isGeminiSpeech?: boolean; isMusic?: boolean; imageDemo?: ImageDemo; videoDemo?: VideoDemo }) {
-  const prompts = isMusic ? MUSIC_QUICK_PROMPTS : isGeminiSpeech ? GEMINI_TTS_QUICK_PROMPTS : isSpeech ? SPEECH_QUICK_PROMPTS : isImage ? IMAGE_QUICK_PROMPTS : QUICK_PROMPTS;
+  const fallback = isMusic ? MUSIC_QUICK_PROMPTS : isGeminiSpeech ? GEMINI_TTS_QUICK_PROMPTS : isSpeech ? SPEECH_QUICK_PROMPTS : isImage ? IMAGE_QUICK_PROMPTS : QUICK_PROMPTS;
+  const libType = isImage ? 'image' : isMusic ? 'music' : 'text';
+
+  const [libPrompts, setLibPrompts] = useState<LibraryPrompt[]>([]);
+  const [saved, setSaved] = useState<SavedPrompt[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchPrompts({ type: libType, limit: 24 }).then(res => {
+      if (!cancelled) setLibPrompts(res.results);
+    });
+    setSaved(loadSavedPrompts());
+    return () => {
+      cancelled = true;
+    };
+  }, [libType]);
+
+  // Library examples take priority; fall back to the bundled quick prompts.
+  const examples: { label: string; text: string }[] = libPrompts.length
+    ? libPrompts.map(p => ({ label: p.title, text: p.prompt }))
+    : fallback.map(p => ({ label: promptExampleLabel(p), text: promptExampleText(p) }));
+
   return (
     <div className="h-full flex flex-col items-center justify-center px-6 py-12">
       <div className="text-white/10 mb-6">
@@ -2799,16 +2866,58 @@ function EmptyState({ onPrompt, hasApiKey, isImage, isSpeech, isGeminiSpeech, is
             {imageDemo || videoDemo ? 'Verified sample output is loaded' : isMusic ? 'Describe a song or clip to generate' : isSpeech ? 'Enter text to synthesize' : isImage ? 'Describe an image to generate' : 'Try a prompt to get started'}
           </p>
           {!imageDemo && !videoDemo && (
-            <div className="flex flex-wrap gap-2 justify-center max-w-md">
-              {prompts.map((prompt, i) => (
-                <button
-                  key={i}
-                  onClick={() => onPrompt(promptExampleText(prompt))}
-                  className="text-xs font-mono text-white/40 border border-white/10 rounded-lg px-3 py-2 hover:border-white/25 hover:text-white/60 hover:bg-white/[0.02] transition-colors text-left"
-                >
-                  {promptExampleLabel(prompt)}
-                </button>
-              ))}
+            <div className="w-full max-w-md flex flex-col items-center gap-3">
+              {/* Examples select — sourced from the prompt library */}
+              <select
+                value=""
+                onChange={e => {
+                  const ex = examples[Number(e.target.value)];
+                  if (ex) onPrompt(ex.text);
+                }}
+                data-testid="example-select"
+                className="w-full bg-black border border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-white/60 focus:outline-none focus:border-white/30"
+              >
+                <option value="" disabled>Load an example prompt…</option>
+                {examples.map((ex, i) => (
+                  <option key={i} value={i}>{ex.label}</option>
+                ))}
+              </select>
+
+              <div className="flex flex-wrap gap-2 justify-center">
+                {examples.slice(0, 6).map((ex, i) => (
+                  <button
+                    key={i}
+                    onClick={() => onPrompt(ex.text)}
+                    className="text-xs font-mono text-white/40 border border-white/10 rounded-lg px-3 py-2 hover:border-white/25 hover:text-white/60 hover:bg-white/[0.02] transition-colors text-left"
+                  >
+                    {ex.label}
+                  </button>
+                ))}
+              </div>
+
+              {saved.length > 0 && (
+                <div className="w-full">
+                  <p className="text-[11px] font-mono uppercase tracking-wide text-white/25 mb-1.5">Saved prompts</p>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {saved.slice(0, 8).map(sp => (
+                      <span key={sp.id} className="group inline-flex items-center gap-1 text-xs font-mono text-white/45 border border-white/10 rounded-lg pl-3 pr-1.5 py-2 hover:border-white/25">
+                        <button onClick={() => onPrompt(sp.prompt)} className="hover:text-white/70">{sp.title}</button>
+                        <button
+                          onClick={() => setSaved(removeSavedPrompt(sp.id))}
+                          className="text-white/20 hover:text-white/60"
+                          title="Remove saved prompt"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <Link to={`/prompts${libType === 'text' ? '' : `/type/${libType}`}`} className="text-[11px] font-mono text-white/30 hover:text-white/60 transition-colors">
+                Browse the full prompt library →
+              </Link>
             </div>
           )}
         </>
@@ -2838,7 +2947,44 @@ function EmptyState({ onPrompt, hasApiKey, isImage, isSpeech, isGeminiSpeech, is
   );
 }
 
-function MessageBubble({ message }: { message: Message; key?: React.Key }) {
+// Saves the current composer text to the local "saved prompts" list, surfaced
+// back in the EmptyState examples and the prompt library.
+function SavePromptButton({ text, modelId, modality }: { text: string; modelId?: string; modality?: string }) {
+  const [done, setDone] = useState(false);
+  const disabled = !text.trim();
+  return (
+    <button
+      onClick={() => {
+        if (disabled) return;
+        const title = (text.trim().split('\n')[0] || 'Saved prompt').slice(0, 48);
+        savePrompt({ title, prompt: text.trim(), modelId, modality });
+        setDone(true);
+        window.setTimeout(() => setDone(false), 1600);
+      }}
+      disabled={disabled}
+      data-testid="chat-save-prompt"
+      title="Save this prompt"
+      className="border border-white/10 text-white/40 px-3 py-3 rounded-lg hover:text-white/70 hover:border-white/25 transition-colors disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
+    >
+      {done ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
+    </button>
+  );
+}
+
+function MessageBubble({
+  message,
+  streaming = false,
+  isLast = false,
+  onRetry,
+  onDelete,
+}: {
+  message: Message;
+  streaming?: boolean;
+  isLast?: boolean;
+  onRetry?: () => void;
+  onDelete?: () => void;
+  key?: React.Key;
+}) {
   const [copied, setCopied] = useState(false);
   const isUser = message.role === 'user';
   const imageSrc = message.imageB64
@@ -2847,6 +2993,9 @@ function MessageBubble({ message }: { message: Message; key?: React.Key }) {
   const audioSrc = message.audioB64
     ? `data:audio/${message.audioFormat || 'mpeg'};base64,${message.audioB64}`
     : message.audioUrl || null;
+  // Hide actions on the message that's still streaming in.
+  const isStreamingThis = streaming && isLast && !isUser;
+  const hasCopyable = !!message.content;
 
   const copy = () => {
     navigator.clipboard.writeText(message.content);
@@ -2854,11 +3003,55 @@ function MessageBubble({ message }: { message: Message; key?: React.Key }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // Action bar: visible by default on touch (no hover), reveal on hover for
+  // pointer devices. Keeps Retry/Delete reachable on mobile.
+  const actions = !isStreamingThis && (onRetry || onDelete || hasCopyable) ? (
+    <div
+      className={`flex items-center gap-0.5 pt-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 ${isUser ? 'justify-end' : ''}`}
+    >
+      {hasCopyable && (
+        <button
+          onClick={copy}
+          className="p-1.5 rounded-md text-white/30 hover:text-white hover:bg-white/10 transition-colors"
+          title="Copy message"
+          aria-label="Copy message"
+          data-testid="msg-copy"
+        >
+          {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+        </button>
+      )}
+      {onRetry && (
+        <button
+          onClick={onRetry}
+          disabled={streaming}
+          className="p-1.5 rounded-md text-white/30 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          title={isUser ? 'Resend from here' : 'Regenerate response'}
+          aria-label={isUser ? 'Resend from here' : 'Regenerate response'}
+          data-testid="msg-retry"
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+        </button>
+      )}
+      {onDelete && (
+        <button
+          onClick={onDelete}
+          disabled={streaming}
+          className="p-1.5 rounded-md text-white/30 hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          title="Delete message"
+          aria-label="Delete message"
+          data-testid="msg-delete"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+      )}
+    </div>
+  ) : null;
+
   return (
-    <div className={`group ${isUser ? 'flex justify-end' : ''}`}>
-      <div className={`relative ${isUser ? 'max-w-[85%]' : 'w-full'}`}>
+    <div className={`group ${isUser ? 'flex flex-col items-end' : ''}`}>
+      <div className={`${isUser ? 'max-w-[85%]' : 'w-full'}`}>
         {isUser ? (
-          <div className="bg-white/10 rounded-2xl rounded-br-sm px-4 py-2.5 text-sm leading-relaxed">
+          <div className="bg-white/10 rounded-2xl rounded-br-sm px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words">
             {message.content}
           </div>
         ) : (
@@ -2892,14 +3085,8 @@ function MessageBubble({ message }: { message: Message; key?: React.Key }) {
             {message.content && renderMarkdown(message.content)}
           </div>
         )}
-        <button
-          onClick={copy}
-          className="absolute -right-1 top-0 p-1 opacity-0 group-hover:opacity-100 transition-opacity text-white/20 hover:text-white/50"
-          title="Copy message"
-        >
-          {copied ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
-        </button>
       </div>
+      {actions}
     </div>
   );
 }

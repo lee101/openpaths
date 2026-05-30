@@ -9,6 +9,7 @@ export type ZImageArtItem = {
   thumbUrl?: string;
   width?: number;
   height?: number;
+  aspect?: string; // 'square' | 'portrait' | 'wide'
   model: string;
   seed?: number;
   steps?: number;
@@ -16,6 +17,14 @@ export type ZImageArtItem = {
   tags?: string[];
   createdAt?: string;
   score?: number;
+};
+
+export type ArtTagFacet = { tag: string; count: number };
+
+export type ArtListResponse = {
+  results: ZImageArtItem[];
+  total: number;
+  aspects: Record<string, number>;
 };
 
 export type ZImageArtChunk = {
