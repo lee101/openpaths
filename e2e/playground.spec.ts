@@ -67,6 +67,44 @@ test.describe('Playground Page', () => {
     await expect(page.locator('text=Sign in to start comparing models').first()).toBeVisible();
   });
 
+  test('delete button removes a single message from the conversation', async ({ page }) => {
+    await page.evaluate(() => {
+      localStorage.setItem('op_api_key', 'op-test-key');
+      localStorage.setItem('op_pg_pane_auto', JSON.stringify([
+        { role: 'user', content: 'first question' },
+        { role: 'assistant', content: 'first answer' },
+      ]));
+    });
+    await page.reload();
+
+    await expect(page.locator('text=first answer')).toBeVisible();
+    // Delete the assistant reply (second message).
+    await page.getByTestId('msg-delete').last().click();
+    await expect(page.locator('text=first answer')).not.toBeVisible();
+    await expect(page.locator('text=first question')).toBeVisible();
+    // Deletion persists to localStorage.
+    const stored = await page.evaluate(() => localStorage.getItem('op_pg_pane_auto'));
+    expect(stored).not.toContain('first answer');
+    expect(stored).toContain('first question');
+  });
+
+  test('retry on an assistant reply drops the old reply before regenerating', async ({ page }) => {
+    await page.evaluate(() => {
+      localStorage.setItem('op_api_key', 'op-test-key');
+      localStorage.setItem('op_pg_pane_auto', JSON.stringify([
+        { role: 'user', content: 'keep this prompt' },
+        { role: 'assistant', content: 'stale reply to regenerate' },
+      ]));
+    });
+    await page.reload();
+
+    await expect(page.locator('text=stale reply to regenerate')).toBeVisible();
+    await page.getByTestId('msg-retry').last().click();
+    // The old assistant reply is removed; the user prompt is preserved.
+    await expect(page.locator('text=stale reply to regenerate')).not.toBeVisible();
+    await expect(page.locator('text=keep this prompt')).toBeVisible();
+  });
+
   test('copy code panel highlights snippets and injects stored API key', async ({ page }) => {
     await page.evaluate(() => {
       localStorage.setItem('op_api_key', 'op-playground-code-key');

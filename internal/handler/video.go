@@ -67,7 +67,7 @@ func (h *VideoHandler) HandleVideoGeneration(ctx *fasthttp.RequestCtx) {
 	}
 	job, cached := h.jobs.getOrCreate(req)
 	if !cached {
-		go h.runVideoJob(job.ID, req, userID, apiKeyID)
+		go h.runVideoJob(job.ID, req, userID, apiKeyID, requestAppAttribution(ctx))
 	}
 	if async {
 		writeJSON(ctx, 202, videoJobPayload(job, cached))
@@ -145,7 +145,7 @@ func (h *VideoHandler) handleDurableVideoGeneration(ctx *fasthttp.RequestCtx, re
 		return
 	}
 	if created {
-		go h.runDurableVideoJob(job.ID, req, userID, apiKeyID)
+		go h.runDurableVideoJob(job.ID, req, userID, apiKeyID, requestAppAttribution(ctx))
 	}
 	if async {
 		writeJSON(ctx, 202, durableVideoJobPayload(job, !created))
@@ -200,13 +200,13 @@ func (h *VideoHandler) waitDurableVideoJob(jobID string, timeout time.Duration) 
 	}
 }
 
-func (h *VideoHandler) runDurableVideoJob(jobID string, req model.VideoGenerationRequest, userID, apiKeyID string) {
+func (h *VideoHandler) runDurableVideoJob(jobID string, req model.VideoGenerationRequest, userID, apiKeyID string, app requestApp) {
 	atomic.AddInt64(&activeVideoJobs, 1)
 	defer atomic.AddInt64(&activeVideoJobs, -1)
 	bg, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer cancel()
 	_ = h.jobQ.MarkRunning(bg, jobID)
-	result := h.executeVideoGeneration(bg, req, userID, apiKeyID)
+	result := h.executeVideoGeneration(bg, req, userID, apiKeyID, app)
 	if result.Response != nil && result.StatusCode < 400 {
 		body, _ := json.Marshal(result.Response)
 		_ = h.jobQ.Complete(context.Background(), jobID, body)
@@ -219,16 +219,16 @@ func (h *VideoHandler) runDurableVideoJob(jobID string, req model.VideoGeneratio
 	_ = h.jobQ.Fail(context.Background(), jobID, errType, result.ErrorMessage)
 }
 
-func (h *VideoHandler) runVideoJob(jobID string, req model.VideoGenerationRequest, userID, apiKeyID string) {
+func (h *VideoHandler) runVideoJob(jobID string, req model.VideoGenerationRequest, userID, apiKeyID string, app requestApp) {
 	atomic.AddInt64(&activeVideoJobs, 1)
 	defer atomic.AddInt64(&activeVideoJobs, -1)
 	h.jobs.markRunning(jobID)
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer cancel()
-	h.jobs.complete(jobID, h.executeVideoGeneration(ctx, req, userID, apiKeyID))
+	h.jobs.complete(jobID, h.executeVideoGeneration(ctx, req, userID, apiKeyID, app))
 }
 
-func (h *VideoHandler) executeVideoGeneration(ctx context.Context, req model.VideoGenerationRequest, userID, apiKeyID string) videoExecutionResult {
+func (h *VideoHandler) executeVideoGeneration(ctx context.Context, req model.VideoGenerationRequest, userID, apiKeyID string, app requestApp) videoExecutionResult {
 	originalModel := req.Model
 	autoResult := h.router.MaybeResolveAuto(ctx, req.Model, "video", req.Prompt)
 	candidates, err := h.router.ResolveForRequest(originalModel, autoResult.ModelID)
@@ -254,8 +254,8 @@ func (h *VideoHandler) executeVideoGeneration(ctx context.Context, req model.Vid
 				cand.Provider.Name(), cand.ModelCfg.ID, int(latency.Milliseconds()), err)
 			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 				if h.recorder != nil {
-					h.recorder.RecordError(userID, apiKeyID, originalModel, cand.Provider.Name(),
-						int(latency.Milliseconds()), 499, err.Error(), false)
+					h.recorder.RecordErrorWithApp(userID, apiKeyID, originalModel, cand.Provider.Name(),
+						int(latency.Milliseconds()), 499, err.Error(), false, app.ID, app.URL, app.Title, app.Categories)
 				}
 				return videoExecutionResult{StatusCode: 499, ErrorType: "request_canceled", ErrorMessage: "request canceled"}
 			}
@@ -266,16 +266,16 @@ func (h *VideoHandler) executeVideoGeneration(ctx context.Context, req model.Vid
 				errMsg = pe.Message
 				if !pe.Retryable {
 					if h.recorder != nil {
-						h.recorder.RecordError(userID, apiKeyID, originalModel, cand.Provider.Name(),
-							int(latency.Milliseconds()), statusCode, errMsg, false)
+						h.recorder.RecordErrorWithApp(userID, apiKeyID, originalModel, cand.Provider.Name(),
+							int(latency.Milliseconds()), statusCode, errMsg, false, app.ID, app.URL, app.Title, app.Categories)
 					}
 					return videoExecutionResult{StatusCode: statusCode, ErrorType: "provider_error", ErrorMessage: errMsg}
 				}
 			}
 			h.router.MarkModelUnhealthy(cand.Provider.Name(), cand.ModelCfg.ID)
 			if h.recorder != nil {
-				h.recorder.RecordError(userID, apiKeyID, originalModel, cand.Provider.Name(),
-					int(latency.Milliseconds()), statusCode, errMsg, false)
+				h.recorder.RecordErrorWithApp(userID, apiKeyID, originalModel, cand.Provider.Name(),
+					int(latency.Milliseconds()), statusCode, errMsg, false, app.ID, app.URL, app.Title, app.Categories)
 			}
 			if i < len(candidates)-1 {
 				log.Printf("video fallback: %s/%s -> %s/%s",
@@ -292,8 +292,8 @@ func (h *VideoHandler) executeVideoGeneration(ctx context.Context, req model.Vid
 			cost, _ = h.billing.DeductVideo(ctx, userID, cand.ModelCfg.ID, videoDurationSeconds(string(req.Duration)), len(req.VideoURLs) > 0, "")
 		}
 		if h.recorder != nil {
-			h.recorder.RecordSuccess(userID, apiKeyID, originalModel, cand.Provider.Name(),
-				0, 1, int(latency.Milliseconds()), 0, cost, false)
+			h.recorder.RecordSuccessWithApp(userID, apiKeyID, originalModel, cand.Provider.Name(),
+				0, 1, int(latency.Milliseconds()), 0, cost, false, app.ID, app.URL, app.Title, app.Categories)
 		}
 
 		return videoExecutionResult{Response: resp, StatusCode: 200}

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html"
 	"log"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -16,6 +17,7 @@ import (
 	fasthttprouter "github.com/fasthttp/router"
 	"github.com/valyala/fasthttp"
 
+	"github.com/openpaths/openpaths/internal/artindex"
 	"github.com/openpaths/openpaths/internal/audio"
 	"github.com/openpaths/openpaths/internal/auth"
 	"github.com/openpaths/openpaths/internal/billing"
@@ -26,6 +28,7 @@ import (
 	"github.com/openpaths/openpaths/internal/handler"
 	"github.com/openpaths/openpaths/internal/metrics"
 	"github.com/openpaths/openpaths/internal/middleware"
+	"github.com/openpaths/openpaths/internal/promptlib"
 	"github.com/openpaths/openpaths/internal/provider"
 	"github.com/openpaths/openpaths/internal/router"
 	"github.com/openpaths/openpaths/internal/storage"
@@ -51,6 +54,8 @@ type Dependencies struct {
 	StripeDepositQ   *queries.StripeDepositQueries
 	StripeReconciler *billing.Reconciler
 	StatsQ           *queries.StatsQueries
+	AppQ             *queries.AppQueries
+	ModelProbeQ      *queries.ModelProbeQueries
 	Transcribers     []provider.TranscriptionProvider
 	Embedders        []provider.EmbeddingProvider
 	AutoEmotion      *audio.AutoEmotion
@@ -65,6 +70,9 @@ type Dependencies struct {
 	VideoJobQ        *queries.VideoJobQueries
 	Model3DJobQ      *queries.Model3DJobQueries
 	OnRegister       handler.OnRegisterFunc
+	ArtIndex         *artindex.Service
+	ArtImageQ        *queries.ArtImageQueries
+	PromptIndex      *promptlib.Index
 }
 
 func New(deps *Dependencies) *Server {
@@ -72,13 +80,15 @@ func New(deps *Dependencies) *Server {
 
 	chatH := handler.NewChatHandler(deps.Router, deps.Billing, deps.Recorder, deps.UserQ, deps.ProviderKeyQ)
 	modelsH := handler.NewModelsHandler(deps.Router)
-	authH := handler.NewAuthHandler(deps.UserQ, deps.CreditQ, deps.APIKeyQ)
+	authH := handler.NewAuthHandler(deps.UserQ, deps.CreditQ, deps.APIKeyQ, deps.JWTService)
 	if deps.OnRegister != nil {
 		authH.SetOnRegister(deps.OnRegister)
 	}
 	accountH := handler.NewAccountHandler(deps.APIKeyQ, deps.CreditQ, deps.Billing, deps.StripeReconciler)
 	creditsH := handler.NewCreditsHandler(deps.Billing)
-	statsH := handler.NewStatsHandler(deps.StatsQ)
+	statsH := handler.NewStatsHandler(deps.StatsQ, deps.AppQ, deps.ModelProbeQ)
+	artH := handler.NewArtHandler(deps.ArtIndex, deps.ArtImageQ)
+	promptsH := handler.NewPromptsHandler(deps.PromptIndex)
 	acctStatsH := handler.NewAccountStatsHandler(deps.StatsQ)
 	adminH := handler.NewAdminHandler(deps.UserQ)
 
@@ -86,6 +96,7 @@ func New(deps *Dependencies) *Server {
 		middleware.Recovery(),
 		middleware.Logging(),
 		middleware.APIKeyAuth(deps.APIKeyQ),
+		middleware.AppAttribution(deps.AppQ),
 		middleware.BYOKLoader(deps.ProviderKeyQ),
 		middleware.RateLimit(),
 		middleware.BalanceCheck(deps.Billing),
@@ -96,15 +107,16 @@ func New(deps *Dependencies) *Server {
 		middleware.Recovery(),
 		middleware.Logging(),
 		middleware.APIKeyAuth(deps.APIKeyQ),
+		middleware.AppAttribution(deps.AppQ),
 		middleware.BYOKLoader(deps.ProviderKeyQ),
 		middleware.RateLimit(),
 	)
 
-	// accountChain: API key auth only — no balance check for account management
+	// accountChain: API key or dashboard JWT — no balance check for account management
 	accountChain := middleware.Chain(
 		middleware.Recovery(),
 		middleware.Logging(),
-		middleware.APIKeyAuth(deps.APIKeyQ),
+		middleware.DashboardAuth(deps.APIKeyQ, deps.JWTService),
 	)
 
 	publicChain := middleware.Chain(
@@ -141,6 +153,12 @@ func New(deps *Dependencies) *Server {
 	r.GET("/v1/3d/generations/{job_id}", apiKeyChain(model3DH.HandleModel3DGenerationJob))
 	r.GET("/v1/3d/generations/{job_id}/status", apiKeyChain(model3DH.HandleModel3DGenerationJob))
 	log.Printf("3D generation endpoint enabled")
+
+	textTo3DH := handler.NewTextTo3DHandler(imageH, model3DH, deps.Billing)
+	r.POST("/v1/3d/text-generations", trackLongRequest(apiKeyChain(textTo3DH.HandleTextTo3DGeneration)))
+	r.GET("/v1/3d/text-generations/{job_id}", apiKeyChain(textTo3DH.HandleTextTo3DGenerationJob))
+	r.GET("/v1/3d/text-generations/{job_id}/status", apiKeyChain(textTo3DH.HandleTextTo3DGenerationJob))
+	log.Printf("Text-to-3D generation endpoint enabled")
 
 	videoH := handler.NewVideoHandler(deps.Router, deps.Billing, deps.Recorder, deps.VideoJobQ)
 	r.POST("/v1/videos/generations", trackLongRequest(apiKeyChain(videoH.HandleVideoGeneration)))
@@ -196,6 +214,8 @@ func New(deps *Dependencies) *Server {
 		r.DELETE("/account/provider-keys", accountChain(pkH.HandleDelete))
 		openAIAuthH := handler.NewOpenAIOAuthHandler(deps.ProviderKeyQ)
 		r.POST("/account/openai/start", accountChain(openAIAuthH.HandleStart))
+		r.POST("/account/openai/device/start", accountChain(openAIAuthH.HandleDeviceStart))
+		r.POST("/account/openai/device/poll", accountChain(openAIAuthH.HandleDevicePoll))
 		r.GET("/account/openai/callback", publicChain(openAIAuthH.HandleCallback))
 		log.Printf("BYOK provider keys endpoints enabled")
 	}
@@ -227,10 +247,30 @@ func New(deps *Dependencies) *Server {
 	}
 
 	r.GET("/stats/models", publicChain(statsH.HandleModelStats))
+	r.GET("/stats/model-probes", publicChain(statsH.HandleModelProbes))
 	r.GET("/stats/providers", publicChain(statsH.HandleProviderStats))
 	r.GET("/stats/breakdown", publicChain(statsH.HandleUsageBreakdown))
 	r.GET("/stats/timeseries", publicChain(statsH.HandleTimeSeries))
 	r.GET("/stats/models/timeseries", publicChain(statsH.HandleModelDailyUsage))
+	r.GET("/stats/apps/{slug}", publicChain(statsH.HandleAppDetailStats))
+	r.GET("/stats/apps", publicChain(statsH.HandleAppStats))
+	r.GET("/og/apps/{slug}.svg", publicChain(statsH.HandleAppOGImage))
+	r.GET("/art/search", publicChain(artH.HandleSearch))
+	r.GET("/art/status", publicChain(artH.HandleStatus))
+	r.GET("/art/list", publicChain(artH.HandleList))
+	r.GET("/art/item", publicChain(artH.HandleItem))
+	r.GET("/art/tags", publicChain(artH.HandleTags))
+	r.GET("/v1/art/search", publicChain(artH.HandleSearch))
+	r.GET("/v1/art/status", publicChain(artH.HandleStatus))
+	r.GET("/v1/art/list", publicChain(artH.HandleList))
+	r.GET("/v1/art/item", publicChain(artH.HandleItem))
+	r.GET("/v1/art/tags", publicChain(artH.HandleTags))
+
+	// Prompt library (the /prompts directory). Read-only, public, gobed-powered search.
+	// Served under /v1 only so the client-side /prompts SPA routes are untouched.
+	r.GET("/v1/prompts", publicChain(promptsH.HandleList))
+	r.GET("/v1/prompts/meta", publicChain(promptsH.HandleMeta))
+	r.GET("/v1/prompts/{slug}", publicChain(promptsH.HandleGet))
 
 	r.GET("/account/stats/timeseries", accountChain(acctStatsH.HandleUserTimeSeries))
 	r.GET("/account/stats/by-api-key", accountChain(acctStatsH.HandleUserSpendByAPIKey))
@@ -295,7 +335,28 @@ func New(deps *Dependencies) *Server {
 	})
 	r.POST("/monitoring/frontend-errors", publicChain(handleFrontendErrorReport))
 
+	// Sitemap index: references the static pages sitemap plus the DB-backed art
+	// tag + image sitemaps (paged, because the art catalog exceeds the 50k/url limit).
 	r.GET("/sitemap.xml", func(ctx *fasthttp.RequestCtx) {
+		const base = "https://openpaths.io"
+		var b strings.Builder
+		b.WriteString(`<?xml version="1.0" encoding="UTF-8"?>` + "\n")
+		b.WriteString(`<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` + "\n")
+		fmt.Fprintf(&b, "  <sitemap>\n    <loc>%s/sitemap-pages.xml</loc>\n  </sitemap>\n", base)
+		fmt.Fprintf(&b, "  <sitemap>\n    <loc>%s/sitemap-art-tags.xml</loc>\n  </sitemap>\n", base)
+		for p := 1; p <= artH.ArtSitemapPages(ctx); p++ {
+			fmt.Fprintf(&b, "  <sitemap>\n    <loc>%s/sitemap-art.xml?p=%d</loc>\n  </sitemap>\n", base, p)
+		}
+		b.WriteString("</sitemapindex>\n")
+		ctx.SetContentType("text/xml; charset=utf-8")
+		ctx.SetStatusCode(200)
+		ctx.SetBodyString(b.String())
+	})
+	r.GET("/sitemap-art-tags.xml", publicChain(artH.HandleSitemapTags))
+	r.GET("/sitemap-art.xml", publicChain(artH.HandleSitemapImages))
+
+	// Static pages sitemap (previously the root sitemap): core pages, blog, prompts.
+	r.GET("/sitemap-pages.xml", func(ctx *fasthttp.RequestCtx) {
 		if staticDir := deps.Config.Server.StaticDir; staticDir != "" {
 			if data, err := os.ReadFile(filepath.Join(staticDir, "sitemap.xml")); err == nil {
 				ctx.SetContentType("application/xml; charset=utf-8")
@@ -312,10 +373,16 @@ func New(deps *Dependencies) *Server {
 			{"/models", "0.9", "weekly"},
 			{"/providers", "0.8", "weekly"},
 			{"/stats", "0.7", "daily"},
+			{"/apps", "0.7", "daily"},
 			{"/docs", "0.9", "weekly"},
 			{"/integrations", "0.9", "weekly"},
 			{"/playground", "0.7", "monthly"},
+			{"/tools", "0.8", "weekly"},
+			{"/text-to-image", "0.7", "monthly"},
+			{"/image-to-3d", "0.7", "monthly"},
+			{"/text-to-3d", "0.7", "monthly"},
 			{"/search", "0.7", "monthly"},
+			{"/art", "0.7", "daily"},
 			{"/blog", "0.8", "weekly"},
 		}
 		blogSlugs := []string{
@@ -356,6 +423,15 @@ func New(deps *Dependencies) *Server {
 		for _, slug := range blogSlugs {
 			fmt.Fprintf(&b, "  <url>\n    <loc>%s/blog/%s</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.7</priority>\n  </url>\n", base, slug)
 		}
+		for _, p := range promptlib.SitemapPaths() {
+			priority := "0.6"
+			if p == "/prompts" {
+				priority = "0.8"
+			} else if strings.HasPrefix(p, "/prompts/category/") || strings.HasPrefix(p, "/prompts/model/") || strings.HasPrefix(p, "/prompts/type/") {
+				priority = "0.7"
+			}
+			fmt.Fprintf(&b, "  <url>\n    <loc>%s%s</loc>\n    <changefreq>weekly</changefreq>\n    <priority>%s</priority>\n  </url>\n", base, p, priority)
+		}
 		b.WriteString("</urlset>\n")
 		ctx.SetContentType("text/xml; charset=utf-8")
 		ctx.SetStatusCode(200)
@@ -364,7 +440,7 @@ func New(deps *Dependencies) *Server {
 
 	handler := r.Handler
 	if staticDir := deps.Config.Server.StaticDir; staticDir != "" {
-		handler = spaHandler(staticDir, r.Handler, deps.APIKeyQ, deps.UserQ)
+		handler = spaHandler(staticDir, r.Handler, deps.APIKeyQ, deps.UserQ, deps.JWTService, deps.ArtImageQ)
 		log.Printf("Serving frontend from %s", staticDir)
 	}
 
@@ -405,7 +481,17 @@ func trackLongRequest(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 	}
 }
 
-func spaHandler(dir string, api fasthttp.RequestHandler, apiKeyQ *queries.APIKeyQueries, userQ *queries.UserQueries) fasthttp.RequestHandler {
+// artAPIPaths are the bare /art/* endpoints that must hit the API (not the SPA).
+// /art, /art/i/:slug and /art/tag/:slug are SPA routes and must NOT be listed here.
+func isArtAPIPath(path string) bool {
+	switch path {
+	case "/art/search", "/art/status", "/art/list", "/art/item", "/art/tags":
+		return true
+	}
+	return false
+}
+
+func spaHandler(dir string, api fasthttp.RequestHandler, apiKeyQ *queries.APIKeyQueries, userQ *queries.UserQueries, jwtService *auth.JWTService, artMetaQ *queries.ArtImageQueries) fasthttp.RequestHandler {
 	fs := &fasthttp.FS{
 		Root:       dir,
 		IndexNames: []string{"index.html"},
@@ -426,19 +512,27 @@ func spaHandler(dir string, api fasthttp.RequestHandler, apiKeyQ *queries.APIKey
 			strings.HasPrefix(path, "/crypto/") ||
 			strings.HasPrefix(path, "/stripe/") ||
 			strings.HasPrefix(path, "/stats/") ||
+			isArtAPIPath(path) ||
+			strings.HasPrefix(path, "/og/") ||
 			strings.HasPrefix(path, "/admin/") ||
 			strings.HasPrefix(path, "/uploads/") ||
 			strings.HasPrefix(path, "/openrouter/") ||
 			strings.HasPrefix(path, "/monitoring/") ||
 			path == "/health" ||
-			path == "/sitemap.xml" {
+			strings.HasPrefix(path, "/sitemap") {
 			api(ctx)
 			return
+		}
+		resolveMeta := func() pageMeta {
+			if m, ok := resolveArtMeta(ctx, artMetaQ, path); ok {
+				return m
+			}
+			return pageMetaForPath(path)
 		}
 		if isSPARoute(path) && indexData != nil {
 			ctx.SetStatusCode(200)
 			ctx.SetContentType("text/html; charset=utf-8")
-			ctx.SetBody(injectUserData(injectPageMeta(indexData, path), ctx, apiKeyQ, userQ))
+			ctx.SetBody(injectUserData(injectPageMeta(indexData, resolveMeta()), ctx, apiKeyQ, userQ, jwtService))
 			return
 		}
 		fsHandler(ctx)
@@ -450,13 +544,64 @@ func spaHandler(dir string, api fasthttp.RequestHandler, apiKeyQ *queries.APIKey
 			ctx.Response.Reset()
 			ctx.SetStatusCode(200)
 			ctx.SetContentType("text/html; charset=utf-8")
-			ctx.SetBody(injectUserData(injectPageMeta(indexData, path), ctx, apiKeyQ, userQ))
+			ctx.SetBody(injectUserData(injectPageMeta(indexData, resolveMeta()), ctx, apiKeyQ, userQ, jwtService))
 		} else if ctx.Response.StatusCode() == fasthttp.StatusOK && strings.HasSuffix(path, ".html") || path == "/" {
 			// Also inject on direct index.html hits
-			body := injectPageMeta(ctx.Response.Body(), path)
-			ctx.Response.SetBody(injectUserData(body, ctx, apiKeyQ, userQ))
+			body := injectPageMeta(ctx.Response.Body(), resolveMeta())
+			ctx.Response.SetBody(injectUserData(body, ctx, apiKeyQ, userQ, jwtService))
 		}
 	}
+}
+
+// resolveArtMeta produces crawler-visible meta for art detail (/art/i/:slug) and
+// tag (/art/tag/:slug) pages from the DB so each has a unique title/description/og:image.
+func resolveArtMeta(ctx *fasthttp.RequestCtx, q *queries.ArtImageQueries, path string) (pageMeta, bool) {
+	const base = "https://openpaths.io"
+	if rest := strings.TrimPrefix(path, "/art/i/"); rest != path {
+		slug := strings.Trim(rest, "/")
+		if dec, err := url.PathUnescape(slug); err == nil {
+			slug = dec
+		}
+		if slug == "" || q == nil {
+			return pageMeta{}, false
+		}
+		item, err := q.GetBySlug(ctx, slug)
+		if err != nil || item == nil {
+			return pageMeta{}, false
+		}
+		prompt := strings.Join(strings.Fields(item.Prompt), " ")
+		title := truncateMeta(prompt, 70)
+		return pageMeta{
+			Title:       title + " | AI Art Prompt | OpenPaths",
+			Description: "AI-generated art for the prompt: " + truncateMeta(prompt, 150) + ". Search thousands of prompts and try them in the OpenPaths playground.",
+			URL:         base + "/art/i/" + url.PathEscape(slug),
+			Image:       item.ImageURL,
+		}, true
+	}
+	if rest := strings.TrimPrefix(path, "/art/tag/"); rest != path {
+		tag := strings.Trim(rest, "/")
+		if dec, err := url.PathUnescape(tag); err == nil {
+			tag = dec
+		}
+		if tag == "" {
+			return pageMeta{}, false
+		}
+		display := strings.Title(strings.ReplaceAll(tag, "-", " ")) //nolint:staticcheck
+		return pageMeta{
+			Title:       display + " AI Art Prompts | OpenPaths",
+			Description: "Browse AI-generated " + tag + " art and prompts. Search by visual intent and try any prompt against OpenPaths image models.",
+			URL:         base + "/art/tag/" + url.PathEscape(tag),
+		}, true
+	}
+	return pageMeta{}, false
+}
+
+func truncateMeta(s string, max int) string {
+	runes := []rune(s)
+	if len(runes) <= max {
+		return s
+	}
+	return strings.TrimSpace(string(runes[:max])) + "…"
 }
 
 func handleFrontendErrorReport(ctx *fasthttp.RequestCtx) {
@@ -511,6 +656,9 @@ func isSPARoute(path string) bool {
 	if path == "" || path == "/" {
 		return false
 	}
+	if path == "/compare" || strings.HasPrefix(path, "/compare/") {
+		return true
+	}
 	base := path
 	if i := strings.LastIndexByte(base, '/'); i >= 0 {
 		base = base[i+1:]
@@ -522,10 +670,10 @@ type pageMeta struct {
 	Title       string
 	Description string
 	URL         string
+	Image       string
 }
 
-func injectPageMeta(doc []byte, path string) []byte {
-	meta := pageMetaForPath(path)
+func injectPageMeta(doc []byte, meta pageMeta) []byte {
 	if meta.Title == "" || meta.Description == "" || meta.URL == "" {
 		return doc
 	}
@@ -542,6 +690,12 @@ func injectPageMeta(doc []byte, path string) []byte {
 		{`(?is)<meta\s+name=["']twitter:title["']\s+content=["'][^"']*["']\s*/?>`, fmt.Sprintf(`<meta name="twitter:title" content="%s" />`, html.EscapeString(meta.Title))},
 		{`(?is)<meta\s+name=["']twitter:description["']\s+content=["'][^"']*["']\s*/?>`, fmt.Sprintf(`<meta name="twitter:description" content="%s" />`, html.EscapeString(meta.Description))},
 		{`(?is)<link\s+rel=["']canonical["']\s+href=["'][^"']*["']\s*/?>`, fmt.Sprintf(`<link rel="canonical" href="%s" />`, html.EscapeString(meta.URL))},
+	}
+	if meta.Image != "" {
+		replacements = append(replacements,
+			struct{ pattern, value string }{`(?is)<meta\s+property=["']og:image["']\s+content=["'][^"']*["']\s*/?>`, fmt.Sprintf(`<meta property="og:image" content="%s" />`, html.EscapeString(meta.Image))},
+			struct{ pattern, value string }{`(?is)<meta\s+name=["']twitter:image["']\s+content=["'][^"']*["']\s*/?>`, fmt.Sprintf(`<meta name="twitter:image" content="%s" />`, html.EscapeString(meta.Image))},
+		)
 	}
 
 	out := string(doc)
@@ -568,11 +722,47 @@ func pageMetaForPath(path string) pageMeta {
 			Description: "OpenPaths keeps AI pricing as close to zero markup as practical, makes money from first-party AI services, and supports transparent pay-as-you-go pricing across text, embeddings, image, and video models.",
 			URL:         "https://openpaths.io/pricing",
 		}
+	case "/evals":
+		return pageMeta{
+			Title:       "AI Model Evals, Pricing, and Speed | OpenPaths",
+			Description: "Compare frontier AI model intelligence, coding, agentic performance, speed, and token pricing using the OpenPaths Artificial Analysis benchmark snapshot.",
+			URL:         "https://openpaths.io/evals",
+		}
+	case "/compare":
+		return pageMeta{
+			Title:       "Compare AI Models by Evals, Speed, and Price | OpenPaths",
+			Description: "Compare frontier AI models head-to-head using Artificial Analysis evals, pricing, context windows, speed, and benchmark run costs.",
+			URL:         "https://openpaths.io/compare",
+		}
 	case "/stats":
 		return pageMeta{
 			Title:       "OpenPaths Stats | AI Model Usage",
 			Description: "Daily model usage and public OpenPaths request breakdowns.",
 			URL:         "https://openpaths.io/stats",
+		}
+	case "/art":
+		return pageMeta{
+			Title:       "AI Art Prompt Search | OpenPaths",
+			Description: "Search a huge library of AI-generated art by prompt, style, scene, mood, and aspect ratio (square, portrait, wide). Browse subtags and try any prompt in the OpenPaths playground.",
+			URL:         "https://openpaths.io/art",
+		}
+	case "/tools":
+		return pageMeta{
+			Title:       "Tools | OpenPaths",
+			Description: "First-party OpenPaths tools: text-to-image, image-to-3D, text-to-3D, and the multi-model playground. Each tool has its own API.",
+			URL:         "https://openpaths.io/tools",
+		}
+	case "/text-to-image":
+		return pageMeta{
+			Title:       "Text to Image API | OpenPaths",
+			Description: "Generate images from text with the OpenPaths auto image endpoint — routes to GPT Image 2, RA1, Flux, and more with near-zero markup.",
+			URL:         "https://openpaths.io/text-to-image",
+		}
+	case "/text-to-3d":
+		return pageMeta{
+			Title:       "Text to 3D API | OpenPaths",
+			Description: "Generate textured GLB models straight from a text prompt. OpenPaths auto-generates an image then converts it to 3D with Pixal3D.",
+			URL:         "https://openpaths.io/text-to-3d",
 		}
 	case "/alternatives":
 		return pageMeta{
@@ -581,6 +771,13 @@ func pageMetaForPath(path string) pageMeta {
 			URL:         "https://openpaths.io/alternatives",
 		}
 	default:
+		if strings.HasPrefix(path, "/compare/") {
+			return pageMeta{
+				Title:       "AI Model Comparison | OpenPaths",
+				Description: "Head-to-head AI model comparison with evals, pricing, context windows, speed, and benchmark run costs.",
+				URL:         "https://openpaths.io" + path,
+			}
+		}
 		return pageMeta{
 			Title:       "OpenPaths - The Open Source Model Router",
 			Description: "Search and we shall find. Neural learned paths for 1ms routing across 432+ large model providers and art generators. Try Open Pathways.",
@@ -590,16 +787,30 @@ func pageMetaForPath(path string) pageMeta {
 }
 
 // injectUserData reads the op_session cookie and injects window.userData into index.html.
-func injectUserData(html []byte, ctx *fasthttp.RequestCtx, apiKeyQ *queries.APIKeyQueries, userQ *queries.UserQueries) []byte {
+func injectUserData(html []byte, ctx *fasthttp.RequestCtx, apiKeyQ *queries.APIKeyQueries, userQ *queries.UserQueries, jwtService *auth.JWTService) []byte {
 	sessionKey := string(ctx.Request.Header.Cookie("op_session"))
 	if sessionKey == "" {
 		return html
 	}
-	apiKey, err := apiKeyQ.ValidateKey(ctx, auth.HashAPIKey(sessionKey))
-	if err != nil {
+
+	var userID string
+	if strings.HasPrefix(sessionKey, auth.APIKeyPrefix) {
+		apiKey, err := apiKeyQ.ValidateKey(ctx, auth.HashAPIKey(sessionKey))
+		if err != nil {
+			return html
+		}
+		userID = apiKey.UserID
+	} else if jwtService != nil {
+		claims, err := jwtService.Validate(sessionKey)
+		if err != nil {
+			return html
+		}
+		userID = claims.UserID
+	} else {
 		return html
 	}
-	user, err := userQ.GetByID(ctx, apiKey.UserID)
+
+	user, err := userQ.GetByID(ctx, userID)
 	if err != nil {
 		return html
 	}

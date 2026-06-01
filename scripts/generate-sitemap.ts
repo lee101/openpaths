@@ -2,6 +2,8 @@ import { writeFileSync } from 'node:fs';
 import { posts } from '../src/data/blog';
 import { models } from '../src/data/models';
 import { providers } from '../src/data/providers';
+import { artificialAnalysisModels } from '../src/lib/artificialAnalysis';
+import { seedApps } from '../src/data/seedApps';
 
 const BASE_URL = 'https://openpaths.io';
 
@@ -19,10 +21,36 @@ const entries: SitemapEntry[] = [
   { path: '/docs', changefreq: 'weekly', priority: '0.8' },
   { path: '/integrations', changefreq: 'weekly', priority: '0.8' },
   { path: '/playground', changefreq: 'monthly', priority: '0.5' },
+  { path: '/tools', changefreq: 'weekly', priority: '0.8' },
+  { path: '/text-to-image', changefreq: 'monthly', priority: '0.7' },
   { path: '/image-to-3d', changefreq: 'monthly', priority: '0.7' },
+  { path: '/text-to-3d', changefreq: 'monthly', priority: '0.7' },
   { path: '/search', changefreq: 'monthly', priority: '0.7' },
+  { path: '/art', changefreq: 'daily', priority: '0.7' },
+  { path: '/stats', changefreq: 'weekly', priority: '0.6' },
+  { path: '/apps/', changefreq: 'daily', priority: '0.7' },
+  { path: '/evals', changefreq: 'weekly', priority: '0.8' },
+  { path: '/compare', changefreq: 'weekly', priority: '0.8' },
   { path: '/blog', changefreq: 'weekly', priority: '0.8' },
   { path: '/alternatives', changefreq: 'weekly', priority: '0.8' },
+  // Prompt library directory (index + category/type sections). Individual prompt
+  // pages are also emitted by the server-side sitemap and discoverable via links.
+  { path: '/prompts', changefreq: 'weekly', priority: '0.8' },
+  ...['coding-dev', 'art-illustration', 'logo-icon', 'graphic-design', 'productivity-writing', 'marketing-business', 'photography', 'video-motion', 'music-audio'].map(slug => ({
+    path: `/prompts/category/${slug}`,
+    changefreq: 'weekly' as const,
+    priority: '0.7',
+  })),
+  ...['text', 'image', 'video', 'music', 'free'].map(slug => ({
+    path: `/prompts/type/${slug}`,
+    changefreq: 'weekly' as const,
+    priority: '0.7',
+  })),
+  ...artificialAnalysisModels.slice(1, 12).map(model => ({
+    path: `/compare/${encodeURIComponent(artificialAnalysisModels[0].slug)}-vs-${encodeURIComponent(model.slug)}`,
+    changefreq: 'weekly' as const,
+    priority: '0.7',
+  })),
   ...providers.map(provider => ({
     path: `/providers/${encodeURIComponent(provider.slug)}`,
     changefreq: 'weekly' as const,
@@ -32,6 +60,11 @@ const entries: SitemapEntry[] = [
     path: `/${encodeURIComponent(provider.slug)}/docs`,
     changefreq: 'weekly' as const,
     priority: provider.featured ? '0.8' : '0.7',
+  })),
+  ...seedApps.map(app => ({
+    path: `/apps/${encodeURIComponent(app.slug)}/`,
+    changefreq: 'daily' as const,
+    priority: app.total_tokens >= 1_000_000_000_000 ? '0.8' : '0.7',
   })),
   ...models.map(model => ({
     path: `/models/${encodeURIComponent(model.id)}`,

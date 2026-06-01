@@ -23,7 +23,11 @@ func (f *fakeEmbedder) Embed(_ context.Context, req *model.EmbeddingRequest) (*m
 		vec = []float64{0.2, 0.2, 0.2, 0.2, 0.2}
 	case containsAny(text, "classify", "categorize", "structured output", "json schema"):
 		vec = []float64{1, 0, 0, 0, 0}
+	case containsAny(text, "pick chart type", "select chart type", "visualization type"):
+		vec = []float64{1, 0, 0, 0, 0}
 	case containsAny(text, "implement feature", "new endpoint", "debug fix bug", "integration test", "simple python function", "reverse string", "helper utility"):
+		vec = []float64{0, 1, 0, 0, 0}
+	case containsAny(text, "plotly graph config", "chart traces", "dataframe transform", "xlsx unstructured"):
 		vec = []float64{0, 1, 0, 0, 0}
 	case containsAny(text, "code review", "security vulnerability", "authentication authorization", "oauth jwt"):
 		vec = []float64{0, 0, 1, 0, 0}
@@ -92,6 +96,24 @@ func TestAutoRouter_EasyTaskRoutesClassificationToGPT54Nano(t *testing.T) {
 	}
 }
 
+func TestAutoRouter_EasyTaskRoutesChartTypeSelectionToGPT54Nano(t *testing.T) {
+	ar := NewAutoRouter(&fakeEmbedder{})
+	if err := ar.Init(context.Background()); err != nil {
+		t.Fatalf("Init() error = %v", err)
+	}
+
+	got, err := ar.ResolveAuto(context.Background(), "easy-task", "Pick chart type for this dataset.")
+	if err != nil {
+		t.Fatalf("ResolveAuto() error = %v", err)
+	}
+	if got.ModelID != "gpt-5.4-nano" {
+		t.Fatalf("ModelID = %q, want %q", got.ModelID, "gpt-5.4-nano")
+	}
+	if got.ReasoningEffort != "none" {
+		t.Fatalf("ReasoningEffort = %q, want none", got.ReasoningEffort)
+	}
+}
+
 func TestAutoRouter_MediumTaskRoutesImplementationToGPT54Mini(t *testing.T) {
 	ar := NewAutoRouter(&fakeEmbedder{})
 	if err := ar.Init(context.Background()); err != nil {
@@ -104,6 +126,24 @@ func TestAutoRouter_MediumTaskRoutesImplementationToGPT54Mini(t *testing.T) {
 	}
 	if got.ModelID != "gpt-5.4-mini" {
 		t.Fatalf("ModelID = %q, want %q", got.ModelID, "gpt-5.4-mini")
+	}
+}
+
+func TestAutoRouter_MediumTaskRoutesGraphConfigToGPT54Mini(t *testing.T) {
+	ar := NewAutoRouter(&fakeEmbedder{})
+	if err := ar.Init(context.Background()); err != nil {
+		t.Fatalf("Init() error = %v", err)
+	}
+
+	got, err := ar.ResolveAuto(context.Background(), "medium-task", "Build a Plotly graph config with traces and layout from challenging unstructured xlsx data.")
+	if err != nil {
+		t.Fatalf("ResolveAuto() error = %v", err)
+	}
+	if got.ModelID != "gpt-5.4-mini" {
+		t.Fatalf("ModelID = %q, want %q", got.ModelID, "gpt-5.4-mini")
+	}
+	if got.ReasoningEffort != "low" {
+		t.Fatalf("ReasoningEffort = %q, want low", got.ReasoningEffort)
 	}
 }
 
@@ -264,7 +304,7 @@ func (s *stubEmbedder) Embed(_ context.Context, req *model.EmbeddingRequest) (*m
 
 func TestMaybeResolveAuto_UsesNamedTierWhenModalityIsEmpty(t *testing.T) {
 	r := newTestRouter([]model.ModelConfig{
-		{ID: "auto-easy-task", Provider: "google"},
+		{ID: "openpaths/auto-cheap", Provider: "openai"},
 		{ID: "gemini-3.1-flash-lite", Provider: "google"},
 		{ID: "gpt-4o", Provider: "openai"},
 	}, "google", "openai")
@@ -279,14 +319,14 @@ func TestMaybeResolveAuto_UsesNamedTierWhenModalityIsEmpty(t *testing.T) {
 			"text": {
 				{ModelID: "gpt-4o", ReasoningEffort: "low", Embedding: []float64{1, 0}},
 			},
-			"easy-task": {
+			"cheap-task": {
 				{ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none", Embedding: []float64{1, 0}},
 			},
 		},
 		ready: true,
 	})
 
-	got := r.MaybeResolveAuto(context.Background(), "auto-easy-task", "", "quick cleanup")
+	got := r.MaybeResolveAuto(context.Background(), "openpaths/auto-cheap", "", "quick cleanup")
 	if got.ModelID != "gemini-3.1-flash-lite" {
 		t.Fatalf("MaybeResolveAuto() model = %q, want %q", got.ModelID, "gemini-3.1-flash-lite")
 	}
@@ -308,7 +348,7 @@ func TestMaybeResolveAutoWithTier_HardTierOverridesNonAutoModel(t *testing.T) {
 			},
 		},
 		tables: map[string][]AutoEntry{
-			"hard-task": {
+			"reasoning-task": {
 				{ModelID: "gemini-3.5-flash", ReasoningEffort: "medium", Embedding: []float64{1, 0}},
 			},
 		},
@@ -356,7 +396,7 @@ func TestMaybeResolveAutoReasoning_KeepsDirectModelReasoningOnly(t *testing.T) {
 			},
 		},
 		tables: map[string][]AutoEntry{
-			"think-task": {
+			"reasoning-task": {
 				{ModelID: "gemini-3.5-flash", ReasoningEffort: "high", Embedding: []float64{1, 0}},
 			},
 		},
@@ -383,10 +423,16 @@ func TestTaskTierToModality(t *testing.T) {
 		want string
 		ok   bool
 	}{
-		{"easy", "easy-task", true},
-		{"medium", "medium-task", true},
-		{"think", "think-task", true},
-		{"hard", "hard-task", true},
+		{"easy", "cheap-task", true},
+		{"cheap", "cheap-task", true},
+		{"medium", "code-task", true},
+		{"code", "code-task", true},
+		{"think", "reasoning-task", true},
+		{"reasoning", "reasoning-task", true},
+		{"hard", "reasoning-task", true},
+		// legacy tier names still accepted
+		{"fast", "fast-task", true},
+		{"vision", "vision-task", true},
 		{"", "", false},
 		{"bogus", "", false},
 	}
@@ -461,6 +507,95 @@ func TestDefaultRoutingTablesTargetsExistInConfig(t *testing.T) {
 	for autoModel := range autoModelMap {
 		if _, ok := modelNames[autoModel]; !ok {
 			t.Fatalf("auto model %q is missing from config.yaml ids and aliases", autoModel)
+		}
+	}
+}
+
+// TestIsAutoModel_LegacyAliasesResolve guards the public promise that legacy
+// auto IDs keep working: each documented alias must resolve to the modality of
+// its current openpaths/* equivalent.
+func TestIsAutoModel_LegacyAliasesResolve(t *testing.T) {
+	cases := []struct {
+		alias    string
+		modality string
+	}{
+		{"auto", "text"},
+		{"auto-text", "text"},
+		{"auto-chat", "text"},
+		{"auto-easy-task", "cheap-task"},
+		{"auto-easy", "cheap-task"},
+		{"auto-cheap", "cheap-task"},
+		{"auto-fast", "fast-task"},
+		{"auto-code", "code-task"},
+		{"auto-medium-task", "code-task"},
+		{"auto-medium", "code-task"},
+		{"auto-reasoning", "reasoning-task"},
+		{"auto-think", "reasoning-task"},
+		{"auto-think-task", "reasoning-task"},
+		{"autothink", "reasoning-task"},
+		{"auto-hard", "reasoning-task"},
+		{"auto-hard-task", "reasoning-task"},
+		{"auto-opus", "reasoning-task"},
+		{"auto-vision", "vision-task"},
+		{"auto-image", "image"},
+		{"auto-img", "image"},
+		{"auto-video", "video"},
+		{"auto-vid", "video"},
+	}
+	for _, c := range cases {
+		got, ok := IsAutoModel(c.alias)
+		if !ok {
+			t.Errorf("IsAutoModel(%q) ok = false, want true", c.alias)
+			continue
+		}
+		if got != c.modality {
+			t.Errorf("IsAutoModel(%q) = %q, want %q", c.alias, got, c.modality)
+		}
+	}
+
+	if _, ok := IsAutoModel("gpt-5.5"); ok {
+		t.Error("IsAutoModel(\"gpt-5.5\") ok = true, want false for a direct model")
+	}
+}
+
+func TestIsAutoThinkModel(t *testing.T) {
+	cases := []struct {
+		model string
+		want  bool
+	}{
+		{"auto-think", true},
+		{"autothink", true},
+		{"auto-hard-task", true},
+		{"openpaths/auto-reasoning", true},
+		{"auto", false},       // text modality, not reasoning
+		{"auto-image", false}, // image modality
+		{"auto-fast", false},  // fast modality
+		{"gpt-5.5", false},    // not an auto model at all
+	}
+	for _, c := range cases {
+		if got := IsAutoThinkModel(c.model); got != c.want {
+			t.Errorf("IsAutoThinkModel(%q) = %v, want %v", c.model, got, c.want)
+		}
+	}
+}
+
+func TestIsAutoReasoningEffort(t *testing.T) {
+	cases := []struct {
+		effort string
+		want   bool
+	}{
+		{"auto", true},
+		{"automatic", true},
+		{"auto-think", true},
+		{"autothink", true},
+		{"  AUTO  ", true}, // trimmed + case-insensitive
+		{"high", false},
+		{"none", false},
+		{"", false},
+	}
+	for _, c := range cases {
+		if got := IsAutoReasoningEffort(c.effort); got != c.want {
+			t.Errorf("IsAutoReasoningEffort(%q) = %v, want %v", c.effort, got, c.want)
 		}
 	}
 }

@@ -10,8 +10,7 @@ import { Seo } from '../components/Seo';
 export function Landing() {
   const [activeTab, setActiveTab] = useState<'python' | 'curl'>('python');
   const apiKey = localStorage.getItem('op_api_key') || 'op_...';
-  const featuredArt = artGallery[0];
-  const galleryGrid = artGallery.slice(1);
+  const galleryGrid = artGallery;
 
   return (
     <>
@@ -37,7 +36,7 @@ export function Landing() {
             <span className="text-white/40">Model Router.</span>
           </h1>
           <p className="text-lg md:text-xl text-white/60 max-w-2xl mx-auto mb-10 font-light leading-relaxed">
-            <span className="text-white font-medium">Search and we shall find.</span> Neural learned paths for 1ms routing to find the best model. Try Open Pathways.
+            <span className="text-white font-medium">Stop choosing models manually.</span> Use <code className="text-white font-mono text-base">openpaths/auto</code> — embedding-routed paths pick the right provider for every prompt.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link to="/models" className="w-full sm:w-auto bg-white text-black px-8 py-4 font-mono font-bold flex items-center justify-center gap-2 hover:bg-white/90 transition-colors rounded">
@@ -59,6 +58,32 @@ export function Landing() {
           <div className="flex items-center gap-2"><Zap className="w-4 h-4" /> &lt;50ms Latency</div>
           <div className="flex items-center gap-2"><Search className="w-4 h-4" /> Intelligent Fallbacks</div>
         </div>
+      </section>
+
+      {/* OpenPaths Auto */}
+      <section id="auto" className="px-6 py-24 max-w-7xl mx-auto border-t border-white/10">
+        <div className="mb-12 text-center max-w-3xl mx-auto">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/15 bg-white/[0.03] text-xs font-mono mb-6">
+            <Sparkles className="w-3.5 h-3.5" />
+            Hero product
+          </div>
+          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">Always on the frontier. Zero manual upgrades.</h2>
+          <p className="text-white/60 font-mono text-sm leading-relaxed">
+            OpenPaths Auto takes the hassle out of model upgrades — you stay on Claude latest, Gemini latest, and GPT latest automatically, without touching your code. Point everything at <code className="text-white">openpaths/auto</code>, or pick a variant when you want a bias.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 font-mono text-sm">
+          <AutoVariantCard modelId="openpaths/auto" title="Auto" purpose="Default — chat, agents, mixed workloads" backends="Gemini 3.5 Flash, GPT-5.5, Claude, DeepSeek" />
+          <AutoVariantCard modelId="openpaths/auto-code" title="Auto Code" purpose="Coding agents, bug fixes, refactors" backends="GPT-5.5, Codex, Gemini 3.5 (3D/UI), Nano for easy diffs" />
+          <AutoVariantCard modelId="openpaths/auto-fast" title="Auto Fast" purpose="Low-latency chat" backends="DeepSeek V4 Flash, Gemini 2.5 Flash" />
+          <AutoVariantCard modelId="openpaths/auto-cheap" title="Auto Cheap" purpose="Lowest acceptable cost" backends="GPT-5.4 Nano, Gemini Flash Lite" />
+          <AutoVariantCard modelId="openpaths/auto-reasoning" title="Auto Reasoning" purpose="Planning, math, hard problems" backends="Auto thinking depth + GPT-5.5, Claude, Gemini" />
+          <AutoVariantCard modelId="openpaths/auto-vision" title="Auto Vision" purpose="Image understanding" backends="Gemini Flash; Lite for thumbnails" />
+          <AutoVariantCard modelId="openpaths/auto-image" title="Auto Image" purpose="Image generation" backends="GPT Image 2 → RA1 fallback" className="md:col-span-2 lg:col-span-1" />
+        </div>
+        <p className="mt-8 text-center text-white/40 font-mono text-xs">
+          Take the hassle out of model upgrades — every variant tracks the frontier for you. Legacy IDs still work: <code className="text-white/60">auto</code>, <code className="text-white/60">auto-easy-task</code>, <code className="text-white/60">auto-think</code>, <code className="text-white/60">auto-image</code>
+        </p>
       </section>
 
       {/* Code Snippet */}
@@ -95,13 +120,13 @@ export function Landing() {
               <CodeBlock
                 language="python"
                 preClassName="p-6"
-                code={`import openai\n\nclient = openai.OpenAI(\n  base_url="https://openpaths.io/v1",\n  api_key="${apiKey}"\n)\n\nresponse = client.chat.completions.create(\n  model="auto-hard-task",\n  messages=[\n    {"role": "user", "content": "Make a 3D simulation of cogs in a clock."}\n  ],\n  reasoning_effort="auto",\n)`}
+                code={`import openai\n\nclient = openai.OpenAI(\n  base_url="https://openpaths.io/v1",\n  api_key="${apiKey}"\n)\n\nresponse = client.chat.completions.create(\n  model="openpaths/auto",\n  messages=[\n    {"role": "user", "content": "Ship the feature — you pick the model."}\n  ],\n  reasoning_effort="auto",  # none | low | medium | high | auto\n)`}
               />
             ) : (
               <CodeBlock
                 language="bash"
                 preClassName="p-6"
-                code={`curl https://openpaths.io/v1/chat/completions \\\n  -H "Content-Type: application/json" \\\n  -H "Authorization: Bearer ${apiKey}" \\\n  -d '{\n    "model": "auto-hard-task",\n    "messages": [\n      {\n        "role": "user",\n        "content": "Make a 3D simulation of cogs in a clock."\n      }\n    ],\n    "reasoning_effort": "auto"\n  }'`}
+                code={`curl https://openpaths.io/v1/chat/completions \\\n  -H "Content-Type: application/json" \\\n  -H "Authorization: Bearer ${apiKey}" \\\n  -d '{\n    "model": "openpaths/auto-code",\n    "messages": [\n      {"role": "user", "content": "Fix this git diff and add a test."}\n    ]\n  }'`}
               />
             )}
           </div>
@@ -149,39 +174,7 @@ export function Landing() {
                   </div>
                 </div>
 
-                <motion.article
-                  initial={{ opacity: 0, y: 24 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.2 }}
-                  transition={{ duration: 0.45 }}
-                  className="mt-8 overflow-hidden rounded-[28px] border border-white/10 bg-black/50"
-                >
-                  <div className="relative aspect-[16/10] overflow-hidden">
-                    <img
-                      src={featuredArt.imageUrl}
-                      alt={featuredArt.title}
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
-                    <div className="absolute top-4 left-4 flex items-center gap-3 rounded-full border border-white/15 bg-black/55 px-3 py-2 backdrop-blur">
-                      <img src={getProviderLogo(featuredArt.provider)} alt={`${featuredArt.provider} logo`} className="h-5 w-5 rounded-sm object-contain" />
-                      <div className="font-mono text-xs text-white/75">
-                        <div>{featuredArt.provider}</div>
-                        <div className="text-white">{featuredArt.model}</div>
-                      </div>
-                    </div>
-                    <div className="absolute bottom-0 left-0 right-0 p-5 md:p-6">
-                      <div className="max-w-4xl">
-                        <div className="text-xs uppercase tracking-[0.22em] text-white/40 mb-2">Featured Study</div>
-                        <h3 className="text-2xl md:text-4xl font-bold tracking-tight">{featuredArt.title}</h3>
-                        <PromptText text={featuredArt.prompt} className="mt-3 text-sm md:text-base text-white/70 max-w-3xl" />
-                      </div>
-                    </div>
-                  </div>
-                </motion.article>
-
-                <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                   {galleryGrid.map((item, index) => (
                     <motion.article
                       key={item.slug}
@@ -250,8 +243,8 @@ export function Landing() {
           />
           <FeatureCard
             icon={<Sparkles className="w-6 h-6" />}
-            title="Auto Models"
-            description="Always on the price frontier. Static embedding model-based routing picks the best frontier model for every task — just use auto-coding-latest and stay ahead automatically."
+            title="OpenPaths Auto"
+            description="Always on Claude latest, Gemini latest, and GPT latest — without re-picking models or editing code. One ID stays on the frontier: openpaths/auto, plus auto-code, auto-fast, auto-cheap, auto-reasoning, auto-vision, auto-image."
             to="/blog/how-auto-models-work"
           />
           <FeatureCard 
@@ -423,6 +416,29 @@ function PromptText({ text, className = '' }: { text: string; className?: string
     >
       {text}
     </p>
+  );
+}
+
+function AutoVariantCard({
+  modelId,
+  title,
+  purpose,
+  backends,
+  className = '',
+}: {
+  modelId: string;
+  title: string;
+  purpose: string;
+  backends: string;
+  className?: string;
+}) {
+  return (
+    <div className={`border border-white/10 rounded-lg p-5 bg-black/40 hover:bg-white/[0.03] transition-colors ${className}`}>
+      <div className="text-white font-bold mb-1">{title}</div>
+      <code className="text-xs text-emerald-400/90 block mb-3">{modelId}</code>
+      <p className="text-white/70 text-xs leading-relaxed mb-2">{purpose}</p>
+      <p className="text-white/40 text-[11px] leading-relaxed">{backends}</p>
+    </div>
   );
 }
 

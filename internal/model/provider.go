@@ -5,6 +5,7 @@ type ModelConfig struct {
 	Provider                     string   `yaml:"provider" json:"provider"`
 	ProviderModelID              string   `yaml:"provider_model_id" json:"provider_model_id"`
 	InputPricePer1M              float64  `yaml:"input_price_per_1m" json:"input_price_per_1m"`
+	InputCacheHitPricePer1M      float64  `yaml:"input_cache_hit_price_per_1m,omitempty" json:"input_cache_hit_price_per_1m,omitempty"`
 	OutputPricePer1M             float64  `yaml:"output_price_per_1m" json:"output_price_per_1m"`
 	Aliases                      []string `yaml:"aliases,omitempty" json:"aliases,omitempty"`
 	ContextWindow                int      `yaml:"context_window" json:"context_window"`
@@ -29,8 +30,11 @@ type ModelConfig struct {
 }
 
 type ProviderConfig struct {
-	Name    string `yaml:"name" json:"name"`
-	BaseURL string `yaml:"base_url" json:"base_url"`
-	APIKey  string `yaml:"api_key" json:"api_key"`
-	Enabled bool   `yaml:"enabled" json:"enabled"`
+	Name          string `yaml:"name" json:"name"`
+	BaseURL       string `yaml:"base_url" json:"base_url"`
+	APIKey        string `yaml:"api_key" json:"api_key"`
+	Enabled       bool   `yaml:"enabled" json:"enabled"`
+	AppReferer    string `yaml:"app_referer,omitempty" json:"app_referer,omitempty"`
+	AppTitle      string `yaml:"app_title,omitempty" json:"app_title,omitempty"`
+	AppCategories string `yaml:"app_categories,omitempty" json:"app_categories,omitempty"`
 }

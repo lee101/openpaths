@@ -75,6 +75,11 @@ type AutotopupSettings = {
   amount_cents: number;
 };
 
+function maskApiKey(key: string): string {
+  const visible = Math.min(11, key.length);
+  return key.slice(0, visible) + '•'.repeat(Math.max(8, key.length - visible));
+}
+
 function getUserData(): { apiKey: string | null; user: any } {
   if (window.userData?.secret) {
     return {
@@ -167,7 +172,7 @@ function getBalanceTone(balanceUnits: number | null) {
   };
 }
 
-function AuthForms({ onAuth }: { onAuth: (token: string, user: any, apiKey?: string) => void }) {
+function AuthForms({ onAuth }: { onAuth: (token: string, user: any, newApiKey?: string) => void }) {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -193,7 +198,7 @@ function AuthForms({ onAuth }: { onAuth: (token: string, user: any, apiKey?: str
       localStorage.setItem('op_user', JSON.stringify(data.user));
       window.userData = { id: data.user.id, email: data.user.email, name: data.user.name, secret: key, authenticated: true };
       window.dispatchEvent(new Event('auth-change'));
-      onAuth(key, data.user);
+      onAuth(key, data.user, data.api_key);
     } catch {
       setError('Network error');
     } finally {
@@ -236,6 +241,8 @@ function AuthForms({ onAuth }: { onAuth: (token: string, user: any, apiKey?: str
           <button
             type="button"
             onClick={() => setShowPassword(v => !v)}
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            data-testid="auth-password-toggle"
             className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors"
           >
             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -594,9 +601,20 @@ export function Account() {
   const [checkoutAmount, setCheckoutAmount] = useState(RECOMMENDED_TOPUP_USD);
   const [newKeyName, setNewKeyName] = useState('');
   const [newKeyResult, setNewKeyResult] = useState<string | null>(null);
+  const [newKeyVisible, setNewKeyVisible] = useState(false);
   const [openAIAuthNotice, setOpenAIAuthNotice] = useState<string | null>(null);
   const [openAIAuthError, setOpenAIAuthError] = useState<string | null>(null);
   const [openAIAuthLoading, setOpenAIAuthLoading] = useState(false);
+  const [openAIDeviceAuth, setOpenAIDeviceAuth] = useState<{
+    login_id: string;
+    verification_url: string;
+    user_code: string;
+    interval_seconds: number;
+    expires_at?: string;
+  } | null>(null);
+  const [openAIDeviceStatus, setOpenAIDeviceStatus] = useState<'idle' | 'pending' | 'polling' | 'error'>('idle');
+  const [openAIDeviceMessage, setOpenAIDeviceMessage] = useState('');
+  const [openAIDeviceLoading, setOpenAIDeviceLoading] = useState(false);
 
   const [billingNotice, setBillingNotice] = useState<string | null>(null);
   const [billingError, setBillingError] = useState<string | null>(null);
@@ -785,11 +803,17 @@ export function Account() {
     }
   }, [activeTab, analyticsPeriod, apiKey, fetchAnalytics]);
 
-  const handleAuth = (key: string, u: any) => {
+  useEffect(() => {
+    setNewKeyVisible(false);
+  }, [newKeyResult]);
+
+  const handleAuth = (key: string, u: any, newApiKey?: string) => {
     setApiKey(key);
     setUser(u);
-    setNewKeyResult(key);
-    setActiveTab('keys');
+    if (newApiKey) {
+      setNewKeyResult(newApiKey);
+      setActiveTab('keys');
+    }
   };
 
   const logout = () => {
@@ -813,7 +837,9 @@ export function Account() {
     const data = await res.json();
     if (res.ok) {
       setNewKeyResult(data.key);
+      setNewKeyVisible(false);
       localStorage.setItem('op_api_key', data.key);
+      setApiKey(data.key);
       setNewKeyName('');
       void fetchKeys();
     }
@@ -825,23 +851,78 @@ export function Account() {
   };
 
   const startOpenAIAuth = async () => {
-    setOpenAIAuthLoading(true);
+    await startOpenAIDeviceAuth();
+  };
+
+  const startOpenAIDeviceAuth = async () => {
+    setOpenAIDeviceLoading(true);
     setOpenAIAuthNotice(null);
     setOpenAIAuthError(null);
+    setOpenAIDeviceMessage('');
+    setOpenAIDeviceStatus('idle');
     try {
-      const res = await api('/account/openai/start', { method: 'POST', body: JSON.stringify({}) });
+      const res = await api('/account/openai/device/start', { method: 'POST', body: JSON.stringify({}) });
       const data = await res.json();
-      if (!res.ok || !data.auth_url) {
-        setOpenAIAuthError(data.error?.message || 'Failed to start OpenAI sign-in');
+      if (!res.ok || !data.login_id || !data.verification_url || !data.user_code) {
+        setOpenAIAuthError(data.error?.message || 'Failed to start OpenAI device sign-in');
+        setOpenAIDeviceStatus('error');
         return;
       }
-      window.location.href = data.auth_url;
+      setOpenAIDeviceAuth({
+        login_id: data.login_id,
+        verification_url: data.verification_url,
+        user_code: data.user_code,
+        interval_seconds: Number(data.interval_seconds) || 5,
+        expires_at: data.expires_at,
+      });
+      setOpenAIDeviceStatus('pending');
+      setOpenAIDeviceMessage('Open the sign-in link and enter the code. This page will finish automatically.');
     } catch {
       setOpenAIAuthError('Network error');
+      setOpenAIDeviceStatus('error');
     } finally {
-      setOpenAIAuthLoading(false);
+      setOpenAIDeviceLoading(false);
     }
   };
+
+  const pollOpenAIDeviceAuth = useCallback(async () => {
+    if (!openAIDeviceAuth || openAIDeviceStatus === 'polling') return;
+    setOpenAIDeviceStatus('polling');
+    try {
+      const res = await api('/account/openai/device/poll', {
+        method: 'POST',
+        body: JSON.stringify({ login_id: openAIDeviceAuth.login_id }),
+      });
+      const data = await res.json();
+      if (res.status === 202 || data.status === 'pending') {
+        setOpenAIDeviceStatus('pending');
+        setOpenAIDeviceMessage(data.message || 'Waiting for OpenAI device authorization...');
+        return;
+      }
+      if (!res.ok || data.status !== 'success') {
+        setOpenAIDeviceStatus('error');
+        setOpenAIAuthError(data.error?.message || 'OpenAI device sign-in failed');
+        return;
+      }
+      setOpenAIDeviceAuth(null);
+      setOpenAIDeviceStatus('idle');
+      setOpenAIDeviceMessage('');
+      setOpenAIAuthNotice(data.message || 'OpenAI Max plan sign-in saved.');
+      await fetchProviderKeys();
+    } catch {
+      setOpenAIDeviceStatus('pending');
+      setOpenAIDeviceMessage('Still waiting for OpenAI device authorization...');
+    }
+  }, [fetchProviderKeys, openAIDeviceAuth, openAIDeviceStatus]);
+
+  useEffect(() => {
+    if (!openAIDeviceAuth || openAIDeviceStatus !== 'pending') return;
+    const delay = Math.max(2, openAIDeviceAuth.interval_seconds || 5) * 1000;
+    const timer = window.setTimeout(() => {
+      void pollOpenAIDeviceAuth();
+    }, delay);
+    return () => window.clearTimeout(timer);
+  }, [openAIDeviceAuth, openAIDeviceStatus, pollOpenAIDeviceAuth]);
 
   const openCheckout = (amountUSD: number) => {
     setCheckoutAmount(amountUSD);
@@ -1181,8 +1262,25 @@ export function Account() {
               <div className="border border-green-500/30 bg-green-500/5 rounded-xl p-4 mb-6" data-testid="new-key-banner">
                 <p className="text-sm text-green-400 mb-2 font-bold">New key created. Save it now because it will not be shown again.</p>
                 <div className="flex items-center gap-2 bg-black border border-white/10 rounded-lg p-3">
-                  <code className="flex-1 font-mono text-sm text-white/80 break-all">{newKeyResult}</code>
-                  <button onClick={() => copyKey(newKeyResult)} className="p-2 hover:bg-white/10 rounded transition-colors">
+                  <code className="flex-1 font-mono text-sm text-white/80 break-all" data-testid="new-key-value">
+                    {newKeyVisible ? newKeyResult : maskApiKey(newKeyResult)}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={() => setNewKeyVisible(v => !v)}
+                    aria-label={newKeyVisible ? 'Hide API key' : 'Show API key'}
+                    data-testid="new-key-toggle"
+                    className="p-2 hover:bg-white/10 rounded transition-colors"
+                  >
+                    {newKeyVisible ? <EyeOff className="w-4 h-4 text-white/60" /> : <Eye className="w-4 h-4 text-white/60" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => copyKey(newKeyResult)}
+                    aria-label="Copy API key"
+                    data-testid="new-key-copy"
+                    className="p-2 hover:bg-white/10 rounded transition-colors"
+                  >
                     {copied === newKeyResult ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4 text-white/60" />}
                   </button>
                 </div>
@@ -1241,13 +1339,60 @@ export function Account() {
                 </div>
                 <button
                   onClick={startOpenAIAuth}
-                  disabled={openAIAuthLoading}
+                  disabled={openAIAuthLoading || openAIDeviceLoading}
                   className="rounded-2xl bg-white text-black px-4 py-3 text-sm font-mono font-bold hover:bg-white/90 transition-colors disabled:opacity-50"
                   data-testid="openai-auth-start"
                 >
-                  {openAIAuthLoading ? 'Starting...' : 'Sign in with OpenAI'}
+                  {openAIAuthLoading || openAIDeviceLoading ? 'Starting...' : 'Sign in with OpenAI'}
                 </button>
               </div>
+              {openAIDeviceAuth && (
+                <div className="mt-5 rounded-2xl border border-sky-400/20 bg-sky-500/10 p-4" data-testid="openai-device-auth-panel">
+                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <div className="text-xs font-mono uppercase tracking-[0.14em] text-sky-100/50 mb-2">Device sign-in</div>
+                      <p className="text-sm text-white/70 mb-3">{openAIDeviceMessage || 'Open the sign-in link and enter this code.'}</p>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <code className="rounded-xl border border-white/10 bg-black/35 px-4 py-3 font-mono text-lg tracking-[0.18em] text-white" data-testid="openai-device-code">
+                          {openAIDeviceAuth.user_code}
+                        </code>
+                        <button
+                          onClick={() => copyKey(openAIDeviceAuth.user_code)}
+                          className="rounded-xl border border-white/10 bg-black/25 p-3 text-white/60 transition-colors hover:text-white"
+                          aria-label="Copy OpenAI device code"
+                          data-testid="openai-device-code-copy"
+                        >
+                          {copied === openAIDeviceAuth.user_code ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}
+                        </button>
+                      </div>
+                      {openAIDeviceAuth.expires_at && (
+                        <p className="mt-3 text-xs font-mono text-white/35">
+                          Expires {new Date(openAIDeviceAuth.expires_at).toLocaleTimeString()}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-3 sm:flex-row md:flex-col">
+                      <a
+                        href={openAIDeviceAuth.verification_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-mono font-bold text-black transition-colors hover:bg-white/90"
+                        data-testid="openai-device-auth-link"
+                      >
+                        Open sign-in link <ArrowUpRight className="h-4 w-4" />
+                      </a>
+                      <button
+                        onClick={() => void pollOpenAIDeviceAuth()}
+                        disabled={openAIDeviceStatus === 'polling'}
+                        className="rounded-2xl border border-white/15 bg-black/20 px-4 py-3 text-sm font-mono text-white transition-colors hover:border-white/30 disabled:opacity-50"
+                        data-testid="openai-device-auth-poll"
+                      >
+                        {openAIDeviceStatus === 'polling' ? 'Checking...' : 'Check status'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
               {openAIAuthNotice && (
                 <div className="mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
                   {openAIAuthNotice}

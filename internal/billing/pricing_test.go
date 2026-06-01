@@ -10,6 +10,7 @@ func newTestPricingTable() *PricingTable {
 	models := []model.ModelConfig{
 		{ID: "gpt-4o", InputPricePer1M: 2.50, OutputPricePer1M: 10.00},
 		{ID: "gpt-4o-mini", InputPricePer1M: 0.15, OutputPricePer1M: 0.60},
+		{ID: "deepseek-v4-pro", InputPricePer1M: 0.435, InputCacheHitPricePer1M: 0.003625, OutputPricePer1M: 0.87},
 		{ID: "openpaths-embed", PricePerRequest: 0.001},
 		{ID: "grok-imagine-image", PricePerImage: 0.02, PricePerInputImage: 0.002},
 		{ID: "hidream-o1-image-dev", PricePerMegapixel: 0.011},
@@ -242,6 +243,32 @@ func TestCalculateCost(t *testing.T) {
 				t.Errorf("got cost %d, want %d", cost, tt.wantCost)
 			}
 		})
+	}
+}
+
+func TestCalculateCostWithCachedInput(t *testing.T) {
+	pt := newTestPricingTable()
+
+	cost, err := pt.CalculateCostWithCachedInput("deepseek-v4-pro", 1_000_000, 100_000, 750_000)
+	if err != nil {
+		t.Fatalf("CalculateCostWithCachedInput() error = %v", err)
+	}
+	// 250k uncached input at $0.435/M, 750k cached input at $0.003625/M,
+	// 100k output at $0.87/M = $0.19846875 = 1984 hundredths-of-a-cent.
+	if cost != 1984 {
+		t.Fatalf("cost = %d, want 1984", cost)
+	}
+}
+
+func TestCalculateCostWithCachedInput_IgnoresCacheWhenNoCachePrice(t *testing.T) {
+	pt := newTestPricingTable()
+
+	cost, err := pt.CalculateCostWithCachedInput("gpt-4o-mini", 10000, 2000, 9000)
+	if err != nil {
+		t.Fatalf("CalculateCostWithCachedInput() error = %v", err)
+	}
+	if cost != 27 {
+		t.Fatalf("cost = %d, want 27", cost)
 	}
 }
 

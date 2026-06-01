@@ -3,6 +3,7 @@ package handler
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
@@ -44,6 +45,19 @@ func (h *ImageHandler) SetStorage(store storage.Store) {
 	h.store = store
 }
 
+// imageExecutionResult is the outcome of running the image-generation candidate
+// loop. It lets the HTTP handler and internal pipelines (e.g. text-to-3D) share
+// the same generation, billing, and metrics path.
+type imageExecutionResult struct {
+	Response     *model.ImageGenerationResponse
+	ModelID      string // resolved config model id that produced the image
+	ProviderName string
+	Cost         int64
+	StatusCode   int
+	ErrorType    string
+	ErrorMessage string
+}
+
 func (h *ImageHandler) HandleImageGeneration(ctx *fasthttp.RequestCtx) {
 	userID, _ := ctx.UserValue(middleware.CtxKeyUserID).(string)
 	apiKey, _ := ctx.UserValue(middleware.CtxKeyAPIKey).(*model.APIKey)
@@ -51,6 +65,7 @@ func (h *ImageHandler) HandleImageGeneration(ctx *fasthttp.RequestCtx) {
 	if apiKey != nil {
 		apiKeyID = apiKey.ID
 	}
+	app := requestAppAttribution(ctx)
 
 	var req model.ImageGenerationRequest
 	if err := json.Unmarshal(ctx.PostBody(), &req); err != nil {
@@ -69,6 +84,20 @@ func (h *ImageHandler) HandleImageGeneration(ctx *fasthttp.RequestCtx) {
 		writeError(ctx, 400, "invalid_request", "image_url is required")
 		return
 	}
+
+	result := h.executeImageGeneration(ctx, &req, userID, apiKeyID, app)
+	if result.StatusCode >= 400 || result.Response == nil {
+		writeError(ctx, result.StatusCode, result.ErrorType, result.ErrorMessage)
+		return
+	}
+	writeJSON(ctx, 200, result.Response)
+}
+
+// executeImageGeneration runs auto-routing, the provider candidate loop, image
+// resizing/rehosting, billing, and metrics. It mutates req.Model/req.Size in
+// place (matching the original handler behaviour) and never writes to ctx, so
+// it can be reused by internal pipelines.
+func (h *ImageHandler) executeImageGeneration(ctx context.Context, req *model.ImageGenerationRequest, userID, apiKeyID string, app requestApp) imageExecutionResult {
 	if req.N <= 0 && req.NumImages > 0 {
 		req.N = req.NumImages
 	}
@@ -80,8 +109,7 @@ func (h *ImageHandler) HandleImageGeneration(ctx *fasthttp.RequestCtx) {
 	autoResult := h.router.MaybeResolveAuto(ctx, req.Model, "image", req.Prompt)
 	candidates, err := h.router.ResolveForRequest(originalModel, autoResult.ModelID)
 	if err != nil {
-		writeError(ctx, 404, "model_not_found", err.Error())
-		return
+		return imageExecutionResult{StatusCode: 404, ErrorType: "model_not_found", ErrorMessage: err.Error()}
 	}
 
 	for i, cand := range candidates {
@@ -110,7 +138,7 @@ func (h *ImageHandler) HandleImageGeneration(ctx *fasthttp.RequestCtx) {
 		req.Model = cand.ModelCfg.ProviderModelID
 		start := time.Now()
 
-		resp, err := imgProv.GenerateImage(ctx, &req)
+		resp, err := imgProv.GenerateImage(ctx, req)
 		latency := time.Since(start)
 
 		if err != nil {
@@ -120,15 +148,14 @@ func (h *ImageHandler) HandleImageGeneration(ctx *fasthttp.RequestCtx) {
 				statusCode = pe.StatusCode
 				errMsg = pe.Message
 				if !pe.Retryable && i == len(candidates)-1 {
-					h.recorder.RecordError(userID, apiKeyID, originalModel, cand.Provider.Name(),
-						int(latency.Milliseconds()), statusCode, errMsg, false)
-					writeError(ctx, statusCode, "provider_error", errMsg)
-					return
+					h.recorder.RecordErrorWithApp(userID, apiKeyID, originalModel, cand.Provider.Name(),
+						int(latency.Milliseconds()), statusCode, errMsg, false, app.ID, app.URL, app.Title, app.Categories)
+					return imageExecutionResult{StatusCode: statusCode, ErrorType: "provider_error", ErrorMessage: errMsg}
 				}
 			}
 			h.router.MarkModelUnhealthy(cand.Provider.Name(), cand.ModelCfg.ID)
-			h.recorder.RecordError(userID, apiKeyID, originalModel, cand.Provider.Name(),
-				int(latency.Milliseconds()), statusCode, errMsg, false)
+			h.recorder.RecordErrorWithApp(userID, apiKeyID, originalModel, cand.Provider.Name(),
+				int(latency.Milliseconds()), statusCode, errMsg, false, app.ID, app.URL, app.Title, app.Categories)
 			if i < len(candidates)-1 {
 				log.Printf("image fallback: %s/%s -> %s/%s",
 					cand.Provider.Name(), cand.ModelCfg.ID,
@@ -161,16 +188,53 @@ func (h *ImageHandler) HandleImageGeneration(ctx *fasthttp.RequestCtx) {
 
 		h.router.MarkModelHealthy(cand.Provider.Name(), cand.ModelCfg.ID)
 		imageCount := len(resp.Data)
-		inputImageCount := countInputImages(&req)
-		cost, _ := h.deductImageCost(ctx, userID, cand.ModelCfg.ID, &req, resp, imageCount, inputImageCount)
-		h.recorder.RecordSuccess(userID, apiKeyID, originalModel, cand.Provider.Name(),
-			0, imageCount, int(latency.Milliseconds()), 0, cost, false)
+		inputImageCount := countInputImages(req)
+		cost, _ := h.deductImageCost(ctx, userID, cand.ModelCfg.ID, req, resp, imageCount, inputImageCount)
+		h.recorder.RecordSuccessWithApp(userID, apiKeyID, originalModel, cand.Provider.Name(),
+			0, imageCount, int(latency.Milliseconds()), 0, cost, false, app.ID, app.URL, app.Title, app.Categories)
 
-		writeJSON(ctx, 200, resp)
-		return
+		return imageExecutionResult{
+			Response:     resp,
+			ModelID:      cand.ModelCfg.ID,
+			ProviderName: cand.Provider.Name(),
+			Cost:         cost,
+		}
 	}
 
-	writeError(ctx, 502, "provider_error", "all providers failed for model "+originalModel)
+	return imageExecutionResult{StatusCode: 502, ErrorType: "provider_error", ErrorMessage: "all providers failed for model " + originalModel}
+}
+
+// ensurePublicImageURL returns a public http(s) URL for the first image in the
+// response, uploading inline base64 bytes to storage when the provider only
+// returned data. Returns "" when no usable image is present. Used by the
+// text-to-3D pipeline, where the downstream 3D provider must fetch the image.
+func (h *ImageHandler) ensurePublicImageURL(ctx context.Context, resp *model.ImageGenerationResponse) string {
+	if resp == nil || len(resp.Data) == 0 {
+		return ""
+	}
+	d := resp.Data[0]
+	if isPublicHTTPURL(d.URL) {
+		return d.URL
+	}
+	if d.B64JSON != "" && h.store != nil {
+		data, err := base64.StdEncoding.DecodeString(d.B64JSON)
+		if err != nil {
+			log.Printf("text-to-3d: decode b64 image: %v", err)
+			return d.URL
+		}
+		contentType := http.DetectContentType(data)
+		ext := extFromContentType(contentType)
+		if ext == "" {
+			ext = ".png"
+		}
+		url, err := h.store.Upload(ctx, fmt.Sprintf("text-to-3d-input%s", ext), contentType, bytes.NewReader(data))
+		if err != nil {
+			log.Printf("text-to-3d: upload b64 image: %v", err)
+			return d.URL
+		}
+		return url
+	}
+	return d.URL
 }
 
 func (h *ImageHandler) deductImageCost(ctx context.Context, userID, modelID string, req *model.ImageGenerationRequest, resp *model.ImageGenerationResponse, imageCount, inputImageCount int) (int64, error) {

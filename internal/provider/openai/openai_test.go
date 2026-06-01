@@ -3,6 +3,7 @@ package openai
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -60,6 +61,86 @@ func containsAny(s string, needles ...string) bool {
 	return false
 }
 
+func TestIsReasoningModel(t *testing.T) {
+	cases := []struct {
+		model string
+		want  bool
+	}{
+		{"gpt-5.5", true},
+		{"gpt-5.4-mini", true},
+		{"gpt-5.4-nano", true},
+		{"gpt-5-codex", true},
+		{"gpt-5-mini", true},
+		{"o1", true},
+		{"o3", true},
+		{"o4-mini", true},
+		{"gpt-5-chat-latest", false},
+		{"gpt-4o", false},
+		{"gemini-3.5-flash", false},
+		{"deepseek-v4-flash", false},
+	}
+	for _, c := range cases {
+		if got := isReasoningModel(c.model); got != c.want {
+			t.Errorf("isReasoningModel(%q) = %v, want %v", c.model, got, c.want)
+		}
+	}
+}
+
+func TestNormalizeSamplingParams(t *testing.T) {
+	temp, topP, pen := 0.7, 0.9, 0.5
+
+	// Reasoning model: sampling params are stripped.
+	req := &model.ChatCompletionRequest{
+		Model:            "gpt-5.5",
+		Temperature:      &temp,
+		TopP:             &topP,
+		PresencePenalty:  &pen,
+		FrequencyPenalty: &pen,
+	}
+	normalizeSamplingParams(req)
+	if req.Temperature != nil || req.TopP != nil || req.PresencePenalty != nil || req.FrequencyPenalty != nil {
+		t.Errorf("reasoning model sampling params not stripped: %#v", req)
+	}
+
+	// Non-reasoning model: sampling params are preserved.
+	temp2 := 0.7
+	keep := &model.ChatCompletionRequest{Model: "gpt-4o", Temperature: &temp2}
+	normalizeSamplingParams(keep)
+	if keep.Temperature == nil || *keep.Temperature != 0.7 {
+		t.Errorf("non-reasoning temperature should be preserved, got %v", keep.Temperature)
+	}
+}
+
+func TestChatCompletionStripsTemperatureForReasoningModel(t *testing.T) {
+	var gotBody string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req model.ChatCompletionRequest
+		body, _ := io.ReadAll(r.Body)
+		gotBody = string(body)
+		_ = json.Unmarshal(body, &req)
+		if req.Temperature != nil {
+			t.Errorf("temperature reached the provider for reasoning model: %v", *req.Temperature)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(model.ChatCompletionResponse{ID: "ok"})
+	}))
+	defer server.Close()
+
+	temp := 0.7
+	p := New("test-key", server.URL)
+	_, err := p.ChatCompletion(context.Background(), &model.ChatCompletionRequest{
+		Model:       "gpt-5.5",
+		Messages:    []model.ChatMessage{{Role: "user", Content: "Hi"}},
+		Temperature: &temp,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if containsAny(gotBody, "temperature") {
+		t.Errorf("marshaled body still references temperature: %s", gotBody)
+	}
+}
+
 func TestChatCompletionSuccess(t *testing.T) {
 	expectedResp := model.ChatCompletionResponse{
 		ID:      "chatcmpl-123",
@@ -74,9 +155,12 @@ func TestChatCompletionSuccess(t *testing.T) {
 			},
 		}},
 		Usage: &model.UsageInfo{
-			PromptTokens:     10,
-			CompletionTokens: 5,
-			TotalTokens:      15,
+			PromptTokens:          10,
+			CompletionTokens:      5,
+			TotalTokens:           15,
+			PromptCacheHitTokens:  7,
+			PromptCacheMissTokens: 3,
+			PromptTokensDetails:   &model.PromptTokensDetails{CachedTokens: 7},
 		},
 	}
 
@@ -113,6 +197,9 @@ func TestChatCompletionSuccess(t *testing.T) {
 	}
 	if resp.Usage.TotalTokens != 15 {
 		t.Errorf("got total tokens %d, want 15", resp.Usage.TotalTokens)
+	}
+	if resp.Usage.PromptCacheHitTokens != 7 {
+		t.Errorf("got cache hit tokens %d, want 7", resp.Usage.PromptCacheHitTokens)
 	}
 }
 
@@ -260,5 +347,27 @@ func TestHealthCheckFailure(t *testing.T) {
 	err := p.HealthCheck(context.Background())
 	if err == nil {
 		t.Fatal("expected error")
+	}
+}
+
+func TestIsRetryableStatus_ResponsesOnlyModel(t *testing.T) {
+	cases := []struct {
+		name string
+		code int
+		body string
+		want bool
+	}{
+		{"500 transient", 500, "boom", true},
+		{"429 rate limit", 429, "slow down", true},
+		{"400 responses-only codex", 400, `{"error":{"message":"This model is only supported in v1/responses and not in v1/chat/completions."}}`, true},
+		{"400 ordinary bad request", 400, `{"error":{"message":"invalid 'messages'"}}`, false},
+		{"200 ok", 200, "", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := isRetryableStatus(tc.code, tc.body); got != tc.want {
+				t.Errorf("isRetryableStatus(%d, %q) = %v, want %v", tc.code, tc.body, got, tc.want)
+			}
+		})
 	}
 }

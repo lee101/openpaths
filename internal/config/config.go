@@ -32,38 +32,38 @@ type StripeConfig struct {
 }
 
 type StorageConfig struct {
-	Provider  string `yaml:"provider"`
-	LocalDir  string `yaml:"local_dir"`
-	R2Endpoint string `yaml:"r2_endpoint"`
-	R2Bucket   string `yaml:"r2_bucket"`
+	Provider    string `yaml:"provider"`
+	LocalDir    string `yaml:"local_dir"`
+	R2Endpoint  string `yaml:"r2_endpoint"`
+	R2Bucket    string `yaml:"r2_bucket"`
 	R2AccessKey string `yaml:"r2_access_key"`
 	R2SecretKey string `yaml:"r2_secret_key"`
 	R2PublicURL string `yaml:"r2_public_url"`
 }
 
 type CryptoConfig struct {
-	Enabled        bool   `yaml:"enabled"`
-	WalletPubkey   string `yaml:"solana_wallet_pubkey"`
-	HDWalletSeed   string `yaml:"hd_wallet_seed"`
-	SolanaRPCURL   string `yaml:"solana_rpc_url"`
-	HeliusAPIKey   string `yaml:"helius_api_key"`
-	CodexTokenMint string `yaml:"codex_token_mint"`
-	BagsAPIKey     string `yaml:"bags_api_key"`
+	Enabled        bool    `yaml:"enabled"`
+	WalletPubkey   string  `yaml:"solana_wallet_pubkey"`
+	HDWalletSeed   string  `yaml:"hd_wallet_seed"`
+	SolanaRPCURL   string  `yaml:"solana_rpc_url"`
+	HeliusAPIKey   string  `yaml:"helius_api_key"`
+	CodexTokenMint string  `yaml:"codex_token_mint"`
+	BagsAPIKey     string  `yaml:"bags_api_key"`
 	MinTopupUSD    float64 `yaml:"min_topup_usd"`
 }
 
 type ServerConfig struct {
-	Port            int    `yaml:"port"`
-	ReadTimeout     int    `yaml:"read_timeout_seconds"`
-	WriteTimeout    int    `yaml:"write_timeout_seconds"`
-	MaxRequestBody  int    `yaml:"max_request_body_mb"`
-	StaticDir       string `yaml:"static_dir"`
+	Port           int    `yaml:"port"`
+	ReadTimeout    int    `yaml:"read_timeout_seconds"`
+	WriteTimeout   int    `yaml:"write_timeout_seconds"`
+	MaxRequestBody int    `yaml:"max_request_body_mb"`
+	StaticDir      string `yaml:"static_dir"`
 }
 
 type DatabaseConfig struct {
-	URL             string `yaml:"url"`
-	MaxConns        int    `yaml:"max_conns"`
-	MinConns        int    `yaml:"min_conns"`
+	URL      string `yaml:"url"`
+	MaxConns int    `yaml:"max_conns"`
+	MinConns int    `yaml:"min_conns"`
 }
 
 type JWTConfig struct {
@@ -97,6 +97,17 @@ func Load(path string) (*Config, error) {
 		if cfg.Providers[i].Name == "google" {
 			if v := os.Getenv("GEMINI_API_KEY"); v != "" && cfg.Providers[i].APIKey == "" {
 				cfg.Providers[i].APIKey = v
+			}
+		}
+		if cfg.Providers[i].Name == "openrouter" {
+			if v := os.Getenv("OPENROUTER_APP_REFERER"); v != "" {
+				cfg.Providers[i].AppReferer = v
+			}
+			if v := os.Getenv("OPENROUTER_APP_TITLE"); v != "" {
+				cfg.Providers[i].AppTitle = v
+			}
+			if v := os.Getenv("OPENROUTER_APP_CATEGORIES"); v != "" {
+				cfg.Providers[i].AppCategories = v
 			}
 		}
 	}

@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/Layout';
+import { ScrollToTop } from './components/ScrollToTop';
 import { Landing } from './pages/Landing';
 import { Models } from './pages/Models';
 import { Account } from './pages/Account';
@@ -18,11 +19,25 @@ import { AdminLee } from './pages/AdminLee';
 import { Stats } from './pages/Stats';
 import { Search } from './pages/Search';
 import { ImageTo3D } from './pages/ImageTo3D';
+import { TextTo3D } from './pages/TextTo3D';
+import { TextToImage } from './pages/TextToImage';
+import { Tools } from './pages/Tools';
 import { Alternatives } from './pages/Alternatives';
+import { Evals } from './pages/Evals';
+import { Compare, CompareIndex } from './pages/Compare';
+import { ZImageArt } from './pages/ZImageArt';
+import { ArtDetail } from './pages/ArtDetail';
+import { ArtTag } from './pages/ArtTag';
+import { Prompts } from './pages/Prompts';
+import { PromptDetail } from './pages/PromptDetail';
+
+const Apps = lazy(() => import('./pages/Apps').then(module => ({ default: module.Apps })));
+const AppDetail = lazy(() => import('./pages/AppDetail').then(module => ({ default: module.AppDetail })));
 
 export default function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Landing />} />
@@ -35,11 +50,29 @@ export default function App() {
           <Route path="integrations" element={<Integrations />} />
           <Route path=":slug/docs" element={<ProviderDocs />} />
           <Route path="playground" element={<Playground />} />
+          <Route path="tools" element={<Tools />} />
           <Route path="image-to-3d" element={<ImageTo3D />} />
+          <Route path="text-to-3d" element={<TextTo3D />} />
+          <Route path="text-to-image" element={<TextToImage />} />
           <Route path="search" element={<Search />} />
+          <Route path="art" element={<ZImageArt />} />
+          <Route path="art/i/:slug" element={<ArtDetail />} />
+          <Route path="art/tag/:slug" element={<ArtTag />} />
+          <Route path="prompts" element={<Prompts scope="all" />} />
+          <Route path="prompts/category/:slug" element={<Prompts scope="category" />} />
+          <Route path="prompts/type/:slug" element={<Prompts scope="type" />} />
+          <Route path="prompts/model/*" element={<Prompts scope="model" />} />
+          <Route path="prompts/:slug" element={<PromptDetail />} />
           <Route path="account" element={<Account />} />
           <Route path="admin" element={<AdminLee />} />
           <Route path="stats" element={<Stats />} />
+          <Route path="apps" element={<Suspense fallback={<RouteLoading />}><Apps /></Suspense>} />
+          <Route path="apps/" element={<Suspense fallback={<RouteLoading />}><Apps /></Suspense>} />
+          <Route path="apps/:slug" element={<Suspense fallback={<RouteLoading />}><AppDetail /></Suspense>} />
+          <Route path="apps/:slug/" element={<Suspense fallback={<RouteLoading />}><AppDetail /></Suspense>} />
+          <Route path="evals" element={<Evals />} />
+          <Route path="compare" element={<CompareIndex />} />
+          <Route path="compare/*" element={<Compare />} />
           <Route path="blog" element={<Blog />} />
           <Route path="blog/:slug" element={<BlogPost />} />
           <Route path="alternatives" element={<Alternatives />} />
@@ -48,4 +81,8 @@ export default function App() {
       </Routes>
     </BrowserRouter>
   );
+}
+
+function RouteLoading() {
+  return <div className="mx-auto max-w-7xl px-6 py-16 font-mono text-sm text-white/35">Loading...</div>;
 }

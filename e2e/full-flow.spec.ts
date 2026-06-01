@@ -112,7 +112,7 @@ test.describe('Full auth UI flow', () => {
 
     // Keys tab should be active after fresh login (new key banner shown)
     await expect(page.locator('h1:has-text("API Keys")')).toBeVisible({ timeout: 10000 });
-    // Should have at least 1 key (auto-created on register + login key)
+    // Should have 1 key (auto-created on register only)
     await expect(page.getByTestId('api-key-card').first()).toBeVisible({ timeout: 5000 });
 
     // Switch to overview tab

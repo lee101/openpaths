@@ -9,6 +9,7 @@ type CodeBlockProps = {
   preClassName?: string;
   codeClassName?: string;
   testId?: string;
+  hideLabel?: boolean;
 };
 
 const LANGUAGE_ALIASES: Record<string, string> = {
@@ -65,9 +66,10 @@ export function CodeBlock({
   preClassName,
   codeClassName,
   testId,
+  hideLabel,
 }: CodeBlockProps) {
   const highlighted = highlightCode(code, language);
-  const resolvedLabel = label || (highlighted.language ? highlighted.language.toUpperCase() : '');
+  const resolvedLabel = hideLabel ? '' : label || (highlighted.language ? highlighted.language.toUpperCase() : '');
 
   return (
     <div className={containerClassName}>

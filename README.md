@@ -91,7 +91,7 @@ Provider key creation scripts live in `rotation/`. They create a new supported p
 
 | Parameter | Status | Notes |
 |----------|--------|-------|
-| `model` | Full support | Includes direct models plus `auto`, `auto-easy-task`, `auto-medium-task`, and `auto-think` |
+| `model` | Full support | Hero: `openpaths/auto`. Variants: `openpaths/auto-code`, `openpaths/auto-fast`, `openpaths/auto-cheap`, `openpaths/auto-reasoning`, `openpaths/auto-vision`, `openpaths/auto-image`. Legacy aliases (`auto`, `auto-easy-task`, `auto-think`, …) still work. |
 | `messages` | Full support | OpenAI chat message format |
 | `temperature`, `top_p`, `stop` | Full support | Passed through where supported |
 | `max_tokens`, `max_completion_tokens` | Full support | Normalized per provider/model family |
@@ -105,7 +105,7 @@ Provider key creation scripts live in `rotation/`. They create a new supported p
 
 ```json
 {
-  "model": "auto-think",
+  "model": "openpaths/auto-reasoning",
   "messages": [
     {"role": "user", "content": "Design a mesh simplification algorithm."}
   ],
@@ -113,6 +113,8 @@ Provider key creation scripts live in `rotation/`. They create a new supported p
   "max_tokens": 2048
 }
 ```
+
+Use `openpaths/auto` as the default — OpenPaths picks the backend from your prompt. Use `openpaths/auto-code`, `openpaths/auto-fast`, `openpaths/auto-cheap`, `openpaths/auto-reasoning`, `openpaths/auto-vision`, or `openpaths/auto-image` when you want a modality bias. Set `reasoning_effort: "auto"` on direct thinking models or use `openpaths/auto-reasoning` to route reasoning depth automatically.
 
 Set `reasoning_effort: "auto"` on any thinking-capable direct model to keep that model while letting OpenPaths choose `none`, `low`, `medium`, or `high` from the same embedding table used by `auto-think`:
 

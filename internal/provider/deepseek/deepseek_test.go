@@ -101,3 +101,37 @@ func TestChatCompletion_PreservesExplicitThinking(t *testing.T) {
 		t.Fatalf("thinking.type = %v, want disabled", thinking["type"])
 	}
 }
+
+func TestChatCompletion_DropsReasoningEffort(t *testing.T) {
+	var captured map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&captured); err != nil {
+			t.Fatalf("decode request: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(model.ChatCompletionResponse{
+			ID: "chatcmpl-1", Object: "chat.completion", Created: 1, Model: "deepseek-v4-flash",
+			Choices: []model.ChatChoice{{Index: 0, Message: &model.ChatMessage{Role: "assistant", Content: "ok"}}},
+		})
+	}))
+	defer server.Close()
+
+	p := New("test-key", server.URL)
+	// "none" is what the autorouter sets for fast/cheap tiers; DeepSeek rejects
+	// it as an unknown reasoning_effort variant, so it must never be forwarded.
+	_, err := p.ChatCompletion(context.Background(), &model.ChatCompletionRequest{
+		Model:           "deepseek-v4-flash",
+		Messages:        []model.ChatMessage{{Role: "user", Content: "Hi"}},
+		ReasoningEffort: "none",
+	})
+	if err != nil {
+		t.Fatalf("ChatCompletion() error = %v", err)
+	}
+	if _, ok := captured["reasoning_effort"]; ok {
+		t.Fatalf("reasoning_effort should be dropped: %#v", captured)
+	}
+	thinking, ok := captured["thinking"].(map[string]any)
+	if !ok || thinking["type"] != "disabled" {
+		t.Fatalf("expected thinking.type=disabled, got: %#v", captured)
+	}
+}

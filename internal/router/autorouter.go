@@ -154,23 +154,44 @@ func truncate(s string, n int) string {
 }
 
 var autoModelMap = map[string]string{
+	// Hero + variants (openpaths/*)
+	"openpaths/auto":           "text",
+	"openpaths-auto":           "text",
+	"openpaths/auto-cheap":     "cheap-task",
+	"openpaths-auto-cheap":     "cheap-task",
+	"openpaths/auto-fast":      "fast-task",
+	"openpaths-auto-fast":      "fast-task",
+	"openpaths/auto-code":      "code-task",
+	"openpaths-auto-code":      "code-task",
+	"openpaths/auto-reasoning": "reasoning-task",
+	"openpaths-auto-reasoning": "reasoning-task",
+	"openpaths/auto-vision":    "vision-task",
+	"openpaths-auto-vision":    "vision-task",
+	"openpaths/auto-image":     "image",
+	"openpaths-auto-image":     "image",
+	// Legacy aliases (same modalities)
+	"auto":             "text",
+	"auto-text":        "text",
+	"auto-chat":        "text",
+	"auto-cheap":       "cheap-task",
+	"auto-easy-task":   "cheap-task",
+	"auto-easy":        "cheap-task",
+	"auto-fast":        "fast-task",
+	"auto-code":        "code-task",
+	"auto-medium-task": "code-task",
+	"auto-medium":      "code-task",
+	"auto-reasoning":   "reasoning-task",
+	"auto-think":       "reasoning-task",
+	"auto-think-task":  "reasoning-task",
+	"autothink":        "reasoning-task",
+	"auto-hard":        "reasoning-task",
+	"auto-hard-task":   "reasoning-task",
+	"auto-opus":        "reasoning-task",
+	"auto-vision":      "vision-task",
 	"auto-image":       "image",
 	"auto-img":         "image",
 	"auto-video":       "video",
 	"auto-vid":         "video",
-	"auto":             "text",
-	"auto-text":        "text",
-	"auto-chat":        "text",
-	"auto-easy-task":   "easy-task",
-	"auto-easy":        "easy-task",
-	"auto-medium-task": "medium-task",
-	"auto-medium":      "medium-task",
-	"auto-think":       "think-task",
-	"auto-think-task":  "think-task",
-	"autothink":        "think-task",
-	"auto-hard":        "hard-task",
-	"auto-hard-task":   "hard-task",
-	"auto-opus":        "hard-task",
 }
 
 func IsAutoModel(modelName string) (modality string, ok bool) {
@@ -180,7 +201,7 @@ func IsAutoModel(modelName string) (modality string, ok bool) {
 
 func IsAutoThinkModel(modelName string) bool {
 	modality, ok := IsAutoModel(modelName)
-	return ok && modality == "think-task"
+	return ok && modality == "reasoning-task"
 }
 
 func IsAutoReasoningEffort(effort string) bool {
@@ -197,14 +218,16 @@ func IsAutoReasoningEffort(effort string) bool {
 // default model-name based routing.
 func TaskTierToModality(tier string) (modality string, ok bool) {
 	switch tier {
-	case "easy":
-		return "easy-task", true
-	case "medium":
-		return "medium-task", true
-	case "think":
-		return "think-task", true
-	case "hard":
-		return "hard-task", true
+	case "cheap", "easy":
+		return "cheap-task", true
+	case "medium", "code":
+		return "code-task", true
+	case "fast":
+		return "fast-task", true
+	case "think", "reasoning", "hard":
+		return "reasoning-task", true
+	case "vision":
+		return "vision-task", true
 	}
 	return "", false
 }
@@ -212,27 +235,26 @@ func TaskTierToModality(tier string) (modality string, ok bool) {
 func defaultRoutingTables() map[string][]AutoEntry {
 	return map[string][]AutoEntry{
 		"image": {
-			// ra1 - default for most image gen
-			{Description: "portrait headshot face character person selfie photo of someone", ModelID: "ra1"},
-			{Description: "logo icon symbol badge emblem brand design graphic", ModelID: "ra1"},
-			{Description: "abstract art colorful pattern gradient texture minimal", ModelID: "ra1"},
-			{Description: "product photo studio lighting commercial advertisement mockup", ModelID: "ra1"},
-			{Description: "simple illustration drawing sketch concept art", ModelID: "ra1"},
-			{Description: "nature wildlife animal close-up macro photograph", ModelID: "ra1"},
-			{Description: "food photography recipe dish meal plating restaurant", ModelID: "ra1"},
-			{Description: "meme funny image joke humor reaction", ModelID: "ra1"},
-			{Description: "wallpaper background desktop phone aesthetic", ModelID: "ra1"},
-			{Description: "pixel art retro 8bit 16bit sprite game asset", ModelID: "ra1"},
-			// zimage - anime specialist
-			{Description: "anime manga japanese animation style character cel shaded", ModelID: "zimage"},
+			// gpt-image-2 - default for safe commercial and creative generation
+			{Description: "portrait headshot face character person selfie photo of someone professional", ModelID: "gpt-image-2"},
+			{Description: "logo icon symbol badge emblem brand design graphic clean corporate", ModelID: "gpt-image-2"},
+			{Description: "product photo studio lighting commercial advertisement mockup ecommerce", ModelID: "gpt-image-2"},
+			{Description: "simple illustration drawing sketch concept art storyboard", ModelID: "gpt-image-2"},
+			{Description: "food photography recipe dish meal plating restaurant menu", ModelID: "gpt-image-2"},
+			{Description: "wallpaper background desktop phone aesthetic landscape", ModelID: "gpt-image-2"},
+			{Description: "architectural visualization interior design room building render", ModelID: "gpt-image-2"},
+			{Description: "hyperrealistic photo studio quality magazine cover editorial fashion", ModelID: "gpt-image-2"},
+			// ra1 - policy-flexible / NSFW / violence / adult when GPT refuses
+			{Description: "nude naked nsfw adult erotic sexual explicit lingerie topless", ModelID: "ra1"},
+			{Description: "pornographic lewd obscene hentai ecchi mature content", ModelID: "ra1"},
+			{Description: "violence gore blood graphic horror disturbing brutal fight", ModelID: "ra1"},
+			{Description: "refused blocked censored cannot generate policy violation fallback", ModelID: "ra1"},
+			{Description: "anime manga japanese animation style character cel shaded fanart", ModelID: "zimage"},
 			{Description: "chibi kawaii cute anime girl boy manga panel", ModelID: "zimage"},
-			// flux-pro - complex scenes
-			{Description: "complex scene detailed environment photorealistic landscape city architecture multiple characters interacting crowd busy street", ModelID: "flux-pro"},
-			{Description: "panoramic wide angle scenery epic vista detailed background environment world building", ModelID: "flux-pro"},
-			{Description: "intricate mechanical technical diagram blueprint schematic detailed engineering", ModelID: "flux-pro"},
-			{Description: "historical painting classical art renaissance baroque detailed composition museum quality", ModelID: "flux-pro"},
-			{Description: "hyperrealistic photo studio quality magazine cover editorial high fashion", ModelID: "flux-pro"},
-			{Description: "architectural visualization interior design room building floor plan render", ModelID: "flux-pro"},
+			{Description: "complex scene detailed environment photorealistic landscape city crowd", ModelID: "flux-pro"},
+			{Description: "panoramic wide angle scenery epic vista detailed background world building", ModelID: "flux-pro"},
+			{Description: "pixel art retro 8bit 16bit sprite game asset", ModelID: "ra1"},
+			{Description: "meme funny image joke humor reaction", ModelID: "ra1"},
 		},
 		"video": {
 			{Description: "short clip simple animation basic motion loop gif small", ModelID: "ltx-video"},
@@ -293,24 +315,24 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			{Description: "user experience flow onboarding accessibility aria wcag a11y", ModelID: "gemini-3.5-flash", ReasoningEffort: "medium"},
 
 			// ===== ADVANCED CODING - GPT 5 Codex medium thinking =====
-			{Description: "architect system design infrastructure scale distributed microservice", ModelID: "gpt-5-codex", ReasoningEffort: "medium"},
-			{Description: "optimize performance profiling memory cpu bottleneck latency throughput", ModelID: "gpt-5-codex", ReasoningEffort: "medium"},
-			{Description: "refactor large codebase restructure migrate rewrite legacy modernize", ModelID: "gpt-5-codex", ReasoningEffort: "medium"},
-			{Description: "security audit penetration test vulnerability assessment hardening", ModelID: "gpt-5-codex", ReasoningEffort: "medium"},
-			{Description: "implement complex algorithm data structure tree graph trie heap", ModelID: "gpt-5-codex", ReasoningEffort: "medium"},
-			{Description: "concurrency parallel threading async await goroutine channel mutex", ModelID: "gpt-5-codex", ReasoningEffort: "medium"},
-			{Description: "networking protocol tcp udp websocket grpc protobuf", ModelID: "gpt-5-codex", ReasoningEffort: "medium"},
-			{Description: "full stack application end to end complete project from scratch", ModelID: "gpt-5-codex", ReasoningEffort: "medium"},
+			{Description: "architect system design infrastructure scale distributed microservice", ModelID: "gpt-5.5", ReasoningEffort: "medium"},
+			{Description: "optimize performance profiling memory cpu bottleneck latency throughput", ModelID: "gpt-5.5", ReasoningEffort: "medium"},
+			{Description: "refactor large codebase restructure migrate rewrite legacy modernize", ModelID: "gpt-5.5", ReasoningEffort: "medium"},
+			{Description: "security audit penetration test vulnerability assessment hardening", ModelID: "gpt-5.5", ReasoningEffort: "medium"},
+			{Description: "implement complex algorithm data structure tree graph trie heap", ModelID: "gpt-5.5", ReasoningEffort: "medium"},
+			{Description: "concurrency parallel threading async await goroutine channel mutex", ModelID: "gpt-5.5", ReasoningEffort: "medium"},
+			{Description: "networking protocol tcp udp websocket grpc protobuf", ModelID: "gpt-5.5", ReasoningEffort: "medium"},
+			{Description: "full stack application end to end complete project from scratch", ModelID: "gpt-5.5", ReasoningEffort: "medium"},
 
 			// ===== VERY HARD / RESEARCH - GPT 5 Codex high thinking =====
-			{Description: "mathematics proof theorem formula derivation calculus algebra topology", ModelID: "gpt-5-codex", ReasoningEffort: "high"},
-			{Description: "research paper academic analysis deep investigation survey literature", ModelID: "gpt-5-codex", ReasoningEffort: "high"},
-			{Description: "machine learning model training neural network deep learning transformer", ModelID: "gpt-5-codex", ReasoningEffort: "high"},
-			{Description: "complex debugging race condition deadlock memory leak concurrency bug", ModelID: "gpt-5-codex", ReasoningEffort: "high"},
-			{Description: "compiler interpreter parser language design type system ast", ModelID: "gpt-5-codex", ReasoningEffort: "high"},
-			{Description: "cryptography protocol security formal verification zero knowledge proof", ModelID: "gpt-5-codex", ReasoningEffort: "high"},
-			{Description: "operating system kernel driver low level systems programming", ModelID: "gpt-5-codex", ReasoningEffort: "high"},
-			{Description: "quantum computing algorithm complexity theory np hard reduction", ModelID: "gpt-5-codex", ReasoningEffort: "high"},
+			{Description: "mathematics proof theorem formula derivation calculus algebra topology", ModelID: "gpt-5.5", ReasoningEffort: "high"},
+			{Description: "research paper academic analysis deep investigation survey literature", ModelID: "gpt-5.5", ReasoningEffort: "high"},
+			{Description: "machine learning model training neural network deep learning transformer", ModelID: "gpt-5.5", ReasoningEffort: "high"},
+			{Description: "complex debugging race condition deadlock memory leak concurrency bug", ModelID: "gpt-5.5", ReasoningEffort: "high"},
+			{Description: "compiler interpreter parser language design type system ast", ModelID: "gpt-5.5", ReasoningEffort: "high"},
+			{Description: "cryptography protocol security formal verification zero knowledge proof", ModelID: "gpt-5.5", ReasoningEffort: "high"},
+			{Description: "operating system kernel driver low level systems programming", ModelID: "gpt-5.5", ReasoningEffort: "high"},
+			{Description: "quantum computing algorithm complexity theory np hard reduction", ModelID: "gpt-5.5", ReasoningEffort: "high"},
 
 			// ===== CREATIVE / CHAT - GPT 5 Chat Latest =====
 			{Description: "creative writing story poetry fiction novel narrative worldbuilding screenplay", ModelID: "gpt-5-chat-latest", ReasoningEffort: "low"},
@@ -348,6 +370,7 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			{Description: "what time weather date today current status check", ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none"},
 			// GPT-5.4 Nano - fast and cheap with tool support
 			{Description: "classify categorize label tag sort rank items", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
+			{Description: "pick choose select chart type visualization type bar line scatter table", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
 			{Description: "extract data parse structured output json schema", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
 			{Description: "write simple test add unit test basic test case", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
 			{Description: "create boilerplate scaffold template starter project", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
@@ -379,6 +402,7 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			{Description: "backend server middleware routing request response http", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
 			{Description: "error handling validation input sanitization edge cases", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
 			{Description: "data analysis csv json structured query analytics pandas", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
+			{Description: "plotly graph config chart traces layout axes dataframe transform xlsx unstructured data", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
 			{Description: "refactor codebase restructure reorganize code cleanup", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
 			{Description: "write comprehensive test suite integration test e2e", ModelID: "gpt-5.4-mini", ReasoningEffort: "medium"},
 			// Claude Sonnet - strong for security/auth/code review
@@ -413,8 +437,8 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			{Description: "formal verification compiler design cryptography research deep scientific reasoning", ModelID: "gemini-3.5-flash", ReasoningEffort: "high"},
 			{Description: "prove a theorem derive a formula or solve a hard math olympiad style problem", ModelID: "gemini-3.5-flash", ReasoningEffort: "high"},
 			{Description: "design a distributed system protocol with consensus recovery and adversarial failures", ModelID: "gemini-3.5-flash", ReasoningEffort: "high"},
-			{Description: "complex debugging race condition deadlock memory leak concurrency bug", ModelID: "gpt-5-codex", ReasoningEffort: "high"},
-			{Description: "implement complex algorithm data structure tree graph trie heap", ModelID: "gpt-5-codex", ReasoningEffort: "high"},
+			{Description: "complex debugging race condition deadlock memory leak concurrency bug", ModelID: "gpt-5.5", ReasoningEffort: "high"},
+			{Description: "implement complex algorithm data structure tree graph trie heap", ModelID: "gpt-5.5", ReasoningEffort: "high"},
 			// DeepSeek V4 Pro - strong price/perf for sensitive and policy-heavy judgement.
 			{Description: "sensitive adult roleplay fringe controversial content careful boundary judgement", ModelID: "deepseek-v4-pro", ReasoningEffort: "high"},
 			{Description: "biosecurity dual use biology pathogen wet lab protocol synthesis toxin dangerous technical details", ModelID: "deepseek-v4-pro", ReasoningEffort: "high"},
@@ -447,6 +471,73 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			{Description: "formal verification compiler design cryptography research deep scientific reasoning", ModelID: "gemini-3.5-flash", ReasoningEffort: "high"},
 			{Description: "make a 3d simulation of cogs gears clock mechanism physics animation webgl threejs", ModelID: "gemini-3.5-flash", ReasoningEffort: "high"},
 			{Description: "biosecurity dual use biology pathogen lab protocol dangerous technical policy reasoning", ModelID: "deepseek-v4-pro", ReasoningEffort: "high"},
+		},
+
+		"cheap-task": {
+			{Description: "classify categorize label tag sort rank sentiment", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
+			{Description: "extract email phone url json field parse structured output", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
+			{Description: "summarize tldr brief overview recap short summary", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
+			{Description: "format convert reformat text json yaml xml markdown", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
+			{Description: "spell check grammar fix proofread typo correction", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
+			{Description: "simple question yes no answer quick fact trivia", ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none"},
+			{Description: "translate short phrase word sentence between languages", ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none"},
+			{Description: "remove this text delete line strip prefix suffix cleanup", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
+		},
+
+		"fast-task": {
+			{Description: "quick chat reply conversational back and forth low latency", ModelID: "deepseek-v4-flash", ReasoningEffort: "none"},
+			{Description: "fast assistant response customer support short answer", ModelID: "deepseek-v4-flash", ReasoningEffort: "none"},
+			{Description: "streaming chat agent loop tool call fast turnaround", ModelID: "deepseek-v4-flash", ReasoningEffort: "low"},
+			{Description: "rewrite polish concise email message response tone", ModelID: "gemini-2.5-flash", ReasoningEffort: "none"},
+			{Description: "explain concept teach tutorial guide how to learn briefly", ModelID: "gemini-2.5-flash", ReasoningEffort: "none"},
+			{Description: "brainstorm ideas suggestions quick list options", ModelID: "deepseek-v4-flash", ReasoningEffort: "none"},
+		},
+
+		"code-task": {
+			// Easy coding — small models
+			{Description: "resolve this git diff merge conflict cherry pick rebase", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
+			{Description: "remove this text delete unused import rename variable lint fix typo", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
+			{Description: "git commit push pull branch checkout status diff log", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
+			{Description: "write simple test unit test assert mock stub", ModelID: "gpt-5.4-nano", ReasoningEffort: "low"},
+			{Description: "shell command bash script terminal automation", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
+			// Medium coding
+			{Description: "debug fix bug error exception crash investigate stack trace", ModelID: "gpt-5.4-mini", ReasoningEffort: "medium"},
+			{Description: "implement feature endpoint api route handler refactor module", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
+			{Description: "code review security vulnerability quality audit", ModelID: "claude-sonnet-4-6", ReasoningEffort: "medium"},
+			// 3D / Three.js / frontend visual coding — Gemini
+			{Description: "threejs webgl 3d scene mesh shader animation canvas react three fiber", ModelID: "gemini-3.5-flash", ReasoningEffort: "medium"},
+			{Description: "frontend ui ux layout component react vue svelte tailwind css", ModelID: "gemini-3.5-flash", ReasoningEffort: "medium"},
+			{Description: "game design threejs physics simulation clock gears cogs mechanism", ModelID: "gemini-3.5-flash", ReasoningEffort: "high"},
+			// Hard coding — GPT-5.5 / Codex
+			{Description: "architect system design distributed microservice scale infrastructure", ModelID: "gpt-5.5", ReasoningEffort: "medium"},
+			{Description: "refactor large codebase migrate rewrite legacy modernize", ModelID: "gpt-5.5", ReasoningEffort: "medium"},
+			{Description: "agentic coding bug fix multi file patch tool use", ModelID: "gpt-5.5", ReasoningEffort: "medium"},
+			{Description: "implement complex algorithm data structure compiler parser", ModelID: "gpt-5.5", ReasoningEffort: "high"},
+		},
+
+		"reasoning-task": {
+			{Description: "say yes answer yes only one word trivial acknowledgement", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
+			{Description: "explain a concept simply compare two options briefly", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
+			{Description: "plan a refactor migration test strategy across several files", ModelID: "gpt-5.4-mini", ReasoningEffort: "medium"},
+			{Description: "analyze tradeoffs architecture performance bottlenecks failure modes", ModelID: "gpt-5.4-mini", ReasoningEffort: "medium"},
+			{Description: "prove a theorem derive formula hard math olympiad logic puzzle", ModelID: "gemini-3.5-flash", ReasoningEffort: "high"},
+			{Description: "design distributed system protocol consensus adversarial failures", ModelID: "gemini-3.5-flash", ReasoningEffort: "high"},
+			{Description: "formal verification cryptography research deep scientific reasoning", ModelID: "gemini-3.5-flash", ReasoningEffort: "high"},
+			{Description: "make a 3d simulation cogs gears clock mechanism webgl threejs", ModelID: "gemini-3.5-flash", ReasoningEffort: "high"},
+			{Description: "competitive programming leetcode codeforces hard problem", ModelID: "o3", ReasoningEffort: "high"},
+			{Description: "sensitive policy harm classifier biosecurity fringe adult reasoning", ModelID: "deepseek-v4-pro", ReasoningEffort: "high"},
+		},
+
+		"vision-task": {
+			{Description: "describe this image caption alt text accessibility summary", ModelID: "gemini-2.5-flash", ReasoningEffort: "none"},
+			{Description: "analyze photo scene objects people actions context detailed", ModelID: "gemini-2.5-flash", ReasoningEffort: "low"},
+			{Description: "ocr read text document screenshot invoice receipt label", ModelID: "gemini-3.5-flash", ReasoningEffort: "low"},
+			{Description: "compare two images difference similarity visual qa", ModelID: "gemini-3.5-flash", ReasoningEffort: "medium"},
+			{Description: "chart graph diagram plot interpret data visualization", ModelID: "gemini-3.5-flash", ReasoningEffort: "medium"},
+			// Low-res / thumbnail — cheap caption path (gitbase-style via flash-lite until dedicated caption API)
+			{Description: "thumbnail icon small low resolution tiny image quick caption", ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none"},
+			{Description: "favicon sprite sheet pixel small preview describe briefly", ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none"},
+			{Description: "meme image short alt text one sentence description", ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none"},
 		},
 	}
 }

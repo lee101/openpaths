@@ -3,7 +3,9 @@ package handler
 import (
 	"encoding/json"
 	"log"
+	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/valyala/fasthttp"
 
@@ -38,6 +40,7 @@ func (h *SpeechHandler) HandleSpeechGeneration(ctx *fasthttp.RequestCtx) {
 	if apiKey != nil {
 		apiKeyID = apiKey.ID
 	}
+	app := requestAppAttribution(ctx)
 
 	var req model.SpeechRequest
 	if err := json.Unmarshal(ctx.PostBody(), &req); err != nil {
@@ -102,15 +105,15 @@ func (h *SpeechHandler) HandleSpeechGeneration(ctx *fasthttp.RequestCtx) {
 				statusCode = pe.StatusCode
 				errMsg = pe.Message
 				if !pe.Retryable {
-					h.recorder.RecordError(userID, apiKeyID, originalModel, cand.Provider.Name(),
-						int(latency.Milliseconds()), statusCode, errMsg, false)
+					h.recorder.RecordErrorWithApp(userID, apiKeyID, originalModel, cand.Provider.Name(),
+						int(latency.Milliseconds()), statusCode, errMsg, false, app.ID, app.URL, app.Title, app.Categories)
 					writeError(ctx, statusCode, "provider_error", errMsg)
 					return
 				}
 			}
 			h.router.MarkModelUnhealthy(cand.Provider.Name(), cand.ModelCfg.ID)
-			h.recorder.RecordError(userID, apiKeyID, originalModel, cand.Provider.Name(),
-				int(latency.Milliseconds()), statusCode, errMsg, false)
+			h.recorder.RecordErrorWithApp(userID, apiKeyID, originalModel, cand.Provider.Name(),
+				int(latency.Milliseconds()), statusCode, errMsg, false, app.ID, app.URL, app.Title, app.Categories)
 			if i < len(candidates)-1 {
 				log.Printf("speech fallback: %s/%s -> %s/%s",
 					cand.Provider.Name(), cand.ModelCfg.ID,
@@ -120,17 +123,25 @@ func (h *SpeechHandler) HandleSpeechGeneration(ctx *fasthttp.RequestCtx) {
 		}
 
 		h.router.MarkModelHealthy(cand.Provider.Name(), cand.ModelCfg.ID)
-		chars := resp.Characters
-		if chars == 0 {
-			chars = len(req.Input)
+		inputTokens := estimateSpeechInputTokens(req.Input)
+		if inputTokens == 0 {
+			inputTokens = 1
 		}
-		cost, _ := h.billing.Deduct(ctx, userID, cand.ModelCfg.ID, chars, 0, "", "")
-		h.recorder.RecordSuccess(userID, apiKeyID, originalModel, cand.Provider.Name(),
-			chars, 0, int(latency.Milliseconds()), 0, cost, false)
+		cost, _ := h.billing.Deduct(ctx, userID, cand.ModelCfg.ID, inputTokens, 0, "", "")
+		h.recorder.RecordSuccessWithApp(userID, apiKeyID, originalModel, cand.Provider.Name(),
+			inputTokens, 0, int(latency.Milliseconds()), 0, cost, false, app.ID, app.URL, app.Title, app.Categories)
 
 		writeJSON(ctx, 200, resp)
 		return
 	}
 
 	writeError(ctx, 502, "provider_error", "all providers failed for model "+originalModel)
+}
+
+func estimateSpeechInputTokens(input string) int {
+	input = strings.TrimSpace(input)
+	if input == "" {
+		return 0
+	}
+	return max(1, (utf8.RuneCountInString(input)+3)/4)
 }

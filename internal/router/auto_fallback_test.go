@@ -33,14 +33,23 @@ func TestAutoTierConfig_PrimaryModels(t *testing.T) {
 		models[m.ID] = m.ProviderModelID
 	}
 
-	if got := models["auto-medium-task"]; got != "gpt-5.4-mini" {
-		t.Fatalf("auto-medium-task provider_model_id = %q, want %q", got, "gpt-5.4-mini")
+	if got := models["openpaths/auto-code"]; got != "gpt-5.5" {
+		t.Fatalf("openpaths/auto-code provider_model_id = %q, want %q", got, "gpt-5.5")
 	}
-	if got := models["auto-think"]; got != "gpt-5.4-mini" {
-		t.Fatalf("auto-think provider_model_id = %q, want %q", got, "gpt-5.4-mini")
+	if got := models["openpaths/auto-reasoning"]; got != "gpt-5.4-mini" {
+		t.Fatalf("openpaths/auto-reasoning provider_model_id = %q, want %q", got, "gpt-5.4-mini")
 	}
-	if got := models["auto-easy-task"]; got != "gemini-3.1-flash-lite" {
-		t.Fatalf("auto-easy-task provider_model_id = %q, want %q", got, "gemini-3.1-flash-lite")
+	if got := models["openpaths/auto-cheap"]; got != "gpt-5.4-nano" {
+		t.Fatalf("openpaths/auto-cheap provider_model_id = %q, want %q", got, "gpt-5.4-nano")
+	}
+	if got := models["openpaths/auto-fast"]; got != "deepseek-v4-flash" {
+		t.Fatalf("openpaths/auto-fast provider_model_id = %q, want %q", got, "deepseek-v4-flash")
+	}
+	if got := models["openpaths/auto"]; got != "gemini-3.5-flash" {
+		t.Fatalf("openpaths/auto provider_model_id = %q, want %q", got, "gemini-3.5-flash")
+	}
+	if got := models["openpaths/auto-image"]; got != "gpt-image-2" {
+		t.Fatalf("openpaths/auto-image provider_model_id = %q, want %q", got, "gpt-image-2")
 	}
 	if got := models["gpt-5.5"]; got != "gpt-5.5" {
 		t.Fatalf("gpt-5.5 provider_model_id = %q, want %q", got, "gpt-5.5")

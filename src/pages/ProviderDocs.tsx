@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
-import { BookOpen, Copy, Check, ExternalLink, ArrowLeft } from 'lucide-react';
+import { BookOpen, Copy, Check, ExternalLink, ArrowLeft, Play, KeyRound } from 'lucide-react';
 import { providers, FALLBACK_LOGO } from '../data/providers';
 import { models } from '../data/models';
 import { getAPIBaseURL, getStoredAPIKey } from '../lib/session';
@@ -95,6 +95,25 @@ const EXAMPLES: Record<string, ProviderExample> = {
     description: 'DeepSeek V3 Chat and Reasoner — frontier-level performance, extremely cheap.',
     endpoint: '/v1',
     chatModel: 'deepseek-chat',
+  },
+  cursor: {
+    description: 'Cursor Composer 2.5 (standard and fast tiers) via the Cursor Cloud Agents API — agentic coding with tool use, exposed as standard OpenAI-style chat completions through OpenPaths.',
+    endpoint: '/v1',
+    chatModel: 'composer-2.5',
+    provides: [
+      {
+        title: 'Composer 2.5',
+        description: 'Cursor’s agentic coding model with tool use. Use `composer-2.5` for the standard tier and `composer-2.5-fast` for the low-latency tier.',
+      },
+      {
+        title: 'OpenAI-Compatible Surface',
+        description: 'OpenPaths runs Composer through the Cursor Cloud Agents API and returns OpenAI-style chat completion responses, so existing SDKs work unchanged.',
+      },
+    ],
+    notes: [
+      'Use `composer-2.5` (standard) or `composer-2.5-fast` (fast) as the model name.',
+      'Best for coding agents, refactors, and tool-driven workflows — pass your tools array as usual.',
+    ],
   },
   mistral: {
     description: 'Mistral Large, Medium, Codestral, Pixtral, Magistral, Devstral, Ministral, embeddings.',
@@ -313,7 +332,7 @@ const EXAMPLES: Record<string, ProviderExample> = {
     ],
   },
   openpaths: {
-    description: 'First-party auto-routing tiers (auto, auto-easy, auto-medium, auto-think) plus our local embedding model.',
+    description: 'First-party OpenPaths Auto models (openpaths/auto and variants) plus our local gobed embedding router.',
     endpoint: '/v1',
     chatModel: 'auto',
     embeddingModel: 'openpaths-embed',
@@ -345,6 +364,15 @@ export function ProviderDocs() {
     () => models.filter(m => m.provider === providerName),
     [providerName],
   );
+
+  // Best model to prefill the Playground with: the documented default, else the
+  // provider's first listed model. Search providers (exa/papers) have no chat model.
+  const playgroundModel =
+    example?.chatModel ||
+    example?.imageModel ||
+    example?.videoModel ||
+    providerModels[0]?.id ||
+    '';
 
   const snippets = useMemo(
     () => buildSnippets(apiBase, exampleKey, example),
@@ -405,6 +433,43 @@ export function ProviderDocs() {
           >
             <ExternalLink className="w-3.5 h-3.5" /> {providerName} website
           </a>
+        )}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3 mb-8">
+        {slug === 'exa' || slug === 'papers' ? (
+          <Link
+            to="/search"
+            className="inline-flex items-center gap-2 bg-white text-black px-4 py-2.5 rounded-lg text-sm font-mono font-bold hover:bg-white/90 transition-colors"
+            data-testid="provider-docs-try"
+          >
+            <Play className="w-4 h-4" /> Try {providerName} Search
+          </Link>
+        ) : playgroundModel ? (
+          <Link
+            to={`/playground?model=${encodeURIComponent(playgroundModel)}`}
+            className="inline-flex items-center gap-2 bg-white text-black px-4 py-2.5 rounded-lg text-sm font-mono font-bold hover:bg-white/90 transition-colors"
+            data-testid="provider-docs-try"
+          >
+            <Play className="w-4 h-4" /> Test {providerName} in the Playground
+          </Link>
+        ) : (
+          <Link
+            to="/playground"
+            className="inline-flex items-center gap-2 bg-white text-black px-4 py-2.5 rounded-lg text-sm font-mono font-bold hover:bg-white/90 transition-colors"
+            data-testid="provider-docs-try"
+          >
+            <Play className="w-4 h-4" /> Open the Playground
+          </Link>
+        )}
+        {!apiKey && (
+          <Link
+            to="/account"
+            className="inline-flex items-center gap-2 border border-white/15 px-4 py-2.5 rounded-lg text-sm font-mono text-white/80 hover:text-white hover:border-white/30 transition-colors"
+            data-testid="provider-docs-get-key"
+          >
+            <KeyRound className="w-4 h-4" /> Sign up for a free API key
+          </Link>
         )}
       </div>
 

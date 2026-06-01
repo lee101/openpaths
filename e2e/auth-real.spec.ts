@@ -54,7 +54,7 @@ test.describe('Real server auth', () => {
 
   // ========== LOGIN ==========
 
-  test('login returns api_key for valid credentials', async ({ request }) => {
+  test('login returns JWT when user already has API keys', async ({ request }) => {
     const email = uniqueEmail();
     await request.post(`${BASE}/auth/register`, {
       data: { email, password: 'mypassword', name: 'Login Test' },
@@ -65,7 +65,8 @@ test.describe('Real server auth', () => {
     });
     expect(res.status()).toBe(200);
     const body = await res.json();
-    expect(body.api_key).toMatch(/^op-/);
+    expect(body.api_key).toBeUndefined();
+    expect(body.token).toMatch(/^eyJ/);
     expect(body.user.email).toBe(email);
   });
 
@@ -107,7 +108,7 @@ test.describe('Real server auth', () => {
     expect(body).toHaveProperty('balance_usd');
   });
 
-  test('api key from login grants access to balance', async ({ request }) => {
+  test('login JWT grants access to balance', async ({ request }) => {
     const email = uniqueEmail();
     await request.post(`${BASE}/auth/register`, {
       data: { email, password: 'password123', name: 'Test' },
@@ -115,17 +116,17 @@ test.describe('Real server auth', () => {
     const login = await request.post(`${BASE}/auth/login`, {
       data: { email, password: 'password123' },
     });
-    const { api_key } = await login.json();
+    const { token } = await login.json();
 
     const res = await request.get(`${BASE}/account/balance`, {
-      headers: { Authorization: `Bearer ${api_key}` },
+      headers: { Authorization: `Bearer ${token}` },
     });
     expect(res.status()).toBe(200);
     const body = await res.json();
     expect(body).toHaveProperty('balance_usd');
   });
 
-  test('api key from login grants access to account keys list', async ({ request }) => {
+  test('login JWT grants access to account keys list', async ({ request }) => {
     const email = uniqueEmail();
     await request.post(`${BASE}/auth/register`, {
       data: { email, password: 'password123', name: 'Test' },
@@ -133,14 +134,15 @@ test.describe('Real server auth', () => {
     const login = await request.post(`${BASE}/auth/login`, {
       data: { email, password: 'password123' },
     });
-    const { api_key } = await login.json();
+    const { token } = await login.json();
 
     const res = await request.get(`${BASE}/account/keys`, {
-      headers: { Authorization: `Bearer ${api_key}` },
+      headers: { Authorization: `Bearer ${token}` },
     });
     expect(res.status()).toBe(200);
     const body = await res.json();
     expect(Array.isArray(body.keys)).toBe(true);
+    expect(body.keys.length).toBe(1);
   });
 
   test('invalid api key returns 401', async ({ request }) => {
@@ -178,7 +180,7 @@ test.describe('Real server auth', () => {
     expect(storedKey).toMatch(/^op-/);
   });
 
-  test('login via UI flow stores api_key and shows dashboard', async ({ page }) => {
+  test('login via UI flow stores session token and shows dashboard', async ({ page }) => {
     // Register via API first
     const email = uniqueEmail();
     await page.request.post(`${BASE}/auth/register`, {
@@ -193,9 +195,10 @@ test.describe('Real server auth', () => {
     await page.getByTestId('auth-submit').click();
 
     await expect(page.locator('h2:has-text("Account")')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('new-key-banner')).toHaveCount(0);
 
     const storedKey = await page.evaluate(() => localStorage.getItem('op_api_key'));
-    expect(storedKey).toMatch(/^op-/);
+    expect(storedKey).toMatch(/^eyJ/);
   });
 
   test('wrong password via UI shows error without redirect', async ({ page }) => {

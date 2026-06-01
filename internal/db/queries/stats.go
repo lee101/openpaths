@@ -122,12 +122,14 @@ func (q *StatsQueries) GetUsageBreakdown(ctx context.Context, period string) ([]
 	rows, err := q.pool.Query(ctx,
 		`SELECT
 			CASE
-				WHEN model IN ('auto-easy-task', 'auto-easy') THEN 'easy-task'
-				WHEN model IN ('auto-medium-task', 'auto-medium') THEN 'medium-task'
-				WHEN model IN ('auto-think', 'auto-think-task', 'autothink') THEN 'think-task'
-				WHEN model IN ('auto-hard', 'auto-hard-task', 'auto-opus') THEN 'hard-task'
-				WHEN model IN ('auto-image', 'auto-video', 'auto-music', 'auto-speech', 'auto-transcription', 'auto-embedding') THEN model
-				WHEN model = 'auto' THEN 'auto'
+				WHEN model IN ('openpaths/auto', 'auto', 'auto-chat', 'auto-text') THEN 'openpaths/auto'
+				WHEN model IN ('openpaths/auto-cheap', 'auto-cheap', 'auto-easy-task', 'auto-easy') THEN 'openpaths/auto-cheap'
+				WHEN model IN ('openpaths/auto-fast', 'auto-fast') THEN 'openpaths/auto-fast'
+				WHEN model IN ('openpaths/auto-code', 'auto-code', 'auto-medium-task', 'auto-medium') THEN 'openpaths/auto-code'
+				WHEN model IN ('openpaths/auto-reasoning', 'auto-reasoning', 'auto-think', 'auto-think-task', 'autothink', 'auto-hard', 'auto-hard-task', 'auto-opus') THEN 'openpaths/auto-reasoning'
+				WHEN model IN ('openpaths/auto-vision', 'auto-vision') THEN 'openpaths/auto-vision'
+				WHEN model IN ('openpaths/auto-image', 'auto-image', 'auto-img') THEN 'openpaths/auto-image'
+				WHEN model IN ('auto-video', 'auto-music', 'auto-speech', 'auto-transcription', 'auto-embedding') THEN model
 				ELSE 'direct'
 			END AS task,
 			provider,

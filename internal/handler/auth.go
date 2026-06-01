@@ -7,6 +7,7 @@ import (
 
 	"github.com/openpaths/openpaths/internal/auth"
 	"github.com/openpaths/openpaths/internal/db/queries"
+	"github.com/openpaths/openpaths/internal/model"
 )
 
 // OnRegisterFunc is called after a successful user registration with (userID, email).
@@ -16,11 +17,12 @@ type AuthHandler struct {
 	userQ      *queries.UserQueries
 	creditQ    *queries.CreditQueries
 	apiKeyQ    *queries.APIKeyQueries
+	jwt        *auth.JWTService
 	onRegister OnRegisterFunc
 }
 
-func NewAuthHandler(userQ *queries.UserQueries, creditQ *queries.CreditQueries, apiKeyQ *queries.APIKeyQueries) *AuthHandler {
-	return &AuthHandler{userQ: userQ, creditQ: creditQ, apiKeyQ: apiKeyQ}
+func NewAuthHandler(userQ *queries.UserQueries, creditQ *queries.CreditQueries, apiKeyQ *queries.APIKeyQueries, jwt *auth.JWTService) *AuthHandler {
+	return &AuthHandler{userQ: userQ, creditQ: creditQ, apiKeyQ: apiKeyQ, jwt: jwt}
 }
 
 // SetOnRegister sets a callback invoked after successful registration.
@@ -138,12 +140,40 @@ func (h *AuthHandler) HandleLogin(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
+	keys, err := h.apiKeyQ.ListByUser(ctx, user.ID)
+	if err != nil {
+		writeError(ctx, 500, "server_error", "Failed to list API keys")
+		return
+	}
+	if activeAPIKeyCount(keys) > 0 {
+		if h.jwt == nil {
+			writeError(ctx, 500, "server_error", "JWT not configured")
+			return
+		}
+		token, err := h.jwt.Generate(user.ID, user.Email)
+		if err != nil {
+			writeError(ctx, 500, "server_error", "Failed to generate session token")
+			return
+		}
+		setSessionCookie(ctx, token)
+		writeJSON(ctx, 200, authResponse{
+			Token: token,
+			User: map[string]any{
+				"id":       user.ID,
+				"email":    user.Email,
+				"name":     user.Name,
+				"is_admin": user.IsAdmin,
+			},
+		})
+		return
+	}
+
 	rawKey, keyHash, keyPrefix, err := auth.GenerateAPIKey()
 	if err != nil {
 		writeError(ctx, 500, "server_error", "Failed to generate session key")
 		return
 	}
-	if _, err := h.apiKeyQ.Create(ctx, user.ID, keyHash, keyPrefix, "Login"); err != nil {
+	if _, err := h.apiKeyQ.Create(ctx, user.ID, keyHash, keyPrefix, "Default"); err != nil {
 		writeError(ctx, 500, "server_error", "Failed to create session key")
 		return
 	}
@@ -159,6 +189,16 @@ func (h *AuthHandler) HandleLogin(ctx *fasthttp.RequestCtx) {
 			"is_admin": user.IsAdmin,
 		},
 	})
+}
+
+func activeAPIKeyCount(keys []model.APIKey) int {
+	n := 0
+	for _, k := range keys {
+		if !k.Revoked {
+			n++
+		}
+	}
+	return n
 }
 
 // HandleLogout clears the session cookie.

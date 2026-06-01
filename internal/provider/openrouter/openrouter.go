@@ -17,20 +17,36 @@ import (
 
 type OpenRouterProvider struct {
 	*oai.OpenAIProvider
-	apiKey  string
-	baseURL string
-	client  *http.Client
+	apiKey        string
+	baseURL       string
+	appReferer    string
+	appTitle      string
+	appCategories string
+	client        *http.Client
 }
 
 func New(apiKey, baseURL string) *OpenRouterProvider {
+	return NewWithAttribution(apiKey, baseURL, "https://openpaths.io", "OpenPaths", "programming-app")
+}
+
+func NewWithAttribution(apiKey, baseURL, appReferer, appTitle, appCategories string) *OpenRouterProvider {
 	if baseURL == "" {
 		baseURL = "https://openrouter.ai/api"
 	}
 	baseURL = strings.TrimRight(baseURL, "/")
+	if appReferer == "" {
+		appReferer = "https://openpaths.io"
+	}
+	if appTitle == "" {
+		appTitle = "OpenPaths"
+	}
 	return &OpenRouterProvider{
 		OpenAIProvider: oai.New(apiKey, baseURL),
 		apiKey:         apiKey,
 		baseURL:        baseURL,
+		appReferer:     appReferer,
+		appTitle:       appTitle,
+		appCategories:  appCategories,
 		client:         &http.Client{Timeout: 5 * time.Minute},
 	}
 }
@@ -91,6 +107,10 @@ func (p *OpenRouterProvider) ChatCompletion(ctx context.Context, req *model.Chat
 func (p *OpenRouterProvider) setHeaders(req *http.Request) {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+p.apiKey)
-	req.Header.Set("HTTP-Referer", "https://openpaths.io")
-	req.Header.Set("X-Title", "OpenPaths")
+	req.Header.Set("HTTP-Referer", p.appReferer)
+	req.Header.Set("X-OpenRouter-Title", p.appTitle)
+	req.Header.Set("X-Title", p.appTitle)
+	if p.appCategories != "" {
+		req.Header.Set("X-OpenRouter-Categories", p.appCategories)
+	}
 }

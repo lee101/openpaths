@@ -21,7 +21,7 @@ test.describe('Public Spaces', () => {
 
     await expect(nav.locator('a[href="/models"]').last()).toBeVisible();
     await expect(nav.locator('a[href="/alternatives"]').last()).toBeVisible();
-    await expect(nav.locator('a[href="/image-to-3d"]').last()).toBeVisible();
+    await expect(nav.locator('a[href="/tools"]').last()).toBeVisible();
     await expect(nav.locator('a[href="/#api"]').last()).toBeVisible();
 
     await nav.locator('a[href="/alternatives"]').last().click();
@@ -48,13 +48,47 @@ test.describe('Public Spaces', () => {
     await expect(page.getByRole('heading', { name: /Image to 3D/i })).toBeVisible();
     await expect(page.locator('model-viewer')).toHaveAttribute('src', /sword-pixal3d\.glb/);
     await expect(page.getByText('Upload, paste, or drop reference image')).toBeVisible();
-    await expect(page.locator('input[type="file"]')).toHaveAttribute('accept', 'image/*');
+    await expect(page.locator('input[type="file"]').first()).toHaveAttribute('accept', 'image/*');
+    await expect(page.getByText(/Preview your own 3D file/i)).toBeVisible();
 
     await expect(page.getByRole('button', { name: 'python' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'JS' })).toBeVisible();
     await expect(page.locator('button').filter({ hasText: /^curl$/ }).last()).toBeVisible();
     await expect(page.getByText('/v1/3d/generations')).toBeVisible();
     await expect(page.getByText('Model: pixal3d-image-to-3d')).toBeVisible();
+  });
+
+  test('tools hub lists first-party tools and links to each page', async ({ page }) => {
+    await page.goto('/tools');
+
+    await expect(page.getByRole('heading', { name: /OpenPaths Tools/i })).toBeVisible();
+    await expect(page.locator('a[href="/text-to-image"]').first()).toBeVisible();
+    await expect(page.locator('a[href="/image-to-3d"]').first()).toBeVisible();
+    await expect(page.locator('a[href="/text-to-3d"]').first()).toBeVisible();
+
+    await page.locator('a[href="/text-to-3d"]').first().click();
+    await expect(page).toHaveURL('/text-to-3d');
+    await expect(page.getByRole('heading', { name: /^Text to 3D$/i })).toBeVisible();
+  });
+
+  test('text-to-3d space exposes prompt controls, viewer, and snippets', async ({ page }) => {
+    await page.goto('/text-to-3d');
+
+    await expect(page.getByRole('heading', { name: /^Text to 3D$/i })).toBeVisible();
+    await expect(page.locator('model-viewer')).toHaveAttribute('src', /sword-pixal3d\.glb/);
+    await expect(page.getByText('/v1/3d/text-generations')).toBeVisible();
+    await expect(page.getByRole('button', { name: /Generate 3D/i })).toBeVisible();
+  });
+
+  test('text-to-image space exposes prompt, model select, and snippets', async ({ page }) => {
+    await page.goto('/text-to-image');
+
+    await expect(page.getByRole('heading', { name: /^Text to Image$/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Generate/i })).toBeVisible();
+    // Default snippet tab is Python (images.generate); switch to cURL to see the raw endpoint.
+    await expect(page.getByText('images.generate')).toBeVisible();
+    await page.getByRole('button', { name: /^curl$/ }).click();
+    await expect(page.getByText('/v1/images/generations')).toBeVisible();
   });
 
   for (const modelId of seedanceModels) {

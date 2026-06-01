@@ -119,19 +119,24 @@ providers:
     api_key: "${EXA_API_KEY}"
     enabled: true
 
+  - name: cursor
+    base_url: "https://api.cursor.com"
+    api_key: "${CURSOR_API_KEY}"
+    enabled: true
+
   - name: papers
     base_url: "https://papers.app.nz"
     api_key: "${APP_API_KEY}"
     enabled: true
 
 models:
-  # --- Auto (Gemini 3.5 primary, cross-provider fallbacks) ---
-  - id: "auto"
+  # --- OpenPaths Auto (hero + variants; embedding-routed) ---
+  - id: "openpaths/auto"
     provider: google
     provider_model_id: "gemini-3.5-flash"
     input_price_per_1m: 1.50
     output_price_per_1m: 9.00
-    aliases: ["auto-chat", "auto-text"]
+    aliases: ["auto", "auto-chat", "auto-text", "openpaths-auto"]
     context_window: 1000000
     max_output_tokens: 64000
     supports_streaming: true
@@ -148,73 +153,103 @@ models:
       - "gemini-2.5-pro"
       - "or/gpt-5.5"
 
-  # --- Auto Easy Task (cheapest models only) ---
-  - id: "auto-easy-task"
-    provider: google
-    provider_model_id: "gemini-3.1-flash-lite"
-    input_price_per_1m: 0.25
-    output_price_per_1m: 1.50
-    aliases: ["auto-easy"]
-    context_window: 1000000
-    max_output_tokens: 8192
+  - id: "openpaths/auto-cheap"
+    provider: openai
+    provider_model_id: "gpt-5.4-nano"
+    input_price_per_1m: 0.20
+    output_price_per_1m: 1.25
+    aliases: ["auto-cheap", "auto-easy-task", "auto-easy", "openpaths-auto-cheap"]
+    context_window: 400000
+    max_output_tokens: 128000
     supports_streaming: true
     supports_tools: true
     supports_vision: true
     fallback_models:
+      - "gemini-3.1-flash-lite"
       - "deepseek-v4-flash"
-      - "gpt-5.4-nano"
-      - "gemini-2.5-flash"
+      - "gpt-4o-mini"
       - "claude-haiku-4-5-20251001"
       - "or/gpt-5.4-nano"
+
+  - id: "openpaths/auto-fast"
+    provider: deepseek
+    provider_model_id: "deepseek-v4-flash"
+    input_price_per_1m: 0.14
+    output_price_per_1m: 0.28
+    aliases: ["auto-fast", "openpaths-auto-fast"]
+    context_window: 1000000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models:
+      - "gemini-2.5-flash"
       - "gemini-3.1-flash-lite"
-
-  # --- Auto Medium Task (mid-tier models) ---
-  - id: "auto-medium-task"
-    provider: openai
-    provider_model_id: "gpt-5.4-mini"
-    input_price_per_1m: 0.75
-    output_price_per_1m: 4.50
-    aliases: ["auto-medium"]
-    context_window: 400000
-    max_output_tokens: 128000
-    supports_streaming: true
-    supports_tools: true
-    supports_vision: true
-    fallback_models:
-      - "deepseek-v4-flash"
-      - "claude-sonnet-4-6"
-      - "gemini-2.5-flash"
-      - "deepseek-chat"
-      - "or/gpt-5.4-mini"
-
-  # --- Auto Think (embedding-routed reasoning effort) ---
-  - id: "auto-think"
-    provider: openai
-    provider_model_id: "gpt-5.4-mini"
-    input_price_per_1m: 0.75
-    output_price_per_1m: 4.50
-    aliases: ["autothink", "auto-think-task"]
-    context_window: 400000
-    max_output_tokens: 128000
-    supports_streaming: true
-    supports_tools: true
-    supports_vision: true
-    fallback_models:
       - "gpt-5.4-nano"
-      - "deepseek-v4-flash"
-      - "gpt-5.5"
-      - "deepseek-v4-pro"
+      - "claude-haiku-4-5-20251001"
+
+  - id: "openpaths/auto-code"
+    provider: openai
+    provider_model_id: "gpt-5.5"
+    input_price_per_1m: 5.00
+    output_price_per_1m: 30.00
+    aliases: ["auto-code", "auto-medium-task", "auto-medium", "openpaths-auto-code"]
+    context_window: 1050000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models:
+      - "gpt-5-codex"
+      - "gpt-5.4-mini"
+      - "gemini-3.5-flash"
       - "claude-sonnet-4-6"
-      - "gemini-2.5-flash"
-      - "gemini-2.5-pro"
+      - "deepseek-v4-flash"
       - "or/gpt-5.5"
 
-  # --- Auto Image (embedding-routed, defaults to ra1) ---
-  - id: "auto-image"
-    provider: netwrck
-    provider_model_id: "ra1"
-    price_per_image: 0.04
-    aliases: ["auto-img"]
+  - id: "openpaths/auto-reasoning"
+    provider: openai
+    provider_model_id: "gpt-5.4-mini"
+    input_price_per_1m: 0.75
+    output_price_per_1m: 4.50
+    aliases: ["auto-reasoning", "auto-think", "auto-think-task", "autothink", "auto-hard-task", "auto-hard", "auto-opus", "openpaths-auto-reasoning"]
+    context_window: 400000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models:
+      - "gemini-3.5-flash"
+      - "gpt-5.5"
+      - "gpt-5-codex"
+      - "deepseek-v4-pro"
+      - "o3"
+      - "claude-sonnet-4-6"
+      - "or/gpt-5.5"
+
+  - id: "openpaths/auto-vision"
+    provider: google
+    provider_model_id: "gemini-2.5-flash"
+    input_price_per_1m: 0.30
+    output_price_per_1m: 2.50
+    aliases: ["auto-vision", "openpaths-auto-vision"]
+    context_window: 1000000
+    max_output_tokens: 65536
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models:
+      - "gemini-3.5-flash"
+      - "gemini-3.1-flash-lite"
+      - "gpt-5.4-mini"
+      - "glm-4.6v-flash"
+      - "pixtral-large-latest"
+
+  - id: "openpaths/auto-image"
+    provider: openai
+    provider_model_id: "gpt-image-2"
+    price_per_image: 0.211
+    aliases: ["auto-image", "auto-img", "openpaths-auto-image"]
     supports_streaming: false
     supports_tools: false
     supports_vision: false
@@ -229,10 +264,12 @@ models:
       - "1280x720"
       - "720x1280"
     fallback_models:
+      - "gpt-image-2"
       - "ra1"
       - "zimage"
       - "klein"
       - "flux-pro"
+      - "fal-gpt-image-2"
 
   # --- Auto Video (embedding-routed, defaults to hailuo) ---
   - id: "auto-video"
@@ -614,6 +651,37 @@ models:
     supports_streaming: true
     supports_tools: true
     supports_vision: true
+    # gpt-5-codex is only served on OpenAI's /v1/responses endpoint, which this
+    # gateway does not implement. The chat-completions call returns a 400 that
+    # the OpenAI provider marks retryable, so direct callers fall back to a
+    # chat-capable model instead of hard-failing.
+    fallback_models:
+      - "gpt-5.5"
+      - "gpt-5.4"
+
+  - id: "composer-2.5"
+    provider: cursor
+    provider_model_id: "composer-2.5"
+    input_price_per_1m: 0.50
+    output_price_per_1m: 2.50
+    aliases: ["cursor-composer-2.5", "composer-2.5@cursor", "composer-2-5", "composer-2.5-standard"]
+    context_window: 256000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: false
+    supports_vision: false
+
+  - id: "composer-2.5-fast"
+    provider: cursor
+    provider_model_id: "composer-2.5-fast"
+    input_price_per_1m: 3.00
+    output_price_per_1m: 15.00
+    aliases: ["cursor-composer-2.5-fast", "composer-2.5-fast@cursor", "composer-2-5-fast"]
+    context_window: 256000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: false
+    supports_vision: false
 
   - id: "gpt-5-mini"
     provider: openai
@@ -826,10 +894,23 @@ models:
 
   - id: "claude-opus-latest"
     provider: anthropic
-    provider_model_id: "claude-opus-4-7"
+    provider_model_id: "claude-opus-4-8"
     input_price_per_1m: 5.00
     output_price_per_1m: 25.00
     aliases: ["claude-opus", "opus-latest", "opus", "anthropic-opus-latest"]
+    context_window: 200000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_providers: ["openrouter"]
+
+  - id: "claude-opus-4-8"
+    provider: anthropic
+    provider_model_id: "claude-opus-4-8"
+    input_price_per_1m: 5.00
+    output_price_per_1m: 25.00
+    aliases: ["opus-4.8"]
     context_window: 200000
     max_output_tokens: 128000
     supports_streaming: true
@@ -927,7 +1008,7 @@ models:
     provider_model_id: "gemini-3.5-flash"
     input_price_per_1m: 1.50
     output_price_per_1m: 9.00
-    aliases: ["gemini-3.5", "gemini-flash-frontier", "auto-hard", "auto-opus", "auto-hard-task"]
+    aliases: ["gemini-3.5", "gemini-flash-frontier"]
     context_window: 1000000
     max_output_tokens: 65536
     supports_streaming: true
@@ -1372,7 +1453,7 @@ models:
 
   - id: "or/claude-opus"
     provider: openrouter
-    provider_model_id: "anthropic/claude-opus-4-7"
+    provider_model_id: "anthropic/claude-opus-4-8"
     input_price_per_1m: 5.00
     output_price_per_1m: 25.00
     context_window: 200000

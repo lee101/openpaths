@@ -537,7 +537,7 @@ func TestNew_EmptyModels(t *testing.T) {
 func TestResolveForRequest_FallsBackToRequestedAutoChain(t *testing.T) {
 	models := []model.ModelConfig{
 		{
-			ID:             "auto-easy-task",
+			ID:             "openpaths/auto-cheap",
 			Provider:       "google",
 			FallbackModels: []string{"gpt-4o-mini"},
 		},
@@ -554,15 +554,15 @@ func TestResolveForRequest_FallsBackToRequestedAutoChain(t *testing.T) {
 	r := newTestRouter(models, "google", "openai")
 	r.MarkModelUnhealthy("openai", "gpt-5-codex")
 
-	candidates, err := r.ResolveForRequest("auto-easy-task", "gpt-5-codex")
+	candidates, err := r.ResolveForRequest("openpaths/auto-cheap", "gpt-5-codex")
 	if err != nil {
 		t.Fatalf("ResolveForRequest() error = %v", err)
 	}
 	if len(candidates) != 2 {
 		t.Fatalf("ResolveForRequest() returned %d candidates, want 2", len(candidates))
 	}
-	if candidates[0].ModelCfg.ID != "auto-easy-task" {
-		t.Fatalf("first candidate = %q, want auto-easy-task", candidates[0].ModelCfg.ID)
+	if candidates[0].ModelCfg.ID != "openpaths/auto-cheap" {
+		t.Fatalf("first candidate = %q, want openpaths/auto-cheap", candidates[0].ModelCfg.ID)
 	}
 	if candidates[1].ModelCfg.ID != "gpt-4o-mini" {
 		t.Fatalf("second candidate = %q, want gpt-4o-mini", candidates[1].ModelCfg.ID)

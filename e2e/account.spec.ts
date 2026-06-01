@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
 
-const TEST_API_KEY = process.env.TEST_API_KEY!;
+const TEST_API_KEY = process.env.TEST_API_KEY || 'op-test-key';
 const TEST_USER = {
-  id: process.env.TEST_USER_ID!,
-  email: process.env.TEST_USER_EMAIL!,
-  name: process.env.TEST_USER_NAME!,
+  id: process.env.TEST_USER_ID || 'test-user-id',
+  email: process.env.TEST_USER_EMAIL || 'test@example.com',
+  name: process.env.TEST_USER_NAME || 'Test User',
 };
 
 // Shared mock helpers
@@ -98,6 +98,14 @@ function mockAccountAPIs(
 
 test.describe('Account Page', () => {
   test.beforeEach(async ({ page }) => {
+    await page.context().clearCookies();
+    await page.goto('/');
+    await page.evaluate(() => {
+      localStorage.removeItem('op_api_key');
+      localStorage.removeItem('op_user');
+      localStorage.removeItem('op_token');
+      (window as any).userData = undefined;
+    });
     await page.goto('/account');
   });
 
@@ -121,10 +129,9 @@ test.describe('Account Page', () => {
   test('password field has show/hide toggle', async ({ page }) => {
     const pw = page.getByTestId('auth-password');
     await expect(pw).toHaveAttribute('type', 'password');
-    // Click the eye icon button (sibling of password input)
-    await page.locator('button[type="button"]').first().click();
+    await page.getByTestId('auth-password-toggle').click();
     await expect(pw).toHaveAttribute('type', 'text');
-    await page.locator('button[type="button"]').first().click();
+    await page.getByTestId('auth-password-toggle').click();
     await expect(pw).toHaveAttribute('type', 'password');
   });
 
@@ -153,7 +160,7 @@ test.describe('Account Page', () => {
 
       // Should land on authenticated dashboard (keys tab shown first)
       await expect(page.locator('h2:has-text("Account")')).toBeVisible({ timeout: 5000 });
-      await expect(page.locator('text=test@example.com')).toBeVisible();
+      await expect(page.getByTestId('logout-btn')).toBeVisible();
     });
 
     test('register posts correct JSON body', async ({ page }) => {
@@ -229,7 +236,7 @@ test.describe('Account Page', () => {
       await page.getByTestId('auth-submit').click();
 
       await expect(page.locator('h2:has-text("Account")')).toBeVisible({ timeout: 5000 });
-      await expect(page.locator('text=test@example.com')).toBeVisible();
+      await expect(page.getByTestId('logout-btn')).toBeVisible();
     });
 
     test('login posts correct JSON body', async ({ page }) => {
@@ -316,7 +323,7 @@ test.describe('Account Page', () => {
 
     test('page loads with sidebar and overview tab active', async ({ page }) => {
       await expect(page.locator('h2:has-text("Account")')).toBeVisible();
-      await expect(page.locator('text=test@example.com')).toBeVisible();
+      await expect(page.getByTestId('logout-btn')).toBeVisible();
       await expect(page.getByTestId('balance-card')).toBeVisible();
       await expect(page.locator('text=Keep spend predictable.')).toBeVisible();
     });

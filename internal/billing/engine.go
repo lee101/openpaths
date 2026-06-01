@@ -75,7 +75,13 @@ func (e *Engine) PreCheckFixed(ctx context.Context, userID string, estimatedCost
 
 // Deduct calculates actual cost and atomically deducts from balance.
 func (e *Engine) Deduct(ctx context.Context, userID, modelID string, inputTokens, outputTokens int, reasoningEffort, usageLogID string) (int64, error) {
-	cost, err := e.pricing.CalculateCost(modelID, inputTokens, outputTokens)
+	return e.DeductWithCachedInput(ctx, userID, modelID, inputTokens, outputTokens, 0, reasoningEffort, usageLogID)
+}
+
+// DeductWithCachedInput calculates actual cost with cache-hit prompt tokens and
+// atomically deducts from balance.
+func (e *Engine) DeductWithCachedInput(ctx context.Context, userID, modelID string, inputTokens, outputTokens, cachedInputTokens int, reasoningEffort, usageLogID string) (int64, error) {
+	cost, err := e.pricing.CalculateCostWithCachedInput(modelID, inputTokens, outputTokens, cachedInputTokens)
 	if err != nil {
 		return 0, err
 	}
@@ -91,7 +97,7 @@ func (e *Engine) Deduct(ctx context.Context, userID, modelID string, inputTokens
 
 	err = e.credits.DeductWithTransaction(ctx, userID, cost,
 		model.TxTypeUsageDeduction,
-		formatUsageDescription(modelID, inputTokens, outputTokens, reasoningEffort),
+		formatUsageDescriptionWithCache(modelID, inputTokens, outputTokens, cachedInputTokens, reasoningEffort),
 		refID,
 	)
 	if err != nil {
@@ -100,6 +106,12 @@ func (e *Engine) Deduct(ctx context.Context, userID, modelID string, inputTokens
 	}
 	e.triggerAutoTopup(userID)
 	return cost, nil
+}
+
+// ImageCost returns the cost (in hundredths-of-a-cent) of an image request
+// without deducting anything. Used for prechecks in multi-step pipelines.
+func (e *Engine) ImageCost(modelID string, outputImageCount, inputImageCount int, size string) (int64, error) {
+	return e.pricing.CalculateImageCostWithInputsAndSize(modelID, outputImageCount, inputImageCount, size)
 }
 
 // DeductImage calculates image generation cost and atomically deducts from balance.
@@ -171,6 +183,14 @@ func formatImageUsageDescription(modelID string, outputImageCount, inputImageCou
 		parts = append(parts, fmt.Sprintf("size: %s", size))
 	}
 	return strings.Join(parts, ", ")
+}
+
+func formatUsageDescriptionWithCache(modelID string, inputTokens, outputTokens, cachedInputTokens int, reasoningEffort string) string {
+	desc := formatUsageDescription(modelID, inputTokens, outputTokens, reasoningEffort)
+	if cachedInputTokens <= 0 {
+		return desc
+	}
+	return desc + fmt.Sprintf(", cache hit: %d", cachedInputTokens)
 }
 
 func formatOutpaintUsageDescription(modelID string, inputWidth, inputHeight, outputWidth, outputHeight, outputImageCount int) string {

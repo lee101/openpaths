@@ -51,6 +51,14 @@ export const providers: Provider[] = [
     logo: '/logos/openai.svg'
   },
   {
+    slug: 'cursor',
+    name: 'Cursor',
+    url: 'https://cursor.com',
+    description: 'Composer 2.5 (standard and fast tiers) via the Cursor Cloud Agents API. Agentic coding with tool use, routed through OpenPaths chat completions.',
+    featured: false,
+    logo: '/logos/cursor.svg'
+  },
+  {
     slug: 'google',
     name: 'Google',
     url: 'https://deepmind.google',

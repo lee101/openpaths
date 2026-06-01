@@ -32,6 +32,7 @@ func (h *MusicHandler) HandleMusicGeneration(ctx *fasthttp.RequestCtx) {
 	if apiKey != nil {
 		apiKeyID = apiKey.ID
 	}
+	app := requestAppAttribution(ctx)
 
 	var req model.MusicGenerationRequest
 	if err := json.Unmarshal(ctx.PostBody(), &req); err != nil {
@@ -78,15 +79,15 @@ func (h *MusicHandler) HandleMusicGeneration(ctx *fasthttp.RequestCtx) {
 				statusCode = pe.StatusCode
 				errMsg = pe.Message
 				if !pe.Retryable {
-					h.recorder.RecordError(userID, apiKeyID, originalModel, cand.Provider.Name(),
-						int(latency.Milliseconds()), statusCode, errMsg, false)
+					h.recorder.RecordErrorWithApp(userID, apiKeyID, originalModel, cand.Provider.Name(),
+						int(latency.Milliseconds()), statusCode, errMsg, false, app.ID, app.URL, app.Title, app.Categories)
 					writeError(ctx, statusCode, "provider_error", errMsg)
 					return
 				}
 			}
 			h.router.MarkModelUnhealthy(cand.Provider.Name(), cand.ModelCfg.ID)
-			h.recorder.RecordError(userID, apiKeyID, originalModel, cand.Provider.Name(),
-				int(latency.Milliseconds()), statusCode, errMsg, false)
+			h.recorder.RecordErrorWithApp(userID, apiKeyID, originalModel, cand.Provider.Name(),
+				int(latency.Milliseconds()), statusCode, errMsg, false, app.ID, app.URL, app.Title, app.Categories)
 			if i < len(candidates)-1 {
 				log.Printf("music fallback: %s/%s -> %s/%s",
 					cand.Provider.Name(), cand.ModelCfg.ID,
@@ -97,8 +98,8 @@ func (h *MusicHandler) HandleMusicGeneration(ctx *fasthttp.RequestCtx) {
 
 		h.router.MarkModelHealthy(cand.Provider.Name(), cand.ModelCfg.ID)
 		cost, _ := h.billing.DeductImage(ctx, userID, cand.ModelCfg.ID, 1, "")
-		h.recorder.RecordSuccess(userID, apiKeyID, originalModel, cand.Provider.Name(),
-			0, 1, int(latency.Milliseconds()), 0, cost, false)
+		h.recorder.RecordSuccessWithApp(userID, apiKeyID, originalModel, cand.Provider.Name(),
+			0, 1, int(latency.Milliseconds()), 0, cost, false, app.ID, app.URL, app.Title, app.Categories)
 
 		writeJSON(ctx, 200, resp)
 		return

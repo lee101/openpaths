@@ -170,6 +170,7 @@ func (h *AnthropicHandler) tryAnthNonStream(
 	userID, apiKeyID, originalModel string,
 	start time.Time,
 ) bool {
+	app := requestAppAttribution(ctx)
 	resp, err := prov.ChatCompletion(ctx, req)
 	latency := time.Since(start)
 
@@ -178,35 +179,37 @@ func (h *AnthropicHandler) tryAnthNonStream(
 		if pe, ok := err.(*provider.ProviderError); ok {
 			statusCode = pe.StatusCode
 			if statusCode == 401 || statusCode == 403 {
-				h.recorder.RecordError(userID, apiKeyID, originalModel, prov.Name(),
-					int(latency.Milliseconds()), statusCode, pe.Message, false)
+				h.recorder.RecordErrorWithApp(userID, apiKeyID, originalModel, prov.Name(),
+					int(latency.Milliseconds()), statusCode, pe.Message, false, app.ID, app.URL, app.Title, app.Categories)
 				return false
 			}
 			if !pe.Retryable {
-				h.recorder.RecordError(userID, apiKeyID, originalModel, prov.Name(),
-					int(latency.Milliseconds()), statusCode, pe.Message, false)
+				h.recorder.RecordErrorWithApp(userID, apiKeyID, originalModel, prov.Name(),
+					int(latency.Milliseconds()), statusCode, pe.Message, false, app.ID, app.URL, app.Title, app.Categories)
 				writeAnthError(ctx, statusCode, "api_error", pe.Message)
 				return true
 			}
 		}
-		h.recorder.RecordError(userID, apiKeyID, originalModel, prov.Name(),
-			int(latency.Milliseconds()), statusCode, err.Error(), false)
+		h.recorder.RecordErrorWithApp(userID, apiKeyID, originalModel, prov.Name(),
+			int(latency.Milliseconds()), statusCode, err.Error(), false, app.ID, app.URL, app.Title, app.Categories)
 		return false
 	}
 
 	var tps float32
-	var tokensIn, tokensOut int
+	var tokensIn, tokensOut, cachedTokensIn int
 	if resp.Usage != nil {
 		tokensIn = resp.Usage.PromptTokens
 		tokensOut = resp.Usage.CompletionTokens
+		cachedTokensIn = resp.Usage.CachedPromptTokens()
 		if latency.Seconds() > 0 {
 			tps = float32(float64(tokensOut) / latency.Seconds())
 		}
 	}
 
-	cost, _ := h.billing.Deduct(ctx, userID, modelCfg.ID, tokensIn, tokensOut, req.ReasoningEffort, "")
-	h.recorder.RecordSuccess(userID, apiKeyID, originalModel, prov.Name(),
-		tokensIn, tokensOut, int(latency.Milliseconds()), tps, cost, false)
+	cost, _ := h.billing.DeductWithCachedInput(ctx, userID, modelCfg.ID,
+		tokensIn, tokensOut, cachedTokensIn, req.ReasoningEffort, "")
+	h.recorder.RecordSuccessWithApp(userID, apiKeyID, originalModel, prov.Name(),
+		tokensIn, tokensOut, int(latency.Milliseconds()), tps, cost, false, app.ID, app.URL, app.Title, app.Categories)
 
 	anthResp := internalToAnth(resp, originalModel)
 	writeJSON(ctx, 200, anthResp)
@@ -221,6 +224,7 @@ func (h *AnthropicHandler) tryAnthStream(
 	userID, apiKeyID, originalModel string,
 	start time.Time,
 ) bool {
+	app := requestAppAttribution(ctx)
 	streamCh, err := prov.ChatCompletionStream(ctx, req)
 	if err != nil {
 		if pe, ok := err.(*provider.ProviderError); ok {
@@ -346,11 +350,11 @@ func (h *AnthropicHandler) tryAnthStream(
 			if latency.Seconds() > 0 {
 				tps = float32(float64(usage.CompletionTokens) / latency.Seconds())
 			}
-			cost, _ := h.billing.Deduct(ctx, userID, modelCfg.ID,
-				usage.PromptTokens, usage.CompletionTokens, req.ReasoningEffort, "")
-			h.recorder.RecordSuccess(userID, apiKeyID, originalModel, prov.Name(),
+			cost, _ := h.billing.DeductWithCachedInput(ctx, userID, modelCfg.ID,
+				usage.PromptTokens, usage.CompletionTokens, usage.CachedPromptTokens(), req.ReasoningEffort, "")
+			h.recorder.RecordSuccessWithApp(userID, apiKeyID, originalModel, prov.Name(),
 				usage.PromptTokens, usage.CompletionTokens,
-				int(latency.Milliseconds()), tps, cost, true)
+				int(latency.Milliseconds()), tps, cost, true, app.ID, app.URL, app.Title, app.Categories)
 		}
 	})
 	return true

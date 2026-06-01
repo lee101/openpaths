@@ -166,6 +166,29 @@ purge_cf_cache() {
     fi
 }
 
+upload_prerender_routes() {
+    local manifest="${DIST_DIR}/prerender-manifest.json"
+    if [[ ! -f "$manifest" ]]; then
+        return
+    fi
+
+    green "uploading prerendered route metadata..."
+    node -e '
+const fs = require("fs");
+const manifest = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+for (const route of manifest) {
+  process.stdout.write(`${route.source}\t${route.key}\n`);
+}
+' "$manifest" | while IFS=$'\t' read -r source key; do
+        [[ -n "$source" && -n "$key" ]] || continue
+        aws s3 cp "$source" "s3://${STATIC_BUCKET}/${key}" \
+            --endpoint-url "${R2_ENDPOINT}" \
+            --content-type "text/html; charset=utf-8" \
+            --cache-control "public, max-age=300" \
+            >/dev/null
+    done
+}
+
 # --- Site deploy: build frontend + sync to R2 ---
 deploy_site() {
     build_frontend
@@ -177,10 +200,12 @@ deploy_site() {
         --endpoint-url "${R2_ENDPOINT}" \
         --size-only \
         --delete \
+        --exclude "static/data/zimage-art/*" \
         --exclude "static/uploads/*" \
         --exclude "uploads/*" \
         --exclude "*.map"
 
+    upload_prerender_routes
     purge_cf_cache
     green "site deployed to ${STATIC_URL}"
 }

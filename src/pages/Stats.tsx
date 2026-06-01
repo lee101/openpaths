@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, BarChart3, Cpu, Database, RefreshCw } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { ArtificialAnalysisBenchmarkSection } from '../components/ArtificialAnalysisCharts';
 
 type UsageBreakdown = {
   task: string;
@@ -19,6 +20,23 @@ type ModelDailyUsagePoint = {
   model: string;
   provider: string;
   requests: number;
+};
+
+type ModelProbeResult = {
+  model: string;
+  provider: string;
+  latency_ms: number;
+  ok: boolean;
+  status_code: number;
+  error?: string;
+  response_preview?: string;
+  probed_at: string;
+};
+
+type ModelProbeSummary = {
+  total: number;
+  ok: number;
+  failed: number;
 };
 
 const PERIODS = [
@@ -45,6 +63,9 @@ export function Stats() {
   const [period, setPeriod] = useState('24h');
   const [rows, setRows] = useState<UsageBreakdown[]>([]);
   const [modelSeries, setModelSeries] = useState<ModelDailyUsagePoint[]>([]);
+  const [probes, setProbes] = useState<ModelProbeResult[]>([]);
+  const [probeSummary, setProbeSummary] = useState<ModelProbeSummary | null>(null);
+  const [latestProbedAt, setLatestProbedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -52,12 +73,14 @@ export function Stats() {
     setLoading(true);
     setError('');
     try {
-      const [breakdownRes, seriesRes] = await Promise.all([
+      const [breakdownRes, seriesRes, probesRes] = await Promise.all([
         fetch(`/stats/breakdown?period=${encodeURIComponent(period)}`),
         fetch(`/stats/models/timeseries?period=${encodeURIComponent(period)}&limit=8`),
+        fetch('/stats/model-probes'),
       ]);
       const breakdownData = await breakdownRes.json().catch(() => ({}));
       const seriesData = await seriesRes.json().catch(() => ({}));
+      const probesData = await probesRes.json().catch(() => ({}));
       if (!breakdownRes.ok) {
         setError(breakdownData.error?.message || 'Stats unavailable');
         return;
@@ -68,6 +91,9 @@ export function Stats() {
       }
       setRows(Array.isArray(breakdownData.breakdown) ? breakdownData.breakdown : []);
       setModelSeries(Array.isArray(seriesData.data) ? seriesData.data : []);
+      setProbes(Array.isArray(probesData.probes) ? probesData.probes : []);
+      setProbeSummary(probesData.summary ?? null);
+      setLatestProbedAt(probesData.latest_probed_at ?? null);
     } catch {
       setError('Network error');
     } finally {
@@ -114,6 +140,13 @@ export function Stats() {
       .sort((a, b) => b[1] - a[1])
       .map(([model]) => model);
   }, [modelSeries]);
+
+  const sortedProbes = useMemo(() => {
+    return [...probes].sort((a, b) => {
+      if (a.ok !== b.ok) return a.ok ? -1 : 1;
+      return a.latency_ms - b.latency_ms;
+    });
+  }, [probes]);
 
   const chartData = useMemo(() => {
     const byDate = new Map<string, Record<string, string | number>>();
@@ -176,6 +209,60 @@ export function Stats() {
         <Metric label="Tokens" value={formatNumber(totals.tokens)} icon={<Cpu className="w-5 h-5" />} />
         <Metric label="Spend" value={formatCost(totals.cost)} icon={<BarChart3 className="w-5 h-5" />} />
       </div>
+
+      <ArtificialAnalysisBenchmarkSection compact />
+
+      <section className="mb-8 overflow-hidden rounded-lg border border-white/10 bg-white/[0.02]">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 px-4 py-3">
+          <h2 className="font-mono text-sm uppercase tracking-[0.18em] text-white/70">Model probe timings</h2>
+          <span className="font-mono text-sm text-white/40">
+            {probeSummary
+              ? `${probeSummary.ok}/${probeSummary.total} ok`
+              : 'No probes yet'}
+            {latestProbedAt ? ` · ${new Date(latestProbedAt).toLocaleString()}` : ''}
+          </span>
+        </div>
+        <p className="border-b border-white/10 px-4 py-2 font-mono text-xs text-white/40">
+          Periodic &quot;say hi&quot; chat completions per model (records latency in usage_logs).
+        </p>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[720px] text-left">
+            <thead className="text-xs font-mono uppercase tracking-[0.16em] text-white/35">
+              <tr>
+                <th className="px-4 py-3">Model</th>
+                <th className="px-4 py-3">Provider</th>
+                <th className="px-4 py-3">Latency</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Response</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/10">
+              {sortedProbes.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-4 py-8 text-center font-mono text-sm text-white/35">
+                    No probe results yet. Probes run every 6h after API start.
+                  </td>
+                </tr>
+              )}
+              {sortedProbes.map(row => (
+                <tr key={row.model} className="text-sm text-white/75">
+                  <td className="px-4 py-3 font-mono text-white">{row.model}</td>
+                  <td className="px-4 py-3 font-mono text-white/55">{row.provider}</td>
+                  <td className="px-4 py-3 font-mono">{row.latency_ms} ms</td>
+                  <td className="px-4 py-3 font-mono">
+                    <span className={row.ok ? 'text-emerald-300' : 'text-red-300'}>
+                      {row.ok ? 'ok' : `fail (${row.status_code})`}
+                    </span>
+                  </td>
+                  <td className="max-w-md truncate px-4 py-3 font-mono text-white/50">
+                    {row.ok ? row.response_preview : row.error}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       <section className="mb-8 overflow-hidden rounded-lg border border-white/10 bg-white/[0.02]">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 px-4 py-3">

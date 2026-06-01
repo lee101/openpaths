@@ -13,8 +13,8 @@ const comparisonHighlights = [
   },
   {
     icon: <Route className="h-5 w-5" />,
-    title: 'Task-Based Routing',
-    copy: 'Use stable model names like auto-medium-task or auto-think while the router chooses stronger, cheaper, or healthier backends.',
+    title: 'Stay on the Frontier',
+    copy: 'Keep one stable model name like auto-medium-task or auto-think and always get Claude latest, Gemini latest, and GPT latest — no manual model upgrades.',
   },
   {
     icon: <Layers className="h-5 w-5" />,

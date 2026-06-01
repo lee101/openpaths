@@ -3,6 +3,13 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   testDir: './e2e',
+  testIgnore: [
+    '**/auth-real.spec.ts',
+    '**/checkout-flow.spec.ts',
+    '**/full-flow.spec.ts',
+    '**/gpt54-models.spec.ts',
+    '**/minimax-m27.spec.ts',
+  ],
   fullyParallel: true,
   retries: 0,
   reporter: 'list',

@@ -98,6 +98,7 @@ func configToORModel(cfg *model.ModelConfig) *ORModel {
 
 	// Convert pricing from per-1M-tokens to per-token
 	promptPrice := cfg.InputPricePer1M / 1_000_000
+	inputCacheReadPrice := cfg.InputCacheHitPricePer1M / 1_000_000
 	completionPrice := cfg.OutputPricePer1M / 1_000_000
 	imagePrice := cfg.PricePerImage
 
@@ -106,7 +107,7 @@ func configToORModel(cfg *model.ModelConfig) *ORModel {
 		Completion:     formatPrice(completionPrice),
 		Image:          formatPrice(imagePrice),
 		Request:        "0",
-		InputCacheRead: "0",
+		InputCacheRead: formatPrice(inputCacheReadPrice),
 	}
 
 	// Sampling parameters
@@ -161,6 +162,7 @@ var orModelDisplayNames = map[string]string{
 	"claude-sonnet-latest":      "Anthropic: Claude Sonnet (Latest)",
 	"claude-sonnet-4-6":         "Anthropic: Claude Sonnet 4.6",
 	"claude-opus-latest":        "Anthropic: Claude Opus (Latest)",
+	"claude-opus-4-8":           "Anthropic: Claude Opus 4.8",
 	"claude-opus-4-7":           "Anthropic: Claude Opus 4.7",
 	"claude-opus-4-6":           "Anthropic: Claude Opus 4.6",
 	"claude-haiku-4-5-20251001": "Anthropic: Claude Haiku 4.5",

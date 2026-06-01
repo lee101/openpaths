@@ -13,7 +13,10 @@ type VideoPrice = {
 };
 
 const TEXT_MODEL_IDS = [
-  'auto-easy-task',
+  'openpaths/auto-cheap',
+  'openpaths/auto-fast',
+  'openpaths/auto',
+  'openpaths/auto-code',
   'gpt-4o-mini',
   'deepseek-chat',
   'minimax-m2.7',
