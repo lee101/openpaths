@@ -133,10 +133,14 @@ func New(deps *Dependencies) *Server {
 		handler.PapersSearchProviderConfig(deps.Config.Providers),
 		deps.Billing,
 		deps.Recorder,
+	).SetAnswerProviders(
+		handler.GeminiSearchProviderConfig(deps.Config.Providers),
+		handler.OpenAISearchProviderConfig(deps.Config.Providers),
+		handler.GrokSearchProviderConfig(deps.Config.Providers),
 	)
 	r.POST("/v1/search", searchChain(searchH.HandleSearch))
 	handler.LogExaSearchPricing()
-	log.Printf("Search endpoint enabled at /v1/search")
+	log.Printf("Search endpoint enabled at /v1/search (exa, papers, gemini, openai, grok)")
 
 	anthH := handler.NewAnthropicHandler(deps.Router, deps.Billing, deps.Recorder)
 	r.POST("/v1/messages", apiKeyChain(anthH.HandleMessages))
@@ -160,6 +164,12 @@ func New(deps *Dependencies) *Server {
 	r.GET("/v1/3d/text-generations/{job_id}/status", apiKeyChain(textTo3DH.HandleTextTo3DGenerationJob))
 	log.Printf("Text-to-3D generation endpoint enabled")
 
+	riggingH := handler.NewMeshRiggingHandler(deps.Router, deps.Billing, deps.Recorder)
+	r.POST("/v1/3d/rigging", trackLongRequest(apiKeyChain(riggingH.HandleMeshRigging)))
+	r.GET("/v1/3d/rigging/{job_id}", apiKeyChain(riggingH.HandleMeshRiggingJob))
+	r.GET("/v1/3d/rigging/{job_id}/status", apiKeyChain(riggingH.HandleMeshRiggingJob))
+	log.Printf("3D mesh rigging endpoint enabled")
+
 	videoH := handler.NewVideoHandler(deps.Router, deps.Billing, deps.Recorder, deps.VideoJobQ)
 	r.POST("/v1/videos/generations", trackLongRequest(apiKeyChain(videoH.HandleVideoGeneration)))
 	r.GET("/v1/videos/generations/{job_id}", apiKeyChain(videoH.HandleVideoGenerationJob))
@@ -169,6 +179,11 @@ func New(deps *Dependencies) *Server {
 	musicH := handler.NewMusicHandler(deps.Router, deps.Billing, deps.Recorder)
 	r.POST("/v1/music/generations", apiKeyChain(musicH.HandleMusicGeneration))
 	log.Printf("Music generation endpoint enabled")
+
+	forecastH := handler.NewForecastingHandler(deps.Router, deps.Billing, deps.Recorder)
+	r.POST("/v1/forecasts", apiKeyChain(forecastH.HandleForecast))
+	r.POST("/v1/forecasts/generations", apiKeyChain(forecastH.HandleForecast))
+	log.Printf("Time-series forecasting endpoint enabled")
 
 	speechH := handler.NewSpeechHandler(deps.Router, deps.Billing, deps.Recorder)
 	speechH.SetAutoEmotion(deps.AutoEmotion)
@@ -338,28 +353,36 @@ func New(deps *Dependencies) *Server {
 	// Sitemap index: references the static pages sitemap plus the DB-backed art
 	// tag + image sitemaps (paged, because the art catalog exceeds the 50k/url limit).
 	r.GET("/sitemap.xml", func(ctx *fasthttp.RequestCtx) {
-		const base = "https://openpaths.io"
-		var b strings.Builder
-		b.WriteString(`<?xml version="1.0" encoding="UTF-8"?>` + "\n")
-		b.WriteString(`<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` + "\n")
-		fmt.Fprintf(&b, "  <sitemap>\n    <loc>%s/sitemap-pages.xml</loc>\n  </sitemap>\n", base)
-		fmt.Fprintf(&b, "  <sitemap>\n    <loc>%s/sitemap-art-tags.xml</loc>\n  </sitemap>\n", base)
-		for p := 1; p <= artH.ArtSitemapPages(ctx); p++ {
-			fmt.Fprintf(&b, "  <sitemap>\n    <loc>%s/sitemap-art.xml?p=%d</loc>\n  </sitemap>\n", base, p)
-		}
-		b.WriteString("</sitemapindex>\n")
 		ctx.SetContentType("text/xml; charset=utf-8")
 		ctx.SetStatusCode(200)
-		ctx.SetBodyString(b.String())
+		ctx.SetBodyString(handler.ArtSitemapIndexXML("https://openpaths.io", artH.ArtSitemapPages(ctx)))
 	})
 	r.GET("/sitemap-art-tags.xml", publicChain(artH.HandleSitemapTags))
+	// Clean per-page art sitemaps (/sitemap-art-1.xml …) plus the legacy ?p= route
+	// so URLs Google already discovered keep resolving.
+	r.GET("/sitemap-art-{page}.xml", publicChain(artH.HandleSitemapImages))
 	r.GET("/sitemap-art.xml", publicChain(artH.HandleSitemapImages))
+
+	// fasthttp/router does not auto-answer HEAD for GET-only routes; without these
+	// a HEAD probe returns 405 Method Not Allowed, which crawlers and validators
+	// (Google Search Console, sitemap linters) report as "sitemap could not be read".
+	// We answer HEAD with the right status + content type without regenerating the
+	// body (an art page is ~20MB), since a HEAD caller only inspects the headers.
+	sitemapHead := func(ctx *fasthttp.RequestCtx) {
+		ctx.SetContentType("text/xml; charset=utf-8")
+		ctx.SetStatusCode(200)
+	}
+	r.HEAD("/sitemap.xml", sitemapHead)
+	r.HEAD("/sitemap-pages.xml", sitemapHead)
+	r.HEAD("/sitemap-art-tags.xml", sitemapHead)
+	r.HEAD("/sitemap-art-{page}.xml", sitemapHead)
+	r.HEAD("/sitemap-art.xml", sitemapHead)
 
 	// Static pages sitemap (previously the root sitemap): core pages, blog, prompts.
 	r.GET("/sitemap-pages.xml", func(ctx *fasthttp.RequestCtx) {
 		if staticDir := deps.Config.Server.StaticDir; staticDir != "" {
 			if data, err := os.ReadFile(filepath.Join(staticDir, "sitemap.xml")); err == nil {
-				ctx.SetContentType("application/xml; charset=utf-8")
+				ctx.SetContentType("text/xml; charset=utf-8")
 				ctx.SetStatusCode(200)
 				ctx.SetBody(data)
 				return
@@ -381,6 +404,8 @@ func New(deps *Dependencies) *Server {
 			{"/text-to-image", "0.7", "monthly"},
 			{"/image-to-3d", "0.7", "monthly"},
 			{"/text-to-3d", "0.7", "monthly"},
+			{"/rig-3d", "0.7", "monthly"},
+			{"/retexture-3d", "0.7", "monthly"},
 			{"/search", "0.7", "monthly"},
 			{"/art", "0.7", "daily"},
 			{"/blog", "0.8", "weekly"},
@@ -763,6 +788,18 @@ func pageMetaForPath(path string) pageMeta {
 			Title:       "Text to 3D API | OpenPaths",
 			Description: "Generate textured GLB models straight from a text prompt. OpenPaths auto-generates an image then converts it to 3D with Pixal3D.",
 			URL:         "https://openpaths.io/text-to-3d",
+		}
+	case "/rig-3d":
+		return pageMeta{
+			Title:       "3D Auto-Rigging API | OpenPaths",
+			Description: "Upload a humanoid GLB and get back a rigged character (GLB + FBX) with optional walk/run animation, via OpenPaths and Fal Meshy.",
+			URL:         "https://openpaths.io/rig-3d",
+		}
+	case "/retexture-3d":
+		return pageMeta{
+			Title:       "3D Retexture API | OpenPaths",
+			Description: "Re-texture an existing 3D mesh from a reference image — upload a GLB and a style image, get back a textured GLB, via OpenPaths and Fal Trellis-2.",
+			URL:         "https://openpaths.io/retexture-3d",
 		}
 	case "/alternatives":
 		return pageMeta{

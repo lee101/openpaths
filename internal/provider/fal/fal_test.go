@@ -508,3 +508,285 @@ func TestGenerateVideo_PassesImageToVideoInputs(t *testing.T) {
 		t.Fatalf("GenerateVideo() error = %v", err)
 	}
 }
+
+func TestRigMesh_SubmitsModelURLAndParsesRiggedAssets(t *testing.T) {
+	var gotSubmit map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/fal-ai/meshy/rigging":
+			if got := r.Header.Get("Authorization"); got != "Key test-key" {
+				t.Fatalf("unexpected auth header: %s", got)
+			}
+			if err := json.NewDecoder(r.Body).Decode(&gotSubmit); err != nil {
+				t.Fatalf("decode submit: %v", err)
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{"request_id": "rig_1"})
+		case "/fal-ai/meshy/rigging/requests/rig_1/status":
+			_ = json.NewEncoder(w).Encode(map[string]any{"status": "COMPLETED"})
+		case "/fal-ai/meshy/rigging/requests/rig_1":
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"rigged_character_glb": map[string]any{"url": "https://example.com/rigged.glb", "content_type": "model/gltf-binary"},
+				"rigged_character_fbx": map[string]any{"url": "https://example.com/rigged.fbx"},
+				"basic_animations":     map[string]any{"walking_glb": map[string]any{"url": "https://example.com/walk.glb"}},
+				"rig_task_id":          "task_abc",
+			})
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	p := New("test-key")
+	p.baseURL = server.URL
+	p.client = server.Client()
+	height := 1.8
+
+	resp, err := p.RigMesh(context.Background(), &model.MeshRiggingRequest{
+		Model:        "fal-ai/meshy/rigging",
+		ModelURL:     "https://example.com/input.glb",
+		HeightMeters: &height,
+	})
+	if err != nil {
+		t.Fatalf("RigMesh() error = %v", err)
+	}
+	if resp.RiggedCharacterGLB.URL != "https://example.com/rigged.glb" {
+		t.Fatalf("rigged glb url = %q", resp.RiggedCharacterGLB.URL)
+	}
+	if resp.RiggedCharacterFBX == nil || resp.RiggedCharacterFBX.URL != "https://example.com/rigged.fbx" {
+		t.Fatalf("rigged fbx = %#v", resp.RiggedCharacterFBX)
+	}
+	if resp.BasicAnimations == nil || resp.BasicAnimations.WalkingGLB == nil {
+		t.Fatalf("basic animations = %#v", resp.BasicAnimations)
+	}
+	if resp.RigTaskID != "task_abc" {
+		t.Fatalf("rig task id = %q", resp.RigTaskID)
+	}
+	if gotSubmit["model_url"] != "https://example.com/input.glb" || gotSubmit["height_meters"] != 1.8 {
+		t.Fatalf("submit = %#v", gotSubmit)
+	}
+	if _, ok := gotSubmit["enable_animation"]; ok {
+		t.Fatalf("enable_animation should be omitted when false: %#v", gotSubmit)
+	}
+	if resp.Billing == nil || resp.Billing.ExternalCostCents != 20 {
+		t.Fatalf("billing = %#v", resp.Billing)
+	}
+}
+
+func TestRigMesh_AnimationSurcharge(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/fal-ai/meshy/rigging":
+			_ = json.NewEncoder(w).Encode(map[string]any{"request_id": "rig_2"})
+		case "/fal-ai/meshy/rigging/requests/rig_2/status":
+			_ = json.NewEncoder(w).Encode(map[string]any{"status": "COMPLETED"})
+		case "/fal-ai/meshy/rigging/requests/rig_2":
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"rigged_character_glb": map[string]any{"url": "https://example.com/rigged.glb"},
+				"animation_glb":        map[string]any{"url": "https://example.com/anim.glb"},
+			})
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	p := New("test-key")
+	p.baseURL = server.URL
+	p.client = server.Client()
+
+	resp, err := p.RigMesh(context.Background(), &model.MeshRiggingRequest{
+		Model:           "fal-ai/meshy/rigging",
+		ModelURL:        "https://example.com/input.glb",
+		EnableAnimation: true,
+	})
+	if err != nil {
+		t.Fatalf("RigMesh() error = %v", err)
+	}
+	if resp.Billing == nil || resp.Billing.ExternalCostCents != 32 || !resp.Billing.Animation {
+		t.Fatalf("billing = %#v", resp.Billing)
+	}
+	if resp.AnimationGLB == nil || resp.AnimationGLB.URL != "https://example.com/anim.glb" {
+		t.Fatalf("animation glb = %#v", resp.AnimationGLB)
+	}
+}
+
+func TestRigMesh_ErrorsWhenNoRiggedGLB(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/fal-ai/meshy/rigging":
+			_ = json.NewEncoder(w).Encode(map[string]any{"request_id": "rig_3"})
+		case "/fal-ai/meshy/rigging/requests/rig_3/status":
+			_ = json.NewEncoder(w).Encode(map[string]any{"status": "COMPLETED"})
+		case "/fal-ai/meshy/rigging/requests/rig_3":
+			_ = json.NewEncoder(w).Encode(map[string]any{"rig_task_id": "task_x"})
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	p := New("test-key")
+	p.baseURL = server.URL
+	p.client = server.Client()
+
+	if _, err := p.RigMesh(context.Background(), &model.MeshRiggingRequest{
+		Model:    "fal-ai/meshy/rigging",
+		ModelURL: "https://example.com/input.glb",
+	}); err == nil {
+		t.Fatal("expected error when rigged_character_glb is missing")
+	}
+}
+
+func TestGenerate3D_MeshyV6UsesImageToShapeRequestAndParsesGLB(t *testing.T) {
+	var gotSubmit map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/fal-ai/meshy/v6/image-to-3d":
+			if err := json.NewDecoder(r.Body).Decode(&gotSubmit); err != nil {
+				t.Fatalf("decode submit: %v", err)
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{"request_id": "m6_1"})
+		case "/fal-ai/meshy/v6/image-to-3d/requests/m6_1/status":
+			w.WriteHeader(http.StatusMethodNotAllowed)
+		case "/fal-ai/meshy/requests/m6_1/status":
+			_ = json.NewEncoder(w).Encode(map[string]any{"status": "COMPLETED"})
+		case "/fal-ai/meshy/requests/m6_1":
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"model_glb": map[string]any{"url": "https://example.com/meshy.glb"},
+				"seed":      float64(11),
+			})
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	p := New("test-key")
+	p.baseURL = server.URL
+	p.client = server.Client()
+	pc := 12000
+
+	resp, err := p.Generate3D(context.Background(), &model.Model3DGenerationRequest{
+		Model:           "fal-ai/meshy/v6/image-to-3d",
+		ImageURL:        "https://example.com/in.png",
+		Topology:        "quad",
+		TargetPolycount: pc,
+	})
+	if err != nil {
+		t.Fatalf("Generate3D() error = %v", err)
+	}
+	if resp.ModelGLB.URL != "https://example.com/meshy.glb" {
+		t.Fatalf("model glb url = %q", resp.ModelGLB.URL)
+	}
+	if resp.Billing == nil || resp.Billing.ExternalCostCents != 80 {
+		t.Fatalf("billing = %#v", resp.Billing)
+	}
+	if gotSubmit["image_url"] != "https://example.com/in.png" || gotSubmit["topology"] != "quad" {
+		t.Fatalf("submit = %#v", gotSubmit)
+	}
+	if gotSubmit["target_polycount"] != float64(pc) {
+		t.Fatalf("target_polycount = %#v", gotSubmit["target_polycount"])
+	}
+	// Pixal-only slat params must NOT be sent to meshy.
+	if _, ok := gotSubmit["ss_guidance_strength"]; ok {
+		t.Fatalf("meshy request leaked pixal params: %#v", gotSubmit)
+	}
+}
+
+func TestGenerate3D_TripoP1ParsesModelUrlsGLBAndTextureCost(t *testing.T) {
+	var gotSubmit map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/tripo3d/p1/image-to-3d":
+			if err := json.NewDecoder(r.Body).Decode(&gotSubmit); err != nil {
+				t.Fatalf("decode submit: %v", err)
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{"request_id": "tp_1"})
+		case "/tripo3d/p1/image-to-3d/requests/tp_1/status":
+			w.WriteHeader(http.StatusMethodNotAllowed)
+		case "/tripo3d/p1/requests/tp_1/status":
+			_ = json.NewEncoder(w).Encode(map[string]any{"status": "COMPLETED"})
+		case "/tripo3d/p1/requests/tp_1":
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"model_mesh": map[string]any{"url": "https://example.com/mesh.glb"},
+				"model_urls": map[string]any{"glb": map[string]any{"url": "https://example.com/tripo.glb"}},
+			})
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	p := New("test-key")
+	p.baseURL = server.URL
+	p.client = server.Client()
+	off := false
+
+	resp, err := p.Generate3D(context.Background(), &model.Model3DGenerationRequest{
+		Model:         "tripo3d/p1/image-to-3d",
+		ImageURL:      "https://example.com/in.png",
+		ShouldTexture: &off,
+	})
+	if err != nil {
+		t.Fatalf("Generate3D() error = %v", err)
+	}
+	if resp.ModelGLB.URL != "https://example.com/tripo.glb" {
+		t.Fatalf("expected model_urls.glb preferred, got %q", resp.ModelGLB.URL)
+	}
+	if resp.Billing == nil || resp.Billing.ExternalCostCents != 40 {
+		t.Fatalf("texture-off billing = %#v, want 40c", resp.Billing)
+	}
+	if gotSubmit["texture"] != false || gotSubmit["image_url"] != "https://example.com/in.png" {
+		t.Fatalf("submit = %#v", gotSubmit)
+	}
+}
+
+func TestGenerate3D_TrellisRetextureSendsMeshAndResolutionCost(t *testing.T) {
+	var gotSubmit map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/fal-ai/trellis-2/retexture":
+			if err := json.NewDecoder(r.Body).Decode(&gotSubmit); err != nil {
+				t.Fatalf("decode submit: %v", err)
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{"request_id": "tr_1"})
+		case "/fal-ai/trellis-2/retexture/requests/tr_1/status":
+			w.WriteHeader(http.StatusMethodNotAllowed)
+		case "/fal-ai/trellis-2/requests/tr_1/status":
+			_ = json.NewEncoder(w).Encode(map[string]any{"status": "COMPLETED"})
+		case "/fal-ai/trellis-2/requests/tr_1":
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"model_glb": map[string]any{"url": "https://example.com/retex.glb"},
+			})
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	p := New("test-key")
+	p.baseURL = server.URL
+	p.client = server.Client()
+
+	resp, err := p.Generate3D(context.Background(), &model.Model3DGenerationRequest{
+		Model:      "fal-ai/trellis-2/retexture",
+		ImageURL:   "https://example.com/ref.png",
+		MeshURL:    "https://example.com/in.glb",
+		Resolution: 512,
+	})
+	if err != nil {
+		t.Fatalf("Generate3D() error = %v", err)
+	}
+	if resp.ModelGLB.URL != "https://example.com/retex.glb" {
+		t.Fatalf("model glb url = %q", resp.ModelGLB.URL)
+	}
+	if resp.Billing == nil || resp.Billing.ExternalCostCents != 20 {
+		t.Fatalf("512p billing = %#v, want 20c", resp.Billing)
+	}
+	if gotSubmit["mesh_url"] != "https://example.com/in.glb" || gotSubmit["image_url"] != "https://example.com/ref.png" {
+		t.Fatalf("submit = %#v", gotSubmit)
+	}
+	if gotSubmit["resolution"] != float64(512) {
+		t.Fatalf("resolution = %#v", gotSubmit["resolution"])
+	}
+}

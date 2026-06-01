@@ -83,6 +83,58 @@ export const models: Model[] = [
     pricingType: 'request'
   },
   {
+    id: 'meshy-v6-image-to-3d',
+    name: 'Meshy v6 Image to 3D',
+    provider: 'Fal',
+    description: 'Higher-quality image-to-3D: generate a textured GLB (with quad/triangle topology and PBR options) from a single image using Fal Meshy v6.',
+    contextLength: 'N/A',
+    priceInput: 0.80,
+    priceOutput: 0,
+    tags: ['image-to-3d', 'image-to-image', 'vision'],
+    released: '2026-05-31',
+    popularity: -2,
+    pricingType: 'request'
+  },
+  {
+    id: 'tripo-p1-image-to-3d',
+    name: 'Tripo p1 Image to 3D',
+    provider: 'Fal',
+    description: 'Image-to-3D with sharp geometry and clean topology: generate a GLB (textured or untextured, with adjustable face limit) from a single image using Fal Tripo p1.',
+    contextLength: 'N/A',
+    priceInput: 0.50,
+    priceOutput: 0,
+    tags: ['image-to-3d', 'image-to-image', 'vision'],
+    released: '2026-05-31',
+    popularity: -2,
+    pricingType: 'request'
+  },
+  {
+    id: 'trellis-2-retexture',
+    name: 'Trellis-2 Retexture',
+    provider: 'Fal',
+    description: 'Re-texture an existing 3D mesh from a reference image: upload a GLB plus a style image and get back a freshly textured GLB, using Fal Trellis-2.',
+    contextLength: 'N/A',
+    priceInput: 0.24,
+    priceOutput: 0,
+    tags: ['image-to-3d', 'image-to-image', 'vision'],
+    released: '2026-05-31',
+    popularity: -2,
+    pricingType: 'request'
+  },
+  {
+    id: 'meshy-rigging',
+    name: 'Meshy 3D Auto-Rigging',
+    provider: 'Fal',
+    description: 'Auto-rig a humanoid GLB into an animation-ready character (GLB + FBX) with walk/run animations and an optional animation preset, using Fal Meshy.',
+    contextLength: 'N/A',
+    priceInput: 0.20,
+    priceOutput: 0,
+    tags: ['image-to-3d', 'vision'],
+    released: '2026-05-31',
+    popularity: -2,
+    pricingType: 'request'
+  },
+  {
     id: 'text-to-3d',
     name: 'Text to 3D',
     provider: 'OpenPaths',

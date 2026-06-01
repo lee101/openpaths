@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/valyala/fasthttp"
@@ -39,11 +40,12 @@ func (h *Model3DHandler) HandleModel3DGeneration(ctx *fasthttp.RequestCtx) {
 		apiKeyID = apiKey.ID
 	}
 
-	req, originalModel, actualCost, err := parseModel3DGenerationRequest(ctx.PostBody())
+	req, originalModel, err := parseModel3DGenerationRequest(ctx.PostBody())
 	if err != nil {
 		writeError(ctx, 400, "invalid_request", err.Error())
 		return
 	}
+	actualCost := h.costForModel3D(req)
 
 	async := req.Async || string(ctx.QueryArgs().Peek("async")) == "true" || string(ctx.Request.Header.Peek("Prefer")) == "respond-async"
 	if h.jobQ != nil {
@@ -89,23 +91,64 @@ func (h *Model3DHandler) HandleModel3DGeneration(ctx *fasthttp.RequestCtx) {
 	}
 }
 
-func parseModel3DGenerationRequest(body []byte) (model.Model3DGenerationRequest, string, int64, error) {
+func parseModel3DGenerationRequest(body []byte) (model.Model3DGenerationRequest, string, error) {
 	var req model.Model3DGenerationRequest
 	if err := json.Unmarshal(body, &req); err != nil {
-		return req, "", 0, fmt.Errorf("Invalid JSON: %w", err)
+		return req, "", fmt.Errorf("Invalid JSON: %w", err)
 	}
 	if req.Model == "" {
 		req.Model = "pixal3d-image-to-3d"
 	}
 	if req.ImageURL == "" {
-		return req, "", 0, fmt.Errorf("image_url is required")
+		return req, "", fmt.Errorf("image_url is required")
 	}
 	if !isPublicHTTPURL(req.ImageURL) {
-		return req, "", 0, fmt.Errorf("image_url must be a public http or https URL")
+		return req, "", fmt.Errorf("image_url must be a public http or https URL")
+	}
+	if req.MeshURL != "" && !isPublicHTTPURL(req.MeshURL) {
+		return req, "", fmt.Errorf("mesh_url must be a public http or https URL")
 	}
 	originalModel := req.Model
 	req.TextureSize = normalize3DTextureSize(req.TextureSize)
-	return req, originalModel, pixal3DRequestCost(req.TextureSize), nil
+	return req, originalModel, nil
+}
+
+// costForModel3D resolves the requested model and returns its fixed charge in
+// credit-units. Pixal3D keeps texture-tiered pricing; other 3D models (e.g.
+// Meshy v6) bill at their config price_per_request.
+func (h *Model3DHandler) costForModel3D(req model.Model3DGenerationRequest) int64 {
+	candidates, err := h.router.ResolveForRequest(req.Model, req.Model)
+	if err == nil && len(candidates) > 0 {
+		return model3DRequestCostFor(candidates[0].ModelCfg, req)
+	}
+	return pixal3DRequestCost(req.TextureSize)
+}
+
+func model3DRequestCostFor(cfg *model.ModelConfig, req model.Model3DGenerationRequest) int64 {
+	if cfg == nil {
+		return pixal3DRequestCost(req.TextureSize)
+	}
+	pmid := cfg.ProviderModelID
+	switch {
+	case strings.Contains(pmid, "pixal3d"):
+		return pixal3DRequestCost(req.TextureSize)
+	case strings.Contains(pmid, "tripo3d"):
+		// $0.50 with textures, $0.40 without.
+		if req.ShouldTexture == nil || *req.ShouldTexture {
+			return 5000
+		}
+		return 4000
+	case strings.Contains(pmid, "trellis-2/retexture"):
+		// $0.20 at 512p, $0.24 at 1024p and above.
+		if req.Resolution == 512 {
+			return 2000
+		}
+		return 2400
+	}
+	if cfg.PricePerRequest > 0 {
+		return int64(cfg.PricePerRequest * 10000)
+	}
+	return pixal3DRequestCost(req.TextureSize)
 }
 
 func (h *Model3DHandler) precheckModel3DBilling(ctx context.Context, userID string, actualCost int64) error {
@@ -242,7 +285,6 @@ func (h *Model3DHandler) runModel3DJob(jobID string, req model.Model3DGeneration
 func (h *Model3DHandler) executeModel3DGeneration(ctx context.Context, byokCtx *fasthttp.RequestCtx, req model.Model3DGenerationRequest, userID, apiKeyID string, app requestApp) model3DExecutionResult {
 	originalModel := req.Model
 	textureSize := normalize3DTextureSize(req.TextureSize)
-	actualCost := pixal3DRequestCost(textureSize)
 
 	candidates, err := h.router.ResolveForRequest(originalModel, originalModel)
 	if err != nil {
@@ -250,6 +292,7 @@ func (h *Model3DHandler) executeModel3DGeneration(ctx context.Context, byokCtx *
 	}
 
 	for i, cand := range candidates {
+		actualCost := model3DRequestCostFor(cand.ModelCfg, req)
 		req.Model = cand.ModelCfg.ProviderModelID
 		attempts := []provider.Provider{cand.Provider}
 		if byokCtx != nil {

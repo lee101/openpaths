@@ -148,21 +148,35 @@ build_frontend() {
 purge_cf_cache() {
     local email="${CLOUDFLARE_EMAIL:-}"
     local key="${CLOUDFLARE_API_KEY:-}"
-    if [[ -n "$email" && -n "$key" && -n "$CF_ZONE_ID" ]]; then
-        green "purging cloudflare cache..."
-        local response
-        response=$(curl -fsS -X POST \
-            "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache" \
-            -H "X-Auth-Email: ${email}" \
-            -H "X-Auth-Key: ${key}" \
-            -H "Content-Type: application/json" \
-            --data '{"purge_everything":true}')
-        if ! grep -q '"success":true' <<<"$response"; then
-            red "cloudflare cache purge failed: $response"
-            exit 1
-        fi
-    else
-        yellow "cloudflare cache purge skipped (missing credentials or zone id)"
+    local zone="${CF_ZONE_ID:-}"
+    if [[ -z "$email" || -z "$key" ]]; then
+        yellow "cloudflare cache purge skipped (missing CLOUDFLARE_EMAIL / CLOUDFLARE_API_KEY)"
+        return
+    fi
+    # Auto-resolve the zone id from the API when CLOUDFLARE_ZONE_OPENPATHS is unset,
+    # so a missing env var never silently skips the purge (the cause of stale
+    # sitemaps/bundles lingering after a deploy).
+    if [[ -z "$zone" ]]; then
+        green "resolving cloudflare zone id for openpaths.io..."
+        zone=$(curl -fsS "https://api.cloudflare.com/client/v4/zones?name=openpaths.io" \
+            -H "X-Auth-Email: ${email}" -H "X-Auth-Key: ${key}" \
+            | grep -oE '"id":"[a-f0-9]{32}"' | head -1 | cut -d'"' -f4)
+    fi
+    if [[ -z "$zone" ]]; then
+        red "cloudflare cache purge FAILED: could not resolve zone id for openpaths.io"
+        exit 1
+    fi
+    green "purging cloudflare cache (zone ${zone})..."
+    local response
+    response=$(curl -fsS -X POST \
+        "https://api.cloudflare.com/client/v4/zones/${zone}/purge_cache" \
+        -H "X-Auth-Email: ${email}" \
+        -H "X-Auth-Key: ${key}" \
+        -H "Content-Type: application/json" \
+        --data '{"purge_everything":true}')
+    if ! grep -q '"success":true' <<<"$response"; then
+        red "cloudflare cache purge failed: $response"
+        exit 1
     fi
 }
 
@@ -226,6 +240,7 @@ deploy_api() {
         green "swapping binary + restarting locally..."
         restart_api_local
         green "api deployed locally"
+        purge_cf_cache
         return
     fi
 
@@ -254,6 +269,9 @@ deploy_api() {
 REMOTE
 
     green "api deployed to ${API_HOST}"
+    # The API serves dynamic content (sitemaps, /v1/art, og/meta) that Cloudflare
+    # caches, so purge after the new binary is live or crawlers keep seeing stale XML.
+    purge_cf_cache
 }
 
 # --- Deploy env file ---

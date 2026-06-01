@@ -253,6 +253,16 @@ func falImageIsOutpaint(modelID string) bool {
 }
 
 func (p *FalProvider) Generate3D(ctx context.Context, req *model.Model3DGenerationRequest) (*model.Model3DGenerationResponse, error) {
+	if strings.Contains(req.Model, "meshy/") {
+		return p.generateMeshy3D(ctx, req)
+	}
+	if strings.Contains(req.Model, "tripo3d/") {
+		return p.generateTripo3D(ctx, req)
+	}
+	if strings.Contains(req.Model, "trellis-2/retexture") {
+		return p.generateTrellisRetexture(ctx, req)
+	}
+
 	falReq := fal3DRequest(req)
 	body, err := json.Marshal(falReq)
 	if err != nil {
@@ -264,6 +274,72 @@ func (p *FalProvider) Generate3D(ctx context.Context, req *model.Model3DGenerati
 		return nil, err
 	}
 	return parseFal3DResult(resultBody, normalizePixalTextureSize(req.TextureSize))
+}
+
+// generateMeshy3D handles Meshy v6 image-to-3d, which takes a different request
+// shape than Pixal3D and is billed at a flat per-generation price. It still
+// returns a model_glb, so it maps onto the shared Model3DGenerationResponse.
+func (p *FalProvider) generateMeshy3D(ctx context.Context, req *model.Model3DGenerationRequest) (*model.Model3DGenerationResponse, error) {
+	falReq := map[string]any{
+		"image_url": req.ImageURL,
+	}
+	if req.Topology != "" {
+		falReq["topology"] = req.Topology
+	}
+	if req.TargetPolycount > 0 {
+		falReq["target_polycount"] = req.TargetPolycount
+	}
+	if req.SymmetryMode != "" {
+		falReq["symmetry_mode"] = req.SymmetryMode
+	}
+	if req.Remesh != nil {
+		falReq["should_remesh"] = *req.Remesh
+	}
+	if req.ShouldTexture != nil {
+		falReq["should_texture"] = *req.ShouldTexture
+	}
+	if req.EnablePBR != nil {
+		falReq["enable_pbr"] = *req.EnablePBR
+	}
+	if req.TexturePrompt != "" {
+		falReq["texture_prompt"] = req.TexturePrompt
+	}
+	if req.Seed != nil {
+		falReq["seed"] = *req.Seed
+	}
+
+	body, err := json.Marshal(falReq)
+	if err != nil {
+		return nil, fmt.Errorf("marshal: %w", err)
+	}
+	resultBody, err := p.submitFalImageQueue(ctx, req.Model, body)
+	if err != nil {
+		return nil, err
+	}
+	return parseMeshy3DResult(resultBody)
+}
+
+const meshyImageTo3DCostCents = 80
+
+func parseMeshy3DResult(body []byte) (*model.Model3DGenerationResponse, error) {
+	var raw struct {
+		ModelGLB *model.FileAsset `json:"model_glb"`
+		Seed     *int             `json:"seed,omitempty"`
+	}
+	if err := json.Unmarshal(body, &raw); err != nil {
+		return nil, fmt.Errorf("unmarshal meshy result: %w", err)
+	}
+	if raw.ModelGLB == nil || strings.TrimSpace(raw.ModelGLB.URL) == "" {
+		return nil, &provider.ProviderError{Provider: "fal", StatusCode: 502, Message: "no model_glb url in meshy response: " + string(body), Retryable: false}
+	}
+	return &model.Model3DGenerationResponse{
+		ModelGLB: *raw.ModelGLB,
+		Seed:     raw.Seed,
+		Billing: &model.Model3DBilling{
+			ExternalCostUSD:   float64(meshyImageTo3DCostCents) / 100,
+			ExternalCostCents: meshyImageTo3DCostCents,
+		},
+	}, nil
 }
 
 func fal3DRequest(req *model.Model3DGenerationRequest) map[string]any {
@@ -370,6 +446,195 @@ func parseFal3DResult(body []byte, textureSize int) (*model.Model3DGenerationRes
 			ExternalCostCents: cents,
 		},
 	}, nil
+}
+
+func (p *FalProvider) RigMesh(ctx context.Context, req *model.MeshRiggingRequest) (*model.MeshRiggingResponse, error) {
+	falReq := map[string]any{
+		"model_url": req.ModelURL,
+	}
+	if req.HeightMeters != nil && *req.HeightMeters > 0 {
+		falReq["height_meters"] = *req.HeightMeters
+	}
+	if req.EnableAnimation {
+		falReq["enable_animation"] = true
+		if req.AnimationActionID != nil {
+			falReq["animation_action_id"] = *req.AnimationActionID
+		}
+	}
+	if req.EnableSafetyChecker != nil {
+		falReq["enable_safety_checker"] = *req.EnableSafetyChecker
+	}
+
+	body, err := json.Marshal(falReq)
+	if err != nil {
+		return nil, fmt.Errorf("marshal: %w", err)
+	}
+
+	resultBody, err := p.submitFalImageQueue(ctx, req.Model, body)
+	if err != nil {
+		return nil, err
+	}
+	return parseFalRiggingResult(resultBody, req.EnableAnimation)
+}
+
+func parseFalRiggingResult(body []byte, animation bool) (*model.MeshRiggingResponse, error) {
+	var raw struct {
+		RiggedCharacterGLB *model.FileAsset       `json:"rigged_character_glb"`
+		RiggedCharacterFBX *model.FileAsset       `json:"rigged_character_fbx"`
+		BasicAnimations    *model.BasicAnimations `json:"basic_animations"`
+		AnimationGLB       *model.FileAsset       `json:"animation_glb"`
+		AnimationFBX       *model.FileAsset       `json:"animation_fbx"`
+		RigTaskID          string                 `json:"rig_task_id"`
+	}
+	if err := json.Unmarshal(body, &raw); err != nil {
+		return nil, fmt.Errorf("unmarshal rigging result: %w", err)
+	}
+	if raw.RiggedCharacterGLB == nil || strings.TrimSpace(raw.RiggedCharacterGLB.URL) == "" {
+		return nil, &provider.ProviderError{Provider: "fal", StatusCode: 502, Message: "no rigged_character_glb url in response: " + string(body), Retryable: false}
+	}
+	cents := riggingExternalCostCents(animation)
+	return &model.MeshRiggingResponse{
+		RiggedCharacterGLB: *raw.RiggedCharacterGLB,
+		RiggedCharacterFBX: raw.RiggedCharacterFBX,
+		BasicAnimations:    raw.BasicAnimations,
+		AnimationGLB:       raw.AnimationGLB,
+		AnimationFBX:       raw.AnimationFBX,
+		RigTaskID:          raw.RigTaskID,
+		Billing: &model.MeshRiggingBilling{
+			Animation:         animation,
+			ExternalCostUSD:   float64(cents) / 100,
+			ExternalCostCents: cents,
+		},
+	}, nil
+}
+
+// riggingExternalCostCents mirrors fal's meshy/rigging pricing: $0.20 per rig,
+// plus $0.12 when an animation preset is applied.
+func riggingExternalCostCents(animation bool) int {
+	if animation {
+		return 32
+	}
+	return 20
+}
+
+// generateTripo3D handles Tripo3D p1 image-to-3d / text-to-3d, which return a
+// model_urls.glb rather than model_glb, and bill $0.50 with textures / $0.40
+// without. Prompt-driven (text-to-3d) calls pass req.Prompt instead of ImageURL.
+func (p *FalProvider) generateTripo3D(ctx context.Context, req *model.Model3DGenerationRequest) (*model.Model3DGenerationResponse, error) {
+	falReq := map[string]any{}
+	if strings.Contains(req.Model, "text-to-3d") {
+		falReq["prompt"] = req.Prompt
+	} else {
+		falReq["image_url"] = req.ImageURL
+	}
+	// Tripo's mesh-complexity control is face_limit; reuse the shared
+	// target_polycount input for it.
+	if req.TargetPolycount > 0 {
+		falReq["face_limit"] = req.TargetPolycount
+	}
+	texture := req.ShouldTexture == nil || *req.ShouldTexture
+	falReq["texture"] = texture
+	if req.Seed != nil {
+		falReq["model_seed"] = *req.Seed
+	}
+
+	body, err := json.Marshal(falReq)
+	if err != nil {
+		return nil, fmt.Errorf("marshal: %w", err)
+	}
+	resultBody, err := p.submitFalImageQueue(ctx, req.Model, body)
+	if err != nil {
+		return nil, err
+	}
+	return parseTripo3DResult(resultBody, texture)
+}
+
+func tripoCostCents(texture bool) int {
+	if texture {
+		return 50
+	}
+	return 40
+}
+
+func parseTripo3DResult(body []byte, texture bool) (*model.Model3DGenerationResponse, error) {
+	var raw struct {
+		ModelMesh *model.FileAsset `json:"model_mesh"`
+		ModelURLs struct {
+			GLB *model.FileAsset `json:"glb"`
+		} `json:"model_urls"`
+		Seed *int `json:"seed,omitempty"`
+	}
+	if err := json.Unmarshal(body, &raw); err != nil {
+		return nil, fmt.Errorf("unmarshal tripo result: %w", err)
+	}
+	glb := raw.ModelURLs.GLB
+	if glb == nil || strings.TrimSpace(glb.URL) == "" {
+		glb = raw.ModelMesh
+	}
+	if glb == nil || strings.TrimSpace(glb.URL) == "" {
+		return nil, &provider.ProviderError{Provider: "fal", StatusCode: 502, Message: "no glb url in tripo response: " + string(body), Retryable: false}
+	}
+	cents := tripoCostCents(texture)
+	return &model.Model3DGenerationResponse{
+		ModelGLB: *glb,
+		Seed:     raw.Seed,
+		Billing: &model.Model3DBilling{
+			ExternalCostUSD:   float64(cents) / 100,
+			ExternalCostCents: cents,
+		},
+	}, nil
+}
+
+// generateTrellisRetexture handles Trellis-2 retexture (3D-to-3D): a reference
+// image + an untextured mesh in, a textured model_glb out. Billed by output
+// resolution ($0.20 at 512p, $0.24 at 1024p and above).
+func (p *FalProvider) generateTrellisRetexture(ctx context.Context, req *model.Model3DGenerationRequest) (*model.Model3DGenerationResponse, error) {
+	resolution := normalizeTrellisResolution(req.Resolution)
+	falReq := map[string]any{
+		"image_url":  req.ImageURL,
+		"mesh_url":   req.MeshURL,
+		"resolution": resolution,
+	}
+	if req.TextureSize > 0 {
+		falReq["texture_size"] = normalizePixalTextureSize(req.TextureSize)
+	}
+	if req.Seed != nil {
+		falReq["seed"] = *req.Seed
+	}
+
+	body, err := json.Marshal(falReq)
+	if err != nil {
+		return nil, fmt.Errorf("marshal: %w", err)
+	}
+	resultBody, err := p.submitFalImageQueue(ctx, req.Model, body)
+	if err != nil {
+		return nil, err
+	}
+	cents := trellisRetextureCostCents(resolution)
+	resp, err := parseFal3DResult(resultBody, normalizePixalTextureSize(req.TextureSize))
+	if err != nil {
+		return nil, err
+	}
+	resp.Billing = &model.Model3DBilling{
+		TextureSize:       normalizePixalTextureSize(req.TextureSize),
+		ExternalCostUSD:   float64(cents) / 100,
+		ExternalCostCents: cents,
+	}
+	return resp, nil
+}
+
+func normalizeTrellisResolution(value int) int {
+	if value == 512 {
+		return 512
+	}
+	return 1024
+}
+
+func trellisRetextureCostCents(resolution int) int {
+	if resolution == 512 {
+		return 20
+	}
+	return 24
 }
 
 func (p *FalProvider) submitFalImageQueue(ctx context.Context, modelID string, body []byte) ([]byte, error) {
@@ -740,6 +1005,18 @@ func (p *FalProvider) falQueueRequestBases(modelID, requestID string) []string {
 	}
 	if strings.Contains(modelID, "fal-ai/flux-2-pro/outpaint") {
 		bases = append(bases, queueBase+"/fal-ai/flux-2-pro/requests/"+requestID)
+	}
+	if strings.Contains(modelID, "fal-ai/meshy/") {
+		bases = append(bases, queueBase+"/fal-ai/meshy/requests/"+requestID)
+	}
+	if strings.Contains(modelID, "tripo3d/p1/") {
+		bases = append(bases, queueBase+"/tripo3d/p1/requests/"+requestID)
+	}
+	if strings.Contains(modelID, "tripo3d/h3.1/") {
+		bases = append(bases, queueBase+"/tripo3d/h3.1/requests/"+requestID)
+	}
+	if strings.Contains(modelID, "fal-ai/trellis-2/") {
+		bases = append(bases, queueBase+"/fal-ai/trellis-2/requests/"+requestID)
 	}
 	return bases
 }

@@ -41,6 +41,19 @@ Managed by: supervisord (service name: `openpaths`)
 - Bucket: `openpathsstatic`
 - URL: `https://openpathsstatic.openpaths.io`
 
+## Frontend nginx / asset caching
+
+- Prod nginx vhost is version-controlled at [deploy/nginx/openpaths.io](deploy/nginx/openpaths.io)
+  (live copy: `/etc/nginx/sites-enabled/openpaths.io`). Edit, then `sudo nginx -t && sudo systemctl reload nginx`.
+- Asset bundles use **stable** filenames (`/assets/index.js`, `index.css` -- enforced by
+  `npm run verify:assets`). Because the filename never changes, the `/assets/` block serves
+  `Cache-Control: public, max-age=0, must-revalidate` (NOT `immutable`) so a redeployed bundle is
+  picked up on the next load via ETag revalidation. Never re-add `immutable` here -- it pins
+  returning browsers to a stale bundle and breaks newly-added SPA routes ("No routes matched").
+- The Cloudflare zone Browser Cache TTL is set to **Respect Existing Headers** so the origin
+  `max-age=0` is honored. After deploying a new bundle, purge the asset URLs (or `deploy.sh site`
+  purges everything) so the edge re-fetches.
+
 ## Prod DB
 
 Postgres on the prod server. If you renamed the local DB from `openpath` to `openpaths`, the prod DB may still use the old name -- coordinate the rename on prod separately:

@@ -19,6 +19,14 @@ export const providers: Provider[] = [
     logo: '/logos/netwrck.webp'
   },
   {
+    slug: 'cutedsl',
+    name: 'CuteDSL',
+    url: 'https://cutedsl.cc',
+    description: 'Triton-accelerated model API: Z-Image Turbo image generation and chronos2 time-series forecasting (27x faster via custom kernels), plus Kokoro TTS, speech-to-text, and chat.',
+    featured: true,
+    logo: 'https://appstatic.app.nz/cutedsl/static/images/logo.webp'
+  },
+  {
     slug: 'text-generator',
     name: 'Text-Generator.io',
     url: 'https://text-generator.io',

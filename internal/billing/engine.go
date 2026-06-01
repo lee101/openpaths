@@ -148,6 +148,32 @@ func (e *Engine) DeductImageWithInputsAndSize(ctx context.Context, userID, model
 	return cost, nil
 }
 
+// DeductForecast charges for a single time-series forecast request.
+func (e *Engine) DeductForecast(ctx context.Context, userID, modelID, usageLogID string) (int64, error) {
+	cost, err := e.pricing.CalculateForecastCost(modelID)
+	if err != nil {
+		return 0, err
+	}
+	if cost == 0 {
+		return 0, nil
+	}
+	var refID *string
+	if usageLogID != "" {
+		refID = &usageLogID
+	}
+	err = e.credits.DeductWithTransaction(ctx, userID, cost,
+		model.TxTypeUsageDeduction,
+		fmt.Sprintf("Forecast: %s", modelID),
+		refID,
+	)
+	if err != nil {
+		e.triggerAutoTopup(userID)
+		return cost, err
+	}
+	e.triggerAutoTopup(userID)
+	return cost, nil
+}
+
 func (e *Engine) DeductOutpaint(ctx context.Context, userID, modelID string, inputWidth, inputHeight, outputWidth, outputHeight, outputImageCount int, usageLogID string) (int64, error) {
 	cost, err := e.pricing.CalculateOutpaintCost(modelID, inputWidth, inputHeight, outputWidth, outputHeight, outputImageCount)
 	if err != nil {

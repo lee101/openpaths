@@ -174,3 +174,174 @@ func TestSearchHandlerForwardsPapersSearchWithBYOK(t *testing.T) {
 		t.Fatalf("unexpected body: %s", ctx.Response.Body())
 	}
 }
+
+func newAnswerTestCtx(t *testing.T, body string, byok map[string]*queries.UserProviderKey) *fasthttp.RequestCtx {
+	t.Helper()
+	ctx := &fasthttp.RequestCtx{}
+	var req fasthttp.Request
+	req.Header.SetMethod(http.MethodPost)
+	req.SetRequestURI("/v1/search")
+	req.Header.SetContentType("application/json")
+	req.SetBodyString(body)
+	ctx.Init(&req, nil, nil)
+	ctx.SetUserValue(middleware.CtxKeyUserID, "u1")
+	if byok != nil {
+		ctx.SetUserValue(middleware.CtxKeyUserProviderKeys, byok)
+	}
+	return ctx
+}
+
+func TestSearchHandlerGeminiSearch(t *testing.T) {
+	var gotPath, gotKey string
+	var gotBody map[string]any
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		gotKey = r.URL.Query().Get("key")
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+			"candidates": [{
+				"content": { "parts": [{ "text": "Nvidia released a new GPU." }] },
+				"groundingMetadata": {
+					"webSearchQueries": ["nvidia news"],
+					"groundingChunks": [
+						{ "web": { "uri": "https://example.test/nvidia", "title": "Nvidia News" } }
+					]
+				}
+			}]
+		}`))
+	}))
+	defer upstream.Close()
+
+	h := NewSearchHandler(SearchProviderConfig{}, SearchProviderConfig{}, nil,
+		metrics.NewRecorder(metrics.NewCollector(nil, time.Hour))).
+		SetAnswerProviders(SearchProviderConfig{BaseURL: upstream.URL, APIKey: "platform-gemini", Enabled: true}, SearchProviderConfig{}, SearchProviderConfig{})
+
+	ctx := newAnswerTestCtx(t, `{"provider":"gemini","query":"Latest news on Nvidia"}`, nil)
+	h.HandleSearch(ctx)
+
+	if ctx.Response.StatusCode() != 200 {
+		t.Fatalf("status = %d, body = %s", ctx.Response.StatusCode(), ctx.Response.Body())
+	}
+	if !strings.Contains(gotPath, "generateContent") {
+		t.Fatalf("path = %s", gotPath)
+	}
+	if gotKey != "platform-gemini" {
+		t.Fatalf("key = %q", gotKey)
+	}
+	if _, ok := gotBody["tools"]; !ok {
+		t.Fatalf("expected google_search tools in body: %#v", gotBody)
+	}
+	var resp answerResponse
+	if err := json.Unmarshal(ctx.Response.Body(), &resp); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if resp.Provider != "gemini" || resp.Answer != "Nvidia released a new GPU." {
+		t.Fatalf("unexpected answer: %+v", resp)
+	}
+	if len(resp.Citations) != 1 || resp.Citations[0].URL != "https://example.test/nvidia" {
+		t.Fatalf("unexpected citations: %+v", resp.Citations)
+	}
+	if len(resp.Results) != 1 {
+		t.Fatalf("results should mirror citations: %+v", resp.Results)
+	}
+}
+
+func TestSearchHandlerOpenAISearchWithBYOK(t *testing.T) {
+	var gotPath, gotAuth string
+	var gotBody map[string]any
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		gotAuth = r.Header.Get("Authorization")
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+			"output": [{
+				"type": "message",
+				"content": [{
+					"type": "output_text",
+					"text": "OpenAI answer.",
+					"annotations": [{ "type": "url_citation", "url": "https://example.test/a", "title": "Source A" }]
+				}]
+			}]
+		}`))
+	}))
+	defer upstream.Close()
+
+	h := NewSearchHandler(SearchProviderConfig{}, SearchProviderConfig{}, nil,
+		metrics.NewRecorder(metrics.NewCollector(nil, time.Hour))).
+		SetAnswerProviders(SearchProviderConfig{}, SearchProviderConfig{BaseURL: upstream.URL, APIKey: "platform-openai", Enabled: true}, SearchProviderConfig{})
+
+	ctx := newAnswerTestCtx(t, `{"provider":"openai","query":"what is rag"}`, map[string]*queries.UserProviderKey{
+		"openai": {Provider: "openai", APIKey: "user-openai-key"},
+	})
+	h.HandleSearch(ctx)
+
+	if ctx.Response.StatusCode() != 200 {
+		t.Fatalf("status = %d, body = %s", ctx.Response.StatusCode(), ctx.Response.Body())
+	}
+	if gotPath != "/v1/responses" {
+		t.Fatalf("path = %s", gotPath)
+	}
+	if gotAuth != "Bearer user-openai-key" {
+		t.Fatalf("auth = %q", gotAuth)
+	}
+	if _, ok := gotBody["tools"]; !ok {
+		t.Fatalf("expected web_search tools: %#v", gotBody)
+	}
+	var resp answerResponse
+	_ = json.Unmarshal(ctx.Response.Body(), &resp)
+	if resp.Answer != "OpenAI answer." || len(resp.Citations) != 1 || resp.Citations[0].URL != "https://example.test/a" {
+		t.Fatalf("unexpected resp: %+v", resp)
+	}
+}
+
+func TestSearchHandlerGrokSearch(t *testing.T) {
+	var gotPath string
+	var gotBody map[string]any
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+			"choices": [{ "message": { "content": "Grok answer." } }],
+			"citations": ["https://www.example.test/x"]
+		}`))
+	}))
+	defer upstream.Close()
+
+	h := NewSearchHandler(SearchProviderConfig{}, SearchProviderConfig{}, nil,
+		metrics.NewRecorder(metrics.NewCollector(nil, time.Hour))).
+		SetAnswerProviders(SearchProviderConfig{}, SearchProviderConfig{}, SearchProviderConfig{BaseURL: upstream.URL, APIKey: "platform-xai", Enabled: true})
+
+	ctx := newAnswerTestCtx(t, `{"provider":"grok","query":"latest ai"}`, nil)
+	h.HandleSearch(ctx)
+
+	if ctx.Response.StatusCode() != 200 {
+		t.Fatalf("status = %d, body = %s", ctx.Response.StatusCode(), ctx.Response.Body())
+	}
+	if gotPath != "/v1/chat/completions" {
+		t.Fatalf("path = %s", gotPath)
+	}
+	if _, ok := gotBody["search_parameters"]; !ok {
+		t.Fatalf("expected search_parameters: %#v", gotBody)
+	}
+	var resp answerResponse
+	_ = json.Unmarshal(ctx.Response.Body(), &resp)
+	if resp.Answer != "Grok answer." || len(resp.Citations) != 1 {
+		t.Fatalf("unexpected resp: %+v", resp)
+	}
+	if resp.Citations[0].Title != "example.test" {
+		t.Fatalf("expected derived title, got %q", resp.Citations[0].Title)
+	}
+}
+
+func TestSearchHandlerUnknownProvider(t *testing.T) {
+	h := NewSearchHandler(SearchProviderConfig{}, SearchProviderConfig{}, nil,
+		metrics.NewRecorder(metrics.NewCollector(nil, time.Hour)))
+	ctx := newAnswerTestCtx(t, `{"provider":"bing","query":"x"}`, nil)
+	h.HandleSearch(ctx)
+	if ctx.Response.StatusCode() != 400 {
+		t.Fatalf("status = %d", ctx.Response.StatusCode())
+	}
+}

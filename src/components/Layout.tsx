@@ -67,7 +67,7 @@ const primaryNavLinks = [
   { label: 'Integrations', to: '/integrations', match: (path: string) => path === '/integrations' },
   { label: 'Playground', to: '/playground', match: (path: string) => path === '/playground' },
   { label: 'Prompts', to: '/prompts', match: (path: string) => path.startsWith('/prompts') },
-  { label: 'Tools', to: '/tools', match: (path: string) => path === '/tools' || path === '/image-to-3d' || path === '/text-to-3d' || path === '/text-to-image' },
+  { label: 'Tools', to: '/tools', match: (path: string) => path === '/tools' || path === '/image-to-3d' || path === '/text-to-3d' || path === '/rig-3d' || path === '/retexture-3d' || path === '/text-to-image' },
   { label: 'Search', to: '/search', match: (path: string) => path === '/search' },
   { label: 'Art', to: '/art', match: (path: string) => path === '/art' },
   { label: 'Blog', to: '/blog', match: (path: string) => path.startsWith('/blog') },
@@ -199,6 +199,8 @@ export function Layout() {
                   <li><Link to="/text-to-image" className="hover:text-white transition-colors">Text to Image</Link></li>
                   <li><Link to="/image-to-3d" className="hover:text-white transition-colors">Image to 3D</Link></li>
                   <li><Link to="/text-to-3d" className="hover:text-white transition-colors">Text to 3D</Link></li>
+                  <li><Link to="/rig-3d" className="hover:text-white transition-colors">3D Auto-Rigging</Link></li>
+                  <li><Link to="/retexture-3d" className="hover:text-white transition-colors">3D Retexture</Link></li>
                   <li><Link to="/search" className="hover:text-white transition-colors">Search</Link></li>
                   <li><Link to="/art" className="hover:text-white transition-colors">Art Search</Link></li>
                   <li><Link to="/prompts" className="hover:text-white transition-colors">Prompt Library</Link></li>

@@ -14,6 +14,8 @@ const ENDPOINTS = [
   { method: 'POST', path: '/v1/images/edits', description: 'Edit images and image-to-image workflows (GPT Image 2, Grok Imagine Image).' },
   { method: 'POST', path: '/v1/3d/generations', description: 'Generate textured GLB models from image URLs with Pixal3D.' },
   { method: 'POST', path: '/v1/3d/text-generations', description: 'Generate a GLB straight from a text prompt (auto image then Pixal3D).' },
+  { method: 'POST', path: '/v1/3d/rigging', description: 'Auto-rig a humanoid GLB into a rigged character (GLB + FBX) with Meshy.' },
+  { method: 'POST', path: '/v1/3d/generations', description: 'Also retextures a mesh: pass model trellis-2-retexture with mesh_url + image_url.' },
   { method: 'POST', path: '/v1/videos/generations', description: 'Generate videos (Sora 2, Hailuo, Wan, LTX).' },
   { method: 'POST', path: '/v1/audio/transcriptions', description: 'Transcribe speech to text (Whisper, GPT-4o Transcribe).' },
   { method: 'POST', path: '/v1/audio/speech', description: 'Text-to-speech (xAI TTS, MiniMax Speech 2.8 HD).' },

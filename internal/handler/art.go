@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
@@ -292,6 +293,23 @@ func (h *ArtHandler) ArtSitemapPages(ctx *fasthttp.RequestCtx) int {
 	return pages
 }
 
+// ArtSitemapIndexXML builds the sitemap index. Art image sitemaps use a clean
+// path scheme (/sitemap-art-1.xml, /sitemap-art-2.xml, …) rather than a query
+// string (?p=1) so crawlers like Googlebot treat each as a distinct, cacheable
+// sitemap with no ambiguity.
+func ArtSitemapIndexXML(base string, artPages int) string {
+	var b strings.Builder
+	b.WriteString(`<?xml version="1.0" encoding="UTF-8"?>` + "\n")
+	b.WriteString(`<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` + "\n")
+	fmt.Fprintf(&b, "  <sitemap>\n    <loc>%s/sitemap-pages.xml</loc>\n  </sitemap>\n", base)
+	fmt.Fprintf(&b, "  <sitemap>\n    <loc>%s/sitemap-art-tags.xml</loc>\n  </sitemap>\n", base)
+	for p := 1; p <= artPages; p++ {
+		fmt.Fprintf(&b, "  <sitemap>\n    <loc>%s/sitemap-art-%d.xml</loc>\n  </sitemap>\n", base, p)
+	}
+	b.WriteString("</sitemapindex>\n")
+	return b.String()
+}
+
 // HandleSitemapTags emits a urlset of the art landing page + every tag page.
 func (h *ArtHandler) HandleSitemapTags(ctx *fasthttp.RequestCtx) {
 	var tags []queries.TagCount
@@ -321,7 +339,15 @@ func (h *ArtHandler) HandleSitemapImages(ctx *fasthttp.RequestCtx) {
 		ctx.SetStatusCode(fasthttp.StatusServiceUnavailable)
 		return
 	}
-	page, _ := strconv.Atoi(string(ctx.QueryArgs().Peek("p")))
+	// Page comes from the clean path scheme (/sitemap-art-{page}.xml) with a
+	// fallback to the legacy ?p=N query string so already-indexed URLs keep working.
+	page := 0
+	if s, ok := ctx.UserValue("page").(string); ok {
+		page, _ = strconv.Atoi(s)
+	}
+	if page < 1 {
+		page, _ = strconv.Atoi(string(ctx.QueryArgs().Peek("p")))
+	}
 	if page < 1 {
 		page = 1
 	}
@@ -368,8 +394,43 @@ func writeSitemapURL(b *strings.Builder, loc, freq, priority string) {
 }
 
 func xmlEscape(s string) string {
+	s = stripInvalidXMLChars(s)
 	r := strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;", `"`, "&quot;", "'", "&apos;")
 	return r.Replace(s)
+}
+
+// isValidXMLChar reports whether r is allowed in a well-formed XML 1.0 document.
+// XML 1.0 permits #x9, #xA, #xD, #x20-#xD7FF, #xE000-#xFFFD, #x10000-#x10FFFF.
+// AI-generated prompts occasionally contain stray control characters (e.g. \x08),
+// which make the sitemap not well-formed even after entity-escaping and cause
+// crawlers like Googlebot to reject it.
+func isValidXMLChar(r rune) bool {
+	switch {
+	case r == 0x09, r == 0x0A, r == 0x0D:
+		return true
+	case r >= 0x20 && r <= 0xD7FF:
+		return true
+	case r >= 0xE000 && r <= 0xFFFD:
+		return true
+	case r >= 0x10000 && r <= 0x10FFFF:
+		return true
+	default:
+		return false
+	}
+}
+
+// stripInvalidXMLChars drops any code point XML 1.0 forbids. It returns the
+// input unchanged (no allocation) when everything is already valid.
+func stripInvalidXMLChars(s string) string {
+	if strings.IndexFunc(s, func(r rune) bool { return !isValidXMLChar(r) }) < 0 {
+		return s
+	}
+	return strings.Map(func(r rune) rune {
+		if isValidXMLChar(r) {
+			return r
+		}
+		return -1
+	}, s)
 }
 
 func artPromptCaption(s string, max int) string {

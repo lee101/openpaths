@@ -3,6 +3,8 @@ package model
 type Model3DGenerationRequest struct {
 	Model                     string   `json:"model"`
 	ImageURL                  string   `json:"image_url"`
+	MeshURL                   string   `json:"mesh_url,omitempty"`
+	Prompt                    string   `json:"prompt,omitempty"`
 	Async                     bool     `json:"async,omitempty"`
 	Seed                      *int     `json:"seed,omitempty"`
 	Resolution                int      `json:"resolution,omitempty"`
@@ -23,6 +25,14 @@ type Model3DGenerationRequest struct {
 	DecimationTarget          int      `json:"decimation_target,omitempty"`
 	TextureSize               int      `json:"texture_size,omitempty"`
 	Remesh                    *bool    `json:"remesh,omitempty"`
+
+	// Meshy v6 image-to-3d options (ignored by Pixal3D).
+	Topology        string `json:"topology,omitempty"`
+	TargetPolycount int    `json:"target_polycount,omitempty"`
+	SymmetryMode    string `json:"symmetry_mode,omitempty"`
+	ShouldTexture   *bool  `json:"should_texture,omitempty"`
+	EnablePBR       *bool  `json:"enable_pbr,omitempty"`
+	TexturePrompt   string `json:"texture_prompt,omitempty"`
 }
 
 type Model3DGenerationResponse struct {

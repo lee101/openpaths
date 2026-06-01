@@ -25,6 +25,8 @@ const entries: SitemapEntry[] = [
   { path: '/text-to-image', changefreq: 'monthly', priority: '0.7' },
   { path: '/image-to-3d', changefreq: 'monthly', priority: '0.7' },
   { path: '/text-to-3d', changefreq: 'monthly', priority: '0.7' },
+  { path: '/rig-3d', changefreq: 'monthly', priority: '0.7' },
+  { path: '/retexture-3d', changefreq: 'monthly', priority: '0.7' },
   { path: '/search', changefreq: 'monthly', priority: '0.7' },
   { path: '/art', changefreq: 'daily', priority: '0.7' },
   { path: '/stats', changefreq: 'weekly', priority: '0.6' },

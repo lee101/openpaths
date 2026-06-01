@@ -88,6 +88,61 @@ func abs(x int) int {
 	return x
 }
 
+// ParseAspectRatio parses an aspect-ratio string like "16:9" or "19.5:9" into a
+// width/height ratio. Returns false for anything that isn't "W:H".
+func ParseAspectRatio(s string) (float64, bool) {
+	parts := strings.SplitN(strings.TrimSpace(s), ":", 2)
+	if len(parts) != 2 {
+		return 0, false
+	}
+	w, err1 := strconv.ParseFloat(strings.TrimSpace(parts[0]), 64)
+	h, err2 := strconv.ParseFloat(strings.TrimSpace(parts[1]), 64)
+	if err1 != nil || err2 != nil || w <= 0 || h <= 0 {
+		return 0, false
+	}
+	return w / h, true
+}
+
+// IsAspectRatioList reports whether a model's supported_sizes are expressed as
+// aspect ratios ("16:9") rather than pixel dimensions ("1024x1024"). It returns
+// true as soon as it sees a ratio entry and false as soon as it sees a pixel
+// entry, so mixed/labelled lists ("auto") are classified by their first
+// concrete entry.
+func IsAspectRatioList(sizes []string) bool {
+	for _, s := range sizes {
+		if strings.Contains(s, ":") {
+			return true
+		}
+		if _, ok := ParseSize(s); ok {
+			return false
+		}
+	}
+	return false
+}
+
+// MatchAspectRatio returns the supported aspect-ratio string whose ratio is
+// closest to the requested pixel size. Non-ratio entries (e.g. "auto") are
+// ignored. Returns false when no ratio entry is usable.
+func MatchAspectRatio(requested Size, supported []string) (string, bool) {
+	reqAspect := requested.Aspect()
+	if reqAspect == 0 {
+		return "", false
+	}
+	best := ""
+	bestDiff := math.MaxFloat64
+	for _, s := range supported {
+		ar, ok := ParseAspectRatio(s)
+		if !ok {
+			continue
+		}
+		if diff := math.Abs(ar - reqAspect); diff < bestDiff {
+			bestDiff = diff
+			best = s
+		}
+	}
+	return best, best != ""
+}
+
 func NeedsResize(requested, providerSize Size) bool {
 	return requested.W != providerSize.W || requested.H != providerSize.H
 }

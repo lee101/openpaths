@@ -41,10 +41,24 @@ type Model3DProvider interface {
 	Generate3D(ctx context.Context, req *model.Model3DGenerationRequest) (*model.Model3DGenerationResponse, error)
 }
 
+// MeshRiggingProvider defines the interface for 3D mesh auto-rigging.
+type MeshRiggingProvider interface {
+	Name() string
+	RigMesh(ctx context.Context, req *model.MeshRiggingRequest) (*model.MeshRiggingResponse, error)
+}
+
 // VideoProvider defines the interface for video generation.
 type VideoProvider interface {
 	Name() string
 	GenerateVideo(ctx context.Context, req *model.VideoGenerationRequest) (*model.VideoGenerationResponse, error)
+}
+
+// ForecastingProvider defines the interface for time-series forecasting
+// (e.g. CuteDSL chronos2). A forecaster takes a historical series and returns
+// a point forecast plus optional quantiles.
+type ForecastingProvider interface {
+	Name() string
+	GenerateForecast(ctx context.Context, req *model.ForecastingRequest) (*model.ForecastingResponse, error)
 }
 
 // MusicProvider defines the interface for music generation.

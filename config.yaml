@@ -34,6 +34,11 @@ providers:
     api_key: "${NETWRCK_API_KEY}"
     enabled: true
 
+  - name: cutedsl
+    base_url: "https://cutedsl.cc"
+    api_key: "${CUTEDSL_API_KEY}"
+    enabled: true
+
   - name: openai
     base_url: "https://api.openai.com"
     api_key: "${OPENAI_API_KEY}"
@@ -445,6 +450,42 @@ models:
     supports_tools: false
     supports_vision: true
 
+  - id: "meshy-rigging"
+    provider: fal
+    provider_model_id: "fal-ai/meshy/rigging"
+    price_per_request: 0.20
+    aliases: ["rigging", "auto-rig", "mesh-rigging", "3d-to-3d-rigging", "fal-meshy-rigging"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "meshy-v6-image-to-3d"
+    provider: fal
+    provider_model_id: "fal-ai/meshy/v6/image-to-3d"
+    price_per_request: 0.80
+    aliases: ["meshy-v6", "meshy-image-to-3d", "meshy", "fal-meshy-v6-image-to-3d"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "tripo-p1-image-to-3d"
+    provider: fal
+    provider_model_id: "tripo3d/p1/image-to-3d"
+    price_per_request: 0.50
+    aliases: ["tripo", "tripo-p1", "tripo-image-to-3d", "fal-tripo-p1-image-to-3d"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "trellis-2-retexture"
+    provider: fal
+    provider_model_id: "fal-ai/trellis-2/retexture"
+    price_per_request: 0.24
+    aliases: ["retexture", "trellis-retexture", "trellis-2", "fal-trellis-2-retexture"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
   # --- Fal / ByteDance Seedance 2.0 (Video Generation) ---
   - id: "seedance-2.0-fast-text-to-video"
     provider: fal
@@ -507,6 +548,33 @@ models:
     supports_streaming: false
     supports_tools: false
     supports_vision: true
+
+  # --- CuteDSL (Triton-accelerated image gen + time-series forecasting) ---
+  - id: "cutedsl-image"
+    provider: cutedsl
+    provider_model_id: "z-image-turbo"
+    price_per_image: 0.04
+    aliases: ["cutedsl-zimage", "cute-image", "z-image-turbo"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+    supported_sizes:
+      - "512x512"
+      - "768x768"
+      - "1024x1024"
+      - "1024x768"
+      - "768x1024"
+      - "1360x768"
+      - "768x1360"
+
+  - id: "chronos2"
+    provider: cutedsl
+    provider_model_id: "chronos2"
+    price_per_forecast: 0.20
+    aliases: ["forecast", "time-series-forecast", "cutedsl-chronos2", "chronos-2"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
 
   # --- Netwrck (Video Generation) ---
   - id: "wan"
@@ -1103,7 +1171,7 @@ models:
     price_per_image: 0.02
     price_per_input_image: 0.002
     aliases: ["grok-image", "xai-image", "grok-imagine-image-pro"]
-    supported_sizes: ["1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "2:1", "1:2", "19.5:9", "9:19.5", "20:9", "9:20", "auto"]
+    supported_sizes: ["1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "19.5:9", "9:19.5", "auto"]
     supports_streaming: false
     supports_tools: false
     supports_vision: true
@@ -1114,7 +1182,7 @@ models:
     price_per_image: 0.02
     price_per_input_image: 0.002
     aliases: ["grok-image-quality", "xai-image-quality"]
-    supported_sizes: ["1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "2:1", "1:2", "19.5:9", "9:19.5", "20:9", "9:20", "auto"]
+    supported_sizes: ["1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "19.5:9", "9:19.5", "auto"]
     supports_streaming: false
     supports_tools: false
     supports_vision: true

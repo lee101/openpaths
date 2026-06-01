@@ -24,6 +24,7 @@ type ModelConfig struct {
 	PricePerSecondWithVideoInput float64  `yaml:"price_per_second_with_video_input,omitempty" json:"price_per_second_with_video_input,omitempty"`
 	PricePerMinute               float64  `yaml:"price_per_minute,omitempty" json:"price_per_minute,omitempty"`
 	PricePerHour                 float64  `yaml:"price_per_hour,omitempty" json:"price_per_hour,omitempty"`
+	PricePerForecast             float64  `yaml:"price_per_forecast,omitempty" json:"price_per_forecast,omitempty"`
 	FallbackProviders            []string `yaml:"fallback_providers,omitempty" json:"fallback_providers,omitempty"`
 	FallbackModels               []string `yaml:"fallback_models,omitempty" json:"fallback_models,omitempty"`
 	SupportedSizes               []string `yaml:"supported_sizes,omitempty" json:"supported_sizes,omitempty"`

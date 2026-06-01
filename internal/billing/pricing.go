@@ -226,6 +226,28 @@ func (pt *PricingTable) CalculateTranscriptionCost(modelID string, durationSecs 
 	return totalCents, nil
 }
 
+// CalculateForecastCost returns cost in hundredths-of-a-cent for a single
+// time-series forecast request. It prefers an explicit per-forecast price and
+// falls back to the generic per-request price.
+func (pt *PricingTable) CalculateForecastCost(modelID string) (int64, error) {
+	cfg, ok := pt.models[modelID]
+	if !ok {
+		return 0, fmt.Errorf("unknown model %q for pricing", modelID)
+	}
+	price := cfg.PricePerForecast
+	if price <= 0 {
+		price = cfg.PricePerRequest
+	}
+	if price <= 0 {
+		return 0, fmt.Errorf("model %q has no per-forecast pricing", modelID)
+	}
+	totalCents := int64(price * 10000)
+	if totalCents < 1 {
+		totalCents = 1
+	}
+	return totalCents, nil
+}
+
 // LookupModel returns the ModelConfig for a given model ID, or nil if not found.
 func (pt *PricingTable) LookupModel(modelID string) *model.ModelConfig {
 	return pt.models[modelID]
@@ -236,6 +258,9 @@ func (pt *PricingTable) EstimateMaxCost(modelID string, maxOutputTokens int) (in
 	cfg, ok := pt.models[modelID]
 	if !ok {
 		return 0, fmt.Errorf("unknown model %q for pricing", modelID)
+	}
+	if cfg.PricePerForecast > 0 {
+		return pt.CalculateForecastCost(modelID)
 	}
 	if cfg.PricePerRequest > 0 {
 		totalCents := int64(cfg.PricePerRequest * 10000)

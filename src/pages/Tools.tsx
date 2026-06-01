@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Box, Boxes, ImageIcon, Layers, Sparkles } from 'lucide-react';
+import { ArrowRight, Box, Boxes, ImageIcon, Layers, Palette, PersonStanding, Sparkles } from 'lucide-react';
 import { Seo } from '../components/Seo';
 
 const TOOLS = [
@@ -16,9 +16,9 @@ const TOOLS = [
     to: '/image-to-3d',
     icon: Box,
     name: 'Image to 3D',
-    tagline: 'Fal Pixal3D',
-    description: 'Upload or paste an object image and get back a textured GLB you can preview, rotate, and download.',
-    price: '$0.30 – $0.42',
+    tagline: 'Pixal3D · Meshy v6 · Tripo p1',
+    description: 'Upload or paste an object image and get back a textured GLB you can preview, rotate, and download. Choose Pixal3D (fast), Meshy v6 (quality), or Tripo p1 (sharp geometry).',
+    price: '$0.30 – $0.80',
   },
   {
     to: '/text-to-3d',
@@ -27,6 +27,22 @@ const TOOLS = [
     tagline: 'Auto Image + Pixal3D',
     description: 'Type a prompt: OpenPaths generates an image then converts it to a textured GLB in one call. Pay image + 3D price.',
     price: 'image + 3D price',
+  },
+  {
+    to: '/rig-3d',
+    icon: PersonStanding,
+    name: '3D Auto-Rigging',
+    tagline: 'Fal Meshy Rigging',
+    description: 'Upload a humanoid GLB and get back a rigged character (GLB + FBX) with walk/run animations — preview it right in the browser.',
+    price: '$0.20 – $0.32',
+  },
+  {
+    to: '/retexture-3d',
+    icon: Palette,
+    name: '3D Retexture',
+    tagline: 'Fal Trellis-2',
+    description: 'Upload an existing mesh plus a reference image and re-skin it with a fresh texture — preview and download the new GLB.',
+    price: '$0.20 – $0.24',
   },
   {
     to: '/playground',

@@ -54,6 +54,73 @@ func TestMatchSize(t *testing.T) {
 	}
 }
 
+func TestParseAspectRatio(t *testing.T) {
+	tests := []struct {
+		in   string
+		want float64
+		ok   bool
+	}{
+		{"16:9", 16.0 / 9.0, true},
+		{"1:1", 1, true},
+		{"19.5:9", 19.5 / 9.0, true},
+		{" 9 : 19.5 ", 9.0 / 19.5, true},
+		{"1024x768", 0, false},
+		{"auto", 0, false},
+		{"0:9", 0, false},
+	}
+	for _, tt := range tests {
+		got, ok := ParseAspectRatio(tt.in)
+		if ok != tt.ok || (ok && got != tt.want) {
+			t.Errorf("ParseAspectRatio(%q) = %v, %v; want %v, %v", tt.in, got, ok, tt.want, tt.ok)
+		}
+	}
+}
+
+func TestIsAspectRatioList(t *testing.T) {
+	tests := []struct {
+		in   []string
+		want bool
+	}{
+		{[]string{"1:1", "16:9", "auto"}, true},
+		{[]string{"1024x1024", "1360x768"}, false},
+		{[]string{"auto", "16:9"}, true},
+		{nil, false},
+	}
+	for _, tt := range tests {
+		if got := IsAspectRatioList(tt.in); got != tt.want {
+			t.Errorf("IsAspectRatioList(%v) = %v; want %v", tt.in, got, tt.want)
+		}
+	}
+}
+
+func TestMatchAspectRatio(t *testing.T) {
+	// grok-imagine supported aspect ratios.
+	supported := []string{"1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "19.5:9", "9:19.5", "auto"}
+	tests := []struct {
+		req  Size
+		want string
+	}{
+		{Size{1360, 768}, "16:9"},  // 1.77 -> 16:9 (the reported 85:48 bug)
+		{Size{768, 1360}, "9:16"},  // 0.56 -> 9:16
+		{Size{1024, 1024}, "1:1"},  // 1.0  -> 1:1
+		{Size{1024, 768}, "4:3"},   // 1.33 -> 4:3
+		{Size{1200, 800}, "3:2"},   // 1.5  -> 3:2
+		{Size{2000, 900}, "19.5:9"}, // 2.22 -> 19.5:9
+	}
+	for _, tt := range tests {
+		got, ok := MatchAspectRatio(tt.req, supported)
+		if !ok || got != tt.want {
+			t.Errorf("MatchAspectRatio(%v) = %q, %v; want %q", tt.req, got, ok, tt.want)
+		}
+	}
+}
+
+func TestMatchAspectRatioNoRatios(t *testing.T) {
+	if _, ok := MatchAspectRatio(Size{1024, 768}, []string{"auto", "1024x768"}); ok {
+		t.Errorf("MatchAspectRatio with no ratio entries should return ok=false")
+	}
+}
+
 func TestMatchSizeEmptySupported(t *testing.T) {
 	got := MatchSize(Size{800, 600}, nil)
 	if got != (Size{800, 600}) {

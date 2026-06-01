@@ -83,9 +83,13 @@ export function ImageTo3D() {
   const [imageUrl, setImageUrl] = useState(DEFAULT_IMAGE_URL);
   const [activeSnippet, setActiveSnippet] = useState<'python' | 'javascript' | 'curl'>('python');
   const [uploadedImageUrl, setUploadedImageUrl] = useState('');
+  const [engine, setEngine] = useState<'pixal3d' | 'meshy-v6' | 'tripo'>('pixal3d');
   const [textureSize, setTextureSize] = useState(1024);
   const [resolution, setResolution] = useState(1024);
   const [remesh, setRemesh] = useState(true);
+  const [topology, setTopology] = useState<'triangle' | 'quad'>('triangle');
+  const [targetPolycount, setTargetPolycount] = useState(30000);
+  const [shouldTexture, setShouldTexture] = useState(true);
   const [result, setResult] = useState<ImageTo3DResult | null>(null);
   const [modelUrl, setModelUrl] = useState(DEFAULT_MODEL_URL);
   const [error, setError] = useState('');
@@ -98,27 +102,47 @@ export function ImageTo3D() {
     if (apiKey) localStorage.setItem('op_api_key', apiKey);
   }, [apiKey]);
 
-  const payload = useMemo(() => ({
-    model: 'pixal3d-image-to-3d',
-    image_url: imageUrl,
-    resolution,
-    texture_size: textureSize,
-    remesh,
-    ss_guidance_strength: 7.5,
-    ss_guidance_rescale: 0.7,
-    ss_sampling_steps: 12,
-    ss_rescale_t: 5,
-    shape_slat_guidance_strength: 7.5,
-    shape_slat_guidance_rescale: 0.5,
-    shape_slat_sampling_steps: 12,
-    shape_slat_rescale_t: 3,
-    tex_slat_guidance_strength: 1,
-    tex_slat_sampling_steps: 12,
-    tex_slat_rescale_t: 3,
-    mesh_scale: 1,
-    max_num_tokens: 49152,
-    decimation_target: 200000,
-  }), [imageUrl, remesh, resolution, textureSize]);
+  const payload = useMemo(() => {
+    if (engine === 'tripo') {
+      return {
+        model: 'tripo-p1-image-to-3d',
+        image_url: imageUrl,
+        target_polycount: targetPolycount,
+        should_texture: shouldTexture,
+      };
+    }
+    if (engine === 'meshy-v6') {
+      return {
+        model: 'meshy-v6-image-to-3d',
+        image_url: imageUrl,
+        topology,
+        target_polycount: targetPolycount,
+        should_texture: shouldTexture,
+        remesh,
+      };
+    }
+    return {
+      model: 'pixal3d-image-to-3d',
+      image_url: imageUrl,
+      resolution,
+      texture_size: textureSize,
+      remesh,
+      ss_guidance_strength: 7.5,
+      ss_guidance_rescale: 0.7,
+      ss_sampling_steps: 12,
+      ss_rescale_t: 5,
+      shape_slat_guidance_strength: 7.5,
+      shape_slat_guidance_rescale: 0.5,
+      shape_slat_sampling_steps: 12,
+      shape_slat_rescale_t: 3,
+      tex_slat_guidance_strength: 1,
+      tex_slat_sampling_steps: 12,
+      tex_slat_rescale_t: 3,
+      mesh_scale: 1,
+      max_num_tokens: 49152,
+      decimation_target: 200000,
+    };
+  }, [engine, imageUrl, remesh, resolution, textureSize, topology, targetPolycount, shouldTexture]);
 
   const snippets = useMemo(() => {
     const bearer = apiKey || 'op-...';
@@ -288,7 +312,7 @@ console.log(data.model_glb.url);`,
     window.setTimeout(() => setCopied(false), 1400);
   }
 
-  const billed = result?.billing?.external_cost_usd || (textureSize === 1024 ? 0.3 : 0.42);
+  const billed = result?.billing?.external_cost_usd || (engine === 'meshy-v6' ? 0.8 : engine === 'tripo' ? (shouldTexture ? 0.5 : 0.4) : (textureSize === 1024 ? 0.3 : 0.42));
 
   return (
     <>
@@ -303,7 +327,7 @@ console.log(data.model_glb.url);`,
           <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <div className="mb-3 inline-flex items-center gap-2 rounded border border-white/10 bg-white/[0.03] px-3 py-1 text-xs font-mono text-white/45">
-                <Box className="h-3.5 w-3.5" /> Fal Pixal3D
+                <Box className="h-3.5 w-3.5" /> {engine === 'meshy-v6' ? 'Fal Meshy v6' : engine === 'tripo' ? 'Fal Tripo p1' : 'Fal Pixal3D'}
               </div>
               <h1 className="max-w-3xl text-4xl font-bold tracking-tight md:text-6xl">Image to 3D</h1>
               <p className="mt-4 max-w-2xl text-base leading-relaxed text-white/55">
@@ -384,27 +408,76 @@ console.log(data.model_glb.url);`,
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-3">
-                <label>
-                  <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/40">Structure</span>
-                  <select value={resolution} onChange={e => setResolution(Number(e.target.value))} className="w-full rounded border border-white/10 bg-black px-3 py-2 text-sm font-mono text-white focus:border-white/30 focus:outline-none">
-                    <option value={1024}>1024</option>
-                    <option value={1536}>1536</option>
-                  </select>
-                </label>
-                <label>
-                  <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/40">Texture</span>
-                  <select value={textureSize} onChange={e => setTextureSize(Number(e.target.value))} className="w-full rounded border border-white/10 bg-black px-3 py-2 text-sm font-mono text-white focus:border-white/30 focus:outline-none">
-                    <option value={1024}>1024</option>
-                    <option value={2048}>2048</option>
-                    <option value={4096}>4096</option>
-                  </select>
-                </label>
-              </div>
+              <label className="mb-3 block">
+                <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/40">Engine</span>
+                <select value={engine} onChange={e => { setEngine(e.target.value as 'pixal3d' | 'meshy-v6' | 'tripo'); setResult(null); }} className="w-full rounded border border-white/10 bg-black px-3 py-2 text-sm font-mono text-white focus:border-white/30 focus:outline-none">
+                  <option value="pixal3d">Pixal3D — fast, textured ($0.30–$0.42)</option>
+                  <option value="meshy-v6">Meshy v6 — higher quality ($0.80)</option>
+                  <option value="tripo">Tripo p1 — sharp geometry ($0.40–$0.50)</option>
+                </select>
+              </label>
 
-              <button type="button" onClick={() => setRemesh(v => !v)} className={`mt-3 w-full rounded border px-3 py-2 text-xs font-mono transition-colors ${remesh ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' : 'border-white/10 bg-black text-white/45'}`}>
-                Remesh {remesh ? 'on' : 'off'}
-              </button>
+              {engine === 'pixal3d' ? (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <label>
+                      <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/40">Structure</span>
+                      <select value={resolution} onChange={e => setResolution(Number(e.target.value))} className="w-full rounded border border-white/10 bg-black px-3 py-2 text-sm font-mono text-white focus:border-white/30 focus:outline-none">
+                        <option value={1024}>1024</option>
+                        <option value={1536}>1536</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/40">Texture</span>
+                      <select value={textureSize} onChange={e => setTextureSize(Number(e.target.value))} className="w-full rounded border border-white/10 bg-black px-3 py-2 text-sm font-mono text-white focus:border-white/30 focus:outline-none">
+                        <option value={1024}>1024</option>
+                        <option value={2048}>2048</option>
+                        <option value={4096}>4096</option>
+                      </select>
+                    </label>
+                  </div>
+
+                  <button type="button" onClick={() => setRemesh(v => !v)} className={`mt-3 w-full rounded border px-3 py-2 text-xs font-mono transition-colors ${remesh ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' : 'border-white/10 bg-black text-white/45'}`}>
+                    Remesh {remesh ? 'on' : 'off'}
+                  </button>
+                </>
+              ) : engine === 'meshy-v6' ? (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <label>
+                      <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/40">Topology</span>
+                      <select value={topology} onChange={e => setTopology(e.target.value as 'triangle' | 'quad')} className="w-full rounded border border-white/10 bg-black px-3 py-2 text-sm font-mono text-white focus:border-white/30 focus:outline-none">
+                        <option value="triangle">triangle</option>
+                        <option value="quad">quad</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/40">Target polycount</span>
+                      <input type="number" min={1000} max={300000} step={1000} value={targetPolycount} onChange={e => setTargetPolycount(Number(e.target.value) || 30000)} className="w-full rounded border border-white/10 bg-black px-3 py-2 text-sm font-mono text-white focus:border-white/30 focus:outline-none" />
+                    </label>
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-2 gap-3">
+                    <button type="button" onClick={() => setShouldTexture(v => !v)} className={`rounded border px-3 py-2 text-xs font-mono transition-colors ${shouldTexture ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' : 'border-white/10 bg-black text-white/45'}`}>
+                      Texture {shouldTexture ? 'on' : 'off'}
+                    </button>
+                    <button type="button" onClick={() => setRemesh(v => !v)} className={`rounded border px-3 py-2 text-xs font-mono transition-colors ${remesh ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' : 'border-white/10 bg-black text-white/45'}`}>
+                      Remesh {remesh ? 'on' : 'off'}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <label className="block">
+                    <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/40">Face limit (0 = adaptive)</span>
+                    <input type="number" min={0} max={500000} step={1000} value={targetPolycount} onChange={e => setTargetPolycount(Number(e.target.value) || 0)} className="w-full rounded border border-white/10 bg-black px-3 py-2 text-sm font-mono text-white focus:border-white/30 focus:outline-none" />
+                  </label>
+
+                  <button type="button" onClick={() => setShouldTexture(v => !v)} className={`mt-3 w-full rounded border px-3 py-2 text-xs font-mono transition-colors ${shouldTexture ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' : 'border-white/10 bg-black text-white/45'}`}>
+                    Texture {shouldTexture ? 'on ($0.50)' : 'off ($0.40)'}
+                  </button>
+                </>
+              )}
 
               <button
                 type="button"

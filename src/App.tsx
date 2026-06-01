@@ -20,6 +20,8 @@ import { Stats } from './pages/Stats';
 import { Search } from './pages/Search';
 import { ImageTo3D } from './pages/ImageTo3D';
 import { TextTo3D } from './pages/TextTo3D';
+import { Rig3D } from './pages/Rig3D';
+import { Retexture3D } from './pages/Retexture3D';
 import { TextToImage } from './pages/TextToImage';
 import { Tools } from './pages/Tools';
 import { Alternatives } from './pages/Alternatives';
@@ -28,6 +30,7 @@ import { Compare, CompareIndex } from './pages/Compare';
 import { ZImageArt } from './pages/ZImageArt';
 import { ArtDetail } from './pages/ArtDetail';
 import { ArtTag } from './pages/ArtTag';
+import { NotFound } from './pages/NotFound';
 import { Prompts } from './pages/Prompts';
 import { PromptDetail } from './pages/PromptDetail';
 
@@ -53,6 +56,8 @@ export default function App() {
           <Route path="tools" element={<Tools />} />
           <Route path="image-to-3d" element={<ImageTo3D />} />
           <Route path="text-to-3d" element={<TextTo3D />} />
+          <Route path="rig-3d" element={<Rig3D />} />
+          <Route path="retexture-3d" element={<Retexture3D />} />
           <Route path="text-to-image" element={<TextToImage />} />
           <Route path="search" element={<Search />} />
           <Route path="art" element={<ZImageArt />} />
@@ -77,6 +82,7 @@ export default function App() {
           <Route path="blog/:slug" element={<BlogPost />} />
           <Route path="alternatives" element={<Alternatives />} />
           <Route path="alternatives/:slug" element={<BlogPost />} />
+          <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
     </BrowserRouter>

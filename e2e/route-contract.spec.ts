@@ -72,6 +72,20 @@ test.describe('Route Contract', () => {
       }),
     }));
 
+    // Art pages fetch their catalog from the API / static manifest; stub both so the
+    // routing assertion does not depend on live data. We only care that the SPA router
+    // matches these locations (regression guard for "/art/tag/*" missing a route).
+    await page.route('**/v1/art/**', route => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ items: [], total: 0, tags: [] }),
+    }));
+    await page.route('**/static/data/zimage-art/**', route => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ version: 1, kind: 'zimage-art-index', model: 'zimage', count: 0, generatedCount: 0, chunks: [] }),
+    }));
+
     const routes = [
       '/',
       '/models',
@@ -86,6 +100,10 @@ test.describe('Route Contract', () => {
       '/compare',
       '/blog',
       '/alternatives',
+      '/art',
+      '/art/tag/portrait',
+      '/art/tag/anime',
+      '/art/i/example-art-1',
     ];
 
     for (const route of routes) {
@@ -93,6 +111,22 @@ test.describe('Route Contract', () => {
       await page.waitForLoadState('networkidle');
     }
 
+    expect(routeErrors).toEqual([]);
+  });
+
+  test('unknown routes render the 404 page without a routing warning', async ({ page }) => {
+    const routeErrors: string[] = [];
+    page.on('console', msg => {
+      if (msg.type() === 'error' && msg.text().includes('No routes matched location')) {
+        routeErrors.push(msg.text());
+      }
+    });
+
+    await page.goto('/this-route-does-not-exist-xyz-123');
+    await page.waitForLoadState('networkidle');
+
+    await expect(page.getByRole('heading', { name: /this path leads nowhere/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /browse ai art/i })).toBeVisible();
     expect(routeErrors).toEqual([]);
   });
 });

@@ -106,6 +106,11 @@ func (h *ImageHandler) executeImageGeneration(ctx context.Context, req *model.Im
 	}
 
 	originalModel := req.Model
+	// Snapshot the user's requested sizing so each candidate (including
+	// fallbacks) is matched against its own supported sizes from a clean slate,
+	// rather than inheriting the previous candidate's snapped size/aspect ratio.
+	originalSize := req.Size
+	originalAspect := req.AspectRatio
 	autoResult := h.router.MaybeResolveAuto(ctx, req.Model, "image", req.Prompt)
 	candidates, err := h.router.ResolveForRequest(originalModel, autoResult.ModelID)
 	if err != nil {
@@ -119,19 +124,35 @@ func (h *ImageHandler) executeImageGeneration(ctx context.Context, req *model.Im
 			continue
 		}
 
+		req.Size = originalSize
+		req.AspectRatio = originalAspect
+
 		var requestedSize imgutil.Size
 		needsResize := false
 
 		if req.Size != "" && len(cand.ModelCfg.SupportedSizes) > 0 {
 			if rs, ok := imgutil.ParseSize(req.Size); ok {
-				supported := imgutil.ParseSizes(cand.ModelCfg.SupportedSizes)
-				matched := imgutil.MatchSize(rs, supported)
-				if imgutil.NeedsResize(rs, matched) {
-					requestedSize = rs
-					needsResize = true
-					log.Printf("image size snap: %s -> %s", req.Size, imgutil.FormatSize(matched))
+				if imgutil.IsAspectRatioList(cand.ModelCfg.SupportedSizes) {
+					// Provider expects an aspect ratio (e.g. grok-imagine), not
+					// pixel dimensions. Snap the requested pixels to the nearest
+					// supported ratio so we never send an unsupported variant
+					// like "85:48". Respect an explicit user-supplied ratio.
+					if req.AspectRatio == "" {
+						if ar, ok := imgutil.MatchAspectRatio(rs, cand.ModelCfg.SupportedSizes); ok {
+							req.AspectRatio = ar
+							log.Printf("image aspect snap: %s -> %s", req.Size, ar)
+						}
+					}
+				} else {
+					supported := imgutil.ParseSizes(cand.ModelCfg.SupportedSizes)
+					matched := imgutil.MatchSize(rs, supported)
+					if imgutil.NeedsResize(rs, matched) {
+						requestedSize = rs
+						needsResize = true
+						log.Printf("image size snap: %s -> %s", req.Size, imgutil.FormatSize(matched))
+					}
+					req.Size = imgutil.FormatSize(matched)
 				}
-				req.Size = imgutil.FormatSize(matched)
 			}
 		}
 

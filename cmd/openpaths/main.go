@@ -29,6 +29,7 @@ import (
 	"github.com/openpaths/openpaths/internal/provider"
 	"github.com/openpaths/openpaths/internal/provider/anthropic"
 	"github.com/openpaths/openpaths/internal/provider/cursor"
+	"github.com/openpaths/openpaths/internal/provider/cutedsl"
 	"github.com/openpaths/openpaths/internal/provider/deepseek"
 	"github.com/openpaths/openpaths/internal/provider/fal"
 	"github.com/openpaths/openpaths/internal/provider/fireworks"
@@ -147,6 +148,8 @@ func main() {
 			p = minimax.New(provCfg.APIKey)
 		case "netwrck":
 			p = netwrck.New(provCfg.APIKey, provCfg.BaseURL)
+		case "cutedsl":
+			p = cutedsl.New(provCfg.APIKey, provCfg.BaseURL)
 		case "nous":
 			p = nous.New(provCfg.APIKey, provCfg.BaseURL)
 		case "nvidia":
