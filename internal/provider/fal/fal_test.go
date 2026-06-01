@@ -435,6 +435,42 @@ func TestGenerateVideo_FallsBackToHappyHorseBaseQueuePath(t *testing.T) {
 	}
 }
 
+func TestGenerateVideo_FallsBackToLTX23BaseQueuePath(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/fal-ai/ltx-2.3/image-to-video":
+			_ = json.NewEncoder(w).Encode(map[string]any{"request_id": "req_ltx"})
+		case "/fal-ai/ltx-2.3/image-to-video/requests/req_ltx/status":
+			w.WriteHeader(http.StatusMethodNotAllowed)
+		case "/fal-ai/ltx-2.3/requests/req_ltx/status":
+			_ = json.NewEncoder(w).Encode(map[string]any{"status": "COMPLETED"})
+		case "/fal-ai/ltx-2.3/requests/req_ltx":
+			_ = json.NewEncoder(w).Encode(map[string]any{"video": map[string]any{"url": "https://example.com/ltx23.mp4"}})
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	p := New("test-key")
+	p.baseURL = server.URL
+	p.client = server.Client()
+
+	resp, err := p.GenerateVideo(context.Background(), &model.VideoGenerationRequest{
+		Model:      "fal-ai/ltx-2.3/image-to-video",
+		Prompt:     "slow zoom",
+		ImageURL:   "https://example.com/listing.jpg",
+		Duration:   "6",
+		Resolution: "1080p",
+	})
+	if err != nil {
+		t.Fatalf("GenerateVideo() error = %v", err)
+	}
+	if resp.VideoURL != "https://example.com/ltx23.mp4" {
+		t.Fatalf("VideoURL = %q", resp.VideoURL)
+	}
+}
+
 func TestGenerateVideo_PassesReferenceInputs(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/bytedance/seedance-2.0/reference-to-video" {
@@ -488,6 +524,9 @@ func TestGenerateVideo_PassesImageToVideoInputs(t *testing.T) {
 		if body["end_image_url"] != "https://example.com/end.jpg" {
 			t.Fatalf("end_image_url = %#v", body["end_image_url"])
 		}
+		if body["fps"] != float64(25) {
+			t.Fatalf("fps = %#v", body["fps"])
+		}
 		_ = json.NewEncoder(w).Encode(map[string]any{"video": map[string]any{"url": "https://example.com/i2v.mp4"}})
 	}))
 	defer server.Close()
@@ -497,12 +536,13 @@ func TestGenerateVideo_PassesImageToVideoInputs(t *testing.T) {
 	p.client = server.Client()
 
 	_, err := p.GenerateVideo(context.Background(), &model.VideoGenerationRequest{
-		Model:       "bytedance/seedance-2.0/image-to-video",
-		Prompt:      "slow tilt down",
-		ImageURL:    "https://example.com/start.jpg",
-		EndImageURL: "https://example.com/end.jpg",
-		Duration:    "10",
-		Resolution:  "720p",
+		Model:           "bytedance/seedance-2.0/image-to-video",
+		Prompt:          "slow tilt down",
+		ImageURL:        "https://example.com/start.jpg",
+		EndImageURL:     "https://example.com/end.jpg",
+		Duration:        "10",
+		Resolution:      "720p",
+		FramesPerSecond: 25,
 	})
 	if err != nil {
 		t.Fatalf("GenerateVideo() error = %v", err)

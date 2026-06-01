@@ -185,6 +185,48 @@ func ResizeAndCrop(imgData []byte, target Size) ([]byte, string, error) {
 	return buf.Bytes(), format, nil
 }
 
+// DownscaleToMaxEdge shrinks imgData so its longest edge is at most maxEdge,
+// preserving aspect ratio. If the image is already within bounds (or maxEdge<=0)
+// it returns the original bytes with changed=false.
+func DownscaleToMaxEdge(imgData []byte, maxEdge int) ([]byte, string, bool, error) {
+	src, format, err := image.Decode(bytes.NewReader(imgData))
+	if err != nil {
+		return nil, "", false, fmt.Errorf("decode: %w", err)
+	}
+	b := src.Bounds()
+	w, h := b.Dx(), b.Dy()
+	long := w
+	if h > long {
+		long = h
+	}
+	if maxEdge <= 0 || long <= maxEdge {
+		return imgData, format, false, nil
+	}
+	scale := float64(maxEdge) / float64(long)
+	nw := int(math.Round(float64(w) * scale))
+	nh := int(math.Round(float64(h) * scale))
+	if nw < 1 {
+		nw = 1
+	}
+	if nh < 1 {
+		nh = 1
+	}
+	scaled := nearestNeighborScale(src, nw, nh)
+
+	var buf bytes.Buffer
+	switch format {
+	case "png":
+		err = png.Encode(&buf, scaled)
+	default:
+		err = jpeg.Encode(&buf, scaled, &jpeg.Options{Quality: 92})
+		format = "jpeg"
+	}
+	if err != nil {
+		return nil, "", false, fmt.Errorf("encode: %w", err)
+	}
+	return buf.Bytes(), format, true, nil
+}
+
 func nearestNeighborScale(src image.Image, w, h int) image.Image {
 	srcBounds := src.Bounds()
 	srcW, srcH := srcBounds.Dx(), srcBounds.Dy()

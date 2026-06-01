@@ -7,6 +7,7 @@ const seedanceModels = [
   'seedance-2.0-fast-reference-to-video',
   'seedance-2.0-reference-to-video',
   'alibaba/happy-horse/image-to-video',
+  'ltx-2.3-image-to-video',
 ];
 
 test.describe('Public Spaces', () => {

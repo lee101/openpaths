@@ -62,7 +62,7 @@ interface ModelPane {
 
 type CodeLanguage = 'python' | 'js' | 'go' | 'curl';
 type PromptExample = string | { label: string; prompt: string };
-type ReferenceUploadTarget = 'image' | 'end-image' | 'images' | 'video' | 'audio';
+type ReferenceUploadTarget = 'image-inputs' | 'image' | 'end-image' | 'images' | 'video' | 'audio';
 
 async function pollVideoJob(baseUrl: string, apiKey: string, jobId: string, signal: AbortSignal) {
   const deadline = Date.now() + 15 * 60 * 1000;
@@ -166,6 +166,7 @@ const FALLBACK_MODELS: CatalogModel[] = [
   { id: 'grok-3-mini', label: 'Grok 3 Mini', provider: 'xAI' },
   { id: 'xai-tts', label: 'xAI Text to Speech', provider: 'xAI', pricing: { input_per_1m_tokens: 15.00 } },
   { id: 'grok-imagine-image', label: 'Grok Imagine Image', provider: 'xAI', pricing: { per_image: 0.02 } },
+  { id: 'grok-imagine-image-quality', label: 'Grok Imagine Image Quality', provider: 'xAI', pricing: { per_image: 0.02 } },
   { id: 'deepseek-v4-flash', label: 'DeepSeek V4 Flash', provider: 'DeepSeek', pricing: { input_per_1m_tokens: 0.14, input_cache_hit_per_1m_tokens: 0.0028, output_per_1m_tokens: 0.28 } },
   { id: 'deepseek-v4-pro', label: 'DeepSeek V4 Pro', provider: 'DeepSeek', pricing: { input_per_1m_tokens: 0.435, input_cache_hit_per_1m_tokens: 0.003625, output_per_1m_tokens: 0.87 } },
   { id: 'nvidia/deepseek-v4-pro', label: 'DeepSeek V4 Pro Free', provider: 'NVIDIA' },
@@ -935,6 +936,7 @@ ${text}`;
         if (data.url) urls.push(normalizeUploadedAssetUrl(data.url));
       }
       const append = (prev: string) => [prev.trim(), ...urls].filter(Boolean).join('\n');
+      if (target === 'image-inputs') setImageInputUrls(append);
       if (target === 'image') setVideoImageUrl(urls[0] || '');
       if (target === 'end-image') setVideoEndImageUrl(urls[0] || '');
       if (target === 'images') setVideoImageUrls(append);
@@ -2414,6 +2416,15 @@ JSON`;
                 placeholder={primaryIsOutpaintImage ? 'Required source image URL' : 'Optional image URLs'}
                 className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30 resize-none"
                 data-testid="image-input-urls"
+              />
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                disabled={uploadingRefs || !apiKey}
+                onChange={e => e.target.files && uploadReferenceFiles(e.target.files, 'image-inputs')}
+                className="mt-1 block w-full text-[10px] font-mono text-white/35 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-white/60 disabled:opacity-40"
+                data-testid="image-input-upload"
               />
               <ImagePreviewStrip urls={parseImageInputUrls(imageInputUrls)} label="image-input-urls" />
             </label>

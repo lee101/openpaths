@@ -861,6 +861,11 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/models/grok-imagine-image-quality</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/models/deepseek-v4-flash</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
@@ -1167,6 +1172,11 @@
   </url>
   <url>
     <loc>https://openpaths.io/models/alibaba%2Fhappy-horse%2Fimage-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/ltx-2.3-image-to-video</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>

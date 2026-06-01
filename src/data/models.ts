@@ -764,6 +764,19 @@ export const models: Model[] = [
     popularity: 7,
     pricingType: 'request'
   },
+  {
+    id: 'grok-imagine-image-quality',
+    name: 'Grok Imagine Image Quality',
+    provider: 'xAI',
+    description: 'High-quality OpenPaths route for xAI image generation and image-to-image editing, with GPT Image 2 as the fallback path.',
+    contextLength: 'N/A',
+    priceInput: 0.02,
+    priceOutput: 0,
+    tags: ['art generation', 'vision'],
+    released: '2026-05-26',
+    popularity: 7,
+    pricingType: 'request'
+  },
 
   // --- DeepSeek ---
   {
@@ -1543,6 +1556,19 @@ export const models: Model[] = [
     tags: ['video generation', 'vision'],
     released: '2026-04-01',
     popularity: 69,
+    pricingType: 'second'
+  },
+  {
+    id: 'ltx-2.3-image-to-video',
+    name: 'LTX 2.3 Image to Video',
+    provider: 'Fal',
+    description: 'Fal-hosted LTX 2.3 image-to-video for prompt-guided cinematic motion from still images.',
+    contextLength: 'N/A',
+    priceInput: 0.28,
+    priceOutput: 0,
+    tags: ['video generation', 'vision'],
+    released: '2026-03-05',
+    popularity: 70,
     pricingType: 'second'
   },
 ];
