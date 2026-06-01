@@ -12,9 +12,14 @@ import (
 	"strings"
 	"time"
 
+	imgutil "github.com/openpaths/openpaths/internal/image"
 	"github.com/openpaths/openpaths/internal/model"
 	"github.com/openpaths/openpaths/internal/provider"
 )
+
+// outpaintMaxEdge bounds the longest input edge sent to fal outpaint models.
+// Larger inputs are downscaled aspect-preserving to control cost and latency.
+const outpaintMaxEdge = 2048
 
 type FalProvider struct {
 	apiKey  string
@@ -156,6 +161,20 @@ func falImageRequest(req *model.ImageGenerationRequest) map[string]any {
 		if req.ExpandRight != nil {
 			falReq["expand_right"] = *req.ExpandRight
 		}
+		if req.ZoomOutPercentage != nil {
+			falReq["zoom_out_percentage"] = *req.ZoomOutPercentage
+		}
+		if strings.TrimSpace(req.Prompt) != "" {
+			falReq["prompt"] = req.Prompt
+		}
+		if n := req.N; n > 0 {
+			falReq["num_images"] = n
+		} else if req.NumImages > 0 {
+			falReq["num_images"] = req.NumImages
+		}
+		if req.Seed != nil {
+			falReq["seed"] = *req.Seed
+		}
 		if req.AutoCrop != nil {
 			falReq["auto_crop"] = *req.AutoCrop
 		}
@@ -167,6 +186,7 @@ func falImageRequest(req *model.ImageGenerationRequest) map[string]any {
 		if req.OutputFormat != "" {
 			falReq["output_format"] = strings.ToLower(strings.TrimSpace(req.OutputFormat))
 		}
+		downscaleOutpaintInput(falReq)
 		return falReq
 	}
 
@@ -249,7 +269,47 @@ func falImageUsesQueue(modelID string) bool {
 }
 
 func falImageIsOutpaint(modelID string) bool {
-	return strings.Contains(strings.ToLower(modelID), "flux-2-pro/outpaint")
+	return strings.Contains(strings.ToLower(modelID), "outpaint")
+}
+
+// downscaleOutpaintInput shrinks the source image to outpaintMaxEdge on its
+// longest side (aspect-preserving) before outpainting, replacing image_url
+// with a data URI. Best-effort: on any failure the original URL is kept.
+func downscaleOutpaintInput(falReq map[string]any) {
+	src, _ := falReq["image_url"].(string)
+	if src == "" {
+		return
+	}
+	var data []byte
+	switch {
+	case strings.HasPrefix(src, "data:"):
+		b64, err := dataURIToBase64(src)
+		if err != nil {
+			return
+		}
+		decoded, err := base64.StdEncoding.DecodeString(b64)
+		if err != nil {
+			return
+		}
+		data = decoded
+	case strings.HasPrefix(src, "http://"), strings.HasPrefix(src, "https://"):
+		fetched, err := imgutil.FetchImage(src)
+		if err != nil {
+			return
+		}
+		data = fetched
+	default:
+		return
+	}
+	out, format, changed, err := imgutil.DownscaleToMaxEdge(data, outpaintMaxEdge)
+	if err != nil || !changed {
+		return
+	}
+	mime := "image/jpeg"
+	if format == "png" {
+		mime = "image/png"
+	}
+	falReq["image_url"] = "data:" + mime + ";base64," + base64.StdEncoding.EncodeToString(out)
 }
 
 func (p *FalProvider) Generate3D(ctx context.Context, req *model.Model3DGenerationRequest) (*model.Model3DGenerationResponse, error) {
@@ -598,6 +658,9 @@ func (p *FalProvider) GenerateVideo(ctx context.Context, req *model.VideoGenerat
 	if req.Resolution != "" {
 		falReq["resolution"] = req.Resolution
 	}
+	if req.FramesPerSecond > 0 {
+		falReq["fps"] = req.FramesPerSecond
+	}
 	if req.Duration != "" {
 		if strings.Contains(strings.ToLower(req.Model), "alibaba/happy-horse/") {
 			falReq["duration"] = intOrDefaultString(string(req.Duration), 5)
@@ -735,11 +798,17 @@ func (p *FalProvider) falQueueRequestBases(modelID, requestID string) []string {
 	if strings.Contains(modelID, "alibaba/happy-horse/") {
 		bases = append(bases, queueBase+"/alibaba/happy-horse/requests/"+requestID)
 	}
+	if strings.Contains(modelID, "fal-ai/ltx-2.3/") {
+		bases = append(bases, queueBase+"/fal-ai/ltx-2.3/requests/"+requestID)
+	}
 	if strings.Contains(modelID, "fal-ai/hidream-o1-image/") {
 		bases = append(bases, queueBase+"/fal-ai/hidream-o1-image/requests/"+requestID)
 	}
 	if strings.Contains(modelID, "fal-ai/flux-2-pro/outpaint") {
 		bases = append(bases, queueBase+"/fal-ai/flux-2-pro/requests/"+requestID)
+	}
+	if strings.Contains(modelID, "fal-ai/image-apps-v2/") {
+		bases = append(bases, queueBase+"/fal-ai/image-apps-v2/requests/"+requestID)
 	}
 	return bases
 }

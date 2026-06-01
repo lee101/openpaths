@@ -1399,4 +1399,17 @@ export const models: Model[] = [
     popularity: 69,
     pricingType: 'second'
   },
+  {
+    id: 'ltx-2.3-image-to-video',
+    name: 'LTX 2.3 Image to Video',
+    provider: 'Fal',
+    description: 'Fal-hosted LTX 2.3 image-to-video for prompt-guided cinematic motion from still images.',
+    contextLength: 'N/A',
+    priceInput: 0.28,
+    priceOutput: 0,
+    tags: ['video generation', 'vision'],
+    released: '2026-03-05',
+    popularity: 70,
+    pricingType: 'second'
+  },
 ];

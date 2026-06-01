@@ -70,4 +70,13 @@ export const VIDEO_DEMOS: Record<string, VideoDemo> = {
     generateAudio: true,
     imageUrl: HAPPY_HORSE_RAP_IMAGE_URL,
   },
+  'ltx-2.3-image-to-video': {
+    prompt: 'A polished real-estate listing still becomes a smooth slow zoom-in video, subtle parallax, stable architecture, natural lighting, no text overlays.',
+    outputUrl: 'https://openpathsstatic.openpaths.io/static/uploads/playground/happy-horse/happy-horse-image-to-video.mp4',
+    resolution: '1080p',
+    duration: '6',
+    aspectRatio: 'auto',
+    generateAudio: false,
+    imageUrl: SEEDANCE_LOGO_URL,
+  },
 };

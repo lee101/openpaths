@@ -380,6 +380,15 @@ models:
     supports_tools: false
     supports_vision: true
 
+  - id: "extend-image"
+    provider: fal
+    provider_model_id: "fal-ai/image-apps-v2/outpaint"
+    price_per_image: 0.05
+    aliases: ["image-extend", "extend-canvas", "magic-extend", "outpaint-v2", "fal-extend-image"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
   - id: "fal-ai/flux-2-pro/outpaint"
     provider: fal
     provider_model_id: "fal-ai/flux-2-pro/outpaint"
@@ -458,6 +467,15 @@ models:
     provider_model_id: "alibaba/happy-horse/image-to-video"
     price_per_second: 0.28
     aliases: ["happy-horse", "happy-horse-image-to-video", "alibaba-happy-horse"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "ltx-2.3-image-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/ltx-2.3/image-to-video"
+    price_per_second: 0.28
+    aliases: ["ltx-2.3", "ltx2.3", "ltx23", "ltx-23", "ltx-2.3-i2v", "ltx23-image-to-video"]
     supports_streaming: false
     supports_tools: false
     supports_vision: true

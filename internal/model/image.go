@@ -21,6 +21,7 @@ type ImageGenerationRequest struct {
 	ExpandBottom        *int         `json:"expand_bottom,omitempty"`
 	ExpandLeft          *int         `json:"expand_left,omitempty"`
 	ExpandRight         *int         `json:"expand_right,omitempty"`
+	ZoomOutPercentage   *float64     `json:"zoom_out_percentage,omitempty"`
 	AutoCrop            *bool        `json:"auto_crop,omitempty"`
 	Seed                *int         `json:"seed,omitempty"`
 	NumInferenceSteps   int          `json:"num_inference_steps,omitempty"`
