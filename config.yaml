@@ -911,6 +911,32 @@ models:
     supports_vision: false
 
   # --- Anthropic ---
+  - id: "claude-fable-latest"
+    provider: anthropic
+    provider_model_id: "claude-fable-5"
+    input_price_per_1m: 5.00
+    output_price_per_1m: 25.00
+    aliases: ["claude-fable", "fable-latest", "fable", "anthropic-fable-latest"]
+    context_window: 200000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_providers: ["openrouter"]
+
+  - id: "claude-fable-5"
+    provider: anthropic
+    provider_model_id: "claude-fable-5"
+    input_price_per_1m: 5.00
+    output_price_per_1m: 25.00
+    aliases: ["fable-5"]
+    context_window: 200000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_providers: ["openrouter"]
+
   - id: "claude-sonnet-latest"
     provider: anthropic
     provider_model_id: "claude-sonnet-4-6"

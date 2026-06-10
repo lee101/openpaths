@@ -293,6 +293,19 @@ export const models: Model[] = [
 
   // --- Anthropic ---
   {
+    id: 'claude-fable-5',
+    name: 'Claude Fable 5',
+    provider: 'Anthropic',
+    description: 'New Mythos-series flagship Claude model. Frontier reasoning, coding, and long-horizon agentic tasks. Use claude-fable-latest to auto-track the newest Fable.',
+    contextLength: '200K',
+    priceInput: 5.00,
+    priceOutput: 25.00,
+    tags: ['programming', 'reasoning', 'general', 'vision', 'agentic'],
+    aliases: ['claude-fable-latest', 'claude-fable', 'fable'],
+    released: '2026-06-10',
+    popularity: 0
+  },
+  {
     id: 'claude-opus-4-8',
     name: 'Claude Opus 4.8',
     provider: 'Anthropic',
