@@ -726,6 +726,19 @@ export const models: Model[] = [
     pricingType: 'chars'
   },
   {
+    id: 'appnz-tts',
+    name: 'AppNZ CosyVoice 3',
+    provider: 'AppNZ',
+    description: 'Self-hosted CosyVoice 3 text-to-speech with voice cloning passthrough and serverless burst capacity.',
+    contextLength: '15K chars',
+    priceInput: 10.00,
+    priceOutput: 0,
+    tags: ['audio'],
+    released: '2026-06-11',
+    popularity: 5,
+    pricingType: 'chars'
+  },
+  {
     id: 'xai-stt',
     name: 'xAI Speech to Text',
     provider: 'xAI',

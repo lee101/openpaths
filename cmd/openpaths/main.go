@@ -28,6 +28,7 @@ import (
 	"github.com/openpaths/openpaths/internal/promptlib"
 	"github.com/openpaths/openpaths/internal/provider"
 	"github.com/openpaths/openpaths/internal/provider/anthropic"
+	"github.com/openpaths/openpaths/internal/provider/appnz"
 	"github.com/openpaths/openpaths/internal/provider/cursor"
 	"github.com/openpaths/openpaths/internal/provider/cutedsl"
 	"github.com/openpaths/openpaths/internal/provider/deepseek"
@@ -121,6 +122,8 @@ func main() {
 			transcribers = append(transcribers, openai.NewTranscriber(provCfg.APIKey, provCfg.BaseURL))
 		case "anthropic":
 			p = anthropic.New(provCfg.APIKey, provCfg.BaseURL)
+		case "appnz":
+			p = appnz.New(provCfg.APIKey, provCfg.BaseURL)
 		case "cursor":
 			p = cursor.New(provCfg.APIKey, provCfg.BaseURL)
 		case "google":

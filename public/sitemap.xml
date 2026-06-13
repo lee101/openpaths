@@ -671,6 +671,11 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/models/claude-fable-5</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/models/claude-opus-4-8</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>

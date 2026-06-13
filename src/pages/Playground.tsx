@@ -165,6 +165,7 @@ const FALLBACK_MODELS: CatalogModel[] = [
   { id: 'grok-4.20-non-reasoning', label: 'Grok 4.20 Non-Reasoning', provider: 'xAI' },
   { id: 'grok-3-mini', label: 'Grok 3 Mini', provider: 'xAI' },
   { id: 'xai-tts', label: 'xAI Text to Speech', provider: 'xAI', pricing: { input_per_1m_tokens: 15.00 } },
+  { id: 'appnz-tts', label: 'AppNZ Fish Speech', provider: 'AppNZ', pricing: { input_per_1m_tokens: 10.00 } },
   { id: 'grok-imagine-image', label: 'Grok Imagine Image', provider: 'xAI', pricing: { per_image: 0.02 } },
   { id: 'grok-imagine-image-quality', label: 'Grok Imagine Image Quality', provider: 'xAI', pricing: { per_image: 0.02 } },
   { id: 'deepseek-v4-flash', label: 'DeepSeek V4 Flash', provider: 'DeepSeek', pricing: { input_per_1m_tokens: 0.14, input_cache_hit_per_1m_tokens: 0.0028, output_per_1m_tokens: 0.28 } },

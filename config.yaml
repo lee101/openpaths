@@ -134,6 +134,11 @@ providers:
     api_key: "${APP_API_KEY}"
     enabled: true
 
+  - name: appnz
+    base_url: "${APPNZ_BASE_URL}"
+    api_key: "${APPNZ_API_KEY}"
+    enabled: true
+
 models:
   # --- OpenPaths Auto (hero + variants; embedding-routed) ---
   - id: "openpaths/auto"
@@ -2179,6 +2184,18 @@ models:
     input_price_per_1m: 15.00
     output_price_per_1m: 0
     aliases: ["grok-tts", "tts"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  # --- AppNZ (Speech/TTS, CosyVoice 3) ---
+  - id: "appnz-tts"
+    provider: appnz
+    provider_model_id: "cosyvoice3-0.5b"
+    input_price_per_1m: 10.00
+    output_price_per_1m: 0
+    price_per_minute: 0.02
+    aliases: ["cosyvoice", "fish-speech"]
     supports_streaming: false
     supports_tools: false
     supports_vision: false
