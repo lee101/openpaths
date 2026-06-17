@@ -21,6 +21,7 @@ monitoring/logs/
 monitoring/state/
 monitoring/errors/
 /model
+*.safetensors
 /openpaths-api
 /openpaths
 /discover
