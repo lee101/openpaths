@@ -194,6 +194,7 @@ export function Layout() {
                   <li><Link to="/apps/" className="hover:text-white transition-colors">Apps</Link></li>
                   <li><Link to="/pricing" className="hover:text-white transition-colors">Pricing</Link></li>
                   <li><Link to="/integrations" className="hover:text-white transition-colors">Integrations</Link></li>
+                  <li><Link to="/works-with-openpaths" className="hover:text-white transition-colors">Works With OpenPaths</Link></li>
                   <li><Link to="/playground" className="hover:text-white transition-colors">Playground</Link></li>
                   <li><Link to="/tools" className="hover:text-white transition-colors">Tools</Link></li>
                   <li><Link to="/text-to-image" className="hover:text-white transition-colors">Text to Image</Link></li>

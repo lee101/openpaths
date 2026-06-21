@@ -31,6 +31,7 @@ import (
 	"github.com/openpaths/openpaths/internal/promptlib"
 	"github.com/openpaths/openpaths/internal/provider"
 	"github.com/openpaths/openpaths/internal/router"
+	"github.com/openpaths/openpaths/internal/skillindex"
 	"github.com/openpaths/openpaths/internal/storage"
 	stripesvc "github.com/openpaths/openpaths/internal/stripe"
 )
@@ -69,10 +70,13 @@ type Dependencies struct {
 	ProviderKeyQ     *queries.ProviderKeyQueries
 	VideoJobQ        *queries.VideoJobQueries
 	Model3DJobQ      *queries.Model3DJobQueries
+	ResearchJobQ     *queries.ResearchJobQueries
 	OnRegister       handler.OnRegisterFunc
 	ArtIndex         *artindex.Service
 	ArtImageQ        *queries.ArtImageQueries
 	PromptIndex      *promptlib.Index
+	SkillIndex       *skillindex.Service
+	SkillQ           *queries.SkillQueries
 }
 
 func New(deps *Dependencies) *Server {
@@ -89,6 +93,7 @@ func New(deps *Dependencies) *Server {
 	statsH := handler.NewStatsHandler(deps.StatsQ, deps.AppQ, deps.ModelProbeQ)
 	artH := handler.NewArtHandler(deps.ArtIndex, deps.ArtImageQ)
 	promptsH := handler.NewPromptsHandler(deps.PromptIndex)
+	skillsH := handler.NewSkillsHandler(deps.SkillIndex, deps.SkillQ)
 	acctStatsH := handler.NewAccountStatsHandler(deps.StatsQ)
 	adminH := handler.NewAdminHandler(deps.UserQ)
 
@@ -175,6 +180,16 @@ func New(deps *Dependencies) *Server {
 	r.GET("/v1/videos/generations/{job_id}", apiKeyChain(videoH.HandleVideoGenerationJob))
 	r.GET("/v1/videos/generations/{job_id}/status", apiKeyChain(videoH.HandleVideoGenerationJob))
 	log.Printf("Video generation endpoint enabled")
+
+	researchH := handler.NewResearchHandler(
+		deps.Router, deps.Billing, deps.Recorder, deps.ResearchJobQ,
+		handler.ExaSearchProviderConfig(deps.Config.Providers),
+		handler.PapersSearchProviderConfig(deps.Config.Providers),
+	)
+	r.POST("/v1/deep-research", apiKeyChain(researchH.HandleCreate))
+	r.GET("/v1/deep-research", apiKeyChain(researchH.HandleList))
+	r.GET("/v1/deep-research/{job_id}", apiKeyChain(researchH.HandleGet))
+	log.Printf("Deep research endpoint enabled at /v1/deep-research")
 
 	musicH := handler.NewMusicHandler(deps.Router, deps.Billing, deps.Recorder)
 	r.POST("/v1/music/generations", apiKeyChain(musicH.HandleMusicGeneration))
@@ -286,6 +301,12 @@ func New(deps *Dependencies) *Server {
 	r.GET("/v1/prompts", publicChain(promptsH.HandleList))
 	r.GET("/v1/prompts/meta", publicChain(promptsH.HandleMeta))
 	r.GET("/v1/prompts/{slug}", publicChain(promptsH.HandleGet))
+
+	// Searchable agent-skill library (public, read-only, gobed-powered).
+	r.GET("/v1/skills", publicChain(skillsH.HandleList))
+	r.GET("/v1/skills/meta", publicChain(skillsH.HandleMeta))
+	r.GET("/v1/skills/search", publicChain(skillsH.HandleSearch))
+	r.GET("/v1/skills/{slug}", publicChain(skillsH.HandleGet))
 
 	r.GET("/account/stats/timeseries", accountChain(acctStatsH.HandleUserTimeSeries))
 	r.GET("/account/stats/by-api-key", accountChain(acctStatsH.HandleUserSpendByAPIKey))

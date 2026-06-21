@@ -41,6 +41,11 @@ const routes: StaticMeta[] = [
     description: 'Daily model usage and public OpenPaths request breakdowns.',
   },
   {
+    path: '/works-with-openpaths',
+    title: 'Works With OpenPaths | Compatible Apps & Agents',
+    description: 'OpenPaths is OpenAI- and Anthropic-compatible, so it drops into every OpenRouter-style app. Browse coding agents, chat UIs, frameworks, and tools that work with an OpenPaths API key.',
+  },
+  {
     path: '/apps/',
     title: 'Apps | OpenPaths App Usage Stats',
     description: 'Opt-in app and agent usage stats across OpenPaths and OpenRouter, including model and token breakdowns.',

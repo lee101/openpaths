@@ -50,6 +50,7 @@ import (
 	"github.com/openpaths/openpaths/internal/provider/zai"
 	"github.com/openpaths/openpaths/internal/router"
 	"github.com/openpaths/openpaths/internal/server"
+	"github.com/openpaths/openpaths/internal/skillindex"
 	"github.com/openpaths/openpaths/internal/storage"
 	stripesvc "github.com/openpaths/openpaths/internal/stripe"
 )
@@ -92,7 +93,9 @@ func main() {
 	providerKeyQ := queries.NewProviderKeyQueries(database.Pool)
 	videoJobQ := queries.NewVideoJobQueries(database.Pool)
 	model3DJobQ := queries.NewModel3DJobQueries(database.Pool)
+	researchJobQ := queries.NewResearchJobQueries(database.Pool)
 	artImageQ := queries.NewArtImageQueries(database.Pool)
+	skillQ := queries.NewSkillQueries(database.Pool)
 
 	jwtService := auth.NewJWTService(cfg.JWT.Secret, cfg.JWT.ExpirationHours)
 
@@ -312,6 +315,16 @@ func main() {
 		log.Printf("Prompt library semantic index disabled (local gobed embedder unavailable or disabled); lexical search still available")
 	}
 
+	var skillIndex *skillindex.Service
+	if localEmbedder != nil && os.Getenv("OPENPATHS_SKILL_INDEX_DISABLED") != "1" {
+		skillIndex = skillindex.New(localEmbedder)
+		skillIndex.SetSource(skillQ)
+		skillIndex.Start(ctx)
+		log.Printf("Skill library semantic index warming")
+	} else {
+		log.Printf("Skill library semantic index disabled (local gobed embedder unavailable or disabled); ILIKE search still available")
+	}
+
 	// Start drip email campaign scheduler.
 	var onRegister func(string, string)
 	if os.Getenv("AWS_SMTP_USERNAME") != "" {
@@ -360,10 +373,13 @@ func main() {
 		ProviderKeyQ:     providerKeyQ,
 		VideoJobQ:        videoJobQ,
 		Model3DJobQ:      model3DJobQ,
+		ResearchJobQ:     researchJobQ,
 		OnRegister:       onRegister,
 		ArtIndex:         artIndex,
 		ArtImageQ:        artImageQ,
 		PromptIndex:      promptIndex,
+		SkillIndex:       skillIndex,
+		SkillQ:           skillQ,
 	})
 
 	done := make(chan os.Signal, 1)

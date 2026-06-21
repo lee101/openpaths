@@ -554,6 +554,17 @@ function fmtBalance(cents: number): string {
 
 // --- Minimal markdown renderer ---
 
+function isTableSeparator(line: string): boolean {
+  return /^\s*\|?\s*:?-{1,}:?\s*(\|\s*:?-{1,}:?\s*)*\|?\s*$/.test(line) && line.includes('-');
+}
+
+function splitTableRow(line: string): string[] {
+  let s = line.trim();
+  if (s.startsWith('|')) s = s.slice(1);
+  if (s.endsWith('|')) s = s.slice(0, -1);
+  return s.split('|').map(cell => cell.trim());
+}
+
 function renderMarkdown(text: string): React.ReactNode[] {
   const nodes: React.ReactNode[] = [];
   const lines = text.split('\n');
@@ -584,6 +595,49 @@ function renderMarkdown(text: string): React.ReactNode[] {
       const text = headingMatch[2];
       const cls = level === 1 ? 'text-lg font-bold mt-4 mb-2' : level === 2 ? 'text-base font-bold mt-3 mb-1.5' : 'text-sm font-bold mt-2 mb-1';
       nodes.push(<div key={nodes.length} className={cls}>{renderInline(text)}</div>);
+      i++;
+      continue;
+    }
+
+    // Table (GFM pipe table): header row + separator row + body rows
+    if (line.includes('|') && i + 1 < lines.length && isTableSeparator(lines[i + 1])) {
+      const header = splitTableRow(line);
+      i += 2;
+      const rows: string[][] = [];
+      while (i < lines.length && lines[i].includes('|') && lines[i].trim() !== '') {
+        rows.push(splitTableRow(lines[i]));
+        i++;
+      }
+      nodes.push(
+        <div key={nodes.length} className="my-2 overflow-x-auto rounded-lg border border-white/10">
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="bg-white/[0.04]">
+                {header.map((cell, j) => (
+                  <th key={j} className="border-b border-white/10 px-3 py-2 text-left font-semibold whitespace-nowrap">
+                    {renderInline(cell)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, r) => (
+                <tr key={r} className="border-b border-white/5 last:border-0">
+                  {header.map((_, c) => (
+                    <td key={c} className="px-3 py-2 align-top">{renderInline(row[c] ?? '')}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+      continue;
+    }
+
+    // Horizontal rule
+    if (line.match(/^\s*(-{3,}|\*{3,}|_{3,})\s*$/)) {
+      nodes.push(<hr key={nodes.length} className="my-3 border-white/10" />);
       i++;
       continue;
     }
@@ -626,7 +680,7 @@ function renderMarkdown(text: string): React.ReactNode[] {
 
     // Regular paragraph - collect consecutive non-empty lines
     const paraLines: string[] = [];
-    while (i < lines.length && lines[i].trim() !== '' && !lines[i].startsWith('```') && !lines[i].match(/^#{1,3}\s/) && !lines[i].match(/^[\s]*[-*]\s/) && !lines[i].match(/^[\s]*\d+\.\s/)) {
+    while (i < lines.length && lines[i].trim() !== '' && !lines[i].startsWith('```') && !lines[i].match(/^#{1,3}\s/) && !lines[i].match(/^[\s]*[-*]\s/) && !lines[i].match(/^[\s]*\d+\.\s/) && !lines[i].match(/^\s*(-{3,}|\*{3,}|_{3,})\s*$/) && !(i + 1 < lines.length && lines[i].includes('|') && isTableSeparator(lines[i + 1]))) {
       paraLines.push(lines[i]);
       i++;
     }
@@ -642,8 +696,8 @@ function renderMarkdown(text: string): React.ReactNode[] {
 
 function renderInline(text: string): React.ReactNode[] {
   const parts: React.ReactNode[] = [];
-  // Match: **bold**, `code`, *italic*
-  const regex = /(\*\*(.+?)\*\*|`([^`]+)`|\*(.+?)\*)/g;
+  // Match: [link](url), **bold**, `code`, *italic*
+  const regex = /(\[([^\]]+)\]\(([^)\s]+)\)|\*\*(.+?)\*\*|`([^`]+)`|\*(.+?)\*)/g;
   let lastIndex = 0;
   let match;
 
@@ -651,12 +705,24 @@ function renderInline(text: string): React.ReactNode[] {
     if (match.index > lastIndex) {
       parts.push(text.slice(lastIndex, match.index));
     }
-    if (match[2]) {
-      parts.push(<strong key={parts.length} className="font-semibold">{match[2]}</strong>);
-    } else if (match[3]) {
-      parts.push(<code key={parts.length} className="bg-white/10 px-1.5 py-0.5 rounded text-[13px] font-mono">{match[3]}</code>);
+    if (match[2] && match[3]) {
+      parts.push(
+        <a
+          key={parts.length}
+          href={match[3]}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="text-cyan-300 underline decoration-cyan-300/30 underline-offset-2 hover:decoration-cyan-300"
+        >
+          {match[2]}
+        </a>
+      );
     } else if (match[4]) {
-      parts.push(<em key={parts.length}>{match[4]}</em>);
+      parts.push(<strong key={parts.length} className="font-semibold">{match[4]}</strong>);
+    } else if (match[5]) {
+      parts.push(<code key={parts.length} className="bg-white/10 px-1.5 py-0.5 rounded text-[13px] font-mono">{match[5]}</code>);
+    } else if (match[6]) {
+      parts.push(<em key={parts.length}>{match[6]}</em>);
     }
     lastIndex = match.index + match[0].length;
   }
@@ -3204,10 +3270,41 @@ function ModelSelect({ value, onChange, models }: { value: string; onChange: (v:
   );
 }
 
+function getScrollParent(el: HTMLElement | null): HTMLElement | null {
+  let node = el?.parentElement || null;
+  while (node) {
+    const oy = getComputedStyle(node).overflowY;
+    if ((oy === 'auto' || oy === 'scroll') && node.scrollHeight > node.clientHeight) return node;
+    node = node.parentElement;
+  }
+  return null;
+}
+
 function ScrollAnchor({ messages, streaming }: { messages: Message[]; streaming: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
+  const stick = useRef(true);
+  const prevLen = useRef(messages.length);
+
   useEffect(() => {
-    ref.current?.scrollIntoView({ behavior: 'smooth' });
+    const container = getScrollParent(ref.current);
+    if (!container) return;
+    const onScroll = () => {
+      stick.current = container.scrollHeight - container.scrollTop - container.clientHeight < 80;
+    };
+    onScroll();
+    container.addEventListener('scroll', onScroll, { passive: true });
+    return () => container.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    // Re-arm auto-scroll when the user sends a new message, so submitting always jumps to bottom.
+    if (messages.length > prevLen.current && messages[messages.length - 1]?.role === 'user') {
+      stick.current = true;
+    }
+    prevLen.current = messages.length;
+    if (!stick.current) return;
+    ref.current?.scrollIntoView({ behavior: streaming ? 'auto' : 'smooth' });
   }, [messages.length, messages[messages.length - 1]?.content, streaming]);
+
   return <div ref={ref} />;
 }

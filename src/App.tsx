@@ -12,6 +12,7 @@ import { Providers } from './pages/Providers';
 import { ProviderPage } from './pages/ProviderPage';
 import { Docs } from './pages/Docs';
 import { Integrations } from './pages/Integrations';
+import { WorksWith } from './pages/WorksWith';
 import { ProviderDocs } from './pages/ProviderDocs';
 import { Pricing } from './pages/Pricing';
 import { ModelPage } from './pages/ModelPage';
@@ -51,6 +52,7 @@ export default function App() {
           <Route path="providers/:slug" element={<ProviderPage />} />
           <Route path="docs" element={<Docs />} />
           <Route path="integrations" element={<Integrations />} />
+          <Route path="works-with-openpaths" element={<WorksWith />} />
           <Route path=":slug/docs" element={<ProviderDocs />} />
           <Route path="playground" element={<Playground />} />
           <Route path="tools" element={<Tools />} />

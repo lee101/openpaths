@@ -5,12 +5,15 @@ interface SeoProps {
   description: string;
   path?: string;
   image?: string;
+  type?: 'website' | 'article';
+  jsonLd?: object | object[];
 }
 
 const BASE_URL = 'https://openpaths.io';
 const DEFAULT_OG_IMAGE = `${BASE_URL}/og-image.png`;
+const TWITTER_HANDLE = '@openpaths';
 
-export function Seo({ title, description, path = '/', image }: SeoProps) {
+export function Seo({ title, description, path = '/', image, type = 'website', jsonLd }: SeoProps) {
   useEffect(() => {
     const normalizedPath = path.startsWith('/') ? path : `/${path}`;
     const canonicalUrl = `${BASE_URL}${normalizedPath}`;
@@ -18,19 +21,36 @@ export function Seo({ title, description, path = '/', image }: SeoProps) {
 
     document.title = title;
     upsertMeta('name', 'description', description);
-    upsertMeta('property', 'og:type', 'website');
+    upsertMeta('property', 'og:type', type);
+    upsertMeta('property', 'og:site_name', 'OpenPaths');
     upsertMeta('property', 'og:url', canonicalUrl);
     upsertMeta('property', 'og:title', title);
     upsertMeta('property', 'og:description', description);
     upsertMeta('property', 'og:image', imageUrl);
     upsertMeta('name', 'twitter:card', 'summary_large_image');
+    upsertMeta('name', 'twitter:site', TWITTER_HANDLE);
     upsertMeta('name', 'twitter:title', title);
     upsertMeta('name', 'twitter:description', description);
     upsertMeta('name', 'twitter:image', imageUrl);
     upsertCanonical(canonicalUrl);
-  }, [description, image, path, title]);
+    upsertJsonLd(jsonLd);
+  }, [description, image, path, title, type, jsonLd]);
 
   return null;
+}
+
+function upsertJsonLd(data?: object | object[]) {
+  const id = 'seo-jsonld';
+  const existing = document.getElementById(id);
+  if (!data) {
+    existing?.remove();
+    return;
+  }
+  const script = (existing as HTMLScriptElement) || document.createElement('script');
+  script.id = id;
+  script.type = 'application/ld+json';
+  script.textContent = JSON.stringify(data);
+  if (!existing) document.head.appendChild(script);
 }
 
 function absoluteUrl(value: string) {
