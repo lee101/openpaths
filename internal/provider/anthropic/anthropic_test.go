@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/openpaths/openpaths/internal/model"
+	"github.com/openpaths/openpaths/internal/promptcache"
 	"github.com/openpaths/openpaths/internal/provider"
 )
 
@@ -155,6 +157,69 @@ func TestTranslateRequestDefaults(t *testing.T) {
 
 	if anthReq.MaxTokens != 4096 {
 		t.Errorf("got default max tokens %d, want 4096", anthReq.MaxTokens)
+	}
+}
+
+func TestTranslateRequest_MapsOpenAIImageURLBlocks(t *testing.T) {
+	req := &model.ChatCompletionRequest{
+		Model: "claude-sonnet-4-20250514",
+		Messages: []model.ChatMessage{{
+			Role: "user",
+			Content: []any{
+				map[string]any{"type": "text", "text": "What is in this image?"},
+				map[string]any{"type": "image_url", "image_url": map[string]any{"url": "https://example.com/cat.png"}},
+			},
+		}},
+	}
+
+	anthReq := translateRequest(req)
+	blocks, ok := anthReq.Messages[0].Content.([]any)
+	if !ok {
+		t.Fatalf("content type = %T, want []any", anthReq.Messages[0].Content)
+	}
+	if got, ok := blocks[0].(anthropicTextBlock); !ok || got.Text != "What is in this image?" {
+		t.Fatalf("text block = %#v, want Anthropic text block", blocks[0])
+	}
+	img, ok := blocks[1].(anthropicImageBlock)
+	if !ok {
+		t.Fatalf("image block = %#v, want Anthropic image block", blocks[1])
+	}
+	if img.Source.Type != "url" || img.Source.URL != "https://example.com/cat.png" {
+		t.Fatalf("image source = %#v, want URL source", img.Source)
+	}
+}
+
+func TestApplyCacheControl_AttachesToSystemBlock(t *testing.T) {
+	p := New("test-key", "")
+	p.SetCacheOptimizer(promptcache.New(promptcache.Config{ColdDefault: promptcache.TTL1h}))
+	longSystem := strings.Repeat("cache me ", 600)
+	anthReq := translateRequest(&model.ChatCompletionRequest{
+		Model: "claude-sonnet-4-20250514",
+		Messages: []model.ChatMessage{
+			{Role: "system", Content: longSystem},
+			{Role: "user", Content: "Hi"},
+		},
+	})
+
+	p.applyCacheControl(anthReq)
+
+	blocks, ok := anthReq.System.([]anthropicTextBlock)
+	if !ok {
+		t.Fatalf("system = %T, want []anthropicTextBlock", anthReq.System)
+	}
+	if len(blocks) != 1 || blocks[0].CacheControl == nil {
+		t.Fatalf("system blocks = %#v, want cache_control on block", blocks)
+	}
+	if blocks[0].CacheControl.TTL != "1h" {
+		t.Fatalf("ttl = %q, want 1h", blocks[0].CacheControl.TTL)
+	}
+	req, err := http.NewRequest(http.MethodPost, "https://example.com", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	setCacheBeta(req, anthReq)
+	if got := req.Header.Get("anthropic-beta"); got != extendedCacheTTLBeta {
+		t.Fatalf("anthropic-beta = %q, want %q", got, extendedCacheTTLBeta)
 	}
 }
 

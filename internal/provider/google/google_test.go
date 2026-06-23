@@ -67,6 +67,34 @@ func TestTranslateRequest_Gemini35UsesThinkingLevel(t *testing.T) {
 	}
 }
 
+func TestTranslateRequest_MapsOpenAIImageURLBlocks(t *testing.T) {
+	req := &model.ChatCompletionRequest{
+		Model: "gemini-2.5-flash",
+		Messages: []model.ChatMessage{{
+			Role: "user",
+			Content: []any{
+				map[string]any{"type": "text", "text": "Describe this image."},
+				map[string]any{"type": "image_url", "image_url": map[string]any{"url": "https://example.com/cat.png"}},
+			},
+		}},
+	}
+
+	gemReq := translateRequest(req)
+	if len(gemReq.Contents) != 1 {
+		t.Fatalf("got %d contents, want 1", len(gemReq.Contents))
+	}
+	parts := gemReq.Contents[0].Parts
+	if len(parts) != 2 {
+		t.Fatalf("got %d parts, want 2", len(parts))
+	}
+	if parts[0].Text != "Describe this image." {
+		t.Fatalf("text part = %q, want prompt text", parts[0].Text)
+	}
+	if parts[1].FileData == nil || parts[1].FileData.FileURI != "https://example.com/cat.png" {
+		t.Fatalf("image part = %#v, want fileData URI", parts[1])
+	}
+}
+
 func TestTranslateUsage_CountsThoughtTokensAsBillableOutput(t *testing.T) {
 	usage := translateUsage(&geminiUsage{
 		PromptTokenCount:     100,
