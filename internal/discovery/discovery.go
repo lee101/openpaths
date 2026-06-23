@@ -62,6 +62,8 @@ func (s *Service) discoverProvider(ctx context.Context, p model.ProviderConfig) 
 		return s.discoverOpenAICompat(ctx, p, "xai")
 	case "deepseek":
 		return s.discoverOpenAICompat(ctx, p, "deepseek")
+	case "cerebras":
+		return s.discoverOpenAICompat(ctx, p, "cerebras")
 	case "anthropic":
 		return s.discoverAnthropic(ctx, p)
 	case "google":

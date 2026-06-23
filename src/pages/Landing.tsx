@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
-import { Zap, Code2, ArrowRight, Github, Search, Layers, Activity, Sparkles, ArrowUpRight, Image as ImageIcon } from 'lucide-react';
+import { Zap, Code2, ArrowRight, Github, Search, Layers, Activity, Sparkles, ArrowUpRight, Image as ImageIcon, Video } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { CodeBlock } from '../components/CodeBlock';
 import { artGallery } from '../data/artGallery';
+import { videoGallery } from '../data/videoGallery';
 import { getProviderLogo, providersByName } from '../data/providers';
 import { Seo } from '../components/Seo';
 
@@ -11,6 +12,7 @@ export function Landing() {
   const [activeTab, setActiveTab] = useState<'python' | 'curl'>('python');
   const apiKey = localStorage.getItem('op_api_key') || 'op_...';
   const galleryGrid = artGallery;
+  const videoGrid = videoGallery;
 
   return (
     <>
@@ -36,7 +38,7 @@ export function Landing() {
             <span className="text-white/40">Model Router.</span>
           </h1>
           <p className="text-lg md:text-xl text-white/60 max-w-2xl mx-auto mb-10 font-light leading-relaxed">
-            <span className="text-white font-medium">Stop choosing models manually.</span> Use <code className="text-white font-mono text-base">openpaths/auto</code> — embedding-routed paths pick the right provider for every prompt.
+            <span className="text-white font-medium">You don't have to pick a model.</span> Try the <code className="text-white font-mono text-base">openpaths/auto</code> models, auto thinking, and the <code className="text-white font-mono text-base">-latest</code> series to help you stay on the frontier — often better than pinning one provider.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link to="/models" className="w-full sm:w-auto bg-white text-black px-8 py-4 font-mono font-bold flex items-center justify-center gap-2 hover:bg-white/90 transition-colors rounded">
@@ -65,7 +67,7 @@ export function Landing() {
         <div className="mb-12 text-center max-w-3xl mx-auto">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/15 bg-white/[0.03] text-xs font-mono mb-6">
             <Sparkles className="w-3.5 h-3.5" />
-            Hero product
+            OpenPaths Auto
           </div>
           <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">Always on the frontier. Zero manual upgrades.</h2>
           <p className="text-white/60 font-mono text-sm leading-relaxed">
@@ -214,6 +216,45 @@ export function Landing() {
                     </motion.article>
                   ))}
                 </div>
+
+                <div className="mt-12">
+                  <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+                    <div>
+                      <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/30 px-3 py-1 text-xs font-mono text-white/55">
+                        <Video className="h-3.5 w-3.5" /> Grok Imagine Video
+                      </div>
+                      <h3 className="text-2xl font-bold tracking-tight md:text-3xl">Fresh video generation across the best latest AIs.</h3>
+                    </div>
+                    <Link to="/models/grok-imagine-video" className="inline-flex items-center gap-2 text-sm font-mono text-white/55 hover:text-white">
+                      Open model page <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </div>
+                  <div className="grid gap-4 lg:grid-cols-3">
+                    {videoGrid.map((item, index) => (
+                      <motion.article
+                        key={item.slug}
+                        initial={{ opacity: 0, y: 18 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, amount: 0.15 }}
+                        transition={{ duration: 0.35, delay: index * 0.05 }}
+                        className="overflow-hidden rounded-lg border border-white/10 bg-black/45"
+                      >
+                        <div className="relative aspect-video bg-black">
+                          <video src={item.videoUrl} className="h-full w-full object-cover" muted loop playsInline controls preload="metadata" />
+                          <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-2 rounded-full border border-white/15 bg-black/60 px-2.5 py-1.5 backdrop-blur">
+                            <img src={getProviderLogo(item.provider)} alt={`${item.provider} logo`} className="h-4 w-4 rounded-sm object-contain" />
+                            <span className="font-mono text-[11px] text-white/80">{item.model}</span>
+                          </div>
+                        </div>
+                        <div className="p-4">
+                          <div className="mb-2 text-[11px] uppercase tracking-[0.22em] text-white/35">{item.resolution} · {item.duration}s · WebM</div>
+                          <h4 className="text-lg font-bold tracking-tight">{item.title}</h4>
+                          <PromptText text={item.prompt} className="mt-2 text-sm text-white/60" />
+                        </div>
+                      </motion.article>
+                    ))}
+                  </div>
+                </div>
               </div>
 
             </div>
@@ -353,23 +394,6 @@ function HeroMeshCanvas() {
           path.push(drawPoint(x, row + 0.6));
         }
         strokeMesh(path, col * 0.28);
-      }
-
-      for (let pulse = 0; pulse < 3; pulse++) {
-        const progress = ((t * 0.18 + pulse / 3) % 1);
-        const z = progress * rows;
-        const y = horizonY + z * spacing * (1 / (1 + z * 0.075)) * 0.62;
-        const radiusX = width * (0.18 + progress * 0.48);
-        const radiusY = 18 + progress * 72;
-        const gradient = ctx.createRadialGradient(centerX, y, 0, centerX, y, radiusX);
-        gradient.addColorStop(0, 'rgba(255,255,255,0.14)');
-        gradient.addColorStop(0.32, 'rgba(255,255,255,0.055)');
-        gradient.addColorStop(0.68, 'rgba(0,0,0,0.22)');
-        gradient.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.ellipse(centerX, y, radiusX, radiusY, 0, 0, Math.PI * 2);
-        ctx.fill();
       }
 
       ctx.restore();

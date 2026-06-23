@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/openpaths/openpaths/internal/agent"
 	"github.com/openpaths/openpaths/internal/artindex"
 	"github.com/openpaths/openpaths/internal/audio"
 	"github.com/openpaths/openpaths/internal/auth"
@@ -25,6 +26,7 @@ import (
 	"github.com/openpaths/openpaths/internal/discovery"
 	"github.com/openpaths/openpaths/internal/email"
 	"github.com/openpaths/openpaths/internal/metrics"
+	"github.com/openpaths/openpaths/internal/promptcache"
 	"github.com/openpaths/openpaths/internal/promptlib"
 	"github.com/openpaths/openpaths/internal/provider"
 	"github.com/openpaths/openpaths/internal/provider/anthropic"
@@ -37,6 +39,7 @@ import (
 	gobedprov "github.com/openpaths/openpaths/internal/provider/gobed"
 	"github.com/openpaths/openpaths/internal/provider/google"
 	"github.com/openpaths/openpaths/internal/provider/groq"
+	"github.com/openpaths/openpaths/internal/provider/localwhisper"
 	"github.com/openpaths/openpaths/internal/provider/minimax"
 	"github.com/openpaths/openpaths/internal/provider/mistral"
 	"github.com/openpaths/openpaths/internal/provider/netwrck"
@@ -44,12 +47,15 @@ import (
 	"github.com/openpaths/openpaths/internal/provider/nvidia"
 	"github.com/openpaths/openpaths/internal/provider/openai"
 	"github.com/openpaths/openpaths/internal/provider/openrouter"
+	"github.com/openpaths/openpaths/internal/provider/sakana"
 	"github.com/openpaths/openpaths/internal/provider/textgenerator"
 	"github.com/openpaths/openpaths/internal/provider/together"
 	"github.com/openpaths/openpaths/internal/provider/xai"
 	"github.com/openpaths/openpaths/internal/provider/zai"
 	"github.com/openpaths/openpaths/internal/router"
+	"github.com/openpaths/openpaths/internal/savedresp"
 	"github.com/openpaths/openpaths/internal/server"
+	"github.com/openpaths/openpaths/internal/skillindex"
 	"github.com/openpaths/openpaths/internal/storage"
 	stripesvc "github.com/openpaths/openpaths/internal/stripe"
 )
@@ -93,6 +99,9 @@ func main() {
 	videoJobQ := queries.NewVideoJobQueries(database.Pool)
 	model3DJobQ := queries.NewModel3DJobQueries(database.Pool)
 	artImageQ := queries.NewArtImageQueries(database.Pool)
+	skillQ := queries.NewSkillQueries(database.Pool)
+	savedRespQ := queries.NewSavedResponseQueries(database.Pool)
+	agentQ := queries.NewAgentQueries(database.Pool)
 
 	jwtService := auth.NewJWTService(cfg.JWT.Secret, cfg.JWT.ExpirationHours)
 
@@ -109,6 +118,18 @@ func main() {
 		log.Printf("Registered embedding provider: gobed")
 	}
 
+	// Shared Anthropic prompt-cache cost optimizer: tracks per-prefix request
+	// timing and auto-picks the cheapest cache TTL (none/5m/1h), recomputed every
+	// minute. Anthropic-only.
+	cacheOptimizer := promptcache.New(promptcache.Config{})
+	cacheOptimizer.Start()
+	defer cacheOptimizer.Stop()
+
+	if os.Getenv("LOCAL_WHISPER_ENABLED") == "1" || os.Getenv("LOCAL_WHISPER_BIN") != "" {
+		transcribers = append([]provider.TranscriptionProvider{localwhisper.NewFromEnv()}, transcribers...)
+		log.Printf("Registered transcription provider: local-whisper")
+	}
+
 	for _, provCfg := range cfg.Providers {
 		if !provCfg.Enabled || provCfg.APIKey == "" {
 			log.Printf("Skipping provider %s (disabled or no API key)", provCfg.Name)
@@ -121,13 +142,22 @@ func main() {
 			p = openai.New(provCfg.APIKey, provCfg.BaseURL)
 			transcribers = append(transcribers, openai.NewTranscriber(provCfg.APIKey, provCfg.BaseURL))
 		case "anthropic":
-			p = anthropic.New(provCfg.APIKey, provCfg.BaseURL)
+			ap := anthropic.New(provCfg.APIKey, provCfg.BaseURL)
+			ap.SetCacheOptimizer(cacheOptimizer)
+			p = ap
 		case "appnz":
 			p = appnz.New(provCfg.APIKey, provCfg.BaseURL)
 		case "cursor":
 			p = cursor.New(provCfg.APIKey, provCfg.BaseURL)
 		case "google":
-			p = google.New(provCfg.APIKey, provCfg.BaseURL)
+			gp := google.New(provCfg.APIKey, provCfg.BaseURL)
+			// Explicit Gemini context caching is default-OFF (free implicit
+			// caching covers most cases); enable with GEMINI_EXPLICIT_CACHE=1.
+			gem := google.NewGeminiCacheManager(os.Getenv("GEMINI_EXPLICIT_CACHE") == "1", provCfg.APIKey, provCfg.BaseURL)
+			gem.Start()
+			defer gem.Stop()
+			gp.SetCacheManager(gem)
+			p = gp
 		case "mistral":
 			m := mistral.New(provCfg.APIKey, provCfg.BaseURL)
 			embedders = append(embedders, m)
@@ -164,6 +194,12 @@ func main() {
 			log.Printf("Registered embedding provider: textgenerator")
 		case "zai":
 			p = zai.New(provCfg.APIKey, provCfg.BaseURL)
+		case "sakana":
+			p = sakana.New(provCfg.APIKey, provCfg.BaseURL)
+		case "cerebras":
+			// Cerebras is OpenAI-compatible (/v1/chat/completions) and hosts the
+			// zai GLM models (e.g. zai-glm-4.7).
+			p = openai.NewCompatible("cerebras", provCfg.APIKey, provCfg.BaseURL, nil)
 		case "fireworks":
 			p = fireworks.New(provCfg.APIKey, provCfg.BaseURL)
 			transcribers = append(transcribers, fireworks.NewTranscriber(provCfg.APIKey, provCfg.BaseURL))
@@ -289,7 +325,7 @@ func main() {
 	appUsageCrawler.Start()
 	defer appUsageCrawler.Stop()
 
-	modelProber := cron.NewModelProber(modelProbeQ, cfg.Models)
+	modelProber := cron.NewModelProber(modelProbeQ, apiKeyQ, userQ, creditQ, cfg.Models)
 	modelProber.Start()
 	defer modelProber.Stop()
 
@@ -310,6 +346,29 @@ func main() {
 		log.Printf("Prompt library semantic index warming (%d prompts)", promptlib.Count())
 	} else {
 		log.Printf("Prompt library semantic index disabled (local gobed embedder unavailable or disabled); lexical search still available")
+	}
+
+	var skillIndex *skillindex.Service
+	if localEmbedder != nil && os.Getenv("OPENPATHS_SKILL_INDEX_DISABLED") != "1" {
+		skillIndex = skillindex.New(localEmbedder)
+		skillIndex.SetSource(skillQ)
+		skillIndex.Start(ctx)
+		log.Printf("Skill library semantic index warming")
+	} else {
+		log.Printf("Skill library semantic index disabled (local gobed embedder unavailable or disabled); ILIKE search still available")
+	}
+
+	// User-built agents: tool-use + computer-use with connected data sources.
+	agentEngine := agent.NewEngine(modelRouter, billingEngine, localEmbedder, agentQ, store, os.Getenv("OPENPATHS_COMPUTER_USE_URL"))
+
+	// Optional per-user response saving + private usage search.
+	saver := savedresp.New(savedRespQ, userQ, localEmbedder)
+	saver.Start()
+	defer saver.Stop()
+	if localEmbedder != nil {
+		log.Printf("Response saving enabled (semantic search via gobed)")
+	} else {
+		log.Printf("Response saving enabled (trigram search only; gobed embedder unavailable)")
 	}
 
 	// Start drip email campaign scheduler.
@@ -364,6 +423,11 @@ func main() {
 		ArtIndex:         artIndex,
 		ArtImageQ:        artImageQ,
 		PromptIndex:      promptIndex,
+		SkillIndex:       skillIndex,
+		SkillQ:           skillQ,
+		Saver:            saver,
+		AgentQ:           agentQ,
+		AgentEngine:      agentEngine,
 	})
 
 	done := make(chan os.Signal, 1)

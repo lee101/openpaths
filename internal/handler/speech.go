@@ -78,6 +78,10 @@ func (h *SpeechHandler) HandleSpeechGeneration(ctx *fasthttp.RequestCtx) {
 		req.Text = marked
 	}
 
+	if prepaidGate(ctx, h.billing, req.Model, 0) {
+		return
+	}
+
 	originalModel := req.Model
 	candidates, err := h.router.ResolveWithRetries(req.Model)
 	if err != nil {

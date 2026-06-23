@@ -35,14 +35,21 @@ func (p *OpenAIProvider) GenerateImage(ctx context.Context, req *model.ImageGene
 	}
 
 	// GPT Image models return b64_json by default and do not accept response_format.
-	// DALL·E models accept response_format.
+	// dall-e-3 is now served by the same images backend and also rejects
+	// response_format ("Unknown parameter: 'response_format'"); only legacy
+	// dall-e-2 still honours it. The handler rehosts URL responses regardless,
+	// so dropping the param just lets the provider use its default format.
 	m := strings.ToLower(req.Model)
 	isGPTImage := strings.HasPrefix(m, "gpt-image")
-	if isGPTImage {
+	rejectsResponseFormat := isGPTImage || strings.HasPrefix(m, "dall-e-3")
+	if rejectsResponseFormat {
 		out.ResponseFormat = ""
+	}
+	if isGPTImage {
 		// GPT Image models don't support "style"; they use quality only.
 		out.Style = ""
-	} else if out.ResponseFormat == "" {
+	}
+	if !rejectsResponseFormat && out.ResponseFormat == "" {
 		out.ResponseFormat = "b64_json"
 	}
 

@@ -36,6 +36,11 @@
     <priority>0.5</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/fusion</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/tools</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -87,6 +92,11 @@
   </url>
   <url>
     <loc>https://openpaths.io/evals</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/image-evals</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -311,6 +321,11 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/providers/sakana</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/providers/nous</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -422,6 +437,11 @@
   </url>
   <url>
     <loc>https://openpaths.io/zai/docs</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/sakana/docs</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -821,12 +841,27 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/models/grok-build-0.1</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/models/grok-4.3</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://openpaths.io/models/grok-4.20-non-reasoning</loc>
+    <loc>https://openpaths.io/models/grok-4.20-multi-agent-0309</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/grok-4.20-0309-reasoning</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/grok-4.20-0309-non-reasoning</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -842,6 +877,11 @@
   </url>
   <url>
     <loc>https://openpaths.io/models/xai-tts</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/appnz-tts</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -867,6 +907,16 @@
   </url>
   <url>
     <loc>https://openpaths.io/models/grok-imagine-image-quality</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/grok-imagine-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/grok-imagine-video-1.5</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -972,6 +1022,11 @@
   </url>
   <url>
     <loc>https://openpaths.io/models/kimi-k2.5</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/glm-5.2</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1161,6 +1216,11 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/models/seedance-2.0-fast-image-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/models/seedance-2.0-image-to-video</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
@@ -1181,9 +1241,224 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/models/alibaba%2Fhappy-horse%2Ftext-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/alibaba%2Fhappy-horse%2Freference-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/alibaba%2Fhappy-horse%2Fvideo-edit</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/alibaba%2Fhappy-horse%2Fv1.1%2Ftext-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/alibaba%2Fhappy-horse%2Fv1.1%2Fimage-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/alibaba%2Fhappy-horse%2Fv1.1%2Freference-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/fal-ai%2Fkling-video%2Fv3%2Fpro%2Ftext-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/fal-ai%2Fkling-video%2Fv3%2Fpro%2Fimage-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/fal-ai%2Fkling-video%2Fv3%2Fstandard%2Ftext-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/fal-ai%2Fkling-video%2Fv3%2Fstandard%2Fimage-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/fal-ai%2Fkling-video%2Fv2.5-turbo%2Fpro%2Ftext-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/fal-ai%2Fkling-video%2Fv2.5-turbo%2Fpro%2Fimage-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/fal-ai%2Fveo3.1%2Fimage-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/fal-ai%2Fveo3.1%2Ffast%2Fimage-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/fal-ai%2Fveo3.1%2Freference-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/fal-ai%2Fveo3.1%2Ffirst-last-frame-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/fal-ai%2Fveo3%2Fimage-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/fal-ai%2Fwan%2Fv2.7%2Ftext-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/fal-ai%2Fwan%2Fv2.7%2Fimage-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/fal-ai%2Fwan%2Fv2.7%2Freference-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/fal-ai%2Fwan%2Fv2.7%2Fedit-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/fal-ai%2Fwan-pro%2Ftext-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/fal-ai%2Fwan-pro%2Fimage-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/fal-ai%2Fwan%2Fv2.2-a14b%2Ftext-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/fal-ai%2Fwan%2Fv2.2-a14b%2Fimage-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/fal-ai%2Fminimax%2Fhailuo-2.3%2Fpro%2Ftext-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/fal-ai%2Fminimax%2Fhailuo-2.3%2Fpro%2Fimage-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/fal-ai%2Fminimax%2Fhailuo-2.3%2Fstandard%2Ftext-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/fal-ai%2Fminimax%2Fhailuo-2.3%2Fstandard%2Fimage-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/fal-ai%2Fhunyuan-video-v1.5%2Ftext-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/fal-ai%2Fhunyuan-video-v1.5%2Fimage-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/fal-ai%2Fpika%2Fv2.2%2Ftext-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/fal-ai%2Fpika%2Fv2.2%2Fimage-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/fal-ai%2Fluma-dream-machine%2Fray-2%2Fimage-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/fal-ai%2Fluma-dream-machine%2Fray-2-flash%2Fimage-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/fal-ai%2Fcogvideox-5b</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/models/ltx-2.3-image-to-video</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/sync-lipsync-v3</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/blog/use-openpaths-openai-compatible-router-anywhere</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/blog/llm-creative-coding-shader-video-benchmark</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/blog/image-model-tips-prompting-outpainting-editing</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/blog/video-model-tips-image-to-video-encoding</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/blog/image-generator-quality-compared-2026</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/blog/pelican-bicycle-opus-4-8-vs-gpt-5-5-xhigh</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/pelican-bicycle-animated-svg-model-comparison</loc>

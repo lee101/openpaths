@@ -35,6 +35,9 @@ func (e *Engine) triggerAutoTopup(userID string) {
 
 // PreCheck verifies the user has a minimum balance to attempt a request.
 func (e *Engine) PreCheck(ctx context.Context, userID, modelID string, estimatedMaxOutput int) error {
+	if e.credits == nil {
+		return nil
+	}
 	balance, err := e.credits.GetBalance(ctx, userID)
 	if err != nil {
 		return fmt.Errorf("balance lookup: %w", err)
@@ -59,7 +62,7 @@ func (e *Engine) PreCheck(ctx context.Context, userID, modelID string, estimated
 
 // PreCheckFixed verifies the user can cover a precomputed request cost.
 func (e *Engine) PreCheckFixed(ctx context.Context, userID string, estimatedCost int64) error {
-	if estimatedCost <= 0 {
+	if estimatedCost <= 0 || e.credits == nil {
 		return nil
 	}
 	balance, err := e.credits.GetBalance(ctx, userID)

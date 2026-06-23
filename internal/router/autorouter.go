@@ -347,8 +347,8 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			{Description: "brainstorm ideas suggestions creative solutions approach strategy", ModelID: "gemini-3.5-flash", ReasoningEffort: "low"},
 
 			// ===== DEEP REASONING - O3 =====
-			{Description: "logic puzzle complex reasoning brain teaser riddle deduction", ModelID: "o3", ReasoningEffort: "high"},
-			{Description: "competitive programming contest challenge leetcode codeforces problem", ModelID: "o3", ReasoningEffort: "high"},
+			{Description: "logic puzzle complex reasoning brain teaser riddle deduction", ModelID: "gpt-5.5", ReasoningEffort: "high"},
+			{Description: "competitive programming contest challenge leetcode codeforces problem", ModelID: "gpt-5.5", ReasoningEffort: "high"},
 
 			// ===== SENSITIVE / POLICY-HEAVY CONTENT - DeepSeek V4 direct =====
 			{Description: "adult roleplay mature romance intimate character dialogue sensitive creative writing", ModelID: "deepseek-v4-flash", ReasoningEffort: "low"},
@@ -524,7 +524,7 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			{Description: "design distributed system protocol consensus adversarial failures", ModelID: "gemini-3.5-flash", ReasoningEffort: "high"},
 			{Description: "formal verification cryptography research deep scientific reasoning", ModelID: "gemini-3.5-flash", ReasoningEffort: "high"},
 			{Description: "make a 3d simulation cogs gears clock mechanism webgl threejs", ModelID: "gemini-3.5-flash", ReasoningEffort: "high"},
-			{Description: "competitive programming leetcode codeforces hard problem", ModelID: "o3", ReasoningEffort: "high"},
+			{Description: "competitive programming leetcode codeforces hard problem", ModelID: "gpt-5.5", ReasoningEffort: "high"},
 			{Description: "sensitive policy harm classifier biosecurity fringe adult reasoning", ModelID: "deepseek-v4-pro", ReasoningEffort: "high"},
 		},
 

@@ -939,6 +939,9 @@ func (p *FalProvider) GenerateVideo(ctx context.Context, req *model.VideoGenerat
 	if req.GenerateAudio != nil {
 		falReq["generate_audio"] = *req.GenerateAudio
 	}
+	if req.BitrateMode != "" {
+		falReq["bitrate_mode"] = req.BitrateMode
+	}
 	if req.Seed != nil {
 		falReq["seed"] = *req.Seed
 	}
@@ -962,6 +965,46 @@ func (p *FalProvider) GenerateVideo(ctx context.Context, req *model.VideoGenerat
 	}
 	if req.EnableSafetyChecker != nil {
 		falReq["enable_safety_checker"] = *req.EnableSafetyChecker
+	}
+
+	// sync-3 lip-sync takes singular audio_url/video_url (plus optional sync_mode),
+	// not the plural arrays the generic video path emits.
+	if strings.Contains(req.Model, "fal-ai/sync-lipsync/") {
+		delete(falReq, "audio_urls")
+		delete(falReq, "video_urls")
+		if req.AudioURL != "" {
+			falReq["audio_url"] = req.AudioURL
+		} else if len(req.AudioURLs) > 0 {
+			falReq["audio_url"] = req.AudioURLs[0]
+		}
+		if req.VideoURL != "" {
+			falReq["video_url"] = req.VideoURL
+		} else if len(req.VideoURLs) > 0 {
+			falReq["video_url"] = req.VideoURLs[0]
+		}
+		if req.SyncMode != "" {
+			falReq["sync_mode"] = req.SyncMode
+		}
+	}
+
+	// Video-edit endpoints (Happy Horse video-edit, Wan edit-video) take a singular
+	// source video_url plus optional reference_image_urls and an audio_setting; they
+	// do not use the plural video_urls/image_urls arrays the generic path emits.
+	if strings.Contains(req.Model, "video-edit") || strings.Contains(req.Model, "edit-video") {
+		delete(falReq, "video_urls")
+		delete(falReq, "image_urls")
+		delete(falReq, "image_url")
+		if req.VideoURL != "" {
+			falReq["video_url"] = req.VideoURL
+		} else if len(req.VideoURLs) > 0 {
+			falReq["video_url"] = req.VideoURLs[0]
+		}
+		if len(req.ImageURLs) > 0 {
+			falReq["reference_image_urls"] = req.ImageURLs
+		}
+		if req.AudioSetting != "" {
+			falReq["audio_setting"] = req.AudioSetting
+		}
 	}
 
 	body, err := json.Marshal(falReq)
@@ -1065,6 +1108,9 @@ func (p *FalProvider) falQueueRequestBases(modelID, requestID string) []string {
 	}
 	if strings.Contains(modelID, "fal-ai/ltx-2.3/") {
 		bases = append(bases, queueBase+"/fal-ai/ltx-2.3/requests/"+requestID)
+	}
+	if strings.Contains(modelID, "fal-ai/sync-lipsync/") {
+		bases = append(bases, queueBase+"/fal-ai/sync-lipsync/requests/"+requestID)
 	}
 	if strings.Contains(modelID, "fal-ai/hidream-o1-image/") {
 		bases = append(bases, queueBase+"/fal-ai/hidream-o1-image/requests/"+requestID)

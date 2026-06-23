@@ -99,6 +99,16 @@ providers:
     api_key: "${Z_API_KEY}"
     enabled: true
 
+  - name: sakana
+    base_url: "https://api.sakana.ai"
+    api_key: "${SAKANA_API_KEY}"
+    enabled: true
+
+  - name: cerebras
+    base_url: "https://api.cerebras.ai"
+    api_key: "${CEREBRAS_API_KEY}"
+    enabled: true
+
   - name: nous
     base_url: "https://inference-api.nousresearch.com"
     api_key: "${NOUS_API_KEY}"
@@ -138,6 +148,7 @@ providers:
     base_url: "${APPNZ_BASE_URL}"
     api_key: "${APPNZ_API_KEY}"
     enabled: true
+
 
 models:
   # --- OpenPaths Auto (hero + variants; embedding-routed) ---
@@ -233,7 +244,6 @@ models:
       - "gpt-5.5"
       - "gpt-5-codex"
       - "deepseek-v4-pro"
-      - "o3"
       - "claude-sonnet-4-6"
       - "or/gpt-5.5"
 
@@ -254,6 +264,56 @@ models:
       - "gpt-5.4-mini"
       - "glm-4.6v-flash"
       - "pixtral-large-latest"
+
+  # --- app.nz Auto (first-party re-export of the auto router) ---
+  - id: "appnz/auto"
+    provider: appnz
+    provider_model_id: "gemini-3.5-flash"
+    input_price_per_1m: 1.50
+    output_price_per_1m: 9.00
+    aliases: ["appnz-auto", "app-auto", "app.nz/auto"]
+    context_window: 1000000
+    max_output_tokens: 64000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models:
+      - "openpaths/auto"
+      - "gpt-5.5"
+      - "deepseek-v4-pro"
+      - "claude-sonnet-4-6"
+
+  - id: "appnz/auto-cheap"
+    provider: appnz
+    provider_model_id: "gpt-5.4-nano"
+    input_price_per_1m: 0.20
+    output_price_per_1m: 1.25
+    aliases: ["appnz-auto-cheap", "app-auto-cheap"]
+    context_window: 400000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models:
+      - "openpaths/auto-cheap"
+      - "gemini-3.1-flash-lite"
+      - "deepseek-v4-flash"
+
+  - id: "appnz/auto-fast"
+    provider: appnz
+    provider_model_id: "deepseek-v4-flash"
+    input_price_per_1m: 0.14
+    output_price_per_1m: 0.28
+    aliases: ["appnz-auto-fast", "app-auto-fast"]
+    context_window: 1000000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models:
+      - "openpaths/auto-fast"
+      - "gemini-2.5-flash"
+      - "gpt-5.4-nano"
 
   - id: "openpaths/auto-image"
     provider: openai
@@ -292,6 +352,7 @@ models:
     supports_vision: false
     fallback_models:
       - "hailuo-2.3"
+      - "grok-imagine-video-1.5"
       - "wan"
       - "ltx-video"
       - "ra2v"
@@ -512,6 +573,16 @@ models:
     supports_tools: false
     supports_vision: false
 
+  - id: "seedance-2.0-fast-image-to-video"
+    provider: fal
+    provider_model_id: "bytedance/seedance-2.0/fast/image-to-video"
+    price_per_second: 0.26609
+    input_price_per_1m: 12.32
+    aliases: ["seedance-fast-image-to-video", "seedance-fast-i2v", "seedance-2-fast-i2v"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
   - id: "seedance-2.0-image-to-video"
     provider: fal
     provider_model_id: "bytedance/seedance-2.0/image-to-video"
@@ -554,6 +625,338 @@ models:
     supports_tools: false
     supports_vision: true
 
+  - id: "alibaba/happy-horse/text-to-video"
+    provider: fal
+    provider_model_id: "alibaba/happy-horse/text-to-video"
+    price_per_second: 0.28
+    aliases: ["happy-horse-text-to-video-v1", "happy-horse-1.0-text-to-video"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "alibaba/happy-horse/reference-to-video"
+    provider: fal
+    provider_model_id: "alibaba/happy-horse/reference-to-video"
+    price_per_second: 0.28
+    aliases: ["happy-horse-reference-to-video-v1", "happy-horse-1.0-reference-to-video"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  # Happy Horse video-edit: edit a source video from a prompt (+ up to 5 reference images).
+  - id: "alibaba/happy-horse/video-edit"
+    provider: fal
+    provider_model_id: "alibaba/happy-horse/video-edit"
+    price_per_second: 0.28
+    price_per_second_with_video_input: 0.28
+    aliases: ["happy-horse-video-edit", "happy-horse-edit"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  # Happy Horse 1.1 — Alibaba's #1-ranked video model. 1080p, native synced audio,
+  # multilingual lip-sync. fal cost 720p $0.14/s, 1080p $0.18/s; priced at 1080p tier.
+  - id: "alibaba/happy-horse/v1.1/text-to-video"
+    provider: fal
+    provider_model_id: "alibaba/happy-horse/v1.1/text-to-video"
+    price_per_second: 0.28
+    aliases: ["happy-horse-1.1", "happy-horse-v1.1", "happy-horse-1.1-text-to-video", "happy-horse-text-to-video"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "alibaba/happy-horse/v1.1/image-to-video"
+    provider: fal
+    provider_model_id: "alibaba/happy-horse/v1.1/image-to-video"
+    price_per_second: 0.28
+    aliases: ["happy-horse-1.1-image-to-video", "happy-horse-v1.1-i2v", "happy-horse-i2v"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "alibaba/happy-horse/v1.1/reference-to-video"
+    provider: fal
+    provider_model_id: "alibaba/happy-horse/v1.1/reference-to-video"
+    price_per_second: 0.28
+    aliases: ["happy-horse-1.1-reference-to-video", "happy-horse-v1.1-ref", "happy-horse-reference-to-video", "happy-horse-ref2v"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  # --- Fal multi-family video models (Kling, Veo, Wan, MiniMax, Hunyuan, Pika, Luma, CogVideo) ---
+  # Pricing derived from fal per-model rates (audio-on / default-resolution tier) + ~1.5x markup.
+  - id: "fal-ai/kling-video/v3/pro/text-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/kling-video/v3/pro/text-to-video"
+    price_per_second: 0.25
+    aliases: ["kling-v3-pro", "kling-v3-pro-t2v"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "fal-ai/kling-video/v3/pro/image-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/kling-video/v3/pro/image-to-video"
+    price_per_second: 0.25
+    aliases: ["kling-v3-pro-i2v"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "fal-ai/kling-video/v3/standard/text-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/kling-video/v3/standard/text-to-video"
+    price_per_second: 0.19
+    aliases: ["kling-v3", "kling-v3-standard-t2v"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "fal-ai/kling-video/v3/standard/image-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/kling-video/v3/standard/image-to-video"
+    price_per_second: 0.19
+    aliases: ["kling-v3-i2v", "kling-v3-standard-i2v"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "fal-ai/kling-video/v2.5-turbo/pro/text-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/kling-video/v2.5-turbo/pro/text-to-video"
+    price_per_second: 0.11
+    aliases: ["kling-2.5-turbo", "kling-turbo-t2v"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "fal-ai/kling-video/v2.5-turbo/pro/image-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/kling-video/v2.5-turbo/pro/image-to-video"
+    price_per_second: 0.11
+    aliases: ["kling-2.5-turbo-i2v", "kling-turbo-i2v"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "fal-ai/veo3.1/image-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/veo3.1/image-to-video"
+    price_per_second: 0.6
+    aliases: ["veo3.1", "veo-3.1-i2v", "veo3.1-image-to-video"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "fal-ai/veo3.1/fast/image-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/veo3.1/fast/image-to-video"
+    price_per_second: 0.23
+    aliases: ["veo3.1-fast", "veo-3.1-fast-i2v"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "fal-ai/veo3.1/reference-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/veo3.1/reference-to-video"
+    price_per_second: 0.6
+    aliases: ["veo3.1-reference", "veo-3.1-ref"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "fal-ai/veo3.1/first-last-frame-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/veo3.1/first-last-frame-to-video"
+    price_per_second: 0.6
+    aliases: ["veo3.1-flf", "veo-3.1-first-last-frame"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "fal-ai/veo3/image-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/veo3/image-to-video"
+    price_per_second: 0.6
+    aliases: ["veo3", "veo-3-i2v"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "fal-ai/wan/v2.7/text-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/wan/v2.7/text-to-video"
+    price_per_second: 0.15
+    aliases: ["wan-2.7", "wan-2.7-t2v"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "fal-ai/wan/v2.7/image-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/wan/v2.7/image-to-video"
+    price_per_second: 0.15
+    aliases: ["wan-2.7-i2v"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "fal-ai/wan/v2.7/reference-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/wan/v2.7/reference-to-video"
+    price_per_second: 0.15
+    aliases: ["wan-2.7-reference", "wan-2.7-ref"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "fal-ai/wan/v2.7/edit-video"
+    provider: fal
+    provider_model_id: "fal-ai/wan/v2.7/edit-video"
+    price_per_second: 0.15
+    price_per_second_with_video_input: 0.15
+    aliases: ["wan-2.7-edit", "wan-video-edit"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "fal-ai/wan-pro/text-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/wan-pro/text-to-video"
+    price_per_second: 0.24
+    aliases: ["wan-pro", "wan-pro-t2v"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "fal-ai/wan-pro/image-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/wan-pro/image-to-video"
+    price_per_second: 0.24
+    aliases: ["wan-pro-i2v"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "fal-ai/wan/v2.2-a14b/text-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/wan/v2.2-a14b/text-to-video"
+    price_per_second: 0.12
+    aliases: ["wan-2.2", "wan-2.2-t2v"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "fal-ai/wan/v2.2-a14b/image-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/wan/v2.2-a14b/image-to-video"
+    price_per_second: 0.12
+    aliases: ["wan-2.2-i2v"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "fal-ai/minimax/hailuo-2.3/pro/text-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/minimax/hailuo-2.3/pro/text-to-video"
+    price_per_video: 0.74
+    aliases: ["hailuo-2.3-pro", "minimax-hailuo-2.3-pro-t2v"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "fal-ai/minimax/hailuo-2.3/pro/image-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/minimax/hailuo-2.3/pro/image-to-video"
+    price_per_video: 0.74
+    aliases: ["hailuo-2.3-pro-i2v"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "fal-ai/minimax/hailuo-2.3/standard/text-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/minimax/hailuo-2.3/standard/text-to-video"
+    price_per_second: 0.07
+    aliases: ["hailuo-2.3", "hailuo-2.3-std-t2v", "minimax-hailuo-2.3"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "fal-ai/minimax/hailuo-2.3/standard/image-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/minimax/hailuo-2.3/standard/image-to-video"
+    price_per_second: 0.07
+    aliases: ["hailuo-2.3-i2v", "hailuo-2.3-std-i2v"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "fal-ai/hunyuan-video-v1.5/text-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/hunyuan-video-v1.5/text-to-video"
+    price_per_second: 0.11
+    aliases: ["hunyuan-v1.5", "hunyuan-1.5-t2v"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "fal-ai/hunyuan-video-v1.5/image-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/hunyuan-video-v1.5/image-to-video"
+    price_per_second: 0.11
+    aliases: ["hunyuan-v1.5-i2v", "hunyuan-1.5-i2v"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "fal-ai/pika/v2.2/text-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/pika/v2.2/text-to-video"
+    price_per_second: 0.06
+    aliases: ["pika-2.2", "pika-2.2-t2v"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "fal-ai/pika/v2.2/image-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/pika/v2.2/image-to-video"
+    price_per_second: 0.06
+    aliases: ["pika-2.2-i2v"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "fal-ai/luma-dream-machine/ray-2/image-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/luma-dream-machine/ray-2/image-to-video"
+    price_per_second: 0.15
+    aliases: ["luma-ray-2", "ray-2-i2v"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "fal-ai/luma-dream-machine/ray-2-flash/image-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/luma-dream-machine/ray-2-flash/image-to-video"
+    price_per_second: 0.06
+    aliases: ["luma-ray-2-flash", "ray-2-flash-i2v"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "fal-ai/cogvideox-5b"
+    provider: fal
+    provider_model_id: "fal-ai/cogvideox-5b"
+    price_per_video: 0.3
+    aliases: ["cogvideox", "cogvideox-5b-t2v"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+
   # --- CuteDSL (Triton-accelerated image gen + time-series forecasting) ---
   - id: "cutedsl-image"
     provider: cutedsl
@@ -572,10 +975,17 @@ models:
       - "1360x768"
       - "768x1360"
 
+  # Chronos-2 is our own ~120M-param time-series foundation model, hosted on our
+  # own GPUs (cutedsl inference). A forecast is a single ms-scale model call, so
+  # it is priced at a flat ~$0.002 (2 credits) per series — orders of magnitude
+  # below the earlier placeholder. context_window is the 8192-step input the
+  # model accepts; it forecasts up to 1024 steps ahead in one pass.
   - id: "chronos2"
     provider: cutedsl
     provider_model_id: "chronos2"
-    price_per_forecast: 0.20
+    price_per_forecast: 0.002
+    context_window: 8192
+    max_output_tokens: 1024
     aliases: ["forecast", "time-series-forecast", "cutedsl-chronos2", "chronos-2"]
     supports_streaming: false
     supports_tools: false
@@ -586,6 +996,17 @@ models:
     provider_model_id: "fal-ai/ltx-2.3/image-to-video"
     price_per_second: 0.28
     aliases: ["ltx-2.3", "ltx2.3", "ltx23", "ltx-23", "ltx-2.3-i2v", "ltx23-image-to-video"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  # sync-3 lip-sync — turns a still image (or a video) + a voice track into a
+  # talking, lip-synced character. fal cost $8/min ($0.1333/s); priced ~1.5x.
+  - id: "sync-lipsync-v3"
+    provider: fal
+    provider_model_id: "fal-ai/sync-lipsync/v3/image-to-video"
+    price_per_second: 0.20
+    aliases: ["sync-3", "sync3", "sync-lipsync", "sync-lipsync-3", "sync-lipsync-i2v", "lipsync", "lipsync-v3"]
     supports_streaming: false
     supports_tools: false
     supports_vision: true
@@ -645,7 +1066,7 @@ models:
     provider_model_id: "gpt-5.5"
     input_price_per_1m: 5.00
     output_price_per_1m: 30.00
-    aliases: ["gpt5", "gpt55", "gpt-5-5", "openai-latest", "openai-chat-latest"]
+    aliases: ["gpt5", "gpt55", "gpt-5-5", "openai-latest", "openai-chat-latest", "o3", "o4-mini", "o3-mini"]
     context_window: 1050000
     max_output_tokens: 128000
     supports_streaming: true
@@ -780,27 +1201,7 @@ models:
     supports_tools: true
     supports_vision: true
 
-  - id: "o3"
-    provider: openai
-    provider_model_id: "o3"
-    input_price_per_1m: 2.00
-    output_price_per_1m: 8.00
-    context_window: 200000
-    max_output_tokens: 100000
-    supports_streaming: true
-    supports_tools: true
-    supports_vision: true
-
-  - id: "o4-mini"
-    provider: openai
-    provider_model_id: "o4-mini"
-    input_price_per_1m: 1.10
-    output_price_per_1m: 4.40
-    context_window: 200000
-    max_output_tokens: 100000
-    supports_streaming: true
-    supports_tools: true
-    supports_vision: true
+  # o3 / o4-mini retired -> routed to gpt-5.5 via aliases (see gpt-5.5 entry).
 
   - id: "gpt-4o"
     provider: openai
@@ -895,6 +1296,10 @@ models:
       - "1024x1024"
       - "1792x1024"
       - "1024x1792"
+    # OpenAI has retired dall-e-3 ("model does not exist"); fall back to its
+    # gpt-image successor so the public dall-e-3 route keeps serving images.
+    fallback_models:
+      - "gpt-image-1"
 
   # --- OpenAI (Video - Sora) ---
   - id: "sora-2"
@@ -928,6 +1333,9 @@ models:
     supports_tools: true
     supports_vision: true
     fallback_providers: ["openrouter"]
+    # Fable can be pulled by Anthropic (404 "not available, use Opus 4.8"); fall
+    # back to Opus (same 5/25 price tier) so traffic stays served during outages.
+    fallback_models: ["claude-opus-latest"]
 
   - id: "claude-fable-5"
     provider: anthropic
@@ -941,6 +1349,7 @@ models:
     supports_tools: true
     supports_vision: true
     fallback_providers: ["openrouter"]
+    fallback_models: ["claude-opus-latest"]
 
   - id: "claude-sonnet-latest"
     provider: anthropic
@@ -1160,10 +1569,24 @@ models:
     supports_vision: false
 
   # --- xAI Grok ---
+  - id: "grok-build-0.1"
+    provider: xai
+    provider_model_id: "grok-build-0.1"
+    input_price_per_1m: 1.00
+    input_cache_hit_price_per_1m: 0.20
+    output_price_per_1m: 2.00
+    aliases: ["grok-build", "xai-build"]
+    context_window: 256000
+    max_output_tokens: 16384
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
   - id: "grok-4.3"
     provider: xai
     provider_model_id: "grok-4.3"
     input_price_per_1m: 1.25
+    input_cache_hit_price_per_1m: 0.20
     output_price_per_1m: 2.50
     aliases: ["grok-4", "grok-reasoning", "grok-4-0709", "grok-4-1-fast-reasoning", "grok-4-1-fast-non-reasoning", "grok-4-fast-reasoning", "grok-4-fast-non-reasoning", "grok-code-fast-1", "grok-3"]
     context_window: 1000000
@@ -1172,13 +1595,40 @@ models:
     supports_tools: true
     supports_vision: true
 
-  - id: "grok-4.20-non-reasoning"
+  - id: "grok-4.20-multi-agent-0309"
     provider: xai
-    provider_model_id: "grok-4.20-non-reasoning"
+    provider_model_id: "grok-4.20-multi-agent-0309"
     input_price_per_1m: 1.25
+    input_cache_hit_price_per_1m: 0.20
     output_price_per_1m: 2.50
-    aliases: ["grok-latest-non-reasoning", "grok-non-reasoning", "grok-fast"]
-    context_window: 2000000
+    aliases: ["grok-4.20-multi-agent", "grok-multi-agent"]
+    context_window: 1000000
+    max_output_tokens: 16384
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "grok-4.20-0309-reasoning"
+    provider: xai
+    provider_model_id: "grok-4.20-0309-reasoning"
+    input_price_per_1m: 1.25
+    input_cache_hit_price_per_1m: 0.20
+    output_price_per_1m: 2.50
+    aliases: ["grok-4.20-reasoning", "grok-latest-reasoning"]
+    context_window: 1000000
+    max_output_tokens: 16384
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "grok-4.20-0309-non-reasoning"
+    provider: xai
+    provider_model_id: "grok-4.20-0309-non-reasoning"
+    input_price_per_1m: 1.25
+    input_cache_hit_price_per_1m: 0.20
+    output_price_per_1m: 2.50
+    aliases: ["grok-4.20-non-reasoning", "grok-latest-non-reasoning", "grok-non-reasoning", "grok-fast"]
+    context_window: 1000000
     max_output_tokens: 16384
     supports_streaming: true
     supports_tools: true
@@ -1200,6 +1650,7 @@ models:
     provider: xai
     provider_model_id: "grok-voice-think-fast-1.0"
     price_per_hour: 3.00
+    price_per_request: 0.004
     aliases: ["grok-voice", "xai-realtime"]
     supports_streaming: true
     supports_tools: true
@@ -1218,9 +1669,9 @@ models:
 
   - id: "grok-imagine-image-quality"
     provider: xai
-    provider_model_id: "grok-imagine-image"
-    price_per_image: 0.02
-    price_per_input_image: 0.002
+    provider_model_id: "grok-imagine-image-quality"
+    price_per_image: 0.07
+    price_per_input_image: 0.01
     aliases: ["grok-image-quality", "xai-image-quality"]
     supported_sizes: ["1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "19.5:9", "9:19.5", "auto"]
     supports_streaming: false
@@ -1228,6 +1679,30 @@ models:
     supports_vision: true
     fallback_models:
       - "fal-gpt-image-2"
+
+  - id: "grok-imagine-video"
+    provider: xai
+    provider_model_id: "grok-imagine-video"
+    price_per_second: 0.08
+    price_per_second_with_video_input: 0.08
+    price_per_input_image: 0.002
+    aliases: ["grok-video", "xai-video"]
+    supported_sizes: ["480p", "720p", "16:9", "9:16", "1:1"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "grok-imagine-video-1.5"
+    provider: xai
+    provider_model_id: "grok-imagine-video-1.5"
+    price_per_second: 0.15
+    price_per_second_with_video_input: 0.15
+    price_per_input_image: 0.01
+    aliases: ["grok-video-1.5", "xai-video-1.5", "grok-imagine-video-1.5-preview"]
+    supported_sizes: ["480p", "720p", "16:9", "9:16", "1:1"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
 
   # --- DeepSeek ---
   - id: "deepseek-v4-flash"
@@ -1771,7 +2246,69 @@ models:
       - "1728x960"
       - "960x1728"
 
+  # --- Sakana AI (Fugu) ---
+  # Fugu routes a single request across an internal provider pool; the usage it
+  # reports folds orchestration tokens into total_tokens, and the provider layer
+  # (internal/provider/sakana) re-bases prompt/completion onto the full usage so
+  # billing reflects the real per-request spend. Fugu Ultra has fixed tiered
+  # pricing that doubles above a 272K-token context.
+  - id: "fugu-ultra-20260615"
+    provider: sakana
+    provider_model_id: "fugu-ultra-20260615"
+    input_price_per_1m: 5.00
+    input_cache_hit_price_per_1m: 0.50
+    output_price_per_1m: 30.00
+    long_context_threshold: 272000
+    input_price_per_1m_long: 10.00
+    input_cache_hit_price_per_1m_long: 1.00
+    output_price_per_1m_long: 45.00
+    aliases: ["fugu-ultra", "sakana-fugu-ultra", "fugu-ultra-latest"]
+    context_window: 1000000
+    max_output_tokens: 65536
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  # Default fugu router: same fixed-rate billing basis (pricing "depends" on the
+  # underlying route, but is reconstructed from fugu's reported token usage).
+  - id: "fugu"
+    provider: sakana
+    provider_model_id: "fugu"
+    input_price_per_1m: 5.00
+    input_cache_hit_price_per_1m: 0.50
+    output_price_per_1m: 30.00
+    long_context_threshold: 272000
+    input_price_per_1m_long: 10.00
+    input_cache_hit_price_per_1m_long: 1.00
+    output_price_per_1m_long: 45.00
+    aliases: ["sakana", "sakana-fugu"]
+    context_window: 1000000
+    max_output_tokens: 65536
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
   # --- Z.AI (GLM direct) ---
+  # GLM-5.2 is available on Z.AI's standard API and GLM Coding Plan surfaces.
+  # BYOK coding-plan keys hit /api/coding/paas/v4; the platform key uses the
+  # standard /api/paas/v4 surface. If the model is unavailable on whichever
+  # surface is used, it circuit-breaks down the GLM series (5.1 -> 5).
+  - id: "zai/glm-5.2"
+    provider: zai
+    provider_model_id: "glm-5.2"
+    input_price_per_1m: 1.40
+    output_price_per_1m: 4.40
+    aliases: ["zai-glm5.2", "zai-glm52", "glm-5.2", "glm5.2", "glm-52"]
+    context_window: 1000000
+    max_output_tokens: 131072
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+    fallback_models:
+      - "zai/glm-5.1"
+      - "glm-5.1"
+      - "glm-5"
+
   - id: "zai/glm-5"
     provider: zai
     provider_model_id: "glm-5"
@@ -1783,6 +2320,8 @@ models:
     supports_streaming: true
     supports_tools: true
     supports_vision: false
+    fallback_models:
+      - "glm-5"
 
   - id: "zai/glm-5.1"
     provider: zai
@@ -1792,6 +2331,33 @@ models:
     aliases: ["zai-glm5.1", "zai-glm51"]
     context_window: 202752
     max_output_tokens: 65535
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+    fallback_models:
+      - "glm-5.1"
+      - "glm-5"
+
+  - id: "zai-glm-4.7"
+    provider: cerebras
+    provider_model_id: "zai-glm-4.7"
+    input_price_per_1m: 2.25
+    output_price_per_1m: 2.75
+    aliases: ["cerebras-zai-glm-4.7", "glm-4.7"]
+    context_window: 131072
+    max_output_tokens: 40000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "gpt-oss-120b"
+    provider: cerebras
+    provider_model_id: "gpt-oss-120b"
+    input_price_per_1m: 0.35
+    output_price_per_1m: 0.75
+    aliases: ["cerebras-gpt-oss-120b", "gpt-oss"]
+    context_window: 131072
+    max_output_tokens: 65536
     supports_streaming: true
     supports_tools: true
     supports_vision: false
@@ -2026,6 +2592,50 @@ models:
       - "576x1024"
 
   # --- MiniMax (Chat) ---
+  - id: "minimax-m3"
+    provider: minimax
+    provider_model_id: "MiniMax-M3"
+    input_price_per_1m: 0.40
+    output_price_per_1m: 1.50
+    aliases: ["mm-m3", "minimax"]
+    context_window: 1000000
+    max_output_tokens: 32768
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models:
+      - "minimax-m2.7"
+      - "minimax-m2.5-direct"
+
+  - id: "minimax-m2.7"
+    provider: minimax
+    provider_model_id: "MiniMax-M2.7"
+    input_price_per_1m: 0.30
+    output_price_per_1m: 1.10
+    aliases: ["mm-m2.7"]
+    context_window: 1000000
+    max_output_tokens: 32768
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+    fallback_models:
+      - "minimax-m2.7-highspeed"
+      - "minimax-m2.5-direct"
+
+  - id: "minimax-m2.7-highspeed"
+    provider: minimax
+    provider_model_id: "MiniMax-M2.7-highspeed"
+    input_price_per_1m: 0.30
+    output_price_per_1m: 1.10
+    aliases: ["mm-m2.7-fast"]
+    context_window: 1000000
+    max_output_tokens: 32768
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+    fallback_models:
+      - "minimax-m2.7"
+
   - id: "minimax-m2.5-direct"
     provider: minimax
     provider_model_id: "MiniMax-M2.5"

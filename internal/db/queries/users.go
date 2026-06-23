@@ -18,7 +18,8 @@ func NewUserQueries(pool *pgxpool.Pool) *UserQueries {
 
 const userCols = `id, email, password_hash, name, created_at, updated_at, disabled, is_admin,
 	stripe_customer_id, stripe_payment_method_id,
-	autotopup_enabled, autotopup_threshold_cents, autotopup_amount_cents, autotopup_last_at`
+	autotopup_enabled, autotopup_threshold_cents, autotopup_amount_cents, autotopup_last_at,
+	save_responses_text, save_responses_images`
 
 func scanUser(row interface{ Scan(dest ...any) error }) (*model.User, error) {
 	var u model.User
@@ -26,8 +27,19 @@ func scanUser(row interface{ Scan(dest ...any) error }) (*model.User, error) {
 		&u.ID, &u.Email, &u.PasswordHash, &u.Name, &u.CreatedAt, &u.UpdatedAt, &u.Disabled, &u.IsAdmin,
 		&u.StripeCustomerID, &u.StripePaymentMethodID,
 		&u.AutotopupEnabled, &u.AutotopupThresholdCents, &u.AutotopupAmountCents, &u.AutotopupLastAt,
+		&u.SaveResponsesText, &u.SaveResponsesImages,
 	)
 	return &u, err
+}
+
+// SetResponseSaving updates the per-user response-saving opt-in toggles.
+func (q *UserQueries) SetResponseSaving(ctx context.Context, userID string, text, images bool) error {
+	_, err := q.pool.Exec(ctx,
+		`UPDATE users SET save_responses_text = $1, save_responses_images = $2, updated_at = now()
+		 WHERE id = $3`,
+		text, images, userID,
+	)
+	return err
 }
 
 func (q *UserQueries) Create(ctx context.Context, email, passwordHash, name string) (*model.User, error) {

@@ -12,6 +12,748 @@ export interface BlogPost {
 
 export const posts: BlogPost[] = [
   {
+    slug: 'use-openpaths-openai-compatible-router-anywhere',
+    title: 'Use OpenPaths Anywhere an OpenAI-Compatible Router Fits',
+    excerpt: 'How to wire OpenPaths into CLIs, agent frameworks, SDKs, browser apps, observability wrappers, and tools like Hermes Agent and OpenClaw without rewriting your app.',
+    date: '2026-06-20',
+    author: 'OpenPaths Team',
+    readTime: '7 min',
+    tags: ['integrations', 'router', 'agents', 'openclaw', 'hermes'],
+    content: `The most useful thing about an OpenAI-compatible router is not that it has a familiar curl command. It is that it can disappear into the software you already use.
+
+OpenPaths exposes the normal OpenAI-style base URL:
+
+\`\`\`text
+https://openpaths.io/v1
+\`\`\`
+
+That means most tools only need three changes:
+
+- set the API key to \`OPENPATHS_API_KEY\`
+- set the base URL to \`https://openpaths.io/v1\`
+- choose an OpenPaths model ID such as \`auto-medium-task\`, \`auto-hard-task\`, \`auto-think\`, or \`openai-chat-latest\`
+
+We have already documented copy-paste examples on the [Integrations page](/integrations), including Hermes Agent, OpenClaw, LangChain, Vercel AI SDK, PydanticAI, Mastra, Langfuse, LiveKit Agents, OpenAI Agents SDK, and Anthropic Agent SDK. This post is the pattern behind those examples: how to recognize where OpenPaths fits in any compatible stack.
+
+## The universal test
+
+If a tool asks for an OpenAI key and an OpenAI base URL, it can usually use OpenPaths.
+
+| Tool setting | OpenPaths value |
+|--------------|-----------------|
+| API key | \`op-...\` or \`$OPENPATHS_API_KEY\` |
+| Base URL | \`https://openpaths.io/v1\` |
+| Chat endpoint | \`/chat/completions\` |
+| Default model | \`auto-medium-task\` |
+| Harder model route | \`auto-hard-task\` |
+| Reasoning-biased route | \`auto-think\` or \`autothink\` |
+
+Start there before writing adapter code. A lot of "integration work" is just finding the right config slot.
+
+## Plain OpenAI SDK
+
+The boring case is the best case:
+
+\`\`\`python
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://openpaths.io/v1",
+    api_key="op-...",
+)
+
+response = client.chat.completions.create(
+    model="auto-medium-task",
+    messages=[
+        {"role": "user", "content": "Write a short release note."}
+    ],
+)
+
+print(response.choices[0].message.content)
+\`\`\`
+
+This is the shape most frameworks wrap internally. When something supports a custom OpenAI client, pass that client in. When it supports env vars, set the env vars. When it supports a provider object, create an OpenAI-compatible provider pointed at OpenPaths.
+
+## CLI agents: Hermes Agent and OpenClaw
+
+Agent CLIs are a good place for router integration because the model choice changes from turn to turn. One session might include cheap file search, normal implementation, hard debugging, and a reasoning-heavy design question.
+
+Hermes Agent has an OpenPaths path through environment configuration:
+
+\`\`\`bash
+export OPENPATHS_API_KEY="op-..."
+export OPENPATHS_BASE_URL="https://openpaths.io/v1"
+
+hermes model openpaths:auto-medium-task
+hermes
+\`\`\`
+
+Switching task tiers is just a model change:
+
+\`\`\`bash
+hermes model openpaths:auto-hard-task
+\`\`\`
+
+OpenClaw can onboard OpenPaths as a provider and then set an OpenPaths model:
+
+\`\`\`bash
+export OPENPATHS_API_KEY="op-..."
+
+openclaw onboard --auth-choice openpaths-api-key \\
+  --openpaths-api-key "$OPENPATHS_API_KEY"
+
+openclaw models list --all --provider openpaths
+openclaw models set openpaths/auto-medium-task
+\`\`\`
+
+For interactive work, this is the main advantage: the agent surface stays the same, but model routing moves behind one OpenPaths key.
+
+## Web apps and the Vercel AI SDK
+
+In TypeScript apps, the common pattern is an OpenAI-compatible provider object:
+
+\`\`\`typescript
+import { generateText, streamText } from 'ai';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+
+const openpaths = createOpenAICompatible({
+  name: 'openpaths',
+  apiKey: process.env.OPENPATHS_API_KEY!,
+  baseURL: 'https://openpaths.io/v1',
+});
+
+const { text } = await generateText({
+  model: openpaths('auto-medium-task'),
+  prompt: 'Write one sentence about model routing.',
+});
+
+const stream = streamText({
+  model: openpaths('auto'),
+  prompt: 'Stream a concise explanation of fallback chains.',
+});
+\`\`\`
+
+The rest of the app can keep using the AI SDK primitives: streaming UI responses, tools, route handlers, and typed message plumbing.
+
+## Python frameworks: LangChain and PydanticAI
+
+Most Python agent frameworks have a dedicated OpenAI model class with a configurable base URL.
+
+LangChain:
+
+\`\`\`python
+from langchain_openai import ChatOpenAI
+
+llm = ChatOpenAI(
+    model="auto-medium-task",
+    api_key="op-...",
+    base_url="https://openpaths.io/v1",
+)
+
+reply = llm.invoke("Summarize why routers help production agents.")
+print(reply.content)
+\`\`\`
+
+PydanticAI:
+
+\`\`\`python
+from pydantic_ai import Agent
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.openai import OpenAIProvider
+
+model = OpenAIChatModel(
+    'auto-medium-task',
+    provider=OpenAIProvider(
+        base_url='https://openpaths.io/v1',
+        api_key='op-...',
+    ),
+)
+
+agent = Agent(model, instructions='Be concise.')
+result = agent.run_sync('Name one integration risk.')
+print(result.output)
+\`\`\`
+
+The same principle applies: do not fork the framework if it already exposes the provider configuration.
+
+## Observability wrappers
+
+Tracing tools often wrap the OpenAI SDK. That usually means OpenPaths can sit underneath them too.
+
+With Langfuse's OpenAI wrapper, the model call points at OpenPaths while Langfuse captures latency, model name, tokens, and application trace context:
+
+\`\`\`python
+from langfuse import observe
+from langfuse.openai import openai
+
+openai.api_key = "op-..."
+openai.base_url = "https://openpaths.io/v1"
+
+@observe()
+def run():
+    response = openai.chat.completions.create(
+        model="auto-medium-task",
+        messages=[{"role": "user", "content": "Say hi."}],
+    )
+    return response.choices[0].message.content
+
+print(run())
+\`\`\`
+
+This is better than hiding the router from your telemetry. Keep the OpenPaths model ID in traces so you can tell which routes your app is asking for.
+
+## Anthropic-compatible paths
+
+Some tools do not use OpenAI transport. The Anthropic Agent SDK is the main example we document today. For that case, use OpenPaths' Anthropic-compatible Messages surface and pass the root URL where the SDK expects to append Anthropic paths:
+
+\`\`\`python
+from claude_agent_sdk import ClaudeAgentOptions
+
+options = ClaudeAgentOptions(
+    model="auto-medium-task",
+    env={
+        "ANTHROPIC_BASE_URL": "https://openpaths.io",
+        "ANTHROPIC_AUTH_TOKEN": "op-...",
+        "ANTHROPIC_API_KEY": "",
+    },
+)
+\`\`\`
+
+The rule is slightly different here: OpenAI-compatible clients usually want \`https://openpaths.io/v1\`; Anthropic-compatible SDKs usually want the root \`https://openpaths.io\` because they append their own path.
+
+## Which model ID should you use?
+
+Use task-tier models for agents and apps:
+
+- \`auto-easy-task\` for cheap extraction, tagging, and simple rewrites
+- \`auto-medium-task\` as the default integration route
+- \`auto-hard-task\` for deeper coding, debugging, planning, and analysis
+- \`auto-think\` or \`autothink\` when reasoning quality matters more than latency
+- \`openai-chat-latest\`, \`claude-sonnet-latest\`, or other direct aliases when you want a specific family
+
+The task-tier route is usually the most portable integration default because the calling tool does not need to understand every upstream provider.
+
+## Common mistakes
+
+**Using the wrong base URL.** OpenAI-compatible SDKs generally need \`https://openpaths.io/v1\`. Anthropic-compatible SDKs may need \`https://openpaths.io\`.
+
+**Forgetting that tracing keys are separate.** OpenAI Agents tracing, Langfuse tracing, and LiveKit credentials are not OpenPaths credentials. OpenPaths handles model traffic; the framework still owns its own telemetry and runtime auth.
+
+**Hard-coding one expensive model everywhere.** If the tool is an agent or background job runner, start with \`auto-medium-task\` and escalate only where needed.
+
+**Assuming all provider-native features are portable.** OpenAI-compatible chat, tools, streaming, images, embeddings, and common params are the portable layer. Provider-native realtime audio, unusual beta flags, or vendor-specific hosted tools may still need a provider-specific plugin.
+
+## Bottom line
+
+OpenPaths works best as a model layer, not a new application framework. If a tool can point at an OpenAI-compatible endpoint, point it at \`https://openpaths.io/v1\`, use an OpenPaths key, and pick a task-tier model. Hermes Agent, OpenClaw, LangChain, Vercel AI SDK, PydanticAI, Mastra, Langfuse, and LiveKit all follow that same shape.
+
+That is the integration standard we want: keep the tool, swap the model gateway, and let the router handle provider choice underneath.`
+  },
+  {
+    slug: 'llm-creative-coding-shader-video-benchmark',
+    title: 'LLM Creative Coding Lab: SVGs, Shaders, and Procedural Video',
+    excerpt: 'A visual field test for creative coding models: animated SVGs, fragment shaders, and a tiny procedural WebM pipeline, with reproducible media and a runner you can point at OpenPaths.',
+    date: '2026-06-20',
+    author: 'OpenPaths Team',
+    readTime: '8 min',
+    tags: ['models', 'creative-coding', 'shader', 'video', 'evals'],
+    content: `The pelican-on-a-bicycle posts were useful because they made model differences visible. You did not need a benchmark harness to see what happened: one model returned a clean animated SVG, another spent too much budget thinking, another needed stricter format instructions. That kind of test is messy, but it is also honest. Creative work fails in ways a leaderboard number will never show you.
+
+So this round turns that idea into a small creative-coding lab. The tasks are deliberately visual:
+
+- make a complete animated SVG from a single prompt
+- write a compact fragment shader with a real focal idea
+- design a procedural video generator that can write a looping WebM
+- keep the output usable as code, not just impressive as prose
+
+The source is public in the [OpenPaths repo on Codex Infinity](https://codex-infinity.com/@lee101/openpaths). The media in this post was generated by \`scripts/generate_llm_creative_lab_media.mjs\`, and the live model runner is \`scripts/run_llm_creative_lab.mjs\`.
+
+![Creative coding model scorecard](/static/blog/llm-creative-lab/scorecard.svg)
+
+## What the lab scores
+
+This is not a scientific leaderboard. It is a practical field guide for model selection when the output is an artifact you expect to open, render, edit, and ship.
+
+| Dimension | What it rewards | Common failure |
+|-----------|-----------------|----------------|
+| Code fidelity | valid SVG, GLSL, JS, or Python that actually runs | markdown wrappers, missing tags, invented APIs |
+| Visual coherence | a scene with recognizable subject, palette, and composition | correct code that looks like noise |
+| Motion design | loop timing, synchronized animation, readable movement | animation that jitters, drifts, or fights itself |
+| Format discipline | obeying "return only code" and staying within the budget | planning text, partial files, hidden-token overrun |
+
+The scorecard above uses qualitative 1-5 field scores. The point is not that 4.7 is more real than 4.5; the point is that the shape of the bars matches the kind of work each model tends to be good at.
+
+## The model personalities
+
+**Claude Opus 4.8** is the strongest default when the prompt asks for a coherent visual scene. In the pelican test, it coordinated wheel spin, road motion, body bob, and subject details in one pass. Its weakness is that it likes to build a fuller scene than asked for, so you sometimes need to cap complexity if you want a tiny artifact.
+
+**GPT-5.5 direct** is the practical code generator. With no heavy thinking mode, it tends to commit to the artifact quickly: valid SVG, compact structure, easy edits. Its weakness is taste rather than mechanics. It may produce the cleanest starting point, but not always the richest illustration.
+
+**GPT-5.5 xhigh** is useful when the task needs planning, but creative code is often not that task. The pelican run showed the danger: hidden reasoning can consume the completion budget before the final SVG lands. For visual one-shots, xhigh needs either a larger output budget or a much smaller requested artifact.
+
+**Gemini 3.5 Flash** is visually ambitious. It often reaches for gradients, scenery, and richer composition, which makes it interesting for shaders and illustrated SVGs. The tradeoff is format discipline. Give it a strict system instruction if you need code only.
+
+**Qwen3 Coder** belongs in the lab because it is a strong value model for code mechanics. It can assemble loops, buffers, and rendering pipelines cleanly. It needs more taste constraints than the frontier models: palette, camera motion, subject, and "do not explain the UI" style instructions help a lot.
+
+## Shader prompt
+
+A shader prompt is a better test than it first appears. The model has to think in continuous space, write valid math, avoid nonexistent helper functions, and still make an image with intent.
+
+\`\`\`text
+Write a compact GLSL fragment shader in Shadertoy style.
+It should render a loopable aurora over a black ocean with a visible moon reflection.
+Include mainImage. Return code only.
+\`\`\`
+
+![Procedural shader reference frame](/static/blog/llm-creative-lab/shader-field.svg)
+
+The best answers expose a few readable controls: palette, wave speed, horizon, glow amount, moon position. The weaker answers either hallucinate a framework or collapse into undirected noise. This is where Gemini-style visual ambition can help, while GPT-style compactness makes the result easier to port.
+
+## Procedural video prompt
+
+The video task is less about making a movie and more about testing operational grounding. A useful answer must understand raw frames, frame rate, pixel format, and browser-friendly encoding.
+
+\`\`\`text
+Design a tiny Node or Python script that procedurally generates a 4 second looping WebM clip using ffmpeg rawvideo input.
+Include the core frame algorithm and encoding command.
+\`\`\`
+
+![Procedural benchmark loop](/static/blog/llm-creative-lab/procedural-loop.webm)
+
+The clip above is the deterministic reference output from our media generator, not a provider sample. That distinction matters. The generator writes RGB frames directly into \`ffmpeg\`, encodes \`.webm\` plus \`.mp4\`, and emits a \`.webp\` poster so the blog renderer can embed it reliably.
+
+That pipeline is a useful model test because it catches a very specific failure mode: models can describe procedural video fluently while omitting the hard part, which is actually feeding bytes into an encoder with the right size, frame rate, and pixel format.
+
+## Rerun it through OpenPaths
+
+The live runner is intentionally small:
+
+\`\`\`bash
+OPENPATHS_API_KEY=op-... node scripts/run_llm_creative_lab.mjs
+\`\`\`
+
+It calls the OpenAI-compatible chat endpoint, runs the SVG, shader, and procedural-video prompts across the model set, then writes the full responses and simple validity checks under \`local/llm-creative-lab\`.
+
+The media generator is separate:
+
+\`\`\`bash
+node scripts/generate_llm_creative_lab_media.mjs
+\`\`\`
+
+That separation is important. Live model outputs should be rerunnable and inspectable, while the visual article assets should be stable enough to ship. The small score data used for this post is also published as [creative-lab-results.json](/static/blog/llm-creative-lab/creative-lab-results.json).
+
+## Takeaways
+
+For creative code, "best model" depends heavily on the artifact:
+
+- use Opus-style models when visual coherence and animation coordination matter most
+- use GPT-5.5 direct when you want compact, editable code with fewer formatting surprises
+- use xhigh reasoning only when the task truly needs planning, and give it enough final-output budget
+- use Gemini Flash when richer composition is worth stricter output-format prompting
+- use coder/value models when the task is more pipeline than taste, especially for scripts and encoders
+
+The larger lesson is that model evals get more useful when they produce artifacts. A shader, SVG, or WebM loop makes the tradeoffs visible: syntax, taste, motion, and operational discipline all show up on the page. That is the kind of benchmark OpenPaths is good at hosting because every run can use the same endpoint, the same balance, and the same public repo.`
+  },
+  {
+    slug: 'image-model-tips-prompting-outpainting-editing',
+    title: 'Get the Best Out of AI Image Models: Prompting, Aspect Ratios, Outpainting and Editing',
+    excerpt: 'A practical field guide to OpenPaths image spaces — prompt structure, aspect-ratio framing, model selection, outpainting and prompt-based editing — with real generated before/after images and the exact API calls.',
+    date: '2026-06-20',
+    author: 'OpenPaths Team',
+    readTime: '9 min',
+    tags: ['image-generation', 'tips', 'outpainting', 'image-editing', 'flux', 'prompting'],
+    content: `Image models are not slot machines. The difference between a flat, generic render and a frame you would actually ship is almost always *operator skill* — how you prompt, how you frame, which model you reach for, and whether you generate, outpaint or edit. Every image in this post was generated through the same OpenPaths endpoints you call, then encoded to WebP at quality 85. The exact requests are included so you can reproduce or adapt any of them.
+
+## Tip 1 — Prompt structure beats prompt length
+
+The single biggest quality lever is giving the model a *complete brief* instead of a noun. A good image prompt answers five questions: **subject**, **setting**, **lighting**, **lens/medium**, and **mood/quality**. Here is the same model (FLUX [dev]) on the same subject, with a bare prompt and a structured one.
+
+![Bare prompt: a flat cartoon fox](/static/blog/image-tips/prompt-bare.webp)
+
+That came from the prompt \`a fox\`. The model has no other signal, so it falls back to its most generic prior — a flat mascot illustration. Now the structured version:
+
+![Structured prompt: a cinematic photoreal fox on a mossy rock in foggy forest](/static/blog/image-tips/prompt-structured.webp)
+
+\`\`\`text
+A cinematic wildlife photograph of a red fox sitting on a moss-covered rock
+in a misty pine forest at golden hour, shot on an 85mm f/1.4 lens, shallow
+depth of field, warm rim light, volumetric fog, ultra-detailed fur, sharp
+focus, photorealistic
+\`\`\`
+
+Same model, same seed budget, completely different class of output. Notice the specific levers: naming a **lens** ("85mm f/1.4") buys you real bokeh and compression; naming the **light** ("golden hour", "rim light") fixes the mood; naming the **medium** ("cinematic photograph", "photorealistic") pulls it out of cartoon space. You do not need flowery language — you need the five slots filled.
+
+## Tip 2 — Aspect ratio is a composition decision, not a crop
+
+Models compose *for the canvas you ask for*. A portrait frame and a wide frame of the identical prompt are not the same image cropped — the model lays out the scene differently. Same rainy-Tokyo prompt, two aspect ratios:
+
+![Portrait framing of a neon rainy alley](/static/blog/image-tips/aspect-portrait.webp)
+
+![Widescreen framing of the same neon rainy alley](/static/blog/image-tips/aspect-wide.webp)
+
+The portrait (832×1216) stacks the alley vertically and pushes the subject small for a lonely, towering feel. The widescreen (1216×832) opens the street out sideways, gives you cinematic negative space, and reads like a film still. **Pick the ratio for the final use first** — a phone wallpaper, a hero banner and a thumbnail want different framings — and let the model compose into it, rather than generating square and cropping later.
+
+Pass it as a \`size\` (\`"1216x832"\`) or, on models that take it, an \`aspect_ratio\` like \`"16:9"\`.
+
+## Tip 3 — Match the model to the job
+
+There is no single best image model; there is a best model *for this request*. We keep a live side-by-side on the [Image Evals page](/image-evals), but the working heuristic is:
+
+| Job | Reach for | Why |
+|-----|-----------|-----|
+| Bulk / cost-sensitive | \`zimage\` (Z-Image Turbo) | well under a cent per image, crisp subjects |
+| Everyday quality default | \`flux-dev\` | excellent quality-per-dollar, great light |
+| Most photographic single frame | \`flux-pro\` | naturalistic bokeh, passes-as-photo |
+| Strict instruction / text in image | \`gpt-image-2\` | best prompt adherence, costliest |
+| Never-refuse fallback | \`ra1\` | always returns something usable |
+
+The cheap models are genuinely good now — start cheap, and only escalate to \`gpt-image-2\` when you specifically need instruction-following or legible text. One honest caveat across *all* current models: small embedded text and logos still come out garbled (you can see it on the edited lens below), so do not rely on a generator for real typography.
+
+## Tip 4 — Outpainting reframes instead of regenerating
+
+When you have an image you like but the wrong shape, do not re-roll the prompt and lose it — **outpaint**. Outpainting holds the original pixels and extends the canvas, inventing coherent surroundings. Here is a portrait astronaut still:
+
+![Original portrait astronaut on a red desert](/static/blog/image-tips/outpaint-before.webp)
+
+Feed it to FLUX 2 Pro Outpaint, expand left and right, and you get a widescreen establishing shot with the dunes and sky continued seamlessly — same subject, same light, new framing:
+
+![Outpainted widescreen version of the astronaut scene](/static/blog/image-tips/outpaint-after.webp)
+
+\`\`\`bash
+curl https://openpaths.io/v1/images/generations \\
+  -H "Authorization: Bearer op-..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "model": "fal-ai/flux-2-pro/outpaint",
+    "image_url": "https://.../astronaut.png",
+    "prompt": "Extend the alien desert with rolling dunes and distant mountains",
+    "expand_left": 512,
+    "expand_right": 512,
+    "output_format": "png"
+  }'
+\`\`\`
+
+Use it to turn a vertical phone shot into a banner, to add headroom for a title, or to zoom out from a tight crop. The model only invents the *new* margins, so the part you care about stays intact. Try it in the [Text to Image space](/text-to-image).
+
+## Tip 5 — Edit with a prompt, keep the scene
+
+If you like a photo but want to change *one thing*, an image edit beats starting over. You pass a reference image plus an instruction, and the model preserves composition, lighting and surface while swapping the subject. Green perfume bottle in, rugged camera lens out — same marble, same light, same green wall:
+
+![Reference product photo of a green perfume bottle](/static/blog/image-tips/edit-before.webp)
+
+![Edited result: a camera lens on the same marble surface](/static/blog/image-tips/edit-after.webp)
+
+\`\`\`bash
+curl https://openpaths.io/v1/images/edits \\
+  -H "Authorization: Bearer op-..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "model": "fal-ai/hidream-o1-image/edit",
+    "prompt": "Replace the perfume bottle with a rugged black camera lens, keep the marble surface and lighting",
+    "reference_image_urls": ["https://.../perfume.png"]
+  }'
+\`\`\`
+
+This is the right tool for product variants, restyling, object replacement and personalization — anywhere you want consistency with one deliberate change rather than a fresh roll of the dice.
+
+## Tip 6 — Serve WebP at quality ~85
+
+Every image in this post is WebP at quality 85, and that is a deliberate tip, not a detail. WebP at q85 is visually indistinguishable from the source PNG/JPEG for photographic content while being **dramatically smaller** — typically 25–35% smaller than an equivalent JPEG and several times smaller than PNG, with alpha support thrown in. Quality 85 is the sweet spot: high enough that compression artifacts are imperceptible, low enough that you are not paying for bytes nobody can see. Generators hand back PNG or JPEG; transcode once to WebP q85 before you serve and your galleries load faster on every device. (We go deeper on the video equivalent — AV1 in WebM — in the [video tips post](/blog/video-model-tips-image-to-video-encoding).)
+
+## Reproduce any of these
+
+Everything above runs through one OpenAI-compatible key. Text-to-image:
+
+\`\`\`bash
+curl https://openpaths.io/v1/images/generations \\
+  -H "Authorization: Bearer op-..." \\
+  -H "Content-Type: application/json" \\
+  -d '{"model": "flux-dev", "prompt": "...", "size": "1216x832"}'
+\`\`\`
+
+Swap \`model\` for \`zimage\`, \`flux-pro\`, \`gpt-image-2\` or \`ra1\` to change tier, switch to \`fal-ai/flux-2-pro/outpaint\` to reframe, or \`/v1/images/edits\` to edit. Browse the full catalog on [Models](/models), and try everything hands-on in the [Playground](/playground) or [Text to Image](/text-to-image) space.`
+  },
+  {
+    slug: 'video-model-tips-image-to-video-encoding',
+    title: 'Get the Best Out of AI Video Models: Image-to-Video, Motion Prompts and AV1 Encoding',
+    excerpt: 'How to drive OpenPaths video spaces well — start from a still, prompt motion not just scene, pick the right cost tier — plus why you should ship AV1 WebM with an mp4 fallback. Includes a real generated clip.',
+    date: '2026-06-19',
+    author: 'OpenPaths Team',
+    readTime: '8 min',
+    tags: ['video-generation', 'tips', 'image-to-video', 'encoding', 'av1', 'webm'],
+    content: `AI video is where prompt skill and *delivery* skill both matter. A great clip generated as a 4 MB H.264 file that stutters on mobile is a worse product than a tighter clip shipped as AV1. This post covers both halves: how to get a good clip out of the model, and how to encode it so it actually feels good on the page. The clip below was generated through the OpenPaths video API and encoded exactly as described.
+
+## Tip 1 — Start from a still (image-to-video)
+
+The most reliable way to get a video you control is to not start from text. Generate (or pick) a strong still first, get it exactly right, then animate it with **image-to-video**. The first frame is locked to an image you already approved, so you are only gambling on motion, not on composition, subject and color all at once.
+
+We generated this coastline still with FLUX [dev], then fed it to Grok Imagine as the first frame:
+
+![Cinematic ocean cliff at sunset, animated](/static/blog/video-tips/coast.webm)
+
+\`\`\`bash
+curl https://openpaths.io/v1/videos/generations \\
+  -H "Authorization: Bearer op-..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "model": "grok-imagine-video",
+    "prompt": "Slow cinematic aerial push-in, waves rolling and crashing, clouds drifting",
+    "image_url": "https://.../coast.png",
+    "duration": "6",
+    "resolution": "720p"
+  }'
+\`\`\`
+
+Because the still already nailed the framing and light, the model's only job was to move it — which it does far more dependably than inventing a whole scene from a sentence. This is the workflow the [Text to Image](/text-to-image) and video spaces are built around: get the frame, then animate.
+
+## Tip 2 — Prompt the motion, not the scene
+
+Text-to-video prompts fail when they describe a *photo*. The model already has the scene from your image (or your nouns); what it needs from the prompt is **what moves and how the camera behaves**. Two axes:
+
+- **Subject motion** — "waves rolling and crashing", "hair blowing", "steam rising", "crowd walking".
+- **Camera motion** — "slow push-in", "orbit left", "static locked-off shot", "handheld follow".
+
+Compare \`a beach at sunset\` (the model guesses, often badly) with \`slow cinematic aerial push-in, waves crashing, clouds drifting across the sky\`. The second tells the model the *verbs*. Keep motion plausible and singular — one clear camera move plus one or two subject motions beats a paragraph of competing instructions, which tends to produce warping and morphing.
+
+## Tip 3 — Pick the cost tier deliberately
+
+Video is priced by the second or per clip and the spread is large, so choose the tier for the shot, not by reflex:
+
+| Model | Rough cost | Good for |
+|-------|-----------|----------|
+| \`ltx-video\` | ~$0.05 / clip | cheapest drafts, quick motion tests |
+| \`ltx-2\` | ~$0.07 / clip | cheap flat-rate clips |
+| \`grok-imagine-video\` | ~$0.08 / sec | strong image-to-video, low per-second |
+| \`seedance-2.0-fast-text-to-video\` | ~$0.27 / sec | fast higher-end text-to-video |
+| \`seedance-2.0-image-to-video\` | ~$0.33 / sec | premium image-to-video |
+
+Storyboard cheap and final-render expensive: prove the motion on a flat-rate LTX clip, and only spend Seedance money once the shot is locked. See current pricing on [Models](/models). All of them run async — submit, then poll the job URL — and OpenPaths handles that polling for you behind the single request.
+
+## Tip 4 — Keep clips short and loopable
+
+For web use, a 4–8 second clip that loops cleanly outperforms a long one-shot. It is cheaper to generate, faster to load, and a seamless loop reads as "ambient motion" rather than "video that ended awkwardly". Prompt continuous, cyclic motion (drifting clouds, rolling waves, gentle camera drift) so the last frame sits close to the first, and present it muted and auto-looping as a background element. The clip above is six seconds and loops as a muted background \`<video>\`.
+
+## Tip 5 — Ship AV1 in WebM, with an mp4 fallback
+
+Generators return H.264 MP4. For the web that is the *fallback* format, not the one you should lead with. Re-encode to **AV1 in a WebM container** and serve MP4 only for older browsers. Here are the real numbers for the six-second clip above, same resolution, same visual quality:
+
+| Encoding | Size |
+|----------|------|
+| H.264 MP4 (source-style) | 3.4 MB |
+| AV1 WebM (shipped) | 2.8 MB |
+
+That is ~17% smaller on a short clip, and the gap widens on longer, more detailed footage — AV1 routinely beats H.264 by 30%+ at matched quality. **Why AV1/WebM wins:**
+
+- **Better compression** — AV1's newer toolset hits the same perceived quality at a meaningfully lower bitrate than H.264, so users download fewer bytes.
+- **Royalty-free** — AV1 and WebM carry no codec licensing baggage, unlike the H.264/HEVC patent pools.
+- **Broad modern support** — every current major browser decodes AV1; the MP4 \`<source>\` is just there to cover the long tail.
+
+The encode that produced the shipped clip:
+
+\`\`\`bash
+# AV1 WebM — the primary, smallest deliverable
+ffmpeg -i in.mp4 -c:v libsvtav1 -crf 30 -preset 5 -pix_fmt yuv420p -an out.webm
+
+# H.264 MP4 — fallback for browsers without AV1
+ffmpeg -i in.mp4 -c:v libx264 -crf 23 -preset slow -pix_fmt yuv420p \\
+  -movflags +faststart -an out.mp4
+\`\`\`
+
+Then list both as \`<source>\` elements, WebM first, and give the element a WebP poster (the same q85 trick from the [image tips post](/blog/image-model-tips-prompting-outpainting-editing)) so the first frame paints instantly before playback:
+
+\`\`\`html
+<video autoplay muted loop playsinline poster="coast-poster.webp">
+  <source src="coast.webm" type="video/webm" />
+  <source src="coast.mp4" type="video/mp4" />
+</video>
+\`\`\`
+
+We drop the audio track entirely (\`-an\`) because background clips autoplay muted — the audio would be dead weight that browsers block anyway.
+
+## Putting it together
+
+The whole pipeline is one key: generate a still with \`/v1/images/generations\`, animate it with \`/v1/videos/generations\`, then encode AV1 WebM + MP4 fallback + WebP poster for delivery. Start from a frame you trust, prompt the *motion*, render cheap until the shot is right, and ship it in a modern codec. Try the video models in the [Playground](/playground) and browse the catalog on [Models](/models).`
+  },
+  {
+    slug: 'image-generator-quality-compared-2026',
+    title: 'Every Image Generator, One Prompt: RA1 vs GPT Image 2, FLUX, Grok and More',
+    excerpt: 'We gave the exact same prompt to every image generator OpenPaths hosts — including Netwrck’s RA1 — and put the real outputs side by side, then cross-referenced them with the Artificial Analysis Text-to-Image Arena.',
+    date: '2026-06-02',
+    author: 'OpenPaths Team',
+    readTime: '7 min',
+    tags: ['image-generation', 'evals', 'ra1', 'flux', 'gpt-image', 'comparison'],
+    content: `Leaderboards tell you which image model wins blind preference votes. They do not tell you what *your* prompt actually looks like coming out of each one. So we did the obvious thing: took a single prompt and generated one image from every generator OpenPaths serves — through the same \`/v1/images/generations\` API our users hit — and lined the results up.
+
+We also pulled the [Artificial Analysis Text-to-Image Arena](https://artificialanalysis.ai/image/leaderboard/text-to-image) Elo scores so you can see how blind-vote ranking lines up with eyeballing a real generation. The full interactive version, including the image-editing leaderboard, lives on the [Image Evals page](/image-evals).
+
+## The prompt
+
+Every image below came from the identical request — no per-model tuning, no negative prompts, square 1024 where supported:
+
+\`\`\`text
+A cinematic photograph of a red fox wearing a tiny astronaut helmet,
+sitting on a mossy rock in a foggy pine forest at golden hour,
+shallow depth of field, ultra detailed, sharp focus
+\`\`\`
+
+It is a deliberately loaded prompt: it asks for a coherent subject, a specific costume detail (the helmet), an atmospheric setting, a lighting condition, and a depth-of-field instruction. A good generator nails all five; a weaker one drops one or two.
+
+## The scores at a glance
+
+| Model | Provider | AA Arena Elo | OpenPaths price /1k imgs |
+|-------|----------|--------------|--------------------------|
+| GPT Image 2 (high) | OpenAI | 1,339 (#1) | $211 |
+| Grok Imagine (quality) | xAI | 1,205 | $50 |
+| FLUX.2 [dev] | Black Forest Labs | 1,158 | $25 |
+| FLUX.2 [klein] | Black Forest Labs | 1,125 | $20 |
+| Z-Image Turbo | Alibaba | 1,105 | $7 |
+| FLUX1.1 [pro] | Black Forest Labs | 1,082 | $40 |
+| RA1 | Netwrck | not ranked | $40 |
+
+RA1 is not on the Artificial Analysis board at all — it is Netwrck's own art model — which is exactly why we wanted to generate from it and see where it lands by eye.
+
+## RA1 — Netwrck
+
+![RA1 astronaut fox example generation](/static/blog/image-eval/ra1.webp)
+
+RA1 leans illustrative rather than strictly photographic. The fox is warm and characterful, the forest reads as foggy golden-hour, and the helmet is interpreted as a snug headset-style piece. It renders at a smaller native resolution than the FLUX/GPT models, so it is softer up close — but it is fast, cheap, and it never refuses. RA1 is the model OpenPaths auto-routes to when another provider blocks a prompt, so its job is to *always come back with something usable*, and here it does.
+
+## GPT Image 2 — OpenAI
+
+![GPT Image 2 astronaut fox example generation](/static/blog/image-eval/gpt-image-2.webp)
+
+The Arena #1, and it shows. Prompt adherence is the best of the group: clean helmet bubble, convincing rim light, believable fur, and the depth-of-field instruction respected without dissolving the background into mush. It is also by far the most expensive at \`$211/1k\`. If correctness and text/instruction following matter more than budget, this is the pick.
+
+## FLUX1.1 [pro] — Black Forest Labs (fal)
+
+![FLUX1.1 pro astronaut fox example generation](/static/blog/image-eval/flux-pro.webp)
+
+The most *photographic* result. FLUX chose a profile composition with gorgeous creamy bokeh, naturalistic fur, and a helmet that actually looks like a vacuum-formed bubble. Of everything here it is the one most likely to pass as a real photo. Strong default aesthetic, mid-range price.
+
+## FLUX [dev] — Black Forest Labs (fal)
+
+![FLUX dev astronaut fox example generation](/static/blog/image-eval/flux-dev.webp)
+
+The open-weights dev checkpoint skews a touch more "3D render / cute creature," reading the helmet as over-ear headphones rather than a bubble. Lovely warm light and bokeh, and at \`$25/1k\` it is excellent quality-per-dollar for everyday generation.
+
+## FLUX.2 [klein] — Black Forest Labs (fal)
+
+![FLUX.2 klein astronaut fox example generation](/static/blog/image-eval/klein.webp)
+
+The small, efficient FLUX.2 variant. Composition and color are pleasant and on-brief, though the helmet shrinks to a small detail and fine texture is softer than its bigger siblings. A good fast-and-cheap default that stays coherent.
+
+## Z-Image Turbo — Netwrck
+
+![Z-Image Turbo astronaut fox example generation](/static/blog/image-eval/zimage.webp)
+
+The cheapest generator on OpenPaths at well under a cent per image, and it punches far above that price. Crisp centered subject, a clean glass helmet, symmetric fox face, tasteful fog. For bulk generation where cost dominates, Z-Image is the value champion.
+
+## Grok Imagine — xAI
+
+![Grok Imagine astronaut fox example generation](/static/blog/image-eval/grok-imagine-image.webp)
+
+Grok went widest on the *scene*: a fully realized forest with layered trees, volumetric light shafts, pinecones, and ground detail, with the fox and visor helmet nicely integrated. If you want the environment to do as much storytelling as the subject, Grok is a strong, well-priced option.
+
+## What this shows
+
+- **Leaderboard rank ≈ instruction-following, not "the best image for you."** GPT Image 2 deserves its #1 for sheer correctness, but FLUX1.1 [pro] arguably produced the most beautiful single frame, and it sits much lower on the Arena.
+- **Price spread is enormous** — \`$7\` to \`$211\` per thousand images for results that are all genuinely usable. Z-Image and the FLUX dev/klein tiers are the value sweet spot.
+- **RA1 earns its slot by being unblockable.** It is not chasing the photoreal crown; it is the dependable fallback that returns a solid, on-theme image when stricter providers won't.
+
+Because OpenPaths exposes all of these behind one OpenAI-compatible endpoint, you can A/B them yourself by changing a single field:
+
+\`\`\`bash
+curl https://openpaths.io/v1/images/generations \\
+  -H "Authorization: Bearer op-..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "model": "ra1",
+    "prompt": "A cinematic photograph of a red fox wearing a tiny astronaut helmet, sitting on a mossy rock in a foggy pine forest at golden hour, shallow depth of field, ultra detailed, sharp focus",
+    "size": "1024x1024"
+  }'
+\`\`\`
+
+Swap \`"model"\` for \`gpt-image-2\`, \`flux-pro\`, \`flux-dev\`, \`klein\`, \`zimage\`, or \`grok-imagine-image\` to reproduce any image above — or use \`auto-image\` and let OpenPaths route the prompt for you. See the live rankings and gallery on the [Image Evals page](/image-evals).`
+  },
+  {
+    slug: 'pelican-bicycle-opus-4-8-vs-gpt-5-5-xhigh',
+    title: 'Pelican on a Bicycle: Claude Opus 4.8 vs GPT-5.5 xhigh',
+    excerpt: 'We gave the same animated-SVG prompt — a pelican riding a bicycle — to Claude Opus 4.8 and GPT-5.5 with xhigh thinking, and compared what came back in a single shot.',
+    date: '2026-06-01',
+    author: 'OpenPaths Team',
+    readTime: '6 min',
+    tags: ['models', 'svg', 'opus-4.8', 'gpt-5.5', 'creative-coding'],
+    content: `Drawing things in code is a sneaky-hard test for a model. A single prompt has to be turned into a scene the model can picture, then a compact set of valid SVG shapes, then animation — and it all has to land in one pass without a render loop to lean on. It rewards spatial sense and syntax discipline at the same time, which is exactly why the "pelican on a bicycle" prompt has become a quiet little benchmark.
+
+This round is a head-to-head: **Claude Opus 4.8** against **GPT-5.5 with xhigh thinking**. Same prompt, same routing, one shot each.
+
+\`\`\`text
+Draw a pelican riding a bicycle as an animated SVG.
+Return only a complete standalone SVG document.
+\`\`\`
+
+| Run | Model | Thinking setting | Completion tokens | Result size |
+|-----|-------|------------------|-------------------|-------------|
+| Claude Opus 4.8 | claude-opus-4-8 | default | 3,940 | 5.2 KB |
+| GPT-5.5 xhigh thinking | gpt-5.5 | xhigh | 8,371 | 1.3 KB |
+
+## Claude Opus 4.8
+
+![Claude Opus 4.8 animated SVG pelican riding a bicycle](/static/blog/pelican-svg/opus48.svg)
+
+Opus 4.8 went for a full scene rather than a bare line drawing. It built a red bicycle frame with two spoked wheels that spin, a rotating crank with pedals, and a pelican whose body bobs in time with the pedalling while one leg cranks through the stroke. There is a pale sky gradient, a low sun, a couple of clouds, and a dashed road that scrolls underneath to sell the forward motion.
+
+What stands out is the coordination: every animation shares the same 0.7s period, so the wheel spin, the pedal rotation, the body bob, and the scrolling road all stay locked together instead of drifting. The pelican reads clearly as a pelican — long pouch under an orange beak, a tucked wing, a tail — and the file is still small enough to open and hand-edit. This is the kind of output you can drop straight into a page and tweak.
+
+## GPT-5.5, xhigh thinking
+
+![GPT-5.5 xhigh thinking animated SVG pelican bicycle](/static/blog/pelican-svg/gpt55-xhigh.svg)
+
+The unconstrained xhigh request spent most of its budget thinking and did not return a usable SVG before the edge timeout. Running the same model locally through OpenPaths got past the CDN limit, but the first full-size request still burned a 10,000-token completion budget with no final document.
+
+To get a visible artifact we kept xhigh on and constrained the output to a tiny standalone SVG. That produced a compact result: a small canvas, clear wheels, an animated front wheel, and a recognizable beak, with far fewer decorative details. It is a fine little drawing, but the contrast is telling — the deep reasoning setting spent its effort on planning rather than on execution, and we had to shrink the task before any code came back.
+
+## What this shows
+
+For an animated-SVG one-shot, Opus 4.8 was the more practical pick. It returned a complete, valid document on the first try, with a coherent scene and synchronized animation, and without needing the task trimmed down to fit a budget. GPT-5.5 xhigh can absolutely draw a pelican, but its hidden reasoning ate the completion budget before final code appeared, so it needed extra operational care — a bigger budget or a smaller artifact — to produce anything at all.
+
+The practical takeaways line up with the last round:
+
+- for small visual code artifacts, a direct model that commits to output beats one that over-plans
+- if you do use a heavy thinking mode, raise the completion budget or constrain the artifact size so the final code has room to land
+- add strict output-format instructions when you want SVG only
+- treat xhigh thinking as a tool for genuinely hard planning, not a default for every creative-code task
+
+## API shape
+
+Here is the request shape we used for the Opus 4.8 run:
+
+\`\`\`bash
+curl https://openpaths.io/v1/chat/completions \\
+  -H "Authorization: Bearer op-..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "model": "claude-opus-4-8",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Draw a pelican riding a bicycle as an animated SVG. Return only a complete standalone SVG document."
+      }
+    ],
+    "max_tokens": 4096
+  }'
+\`\`\`
+
+For the GPT-5.5 xhigh rerun, the important addition was a strict system instruction plus a larger budget:
+
+\`\`\`text
+You output only final code. Do not explain, plan, use markdown, or include prose.
+The first character of your response must be < and the response must be one complete standalone SVG document.
+\`\`\`
+
+That instruction, plus a roomier completion budget, mattered more for xhigh than the model choice itself for preventing markdown wrappers, planning text, and empty responses.`
+  },
+  {
     slug: 'pelican-bicycle-animated-svg-model-comparison',
     title: 'Pelican on a Bicycle: Animated SVG Comparison Across GPT-5.5 and Gemini 3.5 Flash',
     excerpt: 'We asked GPT-5.5 with no thinking, GPT-5.5 with xhigh thinking, and Gemini 3.5 Flash to draw the same animated SVG: a pelican riding a bicycle.',

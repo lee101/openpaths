@@ -52,6 +52,9 @@ func (p *XAIProvider) GenerateImage(ctx context.Context, req *model.ImageGenerat
 	} else if aspectRatio := sizeToAspectRatio(req.Size); aspectRatio != "" {
 		payload["aspect_ratio"] = aspectRatio
 	}
+	if req.Resolution != "" {
+		payload["resolution"] = req.Resolution
+	}
 
 	path := "/v1/images/generations"
 	inputs := normalizeImageInputs(req)
@@ -77,6 +80,155 @@ func (p *XAIProvider) GenerateImage(ctx context.Context, req *model.ImageGenerat
 		return nil, fmt.Errorf("unmarshal response: %w", err)
 	}
 	return &result, nil
+}
+
+func (p *XAIProvider) GenerateVideo(ctx context.Context, req *model.VideoGenerationRequest) (*model.VideoGenerationResponse, error) {
+	payload := map[string]any{
+		"model":  req.Model,
+		"prompt": req.Prompt,
+	}
+	if req.Duration != "" && req.Operation != "edit" {
+		if n, ok := videoDurationInt(req.Duration); ok {
+			payload["duration"] = n
+		} else {
+			payload["duration"] = string(req.Duration)
+		}
+	}
+
+	path := "/v1/videos/generations"
+	switch req.Operation {
+	case "edit":
+		path = "/v1/videos/edits"
+		video := xaiVideoInput(req)
+		if len(video) == 0 {
+			return nil, &provider.ProviderError{Provider: "xai", StatusCode: 400, Message: "video is required", Retryable: false}
+		}
+		payload["video"] = video
+	case "extension":
+		path = "/v1/videos/extensions"
+		video := xaiVideoInput(req)
+		if len(video) == 0 {
+			return nil, &provider.ProviderError{Provider: "xai", StatusCode: 400, Message: "video is required", Retryable: false}
+		}
+		payload["video"] = video
+	default:
+		if req.Resolution != "" {
+			payload["resolution"] = req.Resolution
+		}
+		if req.AspectRatio != "" {
+			payload["aspect_ratio"] = req.AspectRatio
+		}
+		if req.ImageURL != "" {
+			payload["image"] = map[string]string{"url": req.ImageURL}
+		}
+	}
+
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return nil, fmt.Errorf("marshal request: %w", err)
+	}
+	respBody, err := p.do(ctx, "POST", path, "application/json", bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+
+	var submit xaiVideoResult
+	if err := json.Unmarshal(respBody, &submit); err != nil {
+		return nil, fmt.Errorf("unmarshal video submit: %w", err)
+	}
+	if strings.EqualFold(submit.Status, "done") && submit.Video.URL != "" {
+		return xaiVideoResponse(submit, req.Model), nil
+	}
+	if submit.RequestID == "" {
+		return nil, &provider.ProviderError{Provider: "xai", StatusCode: 502, Message: "no request_id returned: " + string(respBody), Retryable: true}
+	}
+	return p.pollVideo(ctx, submit.RequestID, req.Model)
+}
+
+type xaiVideoResult struct {
+	RequestID string `json:"request_id"`
+	Status    string `json:"status"`
+	Video     struct {
+		URL               string `json:"url"`
+		Duration          int    `json:"duration"`
+		RespectModeration *bool  `json:"respect_moderation"`
+	} `json:"video"`
+	Error *struct {
+		Code    string `json:"code"`
+		Message string `json:"message"`
+	} `json:"error"`
+}
+
+func (p *XAIProvider) pollVideo(ctx context.Context, requestID, modelID string) (*model.VideoGenerationResponse, error) {
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+	deadline := time.After(15 * time.Minute)
+	for {
+		respBody, err := p.do(ctx, "GET", "/v1/videos/"+requestID, "", nil)
+		if err != nil {
+			if pe, ok := err.(*provider.ProviderError); !ok || !pe.Retryable {
+				return nil, err
+			}
+		} else {
+			var result xaiVideoResult
+			if err := json.Unmarshal(respBody, &result); err != nil {
+				return nil, fmt.Errorf("unmarshal video result: %w", err)
+			}
+			switch strings.ToLower(result.Status) {
+			case "done", "completed", "succeeded":
+				if result.Video.URL == "" {
+					return nil, &provider.ProviderError{Provider: "xai", StatusCode: 502, Message: "no video url in response: " + string(respBody), Retryable: false}
+				}
+				return xaiVideoResponse(result, modelID), nil
+			case "failed", "expired":
+				msg := "video generation " + result.Status
+				if result.Error != nil && result.Error.Message != "" {
+					msg = result.Error.Message
+				}
+				return nil, &provider.ProviderError{Provider: "xai", StatusCode: 502, Message: msg, Retryable: false}
+			}
+		}
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-deadline:
+			return nil, &provider.ProviderError{Provider: "xai", StatusCode: 504, Message: "video generation timed out", Retryable: false}
+		case <-ticker.C:
+		}
+	}
+}
+
+func xaiVideoResponse(result xaiVideoResult, modelID string) *model.VideoGenerationResponse {
+	return &model.VideoGenerationResponse{
+		VideoURL: result.Video.URL,
+		Model:    modelID,
+	}
+}
+
+func videoDurationInt(duration model.VideoDuration) (int, bool) {
+	var n int
+	if _, err := fmt.Sscanf(string(duration), "%d", &n); err != nil || n <= 0 {
+		return 0, false
+	}
+	return n, true
+}
+
+func xaiVideoInput(req *model.VideoGenerationRequest) map[string]string {
+	if req.Video != nil {
+		if req.Video.URL != "" {
+			return map[string]string{"url": req.Video.URL}
+		}
+		if req.Video.FileID != "" {
+			return map[string]string{"file_id": req.Video.FileID}
+		}
+	}
+	if req.VideoURL != "" {
+		return map[string]string{"url": req.VideoURL}
+	}
+	if len(req.VideoURLs) > 0 && req.VideoURLs[0] != "" {
+		return map[string]string{"url": req.VideoURLs[0]}
+	}
+	return nil
 }
 
 func (p *XAIProvider) GenerateSpeech(ctx context.Context, req *model.SpeechRequest) (*model.SpeechResponse, error) {

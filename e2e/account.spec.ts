@@ -358,8 +358,11 @@ test.describe('Account Page', () => {
     test('overview shows transactions from API', async ({ page }) => {
       const table = page.getByTestId('activity-table');
       await expect(table).toBeVisible();
-      await expect(table.locator('text=deposit')).toBeVisible();
-      await expect(table.locator('text=usage_deduction')).toBeVisible();
+      await expect(table.locator('thead')).toContainText('Date');
+      await expect(table.locator('tbody')).toContainText('Jan 15, 2024');
+      await expect(table.locator('tbody')).toContainText('Jan 14, 2024');
+      await expect(table.locator('tbody')).not.toContainText('deposit');
+      await expect(table.locator('tbody')).not.toContainText('usage_deduction');
     });
 
     test('Add Funds button switches to billing tab', async ({ page }) => {

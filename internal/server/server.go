@@ -17,6 +17,7 @@ import (
 	fasthttprouter "github.com/fasthttp/router"
 	"github.com/valyala/fasthttp"
 
+	"github.com/openpaths/openpaths/internal/agent"
 	"github.com/openpaths/openpaths/internal/artindex"
 	"github.com/openpaths/openpaths/internal/audio"
 	"github.com/openpaths/openpaths/internal/auth"
@@ -31,6 +32,8 @@ import (
 	"github.com/openpaths/openpaths/internal/promptlib"
 	"github.com/openpaths/openpaths/internal/provider"
 	"github.com/openpaths/openpaths/internal/router"
+	"github.com/openpaths/openpaths/internal/savedresp"
+	"github.com/openpaths/openpaths/internal/skillindex"
 	"github.com/openpaths/openpaths/internal/storage"
 	stripesvc "github.com/openpaths/openpaths/internal/stripe"
 )
@@ -73,12 +76,18 @@ type Dependencies struct {
 	ArtIndex         *artindex.Service
 	ArtImageQ        *queries.ArtImageQueries
 	PromptIndex      *promptlib.Index
+	SkillIndex       *skillindex.Service
+	SkillQ           *queries.SkillQueries
+	Saver            *savedresp.Saver
+	AgentQ           *queries.AgentQueries
+	AgentEngine      *agent.Engine
 }
 
 func New(deps *Dependencies) *Server {
 	r := fasthttprouter.New()
 
 	chatH := handler.NewChatHandler(deps.Router, deps.Billing, deps.Recorder, deps.UserQ, deps.ProviderKeyQ)
+	chatH.SetResponseSaver(deps.Saver)
 	modelsH := handler.NewModelsHandler(deps.Router)
 	authH := handler.NewAuthHandler(deps.UserQ, deps.CreditQ, deps.APIKeyQ, deps.JWTService)
 	if deps.OnRegister != nil {
@@ -89,6 +98,8 @@ func New(deps *Dependencies) *Server {
 	statsH := handler.NewStatsHandler(deps.StatsQ, deps.AppQ, deps.ModelProbeQ)
 	artH := handler.NewArtHandler(deps.ArtIndex, deps.ArtImageQ)
 	promptsH := handler.NewPromptsHandler(deps.PromptIndex)
+	skillsH := handler.NewSkillsHandler(deps.SkillIndex, deps.SkillQ)
+	agentsH := handler.NewAgentsHandler(deps.AgentQ, deps.AgentEngine)
 	acctStatsH := handler.NewAccountStatsHandler(deps.StatsQ)
 	adminH := handler.NewAdminHandler(deps.UserQ)
 
@@ -143,11 +154,13 @@ func New(deps *Dependencies) *Server {
 	log.Printf("Search endpoint enabled at /v1/search (exa, papers, gemini, openai, grok)")
 
 	anthH := handler.NewAnthropicHandler(deps.Router, deps.Billing, deps.Recorder)
+	anthH.SetResponseSaver(deps.Saver)
 	r.POST("/v1/messages", apiKeyChain(anthH.HandleMessages))
 	log.Printf("Anthropic-compatible /v1/messages endpoint enabled")
 
 	imageH := handler.NewImageHandler(deps.Router, deps.Billing, deps.Recorder)
 	imageH.SetStorage(deps.Storage)
+	imageH.SetResponseSaver(deps.Saver)
 	r.POST("/v1/images/generations", apiKeyChain(imageH.HandleImageGeneration))
 	r.POST("/v1/images/edits", apiKeyChain(imageH.HandleImageGeneration))
 	log.Printf("Image generation endpoint enabled")
@@ -171,9 +184,16 @@ func New(deps *Dependencies) *Server {
 	log.Printf("3D mesh rigging endpoint enabled")
 
 	videoH := handler.NewVideoHandler(deps.Router, deps.Billing, deps.Recorder, deps.VideoJobQ)
+	videoH.SetStorage(deps.Storage)
 	r.POST("/v1/videos/generations", trackLongRequest(apiKeyChain(videoH.HandleVideoGeneration)))
+	r.POST("/v1/videos/edits", trackLongRequest(apiKeyChain(videoH.HandleVideoEdit)))
+	r.POST("/v1/videos/extensions", trackLongRequest(apiKeyChain(videoH.HandleVideoExtension)))
 	r.GET("/v1/videos/generations/{job_id}", apiKeyChain(videoH.HandleVideoGenerationJob))
 	r.GET("/v1/videos/generations/{job_id}/status", apiKeyChain(videoH.HandleVideoGenerationJob))
+	r.GET("/v1/videos/edits/{job_id}", apiKeyChain(videoH.HandleVideoGenerationJob))
+	r.GET("/v1/videos/edits/{job_id}/status", apiKeyChain(videoH.HandleVideoGenerationJob))
+	r.GET("/v1/videos/extensions/{job_id}", apiKeyChain(videoH.HandleVideoGenerationJob))
+	r.GET("/v1/videos/extensions/{job_id}/status", apiKeyChain(videoH.HandleVideoGenerationJob))
 	log.Printf("Video generation endpoint enabled")
 
 	musicH := handler.NewMusicHandler(deps.Router, deps.Billing, deps.Recorder)
@@ -194,6 +214,22 @@ func New(deps *Dependencies) *Server {
 	embeddingH := handler.NewEmbeddingHandler(deps.Router, deps.Billing, deps.Recorder, deps.Embedders)
 	r.POST("/v1/embeddings", apiKeyChain(embeddingH.HandleEmbedding))
 	log.Printf("Embedding endpoint enabled (%d fallback providers)", len(deps.Embedders))
+
+	// MCP server: exposes all models over the Model Context Protocol. Runs under
+	// auth+byok WITHOUT the upfront balance gate so initialize/tools/list always
+	// succeed; paid tools bill via the underlying handler (charge-after-serve).
+	mcpH := handler.NewMCPHandler(deps.Router, chatH, modelsH, imageH, embeddingH, searchH)
+	mcpChain := middleware.Chain(
+		middleware.Recovery(),
+		middleware.Logging(),
+		middleware.APIKeyAuth(deps.APIKeyQ),
+		middleware.AppAttribution(deps.AppQ),
+		middleware.BYOKLoader(deps.ProviderKeyQ),
+		middleware.RateLimit(),
+	)
+	r.POST("/mcp", mcpChain(mcpH.HandleMCP))
+	r.POST("/v1/mcp", mcpChain(mcpH.HandleMCP))
+	log.Printf("MCP server enabled at /mcp (chat, list_models, generate_image, embed, web_search)")
 
 	if len(deps.Transcribers) > 0 {
 		transcriptionH := handler.NewTranscriptionHandler(deps.Router, deps.Billing, deps.Transcribers, deps.Recorder)
@@ -287,12 +323,43 @@ func New(deps *Dependencies) *Server {
 	r.GET("/v1/prompts/meta", publicChain(promptsH.HandleMeta))
 	r.GET("/v1/prompts/{slug}", publicChain(promptsH.HandleGet))
 
+	// Searchable agent-skill library (public, read-only, gobed-powered).
+	r.GET("/v1/skills", publicChain(skillsH.HandleList))
+	r.GET("/v1/skills/meta", publicChain(skillsH.HandleMeta))
+	r.GET("/v1/skills/search", publicChain(skillsH.HandleSearch))
+	r.GET("/v1/skills/{slug}", publicChain(skillsH.HandleGet))
+
+	// Agents: user-built tool-use agents with connected data sources.
+	r.GET("/v1/agents/presets", publicChain(agentsH.HandlePresets))
+	r.GET("/v1/agents", accountChain(agentsH.HandleList))
+	r.POST("/v1/agents", accountChain(agentsH.HandleCreate))
+	r.GET("/v1/agents/{id}", accountChain(agentsH.HandleGet))
+	r.PATCH("/v1/agents/{id}", accountChain(agentsH.HandleUpdate))
+	r.DELETE("/v1/agents/{id}", accountChain(agentsH.HandleDelete))
+	r.POST("/v1/agents/{id}/run", accountChain(agentsH.HandleRun))
+	r.POST("/v1/agents/{id}/run/stream", accountChain(agentsH.HandleRunStream))
+	r.GET("/v1/agents/{id}/runs", accountChain(agentsH.HandleRuns))
+	r.GET("/v1/agents/{id}/sources", accountChain(agentsH.HandleListSources))
+	r.POST("/v1/agents/{id}/sources", accountChain(agentsH.HandleCreateSource))
+	r.POST("/v1/agents/{id}/sources/upload", accountChain(agentsH.HandleUploadSource))
+	r.DELETE("/v1/agents/{id}/sources/{sid}", accountChain(agentsH.HandleDeleteSource))
+	r.GET("/v1/agents/{id}/search", accountChain(agentsH.HandleSearch))
+
 	r.GET("/account/stats/timeseries", accountChain(acctStatsH.HandleUserTimeSeries))
 	r.GET("/account/stats/by-api-key", accountChain(acctStatsH.HandleUserSpendByAPIKey))
 	r.GET("/account/stats/by-provider", accountChain(acctStatsH.HandleUserSpendByProvider))
+	r.GET("/account/stats/by-product", accountChain(acctStatsH.HandleUserSpendByProduct))
+	r.GET("/account/stats/activity", accountChain(acctStatsH.HandleUserActivity))
 	r.GET("/account/stats/by-api-key/{key_id}/models", accountChain(acctStatsH.HandleUserAPIKeyDrilldown))
 	r.GET("/account/stats/by-provider/{provider}/models", accountChain(acctStatsH.HandleUserProviderDrilldown))
-	r.GET("/admin/users/spend", accountChain(adminH.HandleUserSpend))
+	r.GET("/admin/users/spend", accountChain(adminH.RequireAdmin(adminH.HandleUserSpend)))
+
+	// Private saved-response search + settings (response saving feature).
+	usageH := handler.NewUsageHandler(deps.Saver, deps.UserQ)
+	r.GET("/account/usage/settings", accountChain(usageH.HandleGetSettings))
+	r.POST("/account/usage/settings", accountChain(usageH.HandleUpdateSettings))
+	r.GET("/account/usage/responses", accountChain(usageH.HandleSearch))
+	r.GET("/account/usage/responses/{id}", accountChain(usageH.HandleItem))
 
 	if deps.FineTuneQ != nil && len(deps.FineTuneProvs) > 0 {
 		ftH := handler.NewFineTuneHandler(deps.FineTuneQ, deps.FineTuneProvs, deps.Storage)
@@ -400,6 +467,7 @@ func New(deps *Dependencies) *Server {
 			{"/docs", "0.9", "weekly"},
 			{"/integrations", "0.9", "weekly"},
 			{"/playground", "0.7", "monthly"},
+			{"/fusion", "0.6", "monthly"},
 			{"/tools", "0.8", "weekly"},
 			{"/text-to-image", "0.7", "monthly"},
 			{"/image-to-3d", "0.7", "monthly"},
@@ -411,6 +479,8 @@ func New(deps *Dependencies) *Server {
 			{"/blog", "0.8", "weekly"},
 		}
 		blogSlugs := []string{
+			"use-openpaths-openai-compatible-router-anywhere",
+			"llm-creative-coding-shader-video-benchmark",
 			"openpaths-agent-integrations-hermes-openclaw",
 			"openpaths-sdk-integrations",
 			"how-openpaths-is-hosted-on-codex-infinity",
@@ -531,6 +601,11 @@ func spaHandler(dir string, api fasthttp.RequestHandler, apiKeyQ *queries.APIKey
 
 	return func(ctx *fasthttp.RequestCtx) {
 		path := string(ctx.Path())
+		// POST /mcp is the MCP JSON-RPC server; GET /mcp is the docs SPA page.
+		if path == "/mcp" && ctx.IsPost() {
+			api(ctx)
+			return
+		}
 		if strings.HasPrefix(path, "/v1/") ||
 			strings.HasPrefix(path, "/auth/") ||
 			strings.HasPrefix(path, "/account/") ||

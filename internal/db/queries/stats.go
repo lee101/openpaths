@@ -3,6 +3,8 @@ package queries
 import (
 	"context"
 	"fmt"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -27,8 +29,51 @@ func parsePeriod(period string) time.Duration {
 		return 7 * 24 * time.Hour
 	case "30d":
 		return 30 * 24 * time.Hour
+	case "90d":
+		return 90 * 24 * time.Hour
+	case "180d":
+		return 180 * 24 * time.Hour
+	case "365d", "1y":
+		return 365 * 24 * time.Hour
 	default:
 		return 24 * time.Hour
+	}
+}
+
+// ClassifyProduct maps a model name to a coarse "product" (capability/modality):
+// chat, image, video, music, speech, transcription, embedding, or 3d.
+// Order matters: more specific buckets (3d, video) are checked before image
+// because their model names often contain "image" (e.g. image-to-3d,
+// image-to-video). Anything unmatched falls back to "chat".
+func ClassifyProduct(modelName string) string {
+	m := strings.ToLower(modelName)
+	has := func(subs ...string) bool {
+		for _, s := range subs {
+			if strings.Contains(m, s) {
+				return true
+			}
+		}
+		return false
+	}
+	switch {
+	case has("3d", "trellis", "meshy", "tripo", "rig", "rodin", "hunyuan3d", "pixal3d"):
+		return "3d"
+	case has("video", "veo", "sora", "kling", "hailuo", "seedance", "ltx", "wan", "runway", "mochi", "pika", "ra2v", "happy-horse", "auto-video"):
+		return "video"
+	case has("whisper", "-stt", "transcrib", "auto-transcription"):
+		return "transcription"
+	case has("tts", "-voice", "voice-", "speech", "speak", "elevenlabs", "auto-speech"):
+		return "speech"
+	case has("lyria", "suno", "udio", "music", "auto-music"):
+		return "music"
+	case has("embed", "auto-embedding"):
+		return "embedding"
+	case has("flux", "image", "dall", "sdxl", "stable-diffusion", "imagen", "ideogram",
+		"recraft", "nano-banana", "qwen-image", "seedream", "glm-image", "zimage",
+		"hidream", "klein", "photon", "smart-resize", "ra1", "auto-image", "auto-img"):
+		return "image"
+	default:
+		return "chat"
 	}
 }
 
@@ -341,6 +386,98 @@ func (q *StatsQueries) GetUserSpendByProvider(ctx context.Context, userID, perio
 			return nil, fmt.Errorf("scan provider spend: %w", err)
 		}
 		result = append(result, s)
+	}
+	return result, nil
+}
+
+// GetUserSpendByProduct groups usage by model in SQL, then folds each model
+// into its product bucket (via ClassifyProduct) in Go so the classification
+// has a single, unit-testable source of truth.
+func (q *StatsQueries) GetUserSpendByProduct(ctx context.Context, userID, period string) ([]model.ProductSpend, error) {
+	since := time.Now().Add(-parsePeriod(period))
+	rows, err := q.pool.Query(ctx,
+		`SELECT model,
+			COUNT(*) AS total_requests,
+			COALESCE(SUM(tokens_in), 0) AS total_tokens_in,
+			COALESCE(SUM(tokens_out), 0) AS total_tokens_out,
+			COALESCE(SUM(cost_cents), 0) AS total_cost_cents
+		 FROM usage_logs
+		 WHERE user_id = $1 AND created_at >= $2
+		 GROUP BY model`,
+		userID, since,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("get user spend by product: %w", err)
+	}
+	defer rows.Close()
+
+	byProduct := make(map[string]*model.ProductSpend)
+	for rows.Next() {
+		var modelName string
+		var reqs, tokIn, tokOut, cost int64
+		if err := rows.Scan(&modelName, &reqs, &tokIn, &tokOut, &cost); err != nil {
+			return nil, fmt.Errorf("scan product spend: %w", err)
+		}
+		p := ClassifyProduct(modelName)
+		agg := byProduct[p]
+		if agg == nil {
+			agg = &model.ProductSpend{Product: p}
+			byProduct[p] = agg
+		}
+		agg.TotalRequests += reqs
+		agg.TotalTokensIn += tokIn
+		agg.TotalTokensOut += tokOut
+		agg.TotalCostCents += cost
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate product spend: %w", err)
+	}
+
+	result := make([]model.ProductSpend, 0, len(byProduct))
+	for _, s := range byProduct {
+		result = append(result, *s)
+	}
+	sort.Slice(result, func(i, j int) bool {
+		if result[i].TotalCostCents != result[j].TotalCostCents {
+			return result[i].TotalCostCents > result[j].TotalCostCents
+		}
+		return result[i].TotalRequests > result[j].TotalRequests
+	})
+	return result, nil
+}
+
+// GetUserDailyActivity returns per-day request counts and spend for the last
+// `days` days, used to render a GitHub-style contribution heatmap.
+func (q *StatsQueries) GetUserDailyActivity(ctx context.Context, userID string, days int) ([]model.DailyActivityPoint, error) {
+	if days <= 0 || days > 366 {
+		days = 365
+	}
+	since := time.Now().AddDate(0, 0, -days)
+	rows, err := q.pool.Query(ctx,
+		`SELECT to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS day,
+			COUNT(*) AS total_requests,
+			COALESCE(SUM(cost_cents), 0) AS total_cost_cents
+		 FROM usage_logs
+		 WHERE user_id = $1 AND created_at >= $2
+		 GROUP BY day
+		 ORDER BY day ASC`,
+		userID, since,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("get user daily activity: %w", err)
+	}
+	defer rows.Close()
+
+	var result []model.DailyActivityPoint
+	for rows.Next() {
+		var p model.DailyActivityPoint
+		if err := rows.Scan(&p.Date, &p.TotalRequests, &p.TotalCostCents); err != nil {
+			return nil, fmt.Errorf("scan daily activity: %w", err)
+		}
+		result = append(result, p)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate daily activity: %w", err)
 	}
 	return result, nil
 }

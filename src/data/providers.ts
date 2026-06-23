@@ -131,6 +131,14 @@ export const providers: Provider[] = [
     logo: '/logos/zai.svg'
   },
   {
+    slug: 'sakana',
+    name: 'Sakana AI',
+    url: 'https://sakana.ai',
+    description: 'Fugu and Fugu Ultra: orchestration models that route a single request across a pool of providers, billed on real per-request token usage.',
+    featured: false,
+    logo: '/logos/sakana.png'
+  },
+  {
     slug: 'nous',
     name: 'Nous Research',
     url: 'https://nousresearch.com',

@@ -49,6 +49,9 @@ func (h *ForecastingHandler) HandleForecast(ctx *fasthttp.RequestCtx) {
 		writeError(ctx, 400, "invalid_request", "context (historical series) is required")
 		return
 	}
+	if prepaidGate(ctx, h.billing, req.Model, 0) {
+		return
+	}
 
 	resp, status, errType, errMsg := h.executeForecast(ctx, &req, userID, apiKeyID, app)
 	if status >= 400 || resp == nil {

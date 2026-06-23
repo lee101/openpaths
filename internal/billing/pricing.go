@@ -57,14 +57,29 @@ func (pt *PricingTable) CalculateCostWithCachedInput(modelID string, inputTokens
 	if cachedInputTokens > inputTokens {
 		cachedInputTokens = inputTokens
 	}
-	if cfg.InputCacheHitPricePer1M <= 0 {
+	// Long-context tiered pricing: above the threshold the whole request bills at
+	// the higher *Long rates.
+	inputRate, cacheRate, outputRate := cfg.InputPricePer1M, cfg.InputCacheHitPricePer1M, cfg.OutputPricePer1M
+	if cfg.LongContextThreshold > 0 && inputTokens > cfg.LongContextThreshold {
+		if cfg.InputPricePer1MLong > 0 {
+			inputRate = cfg.InputPricePer1MLong
+		}
+		if cfg.InputCacheHitPricePer1MLong > 0 {
+			cacheRate = cfg.InputCacheHitPricePer1MLong
+		}
+		if cfg.OutputPricePer1MLong > 0 {
+			outputRate = cfg.OutputPricePer1MLong
+		}
+	}
+
+	if cacheRate <= 0 {
 		cachedInputTokens = 0
 	}
 
 	uncachedInputTokens := inputTokens - cachedInputTokens
-	inputCost := float64(uncachedInputTokens)*cfg.InputPricePer1M/1_000_000.0 +
-		float64(cachedInputTokens)*cfg.InputCacheHitPricePer1M/1_000_000.0
-	outputCost := float64(outputTokens) * cfg.OutputPricePer1M / 1_000_000.0
+	inputCost := float64(uncachedInputTokens)*inputRate/1_000_000.0 +
+		float64(cachedInputTokens)*cacheRate/1_000_000.0
+	outputCost := float64(outputTokens) * outputRate / 1_000_000.0
 	totalDollars := inputCost + outputCost
 
 	// Convert dollars to hundredths-of-a-cent: $1 = 10000 units

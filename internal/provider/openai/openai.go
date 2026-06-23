@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -44,6 +46,44 @@ func NewCompatible(providerName, apiKey, baseURL string, sanitizeChat func(*mode
 }
 
 func (p *OpenAIProvider) Name() string { return p.providerName }
+
+// applyPromptCacheKey sets OpenAI's prompt_cache_key to a stable per-prefix hash
+// (model + system + tools) so repeat requests route to the same prompt cache,
+// raising the cache-hit rate and lowering our spend. It is applied ONLY to the
+// real OpenAI endpoint; other OpenAI-compatible upstreams may reject the unknown
+// field, so it is stripped for them. A caller-supplied key is preserved.
+func (p *OpenAIProvider) applyPromptCacheKey(req *model.ChatCompletionRequest) {
+	if !strings.Contains(p.baseURL, "api.openai.com") {
+		req.PromptCacheKey = ""
+		return
+	}
+	if req.PromptCacheKey == "" {
+		req.PromptCacheKey = openaiPromptCacheKey(req)
+	}
+}
+
+// openaiPromptCacheKey hashes the stable head of a request (model + system
+// messages + tools) into a short, opaque routing key.
+func openaiPromptCacheKey(req *model.ChatCompletionRequest) string {
+	h := sha256.New()
+	io.WriteString(h, req.Model)
+	h.Write([]byte{0})
+	for _, m := range req.Messages {
+		if m.Role != "system" {
+			continue
+		}
+		if s, ok := m.Content.(string); ok {
+			io.WriteString(h, s)
+			h.Write([]byte{0})
+		}
+	}
+	if len(req.Tools) > 0 {
+		if tb, err := json.Marshal(req.Tools); err == nil {
+			h.Write(tb)
+		}
+	}
+	return hex.EncodeToString(h.Sum(nil)[:16])
+}
 
 // sanitizeForOpenAI removes cross-provider hints that OpenAI's API does not
 // recognize. OpenAI has no native "prefill" or "task_tier" fields and may
@@ -105,6 +145,15 @@ func isRetryableStatus(statusCode int, body string) bool {
 	if statusCode >= 500 || statusCode == 429 {
 		return true
 	}
+	// A 402 from an upstream provider means *that provider's* account/credential
+	// is out of funds (e.g. DeepSeek "Insufficient Balance"). That is an
+	// openpaths-side infrastructure problem, not the end user's, so route around
+	// it via the configured fallback_models chain instead of surfacing it. The
+	// end user's own credit exhaustion is handled earlier by the balance
+	// middleware (type "billing_error"), so it never reaches here.
+	if statusCode == 402 {
+		return true
+	}
 	if statusCode == 400 && strings.Contains(body, "v1/responses") {
 		return true
 	}
@@ -119,6 +168,7 @@ func (p *OpenAIProvider) ChatCompletion(ctx context.Context, req *model.ChatComp
 	if p.sanitizeChat != nil {
 		p.sanitizeChat(&outReq)
 	}
+	p.applyPromptCacheKey(&outReq)
 	body, err := json.Marshal(&outReq)
 	if err != nil {
 		return nil, fmt.Errorf("marshal request: %w", err)
@@ -173,6 +223,7 @@ func (p *OpenAIProvider) ChatCompletionStream(ctx context.Context, req *model.Ch
 	if p.sanitizeChat != nil {
 		p.sanitizeChat(&outReq)
 	}
+	p.applyPromptCacheKey(&outReq)
 
 	body, err := json.Marshal(&outReq)
 	if err != nil {

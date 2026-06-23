@@ -20,6 +20,8 @@ func newTestPricingTable() *PricingTable {
 		{ID: "whisper-1", PricePerMinute: 0.006},
 		{ID: "xai-stt", PricePerHour: 0.20},
 		{ID: "free-model", InputPricePer1M: 0, OutputPricePer1M: 0, Aliases: []string{"free-alias"}},
+		{ID: "fugu-ultra", InputPricePer1M: 5.00, InputCacheHitPricePer1M: 0.50, OutputPricePer1M: 30.00,
+			LongContextThreshold: 272000, InputPricePer1MLong: 10.00, InputCacheHitPricePer1MLong: 1.00, OutputPricePer1MLong: 45.00},
 	}
 	return NewPricingTable(models)
 }
@@ -269,6 +271,30 @@ func TestCalculateCostWithCachedInput_IgnoresCacheWhenNoCachePrice(t *testing.T)
 	}
 	if cost != 27 {
 		t.Fatalf("cost = %d, want 27", cost)
+	}
+}
+
+func TestCalculateCost_LongContextTier(t *testing.T) {
+	pt := newTestPricingTable()
+
+	// Below threshold: base rates. 100k input @ $5/M + 10k output @ $30/M
+	// = $0.50 + $0.30 = $0.80 = 8000 hundredths-of-a-cent.
+	below, err := pt.CalculateCost("fugu-ultra", 100_000, 10_000)
+	if err != nil {
+		t.Fatalf("error = %v", err)
+	}
+	if below != 8000 {
+		t.Fatalf("below-tier cost = %d, want 8000", below)
+	}
+
+	// Above 272k threshold: long rates. 300k input @ $10/M + 10k output @ $45/M
+	// = $3.00 + $0.45 = $3.45 = 34500.
+	above, err := pt.CalculateCost("fugu-ultra", 300_000, 10_000)
+	if err != nil {
+		t.Fatalf("error = %v", err)
+	}
+	if above != 34500 {
+		t.Fatalf("above-tier cost = %d, want 34500", above)
 	}
 }
 

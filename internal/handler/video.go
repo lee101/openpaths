@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 	"github.com/openpaths/openpaths/internal/model"
 	"github.com/openpaths/openpaths/internal/provider"
 	"github.com/openpaths/openpaths/internal/router"
+	"github.com/openpaths/openpaths/internal/storage"
 )
 
 var activeVideoJobs int64
@@ -32,13 +34,30 @@ type VideoHandler struct {
 	recorder *metrics.Recorder
 	jobs     *videoJobCache
 	jobQ     *queries.VideoJobQueries
+	store    storage.Store
 }
 
 func NewVideoHandler(r *router.Router, b *billing.Engine, rec *metrics.Recorder, jobQ *queries.VideoJobQueries) *VideoHandler {
 	return &VideoHandler{router: r, billing: b, recorder: rec, jobs: newVideoJobCache(), jobQ: jobQ}
 }
 
+func (h *VideoHandler) SetStorage(store storage.Store) {
+	h.store = store
+}
+
 func (h *VideoHandler) HandleVideoGeneration(ctx *fasthttp.RequestCtx) {
+	h.handleVideoRequest(ctx, "generation")
+}
+
+func (h *VideoHandler) HandleVideoExtension(ctx *fasthttp.RequestCtx) {
+	h.handleVideoRequest(ctx, "extension")
+}
+
+func (h *VideoHandler) HandleVideoEdit(ctx *fasthttp.RequestCtx) {
+	h.handleVideoRequest(ctx, "edit")
+}
+
+func (h *VideoHandler) handleVideoRequest(ctx *fasthttp.RequestCtx, operation string) {
 	userID, _ := ctx.UserValue(middleware.CtxKeyUserID).(string)
 	apiKey, _ := ctx.UserValue(middleware.CtxKeyAPIKey).(*model.APIKey)
 	apiKeyID := ""
@@ -57,6 +76,14 @@ func (h *VideoHandler) HandleVideoGeneration(ctx *fasthttp.RequestCtx) {
 	}
 	if req.Prompt == "" {
 		writeError(ctx, 400, "invalid_request", "prompt is required")
+		return
+	}
+	req.Operation = operation
+	if (operation == "extension" || operation == "edit") && !req.HasVideoInput() {
+		writeError(ctx, 400, "invalid_request", "video is required")
+		return
+	}
+	if prepaidGate(ctx, h.billing, req.Model, 0) {
 		return
 	}
 
@@ -286,10 +313,22 @@ func (h *VideoHandler) executeVideoGeneration(ctx context.Context, req model.Vid
 		}
 
 		h.router.MarkModelHealthy(cand.Provider.Name(), cand.ModelCfg.ID)
+		if wantsVideoWebM(req.OutputFormat) {
+			optimized, err := h.reencodeVideoWebM(ctx, resp.VideoURL, originalModel)
+			if err != nil {
+				log.Printf("video reencode error: provider=%s model=%s err=%v", cand.Provider.Name(), cand.ModelCfg.ID, err)
+				return videoExecutionResult{StatusCode: 502, ErrorType: "video_reencode_failed", ErrorMessage: err.Error()}
+			}
+			resp.OriginalVideoURL = resp.VideoURL
+			resp.VideoURL = optimized.URL
+			resp.OutputFormat = "webm"
+			resp.Bytes = optimized.Bytes
+			resp.OriginalBytes = optimized.OriginalBytes
+		}
 		resp.Model = originalModel
 		var cost int64
 		if h.billing != nil {
-			cost, _ = h.billing.DeductVideo(ctx, userID, cand.ModelCfg.ID, videoDurationSeconds(string(req.Duration)), len(req.VideoURLs) > 0, "")
+			cost, _ = h.billing.DeductVideo(ctx, userID, cand.ModelCfg.ID, videoDurationSeconds(string(req.Duration)), req.HasVideoInput(), "")
 		}
 		if h.recorder != nil {
 			h.recorder.RecordSuccessWithApp(userID, apiKeyID, originalModel, cand.Provider.Name(),
@@ -300,6 +339,11 @@ func (h *VideoHandler) executeVideoGeneration(ctx context.Context, req model.Vid
 	}
 
 	return videoExecutionResult{StatusCode: 502, ErrorType: "provider_error", ErrorMessage: "all providers failed for model " + originalModel}
+}
+
+func wantsVideoWebM(format string) bool {
+	format = strings.ToLower(strings.TrimSpace(format))
+	return format == "webm" || format == "video/webm"
 }
 
 func videoDurationSeconds(duration string) int {

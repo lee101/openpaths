@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -16,17 +17,22 @@ import (
 	"github.com/openpaths/openpaths/internal/model"
 	"github.com/openpaths/openpaths/internal/provider"
 	"github.com/openpaths/openpaths/internal/router"
+	"github.com/openpaths/openpaths/internal/savedresp"
 )
 
 type AnthropicHandler struct {
 	router   *router.Router
 	billing  *billing.Engine
 	recorder *metrics.Recorder
+	saver    *savedresp.Saver
 }
 
 func NewAnthropicHandler(r *router.Router, b *billing.Engine, rec *metrics.Recorder) *AnthropicHandler {
 	return &AnthropicHandler{router: r, billing: b, recorder: rec}
 }
+
+// SetResponseSaver wires the optional saved-response service (response saving feature).
+func (h *AnthropicHandler) SetResponseSaver(s *savedresp.Saver) { h.saver = s }
 
 // Anthropic API request/response types
 
@@ -162,6 +168,23 @@ func (h *AnthropicHandler) HandleMessages(ctx *fasthttp.RequestCtx) {
 	writeAnthError(ctx, 502, "api_error", "all providers failed for model "+originalModel)
 }
 
+// enforcePrepaid blocks the request when the user lacks sufficient balance.
+// The /v1/messages path always bills to OpenPaths' own key (no BYOK), and the
+// BalanceCheck middleware is skipped for any user holding a BYOK key, so this
+// is the hard prepay gate for this endpoint. Returns true (and writes 402) when
+// rejected, which stops the fallback loop.
+func (h *AnthropicHandler) enforcePrepaid(ctx *fasthttp.RequestCtx, req *model.ChatCompletionRequest, modelID string) bool {
+	userID, _ := ctx.UserValue(middleware.CtxKeyUserID).(string)
+	if userID == "" {
+		return false
+	}
+	if err := h.billing.PreCheck(ctx, userID, modelID, maxOutputTokens(req)); err != nil {
+		writeAnthError(ctx, 402, "billing_error", "Insufficient credits. Please add credits to continue.")
+		return true
+	}
+	return false
+}
+
 func (h *AnthropicHandler) tryAnthNonStream(
 	ctx *fasthttp.RequestCtx,
 	req *model.ChatCompletionRequest,
@@ -170,7 +193,11 @@ func (h *AnthropicHandler) tryAnthNonStream(
 	userID, apiKeyID, originalModel string,
 	start time.Time,
 ) bool {
+	if h.enforcePrepaid(ctx, req, modelCfg.ID) {
+		return true
+	}
 	app := requestAppAttribution(ctx)
+	applySafetyIdentifier(req, prov, userID)
 	resp, err := prov.ChatCompletion(ctx, req)
 	latency := time.Since(start)
 
@@ -211,6 +238,9 @@ func (h *AnthropicHandler) tryAnthNonStream(
 	h.recorder.RecordSuccessWithApp(userID, apiKeyID, originalModel, prov.Name(),
 		tokensIn, tokensOut, int(latency.Milliseconds()), tps, cost, false, app.ID, app.URL, app.Title, app.Categories)
 
+	saveTextGeneration(h.saver, userID, apiKeyID, originalModel, prov.Name(),
+		req.Messages, chatResponseText(resp), tokensIn, tokensOut, cost)
+
 	anthResp := internalToAnth(resp, originalModel)
 	writeJSON(ctx, 200, anthResp)
 	return true
@@ -224,7 +254,11 @@ func (h *AnthropicHandler) tryAnthStream(
 	userID, apiKeyID, originalModel string,
 	start time.Time,
 ) bool {
+	if h.enforcePrepaid(ctx, req, modelCfg.ID) {
+		return true
+	}
 	app := requestAppAttribution(ctx)
+	applySafetyIdentifier(req, prov, userID)
 	streamCh, err := prov.ChatCompletionStream(ctx, req)
 	if err != nil {
 		if pe, ok := err.(*provider.ProviderError); ok {
@@ -278,6 +312,7 @@ func (h *AnthropicHandler) tryAnthStream(
 		writeSSE(w, "content_block_start", blockStart)
 
 		var usage *model.UsageInfo
+		var outBuf strings.Builder
 
 		for event := range streamCh {
 			if event.Err != nil {
@@ -304,6 +339,7 @@ func (h *AnthropicHandler) tryAnthStream(
 						text = s
 					}
 					if text != "" {
+						outBuf.WriteString(text)
 						blockDelta := map[string]any{
 							"type":  "content_block_delta",
 							"index": contentIdx,
@@ -355,6 +391,13 @@ func (h *AnthropicHandler) tryAnthStream(
 			h.recorder.RecordSuccessWithApp(userID, apiKeyID, originalModel, prov.Name(),
 				usage.PromptTokens, usage.CompletionTokens,
 				int(latency.Milliseconds()), tps, cost, true, app.ID, app.URL, app.Title, app.Categories)
+			saveTextGeneration(h.saver, userID, apiKeyID, originalModel, prov.Name(),
+				req.Messages, outBuf.String(), usage.PromptTokens, usage.CompletionTokens, cost)
+		} else {
+			// Upstream call happened (billed to us) but ended without a usage frame
+			// — e.g. client disconnect. Leave a DB trace for invoice reconciliation.
+			h.recorder.RecordErrorWithApp(userID, apiKeyID, originalModel, prov.Name(),
+				int(latency.Milliseconds()), 200, "stream_no_usage", true, app.ID, app.URL, app.Title, app.Categories)
 		}
 	})
 	return true
@@ -431,7 +474,7 @@ func anthToInternal(req *anthRequest) *model.ChatCompletionRequest {
 	for _, tool := range req.Tools {
 		chatReq.Tools = append(chatReq.Tools, model.Tool{
 			Type: "function",
-			Function: model.ToolFunction{
+			Function: &model.ToolFunction{
 				Name:        tool.Name,
 				Description: tool.Description,
 				Parameters:  tool.InputSchema,

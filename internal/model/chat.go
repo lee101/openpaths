@@ -15,12 +15,14 @@ type ChatCompletionRequest struct {
 	PresencePenalty     *float64        `json:"presence_penalty,omitempty"`
 	FrequencyPenalty    *float64        `json:"frequency_penalty,omitempty"`
 	User                string          `json:"user,omitempty"`
+	SafetyIdentifier    string          `json:"safety_identifier,omitempty"`
 	ResponseFormat      *ResponseFormat `json:"response_format,omitempty"`
 	Tools               []Tool          `json:"tools,omitempty"`
 	ToolChoice          any             `json:"tool_choice,omitempty"`
 	ReasoningEffort     string          `json:"reasoning_effort,omitempty"`
 	Thinking            *ThinkingConfig `json:"thinking,omitempty"`
 	ChatTemplateKwargs  map[string]any  `json:"chat_template_kwargs,omitempty"`
+	Fusion              *FusionConfig   `json:"fusion,omitempty"`
 
 	// Prefill is a non-standard cross-provider hint: the assistant response
 	// should start with this exact string. Anthropic and Google Gemini support
@@ -34,6 +36,12 @@ type ChatCompletionRequest struct {
 	// (Opus, flagship). Providers and model selectors MAY use this as input;
 	// the direct provider HTTP layer ignores it.
 	TaskTier string `json:"task_tier,omitempty"`
+
+	// PromptCacheKey is OpenAI's optional cache-routing hint: requests sharing a
+	// key are routed together to raise the prompt-cache hit rate. Only the real
+	// OpenAI provider sets/forwards it (other OpenAI-compatible upstreams may
+	// reject unknown fields), so it is stripped for non-OpenAI endpoints.
+	PromptCacheKey string `json:"prompt_cache_key,omitempty"`
 }
 
 type ChatMessage struct {
@@ -70,6 +78,14 @@ type UsageInfo struct {
 	PromptCacheHitTokens  int                  `json:"prompt_cache_hit_tokens,omitempty"`
 	PromptCacheMissTokens int                  `json:"prompt_cache_miss_tokens,omitempty"`
 	PromptTokensDetails   *PromptTokensDetails `json:"prompt_tokens_details,omitempty"`
+
+	// CacheReadTokens / CacheWriteTokens are informational telemetry of upstream
+	// prompt-cache activity (cache hits and writes respectively). They are NOT
+	// read by CachedPromptTokens and do NOT affect customer billing — they exist
+	// so the cache optimizers can measure realized savings. Keeping them out of
+	// billing means the cache discount accrues to us, not the customer.
+	CacheReadTokens  int `json:"cache_read_tokens,omitempty"`
+	CacheWriteTokens int `json:"cache_write_tokens,omitempty"`
 }
 
 type PromptTokensDetails struct {
@@ -121,14 +137,24 @@ type StreamOptions struct {
 }
 
 type Tool struct {
-	Type     string       `json:"type"`
-	Function ToolFunction `json:"function"`
+	Type       string        `json:"type"`
+	Function   *ToolFunction `json:"function,omitempty"`
+	Parameters any           `json:"parameters,omitempty"`
 }
 
 type ToolFunction struct {
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
 	Parameters  any    `json:"parameters,omitempty"`
+}
+
+type FusionConfig struct {
+	Type                string   `json:"type,omitempty"`
+	AnalysisModels      []string `json:"analysis_models,omitempty"`
+	Model               string   `json:"model,omitempty"`
+	Prompt              string   `json:"prompt,omitempty"`
+	MaxPanelModels      int      `json:"max_panel_models,omitempty"`
+	MaxCompletionTokens int      `json:"max_completion_tokens,omitempty"`
 }
 
 type ToolCall struct {

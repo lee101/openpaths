@@ -39,6 +39,9 @@ export function Evals() {
               <p className="mt-5 max-w-3xl text-lg leading-relaxed text-white/60">
                 A local snapshot of Artificial Analysis model scores, prices, token usage, and latency metrics, normalized for OpenPaths comparisons.
               </p>
+              <Link to="/image-evals" className="mt-3 inline-flex items-center gap-1 font-mono text-sm text-cyan-200 hover:text-white">
+                Looking for image generators? See the Image Eval leaderboard <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
             </div>
             <a
               href={artificialAnalysisSnapshot.sourceUrl}

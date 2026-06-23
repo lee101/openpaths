@@ -53,6 +53,40 @@ func (r *Router) setDerivedAliases() {
 			cfg.Aliases = appendUniqueStrings(cfg.Aliases, "grok", "grok-latest")
 		}
 	}
+	// Bare-family convenience aliases pointing at the team-maintained flagship
+	// "*-latest" entries. Deliberately conservative: we point at existing model
+	// IDs/aliases rather than parse versions across product series (e.g. avoid
+	// pointing "claude" at the Mythos "fable" line). Only registered when free.
+	for _, pair := range []struct{ alias, target string }{
+		{"claude", "claude-opus-latest"},
+		{"gpt", "gpt-5-chat-latest"},
+		{"openai", "gpt-5-chat-latest"},
+		{"gemini", "gemini-latest"},
+	} {
+		r.aliasIfFree(pair.alias, pair.target)
+	}
+}
+
+// aliasIfFree registers alias→target only when target resolves to a real model
+// and alias is not already a model ID or an existing alias. Target may itself be
+// a model ID or an alias.
+func (r *Router) aliasIfFree(alias, target string) {
+	if _, taken := r.aliases[alias]; taken {
+		return
+	}
+	if _, taken := r.models[alias]; taken {
+		return
+	}
+	canonical := target
+	if mapped, ok := r.aliases[target]; ok {
+		canonical = mapped
+	}
+	cfg, ok := r.models[canonical]
+	if !ok {
+		return
+	}
+	r.aliases[alias] = canonical
+	cfg.Aliases = appendUniqueStrings(cfg.Aliases, alias)
 }
 
 func appendUniqueStrings(items []string, values ...string) []string {
@@ -230,6 +264,10 @@ func (r *Router) ResolveForRequest(requestedModel, routedModel string) ([]RouteC
 
 func (r *Router) HealthTracker() *HealthTracker {
 	return r.health
+}
+
+func (r *Router) Provider(name string) (provider.Provider, error) {
+	return r.registry.Get(name)
 }
 
 func (r *Router) MarkUnhealthy(providerName string) {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Box, Boxes, ImageIcon, Layers, Palette, PersonStanding, Sparkles } from 'lucide-react';
+import { ArrowRight, Box, Boxes, Clapperboard, GitMerge, ImageIcon, Layers, Palette, PersonStanding, Sparkles } from 'lucide-react';
 import { Seo } from '../components/Seo';
 
 const TOOLS = [
@@ -11,6 +11,14 @@ const TOOLS = [
     tagline: 'Auto image endpoint',
     description: 'Generate an image from a prompt. The auto image route picks the best model (GPT Image 2, RA1, Flux), or pin your own.',
     price: 'from ~$0.04 / image',
+  },
+  {
+    to: '/video-extension',
+    icon: Clapperboard,
+    name: 'Video Extension',
+    tagline: 'Grok Imagine Video',
+    description: 'Upload or paste an MP4, describe what happens next, and extend it through the Grok Imagine video API.',
+    price: '~$0.08 / sec',
   },
   {
     to: '/image-to-3d',
@@ -52,6 +60,14 @@ const TOOLS = [
     description: 'Multi-pane studio to test any model across modalities side by side, with live cost and latency.',
     price: 'pay per request',
   },
+  {
+    to: '/fusion',
+    icon: GitMerge,
+    name: 'Model Fusion',
+    tagline: 'OpenRouter fusion beta',
+    description: 'Run multiple models side by side, analyze consensus and contradictions, then fuse the best result into one answer.',
+    price: 'panel + judge cost',
+  },
 ];
 
 export function Tools() {
@@ -59,7 +75,7 @@ export function Tools() {
     <>
       <Seo
         title="Tools | OpenPaths"
-        description="First-party OpenPaths tools: text-to-image, image-to-3D, text-to-3D, and the multi-model playground. Each tool has its own API."
+        description="First-party OpenPaths tools: text-to-image, image-to-3D, text-to-3D, model fusion, and the multi-model playground. Each tool has its own API."
         path="/tools"
       />
 

@@ -66,6 +66,23 @@ type ProviderSpend struct {
 	TotalCostCents int64  `json:"total_cost_cents"`
 }
 
+// ProductSpend is spend/usage aggregated per product (capability/modality:
+// chat, image, video, music, speech, transcription, embedding, 3d).
+type ProductSpend struct {
+	Product        string `json:"product"`
+	TotalRequests  int64  `json:"total_requests"`
+	TotalTokensIn  int64  `json:"total_tokens_in"`
+	TotalTokensOut int64  `json:"total_tokens_out"`
+	TotalCostCents int64  `json:"total_cost_cents"`
+}
+
+// DailyActivityPoint is one day's usage, used for the contribution heatmap.
+type DailyActivityPoint struct {
+	Date           string `json:"date"` // YYYY-MM-DD
+	TotalRequests  int64  `json:"total_requests"`
+	TotalCostCents int64  `json:"total_cost_cents"`
+}
+
 // AdminUserSpend is the per-user rollup shown in the admin spend dashboard.
 type AdminUserSpend struct {
 	UserID                string     `json:"user_id"`

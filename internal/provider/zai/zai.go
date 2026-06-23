@@ -16,27 +16,97 @@ import (
 	"github.com/openpaths/openpaths/internal/provider"
 )
 
+// Z.AI exposes two OpenAI-compatible surfaces under the same host:
+//   - the standard pay-as-you-go API at /api/paas/v4 (regular API keys)
+//   - the GLM Coding Plan API at /api/coding/paas/v4 (subscription keys)
+// A coding-plan key only works against the coding path and a standard key only
+// works against the standard path, so the provider keeps an ordered list of base
+// paths and falls through to the next one when the upstream rejects the key as a
+// wrong-surface auth error.
+const (
+	standardBasePath = "/api/paas/v4"
+	codingBasePath   = "/api/coding/paas/v4"
+)
+
 type ZAIProvider struct {
 	apiKey  string
 	baseURL string
-	client  *http.Client
+	// paths is the ordered list of base paths to try for chat completions. The
+	// first 200 wins; a 401/403/404 falls through to the next path.
+	paths  []string
+	client *http.Client
 }
 
 func New(apiKey, baseURL string) *ZAIProvider {
+	return newWithPaths(apiKey, baseURL, []string{standardBasePath})
+}
+
+// NewCoding targets the GLM Coding Plan endpoint first, falling back to the
+// standard endpoint if the key turns out to be a regular API key. This is the
+// constructor used for BYOK GLM keys, which are almost always coding-plan keys.
+func NewCoding(apiKey, baseURL string) *ZAIProvider {
+	return newWithPaths(apiKey, baseURL, []string{codingBasePath, standardBasePath})
+}
+
+func newWithPaths(apiKey, baseURL string, paths []string) *ZAIProvider {
 	if baseURL == "" {
 		baseURL = "https://api.z.ai"
 	}
 	return &ZAIProvider{
 		apiKey:  apiKey,
 		baseURL: strings.TrimRight(baseURL, "/"),
+		paths:   paths,
 		client:  &http.Client{Timeout: 5 * time.Minute},
 	}
 }
 
 func (p *ZAIProvider) Name() string { return "zai" }
 
-func (p *ZAIProvider) chatURL() string {
-	return p.baseURL + "/api/paas/v4/chat/completions"
+// wrongSurfaceStatus reports whether a non-200 status indicates the key is for a
+// different Z.AI surface (and we should try the next base path) rather than a
+// genuine error we should surface to the caller.
+func wrongSurfaceStatus(code int) bool {
+	return code == 401 || code == 403 || code == 404
+}
+
+// doChat sends the chat request, trying each base path until one returns 200 or
+// returns a non-200 that is not a wrong-surface auth error. The returned
+// response body is left open for the caller to read/stream.
+func (p *ZAIProvider) doChat(ctx context.Context, body []byte) (*http.Response, error) {
+	var lastResp *http.Response
+	var lastNetErr error
+	for i, path := range p.paths {
+		httpReq, err := http.NewRequestWithContext(ctx, "POST", p.baseURL+path+"/chat/completions", bytes.NewReader(body))
+		if err != nil {
+			return nil, fmt.Errorf("create request: %w", err)
+		}
+		httpReq.Header.Set("Content-Type", "application/json")
+		httpReq.Header.Set("Authorization", "Bearer "+p.apiKey)
+
+		resp, err := p.client.Do(httpReq)
+		if err != nil {
+			lastNetErr = err
+			continue
+		}
+		if resp.StatusCode == 200 || !wrongSurfaceStatus(resp.StatusCode) || i == len(p.paths)-1 {
+			return resp, nil
+		}
+		// Wrong-surface auth error with another path to try: drain, close, retry.
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+		lastResp = resp
+	}
+	if lastNetErr != nil {
+		return nil, &provider.ProviderError{
+			Provider: "zai", StatusCode: 502, Message: lastNetErr.Error(), Retryable: true, Err: lastNetErr,
+		}
+	}
+	if lastResp != nil {
+		return nil, &provider.ProviderError{
+			Provider: "zai", StatusCode: lastResp.StatusCode, Message: "z.ai rejected the key on all endpoints", Retryable: false,
+		}
+	}
+	return nil, &provider.ProviderError{Provider: "zai", StatusCode: 502, Message: "no z.ai endpoint configured", Retryable: false}
 }
 
 // sanitizeForZAI removes cross-provider hints that Z.AI's raw chat endpoint
@@ -54,18 +124,9 @@ func (p *ZAIProvider) ChatCompletion(ctx context.Context, req *model.ChatComplet
 		return nil, fmt.Errorf("marshal request: %w", err)
 	}
 
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", p.chatURL(), bytes.NewReader(body))
+	resp, err := p.doChat(ctx, body)
 	if err != nil {
-		return nil, fmt.Errorf("create request: %w", err)
-	}
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Authorization", "Bearer "+p.apiKey)
-
-	resp, err := p.client.Do(httpReq)
-	if err != nil {
-		return nil, &provider.ProviderError{
-			Provider: "zai", StatusCode: 502, Message: err.Error(), Retryable: true, Err: err,
-		}
+		return nil, err
 	}
 	defer resp.Body.Close()
 
@@ -100,18 +161,9 @@ func (p *ZAIProvider) ChatCompletionStream(ctx context.Context, req *model.ChatC
 		return nil, fmt.Errorf("marshal request: %w", err)
 	}
 
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", p.chatURL(), bytes.NewReader(body))
+	resp, err := p.doChat(ctx, body)
 	if err != nil {
-		return nil, fmt.Errorf("create request: %w", err)
-	}
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Authorization", "Bearer "+p.apiKey)
-
-	resp, err := p.client.Do(httpReq)
-	if err != nil {
-		return nil, &provider.ProviderError{
-			Provider: "zai", StatusCode: 502, Message: err.Error(), Retryable: true, Err: err,
-		}
+		return nil, err
 	}
 
 	if resp.StatusCode != 200 {
@@ -181,7 +233,7 @@ func (p *ZAIProvider) GenerateImage(ctx context.Context, req *model.ImageGenerat
 		return nil, fmt.Errorf("marshal request: %w", err)
 	}
 
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", p.baseURL+"/api/paas/v4/images/generations", bytes.NewReader(body))
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", p.baseURL+p.paths[0]+"/images/generations", bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
 	}
@@ -238,7 +290,7 @@ func (p *ZAIProvider) GenerateImage(ctx context.Context, req *model.ImageGenerat
 }
 
 func (p *ZAIProvider) HealthCheck(ctx context.Context) error {
-	httpReq, err := http.NewRequestWithContext(ctx, "GET", p.baseURL+"/api/paas/v4/models", nil)
+	httpReq, err := http.NewRequestWithContext(ctx, "GET", p.baseURL+p.paths[0]+"/models", nil)
 	if err != nil {
 		return err
 	}

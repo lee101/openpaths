@@ -47,8 +47,8 @@ test.describe('Nav links when logged in', () => {
     );
 
     await page.goto('/');
-    await expect(page.getByTestId('nav-account')).toBeVisible();
     await expect(page.getByTestId('nav-dashboard')).toBeVisible();
+    await expect(page.getByTestId('nav-account')).not.toBeAttached();
     await expect(page.getByTestId('nav-signin')).not.toBeAttached();
     await expect(page.getByTestId('nav-get-started')).not.toBeAttached();
   });

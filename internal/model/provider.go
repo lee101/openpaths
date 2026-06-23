@@ -7,6 +7,13 @@ type ModelConfig struct {
 	InputPricePer1M              float64  `yaml:"input_price_per_1m" json:"input_price_per_1m"`
 	InputCacheHitPricePer1M      float64  `yaml:"input_cache_hit_price_per_1m,omitempty" json:"input_cache_hit_price_per_1m,omitempty"`
 	OutputPricePer1M             float64  `yaml:"output_price_per_1m" json:"output_price_per_1m"`
+	// Long-context tiered pricing: when set and the request's input tokens exceed
+	// LongContextThreshold, the *Long rates apply to the whole request (e.g.
+	// Sakana Fugu Ultra charges higher rates above 272K-token contexts).
+	LongContextThreshold         int      `yaml:"long_context_threshold,omitempty" json:"long_context_threshold,omitempty"`
+	InputPricePer1MLong          float64  `yaml:"input_price_per_1m_long,omitempty" json:"input_price_per_1m_long,omitempty"`
+	InputCacheHitPricePer1MLong  float64  `yaml:"input_cache_hit_price_per_1m_long,omitempty" json:"input_cache_hit_price_per_1m_long,omitempty"`
+	OutputPricePer1MLong         float64  `yaml:"output_price_per_1m_long,omitempty" json:"output_price_per_1m_long,omitempty"`
 	Aliases                      []string `yaml:"aliases,omitempty" json:"aliases,omitempty"`
 	ContextWindow                int      `yaml:"context_window" json:"context_window"`
 	MaxOutputTokens              int      `yaml:"max_output_tokens" json:"max_output_tokens"`

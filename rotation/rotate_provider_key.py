@@ -387,10 +387,246 @@ def revoke_anthropic_key(admin_key: str, old_secret: str) -> dict[str, object]:
     return {"revoked": True, "method": "update_status_inactive", "api_key_id": key_id}
 
 
+def validate_bearer_models(url: str, api_key: str, provider: str) -> None:
+    data = request_json("GET", url, headers={"Authorization": f"Bearer {api_key}"})
+    if not isinstance(data.get("data"), list):
+        raise RotationError(f"New {provider} API key validation did not return a models list")
+
+
+def create_byo_key(
+    provider: str,
+    env_key: str,
+    new_key_names: list[str],
+    validate_url: str,
+    env_file_values: dict[str, str],
+) -> RotationResult:
+    """Resolve a manually-created replacement key from the environment and validate it.
+
+    Used for providers (Mistral, Nous, ...) whose key creation only exists in their web
+    console: create the key there, export it, and let the rotator validate + install it.
+    """
+    source = ""
+    new_key = ""
+    for name in new_key_names:
+        value = os.environ.get(name) or env_file_values.get(name) or ""
+        if value:
+            source, new_key = name, value
+            break
+    if not new_key:
+        raise RotationError(f"Missing required environment variable: {' or '.join(new_key_names)}")
+    validate_bearer_models(validate_url, new_key, provider)
+    return RotationResult(
+        provider=provider,
+        env_key=env_key,
+        secret=new_key,
+        metadata={"new_key_source": source, "new_key_validated": True},
+    )
+
+
+def create_mistral_key(alias: str, env_file_values: dict[str, str]) -> RotationResult:
+    del alias  # Mistral keys are created in the console; alias is unused.
+    return create_byo_key(
+        "mistral",
+        "MISTRAL_API_KEY",
+        ["MISTRAL_NEW_API_KEY", "MISTRAL_REPLACEMENT_API_KEY"],
+        "https://api.mistral.ai/v1/models",
+        env_file_values,
+    )
+
+
+def create_nous_key(alias: str, env_file_values: dict[str, str]) -> RotationResult:
+    del alias  # Nous Portal keys are created in the console; alias is unused.
+    return create_byo_key(
+        "nous",
+        "NOUS_API_KEY",
+        ["NOUS_NEW_API_KEY", "NOUS_REPLACEMENT_API_KEY"],
+        "https://inference-api.nousresearch.com/v1/models",
+        env_file_values,
+    )
+
+
+def openrouter_provisioning_key(env_file_values: dict[str, str]) -> str:
+    return first_env_value(
+        [
+            "OPENROUTER_PROVISIONING_KEY",
+            "OPENROUTER_PROVISIONING_API_KEY",
+            "OPENROUTER_MANAGEMENT_KEY",
+        ],
+        env_file_values,
+    )
+
+
+def validate_openrouter_key(api_key: str) -> None:
+    data = request_json(
+        "GET",
+        "https://openrouter.ai/api/v1/key",
+        headers={"Authorization": f"Bearer {api_key}"},
+    )
+    if not isinstance(data.get("data"), dict):
+        raise RotationError("New OpenRouter API key validation did not return key data")
+
+
+def create_openrouter_key(alias: str, env_file_values: dict[str, str]) -> RotationResult:
+    provisioning_key = openrouter_provisioning_key(env_file_values)
+    data = request_json(
+        "POST",
+        "https://openrouter.ai/api/v1/keys",
+        headers={"Authorization": f"Bearer {provisioning_key}"},
+        payload={"name": alias},
+    )
+
+    secret = data.get("key")
+    if not isinstance(secret, str) or not secret:
+        raise RotationError("OpenRouter response did not include key")
+
+    validate_openrouter_key(secret)
+
+    info = data.get("data") if isinstance(data.get("data"), dict) else {}
+    return RotationResult(
+        provider="openrouter",
+        env_key="OPENROUTER_API_KEY",
+        secret=secret,
+        metadata={
+            "hash": info.get("hash"),
+            "name": info.get("name"),
+            "new_key_validated": True,
+        },
+    )
+
+
+def list_openrouter_keys(provisioning_key: str) -> list[dict[str, object]]:
+    keys: list[dict[str, object]] = []
+    offset = 0
+    while True:
+        data = request_json(
+            "GET",
+            f"https://openrouter.ai/api/v1/keys?include_disabled=true&offset={offset}",
+            headers={"Authorization": f"Bearer {provisioning_key}"},
+        )
+        page = data.get("data")
+        if not isinstance(page, list):
+            raise RotationError("OpenRouter keys response did not include data list")
+        page_objects = [k for k in page if isinstance(k, dict)]
+        if not page_objects:
+            return keys
+        keys.extend(page_objects)
+        offset += len(page)
+
+
+def revoke_openrouter_key(provisioning_key: str, old_secret: str, new_hash: str) -> dict[str, object]:
+    if not old_secret:
+        return {"revoked": False, "reason": "no previous OPENROUTER_API_KEY value found"}
+
+    # OpenRouter never returns full secrets from the list endpoint; match the redacted
+    # `label` (e.g. "sk-or-v1-...last4") against the previous secret, excluding the new key.
+    matches = [
+        k
+        for k in list_openrouter_keys(provisioning_key)
+        if k.get("hash") != new_hash and redacted_key_matches(k.get("label"), old_secret)
+    ]
+    if len(matches) != 1:
+        return {"revoked": False, "reason": f"matched {len(matches)} OpenRouter keys for previous OPENROUTER_API_KEY"}
+
+    key_hash = matches[0].get("hash")
+    if not isinstance(key_hash, str) or not key_hash:
+        raise RotationError("Matched old OpenRouter key is missing hash")
+
+    request_json(
+        "DELETE",
+        f"https://openrouter.ai/api/v1/keys/{key_hash}",
+        headers={"Authorization": f"Bearer {provisioning_key}"},
+    )
+    return {"revoked": True, "method": "delete_key", "hash": key_hash}
+
+
+XAI_MANAGEMENT_BASE = "https://management-api.x.ai"
+XAI_INFERENCE_BASE = "https://api.x.ai"
+
+
+def xai_management_key(env_file_values: dict[str, str]) -> str:
+    return first_env_value(
+        ["XAI_MANAGEMENT_KEY", "XAI_MANAGEMENT_API_KEY", "XAI_ADMIN_KEY"],
+        env_file_values,
+    )
+
+
+def xai_api_key_info(api_key: str) -> dict[str, object]:
+    return request_json(
+        "GET",
+        f"{XAI_INFERENCE_BASE}/v1/api-key",
+        headers={"Authorization": f"Bearer {api_key}"},
+    )
+
+
+def resolve_xai_team_id(env_file_values: dict[str, str]) -> str:
+    team_id = env_value("XAI_TEAM_ID", env_file_values, required=False)
+    if team_id:
+        return team_id
+
+    current = env_value("XAI_API_KEY", env_file_values, required=False)
+    if not current:
+        raise RotationError("XAI_TEAM_ID is required when no current XAI_API_KEY is available to discover the team")
+    team_id = xai_api_key_info(current).get("team_id")
+    if not isinstance(team_id, str) or not team_id:
+        raise RotationError("Could not discover xAI team_id from current XAI_API_KEY; set XAI_TEAM_ID")
+    return team_id
+
+
+def create_xai_key(alias: str, env_file_values: dict[str, str]) -> RotationResult:
+    management_key = xai_management_key(env_file_values)
+    team_id = resolve_xai_team_id(env_file_values)
+    data = request_json(
+        "POST",
+        f"{XAI_MANAGEMENT_BASE}/auth/teams/{team_id}/api-keys",
+        headers={"Authorization": f"Bearer {management_key}"},
+        payload={"name": alias, "acls": ["api-key:model:*", "api-key:endpoint:*"]},
+    )
+
+    secret = data.get("apiKey")
+    if not isinstance(secret, str) or not secret:
+        raise RotationError("xAI response did not include apiKey")
+
+    xai_api_key_info(secret)  # validate the new key against the inference API
+
+    return RotationResult(
+        provider="xai",
+        env_key="XAI_API_KEY",
+        secret=secret,
+        metadata={
+            "team_id": team_id,
+            "api_key_id": data.get("apiKeyId"),
+            "new_key_validated": True,
+        },
+    )
+
+
+def revoke_xai_key(management_key: str, old_secret: str) -> dict[str, object]:
+    if not old_secret:
+        return {"revoked": False, "reason": "no previous XAI_API_KEY value found"}
+
+    try:
+        key_id = xai_api_key_info(old_secret).get("api_key_id")
+    except RotationError as exc:
+        return {"revoked": False, "reason": f"could not look up previous XAI_API_KEY: {exc}"}
+    if not isinstance(key_id, str) or not key_id:
+        return {"revoked": False, "reason": "previous XAI_API_KEY did not report an api_key_id"}
+
+    request_json(
+        "DELETE",
+        f"{XAI_MANAGEMENT_BASE}/auth/api-keys/{key_id}",
+        headers={"Authorization": f"Bearer {management_key}"},
+    )
+    return {"revoked": True, "method": "delete_api_key", "api_key_id": key_id}
+
+
 ROTATORS: dict[str, Callable[[str, dict[str, str]], RotationResult]] = {
     "anthropic": create_anthropic_key,
     "openai": create_openai_key,
     "fal": create_fal_key,
+    "openrouter": create_openrouter_key,
+    "xai": create_xai_key,
+    "mistral": create_mistral_key,
+    "nous": create_nous_key,
 }
 
 
@@ -436,22 +672,31 @@ def update_env_file(path: Path, key: str, value: str) -> Path:
 
 
 def revoke_previous_key(provider: str, result: RotationResult, env_file_values: dict[str, str]) -> dict[str, object]:
+    old_secret = env_file_values.get(result.env_key, "")
+
     if provider == "anthropic":
         admin_key = first_env_value(["ANTHROPIC_ADMIN_KEY", "ANTHROPIC_ADMIN_API_KEY"], env_file_values, required=False)
         if not admin_key:
             return {"revoked": False, "reason": "ANTHROPIC_ADMIN_KEY or ANTHROPIC_ADMIN_API_KEY is required to deactivate the previous key"}
-        return revoke_anthropic_key(admin_key, env_file_values.get(result.env_key, ""))
+        return revoke_anthropic_key(admin_key, old_secret)
 
-    if provider != "openai":
-        return {"revoked": False, "reason": "provider revocation is not implemented"}
+    if provider == "openrouter":
+        provisioning_key = openrouter_provisioning_key(env_file_values)
+        new_hash = result.metadata.get("hash")
+        return revoke_openrouter_key(provisioning_key, old_secret, new_hash if isinstance(new_hash, str) else "")
 
-    admin_key = first_env_value(["OPENAI_ADMIN_KEY", "OPENAI_ADMIN_API_KEY"], env_file_values)
-    org_id = env_value("OPENAI_ORG_ID", env_file_values, required=False)
-    project_id = result.metadata.get("project_id")
-    if not isinstance(project_id, str) or not project_id:
-        project_id = resolve_openai_project_id(env_file_values, admin_key, org_id)
-    old_secret = env_file_values.get(result.env_key, "")
-    return revoke_openai_key(admin_key, org_id, project_id, old_secret)
+    if provider == "xai":
+        return revoke_xai_key(xai_management_key(env_file_values), old_secret)
+
+    if provider == "openai":
+        admin_key = first_env_value(["OPENAI_ADMIN_KEY", "OPENAI_ADMIN_API_KEY"], env_file_values)
+        org_id = env_value("OPENAI_ORG_ID", env_file_values, required=False)
+        project_id = result.metadata.get("project_id")
+        if not isinstance(project_id, str) or not project_id:
+            project_id = resolve_openai_project_id(env_file_values, admin_key, org_id)
+        return revoke_openai_key(admin_key, org_id, project_id, old_secret)
+
+    return {"revoked": False, "reason": "provider revocation is not implemented"}
 
 
 def rotate_provider(provider: str, env_file: Path, alias_prefix: str, no_env_write: bool) -> None:

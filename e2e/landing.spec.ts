@@ -54,7 +54,7 @@ test.describe('Landing Page', () => {
   test('feature cards render', async ({ page }) => {
     await expect(page.getByRole('heading', { name: 'Millisecond Routing' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Universal API' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Auto Models' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'OpenPaths Auto' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Solana Payments' })).toBeVisible();
   });
 

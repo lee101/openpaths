@@ -27,6 +27,7 @@ import (
 	"github.com/openpaths/openpaths/internal/model"
 	"github.com/openpaths/openpaths/internal/provider"
 	"github.com/openpaths/openpaths/internal/router"
+	"github.com/openpaths/openpaths/internal/savedresp"
 	"github.com/openpaths/openpaths/internal/storage"
 )
 
@@ -35,6 +36,7 @@ type ImageHandler struct {
 	billing  *billing.Engine
 	recorder *metrics.Recorder
 	store    storage.Store
+	saver    *savedresp.Saver
 }
 
 func NewImageHandler(r *router.Router, b *billing.Engine, rec *metrics.Recorder) *ImageHandler {
@@ -44,6 +46,9 @@ func NewImageHandler(r *router.Router, b *billing.Engine, rec *metrics.Recorder)
 func (h *ImageHandler) SetStorage(store storage.Store) {
 	h.store = store
 }
+
+// SetResponseSaver wires the optional saved-response service (response saving feature).
+func (h *ImageHandler) SetResponseSaver(s *savedresp.Saver) { h.saver = s }
 
 // imageExecutionResult is the outcome of running the image-generation candidate
 // loop. It lets the HTTP handler and internal pipelines (e.g. text-to-3D) share
@@ -82,6 +87,9 @@ func (h *ImageHandler) HandleImageGeneration(ctx *fasthttp.RequestCtx) {
 	}
 	if isPromptlessImageModel(req.Model) && !hasImageInput(req) {
 		writeError(ctx, 400, "invalid_request", "image_url is required")
+		return
+	}
+	if prepaidGate(ctx, h.billing, req.Model, 0) {
 		return
 	}
 
@@ -213,6 +221,8 @@ func (h *ImageHandler) executeImageGeneration(ctx context.Context, req *model.Im
 		cost, _ := h.deductImageCost(ctx, userID, cand.ModelCfg.ID, req, resp, imageCount, inputImageCount)
 		h.recorder.RecordSuccessWithApp(userID, apiKeyID, originalModel, cand.Provider.Name(),
 			0, imageCount, int(latency.Milliseconds()), 0, cost, false, app.ID, app.URL, app.Title, app.Categories)
+
+		saveImageGeneration(h.saver, userID, apiKeyID, originalModel, cand.Provider.Name(), req.Prompt, resp, cost)
 
 		return imageExecutionResult{
 			Response:     resp,

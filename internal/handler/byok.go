@@ -16,6 +16,7 @@ import (
 	"github.com/openpaths/openpaths/internal/provider/netwrck"
 	"github.com/openpaths/openpaths/internal/provider/openai"
 	"github.com/openpaths/openpaths/internal/provider/openrouter"
+	"github.com/openpaths/openpaths/internal/provider/sakana"
 	"github.com/openpaths/openpaths/internal/provider/together"
 	"github.com/openpaths/openpaths/internal/provider/xai"
 	"github.com/openpaths/openpaths/internal/provider/zai"
@@ -34,6 +35,7 @@ var providerBaseURLs = map[string]string{
 	"minimax":    "https://api.minimax.io",
 	"netwrck":    "https://netwrck.com",
 	"zai":        "https://api.z.ai",
+	"sakana":     "https://api.sakana.ai",
 	"fal":        "https://fal.run",
 }
 
@@ -68,7 +70,12 @@ func makeUserProvider(providerName, apiKey string) provider.Provider {
 	case "netwrck":
 		return netwrck.New(apiKey, baseURL)
 	case "zai":
-		return zai.New(apiKey, baseURL)
+		// BYOK GLM keys are GLM Coding Plan keys, which live on the coding
+		// endpoint (/api/coding/paas/v4). NewCoding tries that first and falls
+		// back to the standard endpoint for plain pay-as-you-go API keys.
+		return zai.NewCoding(apiKey, baseURL)
+	case "sakana":
+		return sakana.New(apiKey, baseURL)
 	case "fal":
 		return fal.New(apiKey)
 	}

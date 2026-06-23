@@ -471,6 +471,60 @@ func TestGenerateVideo_FallsBackToLTX23BaseQueuePath(t *testing.T) {
 	}
 }
 
+func TestGenerateVideo_SyncLipsyncSingularInputsAndQueueFallback(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/fal-ai/sync-lipsync/v3/image-to-video":
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatalf("decode body: %v", err)
+			}
+			if body["image_url"] != "https://example.com/avatar.jpg" {
+				t.Fatalf("image_url = %#v", body["image_url"])
+			}
+			if body["audio_url"] != "https://example.com/voice.wav" {
+				t.Fatalf("audio_url = %#v", body["audio_url"])
+			}
+			if body["sync_mode"] != "bounce" {
+				t.Fatalf("sync_mode = %#v", body["sync_mode"])
+			}
+			if _, ok := body["audio_urls"]; ok {
+				t.Fatalf("audio_urls should not be sent for sync-lipsync")
+			}
+			if _, ok := body["video_urls"]; ok {
+				t.Fatalf("video_urls should not be sent for sync-lipsync")
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{"request_id": "req_sync"})
+		case "/fal-ai/sync-lipsync/v3/image-to-video/requests/req_sync/status":
+			w.WriteHeader(http.StatusNotFound)
+		case "/fal-ai/sync-lipsync/requests/req_sync/status":
+			_ = json.NewEncoder(w).Encode(map[string]any{"status": "COMPLETED"})
+		case "/fal-ai/sync-lipsync/requests/req_sync":
+			_ = json.NewEncoder(w).Encode(map[string]any{"video": map[string]any{"url": "https://example.com/sync.mp4"}})
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	p := New("test-key")
+	p.baseURL = server.URL
+	p.client = server.Client()
+
+	resp, err := p.GenerateVideo(context.Background(), &model.VideoGenerationRequest{
+		Model:     "fal-ai/sync-lipsync/v3/image-to-video",
+		ImageURL:  "https://example.com/avatar.jpg",
+		AudioURLs: []string{"https://example.com/voice.wav"},
+		SyncMode:  "bounce",
+	})
+	if err != nil {
+		t.Fatalf("GenerateVideo() error = %v", err)
+	}
+	if resp.VideoURL != "https://example.com/sync.mp4" {
+		t.Fatalf("VideoURL = %q", resp.VideoURL)
+	}
+}
+
 func TestGenerateVideo_PassesReferenceInputs(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/bytedance/seedance-2.0/reference-to-video" {

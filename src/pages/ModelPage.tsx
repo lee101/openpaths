@@ -47,7 +47,7 @@ export function ModelPage() {
 
   return (
     <>
-      <Seo title={title} description={description} path={`/models/${encodeURIComponent(model.id)}`} />
+      <Seo title={title} description={description} path={`/models/${encodeURIComponent(model.id)}`} image={model.ogImage} />
 
       <section className="max-w-5xl mx-auto px-6 py-16">
         <div className="mb-8">

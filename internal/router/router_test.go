@@ -411,7 +411,7 @@ func TestNew_AliasMapping(t *testing.T) {
 
 func TestNew_DerivesGrokLatestAliasFromHighestVersion(t *testing.T) {
 	models := []model.ModelConfig{
-		{ID: "grok-4.20-non-reasoning", Provider: "xai", Aliases: []string{"grok-fast", "grok-latest-non-reasoning"}},
+		{ID: "grok-4.20-0309-non-reasoning", Provider: "xai", Aliases: []string{"grok-4.20-non-reasoning", "grok-fast", "grok-latest-non-reasoning"}},
 		{ID: "grok-4.3", Provider: "xai"},
 		{ID: "grok-3-mini", Provider: "xai", Aliases: []string{"grok-mini"}},
 		{ID: "grok-9-fake", Provider: "openrouter"},
@@ -444,9 +444,55 @@ func TestNew_DerivesGrokLatestAliasFromHighestVersion(t *testing.T) {
 		if !found {
 			t.Fatalf("GetModelConfig(%q) not found", name)
 		}
-		if cfg.ID != "grok-4.20-non-reasoning" {
-			t.Errorf("GetModelConfig(%q) ID = %q, want grok-4.20-non-reasoning", name, cfg.ID)
+		if cfg.ID != "grok-4.20-0309-non-reasoning" {
+			t.Errorf("GetModelConfig(%q) ID = %q, want grok-4.20-0309-non-reasoning", name, cfg.ID)
 		}
+	}
+}
+
+func TestNew_DerivesBareFamilyAliases(t *testing.T) {
+	models := []model.ModelConfig{
+		{ID: "claude-opus-latest", Provider: "anthropic"},
+		{ID: "claude-fable-5", Provider: "anthropic"},
+		{ID: "gpt-5-chat-latest", Provider: "openai"},
+		{ID: "gemini-latest", Provider: "google"},
+	}
+
+	r := newTestRouter(models, "anthropic", "openai", "google")
+
+	cases := map[string]string{
+		"claude": "claude-opus-latest",
+		"gpt":    "gpt-5-chat-latest",
+		"openai": "gpt-5-chat-latest",
+		"gemini": "gemini-latest",
+	}
+	for alias, want := range cases {
+		cfg, found := r.GetModelConfig(alias)
+		if !found {
+			t.Fatalf("GetModelConfig(%q) not found", alias)
+		}
+		if cfg.ID != want {
+			t.Errorf("GetModelConfig(%q) ID = %q, want %q", alias, cfg.ID, want)
+		}
+	}
+
+	// Exposed via model info aliases.
+	info, found := r.GetModelInfo("claude-opus-latest")
+	if !found || !containsString(info.Aliases, "claude") {
+		t.Errorf("claude-opus-latest aliases = %v, want claude", info.Aliases)
+	}
+}
+
+func TestNew_BareFamilyAliasDoesNotOverrideExisting(t *testing.T) {
+	// A real model named "claude" must not be shadowed by the derived alias.
+	models := []model.ModelConfig{
+		{ID: "claude", Provider: "anthropic"},
+		{ID: "claude-opus-latest", Provider: "anthropic"},
+	}
+	r := newTestRouter(models, "anthropic")
+	cfg, found := r.GetModelConfig("claude")
+	if !found || cfg.ID != "claude" {
+		t.Errorf("GetModelConfig(\"claude\") = %v, want model ID claude", cfg)
 	}
 }
 
@@ -466,9 +512,9 @@ func TestNew_RoutesRetiredGrokAliasesToCurrentModels(t *testing.T) {
 			},
 		},
 		{
-			ID:       "grok-4.20-non-reasoning",
+			ID:       "grok-4.20-0309-non-reasoning",
 			Provider: "xai",
-			Aliases:  []string{"grok-latest-non-reasoning"},
+			Aliases:  []string{"grok-4.20-non-reasoning", "grok-latest-non-reasoning"},
 		},
 		{
 			ID:       "grok-imagine-image",

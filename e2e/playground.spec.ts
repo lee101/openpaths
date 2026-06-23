@@ -20,6 +20,8 @@ test.describe('Playground Page', () => {
     await page.click('button:has-text("Settings")');
     await expect(page.locator('label:has-text("API Key")')).toBeVisible();
     await expect(page.locator('label:has-text("System Prompt")')).toBeVisible();
+    await expect(page.getByTestId('playground-export-attachments')).toBeVisible();
+    await expect(page.getByTestId('playground-auto-archive-days')).toBeVisible();
   });
 
   test('compare model pane up to 4', async ({ page }) => {
@@ -46,6 +48,46 @@ test.describe('Playground Page', () => {
     await page.locator('input[placeholder="op-..."]').fill('test-key');
     const textarea = page.locator('textarea[placeholder*="Send a message"]');
     await expect(textarea).toBeEnabled();
+  });
+
+  test('attaches uploaded files to chat requests', async ({ page }) => {
+    let chatBody: any = null;
+    await page.route('**/v1/files/upload', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ url: 'https://openpathsstatic.openpaths.io/static/uploads/e2e-notes.txt' }),
+      });
+    });
+    await page.route('**/v1/chat/completions', async (route) => {
+      chatBody = route.request().postDataJSON();
+      await route.fulfill({
+        status: 200,
+        contentType: 'text/event-stream',
+        body: 'data: {"choices":[{"delta":{"content":"attached ok"}}]}\n\ndata: [DONE]\n\n',
+      });
+    });
+
+    await page.evaluate(() => {
+      localStorage.setItem('op_api_key', 'op-attachment-test-key');
+    });
+    await page.reload();
+
+    await page.locator('input[type="file"][multiple]').setInputFiles({
+      name: 'e2e-notes.txt',
+      mimeType: 'text/plain',
+      buffer: Buffer.from('OpenPaths attachment test content.'),
+    });
+
+    await expect(page.getByText('e2e-notes.txt')).toBeVisible();
+    await expect(page.getByTestId('chat-send')).toBeEnabled();
+    await page.getByTestId('chat-send').click();
+
+    await expect(page.getByText('attached ok')).toBeVisible();
+    const userMessage = chatBody?.messages?.find((m: any) => m.role === 'user');
+    expect(Array.isArray(userMessage?.content)).toBe(true);
+    expect(JSON.stringify(userMessage.content)).toContain('OpenPaths attachment test content.');
+    expect(JSON.stringify(userMessage.content)).toContain('https://openpathsstatic.openpaths.io/static/uploads/e2e-notes.txt');
   });
 
   test('model selector dropdown opens and shows providers', async ({ page }) => {

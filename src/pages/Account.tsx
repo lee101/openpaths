@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Activity,
   ArrowUpRight,
@@ -10,11 +11,15 @@ import {
   CreditCard,
   Eye,
   EyeOff,
+  FileText,
+  Image as ImageIcon,
   Key,
   LogOut,
   Plus,
   Repeat,
+  Save,
   ShieldCheck,
+  Sparkles,
   TriangleAlert,
   Wallet,
   X,
@@ -30,6 +35,9 @@ import {
   Tooltip,
   Cell,
   CartesianGrid,
+  PieChart,
+  Pie,
+  Legend,
 } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
 import { loadStripe } from '@stripe/stripe-js';
@@ -141,8 +149,29 @@ function formatSignedUnits(units: number): string {
   return `${units > 0 ? '+' : '-'}${formatBalanceUnits(Math.abs(units))}`;
 }
 
+function formatTransactionDate(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Unknown';
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
 function formatUsdWhole(amount: number): string {
   return `$${amount.toLocaleString('en-US')}`;
+}
+
+const PRODUCT_META: Record<string, { label: string; color: string }> = {
+  chat: { label: 'Chat & Text', color: '#6ee7b7' },
+  image: { label: 'Image', color: '#a78bfa' },
+  video: { label: 'Video', color: '#f472b6' },
+  music: { label: 'Music', color: '#fbbf24' },
+  speech: { label: 'Speech / TTS', color: '#38bdf8' },
+  transcription: { label: 'Transcription', color: '#34d399' },
+  embedding: { label: 'Embeddings', color: '#fb923c' },
+  '3d': { label: '3D', color: '#c084fc' },
+};
+
+function productMeta(product: string): { label: string; color: string } {
+  return PRODUCT_META[product] || { label: product.charAt(0).toUpperCase() + product.slice(1), color: '#94a3b8' };
 }
 
 function maskCard(pm: PaymentMethod): string {
@@ -578,8 +607,244 @@ function PaymentMethodSetupModal({
   );
 }
 
+type ActivityDay = { date: string; total_requests: number; total_cost_cents: number };
+
+function fmtDay(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// GitHub-style contribution heatmap of API usage frequency over ~1 year.
+function ContributionHeatmap({ data }: { data: ActivityDay[] }) {
+  const byDate = new Map(data.map(d => [d.date, d]));
+  const max = data.reduce((m, d) => Math.max(m, d.total_requests), 0);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const start = new Date(today);
+  start.setDate(start.getDate() - 364);
+  start.setDate(start.getDate() - start.getDay()); // align to Sunday
+
+  const weeks: Date[][] = [];
+  const cur = new Date(start);
+  while (cur <= today) {
+    const week: Date[] = [];
+    for (let i = 0; i < 7; i++) {
+      week.push(new Date(cur));
+      cur.setDate(cur.getDate() + 1);
+    }
+    weeks.push(week);
+  }
+
+  const colors = [
+    'rgba(255,255,255,0.05)',
+    'rgba(110,231,183,0.28)',
+    'rgba(110,231,183,0.5)',
+    'rgba(110,231,183,0.72)',
+    'rgba(110,231,183,1)',
+  ];
+  const level = (reqs: number) => {
+    if (!reqs || max <= 0) return 0;
+    const r = reqs / max;
+    if (r > 0.66) return 4;
+    if (r > 0.33) return 3;
+    if (r > 0.1) return 2;
+    return 1;
+  };
+
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  let lastMonth = -1;
+  const monthLabels = weeks.map((week) => {
+    const m = week[0].getMonth();
+    if (m !== lastMonth) {
+      lastMonth = m;
+      return monthNames[m];
+    }
+    return '';
+  });
+
+  const totalRequests = data.reduce((s, d) => s + d.total_requests, 0);
+  const activeDays = data.filter(d => d.total_requests > 0).length;
+
+  return (
+    <div>
+      <div className="flex items-baseline justify-between mb-4">
+        <p className="text-xs text-white/40 font-mono">
+          {totalRequests.toLocaleString()} requests · {activeDays} active {activeDays === 1 ? 'day' : 'days'} in the last year
+        </p>
+      </div>
+      <div className="overflow-x-auto pb-1">
+        <div className="inline-flex flex-col gap-1" style={{ minWidth: 'max-content' }}>
+          <div className="flex gap-[3px] ml-[26px] mb-1">
+            {monthLabels.map((label, i) => (
+              <div key={i} className="text-[9px] text-white/30 font-mono" style={{ width: 11 }}>
+                {label}
+              </div>
+            ))}
+          </div>
+          <div className="flex">
+            <div className="flex flex-col gap-[3px] mr-1 text-[9px] text-white/30 font-mono justify-around" style={{ height: 7 * 14 }}>
+              <span>Mon</span>
+              <span>Wed</span>
+              <span>Fri</span>
+            </div>
+            <div className="flex gap-[3px]">
+              {weeks.map((week, wi) => (
+                <div key={wi} className="flex flex-col gap-[3px]">
+                  {week.map((day, di) => {
+                    const key = fmtDay(day);
+                    const entry = byDate.get(key);
+                    const reqs = entry?.total_requests || 0;
+                    const future = day > today;
+                    return (
+                      <div
+                        key={di}
+                        title={future ? '' : `${key}: ${reqs.toLocaleString()} request${reqs === 1 ? '' : 's'}${entry ? ` · $${(entry.total_cost_cents / 10000).toFixed(4)}` : ''}`}
+                        style={{
+                          width: 11,
+                          height: 11,
+                          borderRadius: 2,
+                          background: future ? 'transparent' : colors[level(reqs)],
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center gap-1 justify-end mt-2 text-[9px] text-white/30 font-mono">
+            <span>Less</span>
+            {colors.map((c, i) => (
+              <div key={i} style={{ width: 11, height: 11, borderRadius: 2, background: c }} />
+            ))}
+            <span>More</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`relative h-6 w-11 rounded-full transition-colors ${on ? 'bg-emerald-500/80' : 'bg-white/15'}`}
+      aria-pressed={on}
+    >
+      <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${on ? 'translate-x-5' : 'translate-x-0'}`} />
+    </button>
+  );
+}
+
+// ResponseSavingCard lets the user opt into persisting their generation inputs +
+// outputs, which makes /usage/prompts and /usage/images searchable.
+function ResponseSavingCard() {
+  const [text, setText] = useState(false);
+  const [images, setImages] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    api('/account/usage/settings')
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        if (d) {
+          setText(!!d.text_enabled);
+          setImages(!!d.image_enabled);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoaded(true));
+  }, []);
+
+  const persist = async (nextText: boolean, nextImages: boolean) => {
+    setText(nextText);
+    setImages(nextImages);
+    setSaving(true);
+    try {
+      await api('/account/usage/settings', {
+        method: 'POST',
+        body: JSON.stringify({ text_enabled: nextText, image_enabled: nextImages }),
+      });
+    } catch {
+      /* keep optimistic UI */
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const anyOn = text || images;
+
+  return (
+    <div className="rounded-3xl border border-white/10 bg-black/35 p-6 mb-8" data-testid="response-saving-card">
+      <div className="flex items-center gap-3 mb-1">
+        <div className="rounded-2xl bg-violet-500/15 p-2.5">
+          <Save className="w-5 h-5 text-violet-300" />
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold tracking-tight">Response saving</h3>
+          <p className="text-xs font-mono uppercase tracking-[0.16em] text-white/35">Searchable prompt &amp; image history</p>
+        </div>
+        {saving && <span className="ml-auto text-xs text-white/40">saving…</span>}
+      </div>
+      <p className="text-sm text-white/55 mt-3 mb-5 max-w-2xl">
+        Save the inputs and outputs of your generations to your private history, then search them semantically (find similar
+        prompts, outputs, and images) or by exact text. Off by default; only your own account can see them.
+      </p>
+
+      <div className="space-y-3">
+        <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+          <div className="flex items-center gap-3">
+            <FileText className="w-4 h-4 text-white/50" />
+            <div>
+              <div className="text-sm text-white">Save text generations</div>
+              <div className="text-xs text-white/40">Chat &amp; messages — prompt, transcript, output</div>
+            </div>
+          </div>
+          <Toggle on={text} onClick={() => loaded && persist(!text, images)} />
+        </div>
+        <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+          <div className="flex items-center gap-3">
+            <ImageIcon className="w-4 h-4 text-white/50" />
+            <div>
+              <div className="text-sm text-white">Save image generations</div>
+              <div className="text-xs text-white/40">Prompt + generated image URL</div>
+            </div>
+          </div>
+          <Toggle on={images} onClick={() => loaded && persist(text, !images)} />
+        </div>
+      </div>
+
+      {anyOn && (
+        <div className="mt-5 flex flex-wrap gap-3">
+          {text && (
+            <Link
+              to="/usage/prompts"
+              className="inline-flex items-center gap-2 rounded-xl border border-white/15 px-4 py-2 text-sm text-white hover:bg-white/10 transition-colors"
+            >
+              <Sparkles className="w-4 h-4" /> Search prompt history
+            </Link>
+          )}
+          {images && (
+            <Link
+              to="/usage/images"
+              className="inline-flex items-center gap-2 rounded-xl border border-white/15 px-4 py-2 text-sm text-white hover:bg-white/10 transition-colors"
+            >
+              <ImageIcon className="w-4 h-4" /> Search image history
+            </Link>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Account() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'keys' | 'billing' | 'analytics'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'keys' | 'billing' | 'analytics'>(
+    typeof window !== 'undefined' && window.location.pathname.startsWith('/usage') ? 'analytics' : 'overview',
+  );
   const [user, setUser] = useState<any>(null);
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [stripePk, setStripePk] = useState('');
@@ -627,10 +892,12 @@ export function Account() {
   const [cardSetupError, setCardSetupError] = useState('');
 
   // Analytics state
-  const [analyticsPeriod, setAnalyticsPeriod] = useState<'24h' | '7d' | '30d'>('30d');
+  const [analyticsPeriod, setAnalyticsPeriod] = useState<'24h' | '7d' | '30d' | '90d'>('30d');
   const [spendTimeSeries, setSpendTimeSeries] = useState<{ timestamp: string; value: number }[]>([]);
   const [spendByKey, setSpendByKey] = useState<{ api_key_id: string; key_prefix: string; key_name: string; total_requests: number; total_cost_cents: number }[]>([]);
   const [spendByProvider, setSpendByProvider] = useState<{ provider: string; total_requests: number; total_cost_cents: number }[]>([]);
+  const [spendByProduct, setSpendByProduct] = useState<{ product: string; total_requests: number; total_tokens_in: number; total_tokens_out: number; total_cost_cents: number }[]>([]);
+  const [activity, setActivity] = useState<{ date: string; total_requests: number; total_cost_cents: number }[]>([]);
   const [drilldown, setDrilldown] = useState<{ type: 'key' | 'provider'; id: string; label: string; models: { model: string; provider: string; total_requests: number; total_cost_cents: number }[] } | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
@@ -767,17 +1034,30 @@ export function Account() {
     setAnalyticsLoading(true);
     const interval = period === '24h' ? '1h' : period === '7d' ? '6h' : '1d';
     try {
-      const [tsRes, keyRes, provRes] = await Promise.all([
+      const [tsRes, keyRes, provRes, prodRes] = await Promise.all([
         api(`/account/stats/timeseries?period=${period}&interval=${interval}&metric=cost`),
         api(`/account/stats/by-api-key?period=${period}`),
         api(`/account/stats/by-provider?period=${period}`),
+        api(`/account/stats/by-product?period=${period}`),
       ]);
-      const [tsData, keyData, provData] = await Promise.all([tsRes.json(), keyRes.json(), provRes.json()]);
+      const [tsData, keyData, provData, prodData] = await Promise.all([tsRes.json(), keyRes.json(), provRes.json(), prodRes.json()]);
       setSpendTimeSeries(Array.isArray(tsData.data) ? tsData.data : []);
       setSpendByKey(Array.isArray(keyData.keys) ? keyData.keys : []);
       setSpendByProvider(Array.isArray(provData.providers) ? provData.providers : []);
+      setSpendByProduct(Array.isArray(prodData.products) ? prodData.products : []);
     } catch {}
     setAnalyticsLoading(false);
+  }, [apiKey]);
+
+  // The contribution heatmap always shows a fixed ~1 year window, independent
+  // of the period selector, so it is loaded once when the tab opens.
+  const fetchActivity = useCallback(async () => {
+    if (!apiKey) return;
+    try {
+      const res = await api('/account/stats/activity?days=365');
+      const data = await res.json();
+      setActivity(Array.isArray(data.data) ? data.data : []);
+    } catch {}
   }, [apiKey]);
 
   const loadDrilldown = async (type: 'key' | 'provider', id: string, label: string) => {
@@ -802,6 +1082,12 @@ export function Account() {
       void fetchAnalytics(analyticsPeriod);
     }
   }, [activeTab, analyticsPeriod, apiKey, fetchAnalytics]);
+
+  useEffect(() => {
+    if (activeTab === 'analytics' && apiKey) {
+      void fetchActivity();
+    }
+  }, [activeTab, apiKey, fetchActivity]);
 
   useEffect(() => {
     setNewKeyVisible(false);
@@ -1089,7 +1375,7 @@ export function Account() {
               activeTab === 'analytics' ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/5 hover:text-white'
             }`}
           >
-            <BarChart2 className="w-4 h-4" /> Analytics
+            <BarChart2 className="w-4 h-4" /> Usage
           </button>
         </nav>
       </aside>
@@ -1147,6 +1433,8 @@ export function Account() {
                 </div>
               </div>
             </div>
+
+            <ResponseSavingCard />
 
             {hasLowReserve && (
               <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-6 mb-8">
@@ -1231,7 +1519,7 @@ export function Account() {
                   <table className="w-full text-left text-sm" data-testid="activity-table">
                     <thead className="bg-white/5 font-mono text-xs text-white/40 border-b border-white/10">
                       <tr>
-                        <th className="px-6 py-3 font-normal">Type</th>
+                        <th className="px-6 py-3 font-normal">Date</th>
                         <th className="px-6 py-3 font-normal">Description</th>
                         <th className="px-6 py-3 font-normal">Amount</th>
                       </tr>
@@ -1239,7 +1527,7 @@ export function Account() {
                     <tbody className="divide-y divide-white/10 font-mono">
                       {transactions.slice(0, 10).map((tx: any) => (
                         <tr key={tx.id}>
-                          <td className="px-6 py-4 text-white/60">{tx.tx_type}</td>
+                          <td className="px-6 py-4 text-white/60">{formatTransactionDate(tx.created_at)}</td>
                           <td className="px-6 py-4">{tx.description}</td>
                           <td className={`px-6 py-4 ${tx.amount_cents > 0 ? 'text-emerald-300' : 'text-red-400'}`}>{formatSignedUnits(tx.amount_cents)}</td>
                         </tr>
@@ -1559,8 +1847,8 @@ export function Account() {
                       aria-label="Toggle auto-topup"
                     >
                       <span
-                        className={`absolute top-1 h-6 w-6 rounded-full bg-black transition-transform ${
-                          autotopupSettings.enabled ? 'translate-x-7' : 'translate-x-1'
+                        className={`absolute left-1 top-1 h-6 w-6 rounded-full bg-black transition-transform ${
+                          autotopupSettings.enabled ? 'translate-x-6' : 'translate-x-0'
                         }`}
                       />
                     </button>
@@ -1737,7 +2025,7 @@ export function Account() {
                     <tbody className="divide-y divide-white/10 font-mono">
                       {transactions.map((tx: any) => (
                         <tr key={tx.id}>
-                          <td className="px-6 py-4 text-white/60">{new Date(tx.created_at).toLocaleDateString()}</td>
+                          <td className="px-6 py-4 text-white/60">{formatTransactionDate(tx.created_at)}</td>
                           <td className="px-6 py-4">{tx.tx_type}</td>
                           <td className="px-6 py-4 text-white/60">{tx.description}</td>
                           <td className={`px-6 py-4 ${tx.amount_cents > 0 ? 'text-emerald-300' : 'text-red-400'}`}>{formatSignedUnits(tx.amount_cents)}</td>
@@ -1755,11 +2043,11 @@ export function Account() {
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h1 className="text-2xl font-bold tracking-tight">Spend Analytics</h1>
-                <p className="text-sm text-white/40 font-mono mt-1">Usage and cost breakdown for your account</p>
+                <h1 className="text-2xl font-bold tracking-tight">Usage & Spend</h1>
+                <p className="text-sm text-white/40 font-mono mt-1">Spend by product, by API key, and how often you use the platform</p>
               </div>
               <div className="flex gap-2 font-mono text-sm">
-                {(['24h', '7d', '30d'] as const).map(p => (
+                {(['24h', '7d', '30d', '90d'] as const).map(p => (
                   <button
                     key={p}
                     onClick={() => setAnalyticsPeriod(p)}
@@ -1814,6 +2102,79 @@ export function Account() {
               </div>
             ) : (
               <div className="space-y-8">
+                {/* Activity contribution heatmap */}
+                <div className="border border-white/10 rounded-3xl p-6">
+                  <h2 className="text-base font-bold tracking-tight mb-1">Activity</h2>
+                  <p className="text-xs text-white/40 font-mono mb-5">How often you use the platform · last year</p>
+                  {activity.length === 0 ? (
+                    <div className="h-32 flex items-center justify-center text-white/30 font-mono text-sm">No activity yet</div>
+                  ) : (
+                    <ContributionHeatmap data={activity} />
+                  )}
+                </div>
+
+                {/* Spend by product */}
+                <div className="border border-white/10 rounded-3xl p-6">
+                  <h2 className="text-base font-bold tracking-tight mb-1">Spend by product</h2>
+                  <p className="text-xs text-white/40 font-mono mb-5">Cost across capabilities · {analyticsPeriod}</p>
+                  {spendByProduct.length === 0 ? (
+                    <div className="h-48 flex items-center justify-center text-white/30 font-mono text-sm">No data for this period</div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                      <ResponsiveContainer width="100%" height={240}>
+                        <PieChart>
+                          <Pie
+                            data={spendByProduct}
+                            dataKey="total_cost_cents"
+                            nameKey="product"
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={55}
+                            outerRadius={90}
+                            paddingAngle={2}
+                            stroke="none"
+                          >
+                            {spendByProduct.map((p, i) => (
+                              <Cell key={i} fill={productMeta(p.product).color} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            contentStyle={{ background: '#111', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, fontFamily: 'monospace', fontSize: 12 }}
+                            labelStyle={{ color: 'rgba(255,255,255,0.5)' }}
+                            formatter={(v: number, _: string, props: any) => [`$${(v / 10000).toFixed(4)} · ${props.payload.total_requests.toLocaleString()} reqs`, productMeta(props.payload.product).label]}
+                          />
+                          <Legend
+                            formatter={(value: string) => <span style={{ color: 'rgba(255,255,255,0.6)', fontFamily: 'monospace', fontSize: 11 }}>{productMeta(value).label}</span>}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className="border border-white/10 rounded-2xl overflow-hidden">
+                        <table className="w-full text-left text-sm font-mono">
+                          <thead className="bg-white/5 text-xs text-white/40 border-b border-white/10">
+                            <tr>
+                              <th className="px-4 py-3 font-normal">Product</th>
+                              <th className="px-4 py-3 font-normal text-right">Requests</th>
+                              <th className="px-4 py-3 font-normal text-right">Spend</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-white/10">
+                            {spendByProduct.map((p, i) => (
+                              <tr key={i} className="hover:bg-white/5">
+                                <td className="px-4 py-3 text-white/90">
+                                  <span className="inline-block w-2.5 h-2.5 rounded-sm mr-2 align-middle" style={{ background: productMeta(p.product).color }} />
+                                  {productMeta(p.product).label}
+                                </td>
+                                <td className="px-4 py-3 text-right text-white/60">{p.total_requests.toLocaleString()}</td>
+                                <td className="px-4 py-3 text-right text-emerald-300">{formatBalanceUnits(p.total_cost_cents)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {/* Spend over time */}
                 <div className="border border-white/10 rounded-3xl p-6">
                   <h2 className="text-base font-bold tracking-tight mb-1">Spend over time</h2>
