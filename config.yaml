@@ -947,7 +947,7 @@ models:
     provider_model_id: "claude-sonnet-4-6"
     input_price_per_1m: 3.00
     output_price_per_1m: 15.00
-    aliases: ["claude-sonnet", "sonnet-latest", "sonnet"]
+    aliases: ["claude-sonnet", "sonnet-latest", "sonnet", "claude-sonnet-5", "claude-sonnet-5.0", "sonnet-5", "sonnet5"]
     context_window: 200000
     max_output_tokens: 64000
     supports_streaming: true
