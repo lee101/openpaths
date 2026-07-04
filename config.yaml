@@ -2139,6 +2139,25 @@ models:
     supports_tools: false
     supports_vision: false
 
+  # --- fal.ai (SFX / Text to Audio) ---
+  - id: "elevenlabs-sound-effects"
+    provider: fal
+    provider_model_id: "fal-ai/elevenlabs/sound-effects/v2"
+    price_per_second: 0.002
+    aliases: ["sfx", "sound-effects", "fal-ai/elevenlabs/sound-effects"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "stable-audio-25"
+    provider: fal
+    provider_model_id: "fal-ai/stable-audio-25/text-to-audio"
+    price_per_request: 0.20
+    aliases: ["stable-audio", "stable-audio-text-to-audio"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
   # --- MiniMax (Speech/TTS) ---
   - id: "speech-2.8-hd"
     provider: minimax
