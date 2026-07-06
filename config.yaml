@@ -2208,13 +2208,31 @@ models:
     supports_vision: false
 
   # --- AppNZ (Speech/TTS, CosyVoice 3) ---
+  # Priced per audio minute with scale-to-zero economics in mind: at low usage
+  # a request can pay a full GPU cold start (image pull + model warm), so the
+  # per-minute rate carries that amortization; still well under ElevenLabs
+  # (~$0.30/min equivalent).
   - id: "appnz-tts"
     provider: appnz
     provider_model_id: "cosyvoice3-0.5b"
     input_price_per_1m: 10.00
     output_price_per_1m: 0
-    price_per_minute: 0.02
+    price_per_minute: 0.10
     aliases: ["cosyvoice", "fish-speech"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  # --- AppNZ pocket-tts (Kyutai 100M CALM; open source, 26 voices, 6 langs) ---
+  # Served from app.nz cog hosting (github.com/lee101/pocket-tts-cog). Lighter
+  # than appnz-tts so priced lower; rate still covers cold-start amortization.
+  - id: "pocket-tts"
+    provider: appnz
+    provider_model_id: "pocket-tts"
+    input_price_per_1m: 6.00
+    output_price_per_1m: 0
+    price_per_minute: 0.06
+    aliases: ["kyutai-tts", "pocket-tts-gpu"]
     supports_streaming: false
     supports_tools: false
     supports_vision: false
