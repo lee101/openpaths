@@ -25,7 +25,9 @@ import (
 	"github.com/openpaths/openpaths/internal/db/queries"
 	"github.com/openpaths/openpaths/internal/discovery"
 	"github.com/openpaths/openpaths/internal/email"
+	"github.com/openpaths/openpaths/internal/handler"
 	"github.com/openpaths/openpaths/internal/metrics"
+	"github.com/openpaths/openpaths/internal/model"
 	"github.com/openpaths/openpaths/internal/promptcache"
 	"github.com/openpaths/openpaths/internal/promptlib"
 	"github.com/openpaths/openpaths/internal/provider"
@@ -102,6 +104,7 @@ func main() {
 	skillQ := queries.NewSkillQueries(database.Pool)
 	savedRespQ := queries.NewSavedResponseQueries(database.Pool)
 	agentQ := queries.NewAgentQueries(database.Pool)
+	sharedChatQ := queries.NewSharedChatQueries(database.Pool)
 
 	jwtService := auth.NewJWTService(cfg.JWT.Secret, cfg.JWT.ExpirationHours)
 
@@ -125,13 +128,20 @@ func main() {
 	cacheOptimizer.Start()
 	defer cacheOptimizer.Stop()
 
+	// Providers served by a loopback front door on this box rather than a
+	// cloud API. They register without a catalogue api_key.
+	localProviderNames := map[string]bool{"appnz": true, "gobed": true}
+
 	if os.Getenv("LOCAL_WHISPER_ENABLED") == "1" || os.Getenv("LOCAL_WHISPER_BIN") != "" {
 		transcribers = append([]provider.TranscriptionProvider{localwhisper.NewFromEnv()}, transcribers...)
 		log.Printf("Registered transcription provider: local-whisper")
 	}
 
 	for _, provCfg := range cfg.Providers {
-		if !provCfg.Enabled || provCfg.APIKey == "" {
+		// A local provider talks to a loopback front door that authenticates
+		// with its own secret, so an empty catalogue api_key is not a reason to
+		// skip it. Cloud providers still require one.
+		if !provCfg.Enabled || (provCfg.APIKey == "" && !localProviderNames[provCfg.Name]) {
 			log.Printf("Skipping provider %s (disabled or no API key)", provCfg.Name)
 			continue
 		}
@@ -173,8 +183,18 @@ func main() {
 			p = xp
 		case "deepseek":
 			p = deepseek.New(provCfg.APIKey, provCfg.BaseURL)
+		case "moonshot":
+			p = openai.NewCompatible("moonshot", provCfg.APIKey, provCfg.BaseURL, sanitizeOpenAICompatible)
+		case "thinkingmachines":
+			p = openai.NewCompatible("thinkingmachines", provCfg.APIKey, provCfg.BaseURL, sanitizeOpenAICompatible)
+		case "qwen":
+			p = openai.NewCompatible("qwen", provCfg.APIKey, provCfg.BaseURL, sanitizeOpenAICompatible)
+		case "stepfun":
+			p = openai.NewCompatible("stepfun", provCfg.APIKey, provCfg.BaseURL, sanitizeOpenAICompatible)
 		case "openrouter":
 			p = openrouter.NewWithAttribution(provCfg.APIKey, provCfg.BaseURL, provCfg.AppReferer, provCfg.AppTitle, provCfg.AppCategories)
+		case "inference_net":
+			p = openai.NewCompatible("inference_net", provCfg.APIKey, provCfg.BaseURL, sanitizeOpenAICompatible)
 		case "together":
 			p = together.New(provCfg.APIKey, provCfg.BaseURL)
 		case "minimax":
@@ -248,12 +268,19 @@ func main() {
 	pricingTable := billing.NewPricingTable(cfg.Models)
 	billingEngine := billing.NewEngine(pricingTable, creditQ)
 
+	// IAM + billshock guards (opt-in, open by default).
+	accessQ := queries.NewAccessQueries(database.Pool)
+	guardQ := queries.NewGuardQueries(database.Pool)
+	teamQ := queries.NewTeamQueries(database.Pool)
+	billingEngine.SetGuards(guardQ, os.Getenv("APP_URL"))
+
 	var stripe *stripesvc.Service
 	var stripeReconciler *billing.Reconciler
 	if cfg.Stripe.SecretKey != "" {
 		stripe = stripesvc.NewService(cfg.Stripe.SecretKey)
 		topupQ := queries.NewAutotopupQueries(database.Pool)
 		autoTopup := billing.NewAutoTopupService(userQ, creditQ, topupQ, stripe, billingEngine)
+		autoTopup.SetGuards(guardQ)
 		billingEngine.SetAutoTopup(autoTopup)
 		stripeReconciler = billing.NewReconciler(stripe, userQ, stripeDepositQ, 30*time.Second)
 		log.Printf("Stripe auto-topup + deposit reconciler enabled")
@@ -321,6 +348,10 @@ func main() {
 	codexRefresher.Start()
 	defer codexRefresher.Stop()
 
+	adminMaxPlan := handler.NewAdminMaxPlanRefresher(providerKeyQ, userQ, os.Getenv("ADMIN_OPENAI_MAX_PLAN_EMAIL"))
+	adminMaxPlan.Start()
+	defer adminMaxPlan.Stop()
+
 	appUsageCrawler := cron.NewAppUsageCrawler(appQ)
 	appUsageCrawler.Start()
 	defer appUsageCrawler.Stop()
@@ -360,6 +391,9 @@ func main() {
 
 	// User-built agents: tool-use + computer-use with connected data sources.
 	agentEngine := agent.NewEngine(modelRouter, billingEngine, localEmbedder, agentQ, store, os.Getenv("OPENPATHS_COMPUTER_USE_URL"))
+	if exaCfg := handler.ExaSearchProviderConfig(cfg.Providers); exaCfg.Enabled && exaCfg.APIKey != "" {
+		agentEngine.SetExaKey(exaCfg.APIKey)
+	}
 
 	// Optional per-user response saving + private usage search.
 	saver := savedresp.New(savedRespQ, userQ, localEmbedder)
@@ -371,10 +405,21 @@ func main() {
 		log.Printf("Response saving enabled (trigram search only; gobed embedder unavailable)")
 	}
 
+	// Email suppression: never send to unsubscribed/blocked addresses.
+	suppressionQ := queries.NewSuppressionQueries(database.Pool)
+	email.Suppressed = func(addr string) bool {
+		suppressed, err := suppressionQ.IsSuppressed(context.Background(), addr)
+		if err != nil {
+			log.Printf("suppression check failed for %s: %v", addr, err)
+			return false
+		}
+		return suppressed
+	}
+
 	// Start drip email campaign scheduler.
 	var onRegister func(string, string)
 	if os.Getenv("AWS_SMTP_USERNAME") != "" {
-		dripRunner, err := email.NewDripRunner(database.Pool, "emails")
+		dripRunner, err := email.NewDripRunner(database.Pool, "emails", cfg.JWT.Secret, cfg.Models)
 		if err != nil {
 			log.Printf("Drip email runner disabled: %v", err)
 		} else {
@@ -428,6 +473,11 @@ func main() {
 		Saver:            saver,
 		AgentQ:           agentQ,
 		AgentEngine:      agentEngine,
+		SharedChatQ:      sharedChatQ,
+		AccessQ:          accessQ,
+		GuardQ:           guardQ,
+		TeamQ:            teamQ,
+		SuppressionQ:     suppressionQ,
 	})
 
 	done := make(chan os.Signal, 1)
@@ -449,6 +499,14 @@ func main() {
 	if err := srv.Shutdown(); err != nil {
 		log.Printf("Shutdown error: %v", err)
 	}
+}
+
+func sanitizeOpenAICompatible(req *model.ChatCompletionRequest) {
+	req.Prefill = ""
+	req.TaskTier = ""
+	req.RoutingStrategy = ""
+	req.Thinking = nil
+	req.ChatTemplateKwargs = nil
 }
 
 func initCrypto(cfg *config.Config, database *db.DB, billingEngine *billing.Engine) *crypto.Service {
