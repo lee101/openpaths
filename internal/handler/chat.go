@@ -15,6 +15,7 @@ import (
 	"github.com/valyala/fasthttp"
 
 	"github.com/openpaths/openpaths/internal/billing"
+	responsecache "github.com/openpaths/openpaths/internal/cache"
 	"github.com/openpaths/openpaths/internal/db/queries"
 	"github.com/openpaths/openpaths/internal/metrics"
 	"github.com/openpaths/openpaths/internal/middleware"
@@ -33,6 +34,7 @@ type ChatHandler struct {
 	providerKeyQ *queries.ProviderKeyQueries
 	saver        *savedresp.Saver
 	accessQ      *queries.AccessQueries
+	cache        *responsecache.ResponseCache
 }
 
 // SetAccess wires the optional Model IAM policy store (default-open when unset).
@@ -51,7 +53,12 @@ func (h *ChatHandler) modelDenied(ctx *fasthttp.RequestCtx, userID, modelID stri
 }
 
 func NewChatHandler(r *router.Router, b *billing.Engine, rec *metrics.Recorder, userQ *queries.UserQueries, providerKeyQ *queries.ProviderKeyQueries) *ChatHandler {
-	return &ChatHandler{router: r, billing: b, recorder: rec, userQ: userQ, providerKeyQ: providerKeyQ}
+	return &ChatHandler{router: r, billing: b, recorder: rec, userQ: userQ, providerKeyQ: providerKeyQ, cache: responsecache.NewResponseCacheFromEnv()}
+}
+
+func (h *ChatHandler) SetResponseCache(c *responsecache.ResponseCache) *ChatHandler {
+	h.cache = c
+	return h
 }
 
 // SetResponseSaver wires the optional saved-response service (response saving feature).
@@ -60,9 +67,10 @@ func (h *ChatHandler) SetResponseSaver(s *savedresp.Saver) { h.saver = s }
 func (h *ChatHandler) HandleChatCompletion(ctx *fasthttp.RequestCtx) {
 	userID, _ := ctx.UserValue(middleware.CtxKeyUserID).(string)
 	apiKey, _ := ctx.UserValue(middleware.CtxKeyAPIKey).(*model.APIKey)
+	body := ctx.PostBody()
 
 	var req model.ChatCompletionRequest
-	if err := json.Unmarshal(ctx.PostBody(), &req); err != nil {
+	if err := json.Unmarshal(body, &req); err != nil {
 		writeError(ctx, 400, "invalid_request", "Invalid JSON: "+err.Error())
 		return
 	}
@@ -110,10 +118,12 @@ func (h *ChatHandler) HandleChatCompletion(ctx *fasthttp.RequestCtx) {
 		writeError(ctx, 403, "model_not_permitted", err.Error())
 		return
 	}
-
 	callerEffort := req.ReasoningEffort
 
 	var lastErr error
+	cacheBypass := req.Stream || requestNoCache(ctx) || responsecache.RequestCacheBypass(body) || h.cache == nil
+	ctx.Response.Header.Set("X-OpenPaths-Cache", "miss")
+
 	for i, cand := range candidates {
 		req.Model = cand.ModelCfg.ProviderModelID
 		// Per-model default applies only when the caller named no effort, and is
@@ -121,6 +131,21 @@ func (h *ChatHandler) HandleChatCompletion(ctx *fasthttp.RequestCtx) {
 		req.ReasoningEffort = callerEffort
 		if req.ReasoningEffort == "" {
 			req.ReasoningEffort = cand.ModelCfg.DefaultReasoningEffort
+		}
+		cacheKey := ""
+		if !cacheBypass {
+			if key, err := responsecache.ChatCompletionKey(req.Model, &req); err != nil {
+				log.Printf("chat response cache key: %v", err)
+			} else if data, ok := h.cache.Get(key); ok {
+				ctx.Response.Header.Set("X-OpenPaths-Cache", "hit")
+				ctx.SetStatusCode(200)
+				ctx.SetContentType("application/json")
+				ctx.SetBody(data)
+				h.router.MarkModelHealthy(cand.Provider.Name(), cand.ModelCfg.ID)
+				return
+			} else {
+				cacheKey = key
+			}
 		}
 		attempts := getProviderAttempts(ctx, userID, cand.Provider.Name())
 		if len(attempts) > 0 && cand.Provider.Name() == "openai" {
@@ -143,6 +168,9 @@ func (h *ChatHandler) HandleChatCompletion(ctx *fasthttp.RequestCtx) {
 			if handled {
 				if attemptErr == nil && attempt.cred != nil {
 					markOpenAIMaxPlanCredentialHealthy(attempt.cred.ID)
+				}
+				if cacheKey != "" && attemptErr == nil && ctx.Response.StatusCode() == 200 {
+					h.cache.Set(cacheKey, ctx.Response.Body())
 				}
 				h.router.MarkModelHealthy(cand.Provider.Name(), cand.ModelCfg.ID)
 				return
@@ -523,6 +551,16 @@ func applySafetyIdentifier(req *model.ChatCompletionRequest, prov provider.Provi
 	if id := safetyIdentifier(userID); id != "" {
 		req.SafetyIdentifier = id
 	}
+}
+
+func requestNoCache(ctx *fasthttp.RequestCtx) bool {
+	cacheControl := strings.ToLower(string(ctx.Request.Header.Peek("Cache-Control")))
+	for _, directive := range strings.Split(cacheControl, ",") {
+		if strings.TrimSpace(directive) == "no-cache" {
+			return true
+		}
+	}
+	return false
 }
 
 func extractChatPrompt(messages []model.ChatMessage) string {

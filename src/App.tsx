@@ -14,6 +14,7 @@ import { ProviderPage } from './pages/ProviderPage';
 import { Docs } from './pages/Docs';
 import { Integrations } from './pages/Integrations';
 import { Mcp } from './pages/Mcp';
+import { WorksWith } from './pages/WorksWith';
 import { ProviderDocs } from './pages/ProviderDocs';
 import { Pricing } from './pages/Pricing';
 import { ModelPage } from './pages/ModelPage';
@@ -61,6 +62,7 @@ export default function App() {
           <Route path="docs" element={<Docs />} />
           <Route path="integrations" element={<Integrations />} />
           <Route path="mcp" element={<Mcp />} />
+          <Route path="works-with-openpaths" element={<WorksWith />} />
           <Route path=":slug/docs" element={<ProviderDocs />} />
           <Route path="playground" element={<Playground />} />
           <Route path="chat/:slug" element={<Suspense fallback={<RouteLoading />}><SharedChat /></Suspense>} />

@@ -23,6 +23,36 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.webp" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://openpaths.io/#organization",
+            "name": "OpenPaths",
+            "url": "https://openpaths.io/",
+            "logo": "https://openpaths.io/apple-touch-icon.webp",
+            "description": "Open source model router for 1ms routing across 432+ large model providers and art generators."
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://openpaths.io/#website",
+            "url": "https://openpaths.io/",
+            "name": "OpenPaths",
+            "publisher": { "@id": "https://openpaths.io/#organization" },
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": {
+                "@type": "EntryPoint",
+                "urlTemplate": "https://openpaths.io/models?q={search_term_string}"
+              },
+              "query-input": "required name=search_term_string"
+            }
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

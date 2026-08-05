@@ -105,12 +105,34 @@ export function Models() {
     return sortModels(filtered, sortBy);
   }, [searchQuery, selectedTags, sortBy]);
 
+  const jsonLd = useMemo(() => ({
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: 'AI Model Directory',
+    url: 'https://openpaths.io/models',
+    description: `Compare ${models.length}+ AI models by provider, price, context window, and capability.`,
+    mainEntity: {
+      '@type': 'ItemList',
+      numberOfItems: models.length,
+      itemListElement: [...models]
+        .sort((a, b) => a.popularity - b.popularity)
+        .slice(0, 30)
+        .map((model, i) => ({
+          '@type': 'ListItem',
+          position: i + 1,
+          url: `https://openpaths.io/models/${encodeURIComponent(model.id)}`,
+          name: model.name,
+        })),
+    },
+  }), []);
+
   return (
     <>
       <Seo
         title="AI Model Directory | OpenPaths"
         description={`Compare ${models.length}+ AI models by provider, price, context window, and capability across chat, image, video, audio, and embedding APIs.`}
         path="/models"
+        jsonLd={jsonLd}
       />
 
       <div className="max-w-7xl mx-auto px-6 py-12">

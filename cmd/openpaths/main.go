@@ -101,6 +101,7 @@ func main() {
 	providerKeyQ := queries.NewProviderKeyQueries(database.Pool)
 	videoJobQ := queries.NewVideoJobQueries(database.Pool)
 	model3DJobQ := queries.NewModel3DJobQueries(database.Pool)
+	researchJobQ := queries.NewResearchJobQueries(database.Pool)
 	artImageQ := queries.NewArtImageQueries(database.Pool)
 	skillQ := queries.NewSkillQueries(database.Pool)
 	savedRespQ := queries.NewSavedResponseQueries(database.Pool)
@@ -419,7 +420,6 @@ func main() {
 		}
 		return suppressed
 	}
-
 	// Start drip email campaign scheduler.
 	var onRegister func(string, string)
 	if os.Getenv("AWS_SMTP_USERNAME") != "" {
@@ -468,6 +468,7 @@ func main() {
 		ProviderKeyQ:     providerKeyQ,
 		VideoJobQ:        videoJobQ,
 		Model3DJobQ:      model3DJobQ,
+		ResearchJobQ:     researchJobQ,
 		OnRegister:       onRegister,
 		ArtIndex:         artIndex,
 		ArtImageQ:        artImageQ,

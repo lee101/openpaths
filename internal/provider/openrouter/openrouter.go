@@ -63,8 +63,10 @@ func sanitizeForOpenRouter(req *model.ChatCompletionRequest) {
 }
 
 func (p *OpenRouterProvider) ChatCompletion(ctx context.Context, req *model.ChatCompletionRequest) (*model.ChatCompletionResponse, error) {
-	sanitizeForOpenRouter(req)
-	body, err := json.Marshal(req)
+	outReq := *req
+	outReq.ChatTemplateKwargs = cloneMap(req.ChatTemplateKwargs)
+	sanitizeForOpenRouter(&outReq)
+	body, err := json.Marshal(&outReq)
 	if err != nil {
 		return nil, fmt.Errorf("marshal request: %w", err)
 	}
@@ -103,6 +105,17 @@ func (p *OpenRouterProvider) ChatCompletion(ctx context.Context, req *model.Chat
 	}
 
 	return &result, nil
+}
+
+func cloneMap(in map[string]any) map[string]any {
+	if in == nil {
+		return nil
+	}
+	out := make(map[string]any, len(in))
+	for k, v := range in {
+		out[k] = v
+	}
+	return out
 }
 
 func (p *OpenRouterProvider) setHeaders(req *http.Request) {

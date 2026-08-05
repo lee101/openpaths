@@ -31,6 +31,36 @@ export function ModelPage() {
   const relatedModels = getRelatedModels(model);
   const title = `${model.name} API, Pricing, Context Window | OpenPaths`;
   const description = `${model.name} from ${model.provider}: ${model.description} Use model ID ${model.id} through the OpenPaths API.`;
+  const canonical = `https://openpaths.io/models/${encodeURIComponent(model.id)}`;
+  const jsonLd = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: model.name,
+      description: model.description,
+      sku: model.id,
+      category: 'AI Model',
+      brand: { '@type': 'Brand', name: model.provider },
+      url: canonical,
+      ...(model.priceInput > 0 ? {
+        offers: {
+          '@type': 'Offer',
+          price: model.priceInput.toString(),
+          priceCurrency: 'USD',
+          availability: 'https://schema.org/InStock',
+          url: canonical,
+        },
+      } : {}),
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Models', item: 'https://openpaths.io/models' },
+        { '@type': 'ListItem', position: 2, name: model.name, item: canonical },
+      ],
+    },
+  ];
 
   const scrollToWorkspace = () => {
     document.getElementById('model-workspace')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -38,7 +68,7 @@ export function ModelPage() {
 
   return (
     <>
-      <Seo title={title} description={description} path={`/models/${encodeURIComponent(model.id)}`} image={model.ogImage} />
+      <Seo title={title} description={description} path={`/models/${encodeURIComponent(model.id)}`} image={model.ogImage} jsonLd={jsonLd} />
 
       <section className="max-w-5xl mx-auto px-6 py-16">
         <div className="mb-8">
