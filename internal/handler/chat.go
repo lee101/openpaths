@@ -132,6 +132,11 @@ func (h *ChatHandler) HandleChatCompletion(ctx *fasthttp.RequestCtx) {
 		if req.ReasoningEffort == "" {
 			req.ReasoningEffort = cand.ModelCfg.DefaultReasoningEffort
 		}
+		requestedEffort := req.ReasoningEffort
+		req.ReasoningEffort = model.CompatibleReasoningEffort(req.Model, requestedEffort)
+		if req.ReasoningEffort != requestedEffort {
+			ctx.Response.Header.Set("X-OpenPaths-Reasoning-Effort", req.ReasoningEffort)
+		}
 		cacheKey := ""
 		if !cacheBypass {
 			if key, err := responsecache.ChatCompletionKey(req.Model, &req); err != nil {
