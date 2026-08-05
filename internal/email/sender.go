@@ -10,8 +10,21 @@ import (
 	"os"
 )
 
+// Suppressed is an optional hook consulted before every send; wire it to the
+// email_suppressions table so unsubscribed/blocked addresses never get mail.
+var Suppressed func(email string) bool
+
 // Send sends an HTML email via AWS SES SMTP.
 func Send(toEmail, subject, htmlBody string) error {
+	return SendWithUnsubscribe(toEmail, subject, htmlBody, "")
+}
+
+// SendWithUnsubscribe sends an HTML email with RFC 8058 List-Unsubscribe headers.
+func SendWithUnsubscribe(toEmail, subject, htmlBody, unsubscribeURL string) error {
+	if Suppressed != nil && Suppressed(toEmail) {
+		log.Printf("email suppressed, not sending to %s: %s", toEmail, subject)
+		return nil
+	}
 	region := os.Getenv("AWS_REGION")
 	if region == "" {
 		region = "us-east-1"
@@ -32,9 +45,14 @@ func Send(toEmail, subject, htmlBody string) error {
 	boundary := "----=_Part_" + randomHex(8)
 	plainText := "View this email in your browser."
 
+	unsubHeaders := ""
+	if unsubscribeURL != "" {
+		unsubHeaders = fmt.Sprintf("List-Unsubscribe: <%s>\r\nList-Unsubscribe-Post: List-Unsubscribe=One-Click\r\n", unsubscribeURL)
+	}
+
 	msg := fmt.Sprintf(
-		"From: OpenPaths <%s>\r\nTo: %s\r\nSubject: %s\r\nMIME-Version: 1.0\r\nContent-Type: multipart/alternative; boundary=\"%s\"\r\n\r\n--%s\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n%s\r\n--%s\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n%s\r\n--%s--\r\n",
-		fromEmail, toEmail, subject, boundary, boundary, plainText, boundary, htmlBody, boundary,
+		"From: OpenPaths <%s>\r\nTo: %s\r\nSubject: %s\r\n%sMIME-Version: 1.0\r\nContent-Type: multipart/alternative; boundary=\"%s\"\r\n\r\n--%s\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n%s\r\n--%s\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n%s\r\n--%s--\r\n",
+		fromEmail, toEmail, subject, unsubHeaders, boundary, boundary, plainText, boundary, htmlBody, boundary,
 	)
 
 	auth := smtp.PlainAuth("", smtpUser, smtpPass, smtpHost)

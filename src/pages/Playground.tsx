@@ -3,13 +3,17 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Send, Plus, X, Settings, ChevronDown, Loader2, Trash2, Square, Copy, Check, Zap, RotateCcw, Code2, Share2, Wallet, Eye, Wrench, Volume2, Bookmark, BookmarkCheck, GitFork, Pencil, Paperclip, FileText, Film, File as FileIcon, Download, Upload, PanelLeft, Brain, MessageSquarePlus } from 'lucide-react';
 import { CodeBlock as HighlightedCodeBlock } from '../components/CodeBlock';
 import { VIDEO_DEMOS, type VideoDemo } from '../data/videoDemos';
+import { getVideoParamSpec, EMPTY_ADVANCED, type VideoAdvancedValues, type VideoInputMode } from '../data/videoModelParams';
+import { buildVideoPayload, type VideoBaseValues } from '../lib/videoPayload';
 import { prepareUploadFile } from '../lib/imageUpload';
 import { normalizeUploadedAssetUrl } from '../lib/uploadUrls';
 import { fetchPrompts, loadSavedPrompts, removeSavedPrompt, savePrompt, type SavedPrompt } from '../lib/promptLibrary';
 import type { LibraryPrompt } from '../data/promptLibrary';
 import { ChatSidebar } from '../components/ChatSidebar';
-import { saveConversation, getConversation, getFolder, effectiveSystemPrompt } from '../lib/conversations';
+import { saveConversation, getConversation, getFolder, effectiveSystemPrompt, deriveTitle } from '../lib/conversations';
 import type { Conversation } from '../lib/conversations';
+import { AuthModal } from '../components/AuthModal';
+import { onAuthChange } from '../lib/api';
 
 interface Message {
   role: 'system' | 'user' | 'assistant';
@@ -178,7 +182,7 @@ const FALLBACK_MODELS: CatalogModel[] = [
   { id: 'o4-mini', label: 'o4-mini', provider: 'OpenAI' },
   { id: 'gpt-4o', label: 'GPT-4o', provider: 'OpenAI' },
   { id: 'gpt-4o-mini', label: 'GPT-4o Mini', provider: 'OpenAI' },
-  { id: 'claude-sonnet-latest', label: 'Claude Sonnet (latest)', provider: 'Anthropic' },
+  { id: 'claude-sonnet-latest', label: 'Claude Sonnet 5 (latest)', provider: 'Anthropic' },
   { id: 'claude-opus-latest', label: 'Claude Opus (latest)', provider: 'Anthropic' },
   { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku', provider: 'Anthropic' },
   { id: 'grok-4.3', label: 'Grok 4.3', provider: 'xAI' },
@@ -206,6 +210,7 @@ const FALLBACK_MODELS: CatalogModel[] = [
   { id: 'zimage', label: 'ZImage', provider: 'Netwrck', pricing: { per_image: 0.007 } },
   { id: 'klein', label: 'FLUX Klein 4B', provider: 'Fal', pricing: { per_image: 0.02 } },
   { id: 'flux-pro', label: 'FLUX.1 Pro', provider: 'Fal', pricing: { per_image: 0.04 } },
+  { id: 'flux-2-pro-preview', label: 'FLUX.2 Pro Preview', provider: 'Black Forest Labs', pricing: { per_megapixel: 0.03 } },
   { id: 'flux-dev', label: 'FLUX Dev', provider: 'Fal', pricing: { per_image: 0.025 } },
   { id: 'flux-schnell', label: 'FLUX Schnell', provider: 'Fal', pricing: { per_image: 0.003 } },
   { id: 'stable-diffusion-3', label: 'Stable Diffusion 3', provider: 'Together', pricing: { per_image: 0.002 } },
@@ -214,6 +219,7 @@ const FALLBACK_MODELS: CatalogModel[] = [
   { id: 'hidream-o1-image-dev', label: 'HiDream O1 Image Dev', provider: 'Fal', pricing: { per_megapixel: 0.011 } },
   { id: 'fal-ai/hidream-o1-image/edit', label: 'HiDream O1 Image Edit', provider: 'Fal', pricing: { per_megapixel: 0.011 } },
   { id: 'fal-ai/flux-2-pro/outpaint', label: 'FLUX 2 Pro Outpaint', provider: 'Fal', pricing: { first_megapixel: 0.033, extra_megapixel: 0.0165 } },
+  { id: 'gemini-omni-flash-preview', label: 'Gemini Omni Flash Preview', provider: 'Google', pricing: { per_second: 0.10136 } },
   { id: 'seedance-2.0-fast-text-to-video', label: 'Seedance 2.0 Fast Text to Video', provider: 'Fal', pricing: { per_second: 0.26609 } },
   { id: 'seedance-2.0-text-to-video', label: 'Seedance 2.0 Text to Video', provider: 'Fal', pricing: { per_second: 0.33374 } },
   { id: 'seedance-2.0-image-to-video', label: 'Seedance 2.0 Image to Video', provider: 'Fal', pricing: { per_second: 0.33264 } },
@@ -391,13 +397,15 @@ const AUTO_ARCHIVE_DAYS_KEY = 'op_playground_auto_archive_days';
 // the playground now routes them to /v1/images/generations automatically.
 const NON_CHAT_PATTERNS = /^(whisper|xai-stt|grok-voice|text-embedding|openpaths-embed|modernbert|mistral-embed|codestral-embed|nemotron-embed|gemini-embedding-001|gemini-embedding-2-preview|gemini-embedding-2|gpt-4o-transcribe|gpt-4o-mini-transcribe|distil-whisper|whisper-v3)/i;
 const IMAGE_MODEL_PATTERNS = /^(openpaths\/auto-image|auto-image|flux|klein|ra1|zimage|glm-image|grok-imagine-image|gpt-image|fal-gpt-image|hidream|dall-e|stable-diffusion|sd3|ideogram|fal-ai\/flux-2-pro\/outpaint)/i;
-const VIDEO_MODEL_PATTERNS = /^(auto-video|wan|ltx|hailuo|kling|luma|ra2v|sora|seedance)/i;
+const BFL_IMAGE_SIZES = ['1024x1024', '1152x768', '768x1152', '1360x768', '768x1360', '1920x1088', '1088x1920', '2048x880', '2048x2048'];
+const VIDEO_MODEL_PATTERNS = /^(auto-video|flux-3-video|wan|ltx|hailuo|kling|luma|ra2v|sora|seedance)/i;
 const SPEECH_MODEL_PATTERNS = /(tts|speech-)/i;
 const MUSIC_MODEL_PATTERNS = /^(music-|lyria-)/i;
 
 function isImageModel(m: CatalogModel | undefined): boolean {
   if (!m) return false;
   if (MUSIC_MODEL_PATTERNS.test(m.id)) return false;
+  if (VIDEO_MODEL_PATTERNS.test(m.id)) return false;
   if (m.pricing?.per_image && m.pricing.per_image > 0) return true;
   if (m.pricing?.per_megapixel && m.pricing.per_megapixel > 0) return true;
   if (m.pricing?.first_megapixel && m.pricing.first_megapixel > 0) return true;
@@ -523,12 +531,14 @@ function messageForAPI(message: Message): { role: Message['role']; content: stri
   const parts: any[] = [];
   if (message.content.trim()) parts.push({ type: 'text', text: message.content });
 
-  const nonImageContext = buildAttachmentText(attachments.filter(att => att.kind !== 'image'));
-  if (nonImageContext) parts.push({ type: 'text', text: nonImageContext });
+  const textContext = buildAttachmentText(attachments.filter(att => att.kind !== 'image' && !(att.kind === 'video' && att.url)));
+  if (textContext) parts.push({ type: 'text', text: textContext });
 
   for (const att of attachments) {
-    if (att.kind === 'image') {
+    if (att.kind === 'image' && att.url) {
       parts.push({ type: 'image_url', image_url: { url: att.url } });
+    } else if (att.kind === 'video' && att.url) {
+      parts.push({ type: 'video_url', video_url: { url: att.url } });
     }
   }
 
@@ -937,11 +947,14 @@ export function Playground() {
   const reasoningEffortRef = useRef(reasoningEffort);
   const pendingFolderIdRef = useRef<string | null>(null);
   const [shareCopied, setShareCopied] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
   const [balanceCents, setBalanceCents] = useState<number | null>(null);
   const [imageSize, setImageSize] = useState<typeof IMAGE_SIZES[number]>('1024x1024');
   const [imageQuality, setImageQuality] = useState<typeof IMAGE_QUALITIES[number]>('standard');
   const [imageCount, setImageCount] = useState(1);
   const [imageResponseFormat, setImageResponseFormat] = useState<typeof IMAGE_RESPONSE_FORMATS[number]>('url');
+  const [imageOutputFormat, setImageOutputFormat] = useState('webp');
+  const [imagePromptUpsampling, setImagePromptUpsampling] = useState(true);
   const [imageAspectRatio, setImageAspectRatio] = useState<typeof IMAGE_ASPECT_RATIOS[number]>('auto');
   const [imageInputUrls, setImageInputUrls] = useState('');
   const [outpaintTop, setOutpaintTop] = useState(0);
@@ -951,12 +964,15 @@ export function Playground() {
   const [videoResolution, setVideoResolution] = useState<typeof VIDEO_RESOLUTIONS[number]>('720p');
   const [videoDuration, setVideoDuration] = useState<typeof VIDEO_DURATIONS[number]>('10');
   const [videoAspectRatio, setVideoAspectRatio] = useState<typeof VIDEO_ASPECT_RATIOS[number]>('16:9');
+  const [videoInputMode, setVideoInputMode] = useState<VideoInputMode>('text-to-video');
   const [videoGenerateAudio, setVideoGenerateAudio] = useState(true);
   const [videoImageUrl, setVideoImageUrl] = useState('');
   const [videoEndImageUrl, setVideoEndImageUrl] = useState('');
   const [videoImageUrls, setVideoImageUrls] = useState('');
   const [videoVideoUrls, setVideoVideoUrls] = useState('');
   const [videoAudioUrls, setVideoAudioUrls] = useState('');
+  const [videoAdvanced, setVideoAdvanced] = useState<VideoAdvancedValues>(EMPTY_ADVANCED);
+  const [showVideoAdvanced, setShowVideoAdvanced] = useState(false);
   const [speechVoice, setSpeechVoice] = useState('eve');
   const [speechLanguage, setSpeechLanguage] = useState<typeof SPEECH_LANGUAGES[number]>('en');
   const [ttsSpeaker1Profile, setTtsSpeaker1Profile] = useState('A stern and weary gatekeeper');
@@ -1005,7 +1021,9 @@ export function Playground() {
   const primaryIsImageToVideo = isImageToVideoModel(primaryModel);
   const primaryIsReferenceToVideo = isReferenceToVideoModel(primaryModel);
   const primaryIsHappyHorseVideo = isHappyHorseVideoModel(primaryModel);
+  const videoSpec = getVideoParamSpec(panes[0]?.modelId || '');
   const primaryIsOutpaintImage = isOutpaintImageModel(primaryModel) || panes[0]?.modelId === 'fal-ai/flux-2-pro/outpaint';
+  const primaryIsBFLImage = panes[0]?.modelId === 'flux-2-pro-preview';
   const primaryImageDemo = IMAGE_DEMOS[panes[0]?.modelId || ''];
   const primaryVideoDemo = VIDEO_DEMOS[panes[0]?.modelId || ''];
   const primaryContextWindow = primaryModel?.contextWindow || null;
@@ -1063,6 +1081,8 @@ export function Playground() {
       localStorage.setItem('op_api_key', apiKey);
     }
   }, [apiKey]);
+
+  useEffect(() => onAuthChange(() => setApiKey(localStorage.getItem('op_api_key') || '')), []);
 
   useEffect(() => {
     localStorage.setItem('op_playground_sound', soundEnabled ? '1' : '0');
@@ -1122,6 +1142,13 @@ export function Playground() {
   }, [primaryImageDemo]);
 
   useEffect(() => {
+    if (!primaryIsBFLImage) return;
+    setImageSize('1024x1024');
+    setImageOutputFormat('webp');
+    setImagePromptUpsampling(true);
+  }, [primaryIsBFLImage]);
+
+  useEffect(() => {
     if (!primaryVideoDemo) return;
     setVideoResolution(primaryVideoDemo.resolution);
     setVideoDuration(primaryVideoDemo.duration);
@@ -1132,12 +1159,21 @@ export function Playground() {
     setVideoImageUrls((primaryVideoDemo.imageUrls || []).join('\n'));
     setVideoVideoUrls((primaryVideoDemo.videoUrls || []).join('\n'));
     setVideoAudioUrls((primaryVideoDemo.audioUrls || []).join('\n'));
+    if (videoSpec.inputModes) {
+      setVideoInputMode(
+        primaryVideoDemo.videoUrls?.length && videoSpec.inputModes.includes('video-to-video')
+          ? 'video-to-video'
+          : (primaryVideoDemo.imageUrl || primaryVideoDemo.imageUrls?.length) && videoSpec.inputModes.includes('image-to-video')
+            ? 'image-to-video'
+            : videoSpec.inputModes[0],
+      );
+    }
     setInput(prev => {
       if (prev.trim() && prev !== lastAppliedVideoDemoPromptRef.current) return prev;
       lastAppliedVideoDemoPromptRef.current = primaryVideoDemo.prompt;
       return primaryVideoDemo.prompt;
     });
-  }, [primaryVideoDemo]);
+  }, [primaryVideoDemo, panes[0]?.modelId]);
 
   useEffect(() => {
     if (primaryIsGeminiSpeech && !GEMINI_TTS_VOICES.includes(speechVoice)) {
@@ -1379,6 +1415,11 @@ ${text}`;
         quality: imageQuality,
         response_format: imageResponseFormat,
       };
+      if (modelId === 'flux-2-pro-preview') {
+        body.output_format = imageOutputFormat;
+        body.safety_tolerance = 5;
+        body.disable_pup = !imagePromptUpsampling;
+      }
       if (isEdit) {
         body.images = inputUrls.map(url => ({ type: 'image_url', url }));
         body.reference_image_urls = inputUrls;
@@ -1423,7 +1464,11 @@ ${text}`;
       const latency = Math.round(performance.now() - start);
       const modelCfg = modelIndex.get(modelId);
       const requestedSize = imageSize.match(/^(\d+)x(\d+)$/);
-      const megapixels = requestedSize ? (Number(requestedSize[1]) * Number(requestedSize[2])) / 1_000_000 : 0.512 * 0.512;
+      const megapixels = requestedSize
+        ? (modelId === 'flux-2-pro-preview'
+          ? Math.ceil((Number(requestedSize[1]) * Number(requestedSize[2])) / (1024 * 1024))
+          : (Number(requestedSize[1]) * Number(requestedSize[2])) / 1_000_000)
+        : 0.512 * 0.512;
       const cost = modelCfg?.pricing?.first_megapixel && modelCfg?.pricing?.extra_megapixel
         ? modelCfg.pricing.first_megapixel + (modelCfg.pricing.extra_megapixel * 2)
         : modelCfg?.pricing?.per_image
@@ -1464,7 +1509,7 @@ ${text}`;
     } finally {
       abortRefs.current.delete(paneId);
     }
-  }, [apiKey, baseUrl, imageAspectRatio, imageCount, imageInputUrls, imageQuality, imageResponseFormat, imageSize, modelIndex, outpaintBottom, outpaintLeft, outpaintRight, outpaintTop, refreshBalance, soundEnabled]);
+  }, [apiKey, baseUrl, imageAspectRatio, imageCount, imageInputUrls, imageOutputFormat, imagePromptUpsampling, imageQuality, imageResponseFormat, imageSize, modelIndex, outpaintBottom, outpaintLeft, outpaintRight, outpaintTop, refreshBalance, soundEnabled]);
 
   const sendToVideoModel = useCallback(async (paneId: string, modelId: string, prompt: string) => {
     const controller = new AbortController();
@@ -1479,29 +1524,20 @@ ${text}`;
       const imageUrls = parseImageInputUrls(videoImageUrls);
       const videoUrls = parseImageInputUrls(videoVideoUrls);
       const audioUrls = parseImageInputUrls(videoAudioUrls);
-      const body: Record<string, unknown> = {
-        model: modelId,
+      const base: VideoBaseValues = {
         prompt,
         resolution: videoResolution,
         duration: videoDuration,
-        aspect_ratio: videoAspectRatio,
+        aspectRatio: videoAspectRatio,
+        generateAudio: videoGenerateAudio,
+        imageUrl: videoSpec.inputModes ? (videoInputMode === 'image-to-video' ? videoImageUrl : undefined) : videoImageUrl,
+        endImageUrl: videoSpec.inputModes && videoInputMode !== 'image-to-video' ? undefined : videoEndImageUrl,
+        videoUrl: videoSpec.inputModes && videoInputMode === 'video-to-video' ? videoUrls[0] : undefined,
+        imageUrls: videoSpec.inputModes ? undefined : imageUrls,
+        videoUrls: videoSpec.inputModes ? undefined : videoUrls,
+        audioUrls,
       };
-      const selectedModel = modelIndex.get(modelId);
-      if (isHappyHorseVideoModel(selectedModel)) {
-        body.duration = videoDuration === 'auto' ? 5 : Number(videoDuration) || 5;
-        body.enable_safety_checker = true;
-      } else {
-        body.generate_audio = videoGenerateAudio;
-      }
-      if (isImageToVideoModel(selectedModel)) {
-        if (videoImageUrl.trim()) body.image_url = videoImageUrl.trim();
-        if (videoEndImageUrl.trim()) body.end_image_url = videoEndImageUrl.trim();
-      }
-      if (isReferenceToVideoModel(selectedModel)) {
-        if (imageUrls.length > 0) body.image_urls = imageUrls;
-        if (videoUrls.length > 0) body.video_urls = videoUrls;
-        if (audioUrls.length > 0) body.audio_urls = audioUrls;
-      }
+      const body = buildVideoPayload(modelId, base, videoAdvanced);
 
       const resp = await fetch(`${baseUrl}/v1/videos/generations`, {
         method: 'POST',
@@ -1530,7 +1566,7 @@ ${text}`;
       const latency = Math.round(performance.now() - start);
       const modelCfg = modelIndex.get(modelId);
       const durationSeconds = videoDuration === 'auto' ? 10 : Number(videoDuration) || 10;
-      const perSecond = videoUrls.length > 0 && modelCfg?.pricing?.per_second_with_video_input
+      const perSecond = (videoSpec.inputModes ? videoInputMode === 'video-to-video' : videoUrls.length > 0) && modelCfg?.pricing?.per_second_with_video_input
         ? modelCfg.pricing.per_second_with_video_input
         : modelCfg?.pricing?.per_second;
       const cost = perSecond ? perSecond * durationSeconds : modelCfg?.pricing?.per_video || null;
@@ -1552,7 +1588,7 @@ ${text}`;
     } finally {
       abortRefs.current.delete(paneId);
     }
-  }, [apiKey, baseUrl, modelIndex, refreshBalance, soundEnabled, videoAspectRatio, videoAudioUrls, videoDuration, videoEndImageUrl, videoGenerateAudio, videoImageUrl, videoImageUrls, videoResolution, videoVideoUrls]);
+  }, [apiKey, baseUrl, modelIndex, refreshBalance, soundEnabled, videoAdvanced, videoAspectRatio, videoAudioUrls, videoDuration, videoEndImageUrl, videoGenerateAudio, videoImageUrl, videoImageUrls, videoInputMode, videoResolution, videoVideoUrls, videoSpec]);
 
   const sendToSpeechModel = useCallback(async (paneId: string, modelId: string, text: string) => {
     const controller = new AbortController();
@@ -1730,6 +1766,8 @@ ${text}`;
       p.id === paneId ? { ...p, streaming: true, error: null, latencyMs: null, tokensUsed: null, promptTokens: null, completionTokens: null, cacheHitTokens: null, costUsd: null } : p
     ));
 
+    let flushTimer: ReturnType<typeof setTimeout> | null = null;
+
     try {
       const activeConv = activeConvIdRef.current ? getConversation(activeConvIdRef.current) : undefined;
       const effectiveSystem = activeConv ? effectiveSystemPrompt(activeConv, systemPrompt) : systemPrompt;
@@ -1767,6 +1805,7 @@ ${text}`;
       if (!reader) throw new Error('No response body');
 
       const decoder = new TextDecoder();
+      let sseBuffer = '';
       let assistantContent = '';
       let firstToken = true;
       let totalTokens: number | null = null;
@@ -1774,14 +1813,46 @@ ${text}`;
       let completionTokens: number | null = null;
       let cacheHitTokens: number | null = null;
 
+      // Committing every delta straight to state re-rendered (and re-parsed the
+      // markdown of) the whole transcript once per token, which is quadratic in
+      // the answer length - long answers pegged the tab until the browser killed
+      // it. Coalesce deltas and commit on a fixed interval instead.
+      const FLUSH_MS = 60;
+      const flush = () => {
+        if (flushTimer) {
+          clearTimeout(flushTimer);
+          flushTimer = null;
+        }
+        const content = assistantContent;
+        if (!content) return; // nothing streamed yet - don't add an empty bubble
+        setPanes(prev => prev.map(p => {
+          if (p.id !== paneId) return p;
+          const msgs = [...p.messages];
+          const last = msgs[msgs.length - 1];
+          if (last && last.role === 'assistant') {
+            msgs[msgs.length - 1] = { ...last, content };
+          } else {
+            msgs.push(makeMessage('assistant', content));
+          }
+          return { ...p, messages: msgs };
+        }));
+      };
+      const scheduleFlush = () => {
+        if (!flushTimer) flushTimer = setTimeout(flush, FLUSH_MS);
+      };
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
+        sseBuffer += decoder.decode(value, { stream: true });
+        // A frame can straddle two network reads; keep the trailing partial
+        // line buffered instead of dropping it as unparseable JSON.
+        const lines = sseBuffer.split('\n');
+        sseBuffer = lines.pop() ?? '';
 
-        for (const line of lines) {
+        for (const rawLine of lines) {
+          const line = rawLine.endsWith('\r') ? rawLine.slice(0, -1) : rawLine;
           if (!line.startsWith('data: ')) continue;
           const data = line.slice(6);
           if (data === '[DONE]') continue;
@@ -1805,21 +1876,13 @@ ${text}`;
                 ));
               }
               assistantContent += delta;
-              setPanes(prev => prev.map(p => {
-                if (p.id !== paneId) return p;
-                const msgs = [...p.messages];
-                const last = msgs[msgs.length - 1];
-                if (last && last.role === 'assistant') {
-                  msgs[msgs.length - 1] = { ...last, content: assistantContent };
-                } else {
-                  msgs.push(makeMessage('assistant', assistantContent));
-                }
-                return { ...p, messages: msgs };
-              }));
+              scheduleFlush();
             }
           } catch {}
         }
       }
+
+      flush();
 
       setPanes(prev => prev.map(p => {
         if (p.id !== paneId) return p;
@@ -1840,6 +1903,7 @@ ${text}`;
         p.id === paneId ? { ...p, streaming: false, error: err.message } : p
       ));
     } finally {
+      if (flushTimer) clearTimeout(flushTimer);
       abortRefs.current.delete(paneId);
     }
   }, [apiKey, baseUrl, systemPrompt, temperature, topP, presencePenalty, frequencyPenalty, maxTokens, modelIndex, refreshBalance, sendToImageModel, sendToVideoModel, sendToSpeechModel, sendToMusicModel, soundEnabled]);
@@ -1875,6 +1939,7 @@ ${text}`;
       size: imageSize,
       quality: imageQuality,
       response_format: imageResponseFormat,
+      ...(primaryIsBFLImage ? { output_format: imageOutputFormat, safety_tolerance: 5, disable_pup: !imagePromptUpsampling } : {}),
     };
     const inputUrls = parseImageInputUrls(imageInputUrls);
     const imageIsOutpaint = model === 'fal-ai/flux-2-pro/outpaint';
@@ -1898,6 +1963,7 @@ ${text}`;
           images: inputUrls.map(url => ({ type: 'image_url', url })),
           reference_image_urls: inputUrls,
           aspect_ratio: imageAspectRatio,
+          ...(primaryIsBFLImage ? { output_format: imageOutputFormat, safety_tolerance: 5, disable_pup: !imagePromptUpsampling } : {}),
           ...(imageDemo?.imageSize ? { image_size: imageDemo.imageSize } : {}),
           ...(imageDemo?.numInferenceSteps ? { num_inference_steps: imageDemo.numInferenceSteps } : {}),
           ...(imageDemo?.guidanceScale !== undefined ? { guidance_scale: imageDemo.guidanceScale } : {}),
@@ -1907,31 +1973,19 @@ ${text}`;
         }
       : imagePayload;
     const videoPrompt = input.trim() || [...allMessages].reverse().find(m => m.role === 'user')?.content || 'A cinematic handheld shot of a rainy neon street at night';
-    const videoCodePayload: Record<string, unknown> = {
-      model,
+    const videoCodePayload = buildVideoPayload(model, {
       prompt: videoPrompt,
       resolution: videoResolution,
       duration: videoDuration,
-      aspect_ratio: videoAspectRatio,
-    };
-    if (primaryIsHappyHorseVideo) {
-      videoCodePayload.duration = videoDuration === 'auto' ? 5 : Number(videoDuration) || 5;
-      videoCodePayload.enable_safety_checker = true;
-    } else {
-      videoCodePayload.generate_audio = videoGenerateAudio;
-    }
-    const videoImages = parseImageInputUrls(videoImageUrls);
-    const videoVideos = parseImageInputUrls(videoVideoUrls);
-    const videoAudios = parseImageInputUrls(videoAudioUrls);
-    if (primaryIsImageToVideo) {
-      if (videoImageUrl.trim()) videoCodePayload.image_url = videoImageUrl.trim();
-      if (videoEndImageUrl.trim()) videoCodePayload.end_image_url = videoEndImageUrl.trim();
-    }
-    if (primaryIsReferenceToVideo) {
-      if (videoImages.length > 0) videoCodePayload.image_urls = videoImages;
-      if (videoVideos.length > 0) videoCodePayload.video_urls = videoVideos;
-      if (videoAudios.length > 0) videoCodePayload.audio_urls = videoAudios;
-    }
+      aspectRatio: videoAspectRatio,
+      generateAudio: videoGenerateAudio,
+      imageUrl: videoSpec.inputModes ? (videoInputMode === 'image-to-video' ? videoImageUrl : undefined) : videoImageUrl,
+      endImageUrl: videoSpec.inputModes && videoInputMode !== 'image-to-video' ? undefined : videoEndImageUrl,
+      videoUrl: videoSpec.inputModes && videoInputMode === 'video-to-video' ? parseImageInputUrls(videoVideoUrls)[0] : undefined,
+      imageUrls: videoSpec.inputModes ? undefined : parseImageInputUrls(videoImageUrls),
+      videoUrls: videoSpec.inputModes ? undefined : parseImageInputUrls(videoVideoUrls),
+      audioUrls: parseImageInputUrls(videoAudioUrls),
+    }, videoAdvanced);
     const rawSpeechText = input.trim() || [...allMessages].reverse().find(m => m.role === 'user')?.content || (primaryIsGeminiSpeech ? promptExampleText(GEMINI_TTS_QUICK_PROMPTS[0]) : 'Hello from Grok text to speech.');
     const speechText = primaryIsGeminiSpeech ? buildGeminiTTSPrompt(rawSpeechText) : rawSpeechText;
     const speechCodePayload: Record<string, unknown> = {
@@ -2498,6 +2552,16 @@ JSON`;
     setSearchParams(next, { replace: true });
   }, [searchParams, apiKey, handleSend, setSearchParams]);
 
+  useEffect(() => {
+    const convParam = searchParams.get('conv');
+    if (!convParam) return;
+    const next = new URLSearchParams(searchParams);
+    next.delete('conv');
+    setSearchParams(next, { replace: true });
+    const c = getConversation(convParam);
+    if (c) loadConversation(c);
+  }, [searchParams, setSearchParams]);
+
   function copyShareLink() {
     const firstPane = panes[0];
     const lastUser = [...firstPane.messages].reverse().find(m => m.role === 'user');
@@ -2507,6 +2571,36 @@ JSON`;
     navigator.clipboard.writeText(u.toString());
     setShareCopied(true);
     setTimeout(() => setShareCopied(false), 2000);
+  }
+
+  async function shareChat() {
+    if (!apiKey) {
+      setAuthModalOpen(true);
+      return;
+    }
+    const firstPane = panes[0];
+    try {
+      const res = await fetch('/v1/chats/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          title: deriveTitle(firstPane.messages as any),
+          model: firstPane.modelId,
+          system_prompt: systemPrompt,
+          messages: firstPane.messages
+            .filter(m => m.role === 'user' || m.role === 'assistant')
+            .map(m => ({ role: m.role, content: m.content })),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || (!data.url && !data.slug)) throw new Error(data.error?.message || 'share failed');
+      const url = data.url || `${window.location.origin}/chat/${data.slug}`;
+      await navigator.clipboard.writeText(url);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    } catch {
+      copyShareLink();
+    }
   }
 
   function stopAll() {
@@ -2818,11 +2912,11 @@ JSON`;
         )}
         {hasMessages && (
           <button
-            onClick={copyShareLink}
+            onClick={shareChat}
             className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border border-white/10 text-white/60 hover:text-white hover:border-white/20 transition-colors"
-            title="Copy a link that replays this prompt"
+            title="Copy a public link to this chat"
           >
-            {shareCopied ? <><Check className="w-3.5 h-3.5 text-green-400" /> Copied</> : <><Share2 className="w-3.5 h-3.5" /> Share</>}
+            {shareCopied ? <><Check className="w-3.5 h-3.5 text-green-400" /> Share link copied</> : <><Share2 className="w-3.5 h-3.5" /> Share</>}
           </button>
         )}
         <div className="ml-auto flex items-center gap-3">
@@ -3040,10 +3134,10 @@ JSON`;
                 className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30"
                 data-testid="image-size"
               >
-                {IMAGE_SIZES.map(size => <option key={size} value={size} className="bg-black text-white">{size}</option>)}
+                {(primaryIsBFLImage ? BFL_IMAGE_SIZES : IMAGE_SIZES).map(size => <option key={size} value={size} className="bg-black text-white">{size}</option>)}
               </select>
             </label>}
-            {!primaryIsOutpaintImage && <label className="block">
+            {!primaryIsOutpaintImage && !primaryIsBFLImage && <label className="block">
               <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Quality</span>
               <select
                 value={imageQuality}
@@ -3077,7 +3171,27 @@ JSON`;
                 {IMAGE_RESPONSE_FORMATS.map(format => <option key={format} value={format} className="bg-black text-white">{format}</option>)}
               </select>
             </label>}
-            {!primaryIsOutpaintImage && <label className="block">
+            {primaryIsBFLImage && (
+              <>
+                <label className="block">
+                  <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Output</span>
+                  <select value={imageOutputFormat} onChange={e => setImageOutputFormat(e.target.value)} className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30" data-testid="image-output-format">
+                    {['webp', 'png', 'jpeg'].map(format => <option key={format} value={format} className="bg-black text-white">{format}</option>)}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Prompt upsampling</span>
+                  <button type="button" onClick={() => setImagePromptUpsampling(value => !value)} className={`w-full border rounded px-3 py-2 text-xs font-mono transition-colors ${imagePromptUpsampling ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' : 'border-white/10 bg-black text-white/50'}`} data-testid="image-prompt-upsampling">
+                    {imagePromptUpsampling ? 'on · richer prompt' : 'off · exact prompt'}
+                  </button>
+                </label>
+                <div className="block">
+                  <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Safety tolerance</span>
+                  <div className="w-full border border-white/10 rounded bg-white/[0.03] px-3 py-2 text-xs font-mono text-white/55" data-testid="image-safety-tolerance"><span className="text-white">5</span> · fixed</div>
+                </div>
+              </>
+            )}
+            {!primaryIsOutpaintImage && !primaryIsBFLImage && <label className="block">
               <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Aspect</span>
               <select
                 value={imageAspectRatio}
@@ -3141,22 +3255,43 @@ JSON`;
       {primaryIsVideo && (
         <div className="border-b border-white/10 px-4 py-3 bg-black/40">
           <div className="max-w-5xl grid grid-cols-2 md:grid-cols-7 gap-3">
+            {videoSpec.inputModes && (
+              <label className="block col-span-2 md:col-span-2">
+                <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Video mode</span>
+                <select
+                  value={videoInputMode}
+                  onChange={e => {
+                    const next = e.target.value as VideoInputMode;
+                    setVideoInputMode(next);
+                    if (next === 'image-to-video' && !videoImageUrl) setVideoImageUrl('https://openpaths.io/static/blog/video-tips/coast-poster.webp');
+                  }}
+                  className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30"
+                  data-testid="video-input-mode"
+                >
+                  {videoSpec.inputModes.map(mode => (
+                    <option key={mode} value={mode} className="bg-black text-white">
+                      {mode === 'text-to-video' ? 'Text / Image → Video: text' : mode === 'image-to-video' ? 'Text / Image → Video: image' : 'Video → Video'}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <label className="block">
               <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Resolution</span>
               <select value={videoResolution} onChange={e => setVideoResolution(e.target.value as typeof VIDEO_RESOLUTIONS[number])} className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30" data-testid="video-resolution">
-                {VIDEO_RESOLUTIONS.map(v => <option key={v} value={v} className="bg-black text-white">{v}</option>)}
+                {videoSpec.resolutions.map(v => <option key={v} value={v} className="bg-black text-white">{v}</option>)}
               </select>
             </label>
             <label className="block">
               <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Duration</span>
               <select value={videoDuration} onChange={e => setVideoDuration(e.target.value as typeof VIDEO_DURATIONS[number])} className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30" data-testid="video-duration">
-                {VIDEO_DURATIONS.map(v => <option key={v} value={v} className="bg-black text-white">{v}</option>)}
+                {videoSpec.durations.map(v => <option key={v} value={v} className="bg-black text-white">{v}</option>)}
               </select>
             </label>
             <label className="block">
               <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Aspect</span>
               <select value={videoAspectRatio} onChange={e => setVideoAspectRatio(e.target.value as typeof VIDEO_ASPECT_RATIOS[number])} className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30" data-testid="video-aspect-ratio">
-                {VIDEO_ASPECT_RATIOS.map(v => <option key={v} value={v} className="bg-black text-white">{v}</option>)}
+                {videoSpec.aspectRatios.map(v => <option key={v} value={v} className="bg-black text-white">{v}</option>)}
               </select>
             </label>
             <label className="block">
@@ -3165,7 +3300,46 @@ JSON`;
                 {primaryIsHappyHorseVideo || videoGenerateAudio ? 'on' : 'off'}
               </button>
             </label>
-            {primaryIsImageToVideo ? (
+            {videoSpec.safetyTolerance !== undefined && (
+              <div className="block">
+                <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Safety tolerance</span>
+                <div className="w-full border border-white/10 rounded bg-white/[0.03] px-3 py-2 text-xs font-mono text-white/55" data-testid="video-safety-tolerance">
+                  <span className="text-white">{videoSpec.safetyTolerance}</span> · fixed
+                </div>
+              </div>
+            )}
+            {videoSpec.inputModes ? (
+              videoInputMode === 'image-to-video' ? (
+                <>
+                  <label
+                    className={`block col-span-2 md:col-span-2 rounded border p-2 transition-colors ${dragTarget === 'image' ? 'border-emerald-400/60 bg-emerald-400/10' : 'border-white/10 bg-white/[0.015]'}`}
+                    data-testid="video-start-image-dropzone"
+                    {...referenceDropHandlers('image')}
+                  >
+                    <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Start image</span>
+                    <input value={videoImageUrl} onChange={e => setVideoImageUrl(normalizeUploadedAssetUrl(e.target.value))} placeholder="https://..." className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30" data-testid="video-image-url" />
+                    <input type="file" accept="image/*" disabled={uploadingRefs} onChange={e => e.target.files && uploadReferenceFiles(e.target.files, 'image')} className="mt-1 block w-full text-[10px] font-mono text-white/35 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-white/60" />
+                    <SingleImagePreview url={videoImageUrl} label="video-start-image" />
+                  </label>
+                  <label
+                    className={`block col-span-2 md:col-span-1 rounded border p-2 transition-colors ${dragTarget === 'end-image' ? 'border-emerald-400/60 bg-emerald-400/10' : 'border-white/10 bg-white/[0.015]'}`}
+                    data-testid="video-end-image-dropzone"
+                    {...referenceDropHandlers('end-image')}
+                  >
+                    <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">End image</span>
+                    <input value={videoEndImageUrl} onChange={e => setVideoEndImageUrl(normalizeUploadedAssetUrl(e.target.value))} placeholder="optional URL" className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30" data-testid="video-end-image-url" />
+                    <input type="file" accept="image/*" disabled={uploadingRefs} onChange={e => e.target.files && uploadReferenceFiles(e.target.files, 'end-image')} className="mt-1 block w-full text-[10px] font-mono text-white/35 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-white/60" />
+                    <SingleImagePreview url={videoEndImageUrl} label="video-end-image" />
+                  </label>
+                </>
+              ) : videoInputMode === 'video-to-video' ? (
+                <label className="block col-span-2 md:col-span-3">
+                  <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Input video URL</span>
+                  <textarea value={videoVideoUrls} onChange={e => setVideoVideoUrls(e.target.value)} rows={1} placeholder="https://example.com/input-video.mp4" className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30 resize-none" data-testid="video-video-urls" />
+                  <input type="file" accept="video/mp4,video/quicktime,video/*" disabled={uploadingRefs} onChange={e => e.target.files && uploadReferenceFiles(e.target.files, 'video')} className="mt-1 block w-full text-[10px] font-mono text-white/35 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-white/60" />
+                </label>
+              ) : null
+            ) : primaryIsImageToVideo ? (
               <>
                 <label
                   className={`block col-span-2 md:col-span-2 rounded border p-2 transition-colors ${dragTarget === 'image' ? 'border-emerald-400/60 bg-emerald-400/10' : 'border-white/10 bg-white/[0.015]'}`}
@@ -3208,6 +3382,63 @@ JSON`;
                 </label>
               </>
             ) : null}
+          </div>
+          <div className="max-w-5xl mt-2">
+            <button type="button" onClick={() => setShowVideoAdvanced(v => !v)} className="font-mono text-[10px] uppercase tracking-wider text-white/40 hover:text-white" data-testid="video-advanced-toggle">
+              {showVideoAdvanced ? '− Advanced args' : '+ Advanced args'}
+            </button>
+            {showVideoAdvanced && (
+              <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-3" data-testid="video-advanced">
+                {videoSpec.negativePrompt && (
+                  <label className="block col-span-2 md:col-span-1">
+                    <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Negative prompt</span>
+                    <input value={videoAdvanced.negativePrompt} onChange={e => setVideoAdvanced(p => ({ ...p, negativePrompt: e.target.value }))} placeholder="blurry, distorted" className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30" data-testid="video-negative-prompt" />
+                  </label>
+                )}
+                {videoSpec.seed && (
+                  <label className="block">
+                    <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Seed</span>
+                    <input value={videoAdvanced.seed} onChange={e => setVideoAdvanced(p => ({ ...p, seed: e.target.value }))} inputMode="numeric" placeholder="random" className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30" data-testid="video-seed" />
+                  </label>
+                )}
+                {videoSpec.numFrames && (
+                  <label className="block">
+                    <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Num frames</span>
+                    <input value={videoAdvanced.numFrames} onChange={e => setVideoAdvanced(p => ({ ...p, numFrames: e.target.value }))} inputMode="numeric" placeholder={videoSpec.numFrames.placeholder} className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30" data-testid="video-num-frames" />
+                  </label>
+                )}
+                {videoSpec.framesPerSecond && (
+                  <label className="block">
+                    <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">FPS</span>
+                    <select value={videoAdvanced.framesPerSecond} onChange={e => setVideoAdvanced(p => ({ ...p, framesPerSecond: e.target.value }))} className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30" data-testid="video-fps">
+                      <option value="" className="bg-black text-white">default</option>
+                      {videoSpec.framesPerSecond.options.map(o => <option key={o} value={o} className="bg-black text-white">{o}</option>)}
+                    </select>
+                  </label>
+                )}
+                {videoSpec.guidanceScale && (
+                  <label className="block">
+                    <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Guidance</span>
+                    <input value={videoAdvanced.guidanceScale} onChange={e => setVideoAdvanced(p => ({ ...p, guidanceScale: e.target.value }))} inputMode="decimal" placeholder={videoSpec.guidanceScale.placeholder} className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30" data-testid="video-guidance-scale" />
+                  </label>
+                )}
+                {videoSpec.numInferenceSteps && (
+                  <label className="block">
+                    <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Steps</span>
+                    <input value={videoAdvanced.numInferenceSteps} onChange={e => setVideoAdvanced(p => ({ ...p, numInferenceSteps: e.target.value }))} inputMode="numeric" placeholder={videoSpec.numInferenceSteps.placeholder} className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30" data-testid="video-num-inference-steps" />
+                  </label>
+                )}
+                {videoSpec.outputFormats && (
+                  <label className="block">
+                    <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Format</span>
+                    <select value={videoAdvanced.outputFormat} onChange={e => setVideoAdvanced(p => ({ ...p, outputFormat: e.target.value }))} className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30" data-testid="video-output-format">
+                      <option value="" className="bg-black text-white">default</option>
+                      {videoSpec.outputFormats.map(o => <option key={o} value={o} className="bg-black text-white">{o}</option>)}
+                    </select>
+                  </label>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -3511,6 +3742,7 @@ JSON`;
         )}
       </div>
       </div>
+      <AuthModal open={authModalOpen} onClose={() => setAuthModalOpen(false)} onSuccess={() => setApiKey(localStorage.getItem('op_api_key') || '')} />
     </div>
   );
 }
@@ -3777,6 +4009,13 @@ function MessageBubble({
   const [copied, setCopied] = useState(false);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(message.content);
+  // Every pane re-render used to re-parse the markdown of every message in the
+  // transcript. Keyed on the content so only the message actually growing
+  // during a stream pays for a re-parse.
+  const body = useMemo(
+    () => (message.content ? renderMarkdown(message.content) : null),
+    [message.content],
+  );
   const isUser = message.role === 'user';
   const imageSrc = message.imageB64
     ? `data:image/png;base64,${message.imageB64}`
@@ -3980,7 +4219,7 @@ function MessageBubble({
                 <audio src={audioSrc} controls className="w-full" />
               </div>
             )}
-            {message.content && renderMarkdown(message.content)}
+            {body}
           </div>
         )}
       </div>

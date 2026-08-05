@@ -2,6 +2,7 @@ package cron
 
 import (
 	"testing"
+	"time"
 
 	"github.com/openpaths/openpaths/internal/model"
 )
@@ -36,5 +37,83 @@ func TestIsChatProbeModel(t *testing.T) {
 		InputPricePer1M: 1.25, OutputPricePer1M: 10, ContextWindow: 400000, MaxOutputTokens: 128000,
 	}) {
 		t.Fatal("codex model should not be probeable")
+	}
+	if IsChatProbeModel(model.ModelConfig{
+		ID: "retired-chat", Provider: "openrouter", Deprecated: true,
+		InputPricePer1M: 1, OutputPricePer1M: 2, ContextWindow: 128000, MaxOutputTokens: 8192,
+	}) {
+		t.Fatal("deprecated model should not be probeable")
+	}
+}
+
+func TestFilterDue(t *testing.T) {
+	now := time.Now()
+	targets := []model.ModelConfig{
+		{ID: "never-probed"},
+		{ID: "healthy-fresh"},
+		{ID: "healthy-stale"},
+		{ID: "failing-fresh"},
+		{ID: "failing-stale"},
+	}
+	last := map[string]model.ModelProbeResult{
+		// Healthy models ride the weekly cadence.
+		"healthy-fresh": {Model: "healthy-fresh", OK: true, ProbedAt: now.Add(-2 * 24 * time.Hour)},
+		"healthy-stale": {Model: "healthy-stale", OK: true, ProbedAt: now.Add(-8 * 24 * time.Hour)},
+		// Failing models are retried daily.
+		"failing-fresh": {Model: "failing-fresh", OK: false, ProbedAt: now.Add(-2 * time.Hour)},
+		"failing-stale": {Model: "failing-stale", OK: false, ProbedAt: now.Add(-25 * time.Hour)},
+	}
+
+	got := map[string]bool{}
+	for _, cfg := range filterDue(targets, last, now) {
+		got[cfg.ID] = true
+	}
+
+	for _, id := range []string{"never-probed", "healthy-stale", "failing-stale"} {
+		if !got[id] {
+			t.Errorf("%s: expected due", id)
+		}
+	}
+	for _, id := range []string{"healthy-fresh", "failing-fresh"} {
+		if got[id] {
+			t.Errorf("%s: expected to be skipped", id)
+		}
+	}
+}
+
+// A restart must not re-probe a catalogue that was probed minutes ago -- that
+// was the bug that turned every deploy into a full billed sweep.
+func TestFilterDueSkipsEverythingRightAfterASweep(t *testing.T) {
+	now := time.Now()
+	targets := []model.ModelConfig{{ID: "a"}, {ID: "b"}, {ID: "c"}}
+	last := map[string]model.ModelProbeResult{
+		"a": {Model: "a", OK: true, ProbedAt: now.Add(-5 * time.Minute)},
+		"b": {Model: "b", OK: true, ProbedAt: now.Add(-5 * time.Minute)},
+		"c": {Model: "c", OK: false, ProbedAt: now.Add(-5 * time.Minute)},
+	}
+	if due := filterDue(targets, last, now); len(due) != 0 {
+		t.Fatalf("expected no models due right after a sweep, got %d", len(due))
+	}
+}
+
+func TestProbeSucceeded(t *testing.T) {
+	tests := []struct {
+		name             string
+		choiceCount      int
+		content          string
+		completionTokens int
+		want             bool
+	}{
+		{name: "visible output", choiceCount: 1, content: "hi", want: true},
+		{name: "reasoning only", choiceCount: 1, completionTokens: 12, want: true},
+		{name: "empty choice", choiceCount: 1, want: false},
+		{name: "usage without choice", completionTokens: 12, want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := probeSucceeded(tt.choiceCount, tt.content, tt.completionTokens); got != tt.want {
+				t.Fatalf("probeSucceeded() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

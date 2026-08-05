@@ -275,6 +275,8 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			{Description: "extract email phone url date number from text parse", ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none"},
 			{Description: "translate short phrase word sentence between languages", ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none"},
 			{Description: "what time weather date today current status check", ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none"},
+			{Description: "deduplicate sort filter rows remove blanks normalize columns", ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none"},
+			{Description: "extract named entities keywords topics language sentiment", ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none"},
 
 			// ===== EASY - GPT-5.4 Nano (cheap, fast, tool support) =====
 			{Description: "git commit push pull merge branch checkout status diff log", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
@@ -289,18 +291,23 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			{Description: "regex pattern match replace string manipulation text processing", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
 			{Description: "readme changelog license contributing guide project docs", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
 			{Description: "ci cd pipeline github actions workflow deploy build", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
+			{Description: "forecast a line continue trend extrapolate time series next points", ModelID: "gpt-5.4-nano", ReasoningEffort: "low"},
+			{Description: "estimate near term values from sparse line chart out of distribution", ModelID: "gpt-5.4-nano", ReasoningEffort: "low"},
+			{Description: "map fields rename keys validate a small payload", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
 
 			// ===== MODERATE CODING - GPT-5.4 Mini (great price/perf) + Claude Sonnet =====
 			{Description: "implement feature add functionality new endpoint api route handler controller", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
 			{Description: "debug fix bug error exception crash investigate issue trace", ModelID: "gpt-5.4-mini", ReasoningEffort: "medium"},
-			{Description: "code review analyze quality security vulnerability check audit", ModelID: "claude-sonnet-4-6", ReasoningEffort: "medium"},
+			{Description: "code review analyze quality security vulnerability check audit", ModelID: "claude-sonnet-latest", ReasoningEffort: "medium"},
 			{Description: "database query sql migration schema design model orm prisma", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
 			{Description: "data analysis csv json structured query analytics pandas numpy", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
 			{Description: "api integration third party sdk client library webhook", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
-			{Description: "authentication authorization login signup oauth jwt session", ModelID: "claude-sonnet-4-6", ReasoningEffort: "medium"},
+			{Description: "authentication authorization login signup oauth jwt session", ModelID: "claude-sonnet-latest", ReasoningEffort: "medium"},
 			{Description: "backend server middleware routing request response http rest", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
 			{Description: "write comprehensive test suite integration test e2e coverage", ModelID: "gpt-5.4-mini", ReasoningEffort: "medium"},
 			{Description: "error handling validation input sanitization edge cases", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
+			{Description: "forecast noisy seasonal time series with assumptions and uncertainty", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
+			{Description: "analyze spreadsheet formulas joins pivots and inconsistent rows", ModelID: "gpt-5.4-mini", ReasoningEffort: "medium"},
 
 			// ===== DESIGN / FRONTEND - Gemini 3.5 Flash (best at visual/design) =====
 			{Description: "website design frontend ui ux layout page component react vue svelte", ModelID: "gemini-3.5-flash", ReasoningEffort: "medium"},
@@ -333,6 +340,9 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			{Description: "cryptography protocol security formal verification zero knowledge proof", ModelID: "gpt-5.5", ReasoningEffort: "high"},
 			{Description: "operating system kernel driver low level systems programming", ModelID: "gpt-5.5", ReasoningEffort: "high"},
 			{Description: "quantum computing algorithm complexity theory np hard reduction", ModelID: "gpt-5.5", ReasoningEffort: "high"},
+			{Description: "causal inference counterfactual identification confounding experimental design", ModelID: "gpt-5.5", ReasoningEffort: "high"},
+			{Description: "multi stage migration with compatibility rollback data integrity and zero downtime", ModelID: "gpt-5.5", ReasoningEffort: "high"},
+			{Description: "investigate an intermittent production incident across distributed traces and partial logs", ModelID: "gpt-5.5", ReasoningEffort: "high"},
 
 			// ===== CREATIVE / CHAT - GPT 5 Chat Latest =====
 			{Description: "creative writing story poetry fiction novel narrative worldbuilding screenplay", ModelID: "gpt-5-chat-latest", ReasoningEffort: "low"},
@@ -368,6 +378,8 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			{Description: "extract email phone url date number from text", ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none"},
 			{Description: "translate short phrase word sentence between languages", ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none"},
 			{Description: "what time weather date today current status check", ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none"},
+			{Description: "deduplicate sort filter rows remove blanks normalize columns", ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none"},
+			{Description: "extract names keywords labels sentiment language from short text", ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none"},
 			// GPT-5.4 Nano - fast and cheap with tool support
 			{Description: "classify categorize label tag sort rank items", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
 			{Description: "pick choose select chart type visualization type bar line scatter table", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
@@ -383,6 +395,8 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			{Description: "shell command bash script terminal automation cron", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
 			{Description: "install package dependency npm pip cargo go get", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
 			{Description: "regex pattern match replace string manipulation text", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
+			{Description: "forecast a line continue trend extrapolate time series next points", ModelID: "gpt-5.4-nano", ReasoningEffort: "low"},
+			{Description: "estimate next values from a chart or sparse observations out of distribution", ModelID: "gpt-5.4-nano", ReasoningEffort: "low"},
 			// DeepSeek V4 Flash - cheap direct path for lightweight sensitive classifiers
 			{Description: "classify sensitive content harm category adult roleplay biosecurity fringe policy", ModelID: "deepseek-v4-flash", ReasoningEffort: "none"},
 			// Gemini 2.5 Flash - lightweight but stronger general replies
@@ -406,9 +420,9 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			{Description: "refactor codebase restructure reorganize code cleanup", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
 			{Description: "write comprehensive test suite integration test e2e", ModelID: "gpt-5.4-mini", ReasoningEffort: "medium"},
 			// Claude Sonnet - strong for security/auth/code review
-			{Description: "code review analyze quality security vulnerability check", ModelID: "claude-sonnet-4-6", ReasoningEffort: "medium"},
-			{Description: "database query sql migration schema design model orm", ModelID: "claude-sonnet-4-6", ReasoningEffort: "low"},
-			{Description: "authentication authorization login signup oauth jwt session", ModelID: "claude-sonnet-4-6", ReasoningEffort: "medium"},
+			{Description: "code review analyze quality security vulnerability check", ModelID: "claude-sonnet-latest", ReasoningEffort: "medium"},
+			{Description: "database query sql migration schema design model orm", ModelID: "claude-sonnet-latest", ReasoningEffort: "low"},
+			{Description: "authentication authorization login signup oauth jwt session", ModelID: "claude-sonnet-latest", ReasoningEffort: "medium"},
 			// Gemini 2.5 Flash - fast mid-tier for frontend
 			{Description: "website design frontend ui ux layout component react vue", ModelID: "gemini-2.5-flash", ReasoningEffort: "low"},
 			{Description: "css styling animation responsive design theme tailwind", ModelID: "gemini-2.5-flash", ReasoningEffort: "low"},
@@ -433,6 +447,9 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			{Description: "non trivial json schema output structured generation prefill continuation careful formatting", ModelID: "gemini-3.5-flash", ReasoningEffort: "medium"},
 			{Description: "architectural decision tradeoff analysis senior engineer judgement", ModelID: "gemini-3.5-flash", ReasoningEffort: "high"},
 			{Description: "deep product reasoning subtle requirements ambiguous spec planning", ModelID: "gemini-3.5-flash", ReasoningEffort: "high"},
+			{Description: "causal inference counterfactual analysis confounders identification strategy", ModelID: "gemini-3.5-flash", ReasoningEffort: "high"},
+			{Description: "multi region disaster recovery migration with rollback consistency and failure injection", ModelID: "gemini-3.5-flash", ReasoningEffort: "high"},
+			{Description: "reconcile contradictory requirements evidence sources and hidden constraints", ModelID: "gemini-3.5-flash", ReasoningEffort: "high"},
 			// High-effort algorithmic / math / systems.
 			{Description: "formal verification compiler design cryptography research deep scientific reasoning", ModelID: "gemini-3.5-flash", ReasoningEffort: "high"},
 			{Description: "prove a theorem derive a formula or solve a hard math olympiad style problem", ModelID: "gemini-3.5-flash", ReasoningEffort: "high"},
@@ -456,6 +473,8 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			{Description: "explain a concept simply compare two options briefly", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
 			{Description: "draft a short email response summarize and suggest next steps", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
 			{Description: "debug a small bug trace a simple error update config safely", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
+			{Description: "forecast a line or time series extrapolate the next few values", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
+			{Description: "estimate trend direction from sparse noisy observations with caveats", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
 
 			// MEDIUM - multi-step work where deliberate reasoning is useful.
 			{Description: "design an api endpoint with validation auth and edge cases", ModelID: "gpt-5.4-mini", ReasoningEffort: "medium"},
@@ -503,7 +522,7 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			// Medium coding
 			{Description: "debug fix bug error exception crash investigate stack trace", ModelID: "gpt-5.4-mini", ReasoningEffort: "medium"},
 			{Description: "implement feature endpoint api route handler refactor module", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
-			{Description: "code review security vulnerability quality audit", ModelID: "claude-sonnet-4-6", ReasoningEffort: "medium"},
+			{Description: "code review security vulnerability quality audit", ModelID: "claude-sonnet-latest", ReasoningEffort: "medium"},
 			// 3D / Three.js / frontend visual coding — Gemini
 			{Description: "threejs webgl 3d scene mesh shader animation canvas react three fiber", ModelID: "gemini-3.5-flash", ReasoningEffort: "medium"},
 			{Description: "frontend ui ux layout component react vue svelte tailwind css", ModelID: "gemini-3.5-flash", ReasoningEffort: "medium"},
@@ -518,6 +537,7 @@ func defaultRoutingTables() map[string][]AutoEntry {
 		"reasoning-task": {
 			{Description: "say yes answer yes only one word trivial acknowledgement", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
 			{Description: "explain a concept simply compare two options briefly", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
+			{Description: "forecast a line extrapolate a time series next values out of distribution", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
 			{Description: "plan a refactor migration test strategy across several files", ModelID: "gpt-5.4-mini", ReasoningEffort: "medium"},
 			{Description: "analyze tradeoffs architecture performance bottlenecks failure modes", ModelID: "gpt-5.4-mini", ReasoningEffort: "medium"},
 			{Description: "prove a theorem derive formula hard math olympiad logic puzzle", ModelID: "gemini-3.5-flash", ReasoningEffort: "high"},

@@ -16,14 +16,16 @@ import (
 	"github.com/google/uuid"
 	"github.com/openpaths/openpaths/internal/model"
 	"github.com/openpaths/openpaths/internal/provider"
+	"github.com/openpaths/openpaths/internal/safefetch"
 	"google.golang.org/genai"
 )
 
 type GoogleProvider struct {
-	apiKey   string
-	baseURL  string
-	client   *http.Client
-	cacheMgr *GeminiCacheManager
+	apiKey      string
+	baseURL     string
+	client      *http.Client
+	imageClient *http.Client
+	cacheMgr    *GeminiCacheManager
 }
 
 func New(apiKey, baseURL string) *GoogleProvider {
@@ -31,9 +33,10 @@ func New(apiKey, baseURL string) *GoogleProvider {
 		baseURL = "https://generativelanguage.googleapis.com"
 	}
 	return &GoogleProvider{
-		apiKey:  apiKey,
-		baseURL: strings.TrimRight(baseURL, "/"),
-		client:  &http.Client{Timeout: 5 * time.Minute},
+		apiKey:      apiKey,
+		baseURL:     strings.TrimRight(baseURL, "/"),
+		client:      &http.Client{Timeout: 5 * time.Minute},
+		imageClient: safefetch.NewClient(30 * time.Second),
 	}
 }
 

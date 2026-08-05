@@ -73,7 +73,7 @@ func TestChatCompletion_AddsDeepSeekV4ProTemplateKwargs(t *testing.T) {
 	if kwargs["thinking"] != true {
 		t.Fatalf("chat_template_kwargs.thinking = %v, want true", kwargs["thinking"])
 	}
-	if kwargs["reasoning_effort"] != "high" {
-		t.Fatalf("chat_template_kwargs.reasoning_effort = %v, want high", kwargs["reasoning_effort"])
+	if _, ok := kwargs["reasoning_effort"]; ok {
+		t.Fatalf("undocumented chat_template_kwargs.reasoning_effort should be omitted: %#v", kwargs)
 	}
 }

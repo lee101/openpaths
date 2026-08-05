@@ -11,6 +11,7 @@ import (
 	"github.com/openpaths/openpaths/internal/billing"
 	"github.com/openpaths/openpaths/internal/db/queries"
 	"github.com/openpaths/openpaths/internal/model"
+	"github.com/openpaths/openpaths/internal/modelaccess"
 	"github.com/openpaths/openpaths/internal/provider"
 	"github.com/openpaths/openpaths/internal/router"
 	"github.com/openpaths/openpaths/internal/storage"
@@ -18,7 +19,7 @@ import (
 
 var errNoEmbedding = errors.New("no embedding returned")
 
-const defaultModel = "claude-sonnet-4-6"
+const defaultModel = "claude-sonnet-latest"
 
 // Engine executes agents: a tool-calling loop over the chat router with per-step
 // billing, plus document ingest/RAG.
@@ -29,10 +30,39 @@ type Engine struct {
 	q           *queries.AgentQueries
 	store       storage.Store
 	computerURL string // optional computer-use sandbox endpoint
+	exaKey      string // optional Exa key enabling the web_search tool
+	accessQ     modelaccess.Checker
 }
 
 func NewEngine(r *router.Router, b *billing.Engine, emb provider.EmbeddingProvider, q *queries.AgentQueries, store storage.Store, computerURL string) *Engine {
 	return &Engine{router: r, billing: b, embedder: emb, q: q, store: store, computerURL: computerURL}
+}
+
+// SetExaKey enables the web_search tool with the platform Exa API key.
+func (e *Engine) SetExaKey(key string) { e.exaKey = strings.TrimSpace(key) }
+
+// SetAccess wires the optional Model IAM policy store (default-open when unset).
+func (e *Engine) SetAccess(checker modelaccess.Checker) { e.accessQ = checker }
+
+func (e *Engine) resolveAuthorizedCandidates(ctx context.Context, userID, modelID string) ([]router.RouteCandidate, error) {
+	modelID = strings.TrimSpace(modelID)
+	if modelID == "" || modelID == "auto" {
+		modelID = defaultModel
+	}
+	candidates, err := e.router.ResolveForRequest(modelID, "")
+	if err != nil || len(candidates) == 0 {
+		if candidates, err = e.router.ResolveWithRetries(defaultModel); err != nil {
+			return nil, fmt.Errorf("resolve agent model: %w", err)
+		}
+	}
+	return modelaccess.FilterCandidates(ctx, e.accessQ, userID, modelID, candidates)
+}
+
+// AuthorizeModel lets HTTP handlers reject a denied run before starting a
+// streaming response. Run repeats the check at its provider boundary.
+func (e *Engine) AuthorizeModel(ctx context.Context, userID, modelID string) error {
+	_, err := e.resolveAuthorizedCandidates(ctx, userID, modelID)
+	return err
 }
 
 // Run executes the agent against the request. emit, if non-nil, receives each
@@ -50,11 +80,9 @@ func (e *Engine) Run(ctx context.Context, userID string, ag *model.Agent, req mo
 	if modelID == "" || modelID == "auto" {
 		modelID = defaultModel
 	}
-	candidates, err := e.router.ResolveForRequest(modelID, "")
-	if err != nil || len(candidates) == 0 {
-		if candidates, err = e.router.ResolveWithRetries(defaultModel); err != nil {
-			return nil, fmt.Errorf("resolve agent model: %w", err)
-		}
+	candidates, err := e.resolveAuthorizedCandidates(ctx, userID, modelID)
+	if err != nil {
+		return nil, err
 	}
 
 	tools, toolDefs := e.buildTools(userID, ag)
@@ -68,6 +96,16 @@ func (e *Engine) Run(ctx context.Context, userID string, ag *model.Agent, req mo
 		messages = append(messages, model.ChatMessage{Role: "user", Content: req.Input})
 	}
 
+	// Agent runs are not behind the BalanceCheck middleware (accountChain has no
+	// balance or rate-limit stage) and each step is billed only after it has
+	// been served, so without this gate a zero-balance user could burn up to
+	// maxSteps full model calls before anything stopped them.
+	if e.billing != nil {
+		if err := e.billing.PreCheck(ctx, userID, modelID, 1000); err != nil {
+			return nil, fmt.Errorf("insufficient credits: %w", err)
+		}
+	}
+
 	run := &model.AgentRun{AgentID: ag.ID, UserID: userID, Input: req.Input, Status: "completed"}
 	record := func(s model.AgentRunStep) {
 		run.Steps = append(run.Steps, s)
@@ -77,6 +115,16 @@ func (e *Engine) Run(ctx context.Context, userID string, ag *model.Agent, req mo
 	}
 
 	for step := 0; step < maxSteps; step++ {
+		// Re-check between steps: a long multi-step run can exhaust a balance
+		// that was healthy when the run started.
+		if step > 0 && e.billing != nil {
+			if err := e.billing.PreCheck(ctx, userID, modelID, 1000); err != nil {
+				run.Status = "error"
+				record(model.AgentRunStep{Type: "error", Output: "run stopped: insufficient credits"})
+				break
+			}
+		}
+
 		chatReq := &model.ChatCompletionRequest{Model: modelID, Messages: messages, Temperature: ag.Config.Temperature}
 		if len(toolDefs) > 0 {
 			chatReq.Tools = toolDefs

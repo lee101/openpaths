@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"io"
@@ -14,17 +15,22 @@ import (
 	"github.com/openpaths/openpaths/internal/db/queries"
 	"github.com/openpaths/openpaths/internal/middleware"
 	"github.com/openpaths/openpaths/internal/model"
+	"github.com/openpaths/openpaths/internal/storage"
 )
 
 // AgentsHandler serves the user-built agents feature: CRUD, data sources, and runs.
 type AgentsHandler struct {
 	q      *queries.AgentQueries
 	engine *agent.Engine
+	store  storage.Store
 }
 
 func NewAgentsHandler(q *queries.AgentQueries, engine *agent.Engine) *AgentsHandler {
 	return &AgentsHandler{q: q, engine: engine}
 }
+
+// SetStorage enables durable links for useful images extracted from uploads.
+func (h *AgentsHandler) SetStorage(store storage.Store) { h.store = store }
 
 func agentUserID(ctx *fasthttp.RequestCtx) string {
 	id, _ := ctx.UserValue(middleware.CtxKeyUserID).(string)
@@ -102,6 +108,7 @@ func (h *AgentsHandler) HandleGet(ctx *fasthttp.RequestCtx) {
 		return
 	}
 	a.Sources, _ = h.q.ListSources(ctx, a.ID)
+	a.Sources = publicAgentSources(a.Sources)
 	writeJSON(ctx, 200, a)
 }
 
@@ -142,6 +149,7 @@ func (h *AgentsHandler) HandleListSources(ctx *fasthttp.RequestCtx) {
 		return
 	}
 	sources, _ := h.q.ListSources(ctx, id)
+	sources = publicAgentSources(sources)
 	writeJSON(ctx, 200, map[string]any{"object": "list", "sources": sources})
 }
 
@@ -192,7 +200,7 @@ func (h *AgentsHandler) HandleCreateSource(ctx *fasthttp.RequestCtx) {
 		_ = h.q.SetSourceStatus(ctx, src.ID, "ingesting", 0)
 		src.Status = "ingesting"
 	}
-	writeJSON(ctx, 200, src)
+	writeJSON(ctx, 200, publicAgentSource(*src))
 }
 
 // HandleUploadSource serves POST /v1/agents/{id}/sources/upload (multipart file).
@@ -221,17 +229,30 @@ func (h *AgentsHandler) HandleUploadSource(ctx *fasthttp.RequestCtx) {
 		return
 	}
 	defer f.Close()
-	data, err := io.ReadAll(io.LimitReader(f, 25<<20))
+	const maxUploadBytes = 25 << 20
+	data, err := io.ReadAll(io.LimitReader(f, maxUploadBytes+1))
 	if err != nil {
 		writeError(ctx, 400, "invalid_request", err.Error())
 		return
 	}
-	md, err := agent.ToMarkdown(fh.Filename, fh.Header.Get("Content-Type"), data)
+	if len(data) > maxUploadBytes {
+		writeError(ctx, 413, "file_too_large", "document exceeds the 25 MB upload limit")
+		return
+	}
+	converted, err := agent.ConvertDocument(fh.Filename, fh.Header.Get("Content-Type"), data)
 	if err != nil {
 		writeError(ctx, 400, "convert_error", err.Error())
 		return
 	}
-	src, err := h.q.CreateSource(ctx, uid, id, "document", fh.Filename, nil)
+	md, imagesKept := h.materializeDocumentImages(ctx, converted)
+	meta := map[string]any{
+		"bytes":       len(data),
+		"format":      strings.TrimPrefix(strings.ToLower(pathExtension(fh.Filename)), "."),
+		"parser":      converted.Parser,
+		"images_seen": converted.Seen,
+		"images_kept": imagesKept,
+	}
+	src, err := h.q.CreateSource(ctx, uid, id, "document", fh.Filename, meta)
 	if err != nil {
 		writeError(ctx, 500, "db_error", err.Error())
 		return
@@ -240,6 +261,65 @@ func (h *AgentsHandler) HandleUploadSource(ctx *fasthttp.RequestCtx) {
 	go h.ingest(a.ID, uid, src.ID, fh.Filename, md)
 	src.Status = "ingesting"
 	writeJSON(ctx, 200, src)
+}
+
+func (h *AgentsHandler) materializeDocumentImages(ctx context.Context, converted agent.ConvertedDocument) (string, int) {
+	markdown := converted.Markdown
+	kept := 0
+	for _, img := range converted.Images {
+		replacement := ""
+		if h.store != nil {
+			url, err := h.store.Upload(ctx, "document-image.webp", "image/webp", bytes.NewReader(img.WebP))
+			if err == nil {
+				alt := strings.NewReplacer("[", "", "]", "", "\n", " ", "\r", " ").Replace(img.Alt)
+				if runes := []rune(alt); len(runes) > 160 {
+					alt = string(runes[:160])
+				}
+				replacement = "![" + alt + "](" + url + ")"
+				kept++
+			}
+		}
+		markdown = strings.ReplaceAll(markdown, img.Placeholder, replacement)
+	}
+	return strings.TrimSpace(markdown), kept
+}
+
+func pathExtension(name string) string {
+	if i := strings.LastIndex(name, "."); i >= 0 {
+		return name[i:]
+	}
+	return "text"
+}
+
+// publicAgentSources removes connection secrets from dashboard responses while
+// leaving the persisted metadata available to the database tool at run time.
+func publicAgentSources(sources []model.AgentDataSource) []model.AgentDataSource {
+	out := make([]model.AgentDataSource, len(sources))
+	for i, source := range sources {
+		out[i] = publicAgentSource(source)
+	}
+	return out
+}
+
+func publicAgentSource(source model.AgentDataSource) model.AgentDataSource {
+	if source.Meta == nil {
+		return source
+	}
+	meta := make(map[string]any, len(source.Meta))
+	for key, value := range source.Meta {
+		if strings.EqualFold(key, "dsn") {
+			meta["connected"] = strings.TrimSpace(stringValue(value)) != ""
+			continue
+		}
+		meta[key] = value
+	}
+	source.Meta = meta
+	return source
+}
+
+func stringValue(value any) string {
+	text, _ := value.(string)
+	return text
 }
 
 func (h *AgentsHandler) ingest(agentID, userID, sourceID, title, markdown string) {
@@ -298,6 +378,10 @@ func (h *AgentsHandler) HandleRun(ctx *fasthttp.RequestCtx) {
 		writeError(ctx, 404, "not_found", "agent not found")
 		return
 	}
+	if err := h.engine.AuthorizeModel(ctx, uid, a.Model); err != nil {
+		writeError(ctx, 403, "model_not_permitted", err.Error())
+		return
+	}
 	var req model.RunAgentRequest
 	if err := json.Unmarshal(ctx.PostBody(), &req); err != nil {
 		writeError(ctx, 400, "invalid_request", err.Error())
@@ -318,6 +402,10 @@ func (h *AgentsHandler) HandleRunStream(ctx *fasthttp.RequestCtx) {
 	a, err := h.q.Get(ctx, uid, id)
 	if err != nil {
 		writeError(ctx, 404, "not_found", "agent not found")
+		return
+	}
+	if err := h.engine.AuthorizeModel(ctx, uid, a.Model); err != nil {
+		writeError(ctx, 403, "model_not_permitted", err.Error())
 		return
 	}
 	var req model.RunAgentRequest

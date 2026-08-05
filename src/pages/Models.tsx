@@ -7,7 +7,7 @@ import { motion } from 'motion/react';
 import { Seo } from '../components/Seo';
 import { modelPath, providerPath } from '../lib/paths';
 
-const ALL_TAGS: Tag[] = ['programming', 'reasoning', 'agentic', 'general', 'vision', 'fast', 'audio', 'embedding', 'open-source', 'free', 'art generation', 'text-to-image', 'image-to-image', 'image-to-3d', 'outpainting', 'video generation', 'roleplay'];
+const ALL_TAGS: Tag[] = ['programming', 'reasoning', 'agentic', 'general', 'vision', 'fast', 'audio', 'embedding', 'open-source', 'free', 'art generation', 'text-to-image', 'image-to-image', 'text-to-video', 'image-to-video', 'video-to-video', 'image-to-3d', 'outpainting', 'video generation', 'forecasting', 'roleplay'];
 
 const TAG_ICONS: Record<Tag, React.ReactNode> = {
   'programming': <Code2 className="w-3 h-3" />,
@@ -18,8 +18,12 @@ const TAG_ICONS: Record<Tag, React.ReactNode> = {
   'image-to-3d': <Box className="w-3 h-3" />,
   'outpainting': <ImageIcon className="w-3 h-3" />,
   'video generation': <Video className="w-3 h-3" />,
+  'text-to-video': <Video className="w-3 h-3" />,
+  'image-to-video': <Video className="w-3 h-3" />,
+  'video-to-video': <Video className="w-3 h-3" />,
   'audio': <AudioLines className="w-3 h-3" />,
   'embedding': <Database className="w-3 h-3" />,
+  'forecasting': <ArrowUpDown className="w-3 h-3" />,
   'general': <Globe className="w-3 h-3" />,
   'vision': <ImageIcon className="w-3 h-3" />,
   'fast': <Zap className="w-3 h-3" />,
@@ -190,7 +194,7 @@ export function Models() {
             <div className="flex justify-between items-start mb-4">
               <div>
                 <div className="text-xs font-mono text-white/40 mb-1 flex items-center gap-1.5">
-                  <img src={getProviderLogo(model.provider)} alt="" className="w-4 h-4 rounded-sm" />
+                  <img src={getProviderLogo(model.provider)} alt="" className={`w-4 h-4 rounded-sm object-contain ${model.provider === 'Black Forest Labs' ? 'bg-white p-px' : ''}`} />
                   {providersByName[model.provider] ? (
                     <Link to={providerPath(providersByName[model.provider].slug)} className="hover:text-white transition-colors underline underline-offset-2 decoration-white/20">
                       {model.provider}
@@ -202,7 +206,7 @@ export function Models() {
                 </Link>
               </div>
               <div className="px-2 py-1 bg-white/10 rounded text-[10px] font-mono text-white/60">
-                {model.contextLength !== 'N/A' ? `${model.contextLength} ctx` : model.tags.includes('audio') ? 'Audio' : 'Image'}
+                {model.contextLength !== 'N/A' ? `${model.contextLength} ctx` : model.tags.includes('video generation') ? 'Video' : model.tags.includes('audio') ? 'Audio' : 'Image'}
               </div>
             </div>
 
@@ -231,6 +235,10 @@ export function Models() {
                 ) : model.pricingType === 'hour' ? (
                   <div className="text-white/40">
                     <span className="text-white">${model.priceInput.toFixed(2)}</span> / hour
+                  </div>
+                ) : model.pricingType === 'second' ? (
+                  <div className="text-white/40">
+                    <span className="text-white">${model.priceInput.toFixed(2)}</span> / second
                   </div>
                 ) : model.pricingType === 'megapixel' ? (
                   <div className="text-white/40">

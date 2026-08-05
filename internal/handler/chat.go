@@ -19,6 +19,7 @@ import (
 	"github.com/openpaths/openpaths/internal/metrics"
 	"github.com/openpaths/openpaths/internal/middleware"
 	"github.com/openpaths/openpaths/internal/model"
+	"github.com/openpaths/openpaths/internal/modelaccess"
 	"github.com/openpaths/openpaths/internal/provider"
 	"github.com/openpaths/openpaths/internal/router"
 	"github.com/openpaths/openpaths/internal/savedresp"
@@ -31,6 +32,22 @@ type ChatHandler struct {
 	userQ        *queries.UserQueries
 	providerKeyQ *queries.ProviderKeyQueries
 	saver        *savedresp.Saver
+	accessQ      *queries.AccessQueries
+}
+
+// SetAccess wires the optional Model IAM policy store (default-open when unset).
+func (h *ChatHandler) SetAccess(a *queries.AccessQueries) { h.accessQ = a }
+
+// modelDenied checks Model IAM and, when denied, writes a 403 and returns true.
+func (h *ChatHandler) modelDenied(ctx *fasthttp.RequestCtx, userID, modelID string) bool {
+	if h.accessQ == nil {
+		return false
+	}
+	if ok, reason := h.accessQ.ModelAllowed(ctx, userID, modelID); !ok {
+		writeError(ctx, 403, "model_not_permitted", reason)
+		return true
+	}
+	return false
 }
 
 func NewChatHandler(r *router.Router, b *billing.Engine, rec *metrics.Recorder, userQ *queries.UserQueries, providerKeyQ *queries.ProviderKeyQueries) *ChatHandler {
@@ -60,6 +77,9 @@ func (h *ChatHandler) HandleChatCompletion(ctx *fasthttp.RequestCtx) {
 	}
 
 	originalModel := req.Model
+	if h.modelDenied(ctx, userID, originalModel) {
+		return
+	}
 	apiKeyID := ""
 	if apiKey != nil {
 		apiKeyID = apiKey.ID
@@ -84,10 +104,24 @@ func (h *ChatHandler) HandleChatCompletion(ctx *fasthttp.RequestCtx) {
 		writeError(ctx, 404, "model_not_found", err.Error())
 		return
 	}
+	candidates = router.OrderCandidates(candidates, req.RoutingStrategy)
+	candidates, err = modelaccess.FilterCandidates(ctx, h.accessQ, userID, originalModel, candidates)
+	if err != nil {
+		writeError(ctx, 403, "model_not_permitted", err.Error())
+		return
+	}
+
+	callerEffort := req.ReasoningEffort
 
 	var lastErr error
 	for i, cand := range candidates {
 		req.Model = cand.ModelCfg.ProviderModelID
+		// Per-model default applies only when the caller named no effort, and is
+		// re-resolved per candidate so a fallback model's default cannot leak.
+		req.ReasoningEffort = callerEffort
+		if req.ReasoningEffort == "" {
+			req.ReasoningEffort = cand.ModelCfg.DefaultReasoningEffort
+		}
 		attempts := getProviderAttempts(ctx, userID, cand.Provider.Name())
 		if len(attempts) > 0 && cand.Provider.Name() == "openai" {
 			attempts = append(attempts, selectedProvider{provider: cand.Provider})
@@ -96,7 +130,8 @@ func (h *ChatHandler) HandleChatCompletion(ctx *fasthttp.RequestCtx) {
 			attempts = []selectedProvider{{provider: cand.Provider}}
 		}
 
-		for j, attempt := range attempts {
+		for j := 0; j < len(attempts); j++ {
+			attempt := attempts[j]
 			start := time.Now()
 			var handled bool
 			var attemptErr error
@@ -116,9 +151,26 @@ func (h *ChatHandler) HandleChatCompletion(ctx *fasthttp.RequestCtx) {
 				lastErr = attemptErr
 			}
 			if attempt.cred != nil {
-				h.handleOpenAIMaxPlanCredentialFailure(ctx, userID, attempt.cred, attemptErr)
+				refreshedCred := h.handleOpenAIMaxPlanCredentialFailure(
+					ctx, userID, attempt.cred, attemptErr, !attempt.afterRefresh,
+				)
+				if refreshedCred != nil {
+					// Retry this exact request once with the newly derived API key.
+					// Both streaming and non-streaming 401s reach here before a
+					// response body has been sent, so the retry is safe.
+					refreshedAttempt := selectedProvider{
+						provider:     makeUserProvider("openai", refreshedCred.APIKey),
+						byok:         attempt.byok,
+						cred:         refreshedCred,
+						afterRefresh: true,
+					}
+					attempts = append(attempts, selectedProvider{})
+					copy(attempts[j+2:], attempts[j+1:])
+					attempts[j+1] = refreshedAttempt
+					log.Printf("openai max plan credential refreshed: retrying %s on %s", attempt.cred.Label, cand.ModelCfg.ProviderModelID)
+				}
 				if j < len(attempts)-1 {
-					log.Printf("openai max plan credential fallback: %s failed, trying next credential/key", attempt.cred.Label)
+					log.Printf("openai max plan credential fallback: %s failed on %s, trying next credential/key: %v", attempt.cred.Label, cand.ModelCfg.ProviderModelID, attemptErr)
 				}
 			}
 		}
@@ -245,6 +297,11 @@ func (h *ChatHandler) handleOpenRouterFusion(ctx *fasthttp.RequestCtx, req *mode
 	outerModel := strings.TrimSpace(req.Fusion.Model)
 	if outerModel == "" {
 		outerModel = req.Model
+	}
+	ids := append([]string{req.Model, outerModel}, req.Fusion.AnalysisModels...)
+	if err := modelaccess.CheckIDs(ctx, h.accessQ, userID, ids...); err != nil {
+		writeError(ctx, 403, "model_not_permitted", err.Error())
+		return
 	}
 	orReq := *req
 	orReq.Model = outerModel
@@ -403,9 +460,17 @@ func (h *ChatHandler) runFusionCompletion(ctx context.Context, req *model.ChatCo
 	if err != nil {
 		return nil, err
 	}
+	candidates = router.OrderCandidates(candidates, req.RoutingStrategy)
+	candidates, err = modelaccess.FilterCandidates(ctx, h.accessQ, userID, requestedModel, candidates)
+	if err != nil {
+		return nil, err
+	}
 	for _, cand := range candidates {
 		legReq := *req
 		legReq.Model = cand.ModelCfg.ProviderModelID
+		if legReq.ReasoningEffort == "" {
+			legReq.ReasoningEffort = cand.ModelCfg.DefaultReasoningEffort
+		}
 		if userID != "" {
 			if err := h.billing.PreCheck(ctx, userID, cand.ModelCfg.ID, maxOutputTokens(&legReq)); err != nil {
 				return nil, fmt.Errorf("insufficient credits")
@@ -653,6 +718,7 @@ func (h *ChatHandler) tryStreamingBYOK(
 	ctx.SetBodyStreamWriter(func(w *bufio.Writer) {
 		var usage *model.UsageInfo
 		var outBuf strings.Builder
+		var firstTokenAt time.Time
 
 		for event := range streamCh {
 			if event.Err != nil {
@@ -676,6 +742,11 @@ func (h *ChatHandler) tryStreamingBYOK(
 			if wantSave && len(event.Chunk.Choices) > 0 && event.Chunk.Choices[0].Delta != nil {
 				outBuf.WriteString(messageContentText(event.Chunk.Choices[0].Delta.Content))
 			}
+			if firstTokenAt.IsZero() && len(event.Chunk.Choices) > 0 && event.Chunk.Choices[0].Delta != nil {
+				if messageContentText(event.Chunk.Choices[0].Delta.Content) != "" {
+					firstTokenAt = time.Now()
+				}
+			}
 			data, _ := json.Marshal(event.Chunk)
 			w.WriteString("data: ")
 			w.Write(data)
@@ -686,17 +757,23 @@ func (h *ChatHandler) tryStreamingBYOK(
 		latency := time.Since(start)
 		if usage != nil {
 			var tps float32
-			if latency.Seconds() > 0 {
-				tps = float32(float64(usage.CompletionTokens) / latency.Seconds())
+			ttftMs := 0
+			generationWindow := latency
+			if !firstTokenAt.IsZero() {
+				ttftMs = int(firstTokenAt.Sub(start).Milliseconds())
+				generationWindow = time.Since(firstTokenAt)
+			}
+			if generationWindow.Seconds() > 0 {
+				tps = float32(float64(usage.CompletionTokens) / generationWindow.Seconds())
 			}
 			var cost int64
 			if !byok {
 				cost, _ = h.billing.DeductWithCachedInput(ctx, userID, modelCfg.ID,
 					usage.PromptTokens, usage.CompletionTokens, usage.CachedPromptTokens(), req.ReasoningEffort, "")
 			}
-			h.recorder.RecordSuccessWithApp(userID, apiKeyID, originalModel, prov.Name(),
+			h.recorder.RecordSuccessWithAppTimings(userID, apiKeyID, originalModel, prov.Name(),
 				usage.PromptTokens, usage.CompletionTokens,
-				int(latency.Milliseconds()), tps, cost, true, app.ID, app.URL, app.Title, app.Categories)
+				int(latency.Milliseconds()), ttftMs, tps, cost, true, app.ID, app.URL, app.Title, app.Categories)
 			if wantSave {
 				saveTextGeneration(h.saver, userID, apiKeyID, originalModel, prov.Name(),
 					req.Messages, outBuf.String(), usage.PromptTokens, usage.CompletionTokens, cost)

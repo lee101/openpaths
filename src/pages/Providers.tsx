@@ -1,14 +1,30 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { providers, FALLBACK_LOGO } from '../data/providers';
+import { providers, FALLBACK_LOGO, Provider } from '../data/providers';
 import { models } from '../data/models';
-import { ExternalLink, ArrowRight, Star } from 'lucide-react';
+import { ExternalLink, ArrowRight, Star, Search as SearchIcon } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Seo } from '../components/Seo';
 import { providerDocsPath, providerPath } from '../lib/paths';
 
 function modelCountFor(providerName: string) {
   return models.filter(m => m.provider === providerName).length;
+}
+
+function ProviderBadge({ provider }: { provider: Provider }) {
+  if (provider.kind === 'search') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white/10 rounded text-[10px] font-mono text-white/60">
+        <SearchIcon className="w-2.5 h-2.5" /> Search API
+      </span>
+    );
+  }
+  const count = modelCountFor(provider.name);
+  return (
+    <span className="px-2 py-0.5 bg-white/10 rounded text-[10px] font-mono text-white/60">
+      {count} model{count !== 1 ? 's' : ''}
+    </span>
+  );
 }
 
 export function Providers() {
@@ -64,14 +80,12 @@ export function Providers() {
             >
               <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-3">
-                  <img src={provider.logo || FALLBACK_LOGO} alt="" className="w-8 h-8 rounded object-contain" />
+                  <img src={provider.logoSmall || provider.logo || FALLBACK_LOGO} srcSet={provider.logoSrcSet} sizes="32px" alt="" className={`w-8 h-8 rounded object-contain ${provider.slug === 'black-forest-labs' ? 'bg-white p-0.5' : ''}`} />
                   <Link to={providerPath(provider.slug)} className="text-xl font-bold tracking-tight hover:underline underline-offset-4">
                     {provider.name}
                   </Link>
                 </div>
-                <span className="px-2 py-0.5 bg-white/10 rounded text-[10px] font-mono text-white/60">
-                  {modelCountFor(provider.name)} model{modelCountFor(provider.name) !== 1 ? 's' : ''}
-                </span>
+                <ProviderBadge provider={provider} />
               </div>
               <p className="text-sm text-white/60 font-light leading-relaxed mb-6 flex-1">
                 {provider.description}
@@ -99,12 +113,21 @@ export function Providers() {
                 >
                   <ArrowRight className="w-3 h-3" /> Provider Page
                 </Link>
-                <Link
-                  to={`/models?q=${encodeURIComponent(provider.name)}`}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white/60 border border-white/10 rounded hover:text-white hover:border-white/30 transition-colors"
-                >
-                  <ArrowRight className="w-3 h-3" /> View Models
-                </Link>
+                {provider.kind === 'search' ? (
+                  <Link
+                    to="/search"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white/60 border border-white/10 rounded hover:text-white hover:border-white/30 transition-colors"
+                  >
+                    <ArrowRight className="w-3 h-3" /> Try Search
+                  </Link>
+                ) : (
+                  <Link
+                    to={`/models?q=${encodeURIComponent(provider.name)}`}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white/60 border border-white/10 rounded hover:text-white hover:border-white/30 transition-colors"
+                  >
+                    <ArrowRight className="w-3 h-3" /> View Models
+                  </Link>
+                )}
               </div>
             </motion.div>
           ))}
@@ -126,14 +149,12 @@ export function Providers() {
             >
               <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-3">
-                  <img src={provider.logo || FALLBACK_LOGO} alt="" className="w-7 h-7 rounded object-contain" />
+                  <img src={provider.logoSmall || provider.logo || FALLBACK_LOGO} srcSet={provider.logoSrcSet} sizes="28px" alt="" className={`w-7 h-7 rounded object-contain ${provider.slug === 'black-forest-labs' ? 'bg-white p-0.5' : ''}`} />
                   <Link to={providerPath(provider.slug)} className="text-lg font-bold tracking-tight hover:underline underline-offset-4">
                     {provider.name}
                   </Link>
                 </div>
-                <span className="px-2 py-0.5 bg-white/10 rounded text-[10px] font-mono text-white/60">
-                  {modelCountFor(provider.name)} model{modelCountFor(provider.name) !== 1 ? 's' : ''}
-                </span>
+                <ProviderBadge provider={provider} />
               </div>
               <p className="text-sm text-white/60 font-light leading-relaxed mb-6 flex-1">
                 {provider.description}
@@ -159,12 +180,21 @@ export function Providers() {
                 >
                   <ArrowRight className="w-3 h-3" /> Provider Page
                 </Link>
-                <Link
-                  to={`/models?q=${encodeURIComponent(provider.name)}`}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white/60 border border-white/10 rounded hover:text-white hover:border-white/30 transition-colors"
-                >
-                  <ArrowRight className="w-3 h-3" /> View Models
-                </Link>
+                {provider.kind === 'search' ? (
+                  <Link
+                    to="/search"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white/60 border border-white/10 rounded hover:text-white hover:border-white/30 transition-colors"
+                  >
+                    <ArrowRight className="w-3 h-3" /> Try Search
+                  </Link>
+                ) : (
+                  <Link
+                    to={`/models?q=${encodeURIComponent(provider.name)}`}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white/60 border border-white/10 rounded hover:text-white hover:border-white/30 transition-colors"
+                  >
+                    <ArrowRight className="w-3 h-3" /> View Models
+                  </Link>
+                )}
               </div>
             </motion.div>
           ))}

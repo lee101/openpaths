@@ -33,6 +33,7 @@ import (
 	"github.com/openpaths/openpaths/internal/provider"
 	"github.com/openpaths/openpaths/internal/provider/anthropic"
 	"github.com/openpaths/openpaths/internal/provider/appnz"
+	"github.com/openpaths/openpaths/internal/provider/bfl"
 	"github.com/openpaths/openpaths/internal/provider/cursor"
 	"github.com/openpaths/openpaths/internal/provider/cutedsl"
 	"github.com/openpaths/openpaths/internal/provider/deepseek"
@@ -227,6 +228,8 @@ func main() {
 			f := fal.New(provCfg.APIKey)
 			transcribers = append(transcribers, f)
 			p = f
+		case "bfl":
+			p = bfl.New(provCfg.APIKey, provCfg.BaseURL)
 		case "exa":
 			log.Printf("Registered search provider: exa")
 			continue
@@ -391,6 +394,7 @@ func main() {
 
 	// User-built agents: tool-use + computer-use with connected data sources.
 	agentEngine := agent.NewEngine(modelRouter, billingEngine, localEmbedder, agentQ, store, os.Getenv("OPENPATHS_COMPUTER_USE_URL"))
+	agentEngine.SetAccess(accessQ)
 	if exaCfg := handler.ExaSearchProviderConfig(cfg.Providers); exaCfg.Enabled && exaCfg.APIKey != "" {
 		agentEngine.SetExaKey(exaCfg.APIKey)
 	}

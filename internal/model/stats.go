@@ -12,6 +12,7 @@ type ModelStats struct {
 	P50LatencyMs   float64 `json:"p50_latency_ms"`
 	P95LatencyMs   float64 `json:"p95_latency_ms"`
 	P99LatencyMs   float64 `json:"p99_latency_ms"`
+	AvgTTFTMs      float64 `json:"avg_ttft_ms"`
 	AvgTPS         float64 `json:"avg_tps"`
 	ErrorRate      float64 `json:"error_rate"`
 	TotalCostCents int64   `json:"total_cost_cents"`
@@ -47,6 +48,8 @@ type UsageBreakdown struct {
 	TotalTokensOut int64   `json:"total_tokens_out"`
 	TotalCostCents int64   `json:"total_cost_cents"`
 	AvgLatencyMs   float64 `json:"avg_latency_ms"`
+	AvgTTFTMs      float64 `json:"avg_ttft_ms"`
+	AvgTPS         float64 `json:"avg_tps"`
 	ErrorRate      float64 `json:"error_rate"`
 }
 

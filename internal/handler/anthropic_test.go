@@ -38,6 +38,11 @@ func TestParseAnthropicThinking(t *testing.T) {
 			thinking: map[string]any{"type": "auto"},
 			want:     "auto",
 		},
+		{
+			name:     "adaptive thinking",
+			thinking: map[string]any{"type": "adaptive"},
+			want:     "auto",
+		},
 	}
 
 	for _, tt := range tests {

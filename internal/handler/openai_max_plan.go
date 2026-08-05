@@ -1,10 +1,10 @@
 package handler
 
 import (
-	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -28,9 +28,10 @@ import (
 const openAIMaxPlanProvider = "openai_codex"
 
 type selectedProvider struct {
-	provider provider.Provider
-	byok     bool
-	cred     *openAIMaxPlanCredential
+	provider     provider.Provider
+	byok         bool
+	cred         *openAIMaxPlanCredential
+	afterRefresh bool
 }
 
 type openAIMaxPlanCredential struct {
@@ -40,6 +41,12 @@ type openAIMaxPlanCredential struct {
 	ProviderName string
 	AuthJSON     string
 	RefreshToken string
+	// Platform marks the shared admin max-plan credential used for all OpenAI
+	// traffic. OwnerUserID is the user the credential is stored under (the
+	// admin), used to persist refreshes to the right row rather than the
+	// requesting user.
+	Platform    bool
+	OwnerUserID string
 }
 
 type credentialCircuit struct {
@@ -60,26 +67,28 @@ func getProviderAttempts(ctx *fasthttp.RequestCtx, userID, providerName string) 
 		return nil
 	}
 
-	keys := getUserProviderKeys(ctx)
-	if keys == nil {
-		return nil
-	}
-
 	var attempts []selectedProvider
-	for _, cred := range healthyOpenAIMaxPlanCredentials(userID, keys) {
-		attempts = append(attempts, selectedProvider{
-			provider: makeUserProvider("openai", cred.APIKey),
-			byok:     true,
-			cred:     cred,
-		})
+	if keys := getUserProviderKeys(ctx); keys != nil {
+		for _, cred := range healthyOpenAIMaxPlanCredentials(userID, keys) {
+			attempts = append(attempts, selectedProvider{
+				provider: makeUserProvider("openai", cred.APIKey),
+				byok:     true,
+				cred:     cred,
+			})
+		}
+
+		if uk, ok := keys["openai"]; ok && strings.TrimSpace(uk.APIKey) != "" {
+			attempts = append(attempts, selectedProvider{
+				provider: makeUserProvider("openai", strings.TrimSpace(uk.APIKey)),
+				byok:     true,
+			})
+		}
 	}
 
-	if uk, ok := keys["openai"]; ok && strings.TrimSpace(uk.APIKey) != "" {
-		attempts = append(attempts, selectedProvider{
-			provider: makeUserProvider("openai", strings.TrimSpace(uk.APIKey)),
-			byok:     true,
-		})
-	}
+	// Shared admin max-plan credential: used for everyone, after a request
+	// user's own OpenAI keys and before the platform env-key fallback that
+	// chat.go appends. byok is false so the requesting user is still billed.
+	attempts = append(attempts, adminOpenAIMaxPlanAttempts()...)
 
 	return attempts
 }
@@ -288,54 +297,66 @@ func shuffleCredentials(creds []*openAIMaxPlanCredential) {
 	}
 }
 
-func (h *ChatHandler) handleOpenAIMaxPlanCredentialFailure(ctx context.Context, userID string, cred *openAIMaxPlanCredential, err error) {
+func (h *ChatHandler) handleOpenAIMaxPlanCredentialFailure(
+	ctx context.Context,
+	userID string,
+	cred *openAIMaxPlanCredential,
+	err error,
+	allowRefresh bool,
+) *openAIMaxPlanCredential {
 	if cred == nil {
-		return
+		return nil
+	}
+	if cred.Platform {
+		return h.handleAdminOpenAIMaxPlanFailure(ctx, cred, err, allowRefresh)
 	}
 	if !isCredentialAuthError(err) || h.userQ == nil || h.providerKeyQ == nil {
 		markOpenAIMaxPlanCredentialFailure(cred.ID, err)
-		return
+		return nil
 	}
-	if refreshed, refreshErr := h.tryRefreshOpenAIMaxPlanCredential(ctx, userID, cred); refreshed {
-		markOpenAIMaxPlanCredentialHealthy(cred.ID)
-		return
-	} else if refreshErr != nil {
-		log.Printf("openai max plan credential refresh failed for %s: %v", cred.Label, refreshErr)
+	if allowRefresh {
+		if refreshed, refreshErr := h.tryRefreshOpenAIMaxPlanCredential(ctx, userID, cred); refreshed {
+			markOpenAIMaxPlanCredentialHealthy(cred.ID)
+			return cred
+		} else if refreshErr != nil {
+			log.Printf("openai max plan credential refresh failed for %s: %v", cred.Label, refreshErr)
+		}
 	}
 	markOpenAIMaxPlanCredentialFailure(cred.ID, err)
 	shouldSend, alertErr := h.providerKeyQ.ShouldSendCredentialAlert(ctx, userID, openAIMaxPlanProvider, cred.ID)
 	if alertErr != nil {
 		log.Printf("openai max plan credential alert throttle failed: %v", alertErr)
-		return
+		return nil
 	}
 	if !shouldSend {
-		return
+		return nil
 	}
 	user, userErr := h.userQ.GetByID(ctx, userID)
 	if userErr != nil || user == nil || strings.TrimSpace(user.Email) == "" {
 		if userErr != nil {
 			log.Printf("openai max plan credential alert user lookup failed: %v", userErr)
 		}
-		return
+		return nil
 	}
 	go sendOpenAIMaxPlanCredentialEmail(user.Email, cred.Label, err)
+	return nil
 }
 
 func (h *ChatHandler) tryRefreshOpenAIMaxPlanCredential(ctx context.Context, userID string, cred *openAIMaxPlanCredential) (bool, error) {
 	if cred.RefreshToken == "" || cred.AuthJSON == "" || cred.ProviderName == "" {
 		return false, nil
 	}
-	refreshed, err := refreshOpenAIMaxPlanAuthJSON(ctx, cred.AuthJSON, cred.RefreshToken)
+	refreshed, _, err := refreshStoredOpenAIMaxPlanAuthJSON(
+		ctx, h.providerKeyQ, userID, cred.ProviderName, cred.AuthJSON, true,
+	)
 	if err != nil {
 		return false, err
 	}
 	if refreshed.APIKey == "" || refreshed.AuthJSON == "" {
 		return false, nil
 	}
-	if err := h.providerKeyQ.UpsertAuthJSON(ctx, userID, cred.ProviderName, refreshed.AuthJSON); err != nil {
-		return false, err
-	}
 	cred.APIKey = refreshed.APIKey
+	cred.ID = newOpenAIMaxPlanCredential(userID, cred.ProviderName, "", refreshed.APIKey).ID
 	cred.AuthJSON = refreshed.AuthJSON
 	cred.RefreshToken = refreshed.RefreshToken
 	return true, nil
@@ -357,6 +378,138 @@ type refreshedOpenAIMaxPlanAuth struct {
 	APIKey       string
 	RefreshToken string
 	AuthJSON     string
+}
+
+const (
+	openAIAccessTokenRefreshWindow = 10 * time.Minute
+	openAIUnknownTokenMaxAge       = 3 * time.Hour
+)
+
+// RefreshStoredOpenAICodexCredentialIfNeeded proactively rotates a stored
+// Codex sign-in when its access token is near expiry. It is exported for the
+// refresh scheduler; request-time 401 recovery uses the same locked path with
+// force=true below.
+func RefreshStoredOpenAICodexCredentialIfNeeded(
+	ctx context.Context,
+	pkQ *queries.ProviderKeyQueries,
+	key *queries.UserProviderKey,
+) (bool, error) {
+	if pkQ == nil || key == nil || key.Provider != openAIMaxPlanProvider || strings.TrimSpace(key.AuthJSON) == "" {
+		return false, nil
+	}
+	if !openAIAuthNeedsRefresh(key.AuthJSON, time.Now()) {
+		return false, nil
+	}
+	_, changed, err := refreshStoredOpenAIMaxPlanAuthJSON(
+		ctx, pkQ, key.UserID, key.Provider, key.AuthJSON, false,
+	)
+	return changed, err
+}
+
+// refreshStoredOpenAIMaxPlanAuthJSON locks the database row before calling the
+// rotating-token endpoint. If another replica already updated the observed
+// auth JSON, its newer result is reused instead of consuming the old refresh
+// token a second time.
+func refreshStoredOpenAIMaxPlanAuthJSON(
+	ctx context.Context,
+	pkQ *queries.ProviderKeyQueries,
+	userID, providerName, observedAuthJSON string,
+	force bool,
+) (*refreshedOpenAIMaxPlanAuth, bool, error) {
+	if pkQ == nil {
+		return nil, false, fmt.Errorf("provider key store is unavailable")
+	}
+	var result *refreshedOpenAIMaxPlanAuth
+	current, changed, err := pkQ.UpdateAuthJSONLocked(ctx, userID, providerName, func(current string) (string, error) {
+		// A concurrent refresher won the race. Reuse what it persisted.
+		if observedAuthJSON != "" && current != observedAuthJSON {
+			var snapshotErr error
+			result, snapshotErr = openAIMaxPlanAuthSnapshot(current)
+			return current, snapshotErr
+		}
+		if !force && !openAIAuthNeedsRefresh(current, time.Now()) {
+			var snapshotErr error
+			result, snapshotErr = openAIMaxPlanAuthSnapshot(current)
+			return current, snapshotErr
+		}
+		snapshot, snapshotErr := openAIMaxPlanAuthSnapshot(current)
+		if snapshotErr != nil {
+			return "", snapshotErr
+		}
+		result, snapshotErr = refreshOpenAIMaxPlanAuthJSON(ctx, current, snapshot.RefreshToken)
+		if snapshotErr != nil {
+			return "", snapshotErr
+		}
+		return result.AuthJSON, nil
+	})
+	if err != nil {
+		return nil, false, err
+	}
+	if result == nil {
+		result, err = openAIMaxPlanAuthSnapshot(current)
+		if err != nil {
+			return nil, false, err
+		}
+	}
+	return result, changed, nil
+}
+
+func openAIMaxPlanAuthSnapshot(raw string) (*refreshedOpenAIMaxPlanAuth, error) {
+	var root map[string]any
+	if err := json.Unmarshal([]byte(raw), &root); err != nil {
+		return nil, err
+	}
+	apiKey := openAIKeyFromAuthObject(root)
+	refreshToken := refreshTokenFromAuthObject(root)
+	if apiKey == "" {
+		return nil, fmt.Errorf("OpenAI sign-in is missing its derived API key")
+	}
+	if refreshToken == "" {
+		return nil, fmt.Errorf("OpenAI sign-in is missing its refresh token")
+	}
+	return &refreshedOpenAIMaxPlanAuth{
+		APIKey:       apiKey,
+		RefreshToken: refreshToken,
+		AuthJSON:     raw,
+	}, nil
+}
+
+func openAIAuthNeedsRefresh(raw string, now time.Time) bool {
+	var root map[string]any
+	if json.Unmarshal([]byte(raw), &root) != nil || refreshTokenFromAuthObject(root) == "" {
+		return false
+	}
+	if tokens, ok := root["tokens"].(map[string]any); ok {
+		if expiresAt, ok := jwtExpiration(stringField(tokens, "access_token")); ok {
+			return !expiresAt.After(now.Add(openAIAccessTokenRefreshWindow))
+		}
+	}
+	if lastRefresh := stringField(root, "last_refresh"); lastRefresh != "" {
+		if refreshedAt, err := time.Parse(time.RFC3339, lastRefresh); err == nil {
+			return !refreshedAt.After(now.Add(-openAIUnknownTokenMaxAge))
+		}
+	}
+	// Older stored sign-ins did not record token expiry or last_refresh. Rotate
+	// them once so they are upgraded to the current format.
+	return true
+}
+
+func jwtExpiration(token string) (time.Time, bool) {
+	parts := strings.Split(token, ".")
+	if len(parts) != 3 {
+		return time.Time{}, false
+	}
+	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return time.Time{}, false
+	}
+	var claims struct {
+		ExpiresAt int64 `json:"exp"`
+	}
+	if json.Unmarshal(payload, &claims) != nil || claims.ExpiresAt <= 0 {
+		return time.Time{}, false
+	}
+	return time.Unix(claims.ExpiresAt, 0), true
 }
 
 func refreshOpenAIMaxPlanAuthJSON(ctx context.Context, rawAuthJSON, refreshToken string) (*refreshedOpenAIMaxPlanAuth, error) {
@@ -393,17 +546,16 @@ type openAIRefreshTokenResponse struct {
 }
 
 func requestOpenAIAuthRefresh(ctx context.Context, refreshToken string) (*openAIRefreshTokenResponse, error) {
-	body, _ := json.Marshal(map[string]string{
-		"client_id":     openAIOAuthClientID,
-		"grant_type":    "refresh_token",
-		"refresh_token": refreshToken,
-	})
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, openAIOAuthTokenEndpoint(), bytes.NewReader(body))
+	form := url.Values{}
+	form.Set("client_id", openAIOAuthClientID)
+	form.Set("grant_type", "refresh_token")
+	form.Set("refresh_token", refreshToken)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, openAIOAuthTokenEndpoint(), strings.NewReader(form.Encode()))
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := http.DefaultClient.Do(req)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	resp, err := openAIOAuthHTTPClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -431,7 +583,7 @@ func exchangeOpenAIIDTokenForAPIKey(ctx context.Context, idToken string) (string
 		return "", err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := openAIOAuthHTTPClient.Do(req)
 	if err != nil {
 		return "", err
 	}

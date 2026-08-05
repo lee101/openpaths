@@ -14,6 +14,7 @@ import (
 	"github.com/openpaths/openpaths/internal/metrics"
 	"github.com/openpaths/openpaths/internal/middleware"
 	"github.com/openpaths/openpaths/internal/model"
+	"github.com/openpaths/openpaths/internal/modelaccess"
 	"github.com/openpaths/openpaths/internal/provider"
 	"github.com/openpaths/openpaths/internal/router"
 )
@@ -23,6 +24,7 @@ type SpeechHandler struct {
 	billing  *billing.Engine
 	recorder *metrics.Recorder
 	emotions *audio.AutoEmotion
+	accessQ  modelaccess.Checker
 }
 
 func NewSpeechHandler(r *router.Router, b *billing.Engine, rec *metrics.Recorder) *SpeechHandler {
@@ -32,6 +34,8 @@ func NewSpeechHandler(r *router.Router, b *billing.Engine, rec *metrics.Recorder
 func (h *SpeechHandler) SetAutoEmotion(marker *audio.AutoEmotion) {
 	h.emotions = marker
 }
+
+func (h *SpeechHandler) SetAccess(checker modelaccess.Checker) { h.accessQ = checker }
 
 func (h *SpeechHandler) HandleSpeechGeneration(ctx *fasthttp.RequestCtx) {
 	userID, _ := ctx.UserValue(middleware.CtxKeyUserID).(string)
@@ -88,6 +92,11 @@ func (h *SpeechHandler) HandleSpeechGeneration(ctx *fasthttp.RequestCtx) {
 		writeError(ctx, 404, "model_not_found", err.Error())
 		return
 	}
+	candidates, err = modelaccess.FilterCandidates(ctx, h.accessQ, userID, originalModel, candidates)
+	if err != nil {
+		writeError(ctx, 403, "model_not_permitted", err.Error())
+		return
+	}
 
 	for i, cand := range candidates {
 		speechProv, ok := cand.Provider.(provider.SpeechProvider)
@@ -127,11 +136,17 @@ func (h *SpeechHandler) HandleSpeechGeneration(ctx *fasthttp.RequestCtx) {
 		}
 
 		h.router.MarkModelHealthy(cand.Provider.Name(), cand.ModelCfg.ID)
+		characters := utf8.RuneCountInString(req.Input)
 		inputTokens := estimateSpeechInputTokens(req.Input)
-		if inputTokens == 0 {
-			inputTokens = 1
+		var cost int64
+		if cand.ModelCfg.PricePer1MCharacters > 0 {
+			cost, _ = h.billing.DeductCharacters(ctx, userID, cand.ModelCfg.ID, characters, "")
+		} else {
+			if inputTokens == 0 {
+				inputTokens = 1
+			}
+			cost, _ = h.billing.Deduct(ctx, userID, cand.ModelCfg.ID, inputTokens, 0, "", "")
 		}
-		cost, _ := h.billing.Deduct(ctx, userID, cand.ModelCfg.ID, inputTokens, 0, "", "")
 		h.recorder.RecordSuccessWithApp(userID, apiKeyID, originalModel, cand.Provider.Name(),
 			inputTokens, 0, int(latency.Milliseconds()), 0, cost, false, app.ID, app.URL, app.Title, app.Categories)
 

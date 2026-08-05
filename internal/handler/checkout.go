@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/valyala/fasthttp"
 
@@ -21,7 +22,11 @@ type CheckoutHandler struct {
 	depositQ      *queries.StripeDepositQueries
 	priceID       string
 	webhookSecret string
+	guardQ        *queries.GuardQueries
 }
+
+// SetGuards wires the optional max top-up cap store (unlimited when unset).
+func (h *CheckoutHandler) SetGuards(g *queries.GuardQueries) { h.guardQ = g }
 
 func NewCheckoutHandler(stripe *stripesvc.Service, userQ *queries.UserQueries, billing *billing.Engine, depositQ *queries.StripeDepositQueries, priceID, webhookSecret string) *CheckoutHandler {
 	return &CheckoutHandler{
@@ -51,6 +56,13 @@ func (h *CheckoutHandler) HandleCreateCheckout(ctx *fasthttp.RequestCtx) {
 	if req.AmountUSD < 1 || req.AmountUSD > 500 {
 		writeError(ctx, 400, "invalid_request", "amount_usd must be 1-500")
 		return
+	}
+	if h.guardQ != nil {
+		if ok, cap := h.guardQ.TopupWithinCap(ctx, userID, int64(req.AmountUSD)*100); !ok {
+			writeError(ctx, 400, "topup_cap_exceeded",
+				fmt.Sprintf("top-up exceeds your max top-up cap of $%.2f", float64(cap)/100))
+			return
+		}
 	}
 
 	user, err := h.userQ.GetByID(ctx, userID)
@@ -115,11 +127,11 @@ func (h *CheckoutHandler) HandleStripeConfig(ctx *fasthttp.RequestCtx) {
 // POST /stripe/webhooks
 func (h *CheckoutHandler) HandleWebhook(ctx *fasthttp.RequestCtx) {
 	payload := ctx.PostBody()
-	sig := string(ctx.Request.Header.Peek("Stripe-Signature"))
+	sig := stripeSignatureHeader(ctx)
 
 	evt, err := h.stripe.ConstructWebhookEvent(payload, sig, h.webhookSecret)
 	if err != nil {
-		log.Printf("webhook parse err: %v", err)
+		log.Printf("webhook parse err: %v (signature_present=%t payload_bytes=%d)", err, sig != "", len(payload))
 		writeError(ctx, 400, "webhook_error", "Invalid webhook payload")
 		return
 	}
@@ -137,6 +149,20 @@ func (h *CheckoutHandler) HandleWebhook(ctx *fasthttp.RequestCtx) {
 
 	ctx.SetStatusCode(200)
 	ctx.SetBodyString(`{"received":true}`)
+}
+
+func stripeSignatureHeader(ctx *fasthttp.RequestCtx) string {
+	if sig := string(ctx.Request.Header.Peek("Stripe-Signature")); sig != "" {
+		return sig
+	}
+
+	var sig string
+	ctx.Request.Header.VisitAll(func(key, value []byte) {
+		if sig == "" && strings.EqualFold(string(key), "Stripe-Signature") {
+			sig = string(value)
+		}
+	})
+	return sig
 }
 
 func (h *CheckoutHandler) handleCheckoutCompleted(ctx *fasthttp.RequestCtx, raw json.RawMessage) {

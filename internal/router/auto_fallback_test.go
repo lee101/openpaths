@@ -39,8 +39,8 @@ func TestAutoTierConfig_PrimaryModels(t *testing.T) {
 	if got := models["openpaths/auto-reasoning"]; got != "gpt-5.4-mini" {
 		t.Fatalf("openpaths/auto-reasoning provider_model_id = %q, want %q", got, "gpt-5.4-mini")
 	}
-	if got := models["openpaths/auto-cheap"]; got != "gpt-5.4-nano" {
-		t.Fatalf("openpaths/auto-cheap provider_model_id = %q, want %q", got, "gpt-5.4-nano")
+	if got := models["openpaths/auto-cheap"]; got != "gpt-5.6-luna" {
+		t.Fatalf("openpaths/auto-cheap provider_model_id = %q, want %q", got, "gpt-5.6-luna")
 	}
 	if got := models["openpaths/auto-fast"]; got != "deepseek-v4-flash" {
 		t.Fatalf("openpaths/auto-fast provider_model_id = %q, want %q", got, "deepseek-v4-flash")

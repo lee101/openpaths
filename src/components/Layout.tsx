@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Menu, User, X } from 'lucide-react';
+import { Menu, User, Wallet, X } from 'lucide-react';
 import { AdSenseSlot } from './AdSenseSlot';
+import { AuthModal } from './AuthModal';
+import { TopUpModal } from './TopUpModal';
+import { AUTH_EVENT } from '../lib/api';
 
 function useIsLoggedIn() {
   const [loggedIn, setLoggedIn] = useState(() => {
@@ -21,10 +24,12 @@ function useIsLoggedIn() {
     window.addEventListener('storage', check);
     window.addEventListener('focus', check);
     window.addEventListener('auth-change', check);
+    window.addEventListener(AUTH_EVENT, check);
     return () => {
       window.removeEventListener('storage', check);
       window.removeEventListener('focus', check);
       window.removeEventListener('auth-change', check);
+      window.removeEventListener(AUTH_EVENT, check);
     };
   }, []);
 
@@ -96,6 +101,8 @@ export function Layout() {
   const showAds = !isPlayground && !['/account', '/usage', '/admin'].some(path => location.pathname === path || location.pathname.startsWith(`${path}/`));
   const isLoggedIn = useIsLoggedIn();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [topUpOpen, setTopUpOpen] = useState(false);
   const initials = accountInitials();
 
   useEffect(() => {
@@ -120,6 +127,14 @@ export function Layout() {
         <div className="flex items-center gap-2 sm:gap-4">
           {isLoggedIn ? (
             <>
+              <button
+                type="button"
+                onClick={() => setTopUpOpen(true)}
+                className="hidden sm:flex items-center gap-1.5 text-sm font-mono text-white/60 hover:text-white transition-colors"
+                data-testid="nav-add-funds"
+              >
+                <Wallet className="w-4 h-4" /> Add funds
+              </button>
               <Link to="/account" className="hidden sm:block bg-white text-black px-4 py-2 text-sm font-mono font-bold hover:bg-white/90 transition-colors rounded" data-testid="nav-dashboard">
                 Dashboard
               </Link>
@@ -134,10 +149,10 @@ export function Layout() {
             </>
           ) : (
             <>
-              <Link to="/account" className="text-sm font-mono text-white/60 hover:text-white transition-colors hidden sm:block" data-testid="nav-signin">Sign In</Link>
-              <Link to="/account" className="hidden sm:block bg-white text-black px-3 py-2 sm:px-4 text-sm font-mono font-bold hover:bg-white/90 transition-colors rounded" data-testid="nav-get-started">
+              <button type="button" onClick={() => setAuthModalOpen(true)} className="text-sm font-mono text-white/60 hover:text-white transition-colors hidden sm:block" data-testid="nav-signin">Sign In</button>
+              <button type="button" onClick={() => setAuthModalOpen(true)} className="hidden sm:block bg-white text-black px-3 py-2 sm:px-4 text-sm font-mono font-bold hover:bg-white/90 transition-colors rounded" data-testid="nav-get-started">
                 Get Started
-              </Link>
+              </button>
             </>
           )}
           <button
@@ -166,14 +181,24 @@ export function Layout() {
                 API
               </a>
               {!isLoggedIn && (
-                <Link to="/account" className="rounded border border-white/25 bg-white px-3 py-2 font-bold text-black transition-colors hover:bg-white/90">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setAuthModalOpen(true);
+                  }}
+                  className="rounded border border-white/25 bg-white px-3 py-2 font-bold text-black transition-colors hover:bg-white/90 text-left"
+                >
                   Get Started
-                </Link>
+                </button>
               )}
             </div>
           </div>
         )}
       </nav>
+
+      <AuthModal open={authModalOpen} onClose={() => setAuthModalOpen(false)} />
+      <TopUpModal open={topUpOpen} onClose={() => setTopUpOpen(false)} />
 
       <main className="flex-1 min-h-0">
         <Outlet />

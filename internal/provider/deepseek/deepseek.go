@@ -25,6 +25,7 @@ func (p *DeepSeekProvider) Name() string { return "deepseek" }
 func sanitizeForDeepSeek(req *model.ChatCompletionRequest) {
 	req.Prefill = ""
 	req.TaskTier = ""
+	req.RoutingStrategy = ""
 
 	// DeepSeek controls reasoning through the `thinking` field, not the
 	// OpenAI-style `reasoning_effort` parameter. Its API rejects unknown
@@ -36,7 +37,7 @@ func sanitizeForDeepSeek(req *model.ChatCompletionRequest) {
 		switch req.ReasoningEffort {
 		case "none":
 			req.Thinking = &model.ThinkingConfig{Type: "disabled"}
-		case "low", "medium", "high":
+		case "minimal", "low", "medium", "high", "xhigh", "max":
 			req.Thinking = &model.ThinkingConfig{Type: "enabled"}
 		}
 	}

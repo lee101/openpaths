@@ -7,12 +7,13 @@ import (
 
 func TestCostForFallback(t *testing.T) {
 	cases := map[string]float64{
-		"claude-opus-4-8":          5,
-		"claude-opus-4-8-20260101": 5, // dated id -> prefix match
-		"anthropic/claude-sonnet-4-6": 3, // routing prefix stripped
-		"claude-haiku-4-5":         1,
-		"claude-opus-4-1":          15,
-		"some-unknown-model":       5, // -> DefaultModel (opus 4.8)
+		"claude-opus-4-8":             5,
+		"claude-opus-4-8-20260101":    5, // dated id -> prefix match
+		"anthropic/claude-sonnet-5":   2, // routing prefix stripped
+		"anthropic/claude-sonnet-4-6": 3,
+		"claude-haiku-4-5":            1,
+		"claude-opus-4-1":             15,
+		"some-unknown-model":          5, // -> DefaultModel (opus 4.8)
 	}
 	for model, wantBase := range cases {
 		if got := CostFor(model).BaseInputPer1M; got != wantBase {
@@ -28,9 +29,9 @@ func TestDecideTTL(t *testing.T) {
 	min := 2
 
 	tests := []struct {
-		name  string
-		gaps  []float64 // inter-arrival gaps in minutes (n = len+1)
-		want  TTL
+		name string
+		gaps []float64 // inter-arrival gaps in minutes (n = len+1)
+		want TTL
 	}{
 		// Single observation -> cold default.
 		{"single", nil, TTL5m},

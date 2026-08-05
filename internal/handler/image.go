@@ -25,6 +25,7 @@ import (
 	"github.com/openpaths/openpaths/internal/metrics"
 	"github.com/openpaths/openpaths/internal/middleware"
 	"github.com/openpaths/openpaths/internal/model"
+	"github.com/openpaths/openpaths/internal/modelaccess"
 	"github.com/openpaths/openpaths/internal/provider"
 	"github.com/openpaths/openpaths/internal/router"
 	"github.com/openpaths/openpaths/internal/savedresp"
@@ -37,6 +38,7 @@ type ImageHandler struct {
 	recorder *metrics.Recorder
 	store    storage.Store
 	saver    *savedresp.Saver
+	accessQ  modelaccess.Checker
 }
 
 func NewImageHandler(r *router.Router, b *billing.Engine, rec *metrics.Recorder) *ImageHandler {
@@ -46,6 +48,8 @@ func NewImageHandler(r *router.Router, b *billing.Engine, rec *metrics.Recorder)
 func (h *ImageHandler) SetStorage(store storage.Store) {
 	h.store = store
 }
+
+func (h *ImageHandler) SetAccess(checker modelaccess.Checker) { h.accessQ = checker }
 
 // SetResponseSaver wires the optional saved-response service (response saving feature).
 func (h *ImageHandler) SetResponseSaver(s *savedresp.Saver) { h.saver = s }
@@ -123,6 +127,10 @@ func (h *ImageHandler) executeImageGeneration(ctx context.Context, req *model.Im
 	candidates, err := h.router.ResolveForRequest(originalModel, autoResult.ModelID)
 	if err != nil {
 		return imageExecutionResult{StatusCode: 404, ErrorType: "model_not_found", ErrorMessage: err.Error()}
+	}
+	candidates, err = modelaccess.FilterCandidates(ctx, h.accessQ, userID, originalModel, candidates)
+	if err != nil {
+		return imageExecutionResult{StatusCode: 403, ErrorType: "model_not_permitted", ErrorMessage: err.Error()}
 	}
 
 	for i, cand := range candidates {
@@ -274,7 +282,11 @@ func (h *ImageHandler) deductImageCost(ctx context.Context, userID, modelID stri
 		outputW, outputH := resp.Data[0].Width, resp.Data[0].Height
 		return h.billing.DeductOutpaint(ctx, userID, modelID, inputW, inputH, outputW, outputH, imageCount, "")
 	}
-	return h.billing.DeductImageWithInputsAndSize(ctx, userID, modelID, imageCount, inputImageCount, req.Size, "")
+	pricingSize := req.Resolution
+	if pricingSize == "" {
+		pricingSize = req.Size
+	}
+	return h.billing.DeductImageWithInputsAndSize(ctx, userID, modelID, imageCount, inputImageCount, pricingSize, "")
 }
 
 func isPromptlessImageModel(modelID string) bool {

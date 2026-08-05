@@ -221,12 +221,12 @@ export function Landing() {
                   <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
                     <div>
                       <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/30 px-3 py-1 text-xs font-mono text-white/55">
-                        <Video className="h-3.5 w-3.5" /> Grok Imagine Video
+                        <Video className="h-3.5 w-3.5" /> AI Video Gallery
                       </div>
                       <h3 className="text-2xl font-bold tracking-tight md:text-3xl">Fresh video generation across the best latest AIs.</h3>
                     </div>
-                    <Link to="/models/grok-imagine-video" className="inline-flex items-center gap-2 text-sm font-mono text-white/55 hover:text-white">
-                      Open model page <ArrowRight className="h-4 w-4" />
+                    <Link to="/models?q=video%20generation" className="inline-flex items-center gap-2 text-sm font-mono text-white/55 hover:text-white">
+                      Browse video models <ArrowRight className="h-4 w-4" />
                     </Link>
                   </div>
                   <div className="grid gap-4 lg:grid-cols-3">
@@ -240,9 +240,9 @@ export function Landing() {
                         className="overflow-hidden rounded-lg border border-white/10 bg-black/45"
                       >
                         <div className="relative aspect-video bg-black">
-                          <video src={item.videoUrl} className="h-full w-full object-cover" muted loop playsInline controls preload="metadata" />
+                          <video src={item.videoUrl} poster={item.posterUrl} className="h-full w-full object-cover" muted loop playsInline controls preload="metadata" />
                           <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-2 rounded-full border border-white/15 bg-black/60 px-2.5 py-1.5 backdrop-blur">
-                            <img src={getProviderLogo(item.provider)} alt={`${item.provider} logo`} className="h-4 w-4 rounded-sm object-contain" />
+                            <img src={getProviderLogo(item.provider)} alt={`${item.provider} logo`} className={`h-4 w-4 rounded-sm object-contain ${item.provider === 'Black Forest Labs' ? 'bg-white p-px' : ''}`} />
                             <span className="font-mono text-[11px] text-white/80">{item.model}</span>
                           </div>
                         </div>

@@ -3,6 +3,11 @@ package agent
 import (
 	"archive/zip"
 	"bytes"
+	"encoding/base64"
+	"fmt"
+	"image"
+	"image/color"
+	"image/png"
 	"strings"
 	"testing"
 )
@@ -45,6 +50,31 @@ func TestToMarkdownXLSX(t *testing.T) {
 		if !strings.Contains(md, want) {
 			t.Fatalf("xlsx markdown missing %q:\n%s", want, md)
 		}
+	}
+}
+
+func TestExtractUsefulImagesFiltersAndCompresses(t *testing.T) {
+	large := testPNG(t, 640, 360)
+	small := testPNG(t, 120, 120)
+	markdown := fmt.Sprintf(`<p>Before</p><img src="data:image/png;base64,%s" alt="Useful chart"/><img src="data:image/png;base64,%s" alt="Tiny icon"/><p>After</p>`,
+		base64.StdEncoding.EncodeToString(large), base64.StdEncoding.EncodeToString(small))
+
+	got, images, seen := extractUsefulImages(markdown)
+	if seen != 2 {
+		t.Fatalf("seen = %d, want 2", seen)
+	}
+	if len(images) != 1 {
+		t.Fatalf("images = %d, want 1", len(images))
+	}
+	if !strings.Contains(got, images[0].Placeholder) || strings.Contains(got, "Tiny icon") || strings.Contains(got, "base64") {
+		t.Fatalf("unexpected normalized markdown: %s", got)
+	}
+	if images[0].Alt != "Useful chart" || images[0].Width != 640 || images[0].Height != 360 {
+		t.Fatalf("image metadata = %#v", images[0])
+	}
+	config, format, err := image.DecodeConfig(bytes.NewReader(images[0].WebP))
+	if err != nil || format != "webp" || config.Width != 640 || config.Height != 360 {
+		t.Fatalf("webp = %s %dx%d err=%v", format, config.Width, config.Height, err)
 	}
 }
 
@@ -108,4 +138,19 @@ func addZipFile(t *testing.T, zw *zip.Writer, name, body string) {
 	if _, err := w.Write([]byte(body)); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func testPNG(t *testing.T, width, height int) []byte {
+	t.Helper()
+	img := image.NewNRGBA(image.Rect(0, 0, width, height))
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			img.SetNRGBA(x, y, color.NRGBA{R: uint8(x % 255), G: uint8(y % 255), B: 140, A: 255})
+		}
+	}
+	var out bytes.Buffer
+	if err := png.Encode(&out, img); err != nil {
+		t.Fatal(err)
+	}
+	return out.Bytes()
 }

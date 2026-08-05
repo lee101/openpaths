@@ -76,7 +76,7 @@ func configToORModel(cfg *model.ModelConfig) *ORModel {
 		return nil
 	}
 	// Skip OpenRouter-proxied models (we don't re-expose those)
-	if strings.HasPrefix(cfg.ID, "or/") {
+	if strings.HasPrefix(cfg.ID, "or/") || strings.EqualFold(cfg.Provider, "openrouter") {
 		return nil
 	}
 
@@ -159,7 +159,8 @@ var orModelDisplayNames = map[string]string{
 	"o4-mini":                      "OpenAI: o4-mini",
 	"gpt-4o":                       "OpenAI: GPT-4o",
 	"gpt-4o-mini":                  "OpenAI: GPT-4o Mini",
-	"claude-sonnet-latest":         "Anthropic: Claude Sonnet (Latest)",
+	"claude-sonnet-latest":         "Anthropic: Claude Sonnet 5 (Latest)",
+	"claude-sonnet-5":              "Anthropic: Claude Sonnet 5",
 	"claude-sonnet-4-6":            "Anthropic: Claude Sonnet 4.6",
 	"claude-opus-latest":           "Anthropic: Claude Opus (Latest)",
 	"claude-opus-4-8":              "Anthropic: Claude Opus 4.8",
@@ -170,8 +171,12 @@ var orModelDisplayNames = map[string]string{
 	"gemini-2.5-pro":               "Google: Gemini 2.5 Pro",
 	"gemini-2.5-flash":             "Google: Gemini 2.5 Flash",
 	"gemini-3.1-flash-lite":        "Google: Gemini 3.1 Flash Lite",
+	"grok-4.5":                     "xAI: Grok 4.5",
 	"grok-4.3":                     "xAI: Grok 4.3",
+	"grok-4.20-0309-reasoning":     "xAI: Grok 4.20 Reasoning",
 	"grok-4.20-0309-non-reasoning": "xAI: Grok 4.20 Non-Reasoning",
+	"grok-4.20-multi-agent-0309":   "xAI: Grok 4.20 Multi-Agent",
+	"grok-build-0.1":               "xAI: Grok Build 0.1",
 	"grok-3-mini":                  "xAI: Grok 3 Mini",
 	"deepseek-chat":                "DeepSeek: Chat",
 	"deepseek-reasoner":            "DeepSeek: Reasoner",
@@ -197,6 +202,7 @@ var orModelDisplayNames = map[string]string{
 	"glm-5":                        "ZAI: GLM-5",
 	"qwen3.5-397b":                 "Alibaba: Qwen 3.5 397B",
 	"kimi-k2.5":                    "Moonshot: Kimi K2.5",
+	"kimi-k3":                      "Moonshot: Kimi K3",
 }
 
 func buildDisplayName(id string) string {

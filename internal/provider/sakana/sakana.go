@@ -86,6 +86,7 @@ func (u *sakanaUsage) normalize() *model.UsageInfo {
 func sanitize(req *model.ChatCompletionRequest) {
 	req.Prefill = ""
 	req.TaskTier = ""
+	req.RoutingStrategy = ""
 	req.Thinking = nil
 	req.ChatTemplateKwargs = nil
 }

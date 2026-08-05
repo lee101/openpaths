@@ -1,3 +1,5 @@
+export type ProviderKind = 'model' | 'search';
+
 export interface Provider {
   slug: string;
   name: string;
@@ -5,6 +7,11 @@ export interface Provider {
   description: string;
   featured: boolean;
   logo?: string;
+  logoSmall?: string;
+  logoSrcSet?: string;
+  // 'search' providers expose search/tool APIs rather than LLM models —
+  // they have no entries in models.ts and must not render a model count.
+  kind?: ProviderKind;
 }
 
 export const FALLBACK_LOGO = '/logos/openpaths.svg';
@@ -54,7 +61,7 @@ export const providers: Provider[] = [
     slug: 'openai',
     name: 'OpenAI',
     url: 'https://openai.com',
-    description: 'GPT-5.5, GPT-5 Chat Latest, GPT-5 Codex, o3/o4-mini reasoning models, and Codex Mini for code generation.',
+    description: 'GPT-5, GPT Realtime live voice, GPT Image, Sora, transcription, and o3/o4 reasoning models.',
     featured: false,
     logo: '/logos/openai.svg'
   },
@@ -91,6 +98,30 @@ export const providers: Provider[] = [
     logo: '/logos/deepseek.svg'
   },
   {
+    slug: 'moonshot',
+    name: 'Moonshot AI',
+    url: 'https://platform.moonshot.ai',
+    description: 'Kimi K3 flagship (2.8T params, 1M context) plus long-context coding models served directly through Moonshot’s OpenAI-compatible API.',
+    featured: false,
+    logo: 'https://icons.duckduckgo.com/ip3/moonshot.ai.ico'
+  },
+  {
+    slug: 'thinking-machines',
+    name: 'Thinking Machines',
+    url: 'https://thinkingmachines.ai',
+    description: 'Inkling and Inkling-Small, open-weights multimodal mixture-of-experts models for coding, reasoning, tool use, and customizable thinking effort, with native text, image, and audio input.',
+    featured: false,
+    logo: 'https://icons.duckduckgo.com/ip3/thinkingmachines.ai.ico'
+  },
+  {
+    slug: 'qwen',
+    name: 'Qwen',
+    url: 'https://qwen.ai',
+    description: 'Alibaba Qwen multimodal and agent models served through DashScope OpenAI-compatible mode.',
+    featured: false,
+    logo: 'https://icons.duckduckgo.com/ip3/qwen.ai.ico'
+  },
+  {
     slug: 'mistral',
     name: 'Mistral',
     url: 'https://mistral.ai',
@@ -118,7 +149,7 @@ export const providers: Provider[] = [
     slug: 'minimax',
     name: 'MiniMax',
     url: 'https://minimax.io',
-    description: 'M2.5 chat models with 1M context and Hailuo video generation.',
+    description: 'MiniMax M-series long-context chat plus Hailuo video generation, including multimodal M3 routes and image-to-video workflows.',
     featured: false,
     logo: '/logos/minimax.svg'
   },
@@ -150,9 +181,25 @@ export const providers: Provider[] = [
     slug: 'openrouter',
     name: 'OpenRouter',
     url: 'https://openrouter.ai',
-    description: 'Gateway to 600+ models including free tiers from StepFun, Upstage, NVIDIA, Arcee, and Liquid.',
+    description: 'Gateway to 600+ models, including Kimi K2.7 Code, Qwen 3.7 Plus, Nemotron 3 Ultra, MiniMax M3, StepFun multimodal routes, and free tiers.',
     featured: false,
     logo: '/logos/openrouter.svg'
+  },
+  {
+    slug: 'stepfun',
+    name: 'StepFun',
+    url: 'https://platform.stepfun.ai',
+    description: 'StepFun multimodal chat models, including Step 3.7 Flash for text, image, video, and tool workflows.',
+    featured: false,
+    logo: 'https://icons.duckduckgo.com/ip3/stepfun.ai.ico'
+  },
+  {
+    slug: 'inference_net',
+    name: 'Inference.net',
+    url: 'https://inference.net',
+    description: 'OpenAI-compatible endpoint serving Nemotron 3 Super, Schematron, ClipTagger, GPT-OSS, Llama, DeepSeek, Qwen, Gemma, and Mistral routes.',
+    featured: false,
+    logo: '/logos/inference-net.webp'
   },
   {
     slug: 'fireworks',
@@ -179,6 +226,16 @@ export const providers: Provider[] = [
     logo: '/logos/fal.svg'
   },
   {
+    slug: 'black-forest-labs',
+    name: 'Black Forest Labs',
+    url: 'https://bfl.ai',
+    description: 'The frontier visual intelligence lab behind FLUX 3 Video, FLUX.2 image generation and editing, specialized FLUX Tools, and the open-weight FLUX.1 family.',
+    featured: false,
+    logo: '/logos/bfl-256.webp',
+    logoSmall: '/logos/bfl-64.webp',
+    logoSrcSet: '/logos/bfl-32.webp 32w, /logos/bfl-64.webp 64w, /logos/bfl-128.webp 128w, /logos/bfl-256.webp 256w, /logos/bfl-512.webp 512w'
+  },
+  {
     slug: 'alibaba',
     name: 'Alibaba',
     url: 'https://www.alibabacloud.com',
@@ -192,7 +249,8 @@ export const providers: Provider[] = [
     url: 'https://exa.ai',
     description: 'Search API for AI applications with fast web search, highlights, full-page text, structured outputs, livecrawl freshness controls, domain filters, and date filtering.',
     featured: false,
-    logo: '/logos/exa.svg'
+    logo: '/logos/exa.svg',
+    kind: 'search'
   },
   {
     slug: 'papers',
@@ -200,7 +258,8 @@ export const providers: Provider[] = [
     url: 'https://papers.app.nz',
     description: 'Applied AI NZ research search for agents. Search papers, methods, datasets, and GitHub code with markdown output and app.nz API key billing.',
     featured: false,
-    logo: '/logos/papers.webp'
+    logo: '/logos/papers.webp',
+    kind: 'search'
   },
 ];
 
@@ -209,5 +268,5 @@ export const providersByName: Record<string, Provider> = Object.fromEntries(
 );
 
 export function getProviderLogo(providerName: string): string {
-  return providersByName[providerName]?.logo || FALLBACK_LOGO;
+  return providersByName[providerName]?.logoSmall || providersByName[providerName]?.logo || FALLBACK_LOGO;
 }

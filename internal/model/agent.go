@@ -120,15 +120,17 @@ var BuiltinTools = []AgentToolSpec{
 	{Name: "generate_image", Label: "Generate image", Description: "Text-to-image with any OpenPaths image model."},
 	{Name: "generate_video", Label: "Generate video", Description: "Text-to-video or image-to-video (Minimax/xAI)."},
 	{Name: "call_model", Label: "Call another model", Description: "Invoke any other OpenPaths chat model for a sub-task."},
+	{Name: "web_search", Label: "Web search", Description: "Search the live web (Exa); returns titles, URLs, and snippets."},
 	{Name: "computer_use", Label: "Computer use", Description: "Drive a sandboxed desktop (Anthropic computer-use beta).", Experimental: true},
 }
 
 // AgentPreset is a ready-made agent template surfaced in the gallery.
 type AgentPreset struct {
-	Key          string      `json:"key"`
-	Name         string      `json:"name"`
-	Description  string      `json:"description"`
-	SystemPrompt string      `json:"system_prompt"`
-	Model        string      `json:"model"`
-	Config       AgentConfig `json:"config"`
+	Key            string      `json:"key"`
+	Name           string      `json:"name"`
+	Description    string      `json:"description"`
+	SystemPrompt   string      `json:"system_prompt"`
+	Model          string      `json:"model"`
+	Config         AgentConfig `json:"config"`
+	ExamplePrompts []string    `json:"example_prompts,omitempty"`
 }

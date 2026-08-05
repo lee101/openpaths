@@ -9,7 +9,120 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 )
+
+func TestOpenAIOAuthLoginTicketSurvivesHandlerRestart(t *testing.T) {
+	beforeRestart := NewOpenAIOAuthHandler(nil, "stable-test-secret")
+	loginID, err := beforeRestart.sealLoginState(openAIOAuthLoginState{
+		Version:      openAIOAuthTicketVersion,
+		Mode:         openAIDeviceLoginMode,
+		UserID:       "user-1",
+		DeviceAuthID: "device-123",
+		UserCode:     "ABCD-EFGH",
+		StartedAt:    time.Now().Add(-time.Minute).Unix(),
+		ExpiresAt:    time.Now().Add(14 * time.Minute).Unix(),
+	})
+	if err != nil {
+		t.Fatalf("sealLoginState: %v", err)
+	}
+
+	// A newly constructed handler models an API restart or another replica.
+	afterRestart := NewOpenAIOAuthHandler(nil, "stable-test-secret")
+	state, err := afterRestart.openLoginState(loginID, "user-1", openAIDeviceLoginMode)
+	if err != nil {
+		t.Fatalf("openLoginState after restart: %v", err)
+	}
+	if state.DeviceAuthID != "device-123" || state.UserCode != "ABCD-EFGH" {
+		t.Fatalf("unexpected recovered state: %+v", state)
+	}
+}
+
+func TestOpenAIOAuthLoginTicketRejectsTamperingWrongUserAndExpiry(t *testing.T) {
+	h := NewOpenAIOAuthHandler(nil, "stable-test-secret")
+	valid := openAIOAuthLoginState{
+		Version:   openAIOAuthTicketVersion,
+		Mode:      openAIBrowserLoginMode,
+		UserID:    "user-1",
+		StartedAt: time.Now().Unix(),
+		ExpiresAt: time.Now().Add(time.Minute).Unix(),
+	}
+	loginID, err := h.sealLoginState(valid)
+	if err != nil {
+		t.Fatalf("sealLoginState: %v", err)
+	}
+
+	tamperAt := len(loginID) / 2
+	replacement := byte('A')
+	if loginID[tamperAt] == replacement {
+		replacement = 'B'
+	}
+	tampered := loginID[:tamperAt] + string(replacement) + loginID[tamperAt+1:]
+	if _, err := h.openLoginState(tampered, "user-1", openAIBrowserLoginMode); !errors.Is(err, errOpenAIOAuthTicketInvalid) {
+		t.Fatalf("tampered ticket error = %v, want invalid", err)
+	}
+	if _, err := h.openLoginState(loginID, "user-2", openAIBrowserLoginMode); !errors.Is(err, errOpenAIOAuthTicketInvalid) {
+		t.Fatalf("wrong-user ticket error = %v, want invalid", err)
+	}
+	if _, err := h.openLoginState(loginID, "user-1", openAIDeviceLoginMode); !errors.Is(err, errOpenAIOAuthTicketInvalid) {
+		t.Fatalf("wrong-mode ticket error = %v, want invalid", err)
+	}
+
+	valid.ExpiresAt = time.Now().Add(-time.Second).Unix()
+	expiredID, err := h.sealLoginState(valid)
+	if err != nil {
+		t.Fatalf("seal expired state: %v", err)
+	}
+	if _, err := h.openLoginState(expiredID, "user-1", openAIBrowserLoginMode); !errors.Is(err, errOpenAIOAuthTicketExpired) {
+		t.Fatalf("expired ticket error = %v, want expired", err)
+	}
+}
+
+func TestOpenAIBrowserAuthorizationURLMatchesCodexFlow(t *testing.T) {
+	t.Setenv("OPENAI_OAUTH_ISSUER", "https://auth.example.test")
+	parsed, err := url.Parse(openAIBrowserAuthorizationURL("challenge-123", "state-123"))
+	if err != nil {
+		t.Fatalf("parse authorization URL: %v", err)
+	}
+	query := parsed.Query()
+	if parsed.String() == "" || parsed.Path != "/oauth/authorize" {
+		t.Fatalf("unexpected authorization URL: %s", parsed.String())
+	}
+	for key, want := range map[string]string{
+		"client_id":                  openAIOAuthClientID,
+		"redirect_uri":               openAIOAuthLocalRedirectURI,
+		"code_challenge":             "challenge-123",
+		"code_challenge_method":      "S256",
+		"state":                      "state-123",
+		"id_token_add_organizations": "true",
+		"codex_cli_simplified_flow":  "true",
+		"originator":                 "openpaths",
+	} {
+		if got := query.Get(key); got != want {
+			t.Errorf("%s = %q, want %q", key, got, want)
+		}
+	}
+	if !strings.Contains(query.Get("scope"), "offline_access") || !strings.Contains(query.Get("scope"), "api.connectors.invoke") {
+		t.Fatalf("scope = %q", query.Get("scope"))
+	}
+}
+
+func TestParseOpenAIAuthorizationInput(t *testing.T) {
+	tests := []struct {
+		input, code, state string
+	}{
+		{"http://localhost:1455/auth/callback?code=abc&state=state-1", "abc", "state-1"},
+		{"?code=abc&state=state-1", "abc", "state-1"},
+		{"abc#state-1", "abc", "state-1"},
+		{"abc", "abc", ""},
+	}
+	for _, tt := range tests {
+		code, state := parseOpenAIAuthorizationInput(tt.input)
+		if code != tt.code || state != tt.state {
+			t.Errorf("parseOpenAIAuthorizationInput(%q) = (%q, %q), want (%q, %q)", tt.input, code, state, tt.code, tt.state)
+		}
+	}
+}
 
 func TestCompleteOpenAIOAuthStoresCodexAuthJSON(t *testing.T) {
 	var sawCodeExchange, sawAPIKeyExchange bool

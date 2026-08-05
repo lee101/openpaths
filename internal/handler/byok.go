@@ -5,8 +5,10 @@ import (
 
 	"github.com/openpaths/openpaths/internal/db/queries"
 	"github.com/openpaths/openpaths/internal/middleware"
+	"github.com/openpaths/openpaths/internal/model"
 	"github.com/openpaths/openpaths/internal/provider"
 	"github.com/openpaths/openpaths/internal/provider/anthropic"
+	"github.com/openpaths/openpaths/internal/provider/bfl"
 	"github.com/openpaths/openpaths/internal/provider/deepseek"
 	"github.com/openpaths/openpaths/internal/provider/fal"
 	"github.com/openpaths/openpaths/internal/provider/google"
@@ -23,20 +25,23 @@ import (
 )
 
 var providerBaseURLs = map[string]string{
-	"openai":     "https://api.openai.com",
-	"anthropic":  "https://api.anthropic.com",
-	"google":     "https://generativelanguage.googleapis.com",
-	"mistral":    "https://api.mistral.ai",
-	"groq":       "https://api.groq.com/openai",
-	"xai":        "https://api.x.ai",
-	"deepseek":   "https://api.deepseek.com",
-	"openrouter": "https://openrouter.ai/api",
-	"together":   "https://api.together.xyz",
-	"minimax":    "https://api.minimax.io",
-	"netwrck":    "https://netwrck.com",
-	"zai":        "https://api.z.ai",
-	"sakana":     "https://api.sakana.ai",
-	"fal":        "https://fal.run",
+	"openai":           "https://api.openai.com",
+	"anthropic":        "https://api.anthropic.com",
+	"google":           "https://generativelanguage.googleapis.com",
+	"mistral":          "https://api.mistral.ai",
+	"groq":             "https://api.groq.com/openai",
+	"xai":              "https://api.x.ai",
+	"deepseek":         "https://api.deepseek.com",
+	"thinkingmachines": "https://tinker.thinkingmachines.dev/services/tinker-prod/oai/api",
+	"openrouter":       "https://openrouter.ai/api",
+	"inference_net":    "https://api.inference.net",
+	"together":         "https://api.together.xyz",
+	"minimax":          "https://api.minimax.io",
+	"netwrck":          "https://netwrck.com",
+	"zai":              "https://api.z.ai",
+	"sakana":           "https://api.sakana.ai",
+	"fal":              "https://fal.run",
+	"bfl":              "https://api.bfl.ai",
 }
 
 func getUserProviderKeys(ctx *fasthttp.RequestCtx) map[string]*queries.UserProviderKey {
@@ -61,8 +66,12 @@ func makeUserProvider(providerName, apiKey string) provider.Provider {
 		return xai.New(apiKey, baseURL)
 	case "deepseek":
 		return deepseek.New(apiKey, baseURL)
+	case "thinkingmachines":
+		return openai.NewCompatible("thinkingmachines", apiKey, baseURL, sanitizeOpenAICompatibleProvider)
 	case "openrouter":
 		return openrouter.New(apiKey, baseURL)
+	case "inference_net":
+		return openai.NewCompatible("inference_net", apiKey, baseURL, sanitizeOpenAICompatibleProvider)
 	case "together":
 		return together.New(apiKey, baseURL)
 	case "minimax":
@@ -78,8 +87,18 @@ func makeUserProvider(providerName, apiKey string) provider.Provider {
 		return sakana.New(apiKey, baseURL)
 	case "fal":
 		return fal.New(apiKey)
+	case "bfl":
+		return bfl.New(apiKey, baseURL)
 	}
 	return nil
+}
+
+func sanitizeOpenAICompatibleProvider(req *model.ChatCompletionRequest) {
+	req.Prefill = ""
+	req.TaskTier = ""
+	req.RoutingStrategy = ""
+	req.Thinking = nil
+	req.ChatTemplateKwargs = nil
 }
 
 func getBYOKProvider(ctx *fasthttp.RequestCtx, providerName string) (provider.Provider, bool) {

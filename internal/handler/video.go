@@ -1,10 +1,14 @@
 package handler
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
+	"net/http"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -17,6 +21,7 @@ import (
 	"github.com/openpaths/openpaths/internal/metrics"
 	"github.com/openpaths/openpaths/internal/middleware"
 	"github.com/openpaths/openpaths/internal/model"
+	"github.com/openpaths/openpaths/internal/modelaccess"
 	"github.com/openpaths/openpaths/internal/provider"
 	"github.com/openpaths/openpaths/internal/router"
 	"github.com/openpaths/openpaths/internal/storage"
@@ -35,6 +40,7 @@ type VideoHandler struct {
 	jobs     *videoJobCache
 	jobQ     *queries.VideoJobQueries
 	store    storage.Store
+	accessQ  modelaccess.Checker
 }
 
 func NewVideoHandler(r *router.Router, b *billing.Engine, rec *metrics.Recorder, jobQ *queries.VideoJobQueries) *VideoHandler {
@@ -44,6 +50,8 @@ func NewVideoHandler(r *router.Router, b *billing.Engine, rec *metrics.Recorder,
 func (h *VideoHandler) SetStorage(store storage.Store) {
 	h.store = store
 }
+
+func (h *VideoHandler) SetAccess(checker modelaccess.Checker) { h.accessQ = checker }
 
 func (h *VideoHandler) HandleVideoGeneration(ctx *fasthttp.RequestCtx) {
 	h.handleVideoRequest(ctx, "generation")
@@ -74,8 +82,9 @@ func (h *VideoHandler) handleVideoRequest(ctx *fasthttp.RequestCtx, operation st
 		writeError(ctx, 400, "invalid_request", "model is required")
 		return
 	}
-	if req.Prompt == "" {
-		writeError(ctx, 400, "invalid_request", "prompt is required")
+	req.Prompt = req.TextPrompt()
+	if req.Prompt == "" && len(req.Input) == 0 {
+		writeError(ctx, 400, "invalid_request", "prompt or input is required")
 		return
 	}
 	req.Operation = operation
@@ -84,6 +93,10 @@ func (h *VideoHandler) handleVideoRequest(ctx *fasthttp.RequestCtx, operation st
 		return
 	}
 	if prepaidGate(ctx, h.billing, req.Model, 0) {
+		return
+	}
+	if err := h.authorizeVideoRequest(ctx, userID, &req); err != nil {
+		writeError(ctx, 403, "model_not_permitted", err.Error())
 		return
 	}
 
@@ -123,6 +136,16 @@ func (h *VideoHandler) handleVideoRequest(ctx *fasthttp.RequestCtx, operation st
 		ctx.Response.Header.Set("Retry-After", "2")
 		writeJSON(ctx, 202, videoJobPayload(waited, cached))
 	}
+}
+
+func (h *VideoHandler) authorizeVideoRequest(ctx context.Context, userID string, req *model.VideoGenerationRequest) error {
+	autoResult := h.router.MaybeResolveAuto(ctx, req.Model, "video", req.Prompt)
+	candidates, err := h.router.ResolveForRequest(req.Model, autoResult.ModelID)
+	if err != nil {
+		return nil // preserve the existing model_not_found response path
+	}
+	_, err = modelaccess.FilterCandidates(ctx, h.accessQ, userID, req.Model, candidates)
+	return err
 }
 
 func videoJobHTTPStatus(job *videoJob) int {
@@ -262,6 +285,10 @@ func (h *VideoHandler) executeVideoGeneration(ctx context.Context, req model.Vid
 	if err != nil {
 		return videoExecutionResult{StatusCode: 404, ErrorType: "model_not_found", ErrorMessage: err.Error()}
 	}
+	candidates, err = modelaccess.FilterCandidates(ctx, h.accessQ, userID, originalModel, candidates)
+	if err != nil {
+		return videoExecutionResult{StatusCode: 403, ErrorType: "model_not_permitted", ErrorMessage: err.Error()}
+	}
 
 	for i, cand := range candidates {
 		vidProv, ok := cand.Provider.(provider.VideoProvider)
@@ -313,6 +340,7 @@ func (h *VideoHandler) executeVideoGeneration(ctx context.Context, req model.Vid
 		}
 
 		h.router.MarkModelHealthy(cand.Provider.Name(), cand.ModelCfg.ID)
+		h.ensurePublicVideoURL(ctx, resp, originalModel)
 		if wantsVideoWebM(req.OutputFormat) {
 			optimized, err := h.reencodeVideoWebM(ctx, resp.VideoURL, originalModel)
 			if err != nil {
@@ -328,7 +356,7 @@ func (h *VideoHandler) executeVideoGeneration(ctx context.Context, req model.Vid
 		resp.Model = originalModel
 		var cost int64
 		if h.billing != nil {
-			cost, _ = h.billing.DeductVideo(ctx, userID, cand.ModelCfg.ID, videoDurationSeconds(string(req.Duration)), req.HasVideoInput(), "")
+			cost, _ = h.billing.DeductVideoWithMediaInputs(ctx, userID, cand.ModelCfg.ID, videoDurationSeconds(string(req.Duration)), req.HasVideoInput(), req.InputImageCount(), req.Resolution, "")
 		}
 		if h.recorder != nil {
 			h.recorder.RecordSuccessWithApp(userID, apiKeyID, originalModel, cand.Provider.Name(),
@@ -339,6 +367,58 @@ func (h *VideoHandler) executeVideoGeneration(ctx context.Context, req model.Vid
 	}
 
 	return videoExecutionResult{StatusCode: 502, ErrorType: "provider_error", ErrorMessage: "all providers failed for model " + originalModel}
+}
+
+func (h *VideoHandler) ensurePublicVideoURL(ctx context.Context, resp *model.VideoGenerationResponse, modelID string) {
+	if resp == nil || h.store == nil || !strings.HasPrefix(resp.VideoURL, "data:video/") {
+		return
+	}
+	contentType, data, ok := decodeVideoDataURL(resp.VideoURL)
+	if !ok {
+		return
+	}
+	if contentType == "" {
+		contentType = http.DetectContentType(data)
+	}
+	if !strings.HasPrefix(strings.ToLower(contentType), "video/") {
+		contentType = "video/mp4"
+	}
+	ext := videoExtFromContentType(contentType)
+	safeModel := strings.NewReplacer("/", "-", " ", "-").Replace(modelID)
+	url, err := h.store.Upload(ctx, fmt.Sprintf("%s%s", safeModel, ext), contentType, bytes.NewReader(data))
+	if err != nil {
+		log.Printf("video upload inline data: %v", err)
+		return
+	}
+	resp.VideoURL = url
+	resp.Bytes = int64(len(data))
+	resp.OutputFormat = strings.TrimPrefix(ext, ".")
+}
+
+func decodeVideoDataURL(raw string) (string, []byte, bool) {
+	header, encoded, ok := strings.Cut(raw, ",")
+	if !ok || !strings.HasPrefix(header, "data:") || !strings.Contains(header, ";base64") {
+		return "", nil, false
+	}
+	contentType := strings.TrimPrefix(strings.Split(header, ";")[0], "data:")
+	data, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		return "", nil, false
+	}
+	return contentType, data, true
+}
+
+func videoExtFromContentType(contentType string) string {
+	switch {
+	case strings.Contains(contentType, "webm"):
+		return ".webm"
+	case strings.Contains(contentType, "quicktime"), strings.Contains(contentType, "mov"):
+		return ".mov"
+	case strings.Contains(contentType, "m4v"):
+		return ".m4v"
+	default:
+		return ".mp4"
+	}
 }
 
 func wantsVideoWebM(format string) bool {

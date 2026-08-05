@@ -19,6 +19,8 @@ type fakeUserQ struct {
 	bal          int64
 	err          error
 	lastAtCalled bool
+	claims       int
+	claimErr     error
 }
 
 func (f *fakeUserQ) GetAutotopupInfo(_ context.Context, _ string) (*model.User, int64, error) {
@@ -35,6 +37,16 @@ func (f *fakeUserQ) SetAutotopupLastAt(_ context.Context, _ string) error {
 	defer f.mu.Unlock()
 	f.lastAtCalled = true
 	return nil
+}
+
+func (f *fakeUserQ) ClaimAutotopup(_ context.Context, _ string, _ time.Duration) (bool, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.claimErr != nil {
+		return false, f.claimErr
+	}
+	f.claims++
+	return f.claims == 1, nil
 }
 
 type fakeTopupQ struct {
@@ -518,5 +530,48 @@ func TestTruncateStr(t *testing.T) {
 		if got != tt.want {
 			t.Errorf("truncateStr(%q, %d) = %q, want %q", tt.in, tt.n, got, tt.want)
 		}
+	}
+}
+
+func autotopupTestUser() *model.User {
+	return &model.User{
+		AutotopupEnabled:        true,
+		AutotopupThresholdCents: 50000,
+		AutotopupAmountCents:    100000,
+		StripeCustomerID:        strPtr("cus_123"),
+		StripePaymentMethodID:   strPtr("pm_123"),
+	}
+}
+
+func TestAutoTopup_ClaimLostMeansNoCharge(t *testing.T) {
+	s := newTestableTopup(autotopupTestUser(), 30000)
+	fakeUsers(s).claims = 1
+
+	if err := s.doTopup(context.Background(), "user1"); err != nil {
+		t.Fatalf("doTopup: %v", err)
+	}
+	if got := len(fakeCharges(s).charges); got != 0 {
+		t.Fatalf("charges = %d, want 0 when another instance holds the claim", got)
+	}
+	if len(fakeDeposits(s).deposits) != 0 {
+		t.Fatal("credits must not be deposited without a charge")
+	}
+}
+
+func TestAutoTopup_ConcurrentCallsChargeOnce(t *testing.T) {
+	s := newTestableTopup(autotopupTestUser(), 30000)
+
+	var wg sync.WaitGroup
+	for i := 0; i < 8; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_ = s.doTopup(context.Background(), "user1")
+		}()
+	}
+	wg.Wait()
+
+	if got := len(fakeCharges(s).charges); got != 1 {
+		t.Fatalf("charges = %d, want exactly 1", got)
 	}
 }

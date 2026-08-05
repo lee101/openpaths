@@ -19,6 +19,7 @@ import (
 // Z.AI exposes two OpenAI-compatible surfaces under the same host:
 //   - the standard pay-as-you-go API at /api/paas/v4 (regular API keys)
 //   - the GLM Coding Plan API at /api/coding/paas/v4 (subscription keys)
+//
 // A coding-plan key only works against the coding path and a standard key only
 // works against the standard path, so the provider keeps an ordered list of base
 // paths and falls through to the next one when the upstream rejects the key as a
@@ -114,6 +115,7 @@ func (p *ZAIProvider) doChat(ctx context.Context, body []byte) (*http.Response, 
 func sanitizeForZAI(req *model.ChatCompletionRequest) {
 	req.Prefill = ""
 	req.TaskTier = ""
+	req.RoutingStrategy = ""
 	req.Thinking = nil
 }
 

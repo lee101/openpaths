@@ -40,9 +40,11 @@ import { Prompts } from './pages/Prompts';
 import { PromptDetail } from './pages/PromptDetail';
 import { Agents } from './pages/Agents';
 import { AgentDetail } from './pages/AgentDetail';
+import { OrgJoin } from './pages/OrgJoin';
 
 const Apps = lazy(() => import('./pages/Apps').then(module => ({ default: module.Apps })));
 const AppDetail = lazy(() => import('./pages/AppDetail').then(module => ({ default: module.AppDetail })));
+const SharedChat = lazy(() => import('./pages/SharedChat').then(module => ({ default: module.SharedChat })));
 
 export default function App() {
   return (
@@ -61,8 +63,10 @@ export default function App() {
           <Route path="mcp" element={<Mcp />} />
           <Route path=":slug/docs" element={<ProviderDocs />} />
           <Route path="playground" element={<Playground />} />
+          <Route path="chat/:slug" element={<Suspense fallback={<RouteLoading />}><SharedChat /></Suspense>} />
           <Route path="agents" element={<Agents />} />
           <Route path="agents/:id" element={<AgentDetail />} />
+		  <Route path="orgs/:slug/join" element={<OrgJoin />} />
           <Route path="fusion" element={<Fusion />} />
           <Route path="tools" element={<Tools />} />
           <Route path="image-to-3d" element={<ImageTo3D />} />

@@ -1,16 +1,16 @@
-import React, { useMemo, useState } from 'react';
+import React from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Check, Copy, Image as ImageIcon, MessageSquare, Video } from 'lucide-react';
-import { CodeBlock } from '../components/CodeBlock';
+import { ArrowLeft, ArrowRight, BookOpen, Image as ImageIcon, MessageSquare, Video } from 'lucide-react';
+import { ImageSpacePanel } from '../components/ImageSpacePanel';
+import { VideoSpacePanel } from '../components/VideoSpacePanel';
 import { Seo } from '../components/Seo';
 import { models, type Model } from '../data/models';
 import { providersByName, getProviderLogo } from '../data/providers';
-import { IMAGE_DEMOS, type ImageDemo } from '../data/imageDemos';
-import { VIDEO_DEMOS, type VideoDemo } from '../data/videoDemos';
-import { providerDocsPath, providerPath } from '../lib/paths';
+import { IMAGE_DEMOS } from '../data/imageDemos';
+import { VIDEO_DEMOS } from '../data/videoDemos';
+import { modelPath, providerDocsPath, providerPath } from '../lib/paths';
 
 const NON_CHAT_TAGS = ['art generation', 'video generation', 'audio', 'embedding'];
-type VideoCodeLanguage = 'python' | 'javascript' | 'curl';
 
 export function ModelPage() {
   const { modelId = '' } = useParams<{ modelId: string }>();
@@ -28,21 +28,12 @@ export function ModelPage() {
   const canChat = isChatModel(model);
   const imageDemo = IMAGE_DEMOS[model.id];
   const videoDemo = VIDEO_DEMOS[model.id];
-  const [videoCodeLang, setVideoCodeLang] = useState<VideoCodeLanguage>('python');
-  const [copiedCode, setCopiedCode] = useState(false);
-  const imageSnippet = useMemo(() => (
-    imageDemo ? generateImageSnippet(imageDemo, videoCodeLang) : ''
-  ), [imageDemo, videoCodeLang]);
-  const videoSnippet = useMemo(() => (
-    isVideo ? generateVideoSnippet(model.id, videoDemo, videoCodeLang) : ''
-  ), [isVideo, model.id, videoDemo, videoCodeLang]);
+  const relatedModels = getRelatedModels(model);
   const title = `${model.name} API, Pricing, Context Window | OpenPaths`;
   const description = `${model.name} from ${model.provider}: ${model.description} Use model ID ${model.id} through the OpenPaths API.`;
 
-  const copyVideoSnippet = async () => {
-    await navigator.clipboard.writeText(isVideo ? videoSnippet : imageSnippet);
-    setCopiedCode(true);
-    window.setTimeout(() => setCopiedCode(false), 1600);
+  const scrollToWorkspace = () => {
+    document.getElementById('model-workspace')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   return (
@@ -58,7 +49,7 @@ export function ModelPage() {
 
         <div className="mb-12">
           <div className="flex items-center gap-2 text-xs font-mono text-white/45 mb-4">
-            <img src={getProviderLogo(model.provider)} alt={`${model.provider} logo`} className="w-5 h-5 rounded-sm object-contain" />
+            <img src={getProviderLogo(model.provider)} alt={`${model.provider} logo`} className={`w-5 h-5 rounded-sm object-contain ${model.provider === 'Black Forest Labs' ? 'bg-white p-px' : ''}`} />
             {provider ? (
               <Link to={providerPath(provider.slug)} className="hover:text-white transition-colors underline underline-offset-4 decoration-white/20">
                 {model.provider}
@@ -102,18 +93,18 @@ export function ModelPage() {
           )}
           {isImage && (
             <button
-              onClick={() => navigate(`/playground?model=${encodeURIComponent(model.id)}&mode=image`)}
+              onClick={scrollToWorkspace}
               className="inline-flex items-center justify-center gap-2 rounded border border-white bg-white px-5 py-3 font-mono text-sm font-bold text-black hover:bg-white/90 transition-colors"
             >
-              <ImageIcon className="w-4 h-4" /> Generate image
+              <ImageIcon className="w-4 h-4" /> Open image workspace
             </button>
           )}
           {isVideo && (
             <button
-              onClick={() => navigate(`/playground?model=${encodeURIComponent(model.id)}&mode=video`)}
+              onClick={scrollToWorkspace}
               className="inline-flex items-center justify-center gap-2 rounded border border-white bg-white px-5 py-3 font-mono text-sm font-bold text-black hover:bg-white/90 transition-colors"
             >
-              <Video className="w-4 h-4" /> Generate video
+              <Video className="w-4 h-4" /> Open video workspace
             </button>
           )}
           {provider && (
@@ -127,152 +118,23 @@ export function ModelPage() {
         </div>
 
         {isVideo && (
-          <section className="mt-12 rounded-2xl border border-white/10 bg-white/[0.02] overflow-hidden">
-            <div className="grid gap-0 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-              <div className="border-b border-white/10 lg:border-b-0 lg:border-r">
-                {videoDemo ? (
-                  <video src={videoDemo.outputUrl} controls muted loop playsInline className="aspect-video w-full bg-black object-contain" />
-                ) : (
-                  <div className="flex aspect-video items-center justify-center bg-white/[0.03] text-sm font-mono text-white/35">
-                    Generate a sample in the playground
-                  </div>
-                )}
-                {videoDemo && (
-                  <div className="grid gap-4 border-t border-white/10 p-4 md:grid-cols-[120px_minmax(0,1fr)]">
-                    {videoDemo.imageUrl || videoDemo.imageUrls?.[0] ? (
-                      <div>
-                        <div className="mb-2 text-[10px] font-mono uppercase tracking-[0.16em] text-white/35">Input image</div>
-                        <img
-                          src={videoDemo.imageUrl || videoDemo.imageUrls?.[0]}
-                          alt={`${model.name} reference input`}
-                          className="aspect-square w-full rounded-lg border border-white/10 bg-white/[0.03] object-contain p-2"
-                        />
-                      </div>
-                    ) : null}
-                    <div className="min-w-0">
-                      <div className="mb-2 text-[10px] font-mono uppercase tracking-[0.16em] text-white/35">Prompt</div>
-                      <p className="text-sm leading-relaxed text-white/58">{videoDemo.prompt}</p>
-                      <div className="mt-4 flex flex-wrap gap-2 text-[10px] font-mono uppercase tracking-[0.14em] text-white/35">
-                        <span className="rounded border border-white/10 px-2 py-1">{videoDemo.resolution}</span>
-                        <span className="rounded border border-white/10 px-2 py-1">{videoDemo.duration}s</span>
-                        <span className="rounded border border-white/10 px-2 py-1">{videoDemo.aspectRatio}</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="p-5">
-                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h2 className="text-xl font-bold tracking-tight">Video API example</h2>
-                    <p className="mt-1 text-sm text-white/45">Copy the request or open it with this model selected in the playground.</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={copyVideoSnippet}
-                    className="inline-flex items-center justify-center gap-2 rounded border border-white/12 px-3 py-2 font-mono text-xs text-white/60 transition-colors hover:border-white/30 hover:text-white"
-                  >
-                    {copiedCode ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                    {copiedCode ? 'Copied' : 'Copy'}
-                  </button>
-                </div>
-                <div className="mb-3 flex flex-wrap gap-2">
-                  {(['python', 'javascript', 'curl'] as const).map(lang => (
-                    <button
-                      key={lang}
-                      type="button"
-                      onClick={() => setVideoCodeLang(lang)}
-                      className={`rounded px-3 py-1.5 font-mono text-xs transition-colors ${videoCodeLang === lang ? 'bg-white text-black' : 'border border-white/10 text-white/45 hover:text-white'}`}
-                    >
-                      {lang === 'javascript' ? 'JavaScript' : lang === 'python' ? 'Python' : 'cURL'}
-                    </button>
-                  ))}
-                </div>
-                <CodeBlock
-                  code={videoSnippet}
-                  language={videoCodeLang === 'curl' ? 'bash' : videoCodeLang}
-                  containerClassName="overflow-hidden rounded-lg border border-white/10 bg-black/60"
-                  preClassName="max-h-[420px] text-xs"
-                />
-                <button
-                  type="button"
-                  onClick={() => navigate(`/playground?model=${encodeURIComponent(model.id)}&mode=video`)}
-                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded border border-white bg-white px-4 py-2.5 font-mono text-sm font-bold text-black transition-colors hover:bg-white/90"
-                >
-                  <Video className="h-4 w-4" /> Use this in playground
-                </button>
-              </div>
-            </div>
+          <section id="model-workspace" className="mt-12 scroll-mt-24 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
+            <VideoSpacePanel modelId={model.id} modelName={model.name} demo={videoDemo} />
           </section>
         )}
 
-        {imageDemo && (
-          <section className="mt-12 rounded-2xl border border-white/10 bg-white/[0.02] overflow-hidden">
-            <div className="grid gap-0 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-              <div className="border-b border-white/10 lg:border-b-0 lg:border-r">
-                <div className="grid grid-cols-2 gap-px bg-white/10">
-                  {imageDemo.imageUrl && (
-                    <div className="bg-black">
-                      <div className="border-b border-white/10 px-4 py-2 text-[10px] font-mono uppercase tracking-[0.16em] text-white/35">Input</div>
-                      <img src={imageDemo.imageUrl} alt={`${model.name} input`} className="aspect-square w-full object-contain p-3" />
-                    </div>
-                  )}
-                  <div className="bg-black">
-                    <div className="border-b border-white/10 px-4 py-2 text-[10px] font-mono uppercase tracking-[0.16em] text-white/35">Output</div>
-                    <img src={imageDemo.outputUrl} alt={`${model.name} output`} className="aspect-square w-full object-contain p-3" />
-                  </div>
-                </div>
-                <div className="border-t border-white/10 p-5">
-                  <h2 className="text-xl font-bold tracking-tight">{imageDemo.title}</h2>
-                  <p className="mt-2 text-sm leading-relaxed text-white/55">{imageDemo.description}</p>
-                </div>
-              </div>
-
-              <div className="p-5">
-                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h2 className="text-xl font-bold tracking-tight">Image API example</h2>
-                    <p className="mt-1 text-sm text-white/45">Copy the request or open it with this model selected in the playground.</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={copyVideoSnippet}
-                    className="inline-flex items-center justify-center gap-2 rounded border border-white/12 px-3 py-2 font-mono text-xs text-white/60 transition-colors hover:border-white/30 hover:text-white"
-                  >
-                    {copiedCode ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                    {copiedCode ? 'Copied' : 'Copy'}
-                  </button>
-                </div>
-                <div className="mb-3 flex flex-wrap gap-2">
-                  {(['python', 'javascript', 'curl'] as const).map(lang => (
-                    <button
-                      key={lang}
-                      type="button"
-                      onClick={() => setVideoCodeLang(lang)}
-                      className={`rounded px-3 py-1.5 font-mono text-xs transition-colors ${videoCodeLang === lang ? 'bg-white text-black' : 'border border-white/10 text-white/45 hover:text-white'}`}
-                    >
-                      {lang === 'javascript' ? 'JavaScript' : lang === 'python' ? 'Python' : 'cURL'}
-                    </button>
-                  ))}
-                </div>
-                <CodeBlock
-                  code={imageSnippet}
-                  language={videoCodeLang === 'curl' ? 'bash' : videoCodeLang}
-                  containerClassName="overflow-hidden rounded-lg border border-white/10 bg-black/60"
-                  preClassName="max-h-[420px] text-xs"
-                />
-                <button
-                  type="button"
-                  onClick={() => navigate(`/playground?model=${encodeURIComponent(model.id)}&mode=image`)}
-                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded border border-white bg-white px-4 py-2.5 font-mono text-sm font-bold text-black transition-colors hover:bg-white/90"
-                >
-                  <ImageIcon className="h-4 w-4" /> Use this in playground
-                </button>
-              </div>
-            </div>
+        {isImage && (
+          <section id={isVideo ? undefined : 'model-workspace'} className="mt-12 scroll-mt-24 rounded-2xl border border-white/10 bg-white/[0.02] overflow-hidden">
+            <ImageSpacePanel
+              modelId={model.id}
+              modelName={model.name}
+              imageToImage={model.tags.includes('image-to-image')}
+              demo={imageDemo}
+            />
           </section>
         )}
+
+        <RelatedModels current={model} related={relatedModels} />
       </section>
     </>
   );
@@ -292,7 +154,7 @@ function Fact({ label, value, code = false }: { label: string; value: string; co
 }
 
 function isChatModel(model: Model) {
-  return !model.tags.every(tag => NON_CHAT_TAGS.includes(tag)) && model.contextLength !== 'N/A';
+  return !model.tags.some(tag => NON_CHAT_TAGS.includes(tag)) && model.contextLength !== 'N/A';
 }
 
 function formatPrice(model: Model, price: number, label: 'input' | 'output') {
@@ -320,118 +182,66 @@ function formatCurrency(value: number) {
   return `$${value.toFixed(2)}`;
 }
 
-function buildVideoPayload(modelId: string, demo?: VideoDemo) {
-  const isHappyHorse = modelId === 'alibaba/happy-horse/image-to-video';
-  const payload: Record<string, unknown> = {
-    model: modelId,
-    prompt: demo?.prompt || 'A cinematic product demo shot of a compact AI routing console, slow camera push-in, clean studio lighting, no readable text.',
-    resolution: demo?.resolution || '720p',
-    duration: isHappyHorse ? Number(demo?.duration || 5) : demo?.duration || '4',
-    aspect_ratio: demo?.aspectRatio || '16:9',
-  };
-  if (isHappyHorse) {
-    payload.enable_safety_checker = true;
-  } else {
-    payload.generate_audio = demo?.generateAudio ?? false;
-  }
-  if (demo?.imageUrl) payload.image_url = demo.imageUrl;
-  if (demo?.endImageUrl) payload.end_image_url = demo.endImageUrl;
-  if (demo?.imageUrls?.length) payload.image_urls = demo.imageUrls;
-  if (demo?.videoUrls?.length) payload.video_urls = demo.videoUrls;
-  if (demo?.audioUrls?.length) payload.audio_urls = demo.audioUrls;
-  return payload;
+function mediaTask(model: Model) {
+  const id = model.id.toLowerCase();
+  if (id.includes('image-to-video')) return 'image-to-video';
+  if (id.includes('reference-to-video')) return 'reference-to-video';
+  if (id.includes('text-to-video')) return 'text-to-video';
+  if (model.tags.includes('outpainting')) return 'outpainting';
+  if (model.tags.includes('image-to-image')) return 'image-to-image';
+  if (model.tags.includes('text-to-image') || model.tags.includes('art generation')) return 'text-to-image';
+  return model.tags[0] || 'model';
 }
 
-function generateVideoSnippet(modelId: string, demo: VideoDemo | undefined, lang: VideoCodeLanguage) {
-  const apiBase = 'https://openpaths.io/v1';
-  const apiKey = 'op-...';
-  const payload = buildVideoPayload(modelId, demo);
-  const body = JSON.stringify(payload, null, 2);
-
-  if (lang === 'python') {
-    return `from openai import OpenAI
-
-client = OpenAI(
-    api_key="${apiKey}",
-    base_url="${apiBase}",
-)
-
-result = client.post(
-    "/videos/generations",
-    body=${JSON.stringify(payload, null, 4)},
-    cast_to=dict,
-)
-
-print(result["video_url"])`;
-  }
-
-  if (lang === 'javascript') {
-    return `import OpenAI from "openai";
-
-const client = new OpenAI({
-  apiKey: "${apiKey}",
-  baseURL: "${apiBase}",
-});
-
-const result = await client.post("/videos/generations", {
-  body: ${body},
-  cast_to: Object,
-});
-
-console.log(result.video_url);`;
-  }
-
-  return `curl "${apiBase}/videos/generations" \\
-  -H "Content-Type: application/json" \\
-  -H "Authorization: Bearer ${apiKey}" \\
-  -d @- <<'JSON'
-${body}
-JSON`;
+function getRelatedModels(current: Model) {
+  const task = mediaTask(current);
+  return models
+    .filter(candidate => candidate.id !== current.id)
+    .map(candidate => {
+      let score = 0;
+      if (candidate.provider === current.provider) score += 6;
+      if (mediaTask(candidate) === task) score += 8;
+      score += candidate.tags.filter(tag => current.tags.includes(tag)).length;
+      if (candidate.id.split('/').slice(0, -2).join('/') === current.id.split('/').slice(0, -2).join('/')) score += 3;
+      return { candidate, score };
+    })
+    .filter(item => item.score >= 4)
+    .sort((a, b) => b.score - a.score || b.candidate.popularity - a.candidate.popularity)
+    .slice(0, 6)
+    .map(item => item.candidate);
 }
 
-function generateImageSnippet(demo: ImageDemo, lang: VideoCodeLanguage) {
-  const apiBase = 'https://openpaths.io/v1';
-  const apiKey = 'op-...';
-  const payload = demo.payload;
-  const body = JSON.stringify(payload, null, 2);
-
-  if (lang === 'python') {
-    return `from openai import OpenAI
-
-client = OpenAI(
-    api_key="${apiKey}",
-    base_url="${apiBase}",
-)
-
-result = client.post(
-    "/images/generations",
-    body=${JSON.stringify(payload, null, 4)},
-    cast_to=dict,
-)
-
-print(result["data"][0]["url"])`;
-  }
-
-  if (lang === 'javascript') {
-    return `import OpenAI from "openai";
-
-const client = new OpenAI({
-  apiKey: "${apiKey}",
-  baseURL: "${apiBase}",
-});
-
-const result = await client.post("/images/generations", {
-  body: ${body},
-  cast_to: Object,
-});
-
-console.log(result.data[0].url);`;
-  }
-
-  return `curl "${apiBase}/images/generations" \\
-  -H "Content-Type: application/json" \\
-  -H "Authorization: Bearer ${apiKey}" \\
-  -d @- <<'JSON'
-${body}
-JSON`;
+function RelatedModels({ current, related }: { current: Model; related: Model[] }) {
+  const task = mediaTask(current);
+  if (!related.length) return null;
+  return (
+    <section className="mt-12 border-t border-white/10 pt-10" aria-labelledby="related-models-heading">
+      <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 id="related-models-heading" className="text-2xl font-bold tracking-tight">Related {task} models</h2>
+          <p className="mt-1 text-sm text-white/45">Compare similar APIs without losing the model-specific workflow.</p>
+        </div>
+        <Link to={`/models?q=${encodeURIComponent(task.replaceAll('-', ' '))}`} className="font-mono text-xs text-white/50 transition-colors hover:text-white">
+          Browse all {task} models <ArrowRight className="inline h-3.5 w-3.5" />
+        </Link>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {related.map(model => (
+          <Link key={model.id} to={modelPath(model.id)} className="group rounded-xl border border-white/10 bg-white/[0.02] p-4 transition-colors hover:border-white/25 hover:bg-white/[0.04]">
+            <div className="mb-2 flex items-start justify-between gap-3">
+              <h3 className="font-semibold tracking-tight text-white/85 group-hover:text-white">{model.name}</h3>
+              <ArrowRight className="mt-1 h-3.5 w-3.5 shrink-0 text-white/25 group-hover:text-white/65" />
+            </div>
+            <code className="block truncate text-[11px] text-white/35">{model.id}</code>
+            <p className="mt-3 line-clamp-2 text-xs leading-relaxed text-white/48">{model.description}</p>
+          </Link>
+        ))}
+      </div>
+      <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 font-mono text-xs text-white/45">
+        <Link to={providerPath(providersByName[current.provider]?.slug || current.provider.toLowerCase())} className="hover:text-white">More from {current.provider} →</Link>
+        {current.tags.includes('video generation') && <Link to="/blog/video-model-tips-image-to-video-encoding" className="hover:text-white">Image-to-video guide →</Link>}
+        {current.tags.includes('art generation') && <Link to="/image-evals" className="hover:text-white">Image model benchmarks →</Link>}
+      </div>
+    </section>
+  );
 }

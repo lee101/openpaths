@@ -13,10 +13,13 @@ func newTestPricingTable() *PricingTable {
 		{ID: "deepseek-v4-pro", InputPricePer1M: 0.435, InputCacheHitPricePer1M: 0.003625, OutputPricePer1M: 0.87},
 		{ID: "openpaths-embed", PricePerRequest: 0.001},
 		{ID: "grok-imagine-image", PricePerImage: 0.02, PricePerInputImage: 0.002},
+		{ID: "grok-imagine-image-quality", PricePerImage: 0.05, PricePerImageByResolution: map[string]float64{"1k": 0.05, "2k": 0.07}, PricePerInputImage: 0.01},
 		{ID: "hidream-o1-image-dev", PricePerMegapixel: 0.011},
 		{ID: "fal-ai/flux-2-pro/outpaint", PriceFirstMegapixel: 0.033, PriceExtraMegapixel: 0.0165},
 		{ID: "seedance-fast", PricePerSecond: 0.26609, PricePerSecondWithVideoInput: 0.15972},
-		{ID: "xai-tts", InputPricePer1M: 15.00},
+		{ID: "grok-imagine-video", PricePerSecond: 0.05, PricePerSecondByResolution: map[string]float64{"480p": 0.05, "720p": 0.07}, PricePerInputVideoSecond: 0.01, PricePerInputImage: 0.002},
+		{ID: "grok-imagine-video-1.5", PricePerSecond: 0.08, PricePerSecondByResolution: map[string]float64{"480p": 0.08, "720p": 0.14, "1080p": 0.25}, PricePerInputImage: 0.01},
+		{ID: "xai-tts", PricePer1MCharacters: 15.00},
 		{ID: "whisper-1", PricePerMinute: 0.006},
 		{ID: "xai-stt", PricePerHour: 0.20},
 		{ID: "free-model", InputPricePer1M: 0, OutputPricePer1M: 0, Aliases: []string{"free-alias"}},
@@ -24,6 +27,33 @@ func newTestPricingTable() *PricingTable {
 			LongContextThreshold: 272000, InputPricePer1MLong: 10.00, InputCacheHitPricePer1MLong: 1.00, OutputPricePer1MLong: 45.00},
 	}
 	return NewPricingTable(models)
+}
+
+func TestCalculateVideoCostWithMediaInputs_XAIResolutionTiers(t *testing.T) {
+	pt := newTestPricingTable()
+
+	tests := []struct {
+		name, model, resolution string
+		duration, inputImages   int
+		hasVideo                bool
+		want                    int64
+	}{
+		{"standard 720p", "grok-imagine-video", "720p", 10, 0, false, 7000},
+		{"standard 480p with video input", "grok-imagine-video", "480P", 10, 0, true, 6000},
+		{"standard with image input", "grok-imagine-video", "480p", 10, 1, false, 5020},
+		{"v1.5 1080p with image input", "grok-imagine-video-1.5", "1080p", 10, 1, false, 25099},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := pt.CalculateVideoCostWithMediaInputs(tt.model, tt.duration, tt.hasVideo, tt.inputImages, tt.resolution)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got != tt.want {
+				t.Fatalf("cost = %d, want %d", got, tt.want)
+			}
+		})
+	}
 }
 
 func TestCalculateVideoCost_PerSecond(t *testing.T) {
@@ -186,14 +216,6 @@ func TestCalculateCost(t *testing.T) {
 			wantErr:      false,
 		},
 		{
-			name:         "xai tts bills input characters at GA price",
-			modelID:      "xai-tts",
-			inputTokens:  1_000_000,
-			outputTokens: 0,
-			wantCost:     150000,
-			wantErr:      false,
-		},
-		{
 			name:         "free model alias stays free with token usage",
 			modelID:      "free-alias",
 			inputTokens:  50000,
@@ -310,6 +332,18 @@ func TestCalculateImageCostWithInputs(t *testing.T) {
 	}
 }
 
+func TestCalculateImageCostWithInputsAndSize_ResolutionTier(t *testing.T) {
+	pt := newTestPricingTable()
+	cost, err := pt.CalculateImageCostWithInputsAndSize("grok-imagine-image-quality", 1, 1, "2K")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// $0.07 output + $0.01 input.
+	if cost != 800 {
+		t.Fatalf("cost = %d, want 800", cost)
+	}
+}
+
 func TestCalculateImageCostWithInputsAndSize_PerMegapixel(t *testing.T) {
 	pt := newTestPricingTable()
 	cost, err := pt.CalculateImageCostWithInputsAndSize("hidream-o1-image-dev", 2, 0, "1024x1024")
@@ -379,6 +413,17 @@ func TestCalculateAudioCost(t *testing.T) {
 				t.Fatalf("cost = %d, want %d", cost, tt.wantCost)
 			}
 		})
+	}
+}
+
+func TestCalculateCharacterCost(t *testing.T) {
+	pt := newTestPricingTable()
+	cost, err := pt.CalculateCharacterCost("xai-tts", 1_000_000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cost != 150000 {
+		t.Fatalf("cost = %d, want 150000", cost)
 	}
 }
 

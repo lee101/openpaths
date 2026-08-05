@@ -5,12 +5,14 @@ export const HAPPY_HORSE_V11_IMAGE_URL = `${HH11_BASE}/rap.png`;
 const SYNC_LIPSYNC_BASE = 'https://openpathsstatic.openpaths.io/static/uploads/playground/sync-lipsync';
 export const SYNC_LIPSYNC_AVATAR_URL = `${SYNC_LIPSYNC_BASE}/avatar.jpg`;
 const FAL_VIDEO_BASE = 'https://openpathsstatic.openpaths.io/static/uploads/playground/fal-video';
+const GEMINI_OMNI_BASE = 'https://openpathsstatic.openpaths.io/static/uploads/playground/gemini-omni';
+export const GEMINI_OMNI_PERFUME_IMAGE_URL = 'https://openpathsstatic.openpaths.io/static/uploads/playground/hidream-edit/perfume.jpg';
 
 export type VideoDemo = {
   prompt: string;
   outputUrl: string;
-  resolution: '480p' | '720p' | '1080p';
-  duration: 'auto' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | '11' | '12' | '13' | '14' | '15';
+  resolution: '480p' | '720p' | '768P' | '1080p' | '2K' | 'HD' | 'FHD';
+  duration: 'auto' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | '11' | '12' | '13' | '14' | '15' | '16' | '17' | '18' | '19' | '20';
   aspectRatio: 'auto' | '21:9' | '16:9' | '4:3' | '1:1' | '3:4' | '9:16';
   generateAudio: boolean;
   imageUrl?: string;
@@ -21,6 +23,31 @@ export type VideoDemo = {
 };
 
 export const VIDEO_DEMOS: Record<string, VideoDemo> = {
+  'flux-3-video-draft': {
+    prompt: 'A cinematic macro journey through a miniature Black Forest at night where luminous fiber-optic paths weave between moss-covered stones like an intelligent routing network. The camera glides slowly forward at ground level; cool moonlight, warm bioluminescent pulses, light fog, realistic depth of field. Natural forest ambience and subtle electronic tones, no speech, no readable text, no logos.',
+    outputUrl: '/static/video-gallery/bfl/flux-3-routing-forest-draft.webm',
+    resolution: 'HD',
+    duration: '5',
+    aspectRatio: '16:9',
+    generateAudio: true,
+  },
+  'flux-3-video': {
+    prompt: 'A precision glass terrarium sits on a dark studio desk, containing a living miniature forest whose glowing root network reroutes pulses of light around fallen branches in real time. Slow cinematic orbit, physically accurate reflections, rich moss detail, cool blue and warm amber lighting, soft mechanical room tone blended with forest ambience, no speech, no readable text, no logos.',
+    outputUrl: '/static/video-gallery/bfl/flux-3-routing-terrarium-full.webm',
+    resolution: 'HD',
+    duration: '5',
+    aspectRatio: '16:9',
+    generateAudio: true,
+  },
+  'gemini-omni-flash-preview': {
+    prompt: '[# Sources <FIRST_FRAME>@Image1] Continuous single-shot premium product video: the perfume bottle remains the hero object from the input image, the camera makes a slow cinematic push-in, soft studio lights sweep across the glass, subtle reflections move on the surface, no scene cuts, no added text, no dialogue. Use Image1 as the starting frame.',
+    outputUrl: `${GEMINI_OMNI_BASE}/gemini-omni-perfume-image-to-video.mp4`,
+    resolution: '720p',
+    duration: '4',
+    aspectRatio: '16:9',
+    generateAudio: false,
+    imageUrl: GEMINI_OMNI_PERFUME_IMAGE_URL,
+  },
   'seedance-2.0-fast-text-to-video': {
     prompt: 'A cinematic 4-second shot of a compact AI routing console on a dark workstation, luminous paths connecting model nodes across a glass interface, slow handheld push-in, realistic reflections, premium product demo lighting, no readable text.',
     outputUrl: 'https://openpathsstatic.openpaths.io/static/uploads/playground/seedance/seedance-fast-text-to-video.mp4',

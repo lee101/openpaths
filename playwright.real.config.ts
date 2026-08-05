@@ -15,7 +15,7 @@ const isLive = !!process.env.TARGET_URL;
 
 export default defineConfig({
   testDir: './e2e',
-  testMatch: ['**/auth-real.spec.ts', '**/full-flow.spec.ts', '**/gpt54-models.spec.ts', '**/xai-video-live.spec.ts'],
+  testMatch: ['**/auth-real.spec.ts', '**/full-flow.spec.ts', '**/gpt54-models.spec.ts', '**/gpt56-models.spec.ts', '**/minimax-m27.spec.ts', '**/new-models-live.spec.ts', '**/xai-video-live.spec.ts'],
   fullyParallel: false,
   retries: 0,
   timeout: 60000,

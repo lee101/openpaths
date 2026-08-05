@@ -43,6 +43,7 @@ export interface Preset {
   system_prompt: string;
   model: string;
   config: AgentConfig;
+  example_prompts?: string[];
 }
 
 export interface RunStep {
@@ -61,6 +62,16 @@ export interface AgentRun {
   steps: RunStep[];
   status: string;
   cost_cents: number;
+  created_at?: string;
+}
+
+export interface KnowledgeResult {
+  id: string;
+  data_source_id: string;
+  title?: string;
+  chunk_index: number;
+  content: string;
+  score?: number;
 }
 
 function authHeaders(json = true): Record<string, string> {
@@ -99,7 +110,7 @@ export async function updateAgent(id: string, body: Partial<Agent>): Promise<Age
 }
 
 export async function deleteAgent(id: string): Promise<void> {
-  await fetch(`/v1/agents/${id}`, { method: 'DELETE', headers: authHeaders(false) });
+  await jsonOrThrow(await fetch(`/v1/agents/${id}`, { method: 'DELETE', headers: authHeaders(false) }));
 }
 
 export async function addSource(id: string, body: Record<string, any>): Promise<AgentSource> {
@@ -113,7 +124,17 @@ export async function uploadSource(id: string, file: File): Promise<AgentSource>
 }
 
 export async function deleteSource(id: string, sid: string): Promise<void> {
-  await fetch(`/v1/agents/${id}/sources/${sid}`, { method: 'DELETE', headers: authHeaders(false) });
+  await jsonOrThrow(await fetch(`/v1/agents/${id}/sources/${sid}`, { method: 'DELETE', headers: authHeaders(false) }));
+}
+
+export async function listAgentRuns(id: string): Promise<AgentRun[]> {
+  const body = await jsonOrThrow(await fetch(`/v1/agents/${id}/runs`, { headers: authHeaders(false) }));
+  return body.runs || [];
+}
+
+export async function searchAgentKnowledge(id: string, query: string): Promise<KnowledgeResult[]> {
+  const body = await jsonOrThrow(await fetch(`/v1/agents/${id}/search?q=${encodeURIComponent(query)}&limit=8`, { headers: authHeaders(false) }));
+  return body.results || [];
 }
 
 export async function runAgentStream(
@@ -129,12 +150,14 @@ export async function runAgentStream(
     body: JSON.stringify({ input }),
   });
   if (!resp.ok || !resp.body) {
-    onError(`run failed (${resp.status})`);
+    const body = await resp.json().catch(() => ({}));
+    onError(body?.error?.message || body?.error || `run failed (${resp.status})`);
     return;
   }
   const reader = resp.body.getReader();
   const dec = new TextDecoder();
   let buf = '';
+  let terminalEvent = false;
   for (;;) {
     const { done, value } = await reader.read();
     if (done) break;
@@ -152,9 +175,10 @@ export async function runAgentStream(
       try {
         const parsed = JSON.parse(data);
         if (event === 'step') onStep(parsed);
-        else if (event === 'done') onDone(parsed);
-        else if (event === 'error') onError(parsed.error || 'error');
+        else if (event === 'done') { terminalEvent = true; onDone(parsed); }
+        else if (event === 'error') { terminalEvent = true; onError(parsed.error || 'error'); }
       } catch { /* ignore partial */ }
     }
   }
+  if (!terminalEvent) onError('The run ended before a final response was received.');
 }

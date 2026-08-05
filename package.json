@@ -19,6 +19,7 @@
     "lint": "tsc --noEmit",
     "test:e2e": "npx playwright test",
     "test:e2e:spaces": "npx playwright test e2e/spaces.spec.ts",
+    "test:e2e:paid-models": "npx playwright test e2e/new-models-live.spec.ts --config=playwright.real.config.ts",
     "test:e2e:ui": "npx playwright test --ui",
     "test:e2e:live": "npx playwright test --config=playwright.live.config.ts"
   },

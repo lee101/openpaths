@@ -37,6 +37,13 @@ type ChatCompletionRequest struct {
 	// the direct provider HTTP layer ignores it.
 	TaskTier string `json:"task_tier,omitempty"`
 
+	// RoutingStrategy controls how OpenPaths orders healthy candidates after the
+	// model/auto router has built a fallback chain. Supported values are:
+	// "price" (default, cheapest blended token rate first), "config" (catalogue
+	// order), and "fastest" (currently catalogue order unless a caller supplies
+	// an explicit low-latency route such as openpaths/auto-fast).
+	RoutingStrategy string `json:"routing_strategy,omitempty"`
+
 	// PromptCacheKey is OpenAI's optional cache-routing hint: requests sharing a
 	// key are routed together to raise the prompt-cache hit rate. Only the real
 	// OpenAI provider sets/forwards it (other OpenAI-compatible upstreams may
@@ -191,21 +198,36 @@ type ModelInfo struct {
 	MaxOutputTokens int                `json:"max_output_tokens,omitempty"`
 	Aliases         []string           `json:"aliases,omitempty"`
 	SupportedSizes  []string           `json:"supported_sizes,omitempty"`
+	// Deprecated ids still answer, but on a substitute upstream named in
+	// DeprecatedNote. Surfaced so callers can migrate rather than discover it
+	// from a changed response.
+	Deprecated     bool   `json:"deprecated,omitempty"`
+	DeprecatedNote string `json:"deprecated_note,omitempty"`
 }
 
 type ModelPricing struct {
-	InputPer1M              float64 `json:"input_per_1m_tokens,omitempty"`
-	InputCacheHitPer1M      float64 `json:"input_cache_hit_per_1m_tokens,omitempty"`
-	OutputPer1M             float64 `json:"output_per_1m_tokens,omitempty"`
-	PerRequest              float64 `json:"per_request,omitempty"`
-	PerImage                float64 `json:"per_image,omitempty"`
-	PerMegapixel            float64 `json:"per_megapixel,omitempty"`
-	FirstMegapixel          float64 `json:"first_megapixel,omitempty"`
-	ExtraMegapixel          float64 `json:"extra_megapixel,omitempty"`
-	PerInputImage           float64 `json:"per_input_image,omitempty"`
-	PerVideo                float64 `json:"per_video,omitempty"`
-	PerSecond               float64 `json:"per_second,omitempty"`
-	PerSecondWithVideoInput float64 `json:"per_second_with_video_input,omitempty"`
+	InputPer1M              float64            `json:"input_per_1m_tokens,omitempty"`
+	InputCacheHitPer1M      float64            `json:"input_cache_hit_per_1m_tokens,omitempty"`
+	OutputPer1M             float64            `json:"output_per_1m_tokens,omitempty"`
+	Per1MCharacters         float64            `json:"per_1m_characters,omitempty"`
+	LongContextThreshold    int                `json:"long_context_threshold,omitempty"`
+	InputPer1MLong          float64            `json:"input_per_1m_tokens_long,omitempty"`
+	InputCacheHitPer1MLong  float64            `json:"input_cache_hit_per_1m_tokens_long,omitempty"`
+	OutputPer1MLong         float64            `json:"output_per_1m_tokens_long,omitempty"`
+	PerRequest              float64            `json:"per_request,omitempty"`
+	PerImage                float64            `json:"per_image,omitempty"`
+	PerImageByResolution    map[string]float64 `json:"per_image_by_resolution,omitempty"`
+	PerMegapixel            float64            `json:"per_megapixel,omitempty"`
+	FirstMegapixel          float64            `json:"first_megapixel,omitempty"`
+	ExtraMegapixel          float64            `json:"extra_megapixel,omitempty"`
+	PerInputImage           float64            `json:"per_input_image,omitempty"`
+	PerVideo                float64            `json:"per_video,omitempty"`
+	PerSecond               float64            `json:"per_second,omitempty"`
+	PerSecondByResolution   map[string]float64 `json:"per_second_by_resolution,omitempty"`
+	PerSecondWithVideoInput float64            `json:"per_second_with_video_input,omitempty"`
+	PerInputVideoSecond     float64            `json:"per_input_video_second,omitempty"`
+	PerMinute               float64            `json:"per_minute,omitempty"`
+	PerHour                 float64            `json:"per_hour,omitempty"`
 }
 
 type ModelCapabilities struct {

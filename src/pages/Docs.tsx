@@ -16,7 +16,7 @@ const ENDPOINTS = [
   { method: 'POST', path: '/v1/3d/text-generations', description: 'Generate a GLB straight from a text prompt (auto image then Pixal3D).' },
   { method: 'POST', path: '/v1/3d/rigging', description: 'Auto-rig a humanoid GLB into a rigged character (GLB + FBX) with Meshy.' },
   { method: 'POST', path: '/v1/3d/generations', description: 'Also retextures a mesh: pass model trellis-2-retexture with mesh_url + image_url.' },
-  { method: 'POST', path: '/v1/videos/generations', description: 'Generate videos (Sora 2, Grok Imagine, Hailuo, Wan, LTX).' },
+  { method: 'POST', path: '/v1/videos/generations', description: 'Generate videos (MiniMax H3, Sora 2, Grok Imagine, Hailuo, Wan, LTX).' },
   { method: 'POST', path: '/v1/videos/edits', description: 'Edit an existing video with Grok Imagine Video.' },
   { method: 'POST', path: '/v1/videos/extensions', description: 'Extend an existing video from its last frame with Grok Imagine Video.' },
   { method: 'POST', path: '/v1/audio/transcriptions', description: 'Transcribe speech to text (Whisper, GPT-4o Transcribe).' },
@@ -192,6 +192,12 @@ export function Docs() {
               <div><code>openpaths/auto-vision</code> — image understanding</div>
               <div><code>openpaths/auto-image</code> — GPT Image 2, RA1 fallback</div>
             </div>
+            <p className="mb-4 text-sm text-white/55">
+              Fallback candidates are price-sorted by default. Send <code>routing_strategy=&quot;config&quot;</code> to preserve catalogue order, or use <code>openpaths/auto-fast</code> for latency-biased routing. The stats page records latency, time to first token, throughput, and spend by provider/model.
+            </p>
+            <p className="mb-4 text-sm text-white/55">
+              Inference.net is available as <code>inference_net</code> with Nemotron 3 Super, Schematron, ClipTagger, GPT-OSS, Llama, DeepSeek, Qwen, Gemma, and Mistral routes. GLM-5.2 stays on Z.ai until Inference.net advertises a compatible GLM model id.
+            </p>
             <div className="text-xs font-mono text-white/40 mb-2">Latest aliases</div>
             <div className="space-y-1 text-sm text-white/70 font-mono" data-testid="docs-latest-aliases">
               <div><code>openai-chat-latest</code>{' -> '}<code>gpt-5-chat-latest</code></div>

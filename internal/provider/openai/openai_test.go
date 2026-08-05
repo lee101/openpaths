@@ -176,6 +176,33 @@ func TestChatCompletionStripsTemperatureForReasoningModel(t *testing.T) {
 	}
 }
 
+func TestChatCompletionPassesThroughGPT56TierModel(t *testing.T) {
+	for _, modelID := range []string{"gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"} {
+		t.Run(modelID, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				var req model.ChatCompletionRequest
+				if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+					t.Fatalf("decode provider request: %v", err)
+				}
+				if req.Model != modelID {
+					t.Fatalf("provider model = %q, want %q", req.Model, modelID)
+				}
+				w.Header().Set("Content-Type", "application/json")
+				_ = json.NewEncoder(w).Encode(model.ChatCompletionResponse{ID: "ok", Model: modelID})
+			}))
+			defer server.Close()
+
+			p := New("test-key", server.URL)
+			if _, err := p.ChatCompletion(context.Background(), &model.ChatCompletionRequest{
+				Model:    modelID,
+				Messages: []model.ChatMessage{{Role: "user", Content: "Hi"}},
+			}); err != nil {
+				t.Fatalf("chat completion: %v", err)
+			}
+		})
+	}
+}
+
 func TestChatCompletionSuccess(t *testing.T) {
 	expectedResp := model.ChatCompletionResponse{
 		ID:      "chatcmpl-123",

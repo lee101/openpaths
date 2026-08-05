@@ -54,13 +54,16 @@ func (p *AnthropicProvider) Name() string { return "anthropic" }
 
 // Anthropic API types
 type anthropicRequest struct {
-	Model     string             `json:"model"`
-	Messages  []anthropicMessage `json:"messages"`
-	System    any                `json:"system,omitempty"`
-	MaxTokens int                `json:"max_tokens"`
-	Stream    bool               `json:"stream,omitempty"`
-	Tools     []anthropicTool    `json:"tools,omitempty"`
-	Thinking  *anthropicThinking `json:"thinking,omitempty"`
+	Model        string                 `json:"model"`
+	Messages     []anthropicMessage     `json:"messages"`
+	System       any                    `json:"system,omitempty"`
+	MaxTokens    int                    `json:"max_tokens"`
+	Stream       bool                   `json:"stream,omitempty"`
+	Temperature  *float64               `json:"temperature,omitempty"`
+	TopP         *float64               `json:"top_p,omitempty"`
+	Tools        []anthropicTool        `json:"tools,omitempty"`
+	Thinking     *anthropicThinking     `json:"thinking,omitempty"`
+	OutputConfig *anthropicOutputConfig `json:"output_config,omitempty"`
 }
 
 // anthropicCacheControl is attached to cacheable system/content/tool blocks.
@@ -103,6 +106,10 @@ type anthropicTool struct {
 type anthropicThinking struct {
 	Type         string `json:"type"`
 	BudgetTokens int    `json:"budget_tokens,omitempty"`
+}
+
+type anthropicOutputConfig struct {
+	Effort string `json:"effort,omitempty"`
 }
 
 type anthropicResponse struct {
@@ -369,8 +376,12 @@ func translateRequest(req *model.ChatCompletionRequest) *anthropicRequest {
 	if req.MaxCompletionTokens != nil {
 		anthReq.MaxTokens = *req.MaxCompletionTokens
 	}
-	if thinking := reasoningToThinking(req.ReasoningEffort, anthReq.MaxTokens); thinking != nil {
-		anthReq.Thinking = thinking
+	applyAnthropicReasoning(anthReq, req.ReasoningEffort)
+	// Current adaptive-thinking models reject non-default sampling controls.
+	// Older/manual-thinking models still accept the OpenAI equivalents.
+	if !usesAdaptiveThinking(req.Model) {
+		anthReq.Temperature = req.Temperature
+		anthReq.TopP = req.TopP
 	}
 
 	// Extract system message
@@ -691,6 +702,97 @@ func reasoningToThinking(effort string, maxTokens int) *anthropicThinking {
 		Type:         "enabled",
 		BudgetTokens: budget,
 	}
+}
+
+// applyAnthropicReasoning selects the current Anthropic dialect per model.
+// Sonnet 5 and Opus 4.7+ reject manual budget_tokens; current models use
+// output_config.effort and adaptive thinking instead. Older Claude models keep
+// the manual budget mapping for backwards compatibility.
+func applyAnthropicReasoning(req *anthropicRequest, effort string) {
+	effort = strings.ToLower(strings.TrimSpace(effort))
+	if effort == "minimal" {
+		effort = "low"
+	}
+	if effort == "xhigh" && !supportsXHighEffort(req.Model) {
+		effort = "max"
+	}
+	if effort == "none" {
+		// Sonnet 5 and Opus 5 think by default, so "no reasoning" has to be
+		// requested explicitly. Opus 5 only accepts disabled thinking at effort
+		// high or below, and high is the server-side default, so sending
+		// disabled on its own is valid.
+		if thinksByDefault(req.Model) {
+			req.Thinking = &anthropicThinking{Type: "disabled"}
+		}
+		return
+	}
+	if effort == "" {
+		return
+	}
+
+	if usesAdaptiveThinking(req.Model) {
+		if effort == "auto" {
+			if !thinksByDefault(req.Model) {
+				req.Thinking = &anthropicThinking{Type: "adaptive"}
+			}
+			return
+		}
+		switch effort {
+		case "low", "medium", "high", "xhigh", "max":
+			req.OutputConfig = &anthropicOutputConfig{Effort: effort}
+		default:
+			return
+		}
+		// Fable 5, Sonnet 5 and Opus 5 have adaptive thinking enabled by
+		// default. Opus 4.x and 4.6-generation models require the explicit
+		// adaptive switch.
+		if !thinksByDefault(req.Model) {
+			req.Thinking = &anthropicThinking{Type: "adaptive"}
+		}
+		return
+	}
+	if effort == "auto" || effort == "max" {
+		effort = "high"
+	}
+	req.Thinking = reasoningToThinking(effort, req.MaxTokens)
+}
+
+func usesAdaptiveThinking(modelID string) bool {
+	id := strings.ToLower(strings.TrimSpace(modelID))
+	for _, prefix := range []string{
+		"claude-fable-5", "claude-opus-5", "claude-opus-4-8", "claude-opus-4-7",
+		"claude-opus-4-6", "claude-sonnet-5", "claude-sonnet-4-6",
+	} {
+		if strings.HasPrefix(id, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+// thinksByDefault reports whether the model runs adaptive thinking when the
+// request carries no thinking field, so the explicit adaptive switch is
+// redundant and "no reasoning" has to be sent as thinking: disabled.
+func thinksByDefault(modelID string) bool {
+	id := strings.ToLower(strings.TrimSpace(modelID))
+	return strings.HasPrefix(id, "claude-fable-5") ||
+		strings.HasPrefix(id, "claude-sonnet-5") ||
+		strings.HasPrefix(id, "claude-opus-5")
+}
+
+// supportsXHighEffort reports whether the model accepts the xhigh effort level
+// natively. Older models cap out at max, so xhigh is folded into it there.
+func supportsXHighEffort(modelID string) bool {
+	id := strings.ToLower(strings.TrimSpace(modelID))
+	for _, prefix := range []string{
+		"claude-fable-5", "claude-opus-5", "claude-opus-4-8", "claude-opus-4-7",
+		"claude-sonnet-5",
+	} {
+		if strings.HasPrefix(id, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 func translateResponse(resp *anthropicResponse, requestModel string) *model.ChatCompletionResponse {

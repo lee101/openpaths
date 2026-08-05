@@ -58,6 +58,7 @@ func (p *OpenRouterProvider) Name() string { return "openrouter" }
 func sanitizeForOpenRouter(req *model.ChatCompletionRequest) {
 	req.Prefill = ""
 	req.TaskTier = ""
+	req.RoutingStrategy = ""
 	req.Thinking = nil
 }
 

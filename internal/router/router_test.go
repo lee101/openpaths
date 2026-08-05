@@ -450,6 +450,28 @@ func TestNew_DerivesGrokLatestAliasFromHighestVersion(t *testing.T) {
 	}
 }
 
+func TestNew_GrokLatestUsesFractionalVersionOrdering(t *testing.T) {
+	models := []model.ModelConfig{
+		{ID: "grok-4.5", Provider: "xai"},
+		{ID: "grok-4.20-0309-reasoning", Provider: "xai"},
+		{ID: "grok-4.20-multi-agent-0309", Provider: "xai"},
+		{ID: "grok-4.3", Provider: "xai"},
+		{ID: "grok-build-0.1", Provider: "xai"},
+	}
+
+	r := newTestRouter(models, "xai")
+
+	for _, name := range []string{"grok", "grok-latest"} {
+		cfg, found := r.GetModelConfig(name)
+		if !found {
+			t.Fatalf("GetModelConfig(%q) not found", name)
+		}
+		if cfg.ID != "grok-4.5" {
+			t.Errorf("GetModelConfig(%q) ID = %q, want grok-4.5", name, cfg.ID)
+		}
+	}
+}
+
 func TestNew_DerivesBareFamilyAliases(t *testing.T) {
 	models := []model.ModelConfig{
 		{ID: "claude-opus-latest", Provider: "anthropic"},

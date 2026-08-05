@@ -3,6 +3,7 @@ package queries
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/openpaths/openpaths/internal/model"
@@ -113,6 +114,24 @@ func (q *UserQueries) SetAutotopupLastAt(ctx context.Context, userID string) err
 		`UPDATE users SET autotopup_last_at = now() WHERE id = $1`, userID,
 	)
 	return err
+}
+
+// ClaimAutotopup marks the attempt and reports whether this caller won the claim.
+// The conditional update is the cross-instance guard: only one process can pass
+// within the debounce window, so a balance check racing on several instances
+// cannot turn into two charges.
+func (q *UserQueries) ClaimAutotopup(ctx context.Context, userID string, debounce time.Duration) (bool, error) {
+	tag, err := q.pool.Exec(ctx,
+		`UPDATE users
+		 SET autotopup_last_at = now()
+		 WHERE id = $1
+		   AND (autotopup_last_at IS NULL OR autotopup_last_at < now() - $2::interval)`,
+		userID, fmt.Sprintf("%d seconds", int64(debounce.Seconds())),
+	)
+	if err != nil {
+		return false, err
+	}
+	return tag.RowsAffected() == 1, nil
 }
 
 type AutotopupInfo struct {

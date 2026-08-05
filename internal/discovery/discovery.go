@@ -64,6 +64,10 @@ func (s *Service) discoverProvider(ctx context.Context, p model.ProviderConfig) 
 		return s.discoverOpenAICompat(ctx, p, "deepseek")
 	case "cerebras":
 		return s.discoverOpenAICompat(ctx, p, "cerebras")
+	case "nvidia":
+		return s.discoverOpenAICompat(ctx, p, "nvidia")
+	case "fireworks":
+		return s.discoverOpenAICompat(ctx, p, "fireworks")
 	case "anthropic":
 		return s.discoverAnthropic(ctx, p)
 	case "google":
@@ -227,7 +231,10 @@ func (s *Service) discoverOpenAICompat(ctx context.Context, p model.ProviderConf
 		Data []openaiModel `json:"data"`
 	}
 	if err := json.Unmarshal(body, &result); err != nil {
-		return 0, err
+		// some providers (together) return a bare array
+		if err2 := json.Unmarshal(body, &result.Data); err2 != nil {
+			return 0, err
+		}
 	}
 
 	count := 0
@@ -677,5 +684,9 @@ func parseTokenPrice(s string) float64 {
 		return 0
 	}
 	f, _ := strconv.ParseFloat(s, 64)
+	// sentinel/absurd prices (openrouter/auto reports -1) overflow the numeric column
+	if f < 0 || f > 1 {
+		return 0
+	}
 	return f
 }

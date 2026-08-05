@@ -45,6 +45,50 @@ func (q *ProviderKeyQueries) UpsertAuthJSON(ctx context.Context, userID, provide
 	return err
 }
 
+// UpdateAuthJSONLocked serializes a read/modify/write of one provider sign-in.
+// The row lock is held while update runs so rotating OAuth refresh tokens cannot
+// be consumed concurrently by request handling, cron jobs, or another replica.
+func (q *ProviderKeyQueries) UpdateAuthJSONLocked(
+	ctx context.Context,
+	userID, provider string,
+	update func(current string) (string, error),
+) (authJSON string, changed bool, err error) {
+	tx, err := q.pool.Begin(ctx)
+	if err != nil {
+		return "", false, err
+	}
+	defer func() { _ = tx.Rollback(context.Background()) }()
+
+	if err := tx.QueryRow(ctx, `
+		SELECT auth_json
+		FROM user_provider_keys
+		WHERE user_id = $1 AND provider = $2
+		FOR UPDATE
+	`, userID, provider).Scan(&authJSON); err != nil {
+		return "", false, err
+	}
+
+	next, err := update(authJSON)
+	if err != nil {
+		return "", false, err
+	}
+	if next != authJSON {
+		if _, err := tx.Exec(ctx, `
+			UPDATE user_provider_keys
+			SET auth_json = $3, updated_at = now()
+			WHERE user_id = $1 AND provider = $2
+		`, userID, provider, next); err != nil {
+			return "", false, err
+		}
+		changed = true
+		authJSON = next
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return "", false, err
+	}
+	return authJSON, changed, nil
+}
+
 func (q *ProviderKeyQueries) ListByUser(ctx context.Context, userID string) ([]*UserProviderKey, error) {
 	rows, err := q.pool.Query(ctx, `
 		SELECT id, user_id, provider, api_key, auth_json, created_at, updated_at

@@ -244,6 +244,104 @@ func TestTranslateRequest_MapsReasoningEffortToThinkingBudget(t *testing.T) {
 	}
 }
 
+func TestTranslateRequest_UsesAdaptiveThinkingAndEffortForCurrentModels(t *testing.T) {
+	for _, tc := range []struct {
+		model        string
+		wantThinking string
+	}{
+		{model: "claude-sonnet-5", wantThinking: ""},
+		{model: "claude-fable-5", wantThinking: ""},
+		{model: "claude-opus-4-8", wantThinking: "adaptive"},
+		{model: "claude-sonnet-4-6", wantThinking: "adaptive"},
+	} {
+		t.Run(tc.model, func(t *testing.T) {
+			temp := 0.7
+			req := translateRequest(&model.ChatCompletionRequest{
+				Model: tc.model, Messages: []model.ChatMessage{{Role: "user", Content: "Work carefully."}},
+				ReasoningEffort: "medium", Temperature: &temp,
+			})
+			if req.OutputConfig == nil || req.OutputConfig.Effort != "medium" {
+				t.Fatalf("output_config = %#v, want medium effort", req.OutputConfig)
+			}
+			if tc.wantThinking == "" {
+				if req.Thinking != nil {
+					t.Fatalf("thinking = %#v, want model default", req.Thinking)
+				}
+			} else if req.Thinking == nil || req.Thinking.Type != tc.wantThinking {
+				t.Fatalf("thinking = %#v, want %q", req.Thinking, tc.wantThinking)
+			}
+			if req.Temperature != nil {
+				t.Fatal("adaptive model must not receive temperature")
+			}
+		})
+	}
+}
+
+func TestTranslateRequest_DisablesSonnet5ThinkingForNone(t *testing.T) {
+	req := translateRequest(&model.ChatCompletionRequest{
+		Model: "claude-sonnet-5", Messages: []model.ChatMessage{{Role: "user", Content: "Say hi."}}, ReasoningEffort: "none",
+	})
+	if req.Thinking == nil || req.Thinking.Type != "disabled" {
+		t.Fatalf("thinking = %#v, want disabled", req.Thinking)
+	}
+}
+
+func TestTranslateRequest_AutoEnablesAdaptiveThinkingForOpus(t *testing.T) {
+	req := translateRequest(&model.ChatCompletionRequest{
+		Model: "claude-opus-4-8", Messages: []model.ChatMessage{{Role: "user", Content: "Choose the right depth."}}, ReasoningEffort: "auto",
+	})
+	if req.Thinking == nil || req.Thinking.Type != "adaptive" {
+		t.Fatalf("thinking = %#v, want adaptive", req.Thinking)
+	}
+	if req.OutputConfig != nil {
+		t.Fatalf("output_config = %#v, want provider default for auto", req.OutputConfig)
+	}
+}
+
+func TestTranslateRequest_PassesXHighThroughWhenSupported(t *testing.T) {
+	for _, id := range []string{"claude-opus-5", "claude-opus-4-8", "claude-sonnet-5", "claude-fable-5"} {
+		req := translateRequest(&model.ChatCompletionRequest{
+			Model: id, Messages: []model.ChatMessage{{Role: "user", Content: "Reason deeply."}}, ReasoningEffort: "xhigh",
+		})
+		if req.OutputConfig == nil || req.OutputConfig.Effort != "xhigh" {
+			t.Fatalf("%s: output_config = %#v, want xhigh", id, req.OutputConfig)
+		}
+	}
+}
+
+func TestTranslateRequest_NormalizesXHighToAnthropicMax(t *testing.T) {
+	req := translateRequest(&model.ChatCompletionRequest{
+		Model: "claude-opus-4-6", Messages: []model.ChatMessage{{Role: "user", Content: "Reason deeply."}}, ReasoningEffort: "xhigh",
+	})
+	if req.OutputConfig == nil || req.OutputConfig.Effort != "max" {
+		t.Fatalf("output_config = %#v, want max", req.OutputConfig)
+	}
+}
+
+func TestTranslateRequest_Opus5ThinksByDefault(t *testing.T) {
+	// Opus 5 runs adaptive thinking when no thinking field is sent, so the
+	// explicit switch is redundant and "none" has to disable it outright.
+	req := translateRequest(&model.ChatCompletionRequest{
+		Model: "claude-opus-5", Messages: []model.ChatMessage{{Role: "user", Content: "Think."}}, ReasoningEffort: "high",
+	})
+	if req.Thinking != nil {
+		t.Fatalf("thinking = %#v, want nil (adaptive is the Opus 5 default)", req.Thinking)
+	}
+	if req.OutputConfig == nil || req.OutputConfig.Effort != "high" {
+		t.Fatalf("output_config = %#v, want high", req.OutputConfig)
+	}
+
+	off := translateRequest(&model.ChatCompletionRequest{
+		Model: "claude-opus-5", Messages: []model.ChatMessage{{Role: "user", Content: "Answer."}}, ReasoningEffort: "none",
+	})
+	if off.Thinking == nil || off.Thinking.Type != "disabled" {
+		t.Fatalf("thinking = %#v, want disabled", off.Thinking)
+	}
+	if off.OutputConfig != nil {
+		t.Fatalf("output_config = %#v, want nil — disabled thinking is rejected above high effort", off.OutputConfig)
+	}
+}
+
 func TestTranslateRequest_ClampsThinkingBudgetToMaxTokens(t *testing.T) {
 	maxTokens := 1500
 	req := &model.ChatCompletionRequest{

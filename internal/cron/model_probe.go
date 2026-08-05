@@ -19,13 +19,26 @@ import (
 )
 
 const (
-	probePrompt       = "say hi"
-	probeReferer      = "https://openpaths.io/stats"
-	probeTitle        = "OpenPaths Model Probe"
-	probeMaxTokens    = 512 // generous so reasoning models emit content instead of spending the whole budget on hidden reasoning tokens
-	probeConcurrency  = 2
-	probeSlowTimeout  = 12 * time.Minute
-	probeFastTimeout  = 3 * time.Minute
+	// Liveness only: the shortest prompt that still forces a real generation,
+	// with a hard cap and stop sequences so a chatty model cannot run away. A
+	// reasoning model may spend the whole budget on hidden tokens and return
+	// empty content -- that still proves the upstream is alive, so it counts as
+	// OK (see probeSucceeded) rather than needing a large budget.
+	probePrompt    = "say hi, nothing else"
+	probeReferer   = "https://openpaths.io/stats"
+	probeTitle     = "OpenPaths Model Probe"
+	probeMaxTokens = 64
+	// probeInterval is how often the loop wakes; probeDueInterval /
+	// probeStableDueInterval decide which models are actually due on that tick.
+	// A model that failed its last probe is retried daily so upstream breakage
+	// is caught fast; one that is healthy is re-checked far less often, since
+	// every probe is a billed generation against the live provider key.
+	probeInterval          = 24 * time.Hour
+	probeDueInterval       = 24 * time.Hour
+	probeStableDueInterval = 7 * 24 * time.Hour
+	probeConcurrency       = 2
+	probeSlowTimeout       = 12 * time.Minute
+	probeFastTimeout       = 3 * time.Minute
 
 	// Auto-provisioned probe identity. The prober calls the gateway through the
 	// normal /v1/chat/completions path, so it needs a valid op- API key and a
@@ -172,7 +185,7 @@ func (p *ModelProber) Start() {
 		log.Printf("model-probe: no chat models configured")
 		return
 	}
-	go p.loop(len(targets))
+	go p.loop()
 	log.Printf("model-probe: started (%d chat models, base=%s)", len(targets), p.baseURL)
 }
 
@@ -184,6 +197,9 @@ func (p *ModelProber) Stop() {
 	}
 }
 
+// RunOnce probes every model regardless of when it was last probed. This is the
+// manual/CLI path (cmd/probe-models), where the caller explicitly wants a full
+// sweep; the background loop uses the due-check in run instead.
 func (p *ModelProber) RunOnce() {
 	keyCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	err := p.ensureProbeKey(keyCtx)
@@ -192,25 +208,62 @@ func (p *ModelProber) RunOnce() {
 		log.Printf("model-probe: cannot run (%v)", err)
 		return
 	}
-	p.run()
+	p.run(true)
 }
 
-func (p *ModelProber) loop(modelCount int) {
+func (p *ModelProber) loop() {
 	time.Sleep(30 * time.Second)
-	p.run()
-	ticker := time.NewTicker(6 * time.Hour)
+	p.run(false)
+	ticker := time.NewTicker(probeInterval)
 	defer ticker.Stop()
 	for {
 		select {
 		case <-ticker.C:
-			p.run()
+			p.run(false)
 		case <-p.stop:
 			return
 		}
 	}
 }
 
-func (p *ModelProber) run() {
+// dueInterval reports how stale a model's last probe may be before it is
+// re-probed. Failing models are retried daily, healthy ones weekly.
+func dueInterval(prev model.ModelProbeResult) time.Duration {
+	if prev.OK {
+		return probeStableDueInterval
+	}
+	return probeDueInterval
+}
+
+// dueTargets filters targets down to the models whose last stored probe is
+// older than their cadence. Models never probed before are always due. This is
+// what makes a process restart cheap: without it, every boot re-probed the full
+// catalogue, which is a billed generation per model.
+func (p *ModelProber) dueTargets(ctx context.Context, targets []model.ModelConfig) []model.ModelConfig {
+	prior, err := p.probeQ.List(ctx)
+	if err != nil {
+		log.Printf("model-probe: cannot read prior results, skipping this cycle: %v", err)
+		return nil
+	}
+	last := make(map[string]model.ModelProbeResult, len(prior))
+	for _, r := range prior {
+		last[r.Model] = r
+	}
+	return filterDue(targets, last, time.Now())
+}
+
+func filterDue(targets []model.ModelConfig, last map[string]model.ModelProbeResult, now time.Time) []model.ModelConfig {
+	due := make([]model.ModelConfig, 0, len(targets))
+	for _, cfg := range targets {
+		prev, seen := last[cfg.ID]
+		if !seen || now.Sub(prev.ProbedAt) >= dueInterval(prev) {
+			due = append(due, cfg)
+		}
+	}
+	return due
+}
+
+func (p *ModelProber) run(force bool) {
 	targets := ChatProbeModels(p.models)
 	if len(targets) == 0 {
 		return
@@ -218,7 +271,16 @@ func (p *ModelProber) run() {
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Hour)
 	defer cancel()
 
-	log.Printf("model-probe: probing %d models...", len(targets))
+	total := len(targets)
+	if !force {
+		targets = p.dueTargets(ctx, targets)
+		if len(targets) == 0 {
+			log.Printf("model-probe: nothing due (%d models up to date)", total)
+			return
+		}
+	}
+
+	log.Printf("model-probe: probing %d of %d models...", len(targets), total)
 	started := time.Now()
 
 	sem := make(chan struct{}, probeConcurrency)
@@ -272,6 +334,7 @@ func (p *ModelProber) probeOne(ctx context.Context, cfg model.ModelConfig) model
 			{"role": "user", "content": probePrompt},
 		},
 		"max_tokens": probeMaxTokens,
+		"stop":       []string{"\n\n"},
 	})
 
 	timeout := probeFastTimeout
@@ -324,21 +387,39 @@ func (p *ModelProber) probeOne(ctx context.Context, cfg model.ModelConfig) model
 				Content string `json:"content"`
 			} `json:"message"`
 		} `json:"choices"`
+		Usage struct {
+			CompletionTokens int `json:"completion_tokens"`
+		} `json:"usage"`
 	}
 	if err := json.Unmarshal(respBody, &parsed); err != nil {
 		msg := "invalid JSON response"
 		result.Error = &msg
 		return result
 	}
-	if len(parsed.Choices) == 0 || strings.TrimSpace(parsed.Choices[0].Message.Content) == "" {
+	content := ""
+	if len(parsed.Choices) > 0 {
+		content = strings.TrimSpace(parsed.Choices[0].Message.Content)
+	}
+	// A reasoning model can spend the whole (small) budget on hidden tokens and
+	// come back with empty content. It answered, so it is alive -- flagging it
+	// as failed just hides the providers that are genuinely down.
+	if !probeSucceeded(len(parsed.Choices), content, parsed.Usage.CompletionTokens) {
 		msg := "empty assistant content"
 		result.Error = &msg
 		return result
 	}
 
 	result.OK = true
-	result.ResponsePreview = truncatePreview(parsed.Choices[0].Message.Content, 120)
+	if content == "" {
+		result.ResponsePreview = "(reasoning only, no visible content)"
+	} else {
+		result.ResponsePreview = truncatePreview(content, 120)
+	}
 	return result
+}
+
+func probeSucceeded(choiceCount int, content string, completionTokens int) bool {
+	return choiceCount > 0 && (strings.TrimSpace(content) != "" || completionTokens > 0)
 }
 
 func ChatProbeModels(models []model.ModelConfig) []model.ModelConfig {
@@ -352,7 +433,7 @@ func ChatProbeModels(models []model.ModelConfig) []model.ModelConfig {
 }
 
 func IsChatProbeModel(cfg model.ModelConfig) bool {
-	if cfg.ID == "" {
+	if cfg.ID == "" || cfg.Deprecated {
 		return false
 	}
 	// Embedding models have input pricing and a context window but produce no

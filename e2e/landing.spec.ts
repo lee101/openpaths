@@ -27,6 +27,19 @@ test.describe('Landing Page', () => {
     await expect(page.getByRole('heading', { name: '100% OpenAI Compatible' })).toBeVisible();
   });
 
+  test('Black Forest Labs gallery videos and posters are available', async ({ page, request }) => {
+    await expect(page.getByText('AI Video Gallery')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Routing Forest — Draft' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Living Routing Terrarium' })).toBeVisible();
+
+    const draftVideo = await request.get('/static/video-gallery/bfl/flux-3-routing-forest-draft.webm');
+    expect(draftVideo.ok()).toBeTruthy();
+    expect(draftVideo.headers()['content-type']).toContain('video/webm');
+    const fullPoster = await request.get('/static/video-gallery/bfl/flux-3-routing-terrarium-full-poster.webp');
+    expect(fullPoster.ok()).toBeTruthy();
+    expect(fullPoster.headers()['content-type']).toContain('image/webp');
+  });
+
   test('stats bar shows metrics', async ({ page }) => {
     await expect(page.locator('text=99.99% Uptime')).toBeVisible();
     await expect(page.locator('text=100+ Models')).toBeVisible();

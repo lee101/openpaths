@@ -91,6 +91,7 @@ func (q *StatsQueries) GetModelStats(ctx context.Context, period string) ([]mode
 			COALESCE(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY latency_ms), 0) as p50_latency,
 			COALESCE(PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY latency_ms), 0) as p95_latency,
 			COALESCE(PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY latency_ms), 0) as p99_latency,
+			COALESCE(AVG(NULLIF(ttft_ms, 0)), 0) as avg_ttft_ms,
 			COALESCE(AVG(tps), 0) as avg_tps,
 			COALESCE(SUM(CASE WHEN error IS NOT NULL THEN 1 ELSE 0 END)::float / NULLIF(COUNT(*), 0), 0) as error_rate,
 			COALESCE(SUM(cost_cents), 0) as total_cost_cents
@@ -111,7 +112,7 @@ func (q *StatsQueries) GetModelStats(ctx context.Context, period string) ([]mode
 		if err := rows.Scan(&s.Model, &s.Provider, &s.TotalRequests,
 			&s.TotalTokensIn, &s.TotalTokensOut, &s.AvgLatencyMs,
 			&s.P50LatencyMs, &s.P95LatencyMs, &s.P99LatencyMs,
-			&s.AvgTPS, &s.ErrorRate, &s.TotalCostCents); err != nil {
+			&s.AvgTTFTMs, &s.AvgTPS, &s.ErrorRate, &s.TotalCostCents); err != nil {
 			return nil, fmt.Errorf("scan model stats: %w", err)
 		}
 		stats = append(stats, s)
@@ -133,6 +134,7 @@ func (q *StatsQueries) GetProviderStats(ctx context.Context, period string) ([]m
 			COALESCE(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY latency_ms), 0),
 			COALESCE(PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY latency_ms), 0),
 			COALESCE(PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY latency_ms), 0),
+			COALESCE(AVG(NULLIF(ttft_ms, 0)), 0),
 			COALESCE(AVG(tps), 0),
 			COALESCE(SUM(CASE WHEN error IS NOT NULL THEN 1 ELSE 0 END)::float / NULLIF(COUNT(*), 0), 0),
 			COALESCE(SUM(cost_cents), 0)
@@ -153,7 +155,7 @@ func (q *StatsQueries) GetProviderStats(ctx context.Context, period string) ([]m
 		if err := rows.Scan(&s.Model, &s.Provider, &s.TotalRequests,
 			&s.TotalTokensIn, &s.TotalTokensOut, &s.AvgLatencyMs,
 			&s.P50LatencyMs, &s.P95LatencyMs, &s.P99LatencyMs,
-			&s.AvgTPS, &s.ErrorRate, &s.TotalCostCents); err != nil {
+			&s.AvgTTFTMs, &s.AvgTPS, &s.ErrorRate, &s.TotalCostCents); err != nil {
 			return nil, fmt.Errorf("scan provider stats: %w", err)
 		}
 		stats = append(stats, s)
@@ -184,6 +186,8 @@ func (q *StatsQueries) GetUsageBreakdown(ctx context.Context, period string) ([]
 			COALESCE(SUM(tokens_out), 0)::bigint AS total_tokens_out,
 			COALESCE(SUM(cost_cents), 0)::bigint AS total_cost_cents,
 			COALESCE(AVG(latency_ms), 0) AS avg_latency_ms,
+			COALESCE(AVG(NULLIF(ttft_ms, 0)), 0) AS avg_ttft_ms,
+			COALESCE(AVG(tps), 0) AS avg_tps,
 			COALESCE(SUM(CASE WHEN error IS NOT NULL THEN 1 ELSE 0 END)::float / NULLIF(COUNT(*), 0), 0) AS error_rate
 		 FROM usage_logs
 		 WHERE created_at >= $1
@@ -208,6 +212,8 @@ func (q *StatsQueries) GetUsageBreakdown(ctx context.Context, period string) ([]
 			&s.TotalTokensOut,
 			&s.TotalCostCents,
 			&s.AvgLatencyMs,
+			&s.AvgTTFTMs,
+			&s.AvgTPS,
 			&s.ErrorRate,
 		); err != nil {
 			return nil, fmt.Errorf("scan usage breakdown: %w", err)

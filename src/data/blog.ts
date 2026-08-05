@@ -12,6 +12,161 @@ export interface BlogPost {
 
 export const posts: BlogPost[] = [
   {
+    slug: 'inkling-small-thinking-machines',
+    title: 'Inkling-Small Is Live: Thinking Machines\' 276B Open-Weights Model at $0.50/$1.20',
+    excerpt: 'Thinking Machines released Inkling-Small — a quarter the size of Inkling, matching it on reasoning and agentic work. It is on OpenPaths today as inkling-small, and the full-size inkling is live again too.',
+    date: '2026-07-31',
+    author: 'Lee Penkman',
+    readTime: '4 min',
+    tags: ['models', 'thinking-machines', 'inkling', 'open-source', 'launch'],
+    content: `Thinking Machines Lab followed [Inkling](https://thinkingmachines.ai/news/introducing-inkling/) — its first open-weights model, released mid-July — with **Inkling-Small**, and it is available on OpenPaths today as \`inkling-small\`.
+
+The pitch is compression: 276B total parameters with 12B active, against Inkling's 975B/41B. A quarter of the size, and Thinking Machines says it *matches or exceeds* Inkling on reasoning and agentic tasks, with better token efficiency. Artificial Analysis has it at 40 on the Intelligence Index versus 41 for full Inkling — for less than a third of the parameters.
+
+## What you get
+
+- **276B total / 12B active MoE.** More performance per FLOP than the flagship: 64.7% on Terminal-Bench 2.1, 31.6% on HLE (text-only), 82.2% on IFBench.
+- **Native multimodal input.** Text, images (40x40-pixel patches) and audio (dMel spectrograms) go straight into the model — no separate encoder bolted on.
+- **Variable thinking effort**, minimal through xhigh, so you pay for reasoning only when the task earns it. Use the standard \`reasoning_effort\` field.
+- **512K context** on our route (the weights support up to 1M).
+- **Open weights on Hugging Face**, Apache-licensed, fine-tunable on Tinker.
+
+## Pricing
+
+\`\`\`
+inkling-small              $0.50 in / $1.20 out per 1M   ($0.10 cached input)
+thinkingmachines/inkling   $1.00 in / $4.05 out per 1M   ($0.17 cached input)
+\`\`\`
+
+Output on Inkling-Small is **3.4x cheaper** than full Inkling for roughly the same Intelligence Index score. For comparison, Thinking Machines' own Tinker API charges $1.87/$4.68 for Inkling at 64K context and double that above it — there is no context-length surcharge here.
+
+## Routing
+
+\`inkling-small\` runs on the open weights through Together's serverless hosting, falling back to \`thinkingmachines/inkling\` if that upstream has a bad day. Full-size \`inkling\` routes to Together with OpenRouter (\`or/inkling\`) behind it.
+
+That is also a fix: \`thinkingmachines/inkling\` had been parked on a substitute model since launch because we had no Tinker key and no other host served it. Open weights solved that — both ids now serve the real model.
+
+\`\`\`bash
+curl https://openpaths.io/v1/chat/completions \\
+  -H "Authorization: Bearer $OPENPATHS_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "model": "inkling-small",
+    "reasoning_effort": "high",
+    "messages": [{"role": "user", "content": "Plan the refactor, then do it."}]
+  }'
+\`\`\`
+
+Tool calling works as expected — a one-shot weather prompt came back with a clean \`tool_calls\` payload and no preamble, with the chain of thought in \`reasoning_content\`.
+
+## The pelican test
+
+Tradition demands it. Same one-shot SVG prompt we pointed at [Kimi K3](/blog/kimi-k3-moonshot-1m-context) and [Opus 4.8 vs GPT-5.5](/blog/pelican-bicycle-opus-4-8-vs-gpt-5-5-xhigh), this time through the gateway at \`inkling-small\`:
+
+![Inkling-Small one-shot SVG: a pelican riding a bicycle](/static/blog/pelican-svg/inkling-small.svg)
+
+One attempt, 4,542 completion tokens, \`finish_reason: stop\` — no truncation, no retry. The bicycle is genuinely good: spoked wheels, a chainring with a visible chain line, correct fork geometry. The pelican is the weak part — it hovers slightly above the frame and its feet are near the pedals rather than on them. Compositionally it is behind Kimi K3's 6.9K-token warrior scene, but it got there in two-thirds the tokens at a fraction of the price, which is exactly the trade the model is selling.
+
+## Try it
+
+Point any OpenAI-compatible client at \`https://openpaths.io/v1\` and use \`inkling-small\`, or open it in the [Playground](/playground). If you are running agents against a mid-tier reasoning model today, this is the cheapest thing on the menu with real tool use, native multimodal input and adjustable thinking effort behind it.`,
+  },
+  {
+    slug: 'kimi-k3-moonshot-1m-context',
+    title: 'Kimi K3 Is Live on OpenPaths: 2.8T Params, 1M Context, Open Weights',
+    excerpt: 'Moonshot\'s new flagship — the largest open-weights model ever released — is available on OpenPaths today as kimi-k3. Direct Moonshot routing with automatic OpenRouter fallback, $3/$15 per million tokens, and a pelican warrior to prove it.',
+    date: '2026-07-16',
+    author: 'Lee Penkman',
+    readTime: '4 min',
+    tags: ['models', 'kimi', 'moonshot', 'open-source', 'launch'],
+    content: `Moonshot AI started rolling out Kimi K3 this week and it is available on OpenPaths today as \`kimi-k3\` (alias \`kimi\`). It is a big one, literally: 2.8 trillion total parameters, which Moonshot says makes it the largest open-weights model released to date, with a full 1,048,576-token context window and no length tiering.
+
+## What you get
+
+- **1M context, untiered.** One price across the whole window — long-repo coding sessions and document piles without a context-length surcharge.
+- **Vision + tools + reasoning.** Multimodal input, strong tool calling, and deep reasoning (reasoning effort currently runs at \`max\` by default; more levels are coming per Moonshot).
+- **Open weights.** The K2 line's open-source posture continues at flagship scale.
+- **$3.00 / $15.00 per million tokens** in and out, matching Moonshot's official API pricing. On the direct Moonshot route, cache hits drop input to $0.30/M.
+
+Early signals are strong: K3 took the #1 spot on the Frontend Code Arena ahead of Claude and GPT, and launch coverage frames it as closing the gap with Anthropic's Opus 4.8 — from an open model.
+
+## Routing
+
+\`kimi-k3\` routes directly to Moonshot's OpenAI-compatible API, with automatic fallback to OpenRouter (\`or/kimi-k3\`) and then \`kimi-k2.5\` if upstream has a bad day. You do not have to think about any of that; the gateway handles failover per request.
+
+\`\`\`bash
+curl https://openpaths.io/v1/chat/completions \\
+  -H "Authorization: Bearer $OPENPATHS_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "model": "kimi-k3",
+    "messages": [{"role": "user", "content": "Refactor this repo plan..."}]
+  }'
+\`\`\`
+
+It also plugs into \`openpaths/auto\` routing: as outcome data accumulates, the router sends K3 the long-context and hard agentic work it is priced for, and keeps cheap models on the easy tickets. See [Learning to Route](/blog/learning-to-route-whitepaper) for how that works.
+
+## The pelican test
+
+Tradition demands it. Same one-shot idea we used for [Opus 4.8 vs GPT-5.5 xhigh](/blog/pelican-bicycle-opus-4-8-vs-gpt-5-5-xhigh), pointed at \`kimi-k3\` through the OpenPaths gateway — this time a pelican *warrior* riding a bicycle, bronze helmet and spear included:
+
+![Kimi K3 one-shot SVG: pelican warrior riding a bicycle](/static/blog/pelican-svg/kimi-k3.svg)
+
+Two runs, in the honest spirit of these posts. Our first attempt capped completions at 8K tokens and K3 blew straight through it mid-\`<path>\` while adding decorative motion lines. Rerun with a 30K budget, it finished the whole scene above cleanly in about 6.9K tokens with a proper \`finish_reason: stop\`. The lesson is not that K3 is verbose — it is that tight output caps make it truncate rather than compress. Give it headroom and it lands the artifact.
+
+## Try it
+
+Point any OpenAI-compatible client at \`https://openpaths.io/v1\` and use \`kimi-k3\`, or hit the [Playground](/playground). BYOK Moonshot keys are supported if you want billing under your own account.`,
+  },
+  {
+    slug: 'learning-to-route-whitepaper',
+    title: 'Learning to Route: Cheap Models Plus a 16MB Router Beat Expensive Defaults',
+    excerpt: 'New whitepaper and open source release, now at v2. A static embedding router over cheap models solved 100% of a 27-task coding benchmark at 4% of the cost of a frontier model that only reached 77.8%. Here is how it works and how it powers OpenPaths auto routing.',
+    date: '2026-07-10',
+    author: 'Lee Penkman',
+    readTime: '6 min',
+    tags: ['research', 'router', 'whitepaper', 'open-source', 'gpt-5.6'],
+    content: `We just released Learning to Route, an open source research project and whitepaper about the routing approach we run inside OpenPaths. The short version: you can move the cost quality frontier of coding agents without training any model at all, using a 16MB static embedding model and a JSON file of past task outcomes.
+
+Read the whitepaper: [github.com/lee101/learning-to-route](https://github.com/lee101/learning-to-route/blob/main/paper/learning-to-route.md). Artifacts (benchmark, outcome logs, trained router tables) are mirrored at [huggingface.co/openpaths/learning-to-route](https://huggingface.co/openpaths/learning-to-route). Everything is MIT.
+
+## The problem
+
+Model families now ship price tiers as a product. GPT-5.6 arrived this week as Sol ($5.00/$30.00 per million tokens), Terra ($2.00/$12.00) and Luna ($0.20/$1.20), all of which you can use on OpenPaths today as \`gpt-5.6-sol\`, \`gpt-5.6-terra\` and \`gpt-5.6-luna\`. Below them sit models like deepseek-v4-flash at $0.14 official and $0.09 spot. That is a 55x price spread, and most coding tasks do not need the top of it.
+
+The catch: you cannot tell from a price list which tasks need which tier. In our benchmark the most expensive model we tested (gemini-3.5-flash at $1.50/1M) solved the fewest tasks, and the only model that solved the RFC 4180 CSV parser task was that same weakest model. Quality is not monotonic in price, per task or even on average.
+
+## Routing as embedding search
+
+The router is deliberately simple. Every task that flows through it is embedded by a static embedding model: a token table lookup plus a mean pool, no transformer forward pass, about 0.15ms on CPU from a 16MB file. Past tasks become anchors that store, per model, how often that model solved similar work and what it cost. Routing a new task means finding its nearest anchors and picking the cheapest model whose estimated pass rate clears a quality floor.
+
+Because the router state is just vectors and counters, it updates online. Every agent run that ends in a verifiable outcome (tests pass or fail, at a known cost) folds straight back into the table. New models join with just a price and start earning traffic. No retraining, no deploy cycle. The same table serves from Python, Go or Zig via our static embedding libraries [pybed](https://github.com/lee101/pybed), [gobed](https://github.com/lee101/gobed) and [zbed](https://github.com/lee101/zbed), with CAGRA style graph search when tables get large.
+
+## The result
+
+We built a 27 task coding benchmark (parsers, data structures, systems semantics, interpreters, plus optimization tasks scored by solution quality against reference bounds) and ran four cheap models plus one frontier tier, gpt-5.5, through the OpenPaths API. Total research spend: about four dollars, and $2.55 of that was the frontier model.
+
+- The frontier model did not win: gpt-5.5 at $2.55 tied gpt-5.4-nano at $0.03 on pass rate (77.8%), an 85x price gap for zero quality gain here.
+- Best single model: gpt-5.4-mini, 85.2% pass at $0.43 over the benchmark.
+- Verify and escalate cascade over the cheap models: 100% pass at $0.11, which is 26% of mini's cost and 4% of gpt-5.5's.
+- Per solved task: cascade $0.0041, frontier model $0.1213. A 30x gap.
+- Every single task, including the optimization tasks with quality thresholds, was solved by at least one model costing at most $0.75 per million input tokens.
+
+Expensive models are an escalation tier, not a default. When your workload can verify results (coding can), a routed cascade of cheap models beats every single model on both axes at once.
+
+## An intelligence lerp
+
+The way we think about this: routing linearly interpolates intelligence per request. Tiers like Luna, Terra and Sol, or Haiku up to Claude Fable, are discrete stops on a price capability dial. A router blends them into a continuous curve, so your deployment sits between tiers, for example most of Sol level quality near Luna level prices. And because the router learns from outcomes, it shifts traffic automatically as models improve. You track the moving frontier instead of re benchmarking every launch week.
+
+That is exactly what \`openpaths/auto\` and \`openpaths/auto-code\` do for you today, and the improvements from this research are rolling into that router. If you want the cheapest capable model per request instead of a fixed choice, point your OpenAI compatible client at:
+
+\`\`\`text
+https://openpaths.io/v1
+\`\`\`
+
+and use \`openpaths/auto-code\`. If you want to reproduce or extend the research, the benchmark harness runs against any OpenAI compatible endpoint and the whole experiment costs less than a coffee.`,
+  },
+  {
     slug: 'use-openpaths-openai-compatible-router-anywhere',
     title: 'Use OpenPaths Anywhere an OpenAI-Compatible Router Fits',
     excerpt: 'How to wire OpenPaths into CLIs, agent frameworks, SDKs, browser apps, observability wrappers, and tools like Hermes Agent and OpenClaw without rewriting your app.',

@@ -19,12 +19,13 @@ func NewArtImageQueries(pool *pgxpool.Pool) *ArtImageQueries {
 	return &ArtImageQueries{pool: pool}
 }
 
-const artImageColumns = `id, slug, prompt, title, width, height, aspect, image_url, thumb_url, model, seed, steps, source, tags, nsfw, to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"')`
+const artImageColumns = `id, slug, prompt, title, width, height, aspect, image_url, thumb_url, model, seed, steps, source, tags, nsfw, media_type, video_url, poster_url, duration_seconds, to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"')`
 
 func scanArtImage(rows pgx.Rows) (model.ArtImage, error) {
 	var a model.ArtImage
 	err := rows.Scan(&a.ID, &a.Slug, &a.Prompt, &a.Title, &a.Width, &a.Height, &a.Aspect,
-		&a.ImageURL, &a.ThumbURL, &a.Model, &a.Seed, &a.Steps, &a.Source, &a.Tags, &a.NSFW, &a.CreatedAt)
+		&a.ImageURL, &a.ThumbURL, &a.Model, &a.Seed, &a.Steps, &a.Source, &a.Tags, &a.NSFW,
+		&a.MediaType, &a.VideoURL, &a.PosterURL, &a.DurationSeconds, &a.CreatedAt)
 	return a, err
 }
 
@@ -48,6 +49,11 @@ func artWhereClause(f model.ArtImageFilters, start int) (string, []any) {
 	if f.Source != "" {
 		parts = append(parts, fmt.Sprintf("source = $%d", n))
 		args = append(args, f.Source)
+		n++
+	}
+	if f.MediaType != "" {
+		parts = append(parts, fmt.Sprintf("media_type = $%d", n))
+		args = append(args, f.MediaType)
 		n++
 	}
 	if f.MinW > 0 {
@@ -278,16 +284,20 @@ func (q *ArtImageQueries) Upsert(ctx context.Context, a *model.ArtImage) error {
 	if a.Source == "" {
 		a.Source = "cutedsl"
 	}
+	if a.MediaType == "" {
+		a.MediaType = "image"
+	}
 	_, err := q.pool.Exec(ctx,
-		`INSERT INTO art_images (id, slug, prompt, title, width, height, aspect, image_url, thumb_url, model, seed, steps, source, tags, nsfw)
-		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+		`INSERT INTO art_images (id, slug, prompt, title, width, height, aspect, image_url, thumb_url, model, seed, steps, source, tags, nsfw, media_type, video_url, poster_url, duration_seconds)
+		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
 		 ON CONFLICT (id) DO UPDATE SET
 			prompt=EXCLUDED.prompt, title=EXCLUDED.title, width=EXCLUDED.width, height=EXCLUDED.height,
 			aspect=EXCLUDED.aspect, image_url=EXCLUDED.image_url, thumb_url=EXCLUDED.thumb_url,
 			model=EXCLUDED.model, seed=EXCLUDED.seed, steps=EXCLUDED.steps, source=EXCLUDED.source,
-			tags=EXCLUDED.tags, nsfw=EXCLUDED.nsfw`,
+			tags=EXCLUDED.tags, nsfw=EXCLUDED.nsfw, media_type=EXCLUDED.media_type, video_url=EXCLUDED.video_url,
+			poster_url=EXCLUDED.poster_url, duration_seconds=EXCLUDED.duration_seconds`,
 		a.ID, a.Slug, a.Prompt, a.Title, a.Width, a.Height, a.Aspect, a.ImageURL, a.ThumbURL,
-		a.Model, a.Seed, a.Steps, a.Source, a.Tags, a.NSFW)
+		a.Model, a.Seed, a.Steps, a.Source, a.Tags, a.NSFW, a.MediaType, a.VideoURL, a.PosterURL, a.DurationSeconds)
 	if err != nil {
 		return fmt.Errorf("upsert art image: %w", err)
 	}

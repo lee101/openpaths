@@ -55,7 +55,9 @@ GOMAXPROCS=3 go build -tags="gpu cuda" \
 | `GROQ_API_KEY` | Groq API key |
 | `XAI_API_KEY` | xAI/Grok API key |
 | `DEEPSEEK_API_KEY` | DeepSeek API key |
+| `TINKER_API_KEY` | Thinking Machines Tinker API key for the direct Inkling route |
 | `OPENROUTER_API_KEY` | OpenRouter API key |
+| `INFERENCE_NET_API_KEY` | Inference.net API key for its OpenAI-compatible `/v1` endpoint |
 | `TOGETHER_API_KEY` | Together AI API key |
 | `MINIMAX_API_KEY` | MiniMax API key |
 | `NETWRCK_API_KEY` | Netwrck API key |
@@ -98,7 +100,8 @@ Provider key creation scripts live in `rotation/`. They create a new supported p
 | `stream` | Full support | Streaming SSE responses |
 | `tools`, `tool_choice` | Full support | Function/tool calling |
 | `response_format` | Full support | Structured outputs / JSON mode where supported |
-| `reasoning_effort` | Full support | Supported values: `none`, `low`, `medium`, `high`, `auto` |
+| `reasoning_effort` | Full support | Supported values: `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`, `auto` (provider capabilities are normalized) |
+| `routing_strategy` | Full support | `price` (default), `config`, or `fastest`. `price` sorts the resolved fallback chain by blended token price; `config` preserves catalogue order; use `openpaths/auto-fast` for latency-biased routing. |
 | `thinking` | Provider-specific | Passed through for direct DeepSeek V4 models; mapped for Anthropic-compatible requests |
 
 `reasoning_effort` can be set directly on compatible OpenAI-format requests:
@@ -114,7 +117,9 @@ Provider key creation scripts live in `rotation/`. They create a new supported p
 }
 ```
 
-Use `openpaths/auto` as the default — OpenPaths picks the backend from your prompt. Use `openpaths/auto-code`, `openpaths/auto-fast`, `openpaths/auto-cheap`, `openpaths/auto-reasoning`, `openpaths/auto-vision`, or `openpaths/auto-image` when you want a modality bias. Set `reasoning_effort: "auto"` on direct thinking models or use `openpaths/auto-reasoning` to route reasoning depth automatically.
+Use `openpaths/auto` as the default — OpenPaths picks the backend from your prompt, then orders viable fallback candidates by price unless you pass `"routing_strategy": "config"`. Use `openpaths/auto-code`, `openpaths/auto-fast`, `openpaths/auto-cheap`, `openpaths/auto-reasoning`, `openpaths/auto-vision`, or `openpaths/auto-image` when you want a modality bias. Set `reasoning_effort: "auto"` on direct thinking models or use `openpaths/auto-reasoning` to route reasoning depth automatically.
+
+Provider latency, time-to-first-token, and throughput are recorded in `usage_logs` and surfaced at `/stats`. Thinking Machines is registered as provider `thinkingmachines` (Tinker's OpenAI-compatible API), but with no `TINKER_API_KEY` configured both Inkling ids are served from the open weights on Together: `inkling-small` (276B/12B active, $0.50/$1.20) and `thinkingmachines/inkling` (975B/41B, $1.00/$4.05), the latter falling back to `or/inkling` on OpenRouter. Inference.net is registered as provider `inference_net` with Nemotron 3 Super, Schematron, ClipTagger, GPT-OSS, Llama, DeepSeek, Qwen, Gemma, and Mistral routes. As of June 29, 2026 its `/v1/models` response for the configured key did not advertise `glm-5.2`, so GLM-5.2 remains routed through Z.ai rather than adding a failing Inference.net fallback.
 
 Set `reasoning_effort: "auto"` on any thinking-capable direct model to keep that model while letting OpenPaths choose `none`, `low`, `medium`, or `high` from the same embedding table used by `auto-think`:
 
@@ -128,9 +133,21 @@ Set `reasoning_effort: "auto"` on any thinking-capable direct model to keep that
 }
 ```
 
-The Anthropic-compatible `POST /v1/messages` endpoint also accepts `thinking`, which we map onto the same internal reasoning controls.
-Direct DeepSeek models `deepseek-v4-flash` and `deepseek-v4-pro` use the DeepSeek API and support `thinking: {"type":"enabled"}` or `{"type":"disabled"}` on chat completions.
-The free NVIDIA-hosted DeepSeek Pro route is available as `nvidia/deepseek-v4-pro`; OpenPaths sends NVIDIA `chat_template_kwargs` for high-reasoning thinking mode automatically.
+The Anthropic-compatible `POST /v1/messages` endpoint also accepts `thinking` and `output_config.effort`, which map onto the same internal reasoning controls. Current Claude models use adaptive thinking and provider-native effort; older Claude models retain budget-based thinking.
+
+Claude Code and Anthropic Agent SDK must use the root URL because they append the Messages path themselves. In PowerShell:
+
+```powershell
+$env:ANTHROPIC_BASE_URL = "https://openpaths.io"
+$env:ANTHROPIC_AUTH_TOKEN = $env:OPENPATHS_API_KEY
+$env:ANTHROPIC_API_KEY = ""
+$env:ANTHROPIC_MODEL = "nvidia/deepseek-v4-pro"
+claude
+```
+
+Do not use `openpaths.io/v1`: it is missing the URL scheme and includes a path those clients append themselves. Anthropic Messages can target OpenAI-compatible models such as `nvidia/deepseek-v4-pro`; OpenPaths translates messages, tools, tool results, streaming events, and usage. Long stable system prompts and tool definitions get safe automatic prompt-cache breakpoints, while explicit caller cache controls are preserved.
+
+Direct DeepSeek models support `thinking: {"type":"enabled"}` or `{"type":"disabled"}` on chat completions. `nvidia/deepseek-v4-pro` routes to NVIDIA NIM as `deepseek-ai/deepseek-v4-pro`; OpenPaths sends NVIDIA `chat_template_kwargs` for thinking mode automatically and can fail over to the direct DeepSeek and Fireworks routes.
 
 ## Frontend
 

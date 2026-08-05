@@ -265,7 +265,9 @@ func falReferenceImageURLs(req *model.ImageGenerationRequest) []string {
 
 func falImageUsesQueue(modelID string) bool {
 	modelName := strings.ToLower(modelID)
-	return strings.Contains(modelName, "hidream-o1-image") || falImageIsOutpaint(modelName)
+	return strings.Contains(modelName, "hidream-o1-image") ||
+		strings.Contains(modelName, "stable-diffusion-v35") ||
+		falImageIsOutpaint(modelName)
 }
 
 func falImageIsOutpaint(modelID string) bool {

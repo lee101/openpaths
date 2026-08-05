@@ -77,3 +77,35 @@ func (h *AdminHandler) HandleUserSpend(ctx *fasthttp.RequestCtx) {
 		},
 	})
 }
+
+// HandleOpenAIMaxPlanStatus reports the shared admin OpenAI max-plan credential
+// state. GET /admin/openai-max-plan.
+func (h *AdminHandler) HandleOpenAIMaxPlanStatus(ctx *fasthttp.RequestCtx) {
+	if !h.requireAdmin(ctx) {
+		return
+	}
+	email, userID, total, healthy := AdminOpenAIMaxPlanStatus()
+	authMode, refreshable := AdminOpenAIMaxPlanAuthInfo()
+	writeJSON(ctx, 200, map[string]any{
+		"enabled":          email != "",
+		"email":            email,
+		"credential_user":  userID,
+		"credential_count": total,
+		"healthy_count":    healthy,
+		"auth_mode":        authMode,
+		"refreshable":      refreshable,
+	})
+}
+
+// HandleOpenAIMaxPlanRefresh forces an immediate reload+refresh of the shared
+// admin credential. POST /admin/openai-max-plan/refresh.
+func (h *AdminHandler) HandleOpenAIMaxPlanRefresh(ctx *fasthttp.RequestCtx) {
+	if !h.requireAdmin(ctx) {
+		return
+	}
+	if !ForceAdminOpenAIMaxPlanRefresh() {
+		writeError(ctx, 400, "not_configured", "ADMIN_OPENAI_MAX_PLAN_EMAIL is not set")
+		return
+	}
+	writeJSON(ctx, 200, map[string]any{"status": "refreshing"})
+}

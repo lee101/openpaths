@@ -12,6 +12,8 @@ type UsageBreakdown = {
   total_tokens_out: number;
   total_cost_cents: number;
   avg_latency_ms: number;
+  avg_ttft_ms: number;
+  avg_tps: number;
   error_rate: number;
 };
 
@@ -57,6 +59,11 @@ function formatCost(cents: number): string {
 
 function formatPct(value: number): string {
   return `${(value * 100).toFixed(2)}%`;
+}
+
+function formatRate(value: number): string {
+  if (!Number.isFinite(value) || value <= 0) return '--';
+  return `${value.toFixed(value >= 10 ? 0 : 1)} tok/s`;
 }
 
 export function Stats() {
@@ -341,6 +348,8 @@ export function Stats() {
                     <th className="px-4 py-3">Tokens in</th>
                     <th className="px-4 py-3">Tokens out</th>
                     <th className="px-4 py-3">Avg latency</th>
+                    <th className="px-4 py-3">TTFT</th>
+                    <th className="px-4 py-3">Throughput</th>
                     <th className="px-4 py-3">Error rate</th>
                     <th className="px-4 py-3">Spend</th>
                   </tr>
@@ -354,6 +363,8 @@ export function Stats() {
                       <td className="px-4 py-4 font-mono">{formatNumber(row.total_tokens_in)}</td>
                       <td className="px-4 py-4 font-mono">{formatNumber(row.total_tokens_out)}</td>
                       <td className="px-4 py-4 font-mono">{Math.round(row.avg_latency_ms)} ms</td>
+                      <td className="px-4 py-4 font-mono">{row.avg_ttft_ms > 0 ? `${Math.round(row.avg_ttft_ms)} ms` : '--'}</td>
+                      <td className="px-4 py-4 font-mono">{formatRate(row.avg_tps)}</td>
                       <td className="px-4 py-4 font-mono">{formatPct(row.error_rate)}</td>
                       <td className="px-4 py-4 font-mono">{formatCost(row.total_cost_cents)}</td>
                     </tr>

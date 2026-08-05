@@ -16,7 +16,7 @@ patch, redeploy, and verify.
 | `autofix_agent.sh` | Legacy 30-min site-up check + supervisor restart. Still wired. |
 | `daily_route_monitor.sh` | Daily API route tests + Codex fixer. Still wired. |
 | `monitor_site.py` | Long-running site watcher (espeak alerts). |
-| `run_codex_agent.sh` | Shared Codex launcher: `$CODEX_LOCAL --yolo3 -m gpt-5.5 --config model_reasoning_effort=medium exec`. |
+| `run_codex_agent.sh` | Shared Codex launcher: `$CODEX_LOCAL --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-sol --config model_reasoning_effort=medium exec`. |
 | `setup_monitoring.sh` | Installs all cron entries on the prod box. |
 | `state/` | gitignored — offsets and `last_codex_fix_at`. |
 | `errors/` | gitignored — JSON snapshots per detection. |

@@ -35,6 +35,18 @@ func (r *Recorder) RecordSuccessWithApp(
 	appID, appURL, appTitle string,
 	appCategories []string,
 ) {
+	r.RecordSuccessWithAppTimings(userID, apiKeyID, modelName, providerName, tokensIn, tokensOut, latencyMs, 0, tps, costCents, streaming, appID, appURL, appTitle, appCategories)
+}
+
+func (r *Recorder) RecordSuccessWithAppTimings(
+	userID, apiKeyID, modelName, providerName string,
+	tokensIn, tokensOut, latencyMs, ttftMs int,
+	tps float32,
+	costCents int64,
+	streaming bool,
+	appID, appURL, appTitle string,
+	appCategories []string,
+) {
 	r.collector.Record(model.UsageLog{
 		UserID:        userID,
 		APIKeyID:      apiKeyID,
@@ -43,6 +55,7 @@ func (r *Recorder) RecordSuccessWithApp(
 		TokensIn:      tokensIn,
 		TokensOut:     tokensOut,
 		LatencyMs:     latencyMs,
+		TTFTMs:        ttftMs,
 		TPS:           tps,
 		CostCents:     costCents,
 		StatusCode:    200,

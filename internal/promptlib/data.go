@@ -113,8 +113,9 @@ var models = []Model{
 	{"gpt-5-codex", "GPT-5 Codex", "OpenAI coding model for autocomplete, refactors, and generation.", "text", "terminal"},
 	{"composer-2.5", "Composer 2.5", "Cursor's fast agentic coding model.", "text", "bolt"},
 	{"gpt-5.5", "GPT-5.5", "OpenAI flagship for reasoning, writing, and analysis.", "text", "smart_toy"},
-	{"claude-opus-4-8", "Claude Opus 4.8", "Anthropic's most capable model for writing and reasoning.", "text", "psychology"},
-	{"claude-opus-4-7", "Claude Opus 4.7", "Previous-gen Anthropic flagship for writing and reasoning.", "text", "psychology"},
+	{"claude-opus-5", "Claude Opus 5", "Anthropic's most capable model for writing and reasoning.", "text", "psychology"},
+	{"claude-opus-4-8", "Claude Opus 4.8", "Previous-gen Anthropic flagship for writing and reasoning.", "text", "psychology"},
+	{"claude-opus-4-7", "Claude Opus 4.7", "Older Anthropic flagship for writing and reasoning.", "text", "psychology"},
 	{"gemini-2.5-pro", "Gemini 2.5 Pro", "Google's long-context reasoning and writing model.", "text", "stars"},
 	// image
 	{"zimage", "ZImage", "OpenPaths image model for fast, high-quality generation.", "image", "image"},

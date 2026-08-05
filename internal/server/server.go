@@ -81,6 +81,11 @@ type Dependencies struct {
 	Saver            *savedresp.Saver
 	AgentQ           *queries.AgentQueries
 	AgentEngine      *agent.Engine
+	SharedChatQ      *queries.SharedChatQueries
+	AccessQ          *queries.AccessQueries
+	GuardQ           *queries.GuardQueries
+	TeamQ            *queries.TeamQueries
+	SuppressionQ     *queries.SuppressionQueries
 }
 
 func New(deps *Dependencies) *Server {
@@ -88,6 +93,8 @@ func New(deps *Dependencies) *Server {
 
 	chatH := handler.NewChatHandler(deps.Router, deps.Billing, deps.Recorder, deps.UserQ, deps.ProviderKeyQ)
 	chatH.SetResponseSaver(deps.Saver)
+	chatH.SetAccess(deps.AccessQ)
+	orgH := handler.NewOrgHandler(deps.AccessQ, deps.GuardQ, deps.TeamQ, deps.UserQ)
 	modelsH := handler.NewModelsHandler(deps.Router)
 	authH := handler.NewAuthHandler(deps.UserQ, deps.CreditQ, deps.APIKeyQ, deps.JWTService)
 	if deps.OnRegister != nil {
@@ -100,6 +107,7 @@ func New(deps *Dependencies) *Server {
 	promptsH := handler.NewPromptsHandler(deps.PromptIndex)
 	skillsH := handler.NewSkillsHandler(deps.SkillIndex, deps.SkillQ)
 	agentsH := handler.NewAgentsHandler(deps.AgentQ, deps.AgentEngine)
+	agentsH.SetStorage(deps.Storage)
 	acctStatsH := handler.NewAccountStatsHandler(deps.StatsQ)
 	adminH := handler.NewAdminHandler(deps.UserQ)
 
@@ -154,11 +162,13 @@ func New(deps *Dependencies) *Server {
 	log.Printf("Search endpoint enabled at /v1/search (exa, papers, gemini, openai, grok)")
 
 	anthH := handler.NewAnthropicHandler(deps.Router, deps.Billing, deps.Recorder)
+	anthH.SetAccess(deps.AccessQ)
 	anthH.SetResponseSaver(deps.Saver)
 	r.POST("/v1/messages", apiKeyChain(anthH.HandleMessages))
 	log.Printf("Anthropic-compatible /v1/messages endpoint enabled")
 
 	imageH := handler.NewImageHandler(deps.Router, deps.Billing, deps.Recorder)
+	imageH.SetAccess(deps.AccessQ)
 	imageH.SetStorage(deps.Storage)
 	imageH.SetResponseSaver(deps.Saver)
 	r.POST("/v1/images/generations", apiKeyChain(imageH.HandleImageGeneration))
@@ -166,6 +176,7 @@ func New(deps *Dependencies) *Server {
 	log.Printf("Image generation endpoint enabled")
 
 	model3DH := handler.NewModel3DHandler(deps.Router, deps.Billing, deps.Recorder, deps.Model3DJobQ)
+	model3DH.SetAccess(deps.AccessQ)
 	r.POST("/v1/3d/generations", trackLongRequest(apiKeyChain(model3DH.HandleModel3DGeneration)))
 	r.GET("/v1/3d/generations/{job_id}", apiKeyChain(model3DH.HandleModel3DGenerationJob))
 	r.GET("/v1/3d/generations/{job_id}/status", apiKeyChain(model3DH.HandleModel3DGenerationJob))
@@ -184,6 +195,7 @@ func New(deps *Dependencies) *Server {
 	log.Printf("3D mesh rigging endpoint enabled")
 
 	videoH := handler.NewVideoHandler(deps.Router, deps.Billing, deps.Recorder, deps.VideoJobQ)
+	videoH.SetAccess(deps.AccessQ)
 	videoH.SetStorage(deps.Storage)
 	r.POST("/v1/videos/generations", trackLongRequest(apiKeyChain(videoH.HandleVideoGeneration)))
 	r.POST("/v1/videos/edits", trackLongRequest(apiKeyChain(videoH.HandleVideoEdit)))
@@ -206,6 +218,7 @@ func New(deps *Dependencies) *Server {
 	log.Printf("Time-series forecasting endpoint enabled")
 
 	speechH := handler.NewSpeechHandler(deps.Router, deps.Billing, deps.Recorder)
+	speechH.SetAccess(deps.AccessQ)
 	speechH.SetAutoEmotion(deps.AutoEmotion)
 	r.POST("/v1/audio/speech", apiKeyChain(speechH.HandleSpeechGeneration))
 	r.POST("/v1/tts", apiKeyChain(speechH.HandleSpeechGeneration))
@@ -246,8 +259,28 @@ func New(deps *Dependencies) *Server {
 
 	r.ServeFiles("/uploads/{filepath:*}", deps.Config.Storage.LocalDir)
 
-	r.POST("/auth/register", publicChain(authH.HandleRegister))
-	r.POST("/auth/login", publicChain(authH.HandleLogin))
+	if deps.SuppressionQ != nil {
+		unsubH := handler.NewUnsubscribeHandler(deps.SuppressionQ, deps.UserQ, deps.Config.JWT.Secret)
+		r.GET("/unsubscribe", publicChain(unsubH.HandleUnsubscribe))
+		r.POST("/unsubscribe", publicChain(unsubH.HandleUnsubscribe))
+		r.POST("/account/unsubscribe", accountChain(unsubH.HandleAccountUnsubscribe))
+	}
+
+	registerMin, registerHour, registerDay := middleware.RegisterIPLimits()
+	loginMin, loginHour, loginDay := middleware.LoginIPLimits()
+	registerChain := middleware.Chain(
+		middleware.Recovery(),
+		middleware.Logging(),
+		middleware.IPRateLimit("register", registerMin, registerHour, registerDay),
+	)
+	loginChain := middleware.Chain(
+		middleware.Recovery(),
+		middleware.Logging(),
+		middleware.IPRateLimit("login", loginMin, loginHour, loginDay),
+	)
+
+	r.POST("/auth/register", registerChain(authH.HandleRegister))
+	r.POST("/auth/login", loginChain(authH.HandleLogin))
 	r.POST("/auth/logout", publicChain(authH.HandleLogout))
 
 	r.GET("/account/keys", accountChain(accountH.HandleListAPIKeys))
@@ -255,6 +288,19 @@ func New(deps *Dependencies) *Server {
 	r.DELETE("/account/keys/{id}", accountChain(accountH.HandleRevokeAPIKey))
 	r.GET("/account/balance", accountChain(accountH.HandleGetBalance))
 	r.GET("/account/transactions", accountChain(accountH.HandleGetTransactions))
+
+	// Model IAM + billshock guards + teams (opt-in, open by default).
+	r.GET("/account/model-rules", accountChain(orgH.HandleModelRules))
+	r.POST("/account/model-rules", accountChain(orgH.HandleModelRules))
+	r.DELETE("/account/model-rules", accountChain(orgH.HandleModelRules))
+	r.GET("/account/billing-guards", accountChain(orgH.HandleBillingGuards))
+	r.POST("/account/billing-guards", accountChain(orgH.HandleBillingGuards))
+	r.GET("/account/orgs", accountChain(orgH.HandleOrgs))
+	r.POST("/account/orgs", accountChain(orgH.HandleOrgs))
+	r.POST("/account/orgs/{slug}/invites", accountChain(orgH.HandleOrgInvite))
+	r.POST("/account/orgs/{slug}/join", accountChain(orgH.HandleOrgJoin))
+	r.GET("/account/orgs/{slug}/members", accountChain(orgH.HandleOrgMembers))
+	r.DELETE("/account/orgs/{slug}/members/{user_id}", accountChain(orgH.HandleOrgMembers))
 	r.POST("/account/credits/add", accountChain(creditsH.HandleAddCredits))
 
 	if deps.ProviderKeyQ != nil {
@@ -263,10 +309,12 @@ func New(deps *Dependencies) *Server {
 		r.POST("/account/provider-keys", accountChain(pkH.HandleUpsert))
 		r.POST("/account/provider-keys/bulk", accountChain(pkH.HandleBulkUpsert))
 		r.DELETE("/account/provider-keys", accountChain(pkH.HandleDelete))
-		openAIAuthH := handler.NewOpenAIOAuthHandler(deps.ProviderKeyQ)
+		openAIAuthH := handler.NewOpenAIOAuthHandler(deps.ProviderKeyQ, deps.Config.JWT.Secret)
 		r.POST("/account/openai/start", accountChain(openAIAuthH.HandleStart))
 		r.POST("/account/openai/device/start", accountChain(openAIAuthH.HandleDeviceStart))
 		r.POST("/account/openai/device/poll", accountChain(openAIAuthH.HandleDevicePoll))
+		r.POST("/account/openai/browser/start", accountChain(openAIAuthH.HandleBrowserStart))
+		r.POST("/account/openai/browser/complete", accountChain(openAIAuthH.HandleBrowserComplete))
 		r.GET("/account/openai/callback", publicChain(openAIAuthH.HandleCallback))
 		log.Printf("BYOK provider keys endpoints enabled")
 	}
@@ -290,6 +338,7 @@ func New(deps *Dependencies) *Server {
 		r.GET("/account/autotopup/settings", accountChain(atH.HandleGetAutotopupSettings))
 
 		checkoutH := handler.NewCheckoutHandler(deps.StripeSvc, deps.UserQ, deps.Billing, deps.StripeDepositQ, deps.Config.Stripe.CreditsPriceID, deps.Config.Stripe.WebhookSecret)
+		checkoutH.SetGuards(deps.GuardQ)
 		r.POST("/account/stripe/checkout", accountChain(checkoutH.HandleCreateCheckout))
 		r.GET("/account/stripe/config", publicChain(checkoutH.HandleStripeConfig))
 		r.POST("/stripe/webhooks", publicChain(checkoutH.HandleWebhook))
@@ -316,6 +365,8 @@ func New(deps *Dependencies) *Server {
 	r.GET("/v1/art/list", publicChain(artH.HandleList))
 	r.GET("/v1/art/item", publicChain(artH.HandleItem))
 	r.GET("/v1/art/tags", publicChain(artH.HandleTags))
+	r.POST("/v1/art/index", accountChain(adminH.RequireAdmin(artH.HandleIndex)))
+	r.POST("/v1/art/reindex", accountChain(adminH.RequireAdmin(artH.HandleReindex)))
 
 	// Prompt library (the /prompts directory). Read-only, public, gobed-powered search.
 	// Served under /v1 only so the client-side /prompts SPA routes are untouched.
@@ -345,6 +396,11 @@ func New(deps *Dependencies) *Server {
 	r.DELETE("/v1/agents/{id}/sources/{sid}", accountChain(agentsH.HandleDeleteSource))
 	r.GET("/v1/agents/{id}/search", accountChain(agentsH.HandleSearch))
 
+	// Share-a-chat: publish a transcript, read it publicly at /chat/:slug.
+	sharedChatH := handler.NewSharedChatHandler(deps.SharedChatQ)
+	r.POST("/v1/chats/share", accountChain(sharedChatH.HandleShare))
+	r.GET("/v1/chats/shared", publicChain(sharedChatH.HandleGetShared))
+
 	r.GET("/account/stats/timeseries", accountChain(acctStatsH.HandleUserTimeSeries))
 	r.GET("/account/stats/by-api-key", accountChain(acctStatsH.HandleUserSpendByAPIKey))
 	r.GET("/account/stats/by-provider", accountChain(acctStatsH.HandleUserSpendByProvider))
@@ -353,6 +409,8 @@ func New(deps *Dependencies) *Server {
 	r.GET("/account/stats/by-api-key/{key_id}/models", accountChain(acctStatsH.HandleUserAPIKeyDrilldown))
 	r.GET("/account/stats/by-provider/{provider}/models", accountChain(acctStatsH.HandleUserProviderDrilldown))
 	r.GET("/admin/users/spend", accountChain(adminH.RequireAdmin(adminH.HandleUserSpend)))
+	r.GET("/admin/openai-max-plan", accountChain(adminH.RequireAdmin(adminH.HandleOpenAIMaxPlanStatus)))
+	r.POST("/admin/openai-max-plan/refresh", accountChain(adminH.RequireAdmin(adminH.HandleOpenAIMaxPlanRefresh)))
 
 	// Private saved-response search + settings (response saving feature).
 	usageH := handler.NewUsageHandler(deps.Saver, deps.UserQ)
@@ -539,6 +597,15 @@ func New(deps *Dependencies) *Server {
 		log.Printf("Serving frontend from %s", staticDir)
 	}
 
+	// Clients that set base_url to ".../v1" produce /v1/v1/... paths; tolerate it
+	inner := handler
+	handler = func(ctx *fasthttp.RequestCtx) {
+		if p := ctx.Path(); bytes.HasPrefix(p, []byte("/v1/v1/")) {
+			ctx.Request.URI().SetPathBytes(p[3:])
+		}
+		inner(ctx)
+	}
+
 	srv := &fasthttp.Server{
 		Handler:                       handler,
 		ReadTimeout:                   time.Duration(deps.Config.Server.ReadTimeout) * time.Second,
@@ -619,6 +686,7 @@ func spaHandler(dir string, api fasthttp.RequestHandler, apiKeyQ *queries.APIKey
 			strings.HasPrefix(path, "/openrouter/") ||
 			strings.HasPrefix(path, "/monitoring/") ||
 			path == "/health" ||
+			path == "/unsubscribe" ||
 			strings.HasPrefix(path, "/sitemap") {
 			api(ctx)
 			return

@@ -154,7 +154,7 @@ var mcpTools = []map[string]any{
 		"inputSchema": map[string]any{
 			"type": "object",
 			"properties": map[string]any{
-				"model":  map[string]any{"type": "string", "description": "Model id, e.g. gpt-5, claude-opus-4-8, gemini-2.5-pro, or 'auto'."},
+				"model":  map[string]any{"type": "string", "description": "Model id, e.g. gpt-5, claude-opus-5, gemini-2.5-pro, or 'auto'."},
 				"prompt": map[string]any{"type": "string", "description": "User prompt (shorthand for a single user message)."},
 				"system": map[string]any{"type": "string", "description": "Optional system instruction."},
 				"messages": map[string]any{
@@ -171,7 +171,7 @@ var mcpTools = []map[string]any{
 				},
 				"max_tokens":       map[string]any{"type": "integer"},
 				"temperature":      map[string]any{"type": "number"},
-				"reasoning_effort": map[string]any{"type": "string", "enum": []string{"low", "medium", "high"}},
+				"reasoning_effort": map[string]any{"type": "string", "enum": []string{"auto", "none", "minimal", "low", "medium", "high", "xhigh", "max"}, "description": "Reasoning depth. 'auto' lets OpenPaths pick per prompt."},
 			},
 			"required": []string{"model"},
 		},

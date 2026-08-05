@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"strings"
 	"time"
 
@@ -13,6 +16,8 @@ import (
 	"github.com/openpaths/openpaths/internal/model"
 	"github.com/openpaths/openpaths/internal/provider"
 )
+
+var webSearchClient = &http.Client{Timeout: 30 * time.Second}
 
 type toolRunFunc func(ctx context.Context, userID string, ag *model.Agent, args map[string]any) (string, error)
 
@@ -67,10 +72,17 @@ func (e *Engine) buildTools(userID string, ag *model.Agent) (map[string]toolImpl
 		"call_model": fnTool("call_model",
 			"Ask another OpenPaths chat model to complete a sub-task. Returns its answer.",
 			obj(map[string]any{
-				"model":  strProp("model id, e.g. gpt-4o or claude-opus-4-8"),
+				"model":  strProp("model id, e.g. gpt-4o or claude-opus-5"),
 				"prompt": strProp("the sub-task prompt"),
 			}, "model", "prompt"),
 			e.toolCallModel),
+		"web_search": fnTool("web_search",
+			"Search the live web. Returns a JSON list of {title,url,snippet} results.",
+			obj(map[string]any{
+				"query":       strProp("the search query"),
+				"num_results": map[string]any{"type": "integer", "description": "how many results to return (max 8, default 5)"},
+			}, "query"),
+			e.toolWebSearch),
 		"computer_use": fnTool("computer_use",
 			"Perform an action on a sandboxed desktop (screenshot, click, type).",
 			obj(map[string]any{"action": strProp("action description")}, "action"),
@@ -248,6 +260,65 @@ func (e *Engine) toolCallModel(ctx context.Context, userID string, ag *model.Age
 		return contentText(resp.Choices[0].Message.Content), nil
 	}
 	return "", fmt.Errorf("empty response from %s", modelID)
+}
+
+func (e *Engine) toolWebSearch(ctx context.Context, userID string, ag *model.Agent, args map[string]any) (string, error) {
+	query := strArg(args, "query")
+	if query == "" {
+		return "", fmt.Errorf("query required")
+	}
+	if e.exaKey == "" {
+		return "", fmt.Errorf("web search is not configured (missing Exa API key)")
+	}
+	n := 5
+	if v, ok := args["num_results"].(float64); ok && v > 0 {
+		n = int(v)
+	}
+	if n > 8 {
+		n = 8
+	}
+	body, _ := json.Marshal(map[string]any{
+		"query":      query,
+		"numResults": n,
+		"contents":   map[string]any{"text": map[string]any{"maxCharacters": 1500}},
+	})
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.exa.ai/search", bytes.NewReader(body))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("x-api-key", e.exaKey)
+	resp, err := webSearchClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("web search: %w", err)
+	}
+	defer resp.Body.Close()
+	data, err := io.ReadAll(io.LimitReader(resp.Body, 4<<20))
+	if err != nil {
+		return "", fmt.Errorf("web search read: %w", err)
+	}
+	if resp.StatusCode != 200 {
+		return "", fmt.Errorf("web search returned status %d", resp.StatusCode)
+	}
+	var parsed struct {
+		Results []struct {
+			Title string `json:"title"`
+			URL   string `json:"url"`
+			Text  string `json:"text"`
+		} `json:"results"`
+	}
+	if err := json.Unmarshal(data, &parsed); err != nil {
+		return "", fmt.Errorf("web search decode: %w", err)
+	}
+	if len(parsed.Results) == 0 {
+		return "No web results found.", nil
+	}
+	out := make([]map[string]string, 0, len(parsed.Results))
+	for _, r := range parsed.Results {
+		out = append(out, map[string]string{"title": r.Title, "url": r.URL, "snippet": strings.TrimSpace(r.Text)})
+	}
+	b, _ := json.Marshal(out)
+	return string(b), nil
 }
 
 func (e *Engine) toolComputerUse(ctx context.Context, userID string, ag *model.Agent, args map[string]any) (string, error) {

@@ -23,6 +23,7 @@ monitoring/state/
 monitoring/errors/
 /model
 /openpaths-api
+/openpaths-api.*
 /openpaths
 /discover
 openpath.log

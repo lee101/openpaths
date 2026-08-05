@@ -16,6 +16,7 @@ import (
 	"github.com/openpaths/openpaths/internal/metrics"
 	"github.com/openpaths/openpaths/internal/middleware"
 	"github.com/openpaths/openpaths/internal/model"
+	"github.com/openpaths/openpaths/internal/modelaccess"
 	"github.com/openpaths/openpaths/internal/provider"
 	"github.com/openpaths/openpaths/internal/router"
 )
@@ -26,11 +27,14 @@ type Model3DHandler struct {
 	recorder *metrics.Recorder
 	jobs     *model3DJobCache
 	jobQ     *queries.Model3DJobQueries
+	accessQ  modelaccess.Checker
 }
 
 func NewModel3DHandler(r *router.Router, b *billing.Engine, rec *metrics.Recorder, jobQ *queries.Model3DJobQueries) *Model3DHandler {
 	return &Model3DHandler{router: r, billing: b, recorder: rec, jobs: newModel3DJobCache(), jobQ: jobQ}
 }
+
+func (h *Model3DHandler) SetAccess(checker modelaccess.Checker) { h.accessQ = checker }
 
 func (h *Model3DHandler) HandleModel3DGeneration(ctx *fasthttp.RequestCtx) {
 	userID, _ := ctx.UserValue(middleware.CtxKeyUserID).(string)
@@ -43,6 +47,10 @@ func (h *Model3DHandler) HandleModel3DGeneration(ctx *fasthttp.RequestCtx) {
 	req, originalModel, err := parseModel3DGenerationRequest(ctx.PostBody())
 	if err != nil {
 		writeError(ctx, 400, "invalid_request", err.Error())
+		return
+	}
+	if err := h.authorizeModel3DRequest(ctx, userID, originalModel); err != nil {
+		writeError(ctx, 403, "model_not_permitted", err.Error())
 		return
 	}
 	actualCost := h.costForModel3D(req)
@@ -89,6 +97,15 @@ func (h *Model3DHandler) HandleModel3DGeneration(ctx *fasthttp.RequestCtx) {
 		ctx.Response.Header.Set("Retry-After", "2")
 		writeJSON(ctx, 202, model3DJobPayload(waited, cached))
 	}
+}
+
+func (h *Model3DHandler) authorizeModel3DRequest(ctx context.Context, userID, modelID string) error {
+	candidates, err := h.router.ResolveForRequest(modelID, modelID)
+	if err != nil {
+		return nil // preserve the existing model_not_found response path
+	}
+	_, err = modelaccess.FilterCandidates(ctx, h.accessQ, userID, modelID, candidates)
+	return err
 }
 
 func parseModel3DGenerationRequest(body []byte) (model.Model3DGenerationRequest, string, error) {
@@ -289,6 +306,10 @@ func (h *Model3DHandler) executeModel3DGeneration(ctx context.Context, byokCtx *
 	candidates, err := h.router.ResolveForRequest(originalModel, originalModel)
 	if err != nil {
 		return model3DExecutionResult{StatusCode: 404, ErrorType: "model_not_found", ErrorMessage: err.Error()}
+	}
+	candidates, err = modelaccess.FilterCandidates(ctx, h.accessQ, userID, originalModel, candidates)
+	if err != nil {
+		return model3DExecutionResult{StatusCode: 403, ErrorType: "model_not_permitted", ErrorMessage: err.Error()}
 	}
 
 	for i, cand := range candidates {

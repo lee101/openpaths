@@ -3,52 +3,189 @@ package agent
 import (
 	"archive/zip"
 	"bytes"
+	"encoding/base64"
 	"encoding/csv"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"html"
+	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
 	"io"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
+
+	markitdown "github.com/conductor-oss/markitdown"
+	"github.com/deepteams/webp"
 )
 
 var (
-	htmlTagRe    = regexp.MustCompile(`(?is)<(script|style)[^>]*>.*?</(script|style)>`)
-	htmlStripRe  = regexp.MustCompile(`(?s)<[^>]+>`)
-	htmlSpaceRe  = regexp.MustCompile(`[ \t]*\n[ \t\n]*\n[ \t]*`)
-	multiSpaceRe = regexp.MustCompile(`[ \t]{2,}`)
+	htmlTagRe     = regexp.MustCompile(`(?is)<(script|style)[^>]*>.*?</(script|style)>`)
+	htmlStripRe   = regexp.MustCompile(`(?s)<[^>]+>`)
+	htmlSpaceRe   = regexp.MustCompile(`[ \t]*\n[ \t\n]*\n[ \t]*`)
+	multiSpaceRe  = regexp.MustCompile(`[ \t]{2,}`)
+	inlineImageRe = regexp.MustCompile(`(?is)<img\s+[^>]*src=["']data:[^>]+>`)
+	imageSourceRe = regexp.MustCompile(`(?is)src=["']data:([^;"']+);base64,([^"']+)["']`)
+	imageAltRe    = regexp.MustCompile(`(?is)alt=["']([^"']*)["']`)
 )
 
-// ToMarkdown converts an uploaded document to markdown text. Text-ish formats
-// are handled natively; pdf/docx are best-effort via pandoc/pdftotext if present.
+const (
+	maxDocumentImages = 3
+	minDocumentWidth  = 320
+	minDocumentHeight = 180
+	maxDocumentPixels = 12_000_000
+	maxImageRatio     = 4.0
+)
+
+// ConvertedDocument is the normalized, RAG-ready representation of an upload.
+// Image data is kept separately so it never leaks into embedding chunks.
+type ConvertedDocument struct {
+	Markdown string
+	Images   []DocumentImage
+	Parser   string
+	Seen     int
+}
+
+// DocumentImage is a useful embedded image re-encoded for storage.
+type DocumentImage struct {
+	Placeholder string
+	Alt         string
+	WebP        []byte
+	Width       int
+	Height      int
+}
+
+// ToMarkdown is the text-only compatibility wrapper around ConvertDocument.
 func ToMarkdown(filename, contentType string, data []byte) (markdown string, err error) {
+	converted, err := ConvertDocument(filename, contentType, data)
+	if err != nil {
+		return "", err
+	}
+	// The compatibility helper has no asset store. Remove placeholders instead of
+	// returning large data URIs or broken local references.
+	markdown = converted.Markdown
+	for _, img := range converted.Images {
+		markdown = strings.ReplaceAll(markdown, img.Placeholder, "")
+	}
+	return strings.TrimSpace(markdown), nil
+}
+
+// ConvertDocument converts an upload to Markdown and extracts a small number of
+// useful embedded images. Office/PDF/EPUB/PowerPoint inputs use the pure-Go
+// MarkItDown port; simple formats retain the small native converters below.
+func ConvertDocument(filename, contentType string, data []byte) (ConvertedDocument, error) {
 	ext := strings.ToLower(filename)
+	var markdown, parser string
+	var err error
 	switch {
 	case hasSuffixAny(ext, ".md", ".markdown", ".txt", ".text", ""):
-		return string(data), nil
-	case hasSuffixAny(ext, ".html", ".htm") || strings.Contains(contentType, "html"):
-		return htmlToMarkdown(string(data)), nil
-	case hasSuffixAny(ext, ".csv"):
-		return csvToMarkdown(data), nil
-	case hasSuffixAny(ext, ".xlsx") || strings.Contains(contentType, "spreadsheetml"):
-		return xlsxToMarkdown(data)
+		markdown, parser = string(data), "native"
 	case hasSuffixAny(ext, ".json") || strings.Contains(contentType, "json"):
-		return jsonToMarkdown(data), nil
-	case hasSuffixAny(ext, ".pdf"):
-		return externalConvert(data, "pdf", "pdftotext", []string{"-", "-"})
-	case hasSuffixAny(ext, ".docx", ".doc", ".rtf", ".odt", ".epub"):
-		return externalConvert(data, "doc", "pandoc", []string{"-t", "markdown"})
+		markdown, parser = jsonToMarkdown(data), "native"
+	case hasSuffixAny(ext, ".csv"):
+		markdown, parser = csvToMarkdown(data), "native"
+	case hasSuffixAny(ext, ".xlsx") || strings.Contains(contentType, "spreadsheetml"):
+		markdown, err = xlsxToMarkdown(data)
+		parser = "native"
+	case hasSuffixAny(ext, ".pdf", ".docx", ".pptx", ".xls", ".html", ".htm", ".epub", ".ipynb", ".zip") ||
+		strings.Contains(contentType, "pdf") || strings.Contains(contentType, "wordprocessingml") ||
+		strings.Contains(contentType, "presentationml") || strings.Contains(contentType, "html"):
+		markdown, err = markItDown(filename, contentType, data)
+		parser = "markitdown"
+	case hasSuffixAny(ext, ".doc", ".rtf", ".odt"):
+		markdown, err = externalConvert(data, "doc", "pandoc", []string{"-t", "gfm"})
+		parser = "pandoc"
 	default:
 		// Assume utf-8 text (code files, logs, etc.).
 		if isProbablyText(data) {
-			return string(data), nil
+			markdown, parser = string(data), "native"
+			break
 		}
-		return "", fmt.Errorf("unsupported document type %q; paste text instead", filename)
+		return ConvertedDocument{}, fmt.Errorf("unsupported document type %q; paste text instead", filename)
 	}
+	if err != nil {
+		return ConvertedDocument{}, err
+	}
+	if strings.TrimSpace(markdown) == "" {
+		return ConvertedDocument{}, fmt.Errorf("%q did not contain readable text", filename)
+	}
+	markdown, images, seen := extractUsefulImages(markdown)
+	return ConvertedDocument{Markdown: strings.TrimSpace(markdown), Images: images, Parser: parser, Seen: seen}, nil
+}
+
+func markItDown(filename, contentType string, data []byte) (string, error) {
+	m := markitdown.New(markitdown.WithKeepDataURIs(true))
+	result, err := m.ConvertReader(bytes.NewReader(data), markitdown.StreamInfo{
+		Extension: strings.ToLower(filepath.Ext(filename)),
+		MIMEType:  strings.TrimSpace(strings.Split(contentType, ";")[0]),
+		Filename:  filename,
+	})
+	if err != nil {
+		return "", fmt.Errorf("convert %s: %w", filename, err)
+	}
+	return result.Markdown, nil
+}
+
+func extractUsefulImages(markdown string) (string, []DocumentImage, int) {
+	seen := 0
+	images := make([]DocumentImage, 0, maxDocumentImages)
+	markdown = inlineImageRe.ReplaceAllStringFunc(markdown, func(tag string) string {
+		seen++
+		if len(images) >= maxDocumentImages {
+			return ""
+		}
+		src := imageSourceRe.FindStringSubmatch(tag)
+		if len(src) != 3 || strings.EqualFold(src[1], "image/svg+xml") {
+			return ""
+		}
+		raw, err := base64.StdEncoding.DecodeString(strings.Map(func(r rune) rune {
+			if r == '\n' || r == '\r' || r == ' ' || r == '\t' {
+				return -1
+			}
+			return r
+		}, src[2]))
+		if err != nil || len(raw) == 0 {
+			return ""
+		}
+		config, _, err := image.DecodeConfig(bytes.NewReader(raw))
+		if err != nil {
+			return ""
+		}
+		width, height := config.Width, config.Height
+		ratio := float64(width) / float64(height)
+		if width < minDocumentWidth || height < minDocumentHeight || width*height > maxDocumentPixels || ratio > maxImageRatio || ratio < 1/maxImageRatio {
+			return ""
+		}
+		decoded, _, err := image.Decode(bytes.NewReader(raw))
+		if err != nil {
+			return ""
+		}
+		var encoded bytes.Buffer
+		if err := webp.Encode(&encoded, decoded, &webp.EncoderOptions{Quality: 85, Method: 4}); err != nil {
+			return ""
+		}
+		alt := "Document image"
+		if match := imageAltRe.FindStringSubmatch(tag); len(match) == 2 && strings.TrimSpace(match[1]) != "" {
+			alt = html.UnescapeString(strings.TrimSpace(match[1]))
+		}
+		placeholder := fmt.Sprintf("{{OPENPATHS_DOCUMENT_IMAGE_%d}}", len(images)+1)
+		images = append(images, DocumentImage{
+			Placeholder: placeholder,
+			Alt:         alt,
+			WebP:        encoded.Bytes(),
+			Width:       width,
+			Height:      height,
+		})
+		return placeholder
+	})
+	return markdown, images, seen
 }
 
 type xlsxSharedStrings struct {

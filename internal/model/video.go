@@ -32,34 +32,60 @@ func (d *VideoDuration) UnmarshalJSON(data []byte) error {
 }
 
 type VideoGenerationRequest struct {
-	Model               string        `json:"model"`
-	Prompt              string        `json:"prompt"`
-	Async               bool          `json:"async,omitempty"`
-	Operation           string        `json:"operation,omitempty"`
-	ImageURL            string        `json:"image_url,omitempty"`
-	EndImageURL         string        `json:"end_image_url,omitempty"`
-	ImageURLs           []string      `json:"image_urls,omitempty"`
-	VideoURL            string        `json:"video_url,omitempty"`
-	Video               *VideoInput   `json:"video,omitempty"`
-	VideoURLs           []string      `json:"video_urls,omitempty"`
-	AudioURL            string        `json:"audio_url,omitempty"`
-	AudioURLs           []string      `json:"audio_urls,omitempty"`
-	SyncMode            string        `json:"sync_mode,omitempty"`
-	AudioSetting        string        `json:"audio_setting,omitempty"`
-	NumFrames           int           `json:"num_frames,omitempty"`
-	FramesPerSecond     int           `json:"frames_per_second,omitempty"`
-	Resolution          string        `json:"resolution,omitempty"`
-	Duration            VideoDuration `json:"duration,omitempty"`
-	AspectRatio         string        `json:"aspect_ratio,omitempty"`
-	OutputFormat        string        `json:"output_format,omitempty"`
-	GenerateAudio       *bool         `json:"generate_audio,omitempty"`
-	BitrateMode         string        `json:"bitrate_mode,omitempty"`
-	EndUserID           string        `json:"end_user_id,omitempty"`
-	NegativePrompt      string        `json:"negative_prompt,omitempty"`
-	Seed                *int          `json:"seed,omitempty"`
-	NumInferenceSteps   int           `json:"num_inference_steps,omitempty"`
-	GuidanceScale       *float64      `json:"guidance_scale,omitempty"`
-	EnableSafetyChecker *bool         `json:"enable_safety_checker,omitempty"`
+	Model                 string             `json:"model"`
+	Prompt                string             `json:"prompt"`
+	Content               []VideoContentItem `json:"content,omitempty"`
+	Input                 json.RawMessage    `json:"input,omitempty"`
+	Async                 bool               `json:"async,omitempty"`
+	Operation             string             `json:"operation,omitempty"`
+	ImageURL              string             `json:"image_url,omitempty"`
+	EndImageURL           string             `json:"end_image_url,omitempty"`
+	ImageURLs             []string           `json:"image_urls,omitempty"`
+	VideoURL              string             `json:"video_url,omitempty"`
+	Video                 *VideoInput        `json:"video,omitempty"`
+	VideoURLs             []string           `json:"video_urls,omitempty"`
+	AudioURL              string             `json:"audio_url,omitempty"`
+	AudioURLs             []string           `json:"audio_urls,omitempty"`
+	SyncMode              string             `json:"sync_mode,omitempty"`
+	AudioSetting          string             `json:"audio_setting,omitempty"`
+	NumFrames             int                `json:"num_frames,omitempty"`
+	FramesPerSecond       int                `json:"frames_per_second,omitempty"`
+	Resolution            string             `json:"resolution,omitempty"`
+	Duration              VideoDuration      `json:"duration,omitempty"`
+	AspectRatio           string             `json:"aspect_ratio,omitempty"`
+	Ratio                 string             `json:"ratio,omitempty"`
+	OutputFormat          string             `json:"output_format,omitempty"`
+	GenerateAudio         *bool              `json:"generate_audio,omitempty"`
+	BitrateMode           string             `json:"bitrate_mode,omitempty"`
+	EndUserID             string             `json:"end_user_id,omitempty"`
+	NegativePrompt        string             `json:"negative_prompt,omitempty"`
+	Seed                  *int               `json:"seed,omitempty"`
+	NumInferenceSteps     int                `json:"num_inference_steps,omitempty"`
+	GuidanceScale         *float64           `json:"guidance_scale,omitempty"`
+	EnableSafetyChecker   *bool              `json:"enable_safety_checker,omitempty"`
+	SafetyTolerance       int                `json:"safety_tolerance,omitempty"`
+	PreviousInteractionID string             `json:"previous_interaction_id,omitempty"`
+	GenerationConfig      json.RawMessage    `json:"generation_config,omitempty"`
+	ResponseModalities    []string           `json:"response_modalities,omitempty"`
+	ResponseFormat        json.RawMessage    `json:"response_format,omitempty"`
+	Store                 *bool              `json:"store,omitempty"`
+	Stream                *bool              `json:"stream,omitempty"`
+}
+
+// VideoContentItem is the multimodal content shape accepted by video models
+// such as MiniMax-H3. URL-bearing items intentionally use an object so the
+// request can be forwarded without losing the provider's native schema.
+type VideoContentItem struct {
+	Type     string         `json:"type"`
+	Text     string         `json:"text,omitempty"`
+	ImageURL *VideoMediaURL `json:"image_url,omitempty"`
+	VideoURL *VideoMediaURL `json:"video_url,omitempty"`
+	AudioURL *VideoMediaURL `json:"audio_url,omitempty"`
+	Role     string         `json:"role,omitempty"`
+}
+
+type VideoMediaURL struct {
+	URL string `json:"url"`
 }
 
 type VideoInput struct {
@@ -87,5 +113,41 @@ func (r VideoGenerationRequest) HasVideoInput() bool {
 	if r.Video != nil && (r.Video.URL != "" || r.Video.FileID != "") {
 		return true
 	}
-	return len(r.VideoURLs) > 0
+	if len(r.VideoURLs) > 0 {
+		return true
+	}
+	for _, item := range r.Content {
+		if item.Type == "video_url" && item.VideoURL != nil && item.VideoURL.URL != "" {
+			return true
+		}
+	}
+	return false
+}
+
+func (r VideoGenerationRequest) InputImageCount() int {
+	count := len(r.ImageURLs)
+	if r.ImageURL != "" {
+		count++
+	}
+	if r.EndImageURL != "" {
+		count++
+	}
+	for _, item := range r.Content {
+		if item.Type == "image_url" && item.ImageURL != nil && item.ImageURL.URL != "" {
+			count++
+		}
+	}
+	return count
+}
+
+func (r VideoGenerationRequest) TextPrompt() string {
+	if r.Prompt != "" {
+		return r.Prompt
+	}
+	for _, item := range r.Content {
+		if item.Type == "text" && item.Text != "" {
+			return item.Text
+		}
+	}
+	return ""
 }
