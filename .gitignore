@@ -18,9 +18,7 @@ crawlers/*.pyc
 crawlers/.venv/
 artificial-analysis/
 test-results/
-monitoring/logs/
-monitoring/state/
-monitoring/errors/
+monitoring/
 /model
 *.safetensors
 /openpaths-api

@@ -34,22 +34,22 @@ const EXAMPLES: Record<string, ProviderExample> = {
     chatModel: 'openai-chat-latest',
     imageModel: 'gpt-image-2',
     videoModel: 'sora-2',
-    transcriptionModel: 'gpt-4o-transcribe',
-    realtimeModel: 'gpt-realtime-2.1',
-    realtimeURL: 'wss://api.openai.com/v1/realtime',
-    realtimeAPIKeyEnv: 'OPENAI_API_KEY',
+    transcriptionModel: 'gpt-transcribe',
+    realtimeModel: 'gpt-realtime-2.1-mini',
+    realtimeURL: 'wss://openpaths.io/v1/realtime',
+    realtimeAPIKeyEnv: 'OPENPATHS_API_KEY',
     realtimeVoice: 'marin',
     provides: [
       {
         title: 'GPT Live voice',
-        description: 'Provider-native speech-to-speech over WebRTC, WebSocket, or SIP. GPT Realtime 2.1 uses token pricing: text is $4/$24 and audio is $32/$64 per 1M input/output tokens.',
+        description: 'Live speech-to-speech through OpenPaths’ authenticated WebSocket relay. GPT Realtime 2.1 Mini uses token pricing: text is $0.60/$2.40 and audio is $10/$20 per 1M input/output tokens.',
       },
     ],
     notes: [
       'gpt-image-2 returns base64 PNGs by default — decode with base64.b64decode.',
       'sora-2 is async; OpenPaths polls for you and returns a signed content URL.',
       'Use openai-coding-latest alias for gpt-5-codex.',
-      '`gpt-realtime-2.1` is the flagship live voice route; use `gpt-realtime-2.1-mini` for lower-cost calls.',
+      '`gpt-realtime-2.1-mini` is the default low-latency voice route; use `gpt-realtime-2.1` when you need the flagship model.',
       'If the direct OpenAI GPT Image 2 path goes unhealthy, OpenPaths can fail over to Fal-hosted GPT Image 2 using the model-level circuit breaker.',
     ],
   },
@@ -795,7 +795,7 @@ print(transcript.text)`,
     const realtimeURL = ex.realtimeURL || 'wss://api.x.ai/v1/realtime';
     const realtimeAPIKeyEnv = ex.realtimeAPIKeyEnv || 'XAI_API_KEY';
     const realtimeVoice = ex.realtimeVoice || 'eve';
-    const realtimeSession = realtimeAPIKeyEnv === 'OPENAI_API_KEY'
+    const realtimeSession = ex.realtimeModel.startsWith('gpt-realtime')
       ? `{
             "type": "session.update",
             "session": {
@@ -851,7 +851,7 @@ async def main():
 
 asyncio.run(main())`,
       curl: `# Realtime voice is a WebSocket endpoint.
-# Use a provider API key with a WebSocket client and connect to:
+# Use an OpenPaths API key with a WebSocket client and connect to:
 ${realtimeURL}?model=${ex.realtimeModel}`,
     });
   }

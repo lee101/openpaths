@@ -24,6 +24,7 @@ const entries: SitemapEntry[] = [
   { path: '/works-with-openpaths', changefreq: 'weekly', priority: '0.8' },
   { path: '/playground', changefreq: 'monthly', priority: '0.5' },
   { path: '/fusion', changefreq: 'monthly', priority: '0.6' },
+  { path: '/compound', changefreq: 'monthly', priority: '0.8' },
   { path: '/tools', changefreq: 'weekly', priority: '0.8' },
   { path: '/text-to-image', changefreq: 'monthly', priority: '0.7' },
   { path: '/image-to-3d', changefreq: 'monthly', priority: '0.7' },

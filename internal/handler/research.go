@@ -134,7 +134,7 @@ func (h *ResearchHandler) engineFor(req researchRequest, plannerModel string) *r
 	return &e
 }
 
-const premiumResearchModel = "claude-sonnet-4-6"
+const premiumResearchModel = "claude-sonnet-5"
 
 func runResearch(e *researchEngine, jobID, userID, query, depth string) {
 	atomic.AddInt64(&activeResearchJobs, 1)

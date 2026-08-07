@@ -19,7 +19,7 @@ import (
 
 var errNoEmbedding = errors.New("no embedding returned")
 
-const defaultModel = "claude-sonnet-latest"
+const defaultModel = "auto-medium-task"
 
 // Engine executes agents: a tool-calling loop over the chat router with per-step
 // billing, plus document ingest/RAG.

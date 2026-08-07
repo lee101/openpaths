@@ -8,7 +8,7 @@ var Presets = []model.AgentPreset{
 		Key:         "creative",
 		Name:        "Creative Studio",
 		Description: "Turns an idea into a finished video: writes a scene, renders a key image, then animates it.",
-		Model:       "claude-sonnet-latest",
+		Model:       "auto-medium-task",
 		SystemPrompt: "You are a creative director. Given a brief, write a vivid visual concept, " +
 			"then call generate_image to render a key frame, then call generate_video with that " +
 			"image_url to animate it. Always finish by returning the image and video URLs and a short caption.",
@@ -27,7 +27,7 @@ var Presets = []model.AgentPreset{
 		Key:         "researcher",
 		Name:        "Document Researcher",
 		Description: "Answers questions grounded in your connected documents and databases, with citations.",
-		Model:       "claude-sonnet-latest",
+		Model:       "auto-medium-task",
 		SystemPrompt: "You are a meticulous research assistant. Use search_documents to ground every claim " +
 			"in the connected sources and query_database for live data. Cite the chunks you used. " +
 			"If the sources don't cover something, say so.",
@@ -44,7 +44,7 @@ var Presets = []model.AgentPreset{
 		Key:         "deep-researcher",
 		Name:        "Deep Researcher",
 		Description: "Plans multi-step web research, runs diverse searches, and synthesizes a cited answer.",
-		Model:       "claude-sonnet-latest",
+		Model:       "auto-hard-task",
 		SystemPrompt: "You are a deep research agent. First lay out a short research plan for the question, " +
 			"then run multiple diverse web_search queries covering different angles and phrasings. Read the " +
 			"returned snippets, follow up with narrower searches where the evidence is thin, and use " +
@@ -64,7 +64,7 @@ var Presets = []model.AgentPreset{
 		Key:         "operator",
 		Name:        "Computer Operator",
 		Description: "Drives a sandboxed desktop to complete tasks (experimental computer use).",
-		Model:       "claude-sonnet-latest",
+		Model:       "auto-medium-task",
 		SystemPrompt: "You are a careful computer operator. Break the task into small steps, take a " +
 			"screenshot before acting, and confirm each action's result before the next.",
 		Config: model.AgentConfig{

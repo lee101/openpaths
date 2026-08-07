@@ -166,6 +166,32 @@ func (e *Engine) DeductWithCachedInput(ctx context.Context, userID, modelID stri
 	return cost, nil
 }
 
+func (e *Engine) DeductRealtime(ctx context.Context, userID, modelID string, usage RealtimeUsage, usageLogID string) (int64, error) {
+	cost, err := e.pricing.CalculateRealtimeCost(modelID, usage)
+	if err != nil || cost == 0 {
+		return cost, err
+	}
+	var refID *string
+	if usageLogID != "" {
+		refID = &usageLogID
+	}
+	err = e.credits.DeductWithTransaction(ctx, userID, cost, model.TxTypeUsageDeduction,
+		fmt.Sprintf("Realtime: %s (%d text in, %d audio in, %d image in, %d text out, %d audio out)",
+			modelID, usage.TextInputTokens, usage.AudioInputTokens, usage.ImageInputTokens,
+			usage.TextOutputTokens, usage.AudioOutputTokens), refID)
+	if err != nil {
+		e.triggerAutoTopup(userID)
+		return cost, err
+	}
+	e.triggerAutoTopup(userID)
+	e.maybeBillingAlert(ctx, userID)
+	return cost, nil
+}
+
+func (e *Engine) RealtimeCost(modelID string, usage RealtimeUsage) (int64, error) {
+	return e.pricing.CalculateRealtimeCost(modelID, usage)
+}
+
 // ImageCost returns the cost (in hundredths-of-a-cent) of an image request
 // without deducting anything. Used for prechecks in multi-step pipelines.
 func (e *Engine) ImageCost(modelID string, outputImageCount, inputImageCount int, size string) (int64, error) {

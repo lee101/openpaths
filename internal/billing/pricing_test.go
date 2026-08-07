@@ -25,8 +25,28 @@ func newTestPricingTable() *PricingTable {
 		{ID: "free-model", InputPricePer1M: 0, OutputPricePer1M: 0, Aliases: []string{"free-alias"}},
 		{ID: "fugu-ultra", InputPricePer1M: 5.00, InputCacheHitPricePer1M: 0.50, OutputPricePer1M: 30.00,
 			LongContextThreshold: 272000, InputPricePer1MLong: 10.00, InputCacheHitPricePer1MLong: 1.00, OutputPricePer1MLong: 45.00},
+		{ID: "gpt-realtime-2.1-mini", InputPricePer1M: .6, InputCacheHitPricePer1M: .06, OutputPricePer1M: 2.4,
+			AudioInputPricePer1M: 10, AudioInputCacheHitPricePer1M: .3, AudioOutputPricePer1M: 20,
+			ImageInputPricePer1M: .8, ImageInputCacheHitPricePer1M: .08},
 	}
 	return NewPricingTable(models)
+}
+
+func TestCalculateRealtimeCost(t *testing.T) {
+	pt := newTestPricingTable()
+	usage := RealtimeUsage{
+		TextInputTokens: 1000, CachedTextInputTokens: 400, TextOutputTokens: 500,
+		AudioInputTokens: 2000, CachedAudioInputTokens: 1000, AudioOutputTokens: 3000,
+		ImageInputTokens: 1000, CachedImageInputTokens: 500,
+	}
+	cost, err := pt.CalculateRealtimeCost("gpt-realtime-2.1-mini", usage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// $0.00036 + $0.000024 + $0.0012 + $0.01 + $0.0003 + $0.06 + $0.0004 + $0.00004.
+	if cost != 723 {
+		t.Fatalf("cost = %d, want 723", cost)
+	}
 }
 
 func TestCalculateVideoCostWithMediaInputs_XAIResolutionTiers(t *testing.T) {

@@ -1,13 +1,18 @@
 package model
 
 type ModelConfig struct {
-	ID                      string  `yaml:"id" json:"id"`
-	Provider                string  `yaml:"provider" json:"provider"`
-	ProviderModelID         string  `yaml:"provider_model_id" json:"provider_model_id"`
-	InputPricePer1M         float64 `yaml:"input_price_per_1m" json:"input_price_per_1m"`
-	InputCacheHitPricePer1M float64 `yaml:"input_cache_hit_price_per_1m,omitempty" json:"input_cache_hit_price_per_1m,omitempty"`
-	OutputPricePer1M        float64 `yaml:"output_price_per_1m" json:"output_price_per_1m"`
-	PricePer1MCharacters    float64 `yaml:"price_per_1m_characters,omitempty" json:"price_per_1m_characters,omitempty"`
+	ID                           string  `yaml:"id" json:"id"`
+	Provider                     string  `yaml:"provider" json:"provider"`
+	ProviderModelID              string  `yaml:"provider_model_id" json:"provider_model_id"`
+	InputPricePer1M              float64 `yaml:"input_price_per_1m" json:"input_price_per_1m"`
+	InputCacheHitPricePer1M      float64 `yaml:"input_cache_hit_price_per_1m,omitempty" json:"input_cache_hit_price_per_1m,omitempty"`
+	OutputPricePer1M             float64 `yaml:"output_price_per_1m" json:"output_price_per_1m"`
+	AudioInputPricePer1M         float64 `yaml:"audio_input_price_per_1m,omitempty" json:"audio_input_price_per_1m,omitempty"`
+	AudioInputCacheHitPricePer1M float64 `yaml:"audio_input_cache_hit_price_per_1m,omitempty" json:"audio_input_cache_hit_price_per_1m,omitempty"`
+	AudioOutputPricePer1M        float64 `yaml:"audio_output_price_per_1m,omitempty" json:"audio_output_price_per_1m,omitempty"`
+	ImageInputPricePer1M         float64 `yaml:"image_input_price_per_1m,omitempty" json:"image_input_price_per_1m,omitempty"`
+	ImageInputCacheHitPricePer1M float64 `yaml:"image_input_cache_hit_price_per_1m,omitempty" json:"image_input_cache_hit_price_per_1m,omitempty"`
+	PricePer1MCharacters         float64 `yaml:"price_per_1m_characters,omitempty" json:"price_per_1m_characters,omitempty"`
 	// Long-context tiered pricing: when set and the request's input tokens exceed
 	// LongContextThreshold, the *Long rates apply to the whole request (e.g.
 	// Sakana Fugu Ultra charges higher rates above 272K-token contexts).

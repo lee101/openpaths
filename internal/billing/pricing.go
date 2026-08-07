@@ -14,6 +14,17 @@ type PricingTable struct {
 	models map[string]*model.ModelConfig
 }
 
+type RealtimeUsage struct {
+	TextInputTokens        int
+	CachedTextInputTokens  int
+	TextOutputTokens       int
+	AudioInputTokens       int
+	CachedAudioInputTokens int
+	AudioOutputTokens      int
+	ImageInputTokens       int
+	CachedImageInputTokens int
+}
+
 func NewPricingTable(models []model.ModelConfig) *PricingTable {
 	pt := &PricingTable{models: make(map[string]*model.ModelConfig)}
 	for i := range models {
@@ -89,6 +100,43 @@ func (pt *PricingTable) CalculateCostWithCachedInput(modelID string, inputTokens
 		totalCents = 1 // minimum charge
 	}
 	return totalCents, nil
+}
+
+func (pt *PricingTable) CalculateRealtimeCost(modelID string, usage RealtimeUsage) (int64, error) {
+	cfg, ok := pt.models[modelID]
+	if !ok {
+		return 0, fmt.Errorf("unknown model %q for pricing", modelID)
+	}
+
+	usage.TextInputTokens = max(0, usage.TextInputTokens)
+	usage.CachedTextInputTokens = min(max(0, usage.CachedTextInputTokens), usage.TextInputTokens)
+	usage.TextOutputTokens = max(0, usage.TextOutputTokens)
+	usage.AudioInputTokens = max(0, usage.AudioInputTokens)
+	usage.CachedAudioInputTokens = min(max(0, usage.CachedAudioInputTokens), usage.AudioInputTokens)
+	usage.AudioOutputTokens = max(0, usage.AudioOutputTokens)
+	usage.ImageInputTokens = max(0, usage.ImageInputTokens)
+	usage.CachedImageInputTokens = min(max(0, usage.CachedImageInputTokens), usage.ImageInputTokens)
+
+	dollarsPerMillion :=
+		float64(usage.TextInputTokens-usage.CachedTextInputTokens)*cfg.InputPricePer1M +
+			float64(usage.CachedTextInputTokens)*cfg.InputCacheHitPricePer1M +
+			float64(usage.TextOutputTokens)*cfg.OutputPricePer1M +
+			float64(usage.AudioInputTokens-usage.CachedAudioInputTokens)*cfg.AudioInputPricePer1M +
+			float64(usage.CachedAudioInputTokens)*cfg.AudioInputCacheHitPricePer1M +
+			float64(usage.AudioOutputTokens)*cfg.AudioOutputPricePer1M +
+			float64(usage.ImageInputTokens-usage.CachedImageInputTokens)*cfg.ImageInputPricePer1M +
+			float64(usage.CachedImageInputTokens)*cfg.ImageInputCacheHitPricePer1M
+
+	totalTokens := usage.TextInputTokens + usage.TextOutputTokens + usage.AudioInputTokens +
+		usage.AudioOutputTokens + usage.ImageInputTokens
+	if dollarsPerMillion == 0 || totalTokens == 0 {
+		return 0, nil
+	}
+	cost := int64(dollarsPerMillion / 1_000_000 * 10000)
+	if cost < 1 {
+		cost = 1
+	}
+	return cost, nil
 }
 
 // CalculateImageCost returns cost in hundredths-of-a-cent for image generation.
