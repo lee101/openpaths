@@ -1,0 +1,143 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420" width="640" height="420" role="img" aria-label="Animated SVG of a pelican riding a bicycle, drawn by Claude Opus 4.8">
+  <title>Pelican riding a bicycle — Claude Opus 4.8</title>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#eaf6ff"/>
+      <stop offset="1" stop-color="#cdeeff"/>
+    </linearGradient>
+    <linearGradient id="road" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#dfe7ec"/>
+      <stop offset="1" stop-color="#c4d0d8"/>
+    </linearGradient>
+    <style>
+      .frame{fill:none;stroke:#b8312f;stroke-width:9;stroke-linecap:round;stroke-linejoin:round}
+      .spoke{fill:none;stroke:#9fb0bd;stroke-width:3}
+      .tire{fill:none;stroke:#222a31;stroke-width:9}
+      .hub{fill:#222a31}
+      .body{fill:#fffaf0;stroke:#2b3a46;stroke-width:4}
+      .wing{fill:#f0e9d6;stroke:#2b3a46;stroke-width:4}
+      .beak{fill:#f7a83a;stroke:#2b3a46;stroke-width:3.5}
+      .pouch{fill:#ffce7a;stroke:#2b3a46;stroke-width:3}
+      .leg{fill:none;stroke:#e08a2c;stroke-width:7;stroke-linecap:round;stroke-linejoin:round}
+      .eye{fill:#2b3a46}
+    </style>
+  </defs>
+
+  <!-- scene -->
+  <rect width="640" height="420" fill="url(#sky)"/>
+  <circle cx="540" cy="86" r="40" fill="#fff3c4" opacity="0.85"/>
+  <g fill="#ffffff" opacity="0.85">
+    <ellipse cx="120" cy="92" rx="46" ry="20"/>
+    <ellipse cx="156" cy="80" rx="34" ry="18"/>
+    <ellipse cx="300" cy="60" rx="40" ry="17"/>
+  </g>
+  <rect y="330" width="640" height="90" fill="url(#road)"/>
+  <g stroke="#aebcc6" stroke-width="5" stroke-linecap="round" opacity="0.7">
+    <line x1="0" y1="372" x2="60" y2="372">
+      <animate attributeName="x1" values="0;-120" dur="0.7s" repeatCount="indefinite"/>
+      <animate attributeName="x2" values="60;-60" dur="0.7s" repeatCount="indefinite"/>
+    </line>
+    <line x1="160" y1="372" x2="220" y2="372">
+      <animate attributeName="x1" values="160;40" dur="0.7s" repeatCount="indefinite"/>
+      <animate attributeName="x2" values="220;100" dur="0.7s" repeatCount="indefinite"/>
+    </line>
+    <line x1="320" y1="372" x2="380" y2="372">
+      <animate attributeName="x1" values="320;200" dur="0.7s" repeatCount="indefinite"/>
+      <animate attributeName="x2" values="380;260" dur="0.7s" repeatCount="indefinite"/>
+    </line>
+    <line x1="480" y1="372" x2="540" y2="372">
+      <animate attributeName="x1" values="480;360" dur="0.7s" repeatCount="indefinite"/>
+      <animate attributeName="x2" values="540;420" dur="0.7s" repeatCount="indefinite"/>
+    </line>
+    <line x1="640" y1="372" x2="700" y2="372">
+      <animate attributeName="x1" values="640;520" dur="0.7s" repeatCount="indefinite"/>
+      <animate attributeName="x2" values="700;580" dur="0.7s" repeatCount="indefinite"/>
+    </line>
+  </g>
+
+  <!-- bicycle -->
+  <g id="bike">
+    <!-- rear wheel -->
+    <g transform="translate(176 300)">
+      <circle class="tire" r="64"/>
+      <g class="spoke">
+        <line x1="0" y1="-58" x2="0" y2="58"/>
+        <line x1="-58" y1="0" x2="58" y2="0"/>
+        <line x1="-41" y1="-41" x2="41" y2="41"/>
+        <line x1="41" y1="-41" x2="-41" y2="41"/>
+        <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="0.7s" repeatCount="indefinite"/>
+      </g>
+      <circle class="hub" r="7"/>
+    </g>
+    <!-- front wheel -->
+    <g transform="translate(470 300)">
+      <circle class="tire" r="64"/>
+      <g class="spoke">
+        <line x1="0" y1="-58" x2="0" y2="58"/>
+        <line x1="-58" y1="0" x2="58" y2="0"/>
+        <line x1="-41" y1="-41" x2="41" y2="41"/>
+        <line x1="41" y1="-41" x2="-41" y2="41"/>
+        <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="0.7s" repeatCount="indefinite"/>
+      </g>
+      <circle class="hub" r="7"/>
+    </g>
+
+    <!-- frame: rear hub -> crank -> seat -> head tube -> front hub -->
+    <path class="frame" d="M176 300 L312 300 L262 200 L176 300"/>
+    <path class="frame" d="M312 300 L398 196"/>
+    <path class="frame" d="M262 200 L398 196"/>
+    <path class="frame" d="M398 196 L470 300"/>
+    <!-- seat post + saddle -->
+    <path class="frame" d="M262 200 L250 168"/>
+    <path d="M222 162 q28 -12 56 0 q-28 14 -56 0 z" fill="#2b3a46"/>
+    <!-- handlebars -->
+    <path class="frame" d="M398 196 L412 158"/>
+    <path class="frame" d="M390 152 q22 2 34 10"/>
+
+    <!-- crank + pedals -->
+    <g transform="translate(312 300)">
+      <circle class="hub" r="9"/>
+      <g>
+        <line class="frame" x1="0" y1="0" x2="34" y2="0"/>
+        <line class="frame" x1="0" y1="0" x2="-34" y2="0"/>
+        <rect x="30" y="-7" width="20" height="14" rx="3" fill="#2b3a46"/>
+        <rect x="-50" y="-7" width="20" height="14" rx="3" fill="#2b3a46"/>
+        <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="0.7s" repeatCount="indefinite"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- pelican -->
+  <g id="pelican">
+    <animateTransform attributeName="transform" type="translate" values="0 0; 0 -5; 0 0" dur="0.7s" repeatCount="indefinite"/>
+
+    <!-- pedalling legs (behind body) -->
+    <g>
+      <path class="leg" d="M286 196 q-6 38 26 56"/>
+      <circle cx="312" cy="252" r="7" fill="#e08a2c"/>
+      <animateTransform attributeName="transform" type="rotate" values="0 312 300; 40 312 300; 0 312 300; -40 312 300; 0 312 300" dur="0.7s" repeatCount="indefinite" additive="sum"/>
+    </g>
+
+    <!-- tail -->
+    <path class="wing" d="M232 150 q-46 6 -64 34 q40 6 70 -10 z"/>
+
+    <!-- body -->
+    <ellipse class="body" cx="288" cy="150" rx="66" ry="52" transform="rotate(-8 288 150)"/>
+    <!-- wing -->
+    <path class="wing" d="M252 122 q56 -8 92 34 q-44 26 -86 4 q-18 -22 -6 -38 z"/>
+    <path class="wing" fill="none" d="M286 132 q24 4 44 26"/>
+
+    <!-- neck + head -->
+    <path class="body" d="M330 124 q44 -34 84 -6 q26 22 6 52 q-26 24 -58 8 q-44 -22 -32 -54 z"/>
+    <circle class="eye" cx="404" cy="118" r="5.5"/>
+    <circle cx="406" cy="116" r="1.6" fill="#fffaf0"/>
+
+    <!-- beak + pouch -->
+    <path class="beak" d="M420 122 q70 -6 150 22 q-72 16 -150 -2 z"/>
+    <path class="pouch" d="M420 134 q60 30 132 6 q-44 44 -110 24 q-26 -10 -22 -30 z"/>
+    <path class="beak" fill="none" stroke-width="2.5" d="M448 124 q-3 14 0 24"/>
+  </g>
+
+  <!-- signature -->
+  <text x="624" y="406" text-anchor="end" font-family="ui-sans-serif,system-ui,sans-serif" font-size="14" fill="#7a8a96">Claude Opus 4.8</text>
+</svg>

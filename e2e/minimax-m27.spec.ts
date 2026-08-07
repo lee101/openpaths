@@ -2,12 +2,13 @@
  * E2E tests for MiniMax M2.7 model.
  * Actually calls the model via /v1/chat/completions to verify the endpoint works.
  *
- * Run:  npx playwright test e2e/minimax-m27.spec.ts --config=playwright.real.config.ts
- * Live: TARGET_URL=https://openpaths.io npx playwright test e2e/minimax-m27.spec.ts --config=playwright.real.config.ts
+ * Opt-in (spends provider credits):
+ * RUN_PAID_MODEL_E2E=1 TARGET_URL=https://openpaths.io npx playwright test e2e/minimax-m27.spec.ts --config=playwright.real.config.ts
  */
 import { test, expect } from '@playwright/test';
 
 const BASE = process.env.TARGET_URL || 'http://localhost:8092';
+test.skip(process.env.RUN_PAID_MODEL_E2E !== '1', 'set RUN_PAID_MODEL_E2E=1 to spend credits on live model checks');
 
 function uniqueEmail() {
   return `e2e-mm27-${Date.now()}-${Math.random().toString(36).slice(2)}@test.openpaths.io`;

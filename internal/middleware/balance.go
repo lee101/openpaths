@@ -19,10 +19,11 @@ func BalanceCheck(engine *billing.Engine) Middleware {
 				return
 			}
 
-			if keys, _ := ctx.UserValue(CtxKeyUserProviderKeys).(map[string]any); keys != nil && len(keys) > 0 {
-				next(ctx)
-				return
-			}
+			// BYOK users pay their own provider, so they are exempt from the
+			// credit pre-check here. This bypass is intentionally broad (any BYOK
+			// key skips the check), so the per-attempt prepay gate in the chat /
+			// messages handlers (enforcePrepaid) is what actually guarantees a
+			// request routed to OpenPaths' own key is backed by a balance.
 			if keys := ctx.UserValue(CtxKeyUserProviderKeys); keys != nil {
 				next(ctx)
 				return

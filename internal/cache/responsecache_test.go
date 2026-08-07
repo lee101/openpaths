@@ -23,7 +23,7 @@ func TestChatCompletionKeyStableForMapOrderAndIgnoresUser(t *testing.T) {
 		}},
 		Tools: []model.Tool{{
 			Type: "function",
-			Function: model.ToolFunction{
+			Function: &model.ToolFunction{
 				Name:       "lookup",
 				Parameters: map[string]any{"b": 2, "a": 1},
 			},
@@ -42,7 +42,7 @@ func TestChatCompletionKeyStableForMapOrderAndIgnoresUser(t *testing.T) {
 		}},
 		Tools: []model.Tool{{
 			Type: "function",
-			Function: model.ToolFunction{
+			Function: &model.ToolFunction{
 				Name:       "lookup",
 				Parameters: map[string]any{"a": 1, "b": 2},
 			},

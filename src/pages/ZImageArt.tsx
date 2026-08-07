@@ -243,7 +243,20 @@ function ArtCard({ item }: { item: ZImageArtItem; key?: React.Key }) {
   return (
     <article className="group flex flex-col overflow-hidden rounded border border-white/10 bg-white/[0.02]">
       <Link to={`/art/i/${encodeURIComponent(item.slug)}`} className="block overflow-hidden">
-        {item.thumbUrl || item.imageUrl ? (
+        {item.mediaType === 'video' && item.videoUrl ? (
+          <video
+            src={item.videoUrl}
+            poster={item.posterUrl || item.thumbUrl || undefined}
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            onMouseEnter={e => { void e.currentTarget.play().catch(() => {}); }}
+            onMouseLeave={e => e.currentTarget.pause()}
+            className={`${aspectClass(item.aspect)} w-full bg-black object-cover`}
+            data-testid="art-card-video"
+          />
+        ) : item.thumbUrl || item.imageUrl ? (
           <img
             src={item.thumbUrl || item.imageUrl}
             alt={item.prompt}
@@ -273,7 +286,11 @@ function ArtCard({ item }: { item: ZImageArtItem; key?: React.Key }) {
 function FeaturedCard({ item }: { item: ZImageArtItem }) {
   return (
     <section className="mb-8 grid overflow-hidden rounded border border-white/10 bg-white/[0.02] lg:grid-cols-[minmax(0,1fr)_420px]">
-      {item.imageUrl ? (
+      {item.mediaType === 'video' && item.videoUrl ? (
+        <Link to={`/art/i/${encodeURIComponent(item.slug)}`}>
+          <video src={item.videoUrl} poster={item.posterUrl || item.thumbUrl || undefined} muted loop autoPlay playsInline className="aspect-[16/10] h-full w-full bg-black object-cover" />
+        </Link>
+      ) : item.imageUrl ? (
         <Link to={`/art/i/${encodeURIComponent(item.slug)}`}>
           <img src={item.imageUrl} alt={item.prompt} className="aspect-[16/10] h-full w-full bg-white/[0.03] object-cover" />
         </Link>

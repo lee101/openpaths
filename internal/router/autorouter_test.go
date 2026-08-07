@@ -16,9 +16,11 @@ func (f *fakeEmbedder) Name() string { return "fake-embedder" }
 
 func (f *fakeEmbedder) Embed(_ context.Context, req *model.EmbeddingRequest) (*model.EmbeddingResponse, error) {
 	text, _ := req.Input.(string)
-	vec := []float64{0, 0, 0, 0, 1}
+	vec := []float64{0.4, 0.3, 0.2, 0.1, 0.05}
 
 	switch {
+	case containsAny(text, "forecast a line", "line forecasting", "time series", "extrapolate", "next values", "next points", "estimate trend direction", "sparse noisy observations"):
+		vec = []float64{0.1, 0.1, 0.1, 0.1, 0.9}
 	case containsAny(text, "sensitive content", "adult roleplay", "biosecurity", "fringe", "harm policy", "controversial"):
 		vec = []float64{0.2, 0.2, 0.2, 0.2, 0.2}
 	case containsAny(text, "classify", "categorize", "structured output", "json schema"):
@@ -157,8 +159,8 @@ func TestAutoRouter_MediumTaskRoutesSecurityReviewToClaudeSonnet(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ResolveAuto() error = %v", err)
 	}
-	if got.ModelID != "claude-sonnet-4-6" {
-		t.Fatalf("ModelID = %q, want %q", got.ModelID, "claude-sonnet-4-6")
+	if got.ModelID != "claude-sonnet-latest" {
+		t.Fatalf("ModelID = %q, want %q", got.ModelID, "claude-sonnet-latest")
 	}
 }
 
@@ -245,6 +247,21 @@ func TestAutoRouter_ThinkTaskRoutesHardPromptToHighThinking(t *testing.T) {
 	}
 	if got.ReasoningEffort != "high" {
 		t.Fatalf("ReasoningEffort = %q, want %q", got.ReasoningEffort, "high")
+	}
+}
+
+func TestAutoRouter_ThinkTaskRoutesLineForecastingToLowThinking(t *testing.T) {
+	ar := NewAutoRouter(&fakeEmbedder{})
+	if err := ar.Init(context.Background()); err != nil {
+		t.Fatalf("Init() error = %v", err)
+	}
+
+	got, err := ar.ResolveAuto(context.Background(), "think-task", "Forecast a line and extrapolate the next points from this unusual time series.")
+	if err != nil {
+		t.Fatalf("ResolveAuto() error = %v", err)
+	}
+	if got.ReasoningEffort != "low" {
+		t.Fatalf("ReasoningEffort = %q, want low", got.ReasoningEffort)
 	}
 }
 

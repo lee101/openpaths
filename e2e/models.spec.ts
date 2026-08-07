@@ -15,15 +15,24 @@ test.describe('Models Page', () => {
     await expect(search).toBeVisible();
 
     await search.fill('claude');
-    await expect(page.locator('text=Claude Sonnet 4.6')).toBeVisible();
+    await expect(page.locator('text=Claude Sonnet 5')).toBeVisible();
     await expect(page.locator('text=RA1 Art Generator')).not.toBeVisible();
+  });
+
+  test('newest Qwen model is listed with its OpenRouter route', async ({ page }) => {
+    const search = page.locator('input[placeholder*="Search models"]');
+    await search.fill('qwen 3.8');
+    await expect(page.getByText('Qwen 3.8 Max')).toBeVisible();
+    await expect(page.locator('code:has-text("or/qwen3.8-max")')).toBeVisible();
+    await expect(page.getByText('$2.00').first()).toBeVisible();
+    await expect(page.getByText('$6.00').first()).toBeVisible();
   });
 
   test('tag filters work', async ({ page }) => {
     await page.click('button:has-text("art generation")');
     await expect(page.locator('text=RA1 Art Generator')).toBeVisible();
     await expect(page.locator('text=FLUX.1 Pro')).toBeVisible();
-    await expect(page.locator('text=Claude Sonnet 4.6')).not.toBeVisible();
+    await expect(page.locator('text=Claude Sonnet 5')).not.toBeVisible();
   });
 
   test('clear filters button works', async ({ page }) => {
@@ -36,11 +45,11 @@ test.describe('Models Page', () => {
   });
 
   test('model cards show provider, name, pricing, and ID', async ({ page }) => {
-    const card = page.locator('text=Claude Sonnet 4.6').locator('..');
+    const card = page.locator('text=Claude Sonnet 5').locator('..');
     await expect(card).toBeVisible();
-    await expect(page.locator('text=$3.00').first()).toBeVisible();
-    await expect(page.locator('text=$15.00').first()).toBeVisible();
-    await expect(page.locator('code:has-text("claude-sonnet-4-6")')).toBeVisible();
+    await expect(page.locator('text=$2.00').first()).toBeVisible();
+    await expect(page.locator('text=$10.00').first()).toBeVisible();
+    await expect(page.locator('code:has-text("claude-sonnet-5")')).toBeVisible();
   });
 
   test('no results state shows when search matches nothing', async ({ page }) => {

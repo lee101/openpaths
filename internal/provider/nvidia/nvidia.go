@@ -25,6 +25,7 @@ func (p *NvidiaProvider) Name() string { return "nvidia" }
 func sanitizeForNvidia(req *model.ChatCompletionRequest) {
 	req.Prefill = ""
 	req.TaskTier = ""
+	req.RoutingStrategy = ""
 
 	if !strings.HasPrefix(req.Model, "deepseek-ai/deepseek-") {
 		req.Thinking = nil
@@ -44,18 +45,10 @@ func sanitizeForNvidia(req *model.ChatCompletionRequest) {
 			req.ChatTemplateKwargs["thinking"] = true
 		case req.ReasoningEffort == "none":
 			req.ChatTemplateKwargs["thinking"] = false
-		case req.ReasoningEffort == "low" || req.ReasoningEffort == "medium" || req.ReasoningEffort == "high":
+		case req.ReasoningEffort == "minimal" || req.ReasoningEffort == "low" || req.ReasoningEffort == "medium" || req.ReasoningEffort == "high" || req.ReasoningEffort == "xhigh" || req.ReasoningEffort == "max":
 			req.ChatTemplateKwargs["thinking"] = true
 		case strings.Contains(req.Model, "deepseek-v4-pro"):
 			req.ChatTemplateKwargs["thinking"] = true
-		}
-	}
-
-	if _, ok := req.ChatTemplateKwargs["reasoning_effort"]; !ok {
-		if req.ReasoningEffort != "" && req.ReasoningEffort != "none" {
-			req.ChatTemplateKwargs["reasoning_effort"] = req.ReasoningEffort
-		} else if strings.Contains(req.Model, "deepseek-v4-pro") {
-			req.ChatTemplateKwargs["reasoning_effort"] = "high"
 		}
 	}
 

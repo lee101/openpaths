@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Load .env so cache-purge creds (CLOUDFLARE_EMAIL/_API_KEY/_ZONE_*) and R2 keys
+# are present even in a non-interactive shell (cron, CI). Shell env still wins.
+if [[ -f .env ]]; then
+    set -a
+    # shellcheck disable=SC1091
+    source .env
+    set +a
+fi
+
 # --- Config ---
 STATIC_BUCKET="${STATIC_BUCKET:-openpathsstatic}"
 R2_ENDPOINT="${R2_ENDPOINT:-https://${R2_ACCOUNT_ID:-f76d25b8b86cfa5638f43016510d8f77}.r2.cloudflarestorage.com}"
@@ -321,12 +330,13 @@ case "$CMD" in
     api)     deploy_api ;;
     env)     deploy_env ;;
     setup)   deploy_setup ;;
+    cache)   purge_cf_cache; green "cloudflare cache purged" ;;
     all)
         deploy_site
         deploy_api
         ;;
     *)
-        echo "usage: $0 {site|api|env|setup|all}"
+        echo "usage: $0 {site|api|env|setup|cache|all}"
         exit 1
         ;;
 esac

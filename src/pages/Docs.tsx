@@ -16,7 +16,9 @@ const ENDPOINTS = [
   { method: 'POST', path: '/v1/3d/text-generations', description: 'Generate a GLB straight from a text prompt (auto image then Pixal3D).' },
   { method: 'POST', path: '/v1/3d/rigging', description: 'Auto-rig a humanoid GLB into a rigged character (GLB + FBX) with Meshy.' },
   { method: 'POST', path: '/v1/3d/generations', description: 'Also retextures a mesh: pass model trellis-2-retexture with mesh_url + image_url.' },
-  { method: 'POST', path: '/v1/videos/generations', description: 'Generate videos (Sora 2, Hailuo, Wan, LTX).' },
+  { method: 'POST', path: '/v1/videos/generations', description: 'Generate videos (MiniMax H3, Sora 2, Grok Imagine, Hailuo, Wan, LTX).' },
+  { method: 'POST', path: '/v1/videos/edits', description: 'Edit an existing video with Grok Imagine Video.' },
+  { method: 'POST', path: '/v1/videos/extensions', description: 'Extend an existing video from its last frame with Grok Imagine Video.' },
   { method: 'POST', path: '/v1/audio/transcriptions', description: 'Transcribe speech to text (Whisper, GPT-4o Transcribe).' },
   { method: 'POST', path: '/v1/audio/speech', description: 'Text-to-speech (xAI TTS, MiniMax Speech 2.8 HD).' },
   { method: 'POST', path: '/v1/stt', description: 'xAI Speech to Text shortcut; defaults to xai-stt.' },
@@ -24,10 +26,11 @@ const ENDPOINTS = [
   { method: 'POST', path: '/v1/embeddings', description: 'Generate vector embeddings (OpenPaths, Google Gemini, Mistral, Nemotron).' },
 ];
 
-type Tab = 'chat' | 'images' | '3d' | 'text-to-3d' | 'videos' | 'transcription';
+type Tab = 'chat' | 'fusion' | 'images' | '3d' | 'text-to-3d' | 'videos' | 'transcription';
 
 const TAB_LABELS: Record<Tab, string> = {
   chat: 'Chat',
+  fusion: 'Fusion',
   images: 'Images',
   '3d': '3D',
   'text-to-3d': 'Text to 3D',
@@ -120,7 +123,7 @@ export function Docs() {
           </div>
 
           <div className="flex gap-1 mb-4 border-b border-white/10">
-            {(['chat', 'images', '3d', 'text-to-3d', 'videos', 'transcription'] as const).map(t => (
+            {(['chat', 'fusion', 'images', '3d', 'text-to-3d', 'videos', 'transcription'] as const).map(t => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
@@ -189,6 +192,12 @@ export function Docs() {
               <div><code>openpaths/auto-vision</code> — image understanding</div>
               <div><code>openpaths/auto-image</code> — GPT Image 2, RA1 fallback</div>
             </div>
+            <p className="mb-4 text-sm text-white/55">
+              Fallback candidates are price-sorted by default. Send <code>routing_strategy=&quot;config&quot;</code> to preserve catalogue order, or use <code>openpaths/auto-fast</code> for latency-biased routing. The stats page records latency, time to first token, throughput, and spend by provider/model.
+            </p>
+            <p className="mb-4 text-sm text-white/55">
+              Inference.net is available as <code>inference_net</code> with Nemotron 3 Super, Schematron, ClipTagger, GPT-OSS, Llama, DeepSeek, Qwen, Gemma, and Mistral routes. GLM-5.2 stays on Z.ai until Inference.net advertises a compatible GLM model id.
+            </p>
             <div className="text-xs font-mono text-white/40 mb-2">Latest aliases</div>
             <div className="space-y-1 text-sm text-white/70 font-mono" data-testid="docs-latest-aliases">
               <div><code>openai-chat-latest</code>{' -> '}<code>gpt-5-chat-latest</code></div>
@@ -274,6 +283,24 @@ response = client.chat.completions.create(
     model="openai-chat-latest",
     messages=[{"role": "user", "content": "Write a tiny SSE server in Go."}],
     reasoning_effort="auto",  # none | low | medium | high | auto
+)
+
+print(response.choices[0].message.content)`,
+    fusion: `from openai import OpenAI
+
+client = OpenAI(base_url="${apiBase}", api_key="${exampleKey}")
+
+response = client.chat.completions.create(
+    model="claude-opus-latest",
+    messages=[{"role": "user", "content": "Compare carbon tax arguments. Where do experts disagree?"}],
+    extra_body={
+        "fusion": {
+            "type": "openpaths",
+            "analysis_models": ["claude-opus-latest", "gpt-5.5", "gemini-latest"],
+            "model": "claude-opus-latest",
+            "prompt": "Synthesize the panel into one best answer. Preserve disagreements and cite uncertainty.",
+        }
+    },
 )
 
 print(response.choices[0].message.content)`,
@@ -371,6 +398,21 @@ print(transcript.text)`,
       {"role": "user", "content": "Write a tiny SSE server in Go."}
     ]
   }'`,
+    fusion: `curl ${apiBase}/chat/completions \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer ${exampleKey}" \\
+  -d '{
+    "model": "claude-opus-latest",
+    "messages": [
+      {"role": "user", "content": "Compare carbon tax arguments. Where do experts disagree?"}
+    ],
+    "fusion": {
+      "type": "openpaths",
+      "analysis_models": ["claude-opus-latest", "gpt-5.5", "gemini-latest"],
+      "model": "claude-opus-latest",
+      "prompt": "Synthesize the panel into one best answer. Preserve disagreements and cite uncertainty."
+    }
+  }'`,
     images: `curl ${apiBase}/images/generations \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer ${exampleKey}" \\
@@ -428,6 +470,25 @@ const response = await client.chat.completions.create({
   model: "openai-chat-latest",
   messages: [{ role: "user", content: "Write a tiny SSE server in Go." }],
   reasoning_effort: "auto", // none | low | medium | high | auto
+});
+
+console.log(response.choices[0].message.content);`,
+    fusion: `import OpenAI from "openai";
+
+const client = new OpenAI({
+  baseURL: "${apiBase}",
+  apiKey: "${exampleKey}",
+});
+
+const response = await client.chat.completions.create({
+  model: "claude-opus-latest",
+  messages: [{ role: "user", content: "Compare carbon tax arguments. Where do experts disagree?" }],
+  fusion: {
+    type: "openpaths",
+    analysis_models: ["claude-opus-latest", "gpt-5.5", "gemini-latest"],
+    model: "claude-opus-latest",
+    prompt: "Synthesize the panel into one best answer. Preserve disagreements and cite uncertainty.",
+  },
 });
 
 console.log(response.choices[0].message.content);`,
@@ -534,6 +595,40 @@ func main() {
   "model": "openai-chat-latest",
   "reasoning_effort": "auto",
   "messages": [{"role": "user", "content": "Write a tiny SSE server in Go."}]
+}\`)
+
+	req, _ := http.NewRequest("POST", "${apiBase}/chat/completions", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer ${exampleKey}")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	out, _ := io.ReadAll(resp.Body)
+	fmt.Println(string(out))
+}`,
+    fusion: `package main
+
+import (
+	"bytes"
+	"fmt"
+	"io"
+	"net/http"
+)
+
+func main() {
+	body := []byte(\`{
+  "model": "claude-opus-latest",
+  "messages": [{"role": "user", "content": "Compare carbon tax arguments. Where do experts disagree?"}],
+  "fusion": {
+    "type": "openpaths",
+    "analysis_models": ["claude-opus-latest", "gpt-5.5", "gemini-latest"],
+    "model": "claude-opus-latest",
+    "prompt": "Synthesize the panel into one best answer. Preserve disagreements and cite uncertainty."
+  }
 }\`)
 
 	req, _ := http.NewRequest("POST", "${apiBase}/chat/completions", bytes.NewReader(body))
@@ -715,6 +810,13 @@ func main() {
       javascript: javascript.chat,
       go: go.chat,
       curl: curl.chat,
+    },
+    fusion: {
+      description: 'Run multiple OpenPaths models, then judge and synthesize the strongest final answer with a custom fusion prompt.',
+      python: python.fusion,
+      javascript: javascript.fusion,
+      go: go.fusion,
+      curl: curl.fusion,
     },
     images: {
       description: 'Generate images with GPT Image 2, Flux, Netwrck RA1, and more.',

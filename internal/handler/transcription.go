@@ -30,6 +30,8 @@ var modelToProvider = map[string]string{
 	"whisper-v3-large-turbo": "fireworks",
 	// Fal
 	"fal-ai/whisper": "fal",
+	// Local
+	"local-whisper": "local-whisper",
 }
 
 type TranscriptionHandler struct {
@@ -122,6 +124,9 @@ func (h *TranscriptionHandler) HandleTranscription(ctx *fasthttp.RequestCtx) {
 	originalModel := reqModel
 	if originalModel == "" || originalModel == "auto" {
 		originalModel = "whisper"
+	}
+	if prepaidGate(ctx, h.billing, originalModel, 0) {
+		return
 	}
 	if reqModel != "" && reqModel != "auto" {
 		if h.handleRoutedTranscription(ctx, userID, apiKeyID, reqModel, req) {

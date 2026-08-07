@@ -19,6 +19,41 @@ func TestOpenAIProviderName(t *testing.T) {
 	}
 }
 
+func TestGenerateImageResponseFormatByModel(t *testing.T) {
+	tests := []struct {
+		model         string
+		wantRespField bool // whether response_format should be sent upstream
+	}{
+		{"dall-e-3", false}, // newer images backend rejects response_format
+		{"gpt-image-2", false},
+		{"dall-e-2", true}, // legacy model still honours it
+	}
+	for _, tt := range tests {
+		var got struct {
+			ResponseFormat string `json:"response_format"`
+		}
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			body, _ := io.ReadAll(r.Body)
+			_ = json.Unmarshal(body, &got)
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(model.ImageGenerationResponse{})
+		}))
+		p := New("test-key", server.URL)
+		_, err := p.GenerateImage(context.Background(), &model.ImageGenerationRequest{
+			Model:          tt.model,
+			Prompt:         "a cat",
+			ResponseFormat: "url",
+		})
+		server.Close()
+		if err != nil {
+			t.Fatalf("%s: unexpected error: %v", tt.model, err)
+		}
+		if (got.ResponseFormat != "") != tt.wantRespField {
+			t.Errorf("%s: response_format sent=%q, want present=%v", tt.model, got.ResponseFormat, tt.wantRespField)
+		}
+	}
+}
+
 func TestSanitizeForOpenAI_StripsPrefillAndTaskTier(t *testing.T) {
 	req := &model.ChatCompletionRequest{
 		Model:    "gpt-5-mini",
@@ -138,6 +173,33 @@ func TestChatCompletionStripsTemperatureForReasoningModel(t *testing.T) {
 	}
 	if containsAny(gotBody, "temperature") {
 		t.Errorf("marshaled body still references temperature: %s", gotBody)
+	}
+}
+
+func TestChatCompletionPassesThroughGPT56TierModel(t *testing.T) {
+	for _, modelID := range []string{"gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"} {
+		t.Run(modelID, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				var req model.ChatCompletionRequest
+				if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+					t.Fatalf("decode provider request: %v", err)
+				}
+				if req.Model != modelID {
+					t.Fatalf("provider model = %q, want %q", req.Model, modelID)
+				}
+				w.Header().Set("Content-Type", "application/json")
+				_ = json.NewEncoder(w).Encode(model.ChatCompletionResponse{ID: "ok", Model: modelID})
+			}))
+			defer server.Close()
+
+			p := New("test-key", server.URL)
+			if _, err := p.ChatCompletion(context.Background(), &model.ChatCompletionRequest{
+				Model:    modelID,
+				Messages: []model.ChatMessage{{Role: "user", Content: "Hi"}},
+			}); err != nil {
+				t.Fatalf("chat completion: %v", err)
+			}
+		})
 	}
 }
 
@@ -361,6 +423,7 @@ func TestIsRetryableStatus_ResponsesOnlyModel(t *testing.T) {
 		{"429 rate limit", 429, "slow down", true},
 		{"400 responses-only codex", 400, `{"error":{"message":"This model is only supported in v1/responses and not in v1/chat/completions."}}`, true},
 		{"400 ordinary bad request", 400, `{"error":{"message":"invalid 'messages'"}}`, false},
+		{"402 upstream insufficient balance", 402, `{"error":{"message":"Insufficient Balance","code":"invalid_request_error"}}`, true},
 		{"200 ok", 200, "", false},
 	}
 	for _, tc := range cases {

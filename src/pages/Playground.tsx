@@ -1,22 +1,43 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Send, Plus, X, Settings, ChevronDown, Loader2, Trash2, Square, Copy, Check, Zap, RotateCcw, Code2, Share2, Wallet, Eye, Wrench, Volume2, Bookmark, BookmarkCheck } from 'lucide-react';
+import { Send, Plus, X, Settings, ChevronDown, Loader2, Trash2, Square, Copy, Check, Zap, RotateCcw, Code2, Share2, Wallet, Eye, Wrench, Volume2, Bookmark, BookmarkCheck, GitFork, Pencil, Paperclip, FileText, Film, File as FileIcon, Download, Upload, PanelLeft, Brain, MessageSquarePlus } from 'lucide-react';
 import { CodeBlock as HighlightedCodeBlock } from '../components/CodeBlock';
 import { VIDEO_DEMOS, type VideoDemo } from '../data/videoDemos';
+import { getVideoParamSpec, EMPTY_ADVANCED, type VideoAdvancedValues, type VideoInputMode } from '../data/videoModelParams';
+import { buildVideoPayload, type VideoBaseValues } from '../lib/videoPayload';
 import { prepareUploadFile } from '../lib/imageUpload';
 import { normalizeUploadedAssetUrl } from '../lib/uploadUrls';
 import { fetchPrompts, loadSavedPrompts, removeSavedPrompt, savePrompt, type SavedPrompt } from '../lib/promptLibrary';
 import type { LibraryPrompt } from '../data/promptLibrary';
+import { ChatSidebar } from '../components/ChatSidebar';
+import { saveConversation, getConversation, getFolder, effectiveSystemPrompt, deriveTitle } from '../lib/conversations';
+import type { Conversation } from '../lib/conversations';
+import { AuthModal } from '../components/AuthModal';
+import { onAuthChange } from '../lib/api';
 
 interface Message {
   role: 'system' | 'user' | 'assistant';
   content: string;
+  createdAt?: number;
+  attachments?: ChatAttachment[];
   imageB64?: string;
   imageUrl?: string;
   videoUrl?: string;
   audioB64?: string;
   audioUrl?: string;
   audioFormat?: string;
+}
+
+type ChatAttachmentKind = 'image' | 'pdf' | 'video' | 'audio' | 'text' | 'file';
+
+interface ChatAttachment {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  url: string;
+  kind: ChatAttachmentKind;
+  extractedText?: string;
 }
 
 interface ModelPricing {
@@ -45,11 +66,14 @@ interface CatalogModel {
   provider: string;
   pricing?: ModelPricing;
   capabilities?: ModelCapabilities;
+  contextWindow?: number;
+  maxOutputTokens?: number;
 }
 
 interface ModelPane {
   id: string;
   modelId: string;
+  historyKey: string;
   messages: Message[];
   streaming: boolean;
   error: string | null;
@@ -57,6 +81,7 @@ interface ModelPane {
   tokensUsed: number | null;
   promptTokens: number | null;
   completionTokens: number | null;
+  cacheHitTokens: number | null;
   costUsd: number | null;
 }
 
@@ -136,7 +161,7 @@ const TTS_ACCENTS = ['American (Gen)', 'British (RP)', 'Neutral', 'Australian', 
 const SPEECH_LANGUAGES = ['en', 'es', 'fr', 'de', 'it', 'pt', 'ja', 'ko', 'zh'] as const;
 
 const FALLBACK_MODELS: CatalogModel[] = [
-  { id: 'openpaths/auto', label: 'OpenPaths Auto (hero)', provider: 'OpenPaths' },
+  { id: 'openpaths/auto', label: 'OpenPaths Auto', provider: 'OpenPaths' },
   { id: 'openpaths/auto-code', label: 'OpenPaths Auto Code', provider: 'OpenPaths' },
   { id: 'openpaths/auto-fast', label: 'OpenPaths Auto Fast', provider: 'OpenPaths' },
   { id: 'openpaths/auto-cheap', label: 'OpenPaths Auto Cheap', provider: 'OpenPaths' },
@@ -157,17 +182,17 @@ const FALLBACK_MODELS: CatalogModel[] = [
   { id: 'o4-mini', label: 'o4-mini', provider: 'OpenAI' },
   { id: 'gpt-4o', label: 'GPT-4o', provider: 'OpenAI' },
   { id: 'gpt-4o-mini', label: 'GPT-4o Mini', provider: 'OpenAI' },
-  { id: 'claude-sonnet-latest', label: 'Claude Sonnet (latest)', provider: 'Anthropic' },
+  { id: 'claude-sonnet-latest', label: 'Claude Sonnet 5 (latest)', provider: 'Anthropic' },
   { id: 'claude-opus-latest', label: 'Claude Opus (latest)', provider: 'Anthropic' },
   { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku', provider: 'Anthropic' },
   { id: 'grok-4.3', label: 'Grok 4.3', provider: 'xAI' },
   { id: 'grok-latest', label: 'Grok Latest', provider: 'xAI' },
-  { id: 'grok-4.20-non-reasoning', label: 'Grok 4.20 Non-Reasoning', provider: 'xAI' },
+  { id: 'grok-4.20-0309-non-reasoning', label: 'Grok 4.20 Non-Reasoning', provider: 'xAI' },
   { id: 'grok-3-mini', label: 'Grok 3 Mini', provider: 'xAI' },
   { id: 'xai-tts', label: 'xAI Text to Speech', provider: 'xAI', pricing: { input_per_1m_tokens: 15.00 } },
   { id: 'appnz-tts', label: 'AppNZ Fish Speech', provider: 'AppNZ', pricing: { input_per_1m_tokens: 10.00 } },
   { id: 'grok-imagine-image', label: 'Grok Imagine Image', provider: 'xAI', pricing: { per_image: 0.02 } },
-  { id: 'grok-imagine-image-quality', label: 'Grok Imagine Image Quality', provider: 'xAI', pricing: { per_image: 0.02 } },
+  { id: 'grok-imagine-image-quality', label: 'Grok Imagine Image Quality', provider: 'xAI', pricing: { per_image: 0.07 } },
   { id: 'deepseek-v4-flash', label: 'DeepSeek V4 Flash', provider: 'DeepSeek', pricing: { input_per_1m_tokens: 0.14, input_cache_hit_per_1m_tokens: 0.0028, output_per_1m_tokens: 0.28 } },
   { id: 'deepseek-v4-pro', label: 'DeepSeek V4 Pro', provider: 'DeepSeek', pricing: { input_per_1m_tokens: 0.435, input_cache_hit_per_1m_tokens: 0.003625, output_per_1m_tokens: 0.87 } },
   { id: 'nvidia/deepseek-v4-pro', label: 'DeepSeek V4 Pro Free', provider: 'NVIDIA' },
@@ -175,6 +200,7 @@ const FALLBACK_MODELS: CatalogModel[] = [
   { id: 'deepseek-reasoner', label: 'DeepSeek Reasoner', provider: 'DeepSeek' },
   { id: 'mistral-large-latest', label: 'Mistral Large', provider: 'Mistral' },
   { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B', provider: 'Groq' },
+  { id: 'glm-5.2', label: 'GLM-5.2', provider: 'Z.AI', pricing: { input_per_1m_tokens: 1.40, output_per_1m_tokens: 4.40 } },
   { id: 'glm-5', label: 'GLM-5', provider: 'Together' },
   { id: 'qwen3.5-397b', label: 'Qwen 3.5 397B', provider: 'Together' },
   { id: 'minimax-m2.7', label: 'MiniMax M2.7', provider: 'MiniMax' },
@@ -184,6 +210,7 @@ const FALLBACK_MODELS: CatalogModel[] = [
   { id: 'zimage', label: 'ZImage', provider: 'Netwrck', pricing: { per_image: 0.007 } },
   { id: 'klein', label: 'FLUX Klein 4B', provider: 'Fal', pricing: { per_image: 0.02 } },
   { id: 'flux-pro', label: 'FLUX.1 Pro', provider: 'Fal', pricing: { per_image: 0.04 } },
+  { id: 'flux-2-pro-preview', label: 'FLUX.2 Pro Preview', provider: 'Black Forest Labs', pricing: { per_megapixel: 0.03 } },
   { id: 'flux-dev', label: 'FLUX Dev', provider: 'Fal', pricing: { per_image: 0.025 } },
   { id: 'flux-schnell', label: 'FLUX Schnell', provider: 'Fal', pricing: { per_image: 0.003 } },
   { id: 'stable-diffusion-3', label: 'Stable Diffusion 3', provider: 'Together', pricing: { per_image: 0.002 } },
@@ -192,6 +219,7 @@ const FALLBACK_MODELS: CatalogModel[] = [
   { id: 'hidream-o1-image-dev', label: 'HiDream O1 Image Dev', provider: 'Fal', pricing: { per_megapixel: 0.011 } },
   { id: 'fal-ai/hidream-o1-image/edit', label: 'HiDream O1 Image Edit', provider: 'Fal', pricing: { per_megapixel: 0.011 } },
   { id: 'fal-ai/flux-2-pro/outpaint', label: 'FLUX 2 Pro Outpaint', provider: 'Fal', pricing: { first_megapixel: 0.033, extra_megapixel: 0.0165 } },
+  { id: 'gemini-omni-flash-preview', label: 'Gemini Omni Flash Preview', provider: 'Google', pricing: { per_second: 0.10136 } },
   { id: 'seedance-2.0-fast-text-to-video', label: 'Seedance 2.0 Fast Text to Video', provider: 'Fal', pricing: { per_second: 0.26609 } },
   { id: 'seedance-2.0-text-to-video', label: 'Seedance 2.0 Text to Video', provider: 'Fal', pricing: { per_second: 0.33374 } },
   { id: 'seedance-2.0-image-to-video', label: 'Seedance 2.0 Image to Video', provider: 'Fal', pricing: { per_second: 0.33264 } },
@@ -364,17 +392,20 @@ const IMAGE_DEMOS: Record<string, ImageDemo> = {
 const MODELS_CACHE_KEY = 'op_models_cache_v1';
 const MODELS_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 const PANE_HISTORY_PREFIX = 'op_pg_pane_';
+const AUTO_ARCHIVE_DAYS_KEY = 'op_playground_auto_archive_days';
 // Models excluded from the chat selector. Image models remain available since
 // the playground now routes them to /v1/images/generations automatically.
 const NON_CHAT_PATTERNS = /^(whisper|xai-stt|grok-voice|text-embedding|openpaths-embed|modernbert|mistral-embed|codestral-embed|nemotron-embed|gemini-embedding-001|gemini-embedding-2-preview|gemini-embedding-2|gpt-4o-transcribe|gpt-4o-mini-transcribe|distil-whisper|whisper-v3)/i;
 const IMAGE_MODEL_PATTERNS = /^(openpaths\/auto-image|auto-image|flux|klein|ra1|zimage|glm-image|grok-imagine-image|gpt-image|fal-gpt-image|hidream|dall-e|stable-diffusion|sd3|ideogram|fal-ai\/flux-2-pro\/outpaint)/i;
-const VIDEO_MODEL_PATTERNS = /^(auto-video|wan|ltx|hailuo|kling|luma|ra2v|sora|seedance)/i;
+const BFL_IMAGE_SIZES = ['1024x1024', '1152x768', '768x1152', '1360x768', '768x1360', '1920x1088', '1088x1920', '2048x880', '2048x2048'];
+const VIDEO_MODEL_PATTERNS = /^(auto-video|flux-3-video|wan|ltx|hailuo|kling|luma|ra2v|sora|seedance)/i;
 const SPEECH_MODEL_PATTERNS = /(tts|speech-)/i;
 const MUSIC_MODEL_PATTERNS = /^(music-|lyria-)/i;
 
 function isImageModel(m: CatalogModel | undefined): boolean {
   if (!m) return false;
   if (MUSIC_MODEL_PATTERNS.test(m.id)) return false;
+  if (VIDEO_MODEL_PATTERNS.test(m.id)) return false;
   if (m.pricing?.per_image && m.pricing.per_image > 0) return true;
   if (m.pricing?.per_megapixel && m.pricing.per_megapixel > 0) return true;
   if (m.pricing?.first_megapixel && m.pricing.first_megapixel > 0) return true;
@@ -437,6 +468,107 @@ function normalizeUploadUrlText(value: string): string {
     .join('\n');
 }
 
+function inferAttachmentKind(file: File): ChatAttachmentKind {
+  const mime = file.type.toLowerCase();
+  const name = file.name.toLowerCase();
+  if (mime.startsWith('image/')) return 'image';
+  if (mime === 'application/pdf' || name.endsWith('.pdf')) return 'pdf';
+  if (mime.startsWith('video/')) return 'video';
+  if (mime.startsWith('audio/')) return 'audio';
+  if (isTextLikeFile(file)) return 'text';
+  return 'file';
+}
+
+function isTextLikeFile(file: File): boolean {
+  const mime = file.type.toLowerCase();
+  const name = file.name.toLowerCase();
+  if (mime.startsWith('text/')) return true;
+  if (['application/json', 'application/xml', 'application/javascript', 'application/x-javascript', 'application/yaml'].includes(mime)) return true;
+  return /\.(txt|md|markdown|csv|json|jsonl|xml|yaml|yml|html|css|js|jsx|ts|tsx|py|go|rs|java|c|cpp|h|hpp|sql|sh|toml|ini|log)$/i.test(name);
+}
+
+async function readTextAttachment(file: File): Promise<string | undefined> {
+  if (!isTextLikeFile(file)) return undefined;
+  const maxChars = 120_000;
+  const text = await file.slice(0, maxChars).text();
+  return file.size > maxChars ? `${text}\n\n[Truncated after ${maxChars.toLocaleString()} characters.]` : text;
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${kb.toFixed(kb < 10 ? 1 : 0)} KB`;
+  const mb = kb / 1024;
+  if (mb < 1024) return `${mb.toFixed(mb < 10 ? 1 : 0)} MB`;
+  return `${(mb / 1024).toFixed(1)} GB`;
+}
+
+function attachmentSummary(attachment: ChatAttachment): string {
+  const type = attachment.type || attachment.kind;
+  return `${attachment.name} (${type}, ${formatBytes(attachment.size)}): ${attachment.url}`;
+}
+
+function buildAttachmentText(attachments: ChatAttachment[]): string {
+  if (attachments.length === 0) return '';
+  const lines: string[] = ['Attached files:'];
+  for (const att of attachments) {
+    lines.push(`- ${attachmentSummary(att)}`);
+    if (att.extractedText) {
+      lines.push(`\nContent excerpt from ${att.name}:\n\`\`\`\n${att.extractedText}\n\`\`\``);
+    } else if (att.kind === 'pdf') {
+      lines.push('  PDF text extraction is not available in this browser flow; use the uploaded URL with a file-aware model.');
+    } else if (att.kind === 'video') {
+      lines.push('  Video is attached as a public URL for video-capable models.');
+    }
+  }
+  return lines.join('\n');
+}
+
+function messageForAPI(message: Message): { role: Message['role']; content: string | any[] } {
+  const attachments = message.attachments || [];
+  if (attachments.length === 0) return { role: message.role, content: message.content };
+
+  const parts: any[] = [];
+  if (message.content.trim()) parts.push({ type: 'text', text: message.content });
+
+  const textContext = buildAttachmentText(attachments.filter(att => att.kind !== 'image' && !(att.kind === 'video' && att.url)));
+  if (textContext) parts.push({ type: 'text', text: textContext });
+
+  for (const att of attachments) {
+    if (att.kind === 'image' && att.url) {
+      parts.push({ type: 'image_url', image_url: { url: att.url } });
+    } else if (att.kind === 'video' && att.url) {
+      parts.push({ type: 'video_url', video_url: { url: att.url } });
+    }
+  }
+
+  if (parts.length === 0) parts.push({ type: 'text', text: buildAttachmentText(attachments) });
+  return { role: message.role, content: parts };
+}
+
+function playCompletionSound() {
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    const now = ctx.currentTime;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.045, now + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+    gain.connect(ctx.destination);
+
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(740, now);
+    osc.frequency.exponentialRampToValueAtTime(980, now + 0.08);
+    osc.connect(gain);
+    osc.start(now);
+    osc.stop(now + 0.2);
+    window.setTimeout(() => void ctx.close(), 300);
+  } catch {}
+}
+
 function ImagePreviewStrip({ urls, label }: { urls: string[]; label: string }) {
   if (urls.length === 0) return null;
   return (
@@ -463,10 +595,11 @@ function resizeTextarea(el: HTMLTextAreaElement) {
 }
 
 let paneCounter = 0;
-function makePane(modelId: string): ModelPane {
+function makePane(modelId: string, historyKey = modelId): ModelPane {
   return {
     id: `pane-${++paneCounter}`,
     modelId,
+    historyKey,
     messages: [],
     streaming: false,
     error: null,
@@ -474,28 +607,76 @@ function makePane(modelId: string): ModelPane {
     tokensUsed: null,
     promptTokens: null,
     completionTokens: null,
+    cacheHitTokens: null,
     costUsd: null,
   };
 }
 
-function loadPaneHistory(modelId: string): Message[] {
+function makeMessage(role: Message['role'], content: string, extras: Omit<Message, 'role' | 'content' | 'createdAt'> = {}): Message {
+  return { role, content, createdAt: Date.now(), ...extras };
+}
+
+function normalizeMessages(messages: Message[]): Message[] {
+  return messages.map(message => ({
+    ...message,
+    createdAt: typeof message.createdAt === 'number' ? message.createdAt : Date.now(),
+  }));
+}
+
+function loadPaneHistory(historyKey: string): Message[] {
   try {
-    const raw = localStorage.getItem(PANE_HISTORY_PREFIX + modelId);
+    const raw = localStorage.getItem(PANE_HISTORY_PREFIX + historyKey);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) return parsed;
+    if (Array.isArray(parsed)) {
+      const normalized = normalizeMessages(parsed);
+      const pruned = pruneArchivedMessages(normalized);
+      if (pruned.length !== normalized.length) savePaneHistory(historyKey, pruned);
+      return pruned;
+    }
   } catch {}
   return [];
 }
 
-function savePaneHistory(modelId: string, messages: Message[]) {
+function savePaneHistory(historyKey: string, messages: Message[]) {
   try {
     if (messages.length === 0) {
-      localStorage.removeItem(PANE_HISTORY_PREFIX + modelId);
+      localStorage.removeItem(PANE_HISTORY_PREFIX + historyKey);
     } else {
-      localStorage.setItem(PANE_HISTORY_PREFIX + modelId, JSON.stringify(messages));
+      localStorage.setItem(PANE_HISTORY_PREFIX + historyKey, JSON.stringify(messages));
     }
   } catch {}
+}
+
+function loadNumberSetting(key: string, fallback: number, min: number, max: number): number {
+  const raw = localStorage.getItem(key);
+  if (raw == null) return fallback;
+  const value = Number(raw);
+  if (!Number.isFinite(value)) return fallback;
+  return Math.min(max, Math.max(min, value));
+}
+
+function loadAutoArchiveDays(): number {
+  return loadNumberSetting(AUTO_ARCHIVE_DAYS_KEY, 0, 0, 365);
+}
+
+function pruneArchivedMessages(messages: Message[]): Message[] {
+  const days = loadAutoArchiveDays();
+  if (!days) return messages;
+  const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+  return messages.filter(message => !message.createdAt || message.createdAt >= cutoff);
+}
+
+function downloadJSON(filename: string, value: unknown) {
+  const blob = new Blob([JSON.stringify(value, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }
 
 function loadCachedModels(): CatalogModel[] | null {
@@ -545,11 +726,51 @@ function estimateCost(model: CatalogModel | undefined, promptTok: number, comple
   return inCost + outCost;
 }
 
+function estimateCostWithCache(model: CatalogModel | undefined, promptTok: number, completionTok: number, cacheHitTok = 0): number | null {
+  const p = model?.pricing;
+  if (!p || (!p.input_per_1m_tokens && !p.output_per_1m_tokens)) return null;
+  const cached = Math.max(0, Math.min(promptTok, cacheHitTok));
+  const uncached = Math.max(0, promptTok - cached);
+  const inputRate = p.input_per_1m_tokens || 0;
+  const cachedRate = p.input_cache_hit_per_1m_tokens ?? inputRate;
+  const inCost = ((inputRate * uncached) + (cachedRate * cached)) / 1_000_000;
+  const outCost = ((p.output_per_1m_tokens || 0) * completionTok) / 1_000_000;
+  return inCost + outCost;
+}
+
+function estimateTokens(text: string): number {
+  const trimmed = text.trim();
+  if (!trimmed) return 0;
+  return Math.max(1, Math.ceil(trimmed.length / 4));
+}
+
+function estimateMessageTokens(messages: Message[]): number {
+  return messages.reduce((sum, msg) => {
+    const attachmentTokens = (msg.attachments || []).reduce((acc, att) => {
+      const textTok = estimateTokens(att.extractedText || '');
+      const fileTok = att.kind === 'image' ? 512 : att.kind === 'video' || att.kind === 'audio' ? 256 : 24;
+      return acc + textTok + fileTok;
+    }, 0);
+    return sum + estimateTokens(msg.content) + attachmentTokens + 4;
+  }, 0);
+}
+
+function fmtTokens(tokens: number): string {
+  if (tokens >= 1_000_000) return `${(tokens / 1_000_000).toFixed(1)}M`;
+  if (tokens >= 1000) return `${(tokens / 1000).toFixed(tokens >= 10_000 ? 0 : 1)}K`;
+  return tokens.toLocaleString();
+}
+
 function fmtBalance(cents: number): string {
   const usd = cents / 100;
   if (usd >= 1) return `$${usd.toFixed(2)}`;
   if (usd > 0) return `$${usd.toFixed(4)}`;
   return '$0.00';
+}
+
+function fmtMessageTime(ts?: number): string {
+  if (!ts) return '';
+  return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
 // --- Minimal markdown renderer ---
@@ -766,20 +987,40 @@ function MarkdownCodeBlock({ code, lang }: { code: string; lang: string; key?: R
 export function Playground() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('op_api_key') || '');
-  const [systemPrompt, setSystemPrompt] = useState('You are a helpful assistant.');
-  const [temperature, setTemperature] = useState(0.7);
-  const [maxTokens, setMaxTokens] = useState(4096);
+  const [systemPrompt, setSystemPrompt] = useState(() => localStorage.getItem('op_playground_system_prompt') || 'You are a helpful assistant.');
+  const [temperature, setTemperature] = useState(() => loadNumberSetting('op_playground_temperature', 0.7, 0, 2));
+  const [maxTokens, setMaxTokens] = useState(() => loadNumberSetting('op_playground_max_tokens', 4096, 256, 16384));
+  const [topP, setTopP] = useState(() => loadNumberSetting('op_playground_top_p', 1, 0.05, 1));
+  const [presencePenalty, setPresencePenalty] = useState(() => loadNumberSetting('op_playground_presence_penalty', 0, -2, 2));
+  const [frequencyPenalty, setFrequencyPenalty] = useState(() => loadNumberSetting('op_playground_frequency_penalty', 0, -2, 2));
+  const [messageTextSize, setMessageTextSize] = useState(() => loadNumberSetting('op_playground_text_size', 14, 12, 20));
+  const [includeAttachmentsInExport, setIncludeAttachmentsInExport] = useState(() => localStorage.getItem('op_playground_export_attachments') === '1');
+  const [autoArchiveDays, setAutoArchiveDays] = useState(() => loadAutoArchiveDays());
+  const [settingsNotice, setSettingsNotice] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showCode, setShowCode] = useState(false);
   const [codeLang, setCodeLang] = useState<CodeLanguage>('python');
   const [codeCopied, setCodeCopied] = useState(false);
   const [input, setInput] = useState('');
+  const [chatAttachments, setChatAttachments] = useState<ChatAttachment[]>([]);
+  const [uploadingChatFiles, setUploadingChatFiles] = useState(false);
+  const [chatFileError, setChatFileError] = useState<string | null>(null);
+  const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem('op_playground_sound') === '1');
+  const [reasoningEffort, setReasoningEffort] = useState(() => localStorage.getItem('op_playground_reasoning_effort') || '');
+  const [sidebarOpen, setSidebarOpen] = useState(() => localStorage.getItem('op_playground_sidebar') === '1');
+  const [activeConvId, setActiveConvId] = useState<string | null>(null);
+  const activeConvIdRef = useRef<string | null>(null);
+  const reasoningEffortRef = useRef(reasoningEffort);
+  const pendingFolderIdRef = useRef<string | null>(null);
   const [shareCopied, setShareCopied] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
   const [balanceCents, setBalanceCents] = useState<number | null>(null);
   const [imageSize, setImageSize] = useState<typeof IMAGE_SIZES[number]>('1024x1024');
   const [imageQuality, setImageQuality] = useState<typeof IMAGE_QUALITIES[number]>('standard');
   const [imageCount, setImageCount] = useState(1);
   const [imageResponseFormat, setImageResponseFormat] = useState<typeof IMAGE_RESPONSE_FORMATS[number]>('url');
+  const [imageOutputFormat, setImageOutputFormat] = useState('webp');
+  const [imagePromptUpsampling, setImagePromptUpsampling] = useState(true);
   const [imageAspectRatio, setImageAspectRatio] = useState<typeof IMAGE_ASPECT_RATIOS[number]>('auto');
   const [imageInputUrls, setImageInputUrls] = useState('');
   const [outpaintTop, setOutpaintTop] = useState(0);
@@ -789,12 +1030,15 @@ export function Playground() {
   const [videoResolution, setVideoResolution] = useState<typeof VIDEO_RESOLUTIONS[number]>('720p');
   const [videoDuration, setVideoDuration] = useState<typeof VIDEO_DURATIONS[number]>('10');
   const [videoAspectRatio, setVideoAspectRatio] = useState<typeof VIDEO_ASPECT_RATIOS[number]>('16:9');
+  const [videoInputMode, setVideoInputMode] = useState<VideoInputMode>('text-to-video');
   const [videoGenerateAudio, setVideoGenerateAudio] = useState(true);
   const [videoImageUrl, setVideoImageUrl] = useState('');
   const [videoEndImageUrl, setVideoEndImageUrl] = useState('');
   const [videoImageUrls, setVideoImageUrls] = useState('');
   const [videoVideoUrls, setVideoVideoUrls] = useState('');
   const [videoAudioUrls, setVideoAudioUrls] = useState('');
+  const [videoAdvanced, setVideoAdvanced] = useState<VideoAdvancedValues>(EMPTY_ADVANCED);
+  const [showVideoAdvanced, setShowVideoAdvanced] = useState(false);
   const [speechVoice, setSpeechVoice] = useState('eve');
   const [speechLanguage, setSpeechLanguage] = useState<typeof SPEECH_LANGUAGES[number]>('en');
   const [ttsSpeaker1Profile, setTtsSpeaker1Profile] = useState('A stern and weary gatekeeper');
@@ -814,10 +1058,12 @@ export function Playground() {
   const [panes, setPanes] = useState<ModelPane[]>(() => {
     const modelParam = searchParams.get('model');
     const initial = makePane(modelParam || 'auto');
-    initial.messages = loadPaneHistory(initial.modelId);
+    initial.messages = loadPaneHistory(initial.historyKey);
     return [initial];
   });
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const chatFileInputRef = useRef<HTMLInputElement>(null);
+  const importFileInputRef = useRef<HTMLInputElement>(null);
   const abortRefs = useRef<Map<string, AbortController>>(new Map());
   const autoRanRef = useRef(false);
   const lastAppliedVideoDemoPromptRef = useRef('');
@@ -841,9 +1087,51 @@ export function Playground() {
   const primaryIsImageToVideo = isImageToVideoModel(primaryModel);
   const primaryIsReferenceToVideo = isReferenceToVideoModel(primaryModel);
   const primaryIsHappyHorseVideo = isHappyHorseVideoModel(primaryModel);
+  const videoSpec = getVideoParamSpec(panes[0]?.modelId || '');
   const primaryIsOutpaintImage = isOutpaintImageModel(primaryModel) || panes[0]?.modelId === 'fal-ai/flux-2-pro/outpaint';
+  const primaryIsBFLImage = panes[0]?.modelId === 'flux-2-pro-preview';
   const primaryImageDemo = IMAGE_DEMOS[panes[0]?.modelId || ''];
   const primaryVideoDemo = VIDEO_DEMOS[panes[0]?.modelId || ''];
+  const primaryContextWindow = primaryModel?.contextWindow || null;
+  const projectedInputTokens = useMemo(() => {
+    const pending = input.trim() || chatAttachments.length > 0
+      ? [makeMessage('user', input.trim() || 'Please analyze the attached file.', { attachments: chatAttachments })]
+      : [];
+    return estimateTokens(systemPrompt) + estimateMessageTokens([...(panes[0]?.messages || []), ...pending]);
+  }, [systemPrompt, panes, input, chatAttachments]);
+  const projectedRequestCost = useMemo(
+    () => estimateCostWithCache(primaryModel, projectedInputTokens, maxTokens, 0),
+    [primaryModel, projectedInputTokens, maxTokens],
+  );
+  const projectedContextPct = primaryContextWindow
+    ? Math.min(100, Math.round((projectedInputTokens / primaryContextWindow) * 100))
+    : null;
+
+  useEffect(() => {
+    localStorage.setItem('op_playground_reasoning_effort', reasoningEffort);
+    reasoningEffortRef.current = reasoningEffort;
+  }, [reasoningEffort]);
+  useEffect(() => { localStorage.setItem('op_playground_sidebar', sidebarOpen ? '1' : '0'); }, [sidebarOpen]);
+  useEffect(() => { activeConvIdRef.current = activeConvId; }, [activeConvId]);
+
+  // Persist the primary pane as a saved conversation once it has a completed reply.
+  useEffect(() => {
+    const p = panes[0];
+    if (!p || p.streaming || !p.messages.length) return;
+    if (!p.messages.some(m => m.role === 'assistant' && m.content)) return;
+    if (isImageModel(modelIndex.get(p.modelId)) || isVideoModel(modelIndex.get(p.modelId)) || isMusicModel(modelIndex.get(p.modelId))) return;
+    const saved = saveConversation({
+      id: activeConvIdRef.current || undefined,
+      model: p.modelId,
+      systemPrompt,
+      messages: p.messages as any,
+      folderId: pendingFolderIdRef.current,
+    });
+    if (saved.id !== activeConvIdRef.current) {
+      activeConvIdRef.current = saved.id;
+      setActiveConvId(saved.id);
+    }
+  }, [panes, systemPrompt, modelIndex]);
 
   useEffect(() => {
     const t = setTimeout(() => inputRef.current?.focus(), 100);
@@ -859,6 +1147,48 @@ export function Playground() {
       localStorage.setItem('op_api_key', apiKey);
     }
   }, [apiKey]);
+
+  useEffect(() => onAuthChange(() => setApiKey(localStorage.getItem('op_api_key') || '')), []);
+
+  useEffect(() => {
+    localStorage.setItem('op_playground_sound', soundEnabled ? '1' : '0');
+  }, [soundEnabled]);
+
+  useEffect(() => {
+    localStorage.setItem('op_playground_system_prompt', systemPrompt);
+  }, [systemPrompt]);
+
+  useEffect(() => {
+    localStorage.setItem('op_playground_temperature', String(temperature));
+  }, [temperature]);
+
+  useEffect(() => {
+    localStorage.setItem('op_playground_max_tokens', String(maxTokens));
+  }, [maxTokens]);
+
+  useEffect(() => {
+    localStorage.setItem('op_playground_top_p', String(topP));
+  }, [topP]);
+
+  useEffect(() => {
+    localStorage.setItem('op_playground_presence_penalty', String(presencePenalty));
+  }, [presencePenalty]);
+
+  useEffect(() => {
+    localStorage.setItem('op_playground_frequency_penalty', String(frequencyPenalty));
+  }, [frequencyPenalty]);
+
+  useEffect(() => {
+    localStorage.setItem('op_playground_text_size', String(messageTextSize));
+  }, [messageTextSize]);
+
+  useEffect(() => {
+    localStorage.setItem('op_playground_export_attachments', includeAttachmentsInExport ? '1' : '0');
+  }, [includeAttachmentsInExport]);
+
+  useEffect(() => {
+    localStorage.setItem(AUTO_ARCHIVE_DAYS_KEY, String(autoArchiveDays));
+  }, [autoArchiveDays]);
 
   useEffect(() => {
     if (!primaryImageDemo) return;
@@ -878,6 +1208,13 @@ export function Playground() {
   }, [primaryImageDemo]);
 
   useEffect(() => {
+    if (!primaryIsBFLImage) return;
+    setImageSize('1024x1024');
+    setImageOutputFormat('webp');
+    setImagePromptUpsampling(true);
+  }, [primaryIsBFLImage]);
+
+  useEffect(() => {
     if (!primaryVideoDemo) return;
     setVideoResolution(primaryVideoDemo.resolution);
     setVideoDuration(primaryVideoDemo.duration);
@@ -888,12 +1225,21 @@ export function Playground() {
     setVideoImageUrls((primaryVideoDemo.imageUrls || []).join('\n'));
     setVideoVideoUrls((primaryVideoDemo.videoUrls || []).join('\n'));
     setVideoAudioUrls((primaryVideoDemo.audioUrls || []).join('\n'));
+    if (videoSpec.inputModes) {
+      setVideoInputMode(
+        primaryVideoDemo.videoUrls?.length && videoSpec.inputModes.includes('video-to-video')
+          ? 'video-to-video'
+          : (primaryVideoDemo.imageUrl || primaryVideoDemo.imageUrls?.length) && videoSpec.inputModes.includes('image-to-video')
+            ? 'image-to-video'
+            : videoSpec.inputModes[0],
+      );
+    }
     setInput(prev => {
       if (prev.trim() && prev !== lastAppliedVideoDemoPromptRef.current) return prev;
       lastAppliedVideoDemoPromptRef.current = primaryVideoDemo.prompt;
       return primaryVideoDemo.prompt;
     });
-  }, [primaryVideoDemo]);
+  }, [primaryVideoDemo, panes[0]?.modelId]);
 
   useEffect(() => {
     if (primaryIsGeminiSpeech && !GEMINI_TTS_VOICES.includes(speechVoice)) {
@@ -946,6 +1292,8 @@ ${text}`;
           provider: humanProvider(m.owned_by),
           pricing: m.pricing,
           capabilities: m.capabilities,
+          contextWindow: m.context_window,
+          maxOutputTokens: m.max_output_tokens,
         }));
         // Merge with fallback so curated labels survive for built-in ids.
         const byId = new Map<string, CatalogModel>();
@@ -1014,6 +1362,47 @@ ${text}`;
     }
   }, [apiKey, baseUrl]);
 
+  const uploadChatFiles = useCallback(async (files: FileList | File[]) => {
+    if (!apiKey || files.length === 0) return;
+    setUploadingChatFiles(true);
+    setChatFileError(null);
+    try {
+      const uploaded: ChatAttachment[] = [];
+      for (const file of Array.from(files)) {
+        const extractedText = await readTextAttachment(file);
+        const form = new FormData();
+        form.append('file', file);
+        const resp = await fetch(`${baseUrl}/v1/files/upload`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${apiKey}` },
+          body: form,
+        });
+        if (!resp.ok) throw new Error(await resp.text());
+        const data = await resp.json();
+        if (!data?.url) throw new Error('Upload response did not include a URL');
+        uploaded.push({
+          id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          name: file.name || 'upload',
+          type: file.type || 'application/octet-stream',
+          size: file.size,
+          url: normalizeUploadedAssetUrl(data.url),
+          kind: inferAttachmentKind(file),
+          extractedText,
+        });
+      }
+      setChatAttachments(prev => [...prev, ...uploaded]);
+    } catch (err) {
+      setChatFileError(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setUploadingChatFiles(false);
+      if (chatFileInputRef.current) chatFileInputRef.current.value = '';
+    }
+  }, [apiKey, baseUrl]);
+
+  const removeChatAttachment = useCallback((id: string) => {
+    setChatAttachments(prev => prev.filter(att => att.id !== id));
+  }, []);
+
   const referenceDropHandlers = useCallback((target: ReferenceUploadTarget) => ({
     onDragEnter: (event: React.DragEvent<HTMLElement>) => {
       event.preventDefault();
@@ -1057,13 +1446,26 @@ ${text}`;
     return () => window.removeEventListener('paste', handlePaste);
   }, [apiKey, primaryIsImageToVideo, uploadReferenceFiles, uploadingRefs]);
 
+  useEffect(() => {
+    if (!primaryIsImage || !apiKey) return;
+    const handlePaste = (event: ClipboardEvent) => {
+      if (uploadingRefs) return;
+      const files = Array.from(event.clipboardData?.files || []).filter(file => file.type.startsWith('image/'));
+      if (files.length === 0) return;
+      event.preventDefault();
+      void uploadReferenceFiles(files, 'image-inputs');
+    };
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [apiKey, primaryIsImage, uploadReferenceFiles, uploadingRefs]);
+
   const sendToImageModel = useCallback(async (paneId: string, modelId: string, prompt: string) => {
     const controller = new AbortController();
     abortRefs.current.set(paneId, controller);
     const start = performance.now();
 
     setPanes(prev => prev.map(p =>
-      p.id === paneId ? { ...p, streaming: true, error: null, latencyMs: null, tokensUsed: null, promptTokens: null, completionTokens: null, costUsd: null } : p
+      p.id === paneId ? { ...p, streaming: true, error: null, latencyMs: null, tokensUsed: null, promptTokens: null, completionTokens: null, cacheHitTokens: null, costUsd: null } : p
     ));
 
     try {
@@ -1079,6 +1481,11 @@ ${text}`;
         quality: imageQuality,
         response_format: imageResponseFormat,
       };
+      if (modelId === 'flux-2-pro-preview') {
+        body.output_format = imageOutputFormat;
+        body.safety_tolerance = 5;
+        body.disable_pup = !imagePromptUpsampling;
+      }
       if (isEdit) {
         body.images = inputUrls.map(url => ({ type: 'image_url', url }));
         body.reference_image_urls = inputUrls;
@@ -1123,7 +1530,11 @@ ${text}`;
       const latency = Math.round(performance.now() - start);
       const modelCfg = modelIndex.get(modelId);
       const requestedSize = imageSize.match(/^(\d+)x(\d+)$/);
-      const megapixels = requestedSize ? (Number(requestedSize[1]) * Number(requestedSize[2])) / 1_000_000 : 0.512 * 0.512;
+      const megapixels = requestedSize
+        ? (modelId === 'flux-2-pro-preview'
+          ? Math.ceil((Number(requestedSize[1]) * Number(requestedSize[2])) / (1024 * 1024))
+          : (Number(requestedSize[1]) * Number(requestedSize[2])) / 1_000_000)
+        : 0.512 * 0.512;
       const cost = modelCfg?.pricing?.first_megapixel && modelCfg?.pricing?.extra_megapixel
         ? modelCfg.pricing.first_megapixel + (modelCfg.pricing.extra_megapixel * 2)
         : modelCfg?.pricing?.per_image
@@ -1135,13 +1546,11 @@ ${text}`;
       setPanes(prev => prev.map(p => {
         if (p.id !== paneId) return p;
         const msgs = [...p.messages];
-        msgs.push({
-          role: 'assistant',
-          content: first.revised_prompt || '',
+        msgs.push(makeMessage('assistant', first.revised_prompt || '', {
           imageB64: first.b64_json,
           imageUrl: first.url,
-        });
-        savePaneHistory(modelId, msgs);
+        }));
+        savePaneHistory(p.historyKey, msgs);
         return {
           ...p,
           messages: msgs,
@@ -1154,6 +1563,7 @@ ${text}`;
         };
       }));
       refreshBalance();
+      if (soundEnabled) playCompletionSound();
     } catch (err: any) {
       if (err.name === 'AbortError') {
         setPanes(prev => prev.map(p => p.id === paneId ? { ...p, streaming: false } : p));
@@ -1165,7 +1575,7 @@ ${text}`;
     } finally {
       abortRefs.current.delete(paneId);
     }
-  }, [apiKey, baseUrl, imageAspectRatio, imageCount, imageInputUrls, imageQuality, imageResponseFormat, imageSize, modelIndex, outpaintBottom, outpaintLeft, outpaintRight, outpaintTop, refreshBalance]);
+  }, [apiKey, baseUrl, imageAspectRatio, imageCount, imageInputUrls, imageOutputFormat, imagePromptUpsampling, imageQuality, imageResponseFormat, imageSize, modelIndex, outpaintBottom, outpaintLeft, outpaintRight, outpaintTop, refreshBalance, soundEnabled]);
 
   const sendToVideoModel = useCallback(async (paneId: string, modelId: string, prompt: string) => {
     const controller = new AbortController();
@@ -1173,36 +1583,27 @@ ${text}`;
     const start = performance.now();
 
     setPanes(prev => prev.map(p =>
-      p.id === paneId ? { ...p, streaming: true, error: null, latencyMs: null, tokensUsed: null, promptTokens: null, completionTokens: null, costUsd: null } : p
+      p.id === paneId ? { ...p, streaming: true, error: null, latencyMs: null, tokensUsed: null, promptTokens: null, completionTokens: null, cacheHitTokens: null, costUsd: null } : p
     ));
 
     try {
       const imageUrls = parseImageInputUrls(videoImageUrls);
       const videoUrls = parseImageInputUrls(videoVideoUrls);
       const audioUrls = parseImageInputUrls(videoAudioUrls);
-      const body: Record<string, unknown> = {
-        model: modelId,
+      const base: VideoBaseValues = {
         prompt,
         resolution: videoResolution,
         duration: videoDuration,
-        aspect_ratio: videoAspectRatio,
+        aspectRatio: videoAspectRatio,
+        generateAudio: videoGenerateAudio,
+        imageUrl: videoSpec.inputModes ? (videoInputMode === 'image-to-video' ? videoImageUrl : undefined) : videoImageUrl,
+        endImageUrl: videoSpec.inputModes && videoInputMode !== 'image-to-video' ? undefined : videoEndImageUrl,
+        videoUrl: videoSpec.inputModes && videoInputMode === 'video-to-video' ? videoUrls[0] : undefined,
+        imageUrls: videoSpec.inputModes ? undefined : imageUrls,
+        videoUrls: videoSpec.inputModes ? undefined : videoUrls,
+        audioUrls,
       };
-      const selectedModel = modelIndex.get(modelId);
-      if (isHappyHorseVideoModel(selectedModel)) {
-        body.duration = videoDuration === 'auto' ? 5 : Number(videoDuration) || 5;
-        body.enable_safety_checker = true;
-      } else {
-        body.generate_audio = videoGenerateAudio;
-      }
-      if (isImageToVideoModel(selectedModel)) {
-        if (videoImageUrl.trim()) body.image_url = videoImageUrl.trim();
-        if (videoEndImageUrl.trim()) body.end_image_url = videoEndImageUrl.trim();
-      }
-      if (isReferenceToVideoModel(selectedModel)) {
-        if (imageUrls.length > 0) body.image_urls = imageUrls;
-        if (videoUrls.length > 0) body.video_urls = videoUrls;
-        if (audioUrls.length > 0) body.audio_urls = audioUrls;
-      }
+      const body = buildVideoPayload(modelId, base, videoAdvanced);
 
       const resp = await fetch(`${baseUrl}/v1/videos/generations`, {
         method: 'POST',
@@ -1231,18 +1632,19 @@ ${text}`;
       const latency = Math.round(performance.now() - start);
       const modelCfg = modelIndex.get(modelId);
       const durationSeconds = videoDuration === 'auto' ? 10 : Number(videoDuration) || 10;
-      const perSecond = videoUrls.length > 0 && modelCfg?.pricing?.per_second_with_video_input
+      const perSecond = (videoSpec.inputModes ? videoInputMode === 'video-to-video' : videoUrls.length > 0) && modelCfg?.pricing?.per_second_with_video_input
         ? modelCfg.pricing.per_second_with_video_input
         : modelCfg?.pricing?.per_second;
       const cost = perSecond ? perSecond * durationSeconds : modelCfg?.pricing?.per_video || null;
 
       setPanes(prev => prev.map(p => {
         if (p.id !== paneId) return p;
-        const msgs = [...p.messages, { role: 'assistant' as const, content: '', videoUrl: data.video_url }];
-        savePaneHistory(modelId, msgs);
+        const msgs = [...p.messages, makeMessage('assistant', '', { videoUrl: data.video_url })];
+        savePaneHistory(p.historyKey, msgs);
         return { ...p, messages: msgs, streaming: false, latencyMs: latency, costUsd: cost, tokensUsed: null, promptTokens: null, completionTokens: null };
       }));
       refreshBalance();
+      if (soundEnabled) playCompletionSound();
     } catch (err: any) {
       if (err.name === 'AbortError') {
         setPanes(prev => prev.map(p => p.id === paneId ? { ...p, streaming: false } : p));
@@ -1252,7 +1654,7 @@ ${text}`;
     } finally {
       abortRefs.current.delete(paneId);
     }
-  }, [apiKey, baseUrl, modelIndex, refreshBalance, videoAspectRatio, videoAudioUrls, videoDuration, videoEndImageUrl, videoGenerateAudio, videoImageUrl, videoImageUrls, videoResolution, videoVideoUrls]);
+  }, [apiKey, baseUrl, modelIndex, refreshBalance, soundEnabled, videoAdvanced, videoAspectRatio, videoAudioUrls, videoDuration, videoEndImageUrl, videoGenerateAudio, videoImageUrl, videoImageUrls, videoInputMode, videoResolution, videoVideoUrls, videoSpec]);
 
   const sendToSpeechModel = useCallback(async (paneId: string, modelId: string, text: string) => {
     const controller = new AbortController();
@@ -1260,7 +1662,7 @@ ${text}`;
     const start = performance.now();
 
     setPanes(prev => prev.map(p =>
-      p.id === paneId ? { ...p, streaming: true, error: null, latencyMs: null, tokensUsed: null, promptTokens: null, completionTokens: null, costUsd: null } : p
+      p.id === paneId ? { ...p, streaming: true, error: null, latencyMs: null, tokensUsed: null, promptTokens: null, completionTokens: null, cacheHitTokens: null, costUsd: null } : p
     ));
 
     try {
@@ -1303,14 +1705,12 @@ ${text}`;
 
       setPanes(prev => prev.map(p => {
         if (p.id !== paneId) return p;
-        const msgs = [...p.messages, {
-          role: 'assistant' as const,
-          content: `${chars.toLocaleString()} characters synthesized with ${speechVoice}.`,
+        const msgs = [...p.messages, makeMessage('assistant', `${chars.toLocaleString()} characters synthesized with ${speechVoice}.`, {
           audioB64: data.audio,
           audioUrl: data.audio_url,
           audioFormat: data.format || 'mp3',
-        }];
-        savePaneHistory(modelId, msgs);
+        })];
+        savePaneHistory(p.historyKey, msgs);
         return {
           ...p,
           messages: msgs,
@@ -1323,6 +1723,7 @@ ${text}`;
         };
       }));
       refreshBalance();
+      if (soundEnabled) playCompletionSound();
     } catch (err: any) {
       if (err.name === 'AbortError') {
         setPanes(prev => prev.map(p => p.id === paneId ? { ...p, streaming: false } : p));
@@ -1332,7 +1733,7 @@ ${text}`;
     } finally {
       abortRefs.current.delete(paneId);
     }
-  }, [apiKey, baseUrl, buildGeminiTTSPrompt, currentGeminiSpeakerVoices, modelIndex, refreshBalance, speechAutoEmotion, speechLanguage, speechVoice]);
+  }, [apiKey, baseUrl, buildGeminiTTSPrompt, currentGeminiSpeakerVoices, modelIndex, refreshBalance, soundEnabled, speechAutoEmotion, speechLanguage, speechVoice]);
 
   const sendToMusicModel = useCallback(async (paneId: string, modelId: string, text: string) => {
     const controller = new AbortController();
@@ -1340,7 +1741,7 @@ ${text}`;
     const start = performance.now();
 
     setPanes(prev => prev.map(p =>
-      p.id === paneId ? { ...p, streaming: true, error: null, latencyMs: null, tokensUsed: null, promptTokens: null, completionTokens: null, costUsd: null } : p
+      p.id === paneId ? { ...p, streaming: true, error: null, latencyMs: null, tokensUsed: null, promptTokens: null, completionTokens: null, cacheHitTokens: null, costUsd: null } : p
     ));
 
     try {
@@ -1370,13 +1771,11 @@ ${text}`;
 
       setPanes(prev => prev.map(p => {
         if (p.id !== paneId) return p;
-        const msgs = [...p.messages, {
-          role: 'assistant' as const,
-          content: 'Generated music.',
+        const msgs = [...p.messages, makeMessage('assistant', 'Generated music.', {
           audioB64: audio,
           audioFormat: 'mpeg',
-        }];
-        savePaneHistory(modelId, msgs);
+        })];
+        savePaneHistory(p.historyKey, msgs);
         return {
           ...p,
           messages: msgs,
@@ -1389,6 +1788,7 @@ ${text}`;
         };
       }));
       refreshBalance();
+      if (soundEnabled) playCompletionSound();
     } catch (err: any) {
       if (err.name === 'AbortError') {
         setPanes(prev => prev.map(p => p.id === paneId ? { ...p, streaming: false } : p));
@@ -1398,7 +1798,7 @@ ${text}`;
     } finally {
       abortRefs.current.delete(paneId);
     }
-  }, [apiKey, baseUrl, modelIndex, refreshBalance]);
+  }, [apiKey, baseUrl, modelIndex, refreshBalance, soundEnabled]);
 
   const sendToModel = useCallback(async (paneId: string, modelId: string, messages: Message[]) => {
     // Image models get routed to /v1/images/generations.
@@ -1429,19 +1829,27 @@ ${text}`;
     const start = performance.now();
 
     setPanes(prev => prev.map(p =>
-      p.id === paneId ? { ...p, streaming: true, error: null, latencyMs: null, tokensUsed: null, promptTokens: null, completionTokens: null, costUsd: null } : p
+      p.id === paneId ? { ...p, streaming: true, error: null, latencyMs: null, tokensUsed: null, promptTokens: null, completionTokens: null, cacheHitTokens: null, costUsd: null } : p
     ));
 
+    let flushTimer: ReturnType<typeof setTimeout> | null = null;
+
     try {
+      const activeConv = activeConvIdRef.current ? getConversation(activeConvIdRef.current) : undefined;
+      const effectiveSystem = activeConv ? effectiveSystemPrompt(activeConv, systemPrompt) : systemPrompt;
       const body = {
         model: modelId,
         messages: [
-          ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
-          ...messages,
+          ...(effectiveSystem ? [{ role: 'system', content: effectiveSystem }] : []),
+          ...messages.map(messageForAPI),
         ],
         stream: true,
         temperature,
+        top_p: topP,
+        presence_penalty: presencePenalty,
+        frequency_penalty: frequencyPenalty,
         max_tokens: maxTokens,
+        ...(reasoningEffortRef.current ? { reasoning_effort: reasoningEffortRef.current } : {}),
       };
 
       const resp = await fetch(`${baseUrl}/v1/chat/completions`, {
@@ -1463,20 +1871,54 @@ ${text}`;
       if (!reader) throw new Error('No response body');
 
       const decoder = new TextDecoder();
+      let sseBuffer = '';
       let assistantContent = '';
       let firstToken = true;
       let totalTokens: number | null = null;
       let promptTokens: number | null = null;
       let completionTokens: number | null = null;
+      let cacheHitTokens: number | null = null;
+
+      // Committing every delta straight to state re-rendered (and re-parsed the
+      // markdown of) the whole transcript once per token, which is quadratic in
+      // the answer length - long answers pegged the tab until the browser killed
+      // it. Coalesce deltas and commit on a fixed interval instead.
+      const FLUSH_MS = 60;
+      const flush = () => {
+        if (flushTimer) {
+          clearTimeout(flushTimer);
+          flushTimer = null;
+        }
+        const content = assistantContent;
+        if (!content) return; // nothing streamed yet - don't add an empty bubble
+        setPanes(prev => prev.map(p => {
+          if (p.id !== paneId) return p;
+          const msgs = [...p.messages];
+          const last = msgs[msgs.length - 1];
+          if (last && last.role === 'assistant') {
+            msgs[msgs.length - 1] = { ...last, content };
+          } else {
+            msgs.push(makeMessage('assistant', content));
+          }
+          return { ...p, messages: msgs };
+        }));
+      };
+      const scheduleFlush = () => {
+        if (!flushTimer) flushTimer = setTimeout(flush, FLUSH_MS);
+      };
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
+        sseBuffer += decoder.decode(value, { stream: true });
+        // A frame can straddle two network reads; keep the trailing partial
+        // line buffered instead of dropping it as unparseable JSON.
+        const lines = sseBuffer.split('\n');
+        sseBuffer = lines.pop() ?? '';
 
-        for (const line of lines) {
+        for (const rawLine of lines) {
+          const line = rawLine.endsWith('\r') ? rawLine.slice(0, -1) : rawLine;
           if (!line.startsWith('data: ')) continue;
           const data = line.slice(6);
           if (data === '[DONE]') continue;
@@ -1488,6 +1930,8 @@ ${text}`;
               if (typeof parsed.usage.total_tokens === 'number') totalTokens = parsed.usage.total_tokens;
               if (typeof parsed.usage.prompt_tokens === 'number') promptTokens = parsed.usage.prompt_tokens;
               if (typeof parsed.usage.completion_tokens === 'number') completionTokens = parsed.usage.completion_tokens;
+              if (typeof parsed.usage.prompt_cache_hit_tokens === 'number') cacheHitTokens = parsed.usage.prompt_cache_hit_tokens;
+              if (typeof parsed.usage.prompt_tokens_details?.cached_tokens === 'number') cacheHitTokens = parsed.usage.prompt_tokens_details.cached_tokens;
             }
             if (delta) {
               if (firstToken) {
@@ -1498,29 +1942,22 @@ ${text}`;
                 ));
               }
               assistantContent += delta;
-              setPanes(prev => prev.map(p => {
-                if (p.id !== paneId) return p;
-                const msgs = [...p.messages];
-                const last = msgs[msgs.length - 1];
-                if (last && last.role === 'assistant') {
-                  msgs[msgs.length - 1] = { ...last, content: assistantContent };
-                } else {
-                  msgs.push({ role: 'assistant', content: assistantContent });
-                }
-                return { ...p, messages: msgs };
-              }));
+              scheduleFlush();
             }
           } catch {}
         }
       }
 
+      flush();
+
       setPanes(prev => prev.map(p => {
         if (p.id !== paneId) return p;
-        const cost = estimateCost(modelIndex.get(p.modelId), promptTokens || 0, completionTokens || 0);
-        return { ...p, streaming: false, tokensUsed: totalTokens, promptTokens, completionTokens, costUsd: cost };
+        const cost = estimateCostWithCache(modelIndex.get(p.modelId), promptTokens || 0, completionTokens || 0, cacheHitTokens || 0);
+        savePaneHistory(p.historyKey, [...messages, makeMessage('assistant', assistantContent)]);
+        return { ...p, streaming: false, tokensUsed: totalTokens, promptTokens, completionTokens, cacheHitTokens, costUsd: cost };
       }));
-      savePaneHistory(modelId, [...messages, { role: 'assistant', content: assistantContent }]);
       refreshBalance();
+      if (soundEnabled) playCompletionSound();
     } catch (err: any) {
       if (err.name === 'AbortError') {
         setPanes(prev => prev.map(p =>
@@ -1532,9 +1969,10 @@ ${text}`;
         p.id === paneId ? { ...p, streaming: false, error: err.message } : p
       ));
     } finally {
+      if (flushTimer) clearTimeout(flushTimer);
       abortRefs.current.delete(paneId);
     }
-  }, [apiKey, baseUrl, systemPrompt, temperature, maxTokens, modelIndex, refreshBalance, sendToImageModel, sendToVideoModel, sendToSpeechModel, sendToMusicModel]);
+  }, [apiKey, baseUrl, systemPrompt, temperature, topP, presencePenalty, frequencyPenalty, maxTokens, modelIndex, refreshBalance, sendToImageModel, sendToVideoModel, sendToSpeechModel, sendToMusicModel, soundEnabled]);
 
   function generateCode(lang: CodeLanguage): string {
     const pane = panes[0];
@@ -1549,11 +1987,16 @@ ${text}`;
     const isVideoCode = primaryIsVideo;
     const isSpeechCode = primaryIsSpeech;
     const isMusicCode = primaryIsMusic;
+    const apiMessages = allMessages.map(messageForAPI);
     const payload = {
       model,
-      messages: allMessages.map(({ role, content }) => ({ role, content })),
+      messages: apiMessages,
       temperature,
+      top_p: topP,
+      presence_penalty: presencePenalty,
+      frequency_penalty: frequencyPenalty,
       max_tokens: maxTokens,
+      ...(reasoningEffort ? { reasoning_effort: reasoningEffort } : {}),
     };
     const imagePayload = {
       model,
@@ -1562,6 +2005,7 @@ ${text}`;
       size: imageSize,
       quality: imageQuality,
       response_format: imageResponseFormat,
+      ...(primaryIsBFLImage ? { output_format: imageOutputFormat, safety_tolerance: 5, disable_pup: !imagePromptUpsampling } : {}),
     };
     const inputUrls = parseImageInputUrls(imageInputUrls);
     const imageIsOutpaint = model === 'fal-ai/flux-2-pro/outpaint';
@@ -1585,6 +2029,7 @@ ${text}`;
           images: inputUrls.map(url => ({ type: 'image_url', url })),
           reference_image_urls: inputUrls,
           aspect_ratio: imageAspectRatio,
+          ...(primaryIsBFLImage ? { output_format: imageOutputFormat, safety_tolerance: 5, disable_pup: !imagePromptUpsampling } : {}),
           ...(imageDemo?.imageSize ? { image_size: imageDemo.imageSize } : {}),
           ...(imageDemo?.numInferenceSteps ? { num_inference_steps: imageDemo.numInferenceSteps } : {}),
           ...(imageDemo?.guidanceScale !== undefined ? { guidance_scale: imageDemo.guidanceScale } : {}),
@@ -1594,31 +2039,19 @@ ${text}`;
         }
       : imagePayload;
     const videoPrompt = input.trim() || [...allMessages].reverse().find(m => m.role === 'user')?.content || 'A cinematic handheld shot of a rainy neon street at night';
-    const videoCodePayload: Record<string, unknown> = {
-      model,
+    const videoCodePayload = buildVideoPayload(model, {
       prompt: videoPrompt,
       resolution: videoResolution,
       duration: videoDuration,
-      aspect_ratio: videoAspectRatio,
-    };
-    if (primaryIsHappyHorseVideo) {
-      videoCodePayload.duration = videoDuration === 'auto' ? 5 : Number(videoDuration) || 5;
-      videoCodePayload.enable_safety_checker = true;
-    } else {
-      videoCodePayload.generate_audio = videoGenerateAudio;
-    }
-    const videoImages = parseImageInputUrls(videoImageUrls);
-    const videoVideos = parseImageInputUrls(videoVideoUrls);
-    const videoAudios = parseImageInputUrls(videoAudioUrls);
-    if (primaryIsImageToVideo) {
-      if (videoImageUrl.trim()) videoCodePayload.image_url = videoImageUrl.trim();
-      if (videoEndImageUrl.trim()) videoCodePayload.end_image_url = videoEndImageUrl.trim();
-    }
-    if (primaryIsReferenceToVideo) {
-      if (videoImages.length > 0) videoCodePayload.image_urls = videoImages;
-      if (videoVideos.length > 0) videoCodePayload.video_urls = videoVideos;
-      if (videoAudios.length > 0) videoCodePayload.audio_urls = videoAudios;
-    }
+      aspectRatio: videoAspectRatio,
+      generateAudio: videoGenerateAudio,
+      imageUrl: videoSpec.inputModes ? (videoInputMode === 'image-to-video' ? videoImageUrl : undefined) : videoImageUrl,
+      endImageUrl: videoSpec.inputModes && videoInputMode !== 'image-to-video' ? undefined : videoEndImageUrl,
+      videoUrl: videoSpec.inputModes && videoInputMode === 'video-to-video' ? parseImageInputUrls(videoVideoUrls)[0] : undefined,
+      imageUrls: videoSpec.inputModes ? undefined : parseImageInputUrls(videoImageUrls),
+      videoUrls: videoSpec.inputModes ? undefined : parseImageInputUrls(videoVideoUrls),
+      audioUrls: parseImageInputUrls(videoAudioUrls),
+    }, videoAdvanced);
     const rawSpeechText = input.trim() || [...allMessages].reverse().find(m => m.role === 'user')?.content || (primaryIsGeminiSpeech ? promptExampleText(GEMINI_TTS_QUICK_PROMPTS[0]) : 'Hello from Grok text to speech.');
     const speechText = primaryIsGeminiSpeech ? buildGeminiTTSPrompt(rawSpeechText) : rawSpeechText;
     const speechCodePayload: Record<string, unknown> = {
@@ -1720,7 +2153,7 @@ else:
 
 print("wrote openpaths-image.png")`;
       }
-      const messagesStr = allMessages
+      const messagesStr = apiMessages
         .map(m => `        {"role": "${m.role}", "content": ${JSON.stringify(m.content)}},`)
         .join('\n');
       return `from openai import OpenAI
@@ -1736,6 +2169,9 @@ completion = client.chat.completions.create(
 ${messagesStr}
     ],
     temperature=${temperature},
+    top_p=${topP},
+    presence_penalty=${presencePenalty},
+    frequency_penalty=${frequencyPenalty},
     max_tokens=${maxTokens},
 )
 
@@ -1814,7 +2250,7 @@ if (image.b64_json) {
 
 console.log("wrote openpaths-image.png");`;
       }
-      const messagesStr = allMessages
+      const messagesStr = apiMessages
         .map(m => `    { role: "${m.role}", content: ${JSON.stringify(m.content)} },`)
         .join('\n');
       return `import OpenAI from "openai";
@@ -1830,6 +2266,9 @@ const completion = await client.chat.completions.create({
 ${messagesStr}
   ],
   temperature: ${temperature},
+  top_p: ${topP},
+  presence_penalty: ${presencePenalty},
+  frequency_penalty: ${frequencyPenalty},
   max_tokens: ${maxTokens},
 });
 
@@ -2145,10 +2584,13 @@ JSON`;
 
   const handleSend = useCallback((text?: string) => {
     const msg = (text || input).trim();
-    if (!msg || !apiKey) return;
+    if ((!msg && chatAttachments.length === 0) || !apiKey) return;
 
-    const userMsg: Message = { role: 'user', content: msg };
+    const attachments = text ? [] : chatAttachments;
+    const userMsg = makeMessage('user', msg || (attachments.length > 0 ? 'Please analyze the attached file.' : ''), { attachments });
     if (!text) setInput('');
+    if (!text) setChatAttachments([]);
+    setChatFileError(null);
     setTimeout(() => inputRef.current?.focus(), 0);
 
     const updatedPanes = panes.map(p => ({
@@ -2158,10 +2600,10 @@ JSON`;
     setPanes(updatedPanes);
 
     for (const pane of updatedPanes) {
-      savePaneHistory(pane.modelId, pane.messages);
+      savePaneHistory(pane.historyKey, pane.messages);
       sendToModel(pane.id, pane.modelId, pane.messages);
     }
-  }, [input, apiKey, panes, sendToModel]);
+  }, [input, apiKey, panes, sendToModel, chatAttachments]);
 
   // Auto-run a prompt passed via ?prompt= once the API key is ready.
   useEffect(() => {
@@ -2176,6 +2618,16 @@ JSON`;
     setSearchParams(next, { replace: true });
   }, [searchParams, apiKey, handleSend, setSearchParams]);
 
+  useEffect(() => {
+    const convParam = searchParams.get('conv');
+    if (!convParam) return;
+    const next = new URLSearchParams(searchParams);
+    next.delete('conv');
+    setSearchParams(next, { replace: true });
+    const c = getConversation(convParam);
+    if (c) loadConversation(c);
+  }, [searchParams, setSearchParams]);
+
   function copyShareLink() {
     const firstPane = panes[0];
     const lastUser = [...firstPane.messages].reverse().find(m => m.role === 'user');
@@ -2185,6 +2637,36 @@ JSON`;
     navigator.clipboard.writeText(u.toString());
     setShareCopied(true);
     setTimeout(() => setShareCopied(false), 2000);
+  }
+
+  async function shareChat() {
+    if (!apiKey) {
+      setAuthModalOpen(true);
+      return;
+    }
+    const firstPane = panes[0];
+    try {
+      const res = await fetch('/v1/chats/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          title: deriveTitle(firstPane.messages as any),
+          model: firstPane.modelId,
+          system_prompt: systemPrompt,
+          messages: firstPane.messages
+            .filter(m => m.role === 'user' || m.role === 'assistant')
+            .map(m => ({ role: m.role, content: m.content })),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || (!data.url && !data.slug)) throw new Error(data.error?.message || 'share failed');
+      const url = data.url || `${window.location.origin}/chat/${data.slug}`;
+      await navigator.clipboard.writeText(url);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    } catch {
+      copyShareLink();
+    }
   }
 
   function stopAll() {
@@ -2197,7 +2679,7 @@ JSON`;
     const usedModels = new Set(panes.map(p => p.modelId));
     const next = chatCatalog.find(m => !usedModels.has(m.id)) || chatCatalog[0];
     const pane = makePane(next.id);
-    pane.messages = loadPaneHistory(next.id);
+    pane.messages = loadPaneHistory(pane.historyKey);
     setPanes(prev => [...prev, pane]);
   }
 
@@ -2212,16 +2694,102 @@ JSON`;
     setPanes(prev => prev.map(p => {
       if (p.id !== paneId) return p;
       // Swap in persisted history for the new model (if any).
-      return { ...p, modelId, messages: loadPaneHistory(modelId), error: null, latencyMs: null, tokensUsed: null, promptTokens: null, completionTokens: null, costUsd: null };
+      return { ...p, modelId, historyKey: modelId, messages: loadPaneHistory(modelId), error: null, latencyMs: null, tokensUsed: null, promptTokens: null, completionTokens: null, cacheHitTokens: null, costUsd: null };
     }));
+  }
+
+  function loadConversation(c: Conversation) {
+    stopAll();
+    pendingFolderIdRef.current = c.folderId;
+    activeConvIdRef.current = c.id;
+    setActiveConvId(c.id);
+    const folder = getFolder(c.folderId);
+    if (folder?.systemPrompt) setSystemPrompt(folder.systemPrompt);
+    else if (c.systemPrompt) setSystemPrompt(c.systemPrompt);
+    const pane = makePane(c.model || 'auto', `conv_${c.id}`);
+    pane.messages = normalizeMessages(c.messages as Message[]);
+    setPanes([pane]);
+    setInput('');
+  }
+
+  function newChatInFolder(folderId: string | null) {
+    stopAll();
+    pendingFolderIdRef.current = folderId;
+    activeConvIdRef.current = null;
+    setActiveConvId(null);
+    const folder = getFolder(folderId);
+    if (folder?.systemPrompt) setSystemPrompt(folder.systemPrompt);
+    const model = folder?.defaultModel || panes[0]?.modelId || 'auto';
+    setPanes([makePane(model, `conv_new_${Date.now()}`)]);
+    setInput('');
   }
 
   function clearAll() {
     stopAll();
     setPanes(prev => prev.map(p => {
-      savePaneHistory(p.modelId, []);
-      return { ...p, messages: [], streaming: false, error: null, latencyMs: null, tokensUsed: null, promptTokens: null, completionTokens: null, costUsd: null };
+      savePaneHistory(p.historyKey, []);
+      return { ...p, messages: [], streaming: false, error: null, latencyMs: null, tokensUsed: null, promptTokens: null, completionTokens: null, cacheHitTokens: null, costUsd: null };
     }));
+  }
+
+  function exportPlaygroundJSON() {
+    downloadJSON(`openpaths-playground-${new Date().toISOString().slice(0, 10)}.json`, {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      settings: {
+        systemPrompt,
+        temperature,
+        maxTokens,
+        topP,
+        presencePenalty,
+        frequencyPenalty,
+        messageTextSize,
+        includeAttachmentsInExport,
+        autoArchiveDays,
+        soundEnabled,
+      },
+      panes: panes.map(p => ({
+        modelId: p.modelId,
+        historyKey: p.historyKey,
+        messages: p.messages.map(message => includeAttachmentsInExport ? message : { ...message, attachments: undefined }),
+      })),
+    });
+    setSettingsNotice(`Exported chats and settings. API keys are not included${includeAttachmentsInExport ? '.' : '; attachment URLs/text were omitted.'}`);
+  }
+
+  async function importPlaygroundJSON(file: File) {
+    try {
+      const parsed = JSON.parse(await file.text());
+      const settings = parsed?.settings || {};
+      if (typeof settings.systemPrompt === 'string') setSystemPrompt(settings.systemPrompt);
+      if (typeof settings.temperature === 'number') setTemperature(Math.min(2, Math.max(0, settings.temperature)));
+      if (typeof settings.maxTokens === 'number') setMaxTokens(Math.min(16384, Math.max(256, Math.round(settings.maxTokens))));
+      if (typeof settings.topP === 'number') setTopP(Math.min(1, Math.max(0.05, settings.topP)));
+      if (typeof settings.presencePenalty === 'number') setPresencePenalty(Math.min(2, Math.max(-2, settings.presencePenalty)));
+      if (typeof settings.frequencyPenalty === 'number') setFrequencyPenalty(Math.min(2, Math.max(-2, settings.frequencyPenalty)));
+      if (typeof settings.messageTextSize === 'number') setMessageTextSize(Math.min(20, Math.max(12, settings.messageTextSize)));
+      if (typeof settings.includeAttachmentsInExport === 'boolean') setIncludeAttachmentsInExport(settings.includeAttachmentsInExport);
+      if (typeof settings.autoArchiveDays === 'number') setAutoArchiveDays(Math.min(365, Math.max(0, Math.round(settings.autoArchiveDays))));
+      if (typeof settings.soundEnabled === 'boolean') setSoundEnabled(settings.soundEnabled);
+
+      if (Array.isArray(parsed?.panes) && parsed.panes.length > 0) {
+        const imported = parsed.panes.slice(0, 4).map((item: any) => {
+          const modelId = typeof item?.modelId === 'string' && item.modelId ? item.modelId : 'auto';
+          const historyKey = typeof item?.historyKey === 'string' && item.historyKey ? item.historyKey : modelId;
+          const pane = makePane(modelId, historyKey);
+          pane.messages = normalizeMessages(Array.isArray(item?.messages) ? item.messages : []);
+          savePaneHistory(pane.historyKey, pane.messages);
+          return pane;
+        });
+        stopAll();
+        setPanes(imported);
+      }
+      setSettingsNotice('Imported chats and settings.');
+    } catch (err: any) {
+      setSettingsNotice(`Import failed: ${err?.message || 'invalid JSON'}`);
+    } finally {
+      if (importFileInputRef.current) importFileInputRef.current.value = '';
+    }
   }
 
   function retryLast(paneId: string) {
@@ -2230,7 +2798,7 @@ JSON`;
     // Remove last assistant message and re-send
     const msgs = pane.messages.filter((_, i) => !(i === pane.messages.length - 1 && pane.messages[i].role === 'assistant'));
     setPanes(prev => prev.map(p => p.id === paneId ? { ...p, messages: msgs, error: null } : p));
-    savePaneHistory(pane.modelId, msgs);
+    savePaneHistory(pane.historyKey, msgs);
     sendToModel(paneId, pane.modelId, msgs);
   }
 
@@ -2251,7 +2819,7 @@ JSON`;
     const msgs = pane.messages.slice(0, cut);
     if (!msgs.some(m => m.role === 'user')) return;
     setPanes(prev => prev.map(p => p.id === paneId ? { ...p, messages: msgs, error: null } : p));
-    savePaneHistory(pane.modelId, msgs);
+    savePaneHistory(pane.historyKey, msgs);
     sendToModel(paneId, pane.modelId, msgs);
   }
 
@@ -2260,7 +2828,43 @@ JSON`;
     if (!pane) return;
     const msgs = pane.messages.filter((_, i) => i !== index);
     setPanes(prev => prev.map(p => p.id === paneId ? { ...p, messages: msgs } : p));
-    savePaneHistory(pane.modelId, msgs);
+    savePaneHistory(pane.historyKey, msgs);
+  }
+
+  function editMessage(paneId: string, index: number, content: string) {
+    const pane = panes.find(p => p.id === paneId);
+    const nextContent = content.trim();
+    if (!pane || !nextContent) return;
+    const target = pane.messages[index];
+    if (!target) return;
+    const nextMessages = pane.messages.map((message, i) =>
+      i === index ? { ...message, content: nextContent, createdAt: message.createdAt || Date.now() } : message
+    );
+
+    if (target.role === 'user') {
+      const ctrl = abortRefs.current.get(paneId);
+      if (ctrl) ctrl.abort();
+      const branch = nextMessages.slice(0, index + 1);
+      setPanes(prev => prev.map(p => p.id === paneId ? { ...p, messages: branch, error: null } : p));
+      savePaneHistory(pane.historyKey, branch);
+      sendToModel(paneId, pane.modelId, branch);
+      return;
+    }
+
+    setPanes(prev => prev.map(p => p.id === paneId ? { ...p, messages: nextMessages, error: null } : p));
+    savePaneHistory(pane.historyKey, nextMessages);
+  }
+
+  function forkMessage(paneId: string, index: number) {
+    if (panes.length >= 4) return;
+    const pane = panes.find(p => p.id === paneId);
+    if (!pane) return;
+    const branchMessages = normalizeMessages(pane.messages.slice(0, index + 1));
+    if (branchMessages.length === 0) return;
+    const fork = makePane(pane.modelId, `${pane.modelId}:fork:${Date.now()}:${index}`);
+    fork.messages = branchMessages;
+    setPanes(prev => [...prev, fork]);
+    savePaneHistory(fork.historyKey, branchMessages);
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -2273,15 +2877,47 @@ JSON`;
   const hasMessages = panes.some(p => p.messages.length > 0);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full min-h-0">
+      {sidebarOpen && (
+        <ChatSidebar activeId={activeConvId} onSelect={loadConversation} onNewChat={newChatInFolder} />
+      )}
+      <div className="flex flex-col h-full flex-1 min-w-0">
       {/* Toolbar */}
       <div className="border-b border-white/10 px-4 py-2.5 flex items-center gap-2 bg-white/[0.02] overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>*]:shrink-0">
+        <button
+          onClick={() => setSidebarOpen(v => !v)}
+          title="Chats & project folders"
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border transition-colors ${sidebarOpen ? 'border-white/30 bg-white/10 text-white' : 'border-white/10 text-white/60 hover:text-white hover:border-white/20'}`}
+        >
+          <PanelLeft className="w-3.5 h-3.5" /> Chats
+        </button>
+        <button
+          onClick={() => newChatInFolder(pendingFolderIdRef.current)}
+          title="Start a new chat"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border border-white/10 text-white/60 hover:text-white hover:border-white/20 transition-colors"
+        >
+          <MessageSquarePlus className="w-3.5 h-3.5" /> New
+        </button>
         <button
           onClick={() => setShowSettings(!showSettings)}
           className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border transition-colors ${showSettings ? 'border-white/30 bg-white/10 text-white' : 'border-white/10 text-white/60 hover:text-white hover:border-white/20'}`}
         >
           <Settings className="w-3.5 h-3.5" /> Settings
         </button>
+        {!primaryIsImage && !primaryIsVideo && !primaryIsSpeech && !primaryIsMusic && (
+          <div className="flex items-center gap-0.5 px-1.5 py-1 rounded border border-white/10" title="Reasoning effort">
+            <Brain className="w-3.5 h-3.5 text-white/40 mr-0.5" />
+            {([['', 'Off'], ['low', 'Low'], ['medium', 'Med'], ['high', 'High']] as const).map(([val, label]) => (
+              <button
+                key={val}
+                onClick={() => setReasoningEffort(val)}
+                className={`px-1.5 py-0.5 text-[11px] font-mono rounded transition-colors ${reasoningEffort === val ? 'bg-white text-black' : 'text-white/50 hover:text-white'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
         <button
           onClick={addPane}
           disabled={panes.length >= 4}
@@ -2289,6 +2925,30 @@ JSON`;
         >
           <Plus className="w-3.5 h-3.5" /> Compare
         </button>
+        <button
+          type="button"
+          onClick={exportPlaygroundJSON}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border border-white/10 text-white/60 hover:text-white hover:border-white/20 transition-colors"
+        >
+          <Download className="w-3.5 h-3.5" /> Export
+        </button>
+        <button
+          type="button"
+          onClick={() => importFileInputRef.current?.click()}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border border-white/10 text-white/60 hover:text-white hover:border-white/20 transition-colors"
+        >
+          <Upload className="w-3.5 h-3.5" /> Import
+        </button>
+        <input
+          ref={importFileInputRef}
+          type="file"
+          className="hidden"
+          accept="application/json,.json"
+          onChange={e => {
+            const file = e.target.files?.[0];
+            if (file) importPlaygroundJSON(file);
+          }}
+        />
         {hasMessages && (
           <button
             onClick={clearAll}
@@ -2297,6 +2957,17 @@ JSON`;
             <Trash2 className="w-3.5 h-3.5" /> Clear
           </button>
         )}
+        <button
+          type="button"
+          onClick={() => {
+            setSoundEnabled(v => !v);
+            if (!soundEnabled) playCompletionSound();
+          }}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border transition-colors ${soundEnabled ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' : 'border-white/10 text-white/60 hover:text-white hover:border-white/20'}`}
+          title="Play a sound when a response finishes"
+        >
+          <Volume2 className="w-3.5 h-3.5" /> Sound
+        </button>
         {(hasMessages || primaryIsImage || primaryIsVideo || primaryIsSpeech || primaryIsMusic) && (
           <button
             onClick={() => setShowCode(!showCode)}
@@ -2307,11 +2978,11 @@ JSON`;
         )}
         {hasMessages && (
           <button
-            onClick={copyShareLink}
+            onClick={shareChat}
             className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border border-white/10 text-white/60 hover:text-white hover:border-white/20 transition-colors"
-            title="Copy a link that replays this prompt"
+            title="Copy a public link to this chat"
           >
-            {shareCopied ? <><Check className="w-3.5 h-3.5 text-green-400" /> Copied</> : <><Share2 className="w-3.5 h-3.5" /> Share</>}
+            {shareCopied ? <><Check className="w-3.5 h-3.5 text-green-400" /> Share link copied</> : <><Share2 className="w-3.5 h-3.5" /> Share</>}
           </button>
         )}
         <div className="ml-auto flex items-center gap-3">
@@ -2332,13 +3003,26 @@ JSON`;
           <span className="text-[10px] font-mono text-white/25">
             {primaryIsMusic ? 'music generation' : primaryIsSpeech ? `${speechVoice} | ${speechLanguage}` : primaryIsVideo ? `${videoResolution} | ${videoDuration}s | ${videoAspectRatio}` : primaryIsImage ? `${imageSize} | ${imageQuality} | ${imageCount} img` : `temp ${temperature} | max ${maxTokens}`}
           </span>
+          {!primaryIsImage && !primaryIsVideo && !primaryIsSpeech && !primaryIsMusic && (
+            <>
+              <span className="text-[10px] font-mono text-white/25" title="Estimated input tokens before sending">
+                ctx {fmtTokens(projectedInputTokens)}{primaryContextWindow ? `/${fmtTokens(primaryContextWindow)}` : ''}
+                {projectedContextPct !== null ? ` (${projectedContextPct}%)` : ''}
+              </span>
+              {projectedRequestCost !== null && (
+                <span className="text-[10px] font-mono text-amber-300/60" title="Estimated maximum request cost using current max tokens">
+                  est {fmtCost(projectedRequestCost)}
+                </span>
+              )}
+            </>
+          )}
         </div>
       </div>
 
       {/* Settings Panel */}
       {showSettings && (
         <div className="border-b border-white/10 px-4 py-4 bg-white/[0.02]">
-          <div className="max-w-2xl grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="max-w-4xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">API Key</label>
               <input
@@ -2393,6 +3077,114 @@ JSON`;
                 <span>256</span><span>16,384</span>
               </div>
             </div>
+            <div>
+              <label className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">
+                Top P <span className="text-white/60">{topP.toFixed(2)}</span>
+              </label>
+              <input
+                type="range"
+                min="0.05"
+                max="1"
+                step="0.05"
+                value={topP}
+                onChange={e => setTopP(parseFloat(e.target.value))}
+                className="w-full accent-white h-1"
+                data-testid="playground-top-p"
+              />
+              <div className="flex justify-between text-[9px] font-mono text-white/20 mt-0.5">
+                <span>Focused</span><span>Open</span>
+              </div>
+            </div>
+            <div>
+              <label className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">
+                Presence <span className="text-white/60">{presencePenalty.toFixed(1)}</span>
+              </label>
+              <input
+                type="range"
+                min="-2"
+                max="2"
+                step="0.1"
+                value={presencePenalty}
+                onChange={e => setPresencePenalty(parseFloat(e.target.value))}
+                className="w-full accent-white h-1"
+                data-testid="playground-presence-penalty"
+              />
+              <div className="flex justify-between text-[9px] font-mono text-white/20 mt-0.5">
+                <span>Repeat</span><span>Explore</span>
+              </div>
+            </div>
+            <div>
+              <label className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">
+                Frequency <span className="text-white/60">{frequencyPenalty.toFixed(1)}</span>
+              </label>
+              <input
+                type="range"
+                min="-2"
+                max="2"
+                step="0.1"
+                value={frequencyPenalty}
+                onChange={e => setFrequencyPenalty(parseFloat(e.target.value))}
+                className="w-full accent-white h-1"
+                data-testid="playground-frequency-penalty"
+              />
+              <div className="flex justify-between text-[9px] font-mono text-white/20 mt-0.5">
+                <span>Reuse</span><span>Vary</span>
+              </div>
+            </div>
+            <div>
+              <label className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">
+                Text Size <span className="text-white/60">{messageTextSize}px</span>
+              </label>
+              <input
+                type="range"
+                min="12"
+                max="20"
+                step="1"
+                value={messageTextSize}
+                onChange={e => setMessageTextSize(parseInt(e.target.value))}
+                className="w-full accent-white h-1"
+                data-testid="playground-text-size"
+              />
+              <div className="flex justify-between text-[9px] font-mono text-white/20 mt-0.5">
+                <span>Compact</span><span>Large</span>
+              </div>
+            </div>
+            <label className="flex items-center justify-between gap-3 rounded border border-white/10 bg-black px-3 py-2">
+              <span>
+                <span className="block text-[10px] font-mono text-white/40 uppercase tracking-wider">Export attachments</span>
+                <span className="block text-[10px] font-mono text-white/25">Include attachment URLs and extracted text in JSON exports.</span>
+              </span>
+              <input
+                type="checkbox"
+                checked={includeAttachmentsInExport}
+                onChange={e => setIncludeAttachmentsInExport(e.target.checked)}
+                className="h-4 w-4 accent-white"
+                data-testid="playground-export-attachments"
+              />
+            </label>
+            <div>
+              <label className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">
+                Auto-Prune Local Chats <span className="text-white/60">{autoArchiveDays ? `${autoArchiveDays}d` : 'Off'}</span>
+              </label>
+              <input
+                type="range"
+                min="0"
+                max="180"
+                step="7"
+                value={autoArchiveDays}
+                onChange={e => setAutoArchiveDays(parseInt(e.target.value))}
+                className="w-full accent-white h-1"
+                data-testid="playground-auto-archive-days"
+              />
+              <div className="flex justify-between text-[9px] font-mono text-white/20 mt-0.5">
+                <span>Keep</span><span>180d</span>
+              </div>
+            </div>
+            {settingsNotice && (
+              <div className="sm:col-span-2 lg:col-span-4 text-[11px] font-mono text-white/45">
+                {settingsNotice}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -2408,10 +3200,10 @@ JSON`;
                 className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30"
                 data-testid="image-size"
               >
-                {IMAGE_SIZES.map(size => <option key={size} value={size} className="bg-black text-white">{size}</option>)}
+                {(primaryIsBFLImage ? BFL_IMAGE_SIZES : IMAGE_SIZES).map(size => <option key={size} value={size} className="bg-black text-white">{size}</option>)}
               </select>
             </label>}
-            {!primaryIsOutpaintImage && <label className="block">
+            {!primaryIsOutpaintImage && !primaryIsBFLImage && <label className="block">
               <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Quality</span>
               <select
                 value={imageQuality}
@@ -2445,7 +3237,27 @@ JSON`;
                 {IMAGE_RESPONSE_FORMATS.map(format => <option key={format} value={format} className="bg-black text-white">{format}</option>)}
               </select>
             </label>}
-            {!primaryIsOutpaintImage && <label className="block">
+            {primaryIsBFLImage && (
+              <>
+                <label className="block">
+                  <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Output</span>
+                  <select value={imageOutputFormat} onChange={e => setImageOutputFormat(e.target.value)} className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30" data-testid="image-output-format">
+                    {['webp', 'png', 'jpeg'].map(format => <option key={format} value={format} className="bg-black text-white">{format}</option>)}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Prompt upsampling</span>
+                  <button type="button" onClick={() => setImagePromptUpsampling(value => !value)} className={`w-full border rounded px-3 py-2 text-xs font-mono transition-colors ${imagePromptUpsampling ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' : 'border-white/10 bg-black text-white/50'}`} data-testid="image-prompt-upsampling">
+                    {imagePromptUpsampling ? 'on · richer prompt' : 'off · exact prompt'}
+                  </button>
+                </label>
+                <div className="block">
+                  <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Safety tolerance</span>
+                  <div className="w-full border border-white/10 rounded bg-white/[0.03] px-3 py-2 text-xs font-mono text-white/55" data-testid="image-safety-tolerance"><span className="text-white">5</span> · fixed</div>
+                </div>
+              </>
+            )}
+            {!primaryIsOutpaintImage && !primaryIsBFLImage && <label className="block">
               <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Aspect</span>
               <select
                 value={imageAspectRatio}
@@ -2474,8 +3286,15 @@ JSON`;
                 />
               </label>
             ))}
-            <label className="block col-span-2 md:col-span-1">
-              <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">{primaryIsOutpaintImage ? 'Source image' : 'Input URLs'}</span>
+            <label
+              className={`block col-span-2 md:col-span-1 rounded border p-2 transition-colors ${dragTarget === 'image-inputs' ? 'border-emerald-400/60 bg-emerald-400/10' : 'border-white/10 bg-white/[0.015]'}`}
+              data-testid="image-input-dropzone"
+              {...referenceDropHandlers('image-inputs')}
+            >
+              <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">
+                {primaryIsOutpaintImage ? 'Source image' : 'Input URLs'}
+                <span className="text-white/25 normal-case tracking-normal"> · drag, paste, or pick</span>
+              </span>
               <textarea
                 value={imageInputUrls}
                 onChange={e => setImageInputUrls(normalizeUploadUrlText(e.target.value))}
@@ -2502,22 +3321,43 @@ JSON`;
       {primaryIsVideo && (
         <div className="border-b border-white/10 px-4 py-3 bg-black/40">
           <div className="max-w-5xl grid grid-cols-2 md:grid-cols-7 gap-3">
+            {videoSpec.inputModes && (
+              <label className="block col-span-2 md:col-span-2">
+                <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Video mode</span>
+                <select
+                  value={videoInputMode}
+                  onChange={e => {
+                    const next = e.target.value as VideoInputMode;
+                    setVideoInputMode(next);
+                    if (next === 'image-to-video' && !videoImageUrl) setVideoImageUrl('https://openpaths.io/static/blog/video-tips/coast-poster.webp');
+                  }}
+                  className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30"
+                  data-testid="video-input-mode"
+                >
+                  {videoSpec.inputModes.map(mode => (
+                    <option key={mode} value={mode} className="bg-black text-white">
+                      {mode === 'text-to-video' ? 'Text / Image → Video: text' : mode === 'image-to-video' ? 'Text / Image → Video: image' : 'Video → Video'}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <label className="block">
               <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Resolution</span>
               <select value={videoResolution} onChange={e => setVideoResolution(e.target.value as typeof VIDEO_RESOLUTIONS[number])} className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30" data-testid="video-resolution">
-                {VIDEO_RESOLUTIONS.map(v => <option key={v} value={v} className="bg-black text-white">{v}</option>)}
+                {videoSpec.resolutions.map(v => <option key={v} value={v} className="bg-black text-white">{v}</option>)}
               </select>
             </label>
             <label className="block">
               <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Duration</span>
               <select value={videoDuration} onChange={e => setVideoDuration(e.target.value as typeof VIDEO_DURATIONS[number])} className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30" data-testid="video-duration">
-                {VIDEO_DURATIONS.map(v => <option key={v} value={v} className="bg-black text-white">{v}</option>)}
+                {videoSpec.durations.map(v => <option key={v} value={v} className="bg-black text-white">{v}</option>)}
               </select>
             </label>
             <label className="block">
               <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Aspect</span>
               <select value={videoAspectRatio} onChange={e => setVideoAspectRatio(e.target.value as typeof VIDEO_ASPECT_RATIOS[number])} className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30" data-testid="video-aspect-ratio">
-                {VIDEO_ASPECT_RATIOS.map(v => <option key={v} value={v} className="bg-black text-white">{v}</option>)}
+                {videoSpec.aspectRatios.map(v => <option key={v} value={v} className="bg-black text-white">{v}</option>)}
               </select>
             </label>
             <label className="block">
@@ -2526,7 +3366,46 @@ JSON`;
                 {primaryIsHappyHorseVideo || videoGenerateAudio ? 'on' : 'off'}
               </button>
             </label>
-            {primaryIsImageToVideo ? (
+            {videoSpec.safetyTolerance !== undefined && (
+              <div className="block">
+                <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Safety tolerance</span>
+                <div className="w-full border border-white/10 rounded bg-white/[0.03] px-3 py-2 text-xs font-mono text-white/55" data-testid="video-safety-tolerance">
+                  <span className="text-white">{videoSpec.safetyTolerance}</span> · fixed
+                </div>
+              </div>
+            )}
+            {videoSpec.inputModes ? (
+              videoInputMode === 'image-to-video' ? (
+                <>
+                  <label
+                    className={`block col-span-2 md:col-span-2 rounded border p-2 transition-colors ${dragTarget === 'image' ? 'border-emerald-400/60 bg-emerald-400/10' : 'border-white/10 bg-white/[0.015]'}`}
+                    data-testid="video-start-image-dropzone"
+                    {...referenceDropHandlers('image')}
+                  >
+                    <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Start image</span>
+                    <input value={videoImageUrl} onChange={e => setVideoImageUrl(normalizeUploadedAssetUrl(e.target.value))} placeholder="https://..." className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30" data-testid="video-image-url" />
+                    <input type="file" accept="image/*" disabled={uploadingRefs} onChange={e => e.target.files && uploadReferenceFiles(e.target.files, 'image')} className="mt-1 block w-full text-[10px] font-mono text-white/35 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-white/60" />
+                    <SingleImagePreview url={videoImageUrl} label="video-start-image" />
+                  </label>
+                  <label
+                    className={`block col-span-2 md:col-span-1 rounded border p-2 transition-colors ${dragTarget === 'end-image' ? 'border-emerald-400/60 bg-emerald-400/10' : 'border-white/10 bg-white/[0.015]'}`}
+                    data-testid="video-end-image-dropzone"
+                    {...referenceDropHandlers('end-image')}
+                  >
+                    <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">End image</span>
+                    <input value={videoEndImageUrl} onChange={e => setVideoEndImageUrl(normalizeUploadedAssetUrl(e.target.value))} placeholder="optional URL" className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30" data-testid="video-end-image-url" />
+                    <input type="file" accept="image/*" disabled={uploadingRefs} onChange={e => e.target.files && uploadReferenceFiles(e.target.files, 'end-image')} className="mt-1 block w-full text-[10px] font-mono text-white/35 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-white/60" />
+                    <SingleImagePreview url={videoEndImageUrl} label="video-end-image" />
+                  </label>
+                </>
+              ) : videoInputMode === 'video-to-video' ? (
+                <label className="block col-span-2 md:col-span-3">
+                  <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Input video URL</span>
+                  <textarea value={videoVideoUrls} onChange={e => setVideoVideoUrls(e.target.value)} rows={1} placeholder="https://example.com/input-video.mp4" className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30 resize-none" data-testid="video-video-urls" />
+                  <input type="file" accept="video/mp4,video/quicktime,video/*" disabled={uploadingRefs} onChange={e => e.target.files && uploadReferenceFiles(e.target.files, 'video')} className="mt-1 block w-full text-[10px] font-mono text-white/35 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-white/60" />
+                </label>
+              ) : null
+            ) : primaryIsImageToVideo ? (
               <>
                 <label
                   className={`block col-span-2 md:col-span-2 rounded border p-2 transition-colors ${dragTarget === 'image' ? 'border-emerald-400/60 bg-emerald-400/10' : 'border-white/10 bg-white/[0.015]'}`}
@@ -2569,6 +3448,63 @@ JSON`;
                 </label>
               </>
             ) : null}
+          </div>
+          <div className="max-w-5xl mt-2">
+            <button type="button" onClick={() => setShowVideoAdvanced(v => !v)} className="font-mono text-[10px] uppercase tracking-wider text-white/40 hover:text-white" data-testid="video-advanced-toggle">
+              {showVideoAdvanced ? '− Advanced args' : '+ Advanced args'}
+            </button>
+            {showVideoAdvanced && (
+              <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-3" data-testid="video-advanced">
+                {videoSpec.negativePrompt && (
+                  <label className="block col-span-2 md:col-span-1">
+                    <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Negative prompt</span>
+                    <input value={videoAdvanced.negativePrompt} onChange={e => setVideoAdvanced(p => ({ ...p, negativePrompt: e.target.value }))} placeholder="blurry, distorted" className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30" data-testid="video-negative-prompt" />
+                  </label>
+                )}
+                {videoSpec.seed && (
+                  <label className="block">
+                    <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Seed</span>
+                    <input value={videoAdvanced.seed} onChange={e => setVideoAdvanced(p => ({ ...p, seed: e.target.value }))} inputMode="numeric" placeholder="random" className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30" data-testid="video-seed" />
+                  </label>
+                )}
+                {videoSpec.numFrames && (
+                  <label className="block">
+                    <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Num frames</span>
+                    <input value={videoAdvanced.numFrames} onChange={e => setVideoAdvanced(p => ({ ...p, numFrames: e.target.value }))} inputMode="numeric" placeholder={videoSpec.numFrames.placeholder} className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30" data-testid="video-num-frames" />
+                  </label>
+                )}
+                {videoSpec.framesPerSecond && (
+                  <label className="block">
+                    <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">FPS</span>
+                    <select value={videoAdvanced.framesPerSecond} onChange={e => setVideoAdvanced(p => ({ ...p, framesPerSecond: e.target.value }))} className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30" data-testid="video-fps">
+                      <option value="" className="bg-black text-white">default</option>
+                      {videoSpec.framesPerSecond.options.map(o => <option key={o} value={o} className="bg-black text-white">{o}</option>)}
+                    </select>
+                  </label>
+                )}
+                {videoSpec.guidanceScale && (
+                  <label className="block">
+                    <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Guidance</span>
+                    <input value={videoAdvanced.guidanceScale} onChange={e => setVideoAdvanced(p => ({ ...p, guidanceScale: e.target.value }))} inputMode="decimal" placeholder={videoSpec.guidanceScale.placeholder} className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30" data-testid="video-guidance-scale" />
+                  </label>
+                )}
+                {videoSpec.numInferenceSteps && (
+                  <label className="block">
+                    <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Steps</span>
+                    <input value={videoAdvanced.numInferenceSteps} onChange={e => setVideoAdvanced(p => ({ ...p, numInferenceSteps: e.target.value }))} inputMode="numeric" placeholder={videoSpec.numInferenceSteps.placeholder} className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30" data-testid="video-num-inference-steps" />
+                  </label>
+                )}
+                {videoSpec.outputFormats && (
+                  <label className="block">
+                    <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Format</span>
+                    <select value={videoAdvanced.outputFormat} onChange={e => setVideoAdvanced(p => ({ ...p, outputFormat: e.target.value }))} className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30" data-testid="video-output-format">
+                      <option value="" className="bg-black text-white">default</option>
+                      {videoSpec.outputFormats.map(o => <option key={o} value={o} className="bg-black text-white">{o}</option>)}
+                    </select>
+                  </label>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -2699,8 +3635,13 @@ JSON`;
                     {pane.tokensUsed.toLocaleString()} tok
                   </span>
                 )}
+                {pane.cacheHitTokens !== null && pane.cacheHitTokens > 0 && !pane.streaming && (
+                  <span className="text-[10px] font-mono text-cyan-300/70" title="Prompt cache hit tokens">
+                    cache {fmtTokens(pane.cacheHitTokens)}
+                  </span>
+                )}
                 {pane.costUsd !== null && !pane.streaming && (
-                  <span className="text-[10px] font-mono text-amber-300/70" title={`Prompt ${pane.promptTokens ?? '?'} + completion ${pane.completionTokens ?? '?'} tok`}>
+                  <span className="text-[10px] font-mono text-amber-300/70" title={`Prompt ${pane.promptTokens ?? '?'} + completion ${pane.completionTokens ?? '?'} tok${pane.cacheHitTokens ? `, cache hit ${pane.cacheHitTokens}` : ''}`}>
                     {fmtCost(pane.costUsd)}
                   </span>
                 )}
@@ -2737,7 +3678,11 @@ JSON`;
                       streaming={pane.streaming}
                       isLast={i === pane.messages.length - 1}
                       onRetry={() => retryMessage(pane.id, i)}
+                      onEdit={content => editMessage(pane.id, i, content)}
+                      onFork={() => forkMessage(pane.id, i)}
+                      forkDisabled={panes.length >= 4}
                       onDelete={() => deleteMessage(pane.id, i)}
+                      textSize={messageTextSize}
                     />
                   ))}
                   {pane.error && (
@@ -2760,7 +3705,61 @@ JSON`;
 
       {/* Input */}
       <div className="border-t border-white/10 p-3 bg-white/[0.02]">
+        {(chatAttachments.length > 0 || chatFileError) && (
+          <div className={`mx-auto mb-2 ${panes.length === 1 ? 'max-w-3xl' : 'max-w-4xl'}`}>
+            {chatAttachments.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {chatAttachments.map(att => (
+                  <div
+                    key={att.id}
+                    className="group inline-flex max-w-full items-center gap-2 rounded-lg border border-white/10 bg-black px-2.5 py-1.5 text-xs font-mono text-white/60 hover:border-white/25 hover:text-white/80"
+                    title={attachmentSummary(att)}
+                  >
+                    {att.kind === 'video' ? <Film className="h-3.5 w-3.5 shrink-0" /> : att.kind === 'image' ? <Eye className="h-3.5 w-3.5 shrink-0" /> : att.kind === 'pdf' || att.kind === 'text' ? <FileText className="h-3.5 w-3.5 shrink-0" /> : <FileIcon className="h-3.5 w-3.5 shrink-0" />}
+                    <a href={att.url} target="_blank" rel="noreferrer" className="truncate hover:text-white">
+                      {att.name}
+                    </a>
+                    <span className="shrink-0 text-white/25">{formatBytes(att.size)}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        removeChatAttachment(att.id);
+                      }}
+                      className="shrink-0 rounded p-0.5 text-white/25 hover:bg-white/10 hover:text-white"
+                      aria-label={`Remove ${att.name}`}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {chatFileError && (
+              <div className="mt-2 rounded border border-red-400/20 bg-red-400/5 px-3 py-2 text-xs font-mono text-red-300/80">
+                {chatFileError}
+              </div>
+            )}
+          </div>
+        )}
         <div className={`mx-auto flex gap-2 items-end ${panes.length === 1 ? 'max-w-3xl' : 'max-w-4xl'}`}>
+          <button
+            type="button"
+            onClick={() => chatFileInputRef.current?.click()}
+            disabled={!apiKey || uploadingChatFiles}
+            className="border border-white/10 text-white/40 px-3 py-3 rounded-lg hover:text-white/70 hover:border-white/25 transition-colors disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
+            title="Attach PDFs, documents, images, videos, or other files"
+            data-testid="chat-attach-file"
+          >
+            {uploadingChatFiles ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
+          </button>
+          <input
+            ref={chatFileInputRef}
+            type="file"
+            multiple
+            className="hidden"
+            accept=".pdf,.txt,.md,.markdown,.csv,.json,.jsonl,.xml,.yaml,.yml,.html,.css,.js,.jsx,.ts,.tsx,.py,.go,.rs,.java,.c,.cpp,.h,.hpp,.sql,.sh,.toml,.ini,.log,image/*,video/*,audio/*,application/pdf,application/json,text/*"
+            onChange={e => e.target.files && uploadChatFiles(e.target.files)}
+          />
           <textarea
             ref={inputRef}
             value={input}
@@ -2770,7 +3769,7 @@ JSON`;
             }}
             onKeyDown={handleKeyDown}
             rows={1}
-            placeholder={apiKey ? (primaryIsSpeech ? 'Enter text to synthesize...' : primaryIsVideo ? 'Describe the video you want to generate...' : primaryIsImage ? 'Describe the image you want to generate...' : 'Send a message... (Shift+Enter for newline)') : 'Set your API key in Settings first'}
+            placeholder={apiKey ? (primaryIsSpeech ? 'Enter text to synthesize...' : primaryIsVideo ? 'Describe the video you want to generate...' : primaryIsImage ? 'Describe the image you want to generate...' : 'Send a message or attach a file... (Shift+Enter for newline)') : 'Set your API key in Settings first'}
             disabled={!apiKey}
             autoFocus
             data-testid="chat-input"
@@ -2794,7 +3793,7 @@ JSON`;
           ) : (
             <button
               onClick={() => handleSend()}
-              disabled={!input.trim() || !apiKey}
+              disabled={(!input.trim() && chatAttachments.length === 0) || !apiKey || uploadingChatFiles}
               data-testid="chat-send"
               className="bg-white text-black px-4 py-3 rounded-lg font-mono text-sm font-bold hover:bg-white/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
             >
@@ -2808,6 +3807,8 @@ JSON`;
           </p>
         )}
       </div>
+      </div>
+      <AuthModal open={authModalOpen} onClose={() => setAuthModalOpen(false)} onSuccess={() => setApiKey(localStorage.getItem('op_api_key') || '')} />
     </div>
   );
 }
@@ -3054,16 +4055,33 @@ function MessageBubble({
   streaming = false,
   isLast = false,
   onRetry,
+  onEdit,
+  onFork,
+  forkDisabled = false,
   onDelete,
+  textSize = 14,
 }: {
   message: Message;
   streaming?: boolean;
   isLast?: boolean;
   onRetry?: () => void;
+  onEdit?: (content: string) => void;
+  onFork?: () => void;
+  forkDisabled?: boolean;
   onDelete?: () => void;
+  textSize?: number;
   key?: React.Key;
 }) {
   const [copied, setCopied] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(message.content);
+  // Every pane re-render used to re-parse the markdown of every message in the
+  // transcript. Keyed on the content so only the message actually growing
+  // during a stream pays for a re-parse.
+  const body = useMemo(
+    () => (message.content ? renderMarkdown(message.content) : null),
+    [message.content],
+  );
   const isUser = message.role === 'user';
   const imageSrc = message.imageB64
     ? `data:image/png;base64,${message.imageB64}`
@@ -3074,6 +4092,11 @@ function MessageBubble({
   // Hide actions on the message that's still streaming in.
   const isStreamingThis = streaming && isLast && !isUser;
   const hasCopyable = !!message.content;
+  const timestamp = fmtMessageTime(message.createdAt);
+
+  useEffect(() => {
+    if (!editing) setDraft(message.content);
+  }, [editing, message.content]);
 
   const copy = () => {
     navigator.clipboard.writeText(message.content);
@@ -3083,7 +4106,18 @@ function MessageBubble({
 
   // Action bar: visible by default on touch (no hover), reveal on hover for
   // pointer devices. Keeps Retry/Delete reachable on mobile.
-  const actions = !isStreamingThis && (onRetry || onDelete || hasCopyable) ? (
+  const commitEdit = () => {
+    const next = draft.trim();
+    if (!next || next === message.content) {
+      setEditing(false);
+      setDraft(message.content);
+      return;
+    }
+    onEdit?.(next);
+    setEditing(false);
+  };
+
+  const actions = !isStreamingThis && (onRetry || onEdit || onFork || onDelete || hasCopyable) ? (
     <div
       className={`flex items-center gap-0.5 pt-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 ${isUser ? 'justify-end' : ''}`}
     >
@@ -3096,6 +4130,30 @@ function MessageBubble({
           data-testid="msg-copy"
         >
           {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+        </button>
+      )}
+      {onEdit && hasCopyable && (
+        <button
+          onClick={() => setEditing(true)}
+          disabled={streaming}
+          className="p-1.5 rounded-md text-white/30 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          title="Edit message"
+          aria-label="Edit message"
+          data-testid="msg-edit"
+        >
+          <Pencil className="w-3.5 h-3.5" />
+        </button>
+      )}
+      {onFork && (
+        <button
+          onClick={onFork}
+          disabled={streaming || forkDisabled}
+          className="p-1.5 rounded-md text-white/30 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          title={forkDisabled ? 'Maximum 4 panes' : 'Fork chat from here'}
+          aria-label="Fork chat from here"
+          data-testid="msg-fork"
+        >
+          <GitFork className="w-3.5 h-3.5" />
         </button>
       )}
       {onRetry && (
@@ -3127,13 +4185,80 @@ function MessageBubble({
 
   return (
     <div className={`group ${isUser ? 'flex flex-col items-end' : ''}`}>
+      {timestamp && (
+        <div className={`mb-1 text-[10px] font-mono text-white/25 ${isUser ? 'text-right' : ''}`}>
+          {timestamp}
+        </div>
+      )}
       <div className={`${isUser ? 'max-w-[85%]' : 'w-full'}`}>
-        {isUser ? (
-          <div className="bg-white/10 rounded-2xl rounded-br-sm px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words">
-            {message.content}
+        {editing ? (
+          <div className={`${isUser ? 'w-[min(32rem,85vw)]' : 'w-full max-w-3xl'} rounded-xl border border-white/10 bg-black/80 p-2`}>
+            <textarea
+              value={draft}
+              onChange={event => setDraft(event.target.value)}
+              onKeyDown={event => {
+                if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+                  event.preventDefault();
+                  commitEdit();
+                }
+                if (event.key === 'Escape') {
+                  event.preventDefault();
+                  setDraft(message.content);
+                  setEditing(false);
+                }
+              }}
+              rows={Math.min(8, Math.max(3, draft.split('\n').length))}
+              autoFocus
+              className="w-full resize-y rounded border border-white/10 bg-black px-3 py-2 text-sm leading-relaxed text-white outline-none focus:border-white/30"
+              data-testid="msg-edit-input"
+            />
+            <div className="mt-2 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setDraft(message.content);
+                  setEditing(false);
+                }}
+                className="rounded border border-white/10 px-2.5 py-1.5 text-xs font-mono text-white/45 hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={commitEdit}
+                disabled={!draft.trim()}
+                className="rounded bg-white px-2.5 py-1.5 text-xs font-mono font-bold text-black disabled:opacity-30"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        ) : isUser ? (
+          <div className="space-y-2">
+            <div className="bg-white/10 rounded-2xl rounded-br-sm px-4 py-2.5 leading-relaxed whitespace-pre-wrap break-words" style={{ fontSize: textSize }}>
+              {message.content}
+            </div>
+            {message.attachments && message.attachments.length > 0 && (
+              <div className="flex flex-col items-end gap-1">
+                {message.attachments.map(att => (
+                  <a
+                    key={att.id}
+                    href={att.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex max-w-full items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-[11px] font-mono text-white/55 hover:border-white/25 hover:text-white/80"
+                    title={attachmentSummary(att)}
+                  >
+                    {att.kind === 'video' ? <Film className="h-3.5 w-3.5 shrink-0" /> : att.kind === 'image' ? <Eye className="h-3.5 w-3.5 shrink-0" /> : att.kind === 'pdf' || att.kind === 'text' ? <FileText className="h-3.5 w-3.5 shrink-0" /> : <FileIcon className="h-3.5 w-3.5 shrink-0" />}
+                    <span className="truncate">{att.name}</span>
+                    <span className="shrink-0 text-white/25">{formatBytes(att.size)}</span>
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
         ) : (
-          <div className="text-sm leading-relaxed text-white/90 space-y-3">
+          <div className="leading-relaxed text-white/90 space-y-3" style={{ fontSize: textSize }}>
             {imageSrc && (
               <a
                 href={imageSrc}
@@ -3160,7 +4285,7 @@ function MessageBubble({
                 <audio src={audioSrc} controls className="w-full" />
               </div>
             )}
-            {message.content && renderMarkdown(message.content)}
+            {body}
           </div>
         )}
       </div>
@@ -3191,6 +4316,7 @@ function ModelSelect({ value, onChange, models }: { value: string; onChange: (v:
   }, [open]);
 
   const current = models.find(m => m.id === value);
+  const currentLabel = value === 'auto' ? 'Auto (intelligent routing)' : current?.label || value;
 
   const filtered = useMemo(() => {
     if (!search) return models;
@@ -3211,7 +4337,7 @@ function ModelSelect({ value, onChange, models }: { value: string; onChange: (v:
         onClick={() => setOpen(!open)}
         className="flex items-center gap-1 text-xs font-mono text-white/80 hover:text-white truncate"
       >
-        <span className="truncate">{current?.label || value}</span>
+        <span className="truncate">{currentLabel}</span>
         <ChevronDown className={`w-3 h-3 shrink-0 text-white/30 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (

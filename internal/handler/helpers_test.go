@@ -1,6 +1,10 @@
 package handler
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/valyala/fasthttp"
+)
 
 func TestFormatUSDExact(t *testing.T) {
 	tests := []struct {
@@ -20,5 +24,15 @@ func TestFormatUSDExact(t *testing.T) {
 				t.Fatalf("formatUSDExact(%d) = %q, want %q", tt.units, got, tt.expect)
 			}
 		})
+	}
+}
+
+func TestStripeSignatureHeaderIsCaseInsensitive(t *testing.T) {
+	var ctx fasthttp.RequestCtx
+	ctx.Request.Header.DisableNormalizing()
+	ctx.Request.Header.Set("stripe-signature", "t=123,v1=abc")
+
+	if got := stripeSignatureHeader(&ctx); got != "t=123,v1=abc" {
+		t.Fatalf("stripeSignatureHeader() = %q, want lower-case header value", got)
 	}
 }

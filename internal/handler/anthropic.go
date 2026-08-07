@@ -5,47 +5,63 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/valyala/fasthttp"
 
 	"github.com/openpaths/openpaths/internal/billing"
+	"github.com/openpaths/openpaths/internal/db/queries"
 	"github.com/openpaths/openpaths/internal/metrics"
 	"github.com/openpaths/openpaths/internal/middleware"
 	"github.com/openpaths/openpaths/internal/model"
+	"github.com/openpaths/openpaths/internal/modelaccess"
 	"github.com/openpaths/openpaths/internal/provider"
 	"github.com/openpaths/openpaths/internal/router"
+	"github.com/openpaths/openpaths/internal/savedresp"
 )
 
 type AnthropicHandler struct {
 	router   *router.Router
 	billing  *billing.Engine
 	recorder *metrics.Recorder
+	saver    *savedresp.Saver
+	accessQ  *queries.AccessQueries
 }
 
 func NewAnthropicHandler(r *router.Router, b *billing.Engine, rec *metrics.Recorder) *AnthropicHandler {
 	return &AnthropicHandler{router: r, billing: b, recorder: rec}
 }
 
+// SetAccess wires the optional Model IAM policy store (default-open when unset).
+func (h *AnthropicHandler) SetAccess(a *queries.AccessQueries) { h.accessQ = a }
+
+// SetResponseSaver wires the optional saved-response service (response saving feature).
+func (h *AnthropicHandler) SetResponseSaver(s *savedresp.Saver) { h.saver = s }
+
 // Anthropic API request/response types
 
 type anthRequest struct {
-	Model       string        `json:"model"`
-	Messages    []anthMessage `json:"messages"`
-	System      any           `json:"system,omitempty"`
-	MaxTokens   int           `json:"max_tokens"`
-	Stream      bool          `json:"stream,omitempty"`
-	Temperature *float64      `json:"temperature,omitempty"`
-	TopP        *float64      `json:"top_p,omitempty"`
-	Tools       []anthTool    `json:"tools,omitempty"`
-	ToolChoice  any           `json:"tool_choice,omitempty"`
-	Metadata    any           `json:"metadata,omitempty"`
-	Thinking    any           `json:"thinking,omitempty"`
+	Model        string        `json:"model"`
+	Messages     []anthMessage `json:"messages"`
+	System       any           `json:"system,omitempty"`
+	MaxTokens    int           `json:"max_tokens"`
+	Stream       bool          `json:"stream,omitempty"`
+	Temperature  *float64      `json:"temperature,omitempty"`
+	TopP         *float64      `json:"top_p,omitempty"`
+	Tools        []anthTool    `json:"tools,omitempty"`
+	ToolChoice   any           `json:"tool_choice,omitempty"`
+	Metadata     any           `json:"metadata,omitempty"`
+	Thinking     any           `json:"thinking,omitempty"`
+	OutputConfig struct {
+		Effort string `json:"effort,omitempty"`
+	} `json:"output_config,omitempty"`
 
 	// Non-standard cross-provider hints — see model.ChatCompletionRequest.
 	TaskTier        string `json:"task_tier,omitempty"`
 	ReasoningEffort string `json:"reasoning_effort,omitempty"`
+	RoutingStrategy string `json:"routing_strategy,omitempty"`
 }
 
 type anthMessage struct {
@@ -112,6 +128,12 @@ func (h *AnthropicHandler) HandleMessages(ctx *fasthttp.RequestCtx) {
 	}
 
 	originalModel := req.Model
+	if h.accessQ != nil {
+		if ok, reason := h.accessQ.ModelAllowed(ctx, userID, originalModel); !ok {
+			writeAnthError(ctx, 403, "permission_error", reason)
+			return
+		}
+	}
 	apiKeyID := ""
 	if apiKey != nil {
 		apiKeyID = apiKey.ID
@@ -132,6 +154,12 @@ func (h *AnthropicHandler) HandleMessages(ctx *fasthttp.RequestCtx) {
 	candidates, err := h.router.ResolveForRequest(originalModel, autoResult.ModelID)
 	if err != nil {
 		writeAnthError(ctx, 404, "not_found_error", err.Error())
+		return
+	}
+	candidates = router.OrderCandidates(candidates, chatReq.RoutingStrategy)
+	candidates, err = modelaccess.FilterCandidates(ctx, h.accessQ, userID, originalModel, candidates)
+	if err != nil {
+		writeAnthError(ctx, 403, "permission_error", err.Error())
 		return
 	}
 
@@ -162,6 +190,23 @@ func (h *AnthropicHandler) HandleMessages(ctx *fasthttp.RequestCtx) {
 	writeAnthError(ctx, 502, "api_error", "all providers failed for model "+originalModel)
 }
 
+// enforcePrepaid blocks the request when the user lacks sufficient balance.
+// The /v1/messages path always bills to OpenPaths' own key (no BYOK), and the
+// BalanceCheck middleware is skipped for any user holding a BYOK key, so this
+// is the hard prepay gate for this endpoint. Returns true (and writes 402) when
+// rejected, which stops the fallback loop.
+func (h *AnthropicHandler) enforcePrepaid(ctx *fasthttp.RequestCtx, req *model.ChatCompletionRequest, modelID string) bool {
+	userID, _ := ctx.UserValue(middleware.CtxKeyUserID).(string)
+	if userID == "" {
+		return false
+	}
+	if err := h.billing.PreCheck(ctx, userID, modelID, maxOutputTokens(req)); err != nil {
+		writeAnthError(ctx, 402, "billing_error", "Insufficient credits. Please add credits to continue.")
+		return true
+	}
+	return false
+}
+
 func (h *AnthropicHandler) tryAnthNonStream(
 	ctx *fasthttp.RequestCtx,
 	req *model.ChatCompletionRequest,
@@ -170,7 +215,11 @@ func (h *AnthropicHandler) tryAnthNonStream(
 	userID, apiKeyID, originalModel string,
 	start time.Time,
 ) bool {
+	if h.enforcePrepaid(ctx, req, modelCfg.ID) {
+		return true
+	}
 	app := requestAppAttribution(ctx)
+	applySafetyIdentifier(req, prov, userID)
 	resp, err := prov.ChatCompletion(ctx, req)
 	latency := time.Since(start)
 
@@ -186,6 +235,11 @@ func (h *AnthropicHandler) tryAnthNonStream(
 			if !pe.Retryable {
 				h.recorder.RecordErrorWithApp(userID, apiKeyID, originalModel, prov.Name(),
 					int(latency.Milliseconds()), statusCode, pe.Message, false, app.ID, app.URL, app.Title, app.Categories)
+				// 404 means the upstream no longer serves this model; fall through to
+				// the next fallback candidate like the chat handler does.
+				if statusCode == 404 {
+					return false
+				}
 				writeAnthError(ctx, statusCode, "api_error", pe.Message)
 				return true
 			}
@@ -211,6 +265,9 @@ func (h *AnthropicHandler) tryAnthNonStream(
 	h.recorder.RecordSuccessWithApp(userID, apiKeyID, originalModel, prov.Name(),
 		tokensIn, tokensOut, int(latency.Milliseconds()), tps, cost, false, app.ID, app.URL, app.Title, app.Categories)
 
+	saveTextGeneration(h.saver, userID, apiKeyID, originalModel, prov.Name(),
+		req.Messages, chatResponseText(resp), tokensIn, tokensOut, cost)
+
 	anthResp := internalToAnth(resp, originalModel)
 	writeJSON(ctx, 200, anthResp)
 	return true
@@ -224,11 +281,15 @@ func (h *AnthropicHandler) tryAnthStream(
 	userID, apiKeyID, originalModel string,
 	start time.Time,
 ) bool {
+	if h.enforcePrepaid(ctx, req, modelCfg.ID) {
+		return true
+	}
 	app := requestAppAttribution(ctx)
+	applySafetyIdentifier(req, prov, userID)
 	streamCh, err := prov.ChatCompletionStream(ctx, req)
 	if err != nil {
 		if pe, ok := err.(*provider.ProviderError); ok {
-			if pe.StatusCode == 401 || pe.StatusCode == 403 {
+			if pe.StatusCode == 401 || pe.StatusCode == 403 || pe.StatusCode == 404 {
 				return false
 			}
 			if !pe.Retryable {
@@ -278,6 +339,7 @@ func (h *AnthropicHandler) tryAnthStream(
 		writeSSE(w, "content_block_start", blockStart)
 
 		var usage *model.UsageInfo
+		var outBuf strings.Builder
 
 		for event := range streamCh {
 			if event.Err != nil {
@@ -304,6 +366,7 @@ func (h *AnthropicHandler) tryAnthStream(
 						text = s
 					}
 					if text != "" {
+						outBuf.WriteString(text)
 						blockDelta := map[string]any{
 							"type":  "content_block_delta",
 							"index": contentIdx,
@@ -355,6 +418,13 @@ func (h *AnthropicHandler) tryAnthStream(
 			h.recorder.RecordSuccessWithApp(userID, apiKeyID, originalModel, prov.Name(),
 				usage.PromptTokens, usage.CompletionTokens,
 				int(latency.Milliseconds()), tps, cost, true, app.ID, app.URL, app.Title, app.Categories)
+			saveTextGeneration(h.saver, userID, apiKeyID, originalModel, prov.Name(),
+				req.Messages, outBuf.String(), usage.PromptTokens, usage.CompletionTokens, cost)
+		} else {
+			// Upstream call happened (billed to us) but ended without a usage frame
+			// — e.g. client disconnect. Leave a DB trace for invoice reconciliation.
+			h.recorder.RecordErrorWithApp(userID, apiKeyID, originalModel, prov.Name(),
+				int(latency.Milliseconds()), 200, "stream_no_usage", true, app.ID, app.URL, app.Title, app.Categories)
 		}
 	})
 	return true
@@ -389,9 +459,12 @@ func anthToInternal(req *anthRequest) *model.ChatCompletionRequest {
 		MaxTokens:       &req.MaxTokens,
 		ReasoningEffort: parseAnthropicThinking(req.Thinking),
 		TaskTier:        req.TaskTier,
+		RoutingStrategy: req.RoutingStrategy,
 	}
 	if req.ReasoningEffort != "" {
 		chatReq.ReasoningEffort = req.ReasoningEffort
+	} else if req.OutputConfig.Effort != "" {
+		chatReq.ReasoningEffort = req.OutputConfig.Effort
 	}
 
 	// System message
@@ -431,7 +504,7 @@ func anthToInternal(req *anthRequest) *model.ChatCompletionRequest {
 	for _, tool := range req.Tools {
 		chatReq.Tools = append(chatReq.Tools, model.Tool{
 			Type: "function",
-			Function: model.ToolFunction{
+			Function: &model.ToolFunction{
 				Name:        tool.Name,
 				Description: tool.Description,
 				Parameters:  tool.InputSchema,
@@ -450,6 +523,9 @@ func parseAnthropicThinking(thinking any) string {
 
 	thinkingType, _ := m["type"].(string)
 	if router.IsAutoReasoningEffort(thinkingType) {
+		return "auto"
+	}
+	if thinkingType == "adaptive" {
 		return "auto"
 	}
 	if thinkingType == "disabled" {

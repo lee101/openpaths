@@ -3,6 +3,7 @@ package billing
 import (
 	"fmt"
 	"math"
+	"strings"
 
 	imgutil "github.com/openpaths/openpaths/internal/image"
 	"github.com/openpaths/openpaths/internal/model"
@@ -57,14 +58,29 @@ func (pt *PricingTable) CalculateCostWithCachedInput(modelID string, inputTokens
 	if cachedInputTokens > inputTokens {
 		cachedInputTokens = inputTokens
 	}
-	if cfg.InputCacheHitPricePer1M <= 0 {
+	// Long-context tiered pricing: above the threshold the whole request bills at
+	// the higher *Long rates.
+	inputRate, cacheRate, outputRate := cfg.InputPricePer1M, cfg.InputCacheHitPricePer1M, cfg.OutputPricePer1M
+	if cfg.LongContextThreshold > 0 && inputTokens > cfg.LongContextThreshold {
+		if cfg.InputPricePer1MLong > 0 {
+			inputRate = cfg.InputPricePer1MLong
+		}
+		if cfg.InputCacheHitPricePer1MLong > 0 {
+			cacheRate = cfg.InputCacheHitPricePer1MLong
+		}
+		if cfg.OutputPricePer1MLong > 0 {
+			outputRate = cfg.OutputPricePer1MLong
+		}
+	}
+
+	if cacheRate <= 0 {
 		cachedInputTokens = 0
 	}
 
 	uncachedInputTokens := inputTokens - cachedInputTokens
-	inputCost := float64(uncachedInputTokens)*cfg.InputPricePer1M/1_000_000.0 +
-		float64(cachedInputTokens)*cfg.InputCacheHitPricePer1M/1_000_000.0
-	outputCost := float64(outputTokens) * cfg.OutputPricePer1M / 1_000_000.0
+	inputCost := float64(uncachedInputTokens)*inputRate/1_000_000.0 +
+		float64(cachedInputTokens)*cacheRate/1_000_000.0
+	outputCost := float64(outputTokens) * outputRate / 1_000_000.0
 	totalDollars := inputCost + outputCost
 
 	// Convert dollars to hundredths-of-a-cent: $1 = 10000 units
@@ -95,17 +111,28 @@ func (pt *PricingTable) CalculateImageCostWithInputsAndSize(modelID string, outp
 			outputSize = parsed
 		}
 		megapixels := float64(outputSize.W*outputSize.H) / 1_000_000.0
-		totalDollars := cfg.PricePerMegapixel*megapixels*float64(outputImageCount) + cfg.PricePerInputImage*float64(inputImageCount)
+		if cfg.RoundMegapixelPricing {
+			megapixels = math.Ceil(float64(outputSize.W*outputSize.H) / float64(1024*1024))
+		}
+		outputRate := cfg.PricePerMegapixel
+		if inputImageCount > 0 && cfg.PricePerMegapixelWithImageInput > 0 {
+			outputRate = cfg.PricePerMegapixelWithImageInput
+		}
+		totalDollars := outputRate*megapixels*float64(outputImageCount) + cfg.PricePerInputImage*float64(inputImageCount)
 		totalCents := int64(totalDollars * 10000)
 		if totalCents < 1 && (outputImageCount > 0 || inputImageCount > 0) {
 			totalCents = 1
 		}
 		return totalCents, nil
 	}
-	if cfg.PricePerImage <= 0 {
+	pricePerImage := cfg.PricePerImage
+	if tierPrice, ok := resolutionPrice(cfg.PricePerImageByResolution, size); ok {
+		pricePerImage = tierPrice
+	}
+	if pricePerImage <= 0 {
 		return 0, fmt.Errorf("model %q has no per-image pricing", modelID)
 	}
-	totalDollars := cfg.PricePerImage*float64(outputImageCount) + cfg.PricePerInputImage*float64(inputImageCount)
+	totalDollars := pricePerImage*float64(outputImageCount) + cfg.PricePerInputImage*float64(inputImageCount)
 	totalCents := int64(totalDollars * 10000)
 	if totalCents < 1 && (outputImageCount > 0 || inputImageCount > 0) {
 		totalCents = 1
@@ -152,32 +179,66 @@ func roundedMegapixels(width, height int) int {
 
 // CalculateVideoCost returns cost in hundredths-of-a-cent for video generation.
 func (pt *PricingTable) CalculateVideoCost(modelID string, durationSeconds int, hasVideoInput bool) (int64, error) {
+	return pt.CalculateVideoCostWithResolution(modelID, durationSeconds, hasVideoInput, "")
+}
+
+// CalculateVideoCostWithResolution applies the output resolution tier and then
+// adds any separately published video-input rate. The legacy combined
+// PricePerSecondWithVideoInput field remains supported for existing models.
+func (pt *PricingTable) CalculateVideoCostWithResolution(modelID string, durationSeconds int, hasVideoInput bool, resolution string) (int64, error) {
+	return pt.CalculateVideoCostWithMediaInputs(modelID, durationSeconds, hasVideoInput, 0, resolution)
+}
+
+func (pt *PricingTable) CalculateVideoCostWithMediaInputs(modelID string, durationSeconds int, hasVideoInput bool, inputImageCount int, resolution string) (int64, error) {
 	cfg, ok := pt.models[modelID]
 	if !ok {
 		return 0, fmt.Errorf("unknown model %q for pricing", modelID)
 	}
+	if durationSeconds <= 0 {
+		durationSeconds = 10
+	}
+	outputRate := cfg.PricePerSecond
+	if tierPrice, ok := resolutionPrice(cfg.PricePerSecondByResolution, resolution); ok {
+		outputRate = tierPrice
+	}
+	inputVideoRate := cfg.PricePerInputVideoSecond
+	if tierPrice, ok := resolutionPrice(cfg.PricePerInputVideoSecondByResolution, resolution); ok {
+		inputVideoRate = tierPrice
+	}
 	var totalDollars float64
 	switch {
+	case outputRate > 0:
+		totalDollars = outputRate * float64(durationSeconds)
+		if hasVideoInput && inputVideoRate > 0 {
+			totalDollars += inputVideoRate * float64(durationSeconds)
+		} else if hasVideoInput && cfg.PricePerSecondWithVideoInput > 0 {
+			totalDollars = cfg.PricePerSecondWithVideoInput * float64(durationSeconds)
+		}
 	case hasVideoInput && cfg.PricePerSecondWithVideoInput > 0:
-		if durationSeconds <= 0 {
-			durationSeconds = 10
-		}
 		totalDollars = cfg.PricePerSecondWithVideoInput * float64(durationSeconds)
-	case cfg.PricePerSecond > 0:
-		if durationSeconds <= 0 {
-			durationSeconds = 10
-		}
-		totalDollars = cfg.PricePerSecond * float64(durationSeconds)
 	case cfg.PricePerVideo > 0:
 		totalDollars = cfg.PricePerVideo
 	default:
 		return 0, fmt.Errorf("model %q has no per-video pricing", modelID)
+	}
+	billableImages := max(0, inputImageCount-cfg.FreeInputImageCount)
+	if billableImages > 0 && cfg.PricePerInputImage > 0 {
+		totalDollars += cfg.PricePerInputImage * float64(billableImages)
 	}
 	totalCents := int64(totalDollars * 10000)
 	if totalCents < 1 {
 		totalCents = 1
 	}
 	return totalCents, nil
+}
+
+func resolutionPrice(prices map[string]float64, resolution string) (float64, bool) {
+	if len(prices) == 0 || resolution == "" {
+		return 0, false
+	}
+	key := strings.ToLower(strings.TrimSpace(resolution))
+	price, ok := prices[key]
+	return price, ok
 }
 
 // CalculateAudioCost returns cost in hundredths-of-a-cent for audio usage.
@@ -205,6 +266,26 @@ func (pt *PricingTable) CalculateAudioCost(modelID string, durationSeconds int) 
 		totalCents = 1
 	}
 	return totalCents, nil
+}
+
+// CalculateCharacterCost bills APIs such as xAI TTS that publish prices per
+// Unicode input character rather than per language-model token.
+func (pt *PricingTable) CalculateCharacterCost(modelID string, characters int) (int64, error) {
+	cfg, ok := pt.models[modelID]
+	if !ok {
+		return 0, fmt.Errorf("unknown model %q for pricing", modelID)
+	}
+	if cfg.PricePer1MCharacters <= 0 {
+		return 0, fmt.Errorf("model %q has no per-character pricing", modelID)
+	}
+	if characters <= 0 {
+		return 0, nil
+	}
+	cost := int64(float64(characters) * cfg.PricePer1MCharacters / 1_000_000 * 10000)
+	if cost < 1 {
+		cost = 1
+	}
+	return cost, nil
 }
 
 // CalculateTranscriptionCost returns cost in hundredths-of-a-cent for audio transcription.
@@ -278,11 +359,14 @@ func (pt *PricingTable) EstimateMaxCost(modelID string, maxOutputTokens int) (in
 	if cfg.PricePerImage > 0 {
 		return pt.CalculateImageCostWithInputs(modelID, 1, 0)
 	}
-	if cfg.PricePerVideo > 0 || cfg.PricePerSecond > 0 {
+	if cfg.PricePerVideo > 0 || cfg.PricePerSecond > 0 || len(cfg.PricePerSecondByResolution) > 0 {
 		return pt.CalculateVideoCost(modelID, 10, false)
 	}
 	if cfg.PricePerMinute > 0 || cfg.PricePerHour > 0 {
 		return pt.CalculateAudioCost(modelID, 60)
+	}
+	if cfg.PricePer1MCharacters > 0 {
+		return pt.CalculateCharacterCost(modelID, 1000)
 	}
 	if maxOutputTokens <= 0 {
 		maxOutputTokens = 4096

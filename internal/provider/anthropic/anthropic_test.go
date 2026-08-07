@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/openpaths/openpaths/internal/model"
+	"github.com/openpaths/openpaths/internal/promptcache"
 	"github.com/openpaths/openpaths/internal/provider"
 )
 
@@ -158,6 +160,69 @@ func TestTranslateRequestDefaults(t *testing.T) {
 	}
 }
 
+func TestTranslateRequest_MapsOpenAIImageURLBlocks(t *testing.T) {
+	req := &model.ChatCompletionRequest{
+		Model: "claude-sonnet-4-20250514",
+		Messages: []model.ChatMessage{{
+			Role: "user",
+			Content: []any{
+				map[string]any{"type": "text", "text": "What is in this image?"},
+				map[string]any{"type": "image_url", "image_url": map[string]any{"url": "https://example.com/cat.png"}},
+			},
+		}},
+	}
+
+	anthReq := translateRequest(req)
+	blocks, ok := anthReq.Messages[0].Content.([]any)
+	if !ok {
+		t.Fatalf("content type = %T, want []any", anthReq.Messages[0].Content)
+	}
+	if got, ok := blocks[0].(anthropicTextBlock); !ok || got.Text != "What is in this image?" {
+		t.Fatalf("text block = %#v, want Anthropic text block", blocks[0])
+	}
+	img, ok := blocks[1].(anthropicImageBlock)
+	if !ok {
+		t.Fatalf("image block = %#v, want Anthropic image block", blocks[1])
+	}
+	if img.Source.Type != "url" || img.Source.URL != "https://example.com/cat.png" {
+		t.Fatalf("image source = %#v, want URL source", img.Source)
+	}
+}
+
+func TestApplyCacheControl_AttachesToSystemBlock(t *testing.T) {
+	p := New("test-key", "")
+	p.SetCacheOptimizer(promptcache.New(promptcache.Config{ColdDefault: promptcache.TTL1h}))
+	longSystem := strings.Repeat("cache me ", 600)
+	anthReq := translateRequest(&model.ChatCompletionRequest{
+		Model: "claude-sonnet-4-20250514",
+		Messages: []model.ChatMessage{
+			{Role: "system", Content: longSystem},
+			{Role: "user", Content: "Hi"},
+		},
+	})
+
+	p.applyCacheControl(anthReq)
+
+	blocks, ok := anthReq.System.([]anthropicTextBlock)
+	if !ok {
+		t.Fatalf("system = %T, want []anthropicTextBlock", anthReq.System)
+	}
+	if len(blocks) != 1 || blocks[0].CacheControl == nil {
+		t.Fatalf("system blocks = %#v, want cache_control on block", blocks)
+	}
+	if blocks[0].CacheControl.TTL != "1h" {
+		t.Fatalf("ttl = %q, want 1h", blocks[0].CacheControl.TTL)
+	}
+	req, err := http.NewRequest(http.MethodPost, "https://example.com", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	setCacheBeta(req, anthReq)
+	if got := req.Header.Get("anthropic-beta"); got != extendedCacheTTLBeta {
+		t.Fatalf("anthropic-beta = %q, want %q", got, extendedCacheTTLBeta)
+	}
+}
+
 func TestTranslateRequest_MapsReasoningEffortToThinkingBudget(t *testing.T) {
 	maxTokens := 9000
 	req := &model.ChatCompletionRequest{
@@ -176,6 +241,104 @@ func TestTranslateRequest_MapsReasoningEffortToThinkingBudget(t *testing.T) {
 	}
 	if anthReq.Thinking.BudgetTokens != 4096 {
 		t.Fatalf("thinking budget = %d, want %d", anthReq.Thinking.BudgetTokens, 4096)
+	}
+}
+
+func TestTranslateRequest_UsesAdaptiveThinkingAndEffortForCurrentModels(t *testing.T) {
+	for _, tc := range []struct {
+		model        string
+		wantThinking string
+	}{
+		{model: "claude-sonnet-5", wantThinking: ""},
+		{model: "claude-fable-5", wantThinking: ""},
+		{model: "claude-opus-4-8", wantThinking: "adaptive"},
+		{model: "claude-sonnet-4-6", wantThinking: "adaptive"},
+	} {
+		t.Run(tc.model, func(t *testing.T) {
+			temp := 0.7
+			req := translateRequest(&model.ChatCompletionRequest{
+				Model: tc.model, Messages: []model.ChatMessage{{Role: "user", Content: "Work carefully."}},
+				ReasoningEffort: "medium", Temperature: &temp,
+			})
+			if req.OutputConfig == nil || req.OutputConfig.Effort != "medium" {
+				t.Fatalf("output_config = %#v, want medium effort", req.OutputConfig)
+			}
+			if tc.wantThinking == "" {
+				if req.Thinking != nil {
+					t.Fatalf("thinking = %#v, want model default", req.Thinking)
+				}
+			} else if req.Thinking == nil || req.Thinking.Type != tc.wantThinking {
+				t.Fatalf("thinking = %#v, want %q", req.Thinking, tc.wantThinking)
+			}
+			if req.Temperature != nil {
+				t.Fatal("adaptive model must not receive temperature")
+			}
+		})
+	}
+}
+
+func TestTranslateRequest_DisablesSonnet5ThinkingForNone(t *testing.T) {
+	req := translateRequest(&model.ChatCompletionRequest{
+		Model: "claude-sonnet-5", Messages: []model.ChatMessage{{Role: "user", Content: "Say hi."}}, ReasoningEffort: "none",
+	})
+	if req.Thinking == nil || req.Thinking.Type != "disabled" {
+		t.Fatalf("thinking = %#v, want disabled", req.Thinking)
+	}
+}
+
+func TestTranslateRequest_AutoEnablesAdaptiveThinkingForOpus(t *testing.T) {
+	req := translateRequest(&model.ChatCompletionRequest{
+		Model: "claude-opus-4-8", Messages: []model.ChatMessage{{Role: "user", Content: "Choose the right depth."}}, ReasoningEffort: "auto",
+	})
+	if req.Thinking == nil || req.Thinking.Type != "adaptive" {
+		t.Fatalf("thinking = %#v, want adaptive", req.Thinking)
+	}
+	if req.OutputConfig != nil {
+		t.Fatalf("output_config = %#v, want provider default for auto", req.OutputConfig)
+	}
+}
+
+func TestTranslateRequest_PassesXHighThroughWhenSupported(t *testing.T) {
+	for _, id := range []string{"claude-opus-5", "claude-opus-4-8", "claude-sonnet-5", "claude-fable-5"} {
+		req := translateRequest(&model.ChatCompletionRequest{
+			Model: id, Messages: []model.ChatMessage{{Role: "user", Content: "Reason deeply."}}, ReasoningEffort: "xhigh",
+		})
+		if req.OutputConfig == nil || req.OutputConfig.Effort != "xhigh" {
+			t.Fatalf("%s: output_config = %#v, want xhigh", id, req.OutputConfig)
+		}
+	}
+}
+
+func TestTranslateRequest_NormalizesXHighToAnthropicMax(t *testing.T) {
+	req := translateRequest(&model.ChatCompletionRequest{
+		Model: "claude-opus-4-6", Messages: []model.ChatMessage{{Role: "user", Content: "Reason deeply."}}, ReasoningEffort: "xhigh",
+	})
+	if req.OutputConfig == nil || req.OutputConfig.Effort != "max" {
+		t.Fatalf("output_config = %#v, want max", req.OutputConfig)
+	}
+}
+
+func TestTranslateRequest_Opus5ThinksByDefault(t *testing.T) {
+	// Opus 5 runs adaptive thinking when no thinking field is sent, so the
+	// explicit switch is redundant and "none" has to disable it outright.
+	req := translateRequest(&model.ChatCompletionRequest{
+		Model: "claude-opus-5", Messages: []model.ChatMessage{{Role: "user", Content: "Think."}}, ReasoningEffort: "high",
+	})
+	if req.Thinking != nil {
+		t.Fatalf("thinking = %#v, want nil (adaptive is the Opus 5 default)", req.Thinking)
+	}
+	if req.OutputConfig == nil || req.OutputConfig.Effort != "high" {
+		t.Fatalf("output_config = %#v, want high", req.OutputConfig)
+	}
+
+	off := translateRequest(&model.ChatCompletionRequest{
+		Model: "claude-opus-5", Messages: []model.ChatMessage{{Role: "user", Content: "Answer."}}, ReasoningEffort: "none",
+	})
+	if off.Thinking == nil || off.Thinking.Type != "disabled" {
+		t.Fatalf("thinking = %#v, want disabled", off.Thinking)
+	}
+	if off.OutputConfig != nil {
+		t.Fatalf("output_config = %#v, want nil — disabled thinking is rejected above high effort", off.OutputConfig)
 	}
 }
 

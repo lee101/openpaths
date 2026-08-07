@@ -32,6 +32,7 @@ type ImageGenerationRequest struct {
 	NumImagesPerSize    int          `json:"num_images_per_size,omitempty"`
 	Resolution          string       `json:"resolution,omitempty"`
 	SafetyTolerance     string       `json:"safety_tolerance,omitempty"`
+	DisablePUP          *bool        `json:"disable_pup,omitempty"`
 }
 
 type ImageGenerationResponse struct {

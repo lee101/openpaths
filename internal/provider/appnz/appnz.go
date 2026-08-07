@@ -86,7 +86,10 @@ func WithRunpod(baseURL, endpointID, apiKey string) Option {
 
 func New(apiKey, baseURL string, opts ...Option) *AppNZProvider {
 	if baseURL == "" {
-		baseURL = "http://127.0.0.1:9080"
+		// The omniserve-native front door. Nothing has listened on 9080 since
+		// local inference moved behind it, so that default made every appnz
+		// call fail on connect and fall through to RunPod.
+		baseURL = "http://127.0.0.1:8791"
 	}
 	baseURL = strings.TrimRight(baseURL, "/")
 	p := &AppNZProvider{

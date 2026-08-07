@@ -31,28 +31,28 @@
       "delay_days": 7,
       "subject": "Anthropic's Claude: World-Class Reasoning & Long Context",
       "template": "04-anthropic.html",
-      "description": "Claude Opus 4.7, Sonnet 4.6, Haiku 4.5 — strengths, pricing, best use cases"
+      "description": "Claude Fable 5, Opus 4.8, Sonnet 4.6, Haiku 4.5 — agentic coding, long context, extended thinking, pricing"
     },
     {
       "id": 5,
       "delay_days": 10,
-      "subject": "OpenAI's GPT: The Broadest Ecosystem in AI",
+      "subject": "OpenAI's gpt-5.6: Sol, Terra & Luna Explained",
       "template": "05-openai.html",
-      "description": "GPT-5 Chat, o3, o4-mini — tools, vision, code interpreter, when to use"
+      "description": "gpt-5.6 family — sol/terra/luna tiers, 1M context, tools, vision, when to use each"
     },
     {
       "id": 6,
       "delay_days": 14,
       "subject": "Google Gemini: 2M Token Context & Multimodal Mastery",
       "template": "06-google.html",
-      "description": "Gemini 3.1 Pro, 2.5 Flash — long context, multimodal, competitive pricing"
+      "description": "Gemini 3.5 Flash, 2.5 Pro (2M context) — cost efficiency, multimodal, long context"
     },
     {
       "id": 7,
       "delay_days": 18,
       "subject": "DeepSeek: Open Source Reasoning at a Fraction of the Cost",
       "template": "07-deepseek.html",
-      "description": "DeepSeek V3.2 & Reasoner — Chinese open source, near-GPT-5 quality for 95% less"
+      "description": "DeepSeek V4 Pro (1M ctx reasoning), chat & reasoner at $0.28/M — open weights, 95% cheaper"
     },
     {
       "id": 8,
@@ -73,7 +73,7 @@
       "delay_days": 28,
       "subject": "xAI Grok: Real-Time Web & Twitter's Training Data",
       "template": "10-xai.html",
-      "description": "Grok 4, Grok 4.1 Fast — live web search, unique training data, Elon's lab"
+      "description": "Grok 4.5 (500K ctx), Grok 4.3 (1M ctx) — live web search, unique training data, Elon's lab"
     },
     {
       "id": 11,
@@ -94,14 +94,14 @@
       "delay_days": 43,
       "subject": "Coding Models: Which One Wins for Your Stack?",
       "template": "13-coding-models.html",
-      "description": "Codestral, Claude Sonnet, Qwen Coder, DeepSeek Coder — benchmarks and use cases"
+      "description": "Claude Fable 5, GPT-5 Codex, Kimi K3, DeepSeek V4 Pro, Codestral, Qwen Coder — picks and pricing"
     },
     {
       "id": 14,
       "delay_days": 48,
-      "subject": "Thinking Models: o3, R1, QwQ & When to Use Them",
+      "subject": "Reasoning Models: Which Frontier Model to Think With",
       "template": "14-reasoning-models.html",
-      "description": "Extended thinking models — OpenAI o3, DeepSeek R1, QwQ — when reasoning is worth the cost"
+      "description": "Frontier reasoning lineup rendered live from the catalog (Sol, Fable, Kimi K3, DeepSeek...) + temperature/top_p/reasoning_effort guidance"
     },
     {
       "id": 15,

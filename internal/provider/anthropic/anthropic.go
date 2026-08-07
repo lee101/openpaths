@@ -4,6 +4,9 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,15 +16,27 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/openpaths/openpaths/internal/model"
+	"github.com/openpaths/openpaths/internal/promptcache"
 	"github.com/openpaths/openpaths/internal/provider"
 )
 
 const anthropicVersion = "2023-06-01"
 
+// extendedCacheTTLBeta is required to request 1h cache TTLs.
+const extendedCacheTTLBeta = "extended-cache-ttl-2025-04-11"
+
 type AnthropicProvider struct {
-	apiKey  string
-	baseURL string
-	client  *http.Client
+	apiKey    string
+	baseURL   string
+	client    *http.Client
+	optimizer *promptcache.Optimizer
+}
+
+// SetCacheOptimizer attaches a prompt-cache cost optimizer. When set, the
+// provider enables Anthropic prompt caching and picks the cheapest TTL per
+// stable prefix. Nil-safe: with no optimizer, no cache_control is sent.
+func (p *AnthropicProvider) SetCacheOptimizer(o *promptcache.Optimizer) {
+	p.optimizer = o
 }
 
 func New(apiKey, baseURL string) *AnthropicProvider {
@@ -39,13 +54,41 @@ func (p *AnthropicProvider) Name() string { return "anthropic" }
 
 // Anthropic API types
 type anthropicRequest struct {
-	Model     string             `json:"model"`
-	Messages  []anthropicMessage `json:"messages"`
-	System    string             `json:"system,omitempty"`
-	MaxTokens int                `json:"max_tokens"`
-	Stream    bool               `json:"stream,omitempty"`
-	Tools     []anthropicTool    `json:"tools,omitempty"`
-	Thinking  *anthropicThinking `json:"thinking,omitempty"`
+	Model        string                 `json:"model"`
+	Messages     []anthropicMessage     `json:"messages"`
+	System       any                    `json:"system,omitempty"`
+	MaxTokens    int                    `json:"max_tokens"`
+	Stream       bool                   `json:"stream,omitempty"`
+	Temperature  *float64               `json:"temperature,omitempty"`
+	TopP         *float64               `json:"top_p,omitempty"`
+	Tools        []anthropicTool        `json:"tools,omitempty"`
+	Thinking     *anthropicThinking     `json:"thinking,omitempty"`
+	OutputConfig *anthropicOutputConfig `json:"output_config,omitempty"`
+}
+
+// anthropicCacheControl is attached to cacheable system/content/tool blocks.
+// ttl is "5m" (default) or "1h".
+type anthropicCacheControl struct {
+	Type string `json:"type"`          // "ephemeral"
+	TTL  string `json:"ttl,omitempty"` // "5m" | "1h"
+}
+
+type anthropicTextBlock struct {
+	Type         string                 `json:"type"`
+	Text         string                 `json:"text"`
+	CacheControl *anthropicCacheControl `json:"cache_control,omitempty"`
+}
+
+type anthropicImageBlock struct {
+	Type   string               `json:"type"`
+	Source anthropicImageSource `json:"source"`
+}
+
+type anthropicImageSource struct {
+	Type      string `json:"type"`
+	URL       string `json:"url,omitempty"`
+	MediaType string `json:"media_type,omitempty"`
+	Data      string `json:"data,omitempty"`
 }
 
 type anthropicMessage struct {
@@ -54,14 +97,19 @@ type anthropicMessage struct {
 }
 
 type anthropicTool struct {
-	Name        string `json:"name"`
-	Description string `json:"description,omitempty"`
-	InputSchema any    `json:"input_schema,omitempty"`
+	Name         string                 `json:"name"`
+	Description  string                 `json:"description,omitempty"`
+	InputSchema  any                    `json:"input_schema,omitempty"`
+	CacheControl *anthropicCacheControl `json:"cache_control,omitempty"`
 }
 
 type anthropicThinking struct {
 	Type         string `json:"type"`
 	BudgetTokens int    `json:"budget_tokens,omitempty"`
+}
+
+type anthropicOutputConfig struct {
+	Effort string `json:"effort,omitempty"`
 }
 
 type anthropicResponse struct {
@@ -83,8 +131,16 @@ type anthropicContent struct {
 }
 
 type anthropicUsage struct {
-	InputTokens  int `json:"input_tokens"`
-	OutputTokens int `json:"output_tokens"`
+	InputTokens              int `json:"input_tokens"`
+	OutputTokens             int `json:"output_tokens"`
+	CacheCreationInputTokens int `json:"cache_creation_input_tokens,omitempty"`
+	CacheReadInputTokens     int `json:"cache_read_input_tokens,omitempty"`
+}
+
+// promptTokens is the total billable input: uncached + cache reads + cache writes.
+// Anthropic reports input_tokens excluding cached/written tokens.
+func (u anthropicUsage) promptTokens() int {
+	return u.InputTokens + u.CacheReadInputTokens + u.CacheCreationInputTokens
 }
 
 // Streaming event types
@@ -105,6 +161,7 @@ type anthropicDelta struct {
 
 func (p *AnthropicProvider) ChatCompletion(ctx context.Context, req *model.ChatCompletionRequest) (*model.ChatCompletionResponse, error) {
 	anthReq := translateRequest(req)
+	p.applyCacheControl(anthReq)
 
 	body, err := json.Marshal(anthReq)
 	if err != nil {
@@ -118,6 +175,7 @@ func (p *AnthropicProvider) ChatCompletion(ctx context.Context, req *model.ChatC
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("x-api-key", p.apiKey)
 	httpReq.Header.Set("anthropic-version", anthropicVersion)
+	setCacheBeta(httpReq, anthReq)
 
 	resp, err := p.client.Do(httpReq)
 	if err != nil {
@@ -146,12 +204,16 @@ func (p *AnthropicProvider) ChatCompletion(ctx context.Context, req *model.ChatC
 		return nil, fmt.Errorf("unmarshal response: %w", err)
 	}
 
+	if p.optimizer != nil {
+		p.optimizer.RecordResult(anthReq.Model, anthResp.Usage.CacheReadInputTokens, anthResp.Usage.CacheCreationInputTokens)
+	}
 	return translateResponse(&anthResp, req.Model), nil
 }
 
 func (p *AnthropicProvider) ChatCompletionStream(ctx context.Context, req *model.ChatCompletionRequest) (<-chan provider.StreamEvent, error) {
 	anthReq := translateRequest(req)
 	anthReq.Stream = true
+	p.applyCacheControl(anthReq)
 
 	body, err := json.Marshal(anthReq)
 	if err != nil {
@@ -165,6 +227,7 @@ func (p *AnthropicProvider) ChatCompletionStream(ctx context.Context, req *model
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("x-api-key", p.apiKey)
 	httpReq.Header.Set("anthropic-version", anthropicVersion)
+	setCacheBeta(httpReq, anthReq)
 
 	resp, err := p.client.Do(httpReq)
 	if err != nil {
@@ -216,8 +279,12 @@ func (p *AnthropicProvider) ChatCompletionStream(ctx context.Context, req *model
 
 				switch event.Type {
 				case "message_start":
-					if event.Message != nil && event.Message.Usage.InputTokens > 0 {
-						totalUsage.PromptTokens = event.Message.Usage.InputTokens
+					if event.Message != nil {
+						// Includes cached read+write tokens; cache discount accrues to
+						// us, not the customer (see translateResponse).
+						totalUsage.PromptTokens = event.Message.Usage.promptTokens()
+						totalUsage.CacheReadTokens = event.Message.Usage.CacheReadInputTokens
+						totalUsage.CacheWriteTokens = event.Message.Usage.CacheCreationInputTokens
 					}
 
 				case "content_block_delta":
@@ -262,6 +329,9 @@ func (p *AnthropicProvider) ChatCompletionStream(ctx context.Context, req *model
 
 				case "message_stop":
 					totalUsage.TotalTokens = totalUsage.PromptTokens + totalUsage.CompletionTokens
+					if p.optimizer != nil {
+						p.optimizer.RecordResult(anthReq.Model, totalUsage.CacheReadTokens, totalUsage.CacheWriteTokens)
+					}
 					ch <- provider.StreamEvent{Done: true, Usage: &totalUsage}
 					return
 				}
@@ -306,8 +376,12 @@ func translateRequest(req *model.ChatCompletionRequest) *anthropicRequest {
 	if req.MaxCompletionTokens != nil {
 		anthReq.MaxTokens = *req.MaxCompletionTokens
 	}
-	if thinking := reasoningToThinking(req.ReasoningEffort, anthReq.MaxTokens); thinking != nil {
-		anthReq.Thinking = thinking
+	applyAnthropicReasoning(anthReq, req.ReasoningEffort)
+	// Current adaptive-thinking models reject non-default sampling controls.
+	// Older/manual-thinking models still accept the OpenAI equivalents.
+	if !usesAdaptiveThinking(req.Model) {
+		anthReq.Temperature = req.Temperature
+		anthReq.TopP = req.TopP
 	}
 
 	// Extract system message
@@ -321,7 +395,7 @@ func translateRequest(req *model.ChatCompletionRequest) *anthropicRequest {
 		}
 		messages = append(messages, anthropicMessage{
 			Role:    msg.Role,
-			Content: msg.Content,
+			Content: translateContentBlocks(msg.Content),
 		})
 	}
 	// Cross-provider prefill: Anthropic accepts a trailing assistant message to
@@ -339,6 +413,9 @@ func translateRequest(req *model.ChatCompletionRequest) *anthropicRequest {
 
 	// Translate tools
 	for _, tool := range req.Tools {
+		if tool.Function == nil {
+			continue
+		}
 		anthReq.Tools = append(anthReq.Tools, anthropicTool{
 			Name:        tool.Function.Name,
 			Description: tool.Function.Description,
@@ -347,6 +424,248 @@ func translateRequest(req *model.ChatCompletionRequest) *anthropicRequest {
 	}
 
 	return anthReq
+}
+
+// applyCacheControl records the request's prefix timing and sets the cheapest
+// cache_control TTL for it, as decided by the optimizer. No-op when no optimizer
+// is attached.
+func (p *AnthropicProvider) applyCacheControl(anthReq *anthropicRequest) {
+	if p.optimizer == nil {
+		return
+	}
+	// Anthropic only caches prefixes above a minimum size (~1024 tokens for
+	// Opus/Sonnet). Below that, cache_control is ignored upstream, so skip it
+	// rather than track a prefix that can never produce a cache write/hit.
+	if cacheablePrefixChars(anthReq) < minCacheablePrefixChars {
+		return
+	}
+	key := prefixKey(anthReq)
+	p.optimizer.Observe(key, anthReq.Model, time.Now())
+	switch p.optimizer.Decide(key) {
+	case promptcache.TTL5m:
+		attachCacheControl(anthReq, &anthropicCacheControl{Type: "ephemeral", TTL: "5m"})
+	case promptcache.TTL1h:
+		attachCacheControl(anthReq, &anthropicCacheControl{Type: "ephemeral", TTL: "1h"})
+	}
+}
+
+func attachCacheControl(anthReq *anthropicRequest, cc *anthropicCacheControl) {
+	if cc == nil {
+		return
+	}
+	if len(anthReq.Tools) > 0 {
+		anthReq.Tools[len(anthReq.Tools)-1].CacheControl = cc
+		return
+	}
+	if anthReq.System == nil {
+		return
+	}
+	switch sys := anthReq.System.(type) {
+	case string:
+		anthReq.System = []anthropicTextBlock{{Type: "text", Text: sys, CacheControl: cc}}
+	case []anthropicTextBlock:
+		if len(sys) == 0 {
+			anthReq.System = []anthropicTextBlock{{Type: "text", Text: "", CacheControl: cc}}
+			return
+		}
+		sys[len(sys)-1].CacheControl = cc
+		anthReq.System = sys
+	case []any:
+		if len(sys) > 0 {
+			if block, ok := sys[len(sys)-1].(map[string]any); ok {
+				block["cache_control"] = cc
+				sys[len(sys)-1] = block
+			}
+		}
+		anthReq.System = sys
+	}
+}
+
+// minCacheablePrefixChars approximates Anthropic's ~1024-token minimum cacheable
+// prefix at ~4 chars/token. Below this we don't bother requesting a cache.
+const minCacheablePrefixChars = 4096
+
+// cacheablePrefixChars estimates the size of the stable cacheable head
+// (system + tools) in characters.
+func cacheablePrefixChars(anthReq *anthropicRequest) int {
+	n := systemTextLen(anthReq.System)
+	if len(anthReq.Tools) > 0 {
+		if tb, err := json.Marshal(anthReq.Tools); err == nil {
+			n += len(tb)
+		}
+	}
+	return n
+}
+
+// prefixKey identifies the stable cacheable head of a request (model + system +
+// tools), matching how Anthropic prefix-matches caches across turns.
+func prefixKey(anthReq *anthropicRequest) string {
+	h := sha256.New()
+	io.WriteString(h, anthReq.Model)
+	h.Write([]byte{0})
+	io.WriteString(h, systemText(anthReq.System))
+	h.Write([]byte{0})
+	if len(anthReq.Tools) > 0 {
+		if tb, err := json.Marshal(anthReq.Tools); err == nil {
+			h.Write(tb)
+		}
+	}
+	return hex.EncodeToString(h.Sum(nil)[:16])
+}
+
+// setCacheBeta adds the beta header required for 1h cache TTLs.
+func setCacheBeta(httpReq *http.Request, anthReq *anthropicRequest) {
+	if requestCacheControlTTL(anthReq) == "1h" {
+		httpReq.Header.Set("anthropic-beta", extendedCacheTTLBeta)
+	}
+}
+
+func requestCacheControlTTL(anthReq *anthropicRequest) string {
+	for _, tool := range anthReq.Tools {
+		if tool.CacheControl != nil && tool.CacheControl.TTL != "" {
+			return tool.CacheControl.TTL
+		}
+	}
+	for _, block := range systemTextBlocks(anthReq.System) {
+		if block.CacheControl != nil && block.CacheControl.TTL != "" {
+			return block.CacheControl.TTL
+		}
+	}
+	for _, msg := range anthReq.Messages {
+		for _, block := range contentTextBlocks(msg.Content) {
+			if block.CacheControl != nil && block.CacheControl.TTL != "" {
+				return block.CacheControl.TTL
+			}
+		}
+	}
+	return ""
+}
+
+func systemTextLen(system any) int {
+	return len(systemText(system))
+}
+
+func systemText(system any) string {
+	switch s := system.(type) {
+	case string:
+		return s
+	case []anthropicTextBlock:
+		var b strings.Builder
+		for _, block := range s {
+			b.WriteString(block.Text)
+		}
+		return b.String()
+	default:
+		if system == nil {
+			return ""
+		}
+		data, _ := json.Marshal(system)
+		return string(data)
+	}
+}
+
+func systemTextBlocks(system any) []anthropicTextBlock {
+	if blocks, ok := system.([]anthropicTextBlock); ok {
+		return blocks
+	}
+	return nil
+}
+
+func contentTextBlocks(content any) []anthropicTextBlock {
+	if blocks, ok := content.([]anthropicTextBlock); ok {
+		return blocks
+	}
+	return nil
+}
+
+func translateContentBlocks(content any) any {
+	switch c := content.(type) {
+	case []any:
+		return translateContentBlockSlice(c)
+	case []map[string]any:
+		parts := make([]any, 0, len(c))
+		for _, part := range c {
+			parts = append(parts, part)
+		}
+		return translateContentBlockSlice(parts)
+	default:
+		return content
+	}
+}
+
+func translateContentBlockSlice(parts []any) any {
+	translated := make([]any, 0, len(parts))
+	for _, part := range parts {
+		block, ok := part.(map[string]any)
+		if !ok {
+			translated = append(translated, part)
+			continue
+		}
+		switch blockType, _ := block["type"].(string); blockType {
+		case "text":
+			if text, ok := block["text"].(string); ok {
+				translated = append(translated, anthropicTextBlock{Type: "text", Text: text})
+				continue
+			}
+		case "image_url":
+			if img, ok := anthropicImageBlockFromOpenAI(block); ok {
+				translated = append(translated, img)
+				continue
+			}
+		}
+		translated = append(translated, part)
+	}
+	return translated
+}
+
+func anthropicImageBlockFromOpenAI(block map[string]any) (anthropicImageBlock, bool) {
+	var rawURL string
+	switch v := block["image_url"].(type) {
+	case string:
+		rawURL = v
+	case map[string]any:
+		rawURL, _ = v["url"].(string)
+	}
+	rawURL = strings.TrimSpace(rawURL)
+	if rawURL == "" {
+		return anthropicImageBlock{}, false
+	}
+	if strings.HasPrefix(rawURL, "data:") {
+		mediaType, data, ok := parseDataImageURL(rawURL)
+		if !ok {
+			return anthropicImageBlock{}, false
+		}
+		return anthropicImageBlock{
+			Type: "image",
+			Source: anthropicImageSource{
+				Type:      "base64",
+				MediaType: mediaType,
+				Data:      data,
+			},
+		}, true
+	}
+	return anthropicImageBlock{
+		Type: "image",
+		Source: anthropicImageSource{
+			Type: "url",
+			URL:  rawURL,
+		},
+	}, true
+}
+
+func parseDataImageURL(rawURL string) (string, string, bool) {
+	header, data, ok := strings.Cut(rawURL, ",")
+	if !ok || !strings.Contains(header, ";base64") {
+		return "", "", false
+	}
+	mediaType := strings.TrimPrefix(strings.TrimSuffix(header, ";base64"), "data:")
+	if mediaType == "" {
+		mediaType = "image/jpeg"
+	}
+	if _, err := base64.StdEncoding.DecodeString(data); err != nil {
+		return "", "", false
+	}
+	return mediaType, data, true
 }
 
 func reasoningToThinking(effort string, maxTokens int) *anthropicThinking {
@@ -383,6 +702,97 @@ func reasoningToThinking(effort string, maxTokens int) *anthropicThinking {
 		Type:         "enabled",
 		BudgetTokens: budget,
 	}
+}
+
+// applyAnthropicReasoning selects the current Anthropic dialect per model.
+// Sonnet 5 and Opus 4.7+ reject manual budget_tokens; current models use
+// output_config.effort and adaptive thinking instead. Older Claude models keep
+// the manual budget mapping for backwards compatibility.
+func applyAnthropicReasoning(req *anthropicRequest, effort string) {
+	effort = strings.ToLower(strings.TrimSpace(effort))
+	if effort == "minimal" {
+		effort = "low"
+	}
+	if effort == "xhigh" && !supportsXHighEffort(req.Model) {
+		effort = "max"
+	}
+	if effort == "none" {
+		// Sonnet 5 and Opus 5 think by default, so "no reasoning" has to be
+		// requested explicitly. Opus 5 only accepts disabled thinking at effort
+		// high or below, and high is the server-side default, so sending
+		// disabled on its own is valid.
+		if thinksByDefault(req.Model) {
+			req.Thinking = &anthropicThinking{Type: "disabled"}
+		}
+		return
+	}
+	if effort == "" {
+		return
+	}
+
+	if usesAdaptiveThinking(req.Model) {
+		if effort == "auto" {
+			if !thinksByDefault(req.Model) {
+				req.Thinking = &anthropicThinking{Type: "adaptive"}
+			}
+			return
+		}
+		switch effort {
+		case "low", "medium", "high", "xhigh", "max":
+			req.OutputConfig = &anthropicOutputConfig{Effort: effort}
+		default:
+			return
+		}
+		// Fable 5, Sonnet 5 and Opus 5 have adaptive thinking enabled by
+		// default. Opus 4.x and 4.6-generation models require the explicit
+		// adaptive switch.
+		if !thinksByDefault(req.Model) {
+			req.Thinking = &anthropicThinking{Type: "adaptive"}
+		}
+		return
+	}
+	if effort == "auto" || effort == "max" {
+		effort = "high"
+	}
+	req.Thinking = reasoningToThinking(effort, req.MaxTokens)
+}
+
+func usesAdaptiveThinking(modelID string) bool {
+	id := strings.ToLower(strings.TrimSpace(modelID))
+	for _, prefix := range []string{
+		"claude-fable-5", "claude-opus-5", "claude-opus-4-8", "claude-opus-4-7",
+		"claude-opus-4-6", "claude-sonnet-5", "claude-sonnet-4-6",
+	} {
+		if strings.HasPrefix(id, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+// thinksByDefault reports whether the model runs adaptive thinking when the
+// request carries no thinking field, so the explicit adaptive switch is
+// redundant and "no reasoning" has to be sent as thinking: disabled.
+func thinksByDefault(modelID string) bool {
+	id := strings.ToLower(strings.TrimSpace(modelID))
+	return strings.HasPrefix(id, "claude-fable-5") ||
+		strings.HasPrefix(id, "claude-sonnet-5") ||
+		strings.HasPrefix(id, "claude-opus-5")
+}
+
+// supportsXHighEffort reports whether the model accepts the xhigh effort level
+// natively. Older models cap out at max, so xhigh is folded into it there.
+func supportsXHighEffort(modelID string) bool {
+	id := strings.ToLower(strings.TrimSpace(modelID))
+	for _, prefix := range []string{
+		"claude-fable-5", "claude-opus-5", "claude-opus-4-8", "claude-opus-4-7",
+		"claude-sonnet-5",
+	} {
+		if strings.HasPrefix(id, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 func translateResponse(resp *anthropicResponse, requestModel string) *model.ChatCompletionResponse {
@@ -427,10 +837,18 @@ func translateResponse(resp *anthropicResponse, requestModel string) *model.Chat
 			Message:      message,
 			FinishReason: &finishReason,
 		}},
+		// PromptTokens includes cached read+write tokens (Anthropic excludes them
+		// from input_tokens) so customers are billed for the full prompt. We do not
+		// set PromptCacheHitTokens: caching is a cost optimization for our upstream
+		// spend, so the cache discount accrues to us rather than being passed
+		// through. To pass savings to customers instead, set PromptCacheHitTokens =
+		// CacheReadInputTokens and configure input_cache_hit_price_per_1m.
 		Usage: &model.UsageInfo{
-			PromptTokens:     resp.Usage.InputTokens,
+			PromptTokens:     resp.Usage.promptTokens(),
 			CompletionTokens: resp.Usage.OutputTokens,
-			TotalTokens:      resp.Usage.InputTokens + resp.Usage.OutputTokens,
+			TotalTokens:      resp.Usage.promptTokens() + resp.Usage.OutputTokens,
+			CacheReadTokens:  resp.Usage.CacheReadInputTokens,
+			CacheWriteTokens: resp.Usage.CacheCreationInputTokens,
 		},
 	}
 }

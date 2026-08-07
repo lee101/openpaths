@@ -17,6 +17,9 @@ interface ProviderExample {
   transcriptionModel?: string;
   embeddingModel?: string;
   realtimeModel?: string;
+  realtimeURL?: string;
+  realtimeAPIKeyEnv?: string;
+  realtimeVoice?: string;
   provides?: Array<{
     title: string;
     description: string;
@@ -26,16 +29,27 @@ interface ProviderExample {
 
 const EXAMPLES: Record<string, ProviderExample> = {
   openai: {
-    description: 'OpenAI GPT-5, GPT-4o, o3/o4 reasoning, GPT Image 2, Sora 2 video, and Whisper transcription — routed through OpenPaths.',
+    description: 'OpenAI GPT-5, GPT Realtime voice, o3/o4 reasoning, GPT Image 2, Sora 2 video, and transcription — routed through OpenPaths.',
     endpoint: '/v1',
     chatModel: 'openai-chat-latest',
     imageModel: 'gpt-image-2',
     videoModel: 'sora-2',
     transcriptionModel: 'gpt-4o-transcribe',
+    realtimeModel: 'gpt-realtime-2.1',
+    realtimeURL: 'wss://api.openai.com/v1/realtime',
+    realtimeAPIKeyEnv: 'OPENAI_API_KEY',
+    realtimeVoice: 'marin',
+    provides: [
+      {
+        title: 'GPT Live voice',
+        description: 'Provider-native speech-to-speech over WebRTC, WebSocket, or SIP. GPT Realtime 2.1 uses token pricing: text is $4/$24 and audio is $32/$64 per 1M input/output tokens.',
+      },
+    ],
     notes: [
       'gpt-image-2 returns base64 PNGs by default — decode with base64.b64decode.',
       'sora-2 is async; OpenPaths polls for you and returns a signed content URL.',
       'Use openai-coding-latest alias for gpt-5-codex.',
+      '`gpt-realtime-2.1` is the flagship live voice route; use `gpt-realtime-2.1-mini` for lower-cost calls.',
       'If the direct OpenAI GPT Image 2 path goes unhealthy, OpenPaths can fail over to Fal-hosted GPT Image 2 using the model-level circuit breaker.',
     ],
   },
@@ -60,17 +74,20 @@ const EXAMPLES: Record<string, ProviderExample> = {
     ],
   },
   xai: {
-    description: 'Grok 4.3 reasoning, Grok 4.20 Non-Reasoning, Grok Imagine Image, plus xAI Voice Agent, Text to Speech, and Speech to Text APIs.',
+    description: 'Grok 4.5, Grok Build, Grok 4.3/4.20, Grok Imagine, plus xAI realtime Voice, Text to Speech, and Speech to Text APIs.',
     endpoint: '/v1',
     chatModel: 'grok-latest',
     imageModel: 'grok-imagine-image',
     speechModel: 'xai-tts',
     transcriptionModel: 'xai-stt',
-    realtimeModel: 'grok-voice-think-fast-1.0',
+    realtimeModel: 'grok-voice-latest',
+    realtimeURL: 'wss://api.x.ai/v1/realtime',
+    realtimeAPIKeyEnv: 'XAI_API_KEY',
+    realtimeVoice: 'eve',
     provides: [
       {
         title: 'Voice Agent API',
-        description: 'Realtime speech-to-speech conversations with tool use over xAI’s `/v1/realtime` WebSocket API, powered by `grok-voice-think-fast-1.0` at $3.00 per hour.',
+        description: 'Realtime speech-to-speech over xAI’s `/v1/realtime` WebSocket API. Use `grok-voice-latest`, or pin Think Fast 1.0 ($3.00/hour) or 2.0 ($4.80/hour). Text-only input events are $0.004 each.',
       },
       {
         title: 'Text to Speech',
@@ -78,17 +95,27 @@ const EXAMPLES: Record<string, ProviderExample> = {
       },
       {
         title: 'Speech to Text',
-        description: 'Transcribe audio through `/v1/stt` or `/v1/audio/transcriptions` with batch uploads, streaming upstream support, and 25 language-formatting options at $0.20 per hour.',
+        description: 'Transcribe audio through `/v1/stt` or `/v1/audio/transcriptions` at the REST rate of $0.10/hour. xAI’s provider-native streaming STT endpoint is $0.20/hour.',
       },
       {
         title: 'Grok Imagine Image',
-        description: 'Generate images through `/v1/images/generations` or edit one to five input images through `/v1/images/edits`. Output images are $0.02 each and image inputs are $0.002 each.',
+        description: 'Standard outputs are $0.02 each with $0.002 inputs. Quality outputs cost $0.05 at 1K or $0.07 at 2K, with $0.01 input images.',
+      },
+      {
+        title: 'Grok Imagine Video',
+        description: 'Video output is resolution-priced: Grok Imagine costs $0.05/sec at 480p or $0.07/sec at 720p; Video 1.5 costs $0.08/$0.14/$0.25 per second at 480p/720p/1080p.',
+      },
+      {
+        title: 'Server-side Tools',
+        description: 'xAI bills tokens plus invocations: web/X search and code execution are $5/1K calls, attachments $10/1K, and collections/file search $2.50/1K. Image/video understanding and remote MCP tools are token-priced.',
       },
     ],
     notes: [
       '`grok-latest` resolves automatically to the highest configured xAI Grok text model.',
       '`/v1/tts` defaults to `xai-tts`; `/v1/stt` defaults to `xai-stt`.',
-      'Realtime voice uses xAI’s WebSocket shape: `wss://.../v1/realtime?model=grok-voice-think-fast-1.0`.',
+      '`grok-voice-latest` follows xAI’s newest voice model; pin a versioned Think Fast ID when production behavior and pricing must remain stable.',
+      'Realtime voice uses xAI’s WebSocket endpoint: `wss://api.x.ai/v1/realtime?model=grok-voice-latest`.',
+      'Grok text prices double for the entire request once the prompt reaches 200K tokens.',
     ],
   },
   deepseek: {
@@ -260,9 +287,9 @@ const EXAMPLES: Record<string, ProviderExample> = {
     videoModel: 'hailuo-2.3',
   },
   zai: {
-    description: 'GLM-5, GLM-4.7, GLM-4.6v vision, and GLM Image generation.',
+    description: 'GLM-5.2, GLM-5.1, GLM-5, GLM-4.7, GLM-4.6v vision, and GLM Image generation. BYOK GLM Coding Plan keys are routed to z.ai’s coding endpoint (api.z.ai/api/coding/paas/v4) and circuit-break down the GLM series (5.2 → 5.1 → 5) on failure.',
     endpoint: '/v1',
-    chatModel: 'zai/glm-5.1',
+    chatModel: 'glm-5.2',
     imageModel: 'glm-image',
   },
   fireworks: {
@@ -409,8 +436,10 @@ export function ProviderDocs() {
           {provider && (
             <img
               src={provider.logo || FALLBACK_LOGO}
+              srcSet={provider.logoSrcSet}
+              sizes="48px"
               alt=""
-              className="w-12 h-12 rounded-lg border border-white/10 bg-white/[0.04] p-2 object-contain"
+              className={`w-12 h-12 rounded-lg border border-white/10 p-2 object-contain ${provider.slug === 'black-forest-labs' ? 'bg-white' : 'bg-white/[0.04]'}`}
             />
           )}
           <div>
@@ -763,6 +792,37 @@ print(transcript.text)`,
     });
   }
   if (ex?.realtimeModel) {
+    const realtimeURL = ex.realtimeURL || 'wss://api.x.ai/v1/realtime';
+    const realtimeAPIKeyEnv = ex.realtimeAPIKeyEnv || 'XAI_API_KEY';
+    const realtimeVoice = ex.realtimeVoice || 'eve';
+    const realtimeSession = realtimeAPIKeyEnv === 'OPENAI_API_KEY'
+      ? `{
+            "type": "session.update",
+            "session": {
+                "type": "realtime",
+                "model": "${ex.realtimeModel}",
+                "output_modalities": ["audio"],
+                "instructions": "You are a concise voice assistant.",
+                "audio": {
+                    "input": {
+                        "format": {"type": "audio/pcm", "rate": 24000},
+                        "turn_detection": {"type": "semantic_vad"},
+                    },
+                    "output": {
+                        "format": {"type": "audio/pcm"},
+                        "voice": "${realtimeVoice}",
+                    },
+                },
+            },
+        }`
+      : `{
+            "type": "session.update",
+            "session": {
+                "voice": "${realtimeVoice}",
+                "instructions": "You are a concise voice assistant.",
+                "turn_detection": {"type": "server_vad"},
+            },
+        }`;
     out.push({
       title: 'Realtime Voice',
       description: `Default realtime model: ${ex.realtimeModel}`,
@@ -773,17 +833,10 @@ import websockets
 
 async def main():
     async with websockets.connect(
-        "wss://api.x.ai/v1/realtime?model=${ex.realtimeModel}",
-        additional_headers={"Authorization": f"Bearer {os.environ['XAI_API_KEY']}"},
+        "${realtimeURL}?model=${ex.realtimeModel}",
+        additional_headers={"Authorization": f"Bearer {os.environ['${realtimeAPIKeyEnv}']}"},
     ) as ws:
-        await ws.send(json.dumps({
-            "type": "session.update",
-            "session": {
-                "voice": "eve",
-                "instructions": "You are a concise voice assistant.",
-                "turn_detection": {"type": "server_vad"},
-            },
-        }))
+        await ws.send(json.dumps(${realtimeSession}))
         await ws.send(json.dumps({
             "type": "conversation.item.create",
             "item": {
@@ -798,8 +851,8 @@ async def main():
 
 asyncio.run(main())`,
       curl: `# Realtime voice is a WebSocket endpoint.
-# Use an xAI API key with a WebSocket client and connect to:
-wss://api.x.ai/v1/realtime?model=${ex.realtimeModel}`,
+# Use a provider API key with a WebSocket client and connect to:
+${realtimeURL}?model=${ex.realtimeModel}`,
     });
   }
   if (ex?.embeddingModel) {

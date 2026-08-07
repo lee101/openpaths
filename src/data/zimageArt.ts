@@ -17,6 +17,10 @@ export type ZImageArtItem = {
   tags?: string[];
   createdAt?: string;
   score?: number;
+  mediaType?: string; // 'image' | 'video'
+  videoUrl?: string;
+  posterUrl?: string;
+  durationSeconds?: number;
 };
 
 export type ArtTagFacet = { tag: string; count: number };

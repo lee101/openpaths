@@ -1,0 +1,55 @@
+{
+  "_readme": "Editable model blurbs injected into email templates via {{.ModelCards.<section>}}. Cards only render when the id exists in config.yaml (by id or alias), and pricing/context is pulled live from the catalog — so emails never name stale models. Add/remove/reorder entries freely.",
+  "sections": {
+    "reasoning": [
+      {
+        "id": "gpt-5.6-sol",
+        "name": "GPT-5.6 Sol",
+        "note": "The raw-intelligence pick. OpenAI's deepest reasoner — strongest on hard math, science and multi-step agentic work. Escalate here when correctness beats cost.",
+        "settings": "reasoning_effort: high · leave temperature at default — reasoning models manage their own sampling"
+      },
+      {
+        "id": "gpt-5.6-terra",
+        "name": "GPT-5.6 Terra",
+        "note": "The balanced flagship: same 1M context as Sol at 40% of the price. The right default for production reasoning workloads.",
+        "settings": "reasoning_effort: medium is the sweet spot for most tasks"
+      },
+      {
+        "id": "claude-fable-5",
+        "name": "Claude Fable 5",
+        "note": "Anthropic's frontier model. Exceptional sustained agentic coding, careful long-document analysis, and honest uncertainty handling — thinks before it answers with extended thinking.",
+        "settings": "extended thinking with a thinking budget; temperature 1.0 while thinking is enabled"
+      },
+      {
+        "id": "claude-opus-4-8",
+        "name": "Claude Opus 4.8",
+        "note": "The dependable agentic-coding workhorse. Slightly behind Fable on raw reasoning, identical pricing, battle-tested on long tool-use loops.",
+        "settings": "temperature 0–0.3 for code, 1.0 with extended thinking for hard problems"
+      },
+      {
+        "id": "kimi-k3",
+        "name": "Kimi K3",
+        "note": "The open-weights frontier. Moonshot's 1M-context reasoner with vision and strong agentic tool use — frontier-class results with open weights.",
+        "settings": "temperature 0.6 recommended by Moonshot; top_p 0.95"
+      },
+      {
+        "id": "deepseek-v4-pro",
+        "name": "DeepSeek V4 Pro",
+        "note": "Cost-efficient deep reasoning: 1M context and up to 384K output tokens at a fraction of frontier pricing. The best $/reasoning-token on the menu.",
+        "settings": "temperature 0.6 for reasoning, 0 for extraction · avoid setting top_p and temperature together"
+      },
+      {
+        "id": "gemini-3.5-flash",
+        "name": "Gemini 3.5 Flash",
+        "note": "The cost-efficiency king with thinking enabled. 1M context, very fast time-to-first-token — ideal for high-volume pipelines that still need real reasoning.",
+        "settings": "thinking budget auto · temperature 0.7 default, 0 for classification"
+      },
+      {
+        "id": "grok-4.5",
+        "name": "Grok 4.5",
+        "note": "xAI's fast frontier reasoner with 500K context. Strong on current-events reasoning and willing to take positions other models hedge on.",
+        "settings": "temperature 0.7 default · pair with search tools for live data"
+      }
+    ]
+  }
+}

@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"log"
-	"os"
 
 	"github.com/openpaths/openpaths/internal/config"
 	"github.com/openpaths/openpaths/internal/cron"
@@ -33,13 +32,18 @@ func main() {
 		log.Fatalf("migrations: %v", err)
 	}
 
-	prober := cron.NewModelProber(queries.NewModelProbeQueries(database.Pool), cfg.Models)
+	prober := cron.NewModelProber(
+		queries.NewModelProbeQueries(database.Pool),
+		queries.NewAPIKeyQueries(database.Pool),
+		queries.NewUserQueries(database.Pool),
+		queries.NewCreditQueries(database.Pool),
+		cfg.Models,
+	)
 	if prober == nil {
 		log.Fatal("model prober init failed")
 	}
-	if os.Getenv("OPENPATHS_PROBE_API_KEY") == "" && os.Getenv("OPENPATHS_API_KEY") == "" && os.Getenv("APP_API_KEY") == "" {
-		log.Fatal("set OPENPATHS_PROBE_API_KEY, OPENPATHS_API_KEY, or APP_API_KEY")
-	}
+	// If no explicit probe key is set, the prober auto-provisions one against
+	// the database (see ensureProbeKey).
 	prober.RunOnce()
 	log.Printf("model probe run complete")
 }

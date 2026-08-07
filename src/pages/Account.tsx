@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Activity,
   ArrowUpRight,
@@ -10,11 +11,15 @@ import {
   CreditCard,
   Eye,
   EyeOff,
+  FileText,
+  Image as ImageIcon,
   Key,
   LogOut,
   Plus,
   Repeat,
+  Save,
   ShieldCheck,
+  Sparkles,
   TriangleAlert,
   Wallet,
   X,
@@ -30,28 +35,24 @@ import {
   Tooltip,
   Cell,
   CartesianGrid,
+  PieChart,
+  Pie,
+  Legend,
 } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
-import { loadStripe } from '@stripe/stripe-js';
 import {
   Elements,
-  EmbeddedCheckout,
-  EmbeddedCheckoutProvider,
   PaymentElement,
   useElements,
   useStripe,
 } from '@stripe/react-stripe-js';
+import { TopUpModal, getStripe } from '../components/TopUpModal';
+import { AUTH_EVENT, clearApiKey, setApiKey as storeApiKey } from '../lib/api';
 
 const API_BASE = '';
 const RECOMMENDED_THRESHOLD_USD = 100;
 const RECOMMENDED_TOPUP_USD = 200;
 const QUICK_TOPUP_AMOUNTS = [25, 100, 200, 500];
-
-let stripePromise: ReturnType<typeof loadStripe> | null = null;
-function getStripe(pk: string) {
-  if (!stripePromise && pk) stripePromise = loadStripe(pk);
-  return stripePromise;
-}
 
 declare global {
   interface Window {
@@ -106,9 +107,8 @@ async function api(path: string, opts: RequestInit = {}) {
   const res = await fetch(API_BASE + path, { ...opts, headers });
   if (res.status === 401 && !isAuthEndpoint) {
     window.userData = undefined;
-    localStorage.removeItem('op_api_key');
-    localStorage.removeItem('op_user');
-    window.location.reload();
+    clearApiKey();
+    window.dispatchEvent(new Event('auth-change'));
   }
   return res;
 }
@@ -141,8 +141,29 @@ function formatSignedUnits(units: number): string {
   return `${units > 0 ? '+' : '-'}${formatBalanceUnits(Math.abs(units))}`;
 }
 
+function formatTransactionDate(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Unknown';
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
 function formatUsdWhole(amount: number): string {
   return `$${amount.toLocaleString('en-US')}`;
+}
+
+const PRODUCT_META: Record<string, { label: string; color: string }> = {
+  chat: { label: 'Chat & Text', color: '#6ee7b7' },
+  image: { label: 'Image', color: '#a78bfa' },
+  video: { label: 'Video', color: '#f472b6' },
+  music: { label: 'Music', color: '#fbbf24' },
+  speech: { label: 'Speech / TTS', color: '#38bdf8' },
+  transcription: { label: 'Transcription', color: '#34d399' },
+  embedding: { label: 'Embeddings', color: '#fb923c' },
+  '3d': { label: '3D', color: '#c084fc' },
+};
+
+function productMeta(product: string): { label: string; color: string } {
+  return PRODUCT_META[product] || { label: product.charAt(0).toUpperCase() + product.slice(1), color: '#94a3b8' };
 }
 
 function maskCard(pm: PaymentMethod): string {
@@ -193,12 +214,13 @@ function AuthForms({ onAuth }: { onAuth: (token: string, user: any, newApiKey?: 
         setError(data.error?.message || 'Failed');
         return;
       }
-      const key = data.api_key || data.token;
-      localStorage.setItem('op_api_key', key);
+	  const token = data.token || data.api_key;
+	  if (data.api_key) storeApiKey(data.api_key);
+	  if (token) localStorage.setItem('op_token', token);
       localStorage.setItem('op_user', JSON.stringify(data.user));
-      window.userData = { id: data.user.id, email: data.user.email, name: data.user.name, secret: key, authenticated: true };
+	  window.userData = { id: data.user.id, email: data.user.email, name: data.user.name, secret: token, authenticated: true };
       window.dispatchEvent(new Event('auth-change'));
-      onAuth(key, data.user, data.api_key);
+	  onAuth(token, data.user, data.api_key);
     } catch {
       setError('Network error');
     } finally {
@@ -269,170 +291,6 @@ function AuthForms({ onAuth }: { onAuth: (token: string, user: any, newApiKey?: 
         {mode === 'login' ? 'Need an account? Register' : 'Already have an account? Sign In'}
       </button>
     </div>
-  );
-}
-
-function StripeCheckoutModal({
-  open,
-  onClose,
-  stripePk,
-  initialAmount,
-}: {
-  open: boolean;
-  onClose: () => void;
-  stripePk: string;
-  initialAmount: number;
-}) {
-  const [amount, setAmount] = useState(initialAmount);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    if (!open) return;
-    setAmount(initialAmount);
-    setClientSecret(null);
-    setError('');
-  }, [initialAmount, open]);
-
-  const startCheckout = async () => {
-    if (!stripePk) {
-      setError('Stripe billing is not configured yet.');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-    try {
-      const res = await api('/account/stripe/checkout', {
-        method: 'POST',
-        body: JSON.stringify({ amount_usd: amount }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error?.message || 'Failed to create checkout');
-        return;
-      }
-      setClientSecret(data.client_secret);
-    } catch {
-      setError('Network error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          data-testid="stripe-modal-backdrop"
-          onClick={e => {
-            if (e.target === e.currentTarget) onClose();
-          }}
-        >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 10 }}
-            className="bg-[#090909] border border-white/10 rounded-3xl w-full max-w-2xl p-6 md:p-8 max-h-[90vh] overflow-y-auto shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
-            data-testid="stripe-modal"
-          >
-            <div className="flex items-start justify-between gap-4 mb-6">
-              <div>
-                <p className="text-xs font-mono uppercase tracking-[0.2em] text-white/35 mb-2">Prepaid credits</p>
-                <h2 className="text-2xl font-bold tracking-tight">{clientSecret ? 'Complete Stripe payment' : 'Add funds'}</h2>
-                <p className="text-sm text-white/55 mt-2 max-w-xl">
-                  Stripe is the payment source of truth. OpenPaths keeps the spend model prepaid so your credit balance stays predictable.
-                </p>
-              </div>
-              <button onClick={onClose} className="text-white/40 hover:text-white transition-colors shrink-0" data-testid="stripe-modal-close">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {!clientSecret ? (
-              <>
-                <div className="rounded-2xl border border-emerald-400/20 bg-[linear-gradient(135deg,rgba(16,185,129,0.12),rgba(255,255,255,0.02))] p-5 mb-6">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-xs font-mono uppercase tracking-[0.18em] text-emerald-200/70 mb-2">Recommended</p>
-                      <h3 className="text-lg font-semibold text-white">Keep at least {formatUsdWhole(RECOMMENDED_THRESHOLD_USD)} ready</h3>
-                      <p className="text-sm text-white/60 mt-2">Most teams avoid interruptions by keeping a larger prepaid reserve and using auto-topup as backup.</p>
-                    </div>
-                    <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
-                      <div className="text-xs font-mono text-white/45 mb-1">Top-up now</div>
-                      <div className="text-2xl font-semibold">{formatUsdWhole(RECOMMENDED_TOPUP_USD)}</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                  {QUICK_TOPUP_AMOUNTS.map(a => (
-                    <button
-                      key={a}
-                      onClick={() => setAmount(a)}
-                      data-testid={`amount-${a}`}
-                      className={`rounded-2xl border px-4 py-4 text-left transition-colors ${
-                        amount === a
-                          ? 'border-white bg-white text-black'
-                          : 'border-white/10 bg-white/[0.03] text-white hover:border-white/30'
-                      }`}
-                    >
-                      <div className="text-xs font-mono uppercase tracking-[0.16em] opacity-60">Credit pack</div>
-                      <div className="text-xl font-semibold mt-2">{formatUsdWhole(a)}</div>
-                    </button>
-                  ))}
-                </div>
-
-                <div className="mb-6">
-                  <label className="text-xs font-mono uppercase tracking-[0.16em] text-white/40 block mb-2">Custom amount</label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 font-mono">$</span>
-                    <input
-                      type="number"
-                      min="1"
-                      max="500"
-                      value={amount}
-                      onChange={e => setAmount(Number(e.target.value))}
-                      data-testid="custom-amount-input"
-                      className="w-full bg-black border border-white/10 rounded-2xl py-4 pl-10 pr-4 text-white font-mono focus:outline-none focus:border-white/30"
-                    />
-                  </div>
-                </div>
-
-                {error && <p className="text-red-400 text-sm font-mono mb-4">{error}</p>}
-
-                <button
-                  onClick={startCheckout}
-                  disabled={loading || amount < 1}
-                  data-testid="stripe-checkout-btn"
-                  className="w-full bg-white text-black py-4 rounded-2xl font-mono font-bold text-sm hover:bg-white/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {loading ? (
-                    <span className="animate-spin w-4 h-4 border-2 border-black/20 border-t-black rounded-full" />
-                  ) : (
-                    <>
-                      <CreditCard className="w-4 h-4" />
-                      Pay {formatUsdWhole(amount)} with Stripe
-                    </>
-                  )}
-                </button>
-              </>
-            ) : (
-              <div data-testid="embedded-checkout-container">
-                <EmbeddedCheckoutProvider stripe={getStripe(stripePk)!} options={{ clientSecret }}>
-                  <EmbeddedCheckout />
-                </EmbeddedCheckoutProvider>
-              </div>
-            )}
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
   );
 }
 
@@ -578,8 +436,468 @@ function PaymentMethodSetupModal({
   );
 }
 
+type ActivityDay = { date: string; total_requests: number; total_cost_cents: number };
+
+function fmtDay(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// GitHub-style contribution heatmap of API usage frequency over ~1 year.
+function ContributionHeatmap({ data }: { data: ActivityDay[] }) {
+  const byDate = new Map(data.map(d => [d.date, d]));
+  const max = data.reduce((m, d) => Math.max(m, d.total_requests), 0);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const start = new Date(today);
+  start.setDate(start.getDate() - 364);
+  start.setDate(start.getDate() - start.getDay()); // align to Sunday
+
+  const weeks: Date[][] = [];
+  const cur = new Date(start);
+  while (cur <= today) {
+    const week: Date[] = [];
+    for (let i = 0; i < 7; i++) {
+      week.push(new Date(cur));
+      cur.setDate(cur.getDate() + 1);
+    }
+    weeks.push(week);
+  }
+
+  const colors = [
+    'rgba(255,255,255,0.05)',
+    'rgba(110,231,183,0.28)',
+    'rgba(110,231,183,0.5)',
+    'rgba(110,231,183,0.72)',
+    'rgba(110,231,183,1)',
+  ];
+  const level = (reqs: number) => {
+    if (!reqs || max <= 0) return 0;
+    const r = reqs / max;
+    if (r > 0.66) return 4;
+    if (r > 0.33) return 3;
+    if (r > 0.1) return 2;
+    return 1;
+  };
+
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  let lastMonth = -1;
+  const monthLabels = weeks.map((week) => {
+    const m = week[0].getMonth();
+    if (m !== lastMonth) {
+      lastMonth = m;
+      return monthNames[m];
+    }
+    return '';
+  });
+
+  const totalRequests = data.reduce((s, d) => s + d.total_requests, 0);
+  const activeDays = data.filter(d => d.total_requests > 0).length;
+
+  return (
+    <div>
+      <div className="flex items-baseline justify-between mb-4">
+        <p className="text-xs text-white/40 font-mono">
+          {totalRequests.toLocaleString()} requests · {activeDays} active {activeDays === 1 ? 'day' : 'days'} in the last year
+        </p>
+      </div>
+      <div className="overflow-x-auto pb-1">
+        <div className="inline-flex flex-col gap-1" style={{ minWidth: 'max-content' }}>
+          <div className="flex gap-[3px] ml-[26px] mb-1">
+            {monthLabels.map((label, i) => (
+              <div key={i} className="text-[9px] text-white/30 font-mono" style={{ width: 11 }}>
+                {label}
+              </div>
+            ))}
+          </div>
+          <div className="flex">
+            <div className="flex flex-col gap-[3px] mr-1 text-[9px] text-white/30 font-mono justify-around" style={{ height: 7 * 14 }}>
+              <span>Mon</span>
+              <span>Wed</span>
+              <span>Fri</span>
+            </div>
+            <div className="flex gap-[3px]">
+              {weeks.map((week, wi) => (
+                <div key={wi} className="flex flex-col gap-[3px]">
+                  {week.map((day, di) => {
+                    const key = fmtDay(day);
+                    const entry = byDate.get(key);
+                    const reqs = entry?.total_requests || 0;
+                    const future = day > today;
+                    return (
+                      <div
+                        key={di}
+                        title={future ? '' : `${key}: ${reqs.toLocaleString()} request${reqs === 1 ? '' : 's'}${entry ? ` · $${(entry.total_cost_cents / 10000).toFixed(4)}` : ''}`}
+                        style={{
+                          width: 11,
+                          height: 11,
+                          borderRadius: 2,
+                          background: future ? 'transparent' : colors[level(reqs)],
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center gap-1 justify-end mt-2 text-[9px] text-white/30 font-mono">
+            <span>Less</span>
+            {colors.map((c, i) => (
+              <div key={i} style={{ width: 11, height: 11, borderRadius: 2, background: c }} />
+            ))}
+            <span>More</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`relative h-6 w-11 rounded-full transition-colors ${on ? 'bg-emerald-500/80' : 'bg-white/15'}`}
+      aria-pressed={on}
+    >
+      <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${on ? 'translate-x-5' : 'translate-x-0'}`} />
+    </button>
+  );
+}
+
+// ResponseSavingCard lets the user opt into persisting their generation inputs +
+// outputs, which makes /usage/prompts and /usage/images searchable.
+function ResponseSavingCard() {
+  const [text, setText] = useState(false);
+  const [images, setImages] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    api('/account/usage/settings')
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        if (d) {
+          setText(!!d.text_enabled);
+          setImages(!!d.image_enabled);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoaded(true));
+  }, []);
+
+  const persist = async (nextText: boolean, nextImages: boolean) => {
+    setText(nextText);
+    setImages(nextImages);
+    setSaving(true);
+    try {
+      await api('/account/usage/settings', {
+        method: 'POST',
+        body: JSON.stringify({ text_enabled: nextText, image_enabled: nextImages }),
+      });
+    } catch {
+      /* keep optimistic UI */
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const anyOn = text || images;
+
+  return (
+    <div className="rounded-3xl border border-white/10 bg-black/35 p-6 mb-8" data-testid="response-saving-card">
+      <div className="flex items-center gap-3 mb-1">
+        <div className="rounded-2xl bg-violet-500/15 p-2.5">
+          <Save className="w-5 h-5 text-violet-300" />
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold tracking-tight">Response saving</h3>
+          <p className="text-xs font-mono uppercase tracking-[0.16em] text-white/35">Searchable prompt &amp; image history</p>
+        </div>
+        {saving && <span className="ml-auto text-xs text-white/40">saving…</span>}
+      </div>
+      <p className="text-sm text-white/55 mt-3 mb-5 max-w-2xl">
+        Save the inputs and outputs of your generations to your private history, then search them semantically (find similar
+        prompts, outputs, and images) or by exact text. Off by default; only your own account can see them.
+      </p>
+
+      <div className="space-y-3">
+        <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+          <div className="flex items-center gap-3">
+            <FileText className="w-4 h-4 text-white/50" />
+            <div>
+              <div className="text-sm text-white">Save text generations</div>
+              <div className="text-xs text-white/40">Chat &amp; messages — prompt, transcript, output</div>
+            </div>
+          </div>
+          <Toggle on={text} onClick={() => loaded && persist(!text, images)} />
+        </div>
+        <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+          <div className="flex items-center gap-3">
+            <ImageIcon className="w-4 h-4 text-white/50" />
+            <div>
+              <div className="text-sm text-white">Save image generations</div>
+              <div className="text-xs text-white/40">Prompt + generated image URL</div>
+            </div>
+          </div>
+          <Toggle on={images} onClick={() => loaded && persist(text, !images)} />
+        </div>
+      </div>
+
+      {anyOn && (
+        <div className="mt-5 flex flex-wrap gap-3">
+          {text && (
+            <Link
+              to="/usage/prompts"
+              className="inline-flex items-center gap-2 rounded-xl border border-white/15 px-4 py-2 text-sm text-white hover:bg-white/10 transition-colors"
+            >
+              <Sparkles className="w-4 h-4" /> Search prompt history
+            </Link>
+          )}
+          {images && (
+            <Link
+              to="/usage/images"
+              className="inline-flex items-center gap-2 rounded-xl border border-white/15 px-4 py-2 text-sm text-white hover:bg-white/10 transition-colors"
+            >
+              <ImageIcon className="w-4 h-4" /> Search image history
+            </Link>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface OpenAIDeviceAuthState {
+  login_id: string;
+  verification_url: string;
+  user_code: string;
+  interval_seconds: number;
+  expires_at?: string;
+}
+
+interface OpenAIBrowserAuthState {
+  login_id: string;
+  authorization_url: string;
+  redirect_uri: string;
+  expires_at?: string;
+}
+
+const OPENAI_DEVICE_AUTH_SESSION_KEY = 'op_openai_device_auth';
+const OPENAI_BROWSER_AUTH_SESSION_KEY = 'op_openai_browser_auth';
+
+function loadPendingOpenAIAuth<T extends { expires_at?: string }>(key: string): T | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const value = JSON.parse(window.sessionStorage.getItem(key) || 'null') as T | null;
+    if (!value) return null;
+    if (value.expires_at && new Date(value.expires_at).getTime() <= Date.now()) {
+      window.sessionStorage.removeItem(key);
+      return null;
+    }
+    return value;
+  } catch {
+    window.sessionStorage.removeItem(key);
+    return null;
+  }
+}
+
+function OpenAIMaxPlanPanel({
+  connected,
+  updatedAt,
+  notice,
+  error,
+  deviceAuth,
+  deviceStatus,
+  deviceMessage,
+  deviceLoading,
+  browserAuth,
+  browserInput,
+  browserLoading,
+  copied,
+  onStartDevice,
+  onPollDevice,
+  onStartBrowser,
+  onBrowserInput,
+  onCompleteBrowser,
+  onCopy,
+}: {
+  connected: boolean;
+  updatedAt?: string;
+  notice: string | null;
+  error: string | null;
+  deviceAuth: OpenAIDeviceAuthState | null;
+  deviceStatus: 'idle' | 'pending' | 'polling' | 'error';
+  deviceMessage: string;
+  deviceLoading: boolean;
+  browserAuth: OpenAIBrowserAuthState | null;
+  browserInput: string;
+  browserLoading: boolean;
+  copied: string | null;
+  onStartDevice: () => void;
+  onPollDevice: () => void;
+  onStartBrowser: () => void;
+  onBrowserInput: (value: string) => void;
+  onCompleteBrowser: () => void;
+  onCopy: (value: string) => void;
+}) {
+  return (
+    <section className="mb-8 border border-sky-300/20 bg-[radial-gradient(circle_at_top_right,rgba(14,165,233,0.14),transparent_42%),rgba(255,255,255,0.02)] rounded-3xl p-6" data-testid="openai-max-plan-panel">
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div>
+          <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-[0.18em] text-sky-100/45 mb-2">
+            <ShieldCheck className="w-4 h-4" /> OpenAI Max plan
+          </div>
+          <h2 className="text-xl font-semibold tracking-tight">Sign in with OpenAI</h2>
+          <p className="text-sm text-white/55 mt-2 max-w-2xl">
+            Connect a ChatGPT subscription with Codex access. Device code is the simplest path; browser login is available if device authorization is disabled or blocked.
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+          <button
+            onClick={onStartDevice}
+            disabled={deviceLoading || browserLoading}
+            className="rounded-2xl bg-white text-black px-4 py-3 text-sm font-mono font-bold hover:bg-white/90 transition-colors disabled:opacity-50"
+            data-testid="openai-auth-start"
+          >
+            {deviceLoading ? 'Starting...' : 'Sign in with device code'}
+          </button>
+          <button
+            onClick={onStartBrowser}
+            disabled={deviceLoading || browserLoading}
+            className="rounded-2xl border border-white/15 bg-black/20 px-4 py-3 text-sm font-mono text-white hover:border-white/30 transition-colors disabled:opacity-50"
+            data-testid="openai-browser-auth-start"
+          >
+            {browserLoading && !browserAuth ? 'Starting...' : 'Use browser callback'}
+          </button>
+        </div>
+      </div>
+
+      {deviceAuth && (
+        <div className="mt-5 rounded-2xl border border-sky-400/20 bg-sky-500/10 p-4" data-testid="openai-device-auth-panel">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="text-xs font-mono uppercase tracking-[0.14em] text-sky-100/50 mb-2">Device sign-in</div>
+              <p className="text-sm text-white/70 mb-3">{deviceMessage || 'Open the sign-in link and enter this code.'}</p>
+              <div className="flex flex-wrap items-center gap-3">
+                <code className="rounded-xl border border-white/10 bg-black/35 px-4 py-3 font-mono text-lg tracking-[0.18em] text-white" data-testid="openai-device-code">
+                  {deviceAuth.user_code}
+                </code>
+                <button
+                  onClick={() => onCopy(deviceAuth.user_code)}
+                  className="rounded-xl border border-white/10 bg-black/25 p-3 text-white/60 transition-colors hover:text-white"
+                  aria-label="Copy OpenAI device code"
+                  data-testid="openai-device-code-copy"
+                >
+                  {copied === deviceAuth.user_code ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}
+                </button>
+              </div>
+              {deviceAuth.expires_at && (
+                <p className="mt-3 text-xs font-mono text-white/35">
+                  Expires {new Date(deviceAuth.expires_at).toLocaleTimeString()}
+                </p>
+              )}
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row md:flex-col">
+              <a
+                href={deviceAuth.verification_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-mono font-bold text-black transition-colors hover:bg-white/90"
+                data-testid="openai-device-auth-link"
+              >
+                Open sign-in link <ArrowUpRight className="h-4 w-4" />
+              </a>
+              <button
+                onClick={onPollDevice}
+                disabled={deviceStatus === 'polling'}
+                className="rounded-2xl border border-white/15 bg-black/20 px-4 py-3 text-sm font-mono text-white transition-colors hover:border-white/30 disabled:opacity-50"
+                data-testid="openai-device-auth-poll"
+              >
+                {deviceStatus === 'polling' ? 'Checking...' : 'Check status'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {browserAuth && (
+        <div className="mt-5 rounded-2xl border border-violet-400/20 bg-violet-500/10 p-4" data-testid="openai-browser-auth-panel">
+          <div className="flex flex-col gap-4">
+            <div>
+              <div className="text-xs font-mono uppercase tracking-[0.14em] text-violet-100/55 mb-2">Browser callback fallback</div>
+              <p className="text-sm text-white/70">
+                Open the login page. When OpenAI redirects to <code className="font-mono text-white/90">localhost:1455</code>, copy the full URL from the address bar—even if the page cannot connect—and paste it below.
+              </p>
+            </div>
+            <div className="flex flex-col gap-3 md:flex-row">
+              <a
+                href={browserAuth.authorization_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-mono font-bold text-black transition-colors hover:bg-white/90"
+                data-testid="openai-browser-auth-link"
+              >
+                Open OpenAI login <ArrowUpRight className="h-4 w-4" />
+              </a>
+              <input
+                value={browserInput}
+                onChange={event => onBrowserInput(event.target.value)}
+                placeholder="http://localhost:1455/auth/callback?code=...&state=..."
+                className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-mono text-white placeholder:text-white/25 focus:border-violet-300/40 focus:outline-none"
+                data-testid="openai-browser-callback-input"
+              />
+              <button
+                onClick={onCompleteBrowser}
+                disabled={browserLoading || !browserInput.trim()}
+                className="shrink-0 rounded-2xl border border-violet-300/30 bg-violet-400/10 px-4 py-3 text-sm font-mono font-bold text-violet-100 transition-colors hover:bg-violet-400/20 disabled:opacity-50"
+                data-testid="openai-browser-auth-complete"
+              >
+                {browserLoading ? 'Connecting...' : 'Connect'}
+              </button>
+            </div>
+            {browserAuth.expires_at && (
+              <p className="text-xs font-mono text-white/35">Expires {new Date(browserAuth.expires_at).toLocaleTimeString()}</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {notice && (
+        <div className="mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+          {notice}
+        </div>
+      )}
+      {error && (
+        <div className="mt-4 rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+          {error}
+        </div>
+      )}
+      <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4">
+        <div className="text-xs font-mono uppercase tracking-[0.14em] text-white/35 mb-2">Status</div>
+        {connected ? (
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm text-white/75">OpenAI Codex sign-in saved.</p>
+              <p className="text-xs text-white/40 mt-1">OAuth tokens refresh automatically before expiry; rejected credentials are refreshed and retried once.</p>
+              {updatedAt && <p className="text-xs text-white/40 mt-1">Last updated {new Date(updatedAt).toLocaleString()}</p>}
+            </div>
+            <span className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1 text-xs font-mono text-emerald-200">Connected</span>
+          </div>
+        ) : (
+          <p className="text-sm text-white/45">No OpenAI Max plan sign-in is connected.</p>
+        )}
+      </div>
+    </section>
+  );
+}
+
 export function Account() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'keys' | 'billing' | 'analytics'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'keys' | 'billing' | 'analytics'>(
+    typeof window !== 'undefined' && window.location.pathname.startsWith('/usage') ? 'analytics' : 'overview',
+  );
   const [user, setUser] = useState<any>(null);
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [stripePk, setStripePk] = useState('');
@@ -604,17 +922,15 @@ export function Account() {
   const [newKeyVisible, setNewKeyVisible] = useState(false);
   const [openAIAuthNotice, setOpenAIAuthNotice] = useState<string | null>(null);
   const [openAIAuthError, setOpenAIAuthError] = useState<string | null>(null);
-  const [openAIAuthLoading, setOpenAIAuthLoading] = useState(false);
-  const [openAIDeviceAuth, setOpenAIDeviceAuth] = useState<{
-    login_id: string;
-    verification_url: string;
-    user_code: string;
-    interval_seconds: number;
-    expires_at?: string;
-  } | null>(null);
-  const [openAIDeviceStatus, setOpenAIDeviceStatus] = useState<'idle' | 'pending' | 'polling' | 'error'>('idle');
+  const [openAIDeviceAuth, setOpenAIDeviceAuth] = useState<OpenAIDeviceAuthState | null>(() => loadPendingOpenAIAuth(OPENAI_DEVICE_AUTH_SESSION_KEY));
+  const [openAIDeviceStatus, setOpenAIDeviceStatus] = useState<'idle' | 'pending' | 'polling' | 'error'>(() =>
+    loadPendingOpenAIAuth(OPENAI_DEVICE_AUTH_SESSION_KEY) ? 'pending' : 'idle',
+  );
   const [openAIDeviceMessage, setOpenAIDeviceMessage] = useState('');
   const [openAIDeviceLoading, setOpenAIDeviceLoading] = useState(false);
+  const [openAIBrowserAuth, setOpenAIBrowserAuth] = useState<OpenAIBrowserAuthState | null>(() => loadPendingOpenAIAuth(OPENAI_BROWSER_AUTH_SESSION_KEY));
+  const [openAIBrowserInput, setOpenAIBrowserInput] = useState('');
+  const [openAIBrowserLoading, setOpenAIBrowserLoading] = useState(false);
 
   const [billingNotice, setBillingNotice] = useState<string | null>(null);
   const [billingError, setBillingError] = useState<string | null>(null);
@@ -627,10 +943,12 @@ export function Account() {
   const [cardSetupError, setCardSetupError] = useState('');
 
   // Analytics state
-  const [analyticsPeriod, setAnalyticsPeriod] = useState<'24h' | '7d' | '30d'>('30d');
+  const [analyticsPeriod, setAnalyticsPeriod] = useState<'24h' | '7d' | '30d' | '90d'>('30d');
   const [spendTimeSeries, setSpendTimeSeries] = useState<{ timestamp: string; value: number }[]>([]);
   const [spendByKey, setSpendByKey] = useState<{ api_key_id: string; key_prefix: string; key_name: string; total_requests: number; total_cost_cents: number }[]>([]);
   const [spendByProvider, setSpendByProvider] = useState<{ provider: string; total_requests: number; total_cost_cents: number }[]>([]);
+  const [spendByProduct, setSpendByProduct] = useState<{ product: string; total_requests: number; total_tokens_in: number; total_tokens_out: number; total_cost_cents: number }[]>([]);
+  const [activity, setActivity] = useState<{ date: string; total_requests: number; total_cost_cents: number }[]>([]);
   const [drilldown, setDrilldown] = useState<{ type: 'key' | 'provider'; id: string; label: string; models: { model: string; provider: string; total_requests: number; total_cost_cents: number }[] } | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
@@ -640,6 +958,20 @@ export function Account() {
       setActiveTab('billing');
       setPostTopupPrompt(true);
       setBillingNotice('Funds added successfully. Set up auto-topup next so this balance keeps itself ready.');
+      window.history.replaceState({}, '', '/account');
+    }
+    if (params.get('unsubscribe') === 'true') {
+      setActiveTab('keys');
+      api('/account/unsubscribe', { method: 'POST' })
+        .then(r => r.json())
+        .then(d => {
+          setOpenAIAuthNotice(d.unsubscribed
+            ? `${d.email} is unsubscribed from OpenPaths emails.`
+            : 'Could not unsubscribe automatically — use the unsubscribe link in a recent email.');
+        })
+        .catch(() => {
+          setOpenAIAuthNotice('Log in to unsubscribe, or use the unsubscribe link in a recent email.');
+        });
       window.history.replaceState({}, '', '/account');
     }
     const openAIAuth = params.get('openai_auth');
@@ -661,6 +993,16 @@ export function Account() {
       setApiKey(k);
       setUser(u);
     }
+  }, []);
+
+  useEffect(() => {
+    const sync = () => {
+      const { apiKey: k, user: u } = getUserData();
+      setApiKey(k);
+      setUser(u);
+    };
+    window.addEventListener(AUTH_EVENT, sync);
+    return () => window.removeEventListener(AUTH_EVENT, sync);
   }, []);
 
   useEffect(() => {
@@ -767,17 +1109,30 @@ export function Account() {
     setAnalyticsLoading(true);
     const interval = period === '24h' ? '1h' : period === '7d' ? '6h' : '1d';
     try {
-      const [tsRes, keyRes, provRes] = await Promise.all([
+      const [tsRes, keyRes, provRes, prodRes] = await Promise.all([
         api(`/account/stats/timeseries?period=${period}&interval=${interval}&metric=cost`),
         api(`/account/stats/by-api-key?period=${period}`),
         api(`/account/stats/by-provider?period=${period}`),
+        api(`/account/stats/by-product?period=${period}`),
       ]);
-      const [tsData, keyData, provData] = await Promise.all([tsRes.json(), keyRes.json(), provRes.json()]);
+      const [tsData, keyData, provData, prodData] = await Promise.all([tsRes.json(), keyRes.json(), provRes.json(), prodRes.json()]);
       setSpendTimeSeries(Array.isArray(tsData.data) ? tsData.data : []);
       setSpendByKey(Array.isArray(keyData.keys) ? keyData.keys : []);
       setSpendByProvider(Array.isArray(provData.providers) ? provData.providers : []);
+      setSpendByProduct(Array.isArray(prodData.products) ? prodData.products : []);
     } catch {}
     setAnalyticsLoading(false);
+  }, [apiKey]);
+
+  // The contribution heatmap always shows a fixed ~1 year window, independent
+  // of the period selector, so it is loaded once when the tab opens.
+  const fetchActivity = useCallback(async () => {
+    if (!apiKey) return;
+    try {
+      const res = await api('/account/stats/activity?days=365');
+      const data = await res.json();
+      setActivity(Array.isArray(data.data) ? data.data : []);
+    } catch {}
   }, [apiKey]);
 
   const loadDrilldown = async (type: 'key' | 'provider', id: string, label: string) => {
@@ -804,6 +1159,12 @@ export function Account() {
   }, [activeTab, analyticsPeriod, apiKey, fetchAnalytics]);
 
   useEffect(() => {
+    if (activeTab === 'analytics' && apiKey) {
+      void fetchActivity();
+    }
+  }, [activeTab, apiKey, fetchActivity]);
+
+  useEffect(() => {
     setNewKeyVisible(false);
   }, [newKeyResult]);
 
@@ -814,13 +1175,16 @@ export function Account() {
       setNewKeyResult(newApiKey);
       setActiveTab('keys');
     }
+    const next = new URLSearchParams(window.location.search).get('next');
+    if (next?.startsWith('/') && !next.startsWith('//')) window.location.assign(next);
   };
 
   const logout = () => {
     fetch('/auth/logout', { method: 'POST' }).catch(() => {});
     window.userData = undefined;
-    localStorage.removeItem('op_api_key');
-    localStorage.removeItem('op_user');
+    clearApiKey();
+    window.sessionStorage.removeItem(OPENAI_DEVICE_AUTH_SESSION_KEY);
+    window.sessionStorage.removeItem(OPENAI_BROWSER_AUTH_SESSION_KEY);
     window.dispatchEvent(new Event('auth-change'));
     setApiKey(null);
     setUser(null);
@@ -838,7 +1202,7 @@ export function Account() {
     if (res.ok) {
       setNewKeyResult(data.key);
       setNewKeyVisible(false);
-      localStorage.setItem('op_api_key', data.key);
+      storeApiKey(data.key);
       setApiKey(data.key);
       setNewKeyName('');
       void fetchKeys();
@@ -850,14 +1214,13 @@ export function Account() {
     void fetchKeys();
   };
 
-  const startOpenAIAuth = async () => {
-    await startOpenAIDeviceAuth();
-  };
-
   const startOpenAIDeviceAuth = async () => {
     setOpenAIDeviceLoading(true);
     setOpenAIAuthNotice(null);
     setOpenAIAuthError(null);
+    setOpenAIBrowserAuth(null);
+    setOpenAIBrowserInput('');
+    window.sessionStorage.removeItem(OPENAI_BROWSER_AUTH_SESSION_KEY);
     setOpenAIDeviceMessage('');
     setOpenAIDeviceStatus('idle');
     try {
@@ -868,13 +1231,15 @@ export function Account() {
         setOpenAIDeviceStatus('error');
         return;
       }
-      setOpenAIDeviceAuth({
+      const pending: OpenAIDeviceAuthState = {
         login_id: data.login_id,
         verification_url: data.verification_url,
         user_code: data.user_code,
         interval_seconds: Number(data.interval_seconds) || 5,
         expires_at: data.expires_at,
-      });
+      };
+      setOpenAIDeviceAuth(pending);
+      window.sessionStorage.setItem(OPENAI_DEVICE_AUTH_SESSION_KEY, JSON.stringify(pending));
       setOpenAIDeviceStatus('pending');
       setOpenAIDeviceMessage('Open the sign-in link and enter the code. This page will finish automatically.');
     } catch {
@@ -902,9 +1267,14 @@ export function Account() {
       if (!res.ok || data.status !== 'success') {
         setOpenAIDeviceStatus('error');
         setOpenAIAuthError(data.error?.message || 'OpenAI device sign-in failed');
+        if (res.status === 400 || res.status === 410) {
+          setOpenAIDeviceAuth(null);
+          window.sessionStorage.removeItem(OPENAI_DEVICE_AUTH_SESSION_KEY);
+        }
         return;
       }
       setOpenAIDeviceAuth(null);
+      window.sessionStorage.removeItem(OPENAI_DEVICE_AUTH_SESSION_KEY);
       setOpenAIDeviceStatus('idle');
       setOpenAIDeviceMessage('');
       setOpenAIAuthNotice(data.message || 'OpenAI Max plan sign-in saved.');
@@ -923,6 +1293,71 @@ export function Account() {
     }, delay);
     return () => window.clearTimeout(timer);
   }, [openAIDeviceAuth, openAIDeviceStatus, pollOpenAIDeviceAuth]);
+
+  const startOpenAIBrowserAuth = async () => {
+    setOpenAIBrowserLoading(true);
+    setOpenAIAuthNotice(null);
+    setOpenAIAuthError(null);
+    setOpenAIDeviceAuth(null);
+    window.sessionStorage.removeItem(OPENAI_DEVICE_AUTH_SESSION_KEY);
+    setOpenAIDeviceStatus('idle');
+    setOpenAIDeviceMessage('');
+    setOpenAIBrowserInput('');
+    try {
+      const res = await api('/account/openai/browser/start', { method: 'POST', body: JSON.stringify({}) });
+      const data = await res.json();
+      if (!res.ok || !data.login_id || !data.authorization_url) {
+        setOpenAIAuthError(data.error?.message || 'Failed to start OpenAI browser sign-in');
+        return;
+      }
+      const pending: OpenAIBrowserAuthState = {
+        login_id: data.login_id,
+        authorization_url: data.authorization_url,
+        redirect_uri: data.redirect_uri,
+        expires_at: data.expires_at,
+      };
+      setOpenAIBrowserAuth(pending);
+      window.sessionStorage.setItem(OPENAI_BROWSER_AUTH_SESSION_KEY, JSON.stringify(pending));
+    } catch {
+      setOpenAIAuthError('Network error');
+    } finally {
+      setOpenAIBrowserLoading(false);
+    }
+  };
+
+  const completeOpenAIBrowserAuth = async () => {
+    if (!openAIBrowserAuth || !openAIBrowserInput.trim()) return;
+    setOpenAIBrowserLoading(true);
+    setOpenAIAuthNotice(null);
+    setOpenAIAuthError(null);
+    try {
+      const res = await api('/account/openai/browser/complete', {
+        method: 'POST',
+        body: JSON.stringify({
+          login_id: openAIBrowserAuth.login_id,
+          callback_url: openAIBrowserInput.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.status !== 'success') {
+        setOpenAIAuthError(data.error?.message || 'OpenAI browser sign-in failed');
+        if ((res.status === 400 && data.error?.code !== 'invalid_request') || res.status === 410) {
+          setOpenAIBrowserAuth(null);
+          window.sessionStorage.removeItem(OPENAI_BROWSER_AUTH_SESSION_KEY);
+        }
+        return;
+      }
+      setOpenAIBrowserAuth(null);
+      window.sessionStorage.removeItem(OPENAI_BROWSER_AUTH_SESSION_KEY);
+      setOpenAIBrowserInput('');
+      setOpenAIAuthNotice(data.message || 'OpenAI Max plan sign-in saved.');
+      await fetchProviderKeys();
+    } catch {
+      setOpenAIAuthError('Network error');
+    } finally {
+      setOpenAIBrowserLoading(false);
+    }
+  };
 
   const openCheckout = (amountUSD: number) => {
     setCheckoutAmount(amountUSD);
@@ -1089,7 +1524,7 @@ export function Account() {
               activeTab === 'analytics' ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/5 hover:text-white'
             }`}
           >
-            <BarChart2 className="w-4 h-4" /> Analytics
+            <BarChart2 className="w-4 h-4" /> Usage
           </button>
         </nav>
       </aside>
@@ -1147,6 +1582,8 @@ export function Account() {
                 </div>
               </div>
             </div>
+
+            <ResponseSavingCard />
 
             {hasLowReserve && (
               <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-6 mb-8">
@@ -1231,7 +1668,7 @@ export function Account() {
                   <table className="w-full text-left text-sm" data-testid="activity-table">
                     <thead className="bg-white/5 font-mono text-xs text-white/40 border-b border-white/10">
                       <tr>
-                        <th className="px-6 py-3 font-normal">Type</th>
+                        <th className="px-6 py-3 font-normal">Date</th>
                         <th className="px-6 py-3 font-normal">Description</th>
                         <th className="px-6 py-3 font-normal">Amount</th>
                       </tr>
@@ -1239,7 +1676,7 @@ export function Account() {
                     <tbody className="divide-y divide-white/10 font-mono">
                       {transactions.slice(0, 10).map((tx: any) => (
                         <tr key={tx.id}>
-                          <td className="px-6 py-4 text-white/60">{tx.tx_type}</td>
+                          <td className="px-6 py-4 text-white/60">{formatTransactionDate(tx.created_at)}</td>
                           <td className="px-6 py-4">{tx.description}</td>
                           <td className={`px-6 py-4 ${tx.amount_cents > 0 ? 'text-emerald-300' : 'text-red-400'}`}>{formatSignedUnits(tx.amount_cents)}</td>
                         </tr>
@@ -1257,6 +1694,27 @@ export function Account() {
             <div className="flex justify-between items-center mb-8">
               <h1 className="text-3xl font-bold tracking-tight">API Keys</h1>
             </div>
+
+            <OpenAIMaxPlanPanel
+              connected={providerKeys.some(k => k.provider === 'openai_codex' && k.has_auth)}
+              updatedAt={providerKeys.find(k => k.provider === 'openai_codex')?.updated_at}
+              notice={openAIAuthNotice}
+              error={openAIAuthError}
+              deviceAuth={openAIDeviceAuth}
+              deviceStatus={openAIDeviceStatus}
+              deviceMessage={openAIDeviceMessage}
+              deviceLoading={openAIDeviceLoading}
+              browserAuth={openAIBrowserAuth}
+              browserInput={openAIBrowserInput}
+              browserLoading={openAIBrowserLoading}
+              copied={copied}
+              onStartDevice={() => void startOpenAIDeviceAuth()}
+              onPollDevice={() => void pollOpenAIDeviceAuth()}
+              onStartBrowser={() => void startOpenAIBrowserAuth()}
+              onBrowserInput={setOpenAIBrowserInput}
+              onCompleteBrowser={() => void completeOpenAIBrowserAuth()}
+              onCopy={copyKey}
+            />
 
             {newKeyResult && (
               <div className="border border-green-500/30 bg-green-500/5 rounded-xl p-4 mb-6" data-testid="new-key-banner">
@@ -1325,101 +1783,6 @@ export function Account() {
                 ))}
               </div>
             )}
-
-            <div className="mt-8 border border-white/10 bg-white/[0.02] rounded-3xl p-6">
-              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                <div>
-                  <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-[0.18em] text-white/35 mb-2">
-                    <ShieldCheck className="w-4 h-4" /> OpenAI Max plan
-                  </div>
-                  <h2 className="text-xl font-semibold tracking-tight">Sign in with OpenAI</h2>
-                  <p className="text-sm text-white/55 mt-2 max-w-2xl">
-                    Connect a ChatGPT Max or Codex-capable OpenAI account. OpenPaths stores the Codex auth tokens, refreshes them when OpenAI rejects a request, and falls back to another credential if refresh fails.
-                  </p>
-                </div>
-                <button
-                  onClick={startOpenAIAuth}
-                  disabled={openAIAuthLoading || openAIDeviceLoading}
-                  className="rounded-2xl bg-white text-black px-4 py-3 text-sm font-mono font-bold hover:bg-white/90 transition-colors disabled:opacity-50"
-                  data-testid="openai-auth-start"
-                >
-                  {openAIAuthLoading || openAIDeviceLoading ? 'Starting...' : 'Sign in with OpenAI'}
-                </button>
-              </div>
-              {openAIDeviceAuth && (
-                <div className="mt-5 rounded-2xl border border-sky-400/20 bg-sky-500/10 p-4" data-testid="openai-device-auth-panel">
-                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                    <div>
-                      <div className="text-xs font-mono uppercase tracking-[0.14em] text-sky-100/50 mb-2">Device sign-in</div>
-                      <p className="text-sm text-white/70 mb-3">{openAIDeviceMessage || 'Open the sign-in link and enter this code.'}</p>
-                      <div className="flex flex-wrap items-center gap-3">
-                        <code className="rounded-xl border border-white/10 bg-black/35 px-4 py-3 font-mono text-lg tracking-[0.18em] text-white" data-testid="openai-device-code">
-                          {openAIDeviceAuth.user_code}
-                        </code>
-                        <button
-                          onClick={() => copyKey(openAIDeviceAuth.user_code)}
-                          className="rounded-xl border border-white/10 bg-black/25 p-3 text-white/60 transition-colors hover:text-white"
-                          aria-label="Copy OpenAI device code"
-                          data-testid="openai-device-code-copy"
-                        >
-                          {copied === openAIDeviceAuth.user_code ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}
-                        </button>
-                      </div>
-                      {openAIDeviceAuth.expires_at && (
-                        <p className="mt-3 text-xs font-mono text-white/35">
-                          Expires {new Date(openAIDeviceAuth.expires_at).toLocaleTimeString()}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex flex-col gap-3 sm:flex-row md:flex-col">
-                      <a
-                        href={openAIDeviceAuth.verification_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-mono font-bold text-black transition-colors hover:bg-white/90"
-                        data-testid="openai-device-auth-link"
-                      >
-                        Open sign-in link <ArrowUpRight className="h-4 w-4" />
-                      </a>
-                      <button
-                        onClick={() => void pollOpenAIDeviceAuth()}
-                        disabled={openAIDeviceStatus === 'polling'}
-                        className="rounded-2xl border border-white/15 bg-black/20 px-4 py-3 text-sm font-mono text-white transition-colors hover:border-white/30 disabled:opacity-50"
-                        data-testid="openai-device-auth-poll"
-                      >
-                        {openAIDeviceStatus === 'polling' ? 'Checking...' : 'Check status'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-              {openAIAuthNotice && (
-                <div className="mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
-                  {openAIAuthNotice}
-                </div>
-              )}
-              {openAIAuthError && (
-                <div className="mt-4 rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-                  {openAIAuthError}
-                </div>
-              )}
-              <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4">
-                <div className="text-xs font-mono uppercase tracking-[0.14em] text-white/35 mb-2">Status</div>
-                {providerKeys.some(k => k.provider === 'openai_codex' && k.has_auth) ? (
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm text-white/75">OpenAI Codex sign-in saved.</p>
-                      <p className="text-xs text-white/40 mt-1">
-                        Last updated {new Date(providerKeys.find(k => k.provider === 'openai_codex')?.updated_at).toLocaleString()}
-                      </p>
-                    </div>
-                    <span className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1 text-xs font-mono text-emerald-200">Connected</span>
-                  </div>
-                ) : (
-                  <p className="text-sm text-white/45">No OpenAI Max plan sign-in is connected.</p>
-                )}
-              </div>
-            </div>
 
             <p className="text-sm text-white/40 font-light mt-6">Do not share your API key in publicly accessible areas such as GitHub or client-side code.</p>
           </motion.div>
@@ -1559,8 +1922,8 @@ export function Account() {
                       aria-label="Toggle auto-topup"
                     >
                       <span
-                        className={`absolute top-1 h-6 w-6 rounded-full bg-black transition-transform ${
-                          autotopupSettings.enabled ? 'translate-x-7' : 'translate-x-1'
+                        className={`absolute left-1 top-1 h-6 w-6 rounded-full bg-black transition-transform ${
+                          autotopupSettings.enabled ? 'translate-x-6' : 'translate-x-0'
                         }`}
                       />
                     </button>
@@ -1737,7 +2100,7 @@ export function Account() {
                     <tbody className="divide-y divide-white/10 font-mono">
                       {transactions.map((tx: any) => (
                         <tr key={tx.id}>
-                          <td className="px-6 py-4 text-white/60">{new Date(tx.created_at).toLocaleDateString()}</td>
+                          <td className="px-6 py-4 text-white/60">{formatTransactionDate(tx.created_at)}</td>
                           <td className="px-6 py-4">{tx.tx_type}</td>
                           <td className="px-6 py-4 text-white/60">{tx.description}</td>
                           <td className={`px-6 py-4 ${tx.amount_cents > 0 ? 'text-emerald-300' : 'text-red-400'}`}>{formatSignedUnits(tx.amount_cents)}</td>
@@ -1755,11 +2118,11 @@ export function Account() {
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h1 className="text-2xl font-bold tracking-tight">Spend Analytics</h1>
-                <p className="text-sm text-white/40 font-mono mt-1">Usage and cost breakdown for your account</p>
+                <h1 className="text-2xl font-bold tracking-tight">Usage & Spend</h1>
+                <p className="text-sm text-white/40 font-mono mt-1">Spend by product, by API key, and how often you use the platform</p>
               </div>
               <div className="flex gap-2 font-mono text-sm">
-                {(['24h', '7d', '30d'] as const).map(p => (
+                {(['24h', '7d', '30d', '90d'] as const).map(p => (
                   <button
                     key={p}
                     onClick={() => setAnalyticsPeriod(p)}
@@ -1814,6 +2177,79 @@ export function Account() {
               </div>
             ) : (
               <div className="space-y-8">
+                {/* Activity contribution heatmap */}
+                <div className="border border-white/10 rounded-3xl p-6">
+                  <h2 className="text-base font-bold tracking-tight mb-1">Activity</h2>
+                  <p className="text-xs text-white/40 font-mono mb-5">How often you use the platform · last year</p>
+                  {activity.length === 0 ? (
+                    <div className="h-32 flex items-center justify-center text-white/30 font-mono text-sm">No activity yet</div>
+                  ) : (
+                    <ContributionHeatmap data={activity} />
+                  )}
+                </div>
+
+                {/* Spend by product */}
+                <div className="border border-white/10 rounded-3xl p-6">
+                  <h2 className="text-base font-bold tracking-tight mb-1">Spend by product</h2>
+                  <p className="text-xs text-white/40 font-mono mb-5">Cost across capabilities · {analyticsPeriod}</p>
+                  {spendByProduct.length === 0 ? (
+                    <div className="h-48 flex items-center justify-center text-white/30 font-mono text-sm">No data for this period</div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                      <ResponsiveContainer width="100%" height={240}>
+                        <PieChart>
+                          <Pie
+                            data={spendByProduct}
+                            dataKey="total_cost_cents"
+                            nameKey="product"
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={55}
+                            outerRadius={90}
+                            paddingAngle={2}
+                            stroke="none"
+                          >
+                            {spendByProduct.map((p, i) => (
+                              <Cell key={i} fill={productMeta(p.product).color} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            contentStyle={{ background: '#111', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, fontFamily: 'monospace', fontSize: 12 }}
+                            labelStyle={{ color: 'rgba(255,255,255,0.5)' }}
+                            formatter={(v: number, _: string, props: any) => [`$${(v / 10000).toFixed(4)} · ${props.payload.total_requests.toLocaleString()} reqs`, productMeta(props.payload.product).label]}
+                          />
+                          <Legend
+                            formatter={(value: string) => <span style={{ color: 'rgba(255,255,255,0.6)', fontFamily: 'monospace', fontSize: 11 }}>{productMeta(value).label}</span>}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className="border border-white/10 rounded-2xl overflow-hidden">
+                        <table className="w-full text-left text-sm font-mono">
+                          <thead className="bg-white/5 text-xs text-white/40 border-b border-white/10">
+                            <tr>
+                              <th className="px-4 py-3 font-normal">Product</th>
+                              <th className="px-4 py-3 font-normal text-right">Requests</th>
+                              <th className="px-4 py-3 font-normal text-right">Spend</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-white/10">
+                            {spendByProduct.map((p, i) => (
+                              <tr key={i} className="hover:bg-white/5">
+                                <td className="px-4 py-3 text-white/90">
+                                  <span className="inline-block w-2.5 h-2.5 rounded-sm mr-2 align-middle" style={{ background: productMeta(p.product).color }} />
+                                  {productMeta(p.product).label}
+                                </td>
+                                <td className="px-4 py-3 text-right text-white/60">{p.total_requests.toLocaleString()}</td>
+                                <td className="px-4 py-3 text-right text-emerald-300">{formatBalanceUnits(p.total_cost_cents)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {/* Spend over time */}
                 <div className="border border-white/10 rounded-3xl p-6">
                   <h2 className="text-base font-bold tracking-tight mb-1">Spend over time</h2>
@@ -2022,7 +2458,7 @@ export function Account() {
         )}
       </main>
 
-      <StripeCheckoutModal
+      <TopUpModal
         open={stripeModalOpen}
         onClose={() => {
           setStripeModalOpen(false);

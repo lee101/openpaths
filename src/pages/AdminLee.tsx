@@ -63,11 +63,52 @@ async function adminApi(path: string) {
   return fetch(API_BASE + path, { headers });
 }
 
+interface MaxPlanStatus {
+  enabled: boolean;
+  email: string;
+  credential_user: string;
+  credential_count: number;
+  healthy_count: number;
+  auth_mode?: string;
+  refreshable?: boolean;
+}
+
 export function AdminLee() {
   const [users, setUsers] = useState<AdminSpendUser[]>([]);
   const [totals, setTotals] = useState<AdminSpendTotals | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [maxPlan, setMaxPlan] = useState<MaxPlanStatus | null>(null);
+  const [maxPlanMsg, setMaxPlanMsg] = useState('');
+
+  const loadMaxPlan = async () => {
+    try {
+      const res = await adminApi('/admin/openai-max-plan');
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) setMaxPlan(data as MaxPlanStatus);
+    } catch {
+      /* non-fatal */
+    }
+  };
+
+  const refreshMaxPlan = async () => {
+    setMaxPlanMsg('Refreshing...');
+    try {
+      const apiKey = getStoredAPIKey();
+      const res = await fetch(API_BASE + '/admin/openai-max-plan/refresh', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+        },
+      });
+      const data = await res.json().catch(() => ({}));
+      setMaxPlanMsg(res.ok ? 'Refresh triggered.' : data.error?.message || 'Refresh failed');
+      setTimeout(() => void loadMaxPlan(), 1500);
+    } catch {
+      setMaxPlanMsg('Network error');
+    }
+  };
 
   const load = async () => {
     setLoading(true);
@@ -90,6 +131,7 @@ export function AdminLee() {
 
   useEffect(() => {
     void load();
+    void loadMaxPlan();
   }, []);
 
   const marginUnits = useMemo(() => {
@@ -135,6 +177,48 @@ export function AdminLee() {
         <Metric label="API spend" value={formatUsageUnits(totals?.api_spend_cents || 0)} icon={<Database className="w-5 h-5" />} />
         <Metric label="Provider base" value={formatUsageUnits(totals?.provider_base_cost_cents || 0)} icon={<Database className="w-5 h-5" />} />
         <Metric label="Gross margin" value={formatUsageUnits(marginUnits)} icon={<ShieldCheck className="w-5 h-5" />} />
+      </div>
+
+      <div className="mb-8 rounded-lg border border-white/10 bg-white/[0.03] p-5">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <div className="flex items-center gap-2 text-white/45 text-xs font-mono uppercase tracking-[0.18em] mb-2">
+              <ShieldCheck className="w-4 h-4" /> Shared OpenAI max plan
+            </div>
+            {maxPlan?.enabled ? (
+              <div className="text-sm text-white/80">
+                <span className="font-mono text-white">{maxPlan.email}</span>
+                {' — '}
+                <span className={maxPlan.healthy_count > 0 ? 'text-emerald-300' : 'text-amber-300'}>
+                  {maxPlan.healthy_count}/{maxPlan.credential_count} credential(s) healthy
+                </span>
+                {maxPlan.credential_count === 0 && (
+                  <span className="text-white/50"> — sign in with OpenAI on the Account page, then refresh</span>
+                )}
+                {maxPlan.credential_count > 0 && !maxPlan.refreshable && (
+                  <div className="mt-1 text-xs text-amber-300">
+                    auth_mode={maxPlan.auth_mode || 'unknown'} — no refresh token, so this is a pasted API key
+                    that cannot be rotated. Sign in with OpenAI on the Account page to store a real max-plan
+                    credential.
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-sm text-white/60">
+                Disabled. Set <span className="font-mono">ADMIN_OPENAI_MAX_PLAN_EMAIL</span> and restart the API.
+              </div>
+            )}
+            {maxPlanMsg && <div className="mt-1 text-xs text-white/50">{maxPlanMsg}</div>}
+          </div>
+          {maxPlan?.enabled && (
+            <button
+              onClick={() => void refreshMaxPlan()}
+              className="shrink-0 rounded-md border border-emerald-400/30 bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-200 hover:bg-emerald-500/20"
+            >
+              Refresh now
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="overflow-hidden rounded-lg border border-white/10">

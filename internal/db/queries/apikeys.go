@@ -30,6 +30,20 @@ func (q *APIKeyQueries) Create(ctx context.Context, userID, keyHash, keyPrefix, 
 	return &k, nil
 }
 
+// SetRateLimit updates the per-minute rate limit for an API key. Used for the
+// internal model-probe key, which fans out across all chat models and would
+// otherwise hit the default 60 rpm limit.
+func (q *APIKeyQueries) SetRateLimit(ctx context.Context, id string, rpm int) error {
+	_, err := q.pool.Exec(ctx,
+		"UPDATE api_keys SET rate_limit_rpm = $1 WHERE id = $2",
+		rpm, id,
+	)
+	if err != nil {
+		return fmt.Errorf("set api key rate limit: %w", err)
+	}
+	return nil
+}
+
 func (q *APIKeyQueries) ValidateKey(ctx context.Context, keyHash string) (*model.APIKey, error) {
 	var k model.APIKey
 	err := q.pool.QueryRow(ctx,

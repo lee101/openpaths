@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -53,6 +54,40 @@ func (r *Router) setDerivedAliases() {
 			cfg.Aliases = appendUniqueStrings(cfg.Aliases, "grok", "grok-latest")
 		}
 	}
+	// Bare-family convenience aliases pointing at the team-maintained flagship
+	// "*-latest" entries. Deliberately conservative: we point at existing model
+	// IDs/aliases rather than parse versions across product series (e.g. avoid
+	// pointing "claude" at the Mythos "fable" line). Only registered when free.
+	for _, pair := range []struct{ alias, target string }{
+		{"claude", "claude-opus-latest"},
+		{"gpt", "gpt-5-chat-latest"},
+		{"openai", "gpt-5-chat-latest"},
+		{"gemini", "gemini-latest"},
+	} {
+		r.aliasIfFree(pair.alias, pair.target)
+	}
+}
+
+// aliasIfFree registers alias→target only when target resolves to a real model
+// and alias is not already a model ID or an existing alias. Target may itself be
+// a model ID or an alias.
+func (r *Router) aliasIfFree(alias, target string) {
+	if _, taken := r.aliases[alias]; taken {
+		return
+	}
+	if _, taken := r.models[alias]; taken {
+		return
+	}
+	canonical := target
+	if mapped, ok := r.aliases[target]; ok {
+		canonical = mapped
+	}
+	cfg, ok := r.models[canonical]
+	if !ok {
+		return
+	}
+	r.aliases[alias] = canonical
+	cfg.Aliases = appendUniqueStrings(cfg.Aliases, alias)
 }
 
 func appendUniqueStrings(items []string, values ...string) []string {
@@ -122,10 +157,15 @@ func parseGrokVersion(id string) (grokVersion, bool) {
 		return grokVersion{}, false
 	}
 
+	// Minor compares as decimal digits (grok-4.5 == 4.50 > grok-4.20 > grok-4.3 == 4.30),
+	// matching xAI's fractional version naming.
 	minor := 0
 	if len(parts) > 1 && len(parts[1]) <= 2 {
 		if parsed, err := strconv.Atoi(parts[1]); err == nil {
 			minor = parsed
+			if len(parts[1]) == 1 {
+				minor *= 10
+			}
 		}
 	}
 
@@ -228,8 +268,48 @@ func (r *Router) ResolveForRequest(requestedModel, routedModel string) ([]RouteC
 	return nil, requestedErr
 }
 
+// OrderCandidates applies an OpenRouter-style routing preference to an already
+// resolved fallback chain. "price" is the default in handlers: it prefers the
+// lowest blended input+output token rate while preserving catalogue order for
+// ties. "config" preserves the configured order. "fastest" intentionally maps
+// to config order today; callers should use openpaths/auto-fast for latency
+// biased routing until observed-latency ranking is promoted into the router.
+func OrderCandidates(candidates []RouteCandidate, strategy string) []RouteCandidate {
+	out := append([]RouteCandidate(nil), candidates...)
+	switch strings.ToLower(strings.TrimSpace(strategy)) {
+	case "", "price", "cheapest", "lowest_price", "lowest-price":
+		sort.SliceStable(out, func(i, j int) bool {
+			return candidateBlendedPrice(out[i]) < candidateBlendedPrice(out[j])
+		})
+	case "config", "configured", "fallback":
+		return out
+	case "fast", "fastest", "latency", "lowest_latency", "lowest-latency":
+		return out
+	default:
+		sort.SliceStable(out, func(i, j int) bool {
+			return candidateBlendedPrice(out[i]) < candidateBlendedPrice(out[j])
+		})
+	}
+	return out
+}
+
+func candidateBlendedPrice(c RouteCandidate) float64 {
+	if c.ModelCfg == nil {
+		return 1 << 30
+	}
+	price := c.ModelCfg.InputPricePer1M + c.ModelCfg.OutputPricePer1M
+	if price <= 0 {
+		return 1 << 30
+	}
+	return price
+}
+
 func (r *Router) HealthTracker() *HealthTracker {
 	return r.health
+}
+
+func (r *Router) Provider(name string) (provider.Provider, error) {
+	return r.registry.Get(name)
 }
 
 func (r *Router) MarkUnhealthy(providerName string) {
@@ -273,19 +353,31 @@ func (r *Router) ListModels() []model.ModelInfo {
 			MaxOutputTokens: cfg.MaxOutputTokens,
 			Aliases:         cfg.Aliases,
 			SupportedSizes:  cfg.SupportedSizes,
+			Deprecated:      cfg.Deprecated,
+			DeprecatedNote:  cfg.DeprecatedNote,
 			Pricing: &model.ModelPricing{
 				InputPer1M:              cfg.InputPricePer1M,
 				InputCacheHitPer1M:      cfg.InputCacheHitPricePer1M,
 				OutputPer1M:             cfg.OutputPricePer1M,
+				Per1MCharacters:         cfg.PricePer1MCharacters,
+				LongContextThreshold:    cfg.LongContextThreshold,
+				InputPer1MLong:          cfg.InputPricePer1MLong,
+				InputCacheHitPer1MLong:  cfg.InputCacheHitPricePer1MLong,
+				OutputPer1MLong:         cfg.OutputPricePer1MLong,
 				PerRequest:              cfg.PricePerRequest,
 				PerImage:                cfg.PricePerImage,
+				PerImageByResolution:    cfg.PricePerImageByResolution,
 				PerMegapixel:            cfg.PricePerMegapixel,
 				FirstMegapixel:          cfg.PriceFirstMegapixel,
 				ExtraMegapixel:          cfg.PriceExtraMegapixel,
 				PerInputImage:           cfg.PricePerInputImage,
 				PerVideo:                cfg.PricePerVideo,
 				PerSecond:               cfg.PricePerSecond,
+				PerSecondByResolution:   cfg.PricePerSecondByResolution,
 				PerSecondWithVideoInput: cfg.PricePerSecondWithVideoInput,
+				PerInputVideoSecond:     cfg.PricePerInputVideoSecond,
+				PerMinute:               cfg.PricePerMinute,
+				PerHour:                 cfg.PricePerHour,
 			},
 			Capabilities: &model.ModelCapabilities{
 				Streaming: cfg.SupportsStreaming,
@@ -324,19 +416,31 @@ func (r *Router) GetModelInfo(modelName string) (model.ModelInfo, bool) {
 		MaxOutputTokens: cfg.MaxOutputTokens,
 		Aliases:         cfg.Aliases,
 		SupportedSizes:  cfg.SupportedSizes,
+		Deprecated:      cfg.Deprecated,
+		DeprecatedNote:  cfg.DeprecatedNote,
 		Pricing: &model.ModelPricing{
 			InputPer1M:              cfg.InputPricePer1M,
 			InputCacheHitPer1M:      cfg.InputCacheHitPricePer1M,
 			OutputPer1M:             cfg.OutputPricePer1M,
+			Per1MCharacters:         cfg.PricePer1MCharacters,
+			LongContextThreshold:    cfg.LongContextThreshold,
+			InputPer1MLong:          cfg.InputPricePer1MLong,
+			InputCacheHitPer1MLong:  cfg.InputCacheHitPricePer1MLong,
+			OutputPer1MLong:         cfg.OutputPricePer1MLong,
 			PerRequest:              cfg.PricePerRequest,
 			PerImage:                cfg.PricePerImage,
+			PerImageByResolution:    cfg.PricePerImageByResolution,
 			PerMegapixel:            cfg.PricePerMegapixel,
 			FirstMegapixel:          cfg.PriceFirstMegapixel,
 			ExtraMegapixel:          cfg.PriceExtraMegapixel,
 			PerInputImage:           cfg.PricePerInputImage,
 			PerVideo:                cfg.PricePerVideo,
 			PerSecond:               cfg.PricePerSecond,
+			PerSecondByResolution:   cfg.PricePerSecondByResolution,
 			PerSecondWithVideoInput: cfg.PricePerSecondWithVideoInput,
+			PerInputVideoSecond:     cfg.PricePerInputVideoSecond,
+			PerMinute:               cfg.PricePerMinute,
+			PerHour:                 cfg.PricePerHour,
 		},
 		Capabilities: &model.ModelCapabilities{
 			Streaming: cfg.SupportsStreaming,

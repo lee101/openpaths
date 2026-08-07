@@ -19,15 +19,21 @@ type ArtImage struct {
 	Tags      []string `json:"tags,omitempty"`
 	NSFW      bool     `json:"nsfw,omitempty"`
 	CreatedAt string   `json:"createdAt,omitempty"`
+	// Video gallery fields. MediaType is "image" (default) or "video".
+	MediaType       string `json:"mediaType,omitempty"`
+	VideoURL        string `json:"videoUrl,omitempty"`
+	PosterURL       string `json:"posterUrl,omitempty"`
+	DurationSeconds int    `json:"durationSeconds,omitempty"`
 }
 
 // ArtImageFilters narrows browse/search queries.
 type ArtImageFilters struct {
-	Aspect string // "square" | "portrait" | "wide" | "" (any)
-	Tag    string // single tag match
-	Source string // "cutedsl" | "openpaths-gen" | "" (any)
-	MinW   int
-	MinH   int
+	Aspect    string // "square" | "portrait" | "wide" | "" (any)
+	Tag       string // single tag match
+	Source    string // "cutedsl" | "openpaths-gen" | "" (any)
+	MediaType string // "image" | "video" | "" (any)
+	MinW      int
+	MinH      int
 }
 
 // AspectFor classifies width/height into the aspect bucket used for filtering.

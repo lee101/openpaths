@@ -31,6 +31,11 @@ const routes: StaticMeta[] = [
     description: 'Compare frontier AI model intelligence, coding, agentic performance, speed, and token pricing using the OpenPaths Artificial Analysis benchmark snapshot.',
   },
   {
+    path: '/image-evals',
+    title: 'Image Generator Evals — Arena Elo, Price & Example Images | OpenPaths',
+    description: 'Artificial Analysis Text-to-Image and Image Editing Arena Elo leaderboards, plus a real example image from every generator OpenPaths hosts — RA1, GPT Image 2, FLUX, and more.',
+  },
+  {
     path: '/compare',
     title: 'Compare AI Models by Evals, Speed, and Price | OpenPaths',
     description: 'Compare frontier AI models head-to-head using Artificial Analysis evals, pricing, context windows, speed, and benchmark run costs.',
@@ -50,6 +55,12 @@ const routes: StaticMeta[] = [
     title: 'Apps | OpenPaths App Usage Stats',
     description: 'Opt-in app and agent usage stats across OpenPaths and OpenRouter, including model and token breakdowns.',
     image: appOgImage('openpaths-apps'),
+  },
+  {
+    path: '/models/sync-lipsync-v3',
+    title: 'sync-3 Avatar Lip Sync API & Pricing | OpenPaths',
+    description: 'sync-3 image-to-video and video-to-video lip sync via OpenPaths: turn any portrait, illustration, or animated frame plus a voice track into a talking, perfectly lip-synced character. $0.20/sec.',
+    image: 'https://openpaths.io/og/og-sync-lipsync.png',
   },
   ...seedApps.map(app => ({
     path: `/apps/${app.slug}/`,

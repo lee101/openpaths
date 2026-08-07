@@ -1,26 +1,51 @@
 # Provider key rotation
 
-This directory contains scripts for provider APIs that can create a new API key programmatically and return the new secret.
+This directory contains a script that creates (or accepts) a replacement provider API key,
+validates it, writes it into this repo's `.env` (with a timestamped backup), and then
+best-effort revokes the previous key.
 
-Supported providers:
+Two classes of provider:
 
-| Provider | Updates | Required credential |
-|----------|---------|---------------------|
-| Anthropic | `ANTHROPIC_API_KEY` | `ANTHROPIC_NEW_API_KEY` or `ANTHROPIC_REPLACEMENT_API_KEY`; optional `ANTHROPIC_ADMIN_KEY` or `ANTHROPIC_ADMIN_API_KEY` to deactivate the previous key |
-| OpenAI | `OPENAI_API_KEY` | `OPENAI_ADMIN_KEY` or `OPENAI_ADMIN_API_KEY`; `OPENAI_PROJECT_ID` when the admin key can access multiple active projects |
-| fal | `FAL_API_KEY` | `FAL_ADMIN_API_KEY`, legacy `FAL_KEY`, or current `FAL_API_KEY` if it has admin key permissions |
+- **Full rotation** — the provider exposes a key-management API that mints a new secret
+  programmatically. We create, validate, install, and revoke the old key end to end.
+- **BYO (bring your own)** — the provider only mints keys in its web console. Create the
+  key there, export it as `*_NEW_API_KEY`, and the rotator validates + installs it. No revoke.
 
-OpenAI creates a project service account, validates the one-time returned API key against `/v1/models`, writes it to `.env`, and then revokes the previous `OPENAI_API_KEY` when it can uniquely identify it from the project API key list. If the previous key belongs to a service account, the script deletes the previous service account. fal creates an API key through the Platform API and uses the one-time returned full key.
+| Provider | Mode | Updates | Required credential |
+|----------|------|---------|---------------------|
+| OpenAI | full | `OPENAI_API_KEY` | `OPENAI_ADMIN_KEY`/`OPENAI_ADMIN_API_KEY`; `OPENAI_PROJECT_ID` when the admin key can access multiple active projects |
+| fal | full | `FAL_API_KEY` | `FAL_ADMIN_API_KEY`, legacy `FAL_KEY`, or current `FAL_API_KEY` with admin permissions |
+| OpenRouter | full | `OPENROUTER_API_KEY` | `OPENROUTER_PROVISIONING_KEY` (aliases: `OPENROUTER_PROVISIONING_API_KEY`, `OPENROUTER_MANAGEMENT_KEY`) |
+| xAI | full | `XAI_API_KEY` | `XAI_MANAGEMENT_KEY` (aliases: `XAI_MANAGEMENT_API_KEY`, `XAI_ADMIN_KEY`); optional `XAI_TEAM_ID` (auto-discovered from the current `XAI_API_KEY` otherwise) |
+| Anthropic | BYO | `ANTHROPIC_API_KEY` | `ANTHROPIC_NEW_API_KEY` or `ANTHROPIC_REPLACEMENT_API_KEY`; optional `ANTHROPIC_ADMIN_KEY`/`ANTHROPIC_ADMIN_API_KEY` to deactivate the previous key |
+| Mistral | BYO | `MISTRAL_API_KEY` | `MISTRAL_NEW_API_KEY` or `MISTRAL_REPLACEMENT_API_KEY` |
+| Nous | BYO | `NOUS_API_KEY` | `NOUS_NEW_API_KEY` or `NOUS_REPLACEMENT_API_KEY` |
 
-Anthropic's Admin API currently documents listing and updating API keys, not creating a new key secret through the API. Create the new API key in Claude Console, export it as `ANTHROPIC_NEW_API_KEY`, and run the rotator. The script validates the new key against Anthropic `/v1/models`, writes it to `.env`, and deactivates the previous key only when an Anthropic admin key can uniquely identify it from the API key list.
+**OpenAI** creates a project service account, validates the one-time returned key against `/v1/models`, writes it, then revokes the previous `OPENAI_API_KEY` (deleting its service account when applicable) once it uniquely identifies it. **fal** creates a key through the Platform API and uses the one-time returned full key.
+
+**OpenRouter** uses the Provisioning API (`POST/GET/DELETE https://openrouter.ai/api/v1/keys`): it creates a key with the provisioning key, validates it via `GET /api/v1/key`, installs it, then deletes the previous key when it can uniquely match its redacted `label` to the old secret. The provisioning key is created in the OpenRouter dashboard and can only manage keys.
+
+**xAI** uses the Management API (`https://management-api.x.ai`): it discovers the team via `GET https://api.x.ai/v1/api-key` (or `XAI_TEAM_ID`), creates a key under that team, validates it, installs it, then revokes the previous key deterministically by looking up its `api_key_id` (again via `/v1/api-key`) and issuing `DELETE /auth/api-keys/{id}`. The management key is separate from the inference key (Console → Settings → Management Keys).
+
+**Anthropic / Mistral / Nous** only mint keys in their consoles. Create the new key there, export it as the provider's `*_NEW_API_KEY`, and the rotator validates it against the provider's `/v1/models` (Anthropic also deactivates the previous key when an admin key can uniquely identify it).
 
 ## Usage
 
 ```bash
 python3 rotation/rotate_provider_key.py openai
 python3 rotation/rotate_provider_key.py fal
+python3 rotation/rotate_provider_key.py openrouter   # needs OPENROUTER_PROVISIONING_KEY
+python3 rotation/rotate_provider_key.py xai          # needs XAI_MANAGEMENT_KEY
 ANTHROPIC_NEW_API_KEY="sk-ant-api03-..." python3 rotation/rotate_provider_key.py anthropic
+MISTRAL_NEW_API_KEY="..." python3 rotation/rotate_provider_key.py mistral
+NOUS_NEW_API_KEY="..."    python3 rotation/rotate_provider_key.py nous
 python3 rotation/rotate_provider_key.py all
+```
+
+Run the tests (no network — the HTTP layer is stubbed):
+
+```bash
+python3 -m unittest discover -s rotation -p 'test_*.py'
 ```
 
 The script reads credentials from the shell environment first and then from `.env`. It writes a timestamped `.env.bak-rotation-*` backup before replacing the target key. If a target key appears more than once in `.env`, rotation collapses it to one updated entry.

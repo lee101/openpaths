@@ -23,7 +23,7 @@ const TEXT_MODEL_IDS = [
   'gpt-5.4-mini',
   'gpt-5.5',
   'gemini-3.5-flash',
-  'claude-opus-4-7',
+  'claude-opus-5',
 ];
 
 const EMBEDDING_MODEL_IDS = ['text-embedding', 'gemini-embedding-001', 'gemini-embedding-2-preview'];

@@ -89,6 +89,49 @@ func (h *AccountStatsHandler) HandleUserSpendByProvider(ctx *fasthttp.RequestCtx
 	})
 }
 
+// HandleUserSpendByProduct handles GET /account/stats/by-product?period=30d
+func (h *AccountStatsHandler) HandleUserSpendByProduct(ctx *fasthttp.RequestCtx) {
+	userID, _ := ctx.UserValue(middleware.CtxKeyUserID).(string)
+
+	period := string(ctx.QueryArgs().Peek("period"))
+	if period == "" {
+		period = "30d"
+	}
+
+	spend, err := h.statsQ.GetUserSpendByProduct(ctx, userID, period)
+	if err != nil {
+		writeError(ctx, 500, "server_error", "Failed to get product spend")
+		return
+	}
+
+	writeJSON(ctx, 200, map[string]any{
+		"period":   period,
+		"products": spend,
+	})
+}
+
+// HandleUserActivity handles GET /account/stats/activity?days=365
+// It powers the GitHub-style contribution heatmap.
+func (h *AccountStatsHandler) HandleUserActivity(ctx *fasthttp.RequestCtx) {
+	userID, _ := ctx.UserValue(middleware.CtxKeyUserID).(string)
+
+	days := ctx.QueryArgs().GetUintOrZero("days")
+	if days <= 0 {
+		days = 365
+	}
+
+	activity, err := h.statsQ.GetUserDailyActivity(ctx, userID, days)
+	if err != nil {
+		writeError(ctx, 500, "server_error", "Failed to get activity")
+		return
+	}
+
+	writeJSON(ctx, 200, map[string]any{
+		"days": days,
+		"data": activity,
+	})
+}
+
 // HandleUserAPIKeyDrilldown handles GET /account/stats/by-api-key/{key_id}/models?period=30d
 func (h *AccountStatsHandler) HandleUserAPIKeyDrilldown(ctx *fasthttp.RequestCtx) {
 	userID, _ := ctx.UserValue(middleware.CtxKeyUserID).(string)

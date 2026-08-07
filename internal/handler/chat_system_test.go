@@ -118,6 +118,133 @@ func TestChatCompletionSystem_SayHiNothingElseReturnsHi(t *testing.T) {
 	}
 }
 
+// fableOutageProvider mimics Anthropic during a Fable outage: it returns the
+// real upstream 404 "not available, use Opus" for the Fable model and serves a
+// normal completion for Opus. Both models live on this one provider, matching
+// production where Fable and Opus are both `provider: anthropic`.
+type fableOutageProvider struct {
+	t           *testing.T
+	fableCalled bool
+	opusCalled  bool
+}
+
+func (p *fableOutageProvider) Name() string { return "anthropic" }
+
+func (p *fableOutageProvider) ChatCompletion(_ context.Context, req *model.ChatCompletionRequest) (*model.ChatCompletionResponse, error) {
+	switch req.Model {
+	case "claude-fable-5":
+		p.fableCalled = true
+		return nil, &provider.ProviderError{
+			Provider:   "anthropic",
+			StatusCode: 404,
+			Message:    `{"type":"error","error":{"type":"not_found_error","message":"Claude Fable 5 is not available. Please use Opus 4.8."}}`,
+			Retryable:  false,
+		}
+	case "claude-opus-4-8":
+		p.opusCalled = true
+		return &model.ChatCompletionResponse{
+			ID:      "chatcmpl_test_opus",
+			Object:  "chat.completion",
+			Created: time.Now().Unix(),
+			Model:   req.Model,
+			Choices: []model.ChatChoice{{
+				Index:        0,
+				Message:      &model.ChatMessage{Role: "assistant", Content: "OK"},
+				FinishReason: strPtr("stop"),
+			}},
+			Usage: &model.UsageInfo{},
+		}, nil
+	default:
+		p.t.Fatalf("unexpected provider model %q", req.Model)
+		return nil, nil
+	}
+}
+
+func (p *fableOutageProvider) ChatCompletionStream(_ context.Context, _ *model.ChatCompletionRequest) (<-chan provider.StreamEvent, error) {
+	ch := make(chan provider.StreamEvent)
+	close(ch)
+	return ch, nil
+}
+
+func (p *fableOutageProvider) HealthCheck(context.Context) error { return nil }
+
+// TestChatCompletion_FableOutageFallsBackToOpus locks in the production fix: a
+// non-retryable 404 from the primary model must fall through to the configured
+// fallback_models chain (Fable -> Opus) instead of failing the request hard.
+func TestChatCompletion_FableOutageFallsBackToOpus(t *testing.T) {
+	reg := provider.NewRegistry()
+	prov := &fableOutageProvider{t: t}
+	reg.Register(prov)
+
+	models := []model.ModelConfig{
+		{
+			ID:              "claude-fable-latest",
+			Provider:        "anthropic",
+			ProviderModelID: "claude-fable-5",
+			Aliases:         []string{"fable"},
+			FallbackModels:  []string{"claude-opus-latest"},
+		},
+		{
+			ID:              "claude-opus-latest",
+			Provider:        "anthropic",
+			ProviderModelID: "claude-opus-4-8",
+		},
+	}
+	r := router.New(reg, models)
+	pricing := billing.NewPricingTable(models)
+	h := NewChatHandler(
+		r,
+		billing.NewEngine(pricing, nil),
+		metrics.NewRecorder(metrics.NewCollector(nil, time.Hour)),
+		nil,
+		nil,
+	)
+
+	body, err := json.Marshal(map[string]any{
+		"model":      "claude-fable-latest",
+		"messages":   []map[string]string{{"role": "user", "content": "say OK"}},
+		"max_tokens": 8,
+	})
+	if err != nil {
+		t.Fatalf("marshal request: %v", err)
+	}
+
+	var req fasthttp.Request
+	req.Header.SetMethod(http.MethodPost)
+	req.SetRequestURI("/v1/chat/completions")
+	req.Header.SetContentType("application/json")
+	req.SetBody(body)
+
+	var ctx fasthttp.RequestCtx
+	ctx.Init(&req, nil, nil)
+	ctx.SetUserValue(middleware.CtxKeyUserID, "ci-user")
+
+	h.HandleChatCompletion(&ctx)
+
+	if got := ctx.Response.StatusCode(); got != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", got, ctx.Response.Body())
+	}
+	if !prov.fableCalled {
+		t.Fatal("expected Fable to be attempted first")
+	}
+	if !prov.opusCalled {
+		t.Fatal("expected fallback to Opus after Fable 404")
+	}
+
+	var resp model.ChatCompletionResponse
+	if err := json.Unmarshal(ctx.Response.Body(), &resp); err != nil {
+		t.Fatalf("decode response: %v; body=%s", err, ctx.Response.Body())
+	}
+	// The user requested Fable, so the response must still be labeled Fable even
+	// though Opus served it -- the failover is transparent to the caller.
+	if resp.Model != "claude-fable-latest" {
+		t.Fatalf("response model = %q, want claude-fable-latest", resp.Model)
+	}
+	if len(resp.Choices) != 1 || resp.Choices[0].Message == nil || resp.Choices[0].Message.Content != "OK" {
+		t.Fatalf("choices = %#v, want one assistant message 'OK'", resp.Choices)
+	}
+}
+
 func strPtr(s string) *string {
 	return &s
 }

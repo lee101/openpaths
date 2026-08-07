@@ -4,19 +4,26 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
+	"time"
 
 	"github.com/openpaths/openpaths/internal/db/queries"
+	"github.com/openpaths/openpaths/internal/email"
 	"github.com/openpaths/openpaths/internal/model"
 )
 
 var ErrInsufficientBalance = errors.New("insufficient balance")
+
+const billingAlertCooldown = 24 * time.Hour
 
 // Engine handles balance checks and deductions.
 type Engine struct {
 	pricing   *PricingTable
 	credits   *queries.CreditQueries
 	autoTopup *AutoTopupService
+	guards    *queries.GuardQueries
+	appURL    string
 }
 
 func NewEngine(pricing *PricingTable, credits *queries.CreditQueries) *Engine {
@@ -27,6 +34,53 @@ func (e *Engine) SetAutoTopup(svc *AutoTopupService) {
 	e.autoTopup = svc
 }
 
+// SetGuards wires the optional billshock-alert store (no alerts when unset).
+func (e *Engine) SetGuards(g *queries.GuardQueries, appURL string) {
+	e.guards = g
+	e.appURL = appURL
+}
+
+// maybeBillingAlert emails the user when their balance crosses below their
+// configured threshold, debounced once per cooldown. Safe to call inline.
+func (e *Engine) maybeBillingAlert(ctx context.Context, userID string) {
+	if e.guards == nil || e.credits == nil {
+		return
+	}
+	enabled, threshold, lastAt, addr, err := e.guards.AlertState(ctx, userID)
+	if err != nil || !enabled || threshold <= 0 || addr == "" {
+		return
+	}
+	if lastAt != nil && time.Since(*lastAt) < billingAlertCooldown {
+		return
+	}
+	balance, err := e.credits.GetBalance(ctx, userID)
+	if err != nil {
+		return
+	}
+	// Balance is in internal units (hundredths-of-a-cent); thresholds are USD cents.
+	balanceCents := balance / 100
+	if balanceCents >= threshold {
+		return
+	}
+	if err := e.guards.MarkAlerted(ctx, userID); err != nil {
+		return
+	}
+	url := e.appURL
+	if url == "" {
+		url = "https://openpaths.io"
+	}
+	body := fmt.Sprintf(`<div style="font-family:sans-serif;max-width:480px">
+<h2>Low credit balance</h2>
+<p>Your balance has dropped to <strong>$%.2f</strong>, below your alert threshold of $%.2f.</p>
+<p><a href="%s/account">Top up your account</a> to avoid interruptions.</p>
+</div>`, float64(balanceCents)/100, float64(threshold)/100, url)
+	go func(to, html string) {
+		if err := email.Send(to, "Low credit balance on OpenPaths", html); err != nil {
+			log.Printf("billing-alert email send failed user=%s: %v", userID, err)
+		}
+	}(addr, body)
+}
+
 func (e *Engine) triggerAutoTopup(userID string) {
 	if e.autoTopup != nil {
 		e.autoTopup.CheckAndTopup(userID)
@@ -35,6 +89,9 @@ func (e *Engine) triggerAutoTopup(userID string) {
 
 // PreCheck verifies the user has a minimum balance to attempt a request.
 func (e *Engine) PreCheck(ctx context.Context, userID, modelID string, estimatedMaxOutput int) error {
+	if e.credits == nil {
+		return nil
+	}
 	balance, err := e.credits.GetBalance(ctx, userID)
 	if err != nil {
 		return fmt.Errorf("balance lookup: %w", err)
@@ -59,7 +116,7 @@ func (e *Engine) PreCheck(ctx context.Context, userID, modelID string, estimated
 
 // PreCheckFixed verifies the user can cover a precomputed request cost.
 func (e *Engine) PreCheckFixed(ctx context.Context, userID string, estimatedCost int64) error {
-	if estimatedCost <= 0 {
+	if estimatedCost <= 0 || e.credits == nil {
 		return nil
 	}
 	balance, err := e.credits.GetBalance(ctx, userID)
@@ -105,6 +162,7 @@ func (e *Engine) DeductWithCachedInput(ctx context.Context, userID, modelID stri
 		return cost, err
 	}
 	e.triggerAutoTopup(userID)
+	e.maybeBillingAlert(ctx, userID)
 	return cost, nil
 }
 
@@ -145,6 +203,7 @@ func (e *Engine) DeductImageWithInputsAndSize(ctx context.Context, userID, model
 		return cost, err
 	}
 	e.triggerAutoTopup(userID)
+	e.maybeBillingAlert(ctx, userID)
 	return cost, nil
 }
 
@@ -171,6 +230,7 @@ func (e *Engine) DeductForecast(ctx context.Context, userID, modelID, usageLogID
 		return cost, err
 	}
 	e.triggerAutoTopup(userID)
+	e.maybeBillingAlert(ctx, userID)
 	return cost, nil
 }
 
@@ -196,6 +256,7 @@ func (e *Engine) DeductOutpaint(ctx context.Context, userID, modelID string, inp
 		return cost, err
 	}
 	e.triggerAutoTopup(userID)
+	e.maybeBillingAlert(ctx, userID)
 	return cost, nil
 }
 
@@ -230,7 +291,15 @@ func formatOutpaintUsageDescription(modelID string, inputWidth, inputHeight, out
 
 // DeductVideo calculates video generation cost and atomically deducts from balance.
 func (e *Engine) DeductVideo(ctx context.Context, userID, modelID string, durationSeconds int, hasVideoInput bool, usageLogID string) (int64, error) {
-	cost, err := e.pricing.CalculateVideoCost(modelID, durationSeconds, hasVideoInput)
+	return e.DeductVideoWithResolution(ctx, userID, modelID, durationSeconds, hasVideoInput, "", usageLogID)
+}
+
+func (e *Engine) DeductVideoWithResolution(ctx context.Context, userID, modelID string, durationSeconds int, hasVideoInput bool, resolution, usageLogID string) (int64, error) {
+	return e.DeductVideoWithMediaInputs(ctx, userID, modelID, durationSeconds, hasVideoInput, 0, resolution, usageLogID)
+}
+
+func (e *Engine) DeductVideoWithMediaInputs(ctx context.Context, userID, modelID string, durationSeconds int, hasVideoInput bool, inputImageCount int, resolution, usageLogID string) (int64, error) {
+	cost, err := e.pricing.CalculateVideoCostWithMediaInputs(modelID, durationSeconds, hasVideoInput, inputImageCount, resolution)
 	if err != nil {
 		return 0, err
 	}
@@ -251,6 +320,7 @@ func (e *Engine) DeductVideo(ctx context.Context, userID, modelID string, durati
 		return cost, err
 	}
 	e.triggerAutoTopup(userID)
+	e.maybeBillingAlert(ctx, userID)
 	return cost, nil
 }
 
@@ -277,7 +347,16 @@ func (e *Engine) DeductAudio(ctx context.Context, userID, modelID string, durati
 		return cost, err
 	}
 	e.triggerAutoTopup(userID)
+	e.maybeBillingAlert(ctx, userID)
 	return cost, nil
+}
+
+func (e *Engine) DeductCharacters(ctx context.Context, userID, modelID string, characters int, usageLogID string) (int64, error) {
+	cost, err := e.pricing.CalculateCharacterCost(modelID, characters)
+	if err != nil || cost == 0 {
+		return cost, err
+	}
+	return cost, e.DeductFixed(ctx, userID, modelID, cost, fmt.Sprintf("Speech: %s, characters: %d", modelID, characters), usageLogID)
 }
 
 // DeductFixed atomically deducts a precomputed usage charge in hundredths-of-a-cent.

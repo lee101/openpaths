@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/openpaths/openpaths/internal/agent"
 	"github.com/openpaths/openpaths/internal/artindex"
 	"github.com/openpaths/openpaths/internal/audio"
 	"github.com/openpaths/openpaths/internal/auth"
@@ -24,11 +25,15 @@ import (
 	"github.com/openpaths/openpaths/internal/db/queries"
 	"github.com/openpaths/openpaths/internal/discovery"
 	"github.com/openpaths/openpaths/internal/email"
+	"github.com/openpaths/openpaths/internal/handler"
 	"github.com/openpaths/openpaths/internal/metrics"
+	"github.com/openpaths/openpaths/internal/model"
+	"github.com/openpaths/openpaths/internal/promptcache"
 	"github.com/openpaths/openpaths/internal/promptlib"
 	"github.com/openpaths/openpaths/internal/provider"
 	"github.com/openpaths/openpaths/internal/provider/anthropic"
 	"github.com/openpaths/openpaths/internal/provider/appnz"
+	"github.com/openpaths/openpaths/internal/provider/bfl"
 	"github.com/openpaths/openpaths/internal/provider/cursor"
 	"github.com/openpaths/openpaths/internal/provider/cutedsl"
 	"github.com/openpaths/openpaths/internal/provider/deepseek"
@@ -37,6 +42,7 @@ import (
 	gobedprov "github.com/openpaths/openpaths/internal/provider/gobed"
 	"github.com/openpaths/openpaths/internal/provider/google"
 	"github.com/openpaths/openpaths/internal/provider/groq"
+	"github.com/openpaths/openpaths/internal/provider/localwhisper"
 	"github.com/openpaths/openpaths/internal/provider/minimax"
 	"github.com/openpaths/openpaths/internal/provider/mistral"
 	"github.com/openpaths/openpaths/internal/provider/netwrck"
@@ -44,11 +50,13 @@ import (
 	"github.com/openpaths/openpaths/internal/provider/nvidia"
 	"github.com/openpaths/openpaths/internal/provider/openai"
 	"github.com/openpaths/openpaths/internal/provider/openrouter"
+	"github.com/openpaths/openpaths/internal/provider/sakana"
 	"github.com/openpaths/openpaths/internal/provider/textgenerator"
 	"github.com/openpaths/openpaths/internal/provider/together"
 	"github.com/openpaths/openpaths/internal/provider/xai"
 	"github.com/openpaths/openpaths/internal/provider/zai"
 	"github.com/openpaths/openpaths/internal/router"
+	"github.com/openpaths/openpaths/internal/savedresp"
 	"github.com/openpaths/openpaths/internal/server"
 	"github.com/openpaths/openpaths/internal/skillindex"
 	"github.com/openpaths/openpaths/internal/storage"
@@ -96,6 +104,9 @@ func main() {
 	researchJobQ := queries.NewResearchJobQueries(database.Pool)
 	artImageQ := queries.NewArtImageQueries(database.Pool)
 	skillQ := queries.NewSkillQueries(database.Pool)
+	savedRespQ := queries.NewSavedResponseQueries(database.Pool)
+	agentQ := queries.NewAgentQueries(database.Pool)
+	sharedChatQ := queries.NewSharedChatQueries(database.Pool)
 
 	jwtService := auth.NewJWTService(cfg.JWT.Secret, cfg.JWT.ExpirationHours)
 
@@ -112,8 +123,27 @@ func main() {
 		log.Printf("Registered embedding provider: gobed")
 	}
 
+	// Shared Anthropic prompt-cache cost optimizer: tracks per-prefix request
+	// timing and auto-picks the cheapest cache TTL (none/5m/1h), recomputed every
+	// minute. Anthropic-only.
+	cacheOptimizer := promptcache.New(promptcache.Config{})
+	cacheOptimizer.Start()
+	defer cacheOptimizer.Stop()
+
+	// Providers served by a loopback front door on this box rather than a
+	// cloud API. They register without a catalogue api_key.
+	localProviderNames := map[string]bool{"appnz": true, "gobed": true}
+
+	if os.Getenv("LOCAL_WHISPER_ENABLED") == "1" || os.Getenv("LOCAL_WHISPER_BIN") != "" {
+		transcribers = append([]provider.TranscriptionProvider{localwhisper.NewFromEnv()}, transcribers...)
+		log.Printf("Registered transcription provider: local-whisper")
+	}
+
 	for _, provCfg := range cfg.Providers {
-		if !provCfg.Enabled || provCfg.APIKey == "" {
+		// A local provider talks to a loopback front door that authenticates
+		// with its own secret, so an empty catalogue api_key is not a reason to
+		// skip it. Cloud providers still require one.
+		if !provCfg.Enabled || (provCfg.APIKey == "" && !localProviderNames[provCfg.Name]) {
 			log.Printf("Skipping provider %s (disabled or no API key)", provCfg.Name)
 			continue
 		}
@@ -124,13 +154,22 @@ func main() {
 			p = openai.New(provCfg.APIKey, provCfg.BaseURL)
 			transcribers = append(transcribers, openai.NewTranscriber(provCfg.APIKey, provCfg.BaseURL))
 		case "anthropic":
-			p = anthropic.New(provCfg.APIKey, provCfg.BaseURL)
+			ap := anthropic.New(provCfg.APIKey, provCfg.BaseURL)
+			ap.SetCacheOptimizer(cacheOptimizer)
+			p = ap
 		case "appnz":
 			p = appnz.New(provCfg.APIKey, provCfg.BaseURL)
 		case "cursor":
 			p = cursor.New(provCfg.APIKey, provCfg.BaseURL)
 		case "google":
-			p = google.New(provCfg.APIKey, provCfg.BaseURL)
+			gp := google.New(provCfg.APIKey, provCfg.BaseURL)
+			// Explicit Gemini context caching is default-OFF (free implicit
+			// caching covers most cases); enable with GEMINI_EXPLICIT_CACHE=1.
+			gem := google.NewGeminiCacheManager(os.Getenv("GEMINI_EXPLICIT_CACHE") == "1", provCfg.APIKey, provCfg.BaseURL)
+			gem.Start()
+			defer gem.Stop()
+			gp.SetCacheManager(gem)
+			p = gp
 		case "mistral":
 			m := mistral.New(provCfg.APIKey, provCfg.BaseURL)
 			embedders = append(embedders, m)
@@ -146,8 +185,18 @@ func main() {
 			p = xp
 		case "deepseek":
 			p = deepseek.New(provCfg.APIKey, provCfg.BaseURL)
+		case "moonshot":
+			p = openai.NewCompatible("moonshot", provCfg.APIKey, provCfg.BaseURL, sanitizeOpenAICompatible)
+		case "thinkingmachines":
+			p = openai.NewCompatible("thinkingmachines", provCfg.APIKey, provCfg.BaseURL, sanitizeOpenAICompatible)
+		case "qwen":
+			p = openai.NewCompatible("qwen", provCfg.APIKey, provCfg.BaseURL, sanitizeOpenAICompatible)
+		case "stepfun":
+			p = openai.NewCompatible("stepfun", provCfg.APIKey, provCfg.BaseURL, sanitizeOpenAICompatible)
 		case "openrouter":
 			p = openrouter.NewWithAttribution(provCfg.APIKey, provCfg.BaseURL, provCfg.AppReferer, provCfg.AppTitle, provCfg.AppCategories)
+		case "inference_net":
+			p = openai.NewCompatible("inference_net", provCfg.APIKey, provCfg.BaseURL, sanitizeOpenAICompatible)
 		case "together":
 			p = together.New(provCfg.APIKey, provCfg.BaseURL)
 		case "minimax":
@@ -167,6 +216,12 @@ func main() {
 			log.Printf("Registered embedding provider: textgenerator")
 		case "zai":
 			p = zai.New(provCfg.APIKey, provCfg.BaseURL)
+		case "sakana":
+			p = sakana.New(provCfg.APIKey, provCfg.BaseURL)
+		case "cerebras":
+			// Cerebras is OpenAI-compatible (/v1/chat/completions) and hosts the
+			// zai GLM models (e.g. zai-glm-4.7).
+			p = openai.NewCompatible("cerebras", provCfg.APIKey, provCfg.BaseURL, nil)
 		case "fireworks":
 			p = fireworks.New(provCfg.APIKey, provCfg.BaseURL)
 			transcribers = append(transcribers, fireworks.NewTranscriber(provCfg.APIKey, provCfg.BaseURL))
@@ -174,6 +229,8 @@ func main() {
 			f := fal.New(provCfg.APIKey)
 			transcribers = append(transcribers, f)
 			p = f
+		case "bfl":
+			p = bfl.New(provCfg.APIKey, provCfg.BaseURL)
 		case "exa":
 			log.Printf("Registered search provider: exa")
 			continue
@@ -215,12 +272,19 @@ func main() {
 	pricingTable := billing.NewPricingTable(cfg.Models)
 	billingEngine := billing.NewEngine(pricingTable, creditQ)
 
+	// IAM + billshock guards (opt-in, open by default).
+	accessQ := queries.NewAccessQueries(database.Pool)
+	guardQ := queries.NewGuardQueries(database.Pool)
+	teamQ := queries.NewTeamQueries(database.Pool)
+	billingEngine.SetGuards(guardQ, os.Getenv("APP_URL"))
+
 	var stripe *stripesvc.Service
 	var stripeReconciler *billing.Reconciler
 	if cfg.Stripe.SecretKey != "" {
 		stripe = stripesvc.NewService(cfg.Stripe.SecretKey)
 		topupQ := queries.NewAutotopupQueries(database.Pool)
 		autoTopup := billing.NewAutoTopupService(userQ, creditQ, topupQ, stripe, billingEngine)
+		autoTopup.SetGuards(guardQ)
 		billingEngine.SetAutoTopup(autoTopup)
 		stripeReconciler = billing.NewReconciler(stripe, userQ, stripeDepositQ, 30*time.Second)
 		log.Printf("Stripe auto-topup + deposit reconciler enabled")
@@ -288,11 +352,15 @@ func main() {
 	codexRefresher.Start()
 	defer codexRefresher.Stop()
 
+	adminMaxPlan := handler.NewAdminMaxPlanRefresher(providerKeyQ, userQ, os.Getenv("ADMIN_OPENAI_MAX_PLAN_EMAIL"))
+	adminMaxPlan.Start()
+	defer adminMaxPlan.Stop()
+
 	appUsageCrawler := cron.NewAppUsageCrawler(appQ)
 	appUsageCrawler.Start()
 	defer appUsageCrawler.Stop()
 
-	modelProber := cron.NewModelProber(modelProbeQ, cfg.Models)
+	modelProber := cron.NewModelProber(modelProbeQ, apiKeyQ, userQ, creditQ, cfg.Models)
 	modelProber.Start()
 	defer modelProber.Stop()
 
@@ -325,10 +393,37 @@ func main() {
 		log.Printf("Skill library semantic index disabled (local gobed embedder unavailable or disabled); ILIKE search still available")
 	}
 
+	// User-built agents: tool-use + computer-use with connected data sources.
+	agentEngine := agent.NewEngine(modelRouter, billingEngine, localEmbedder, agentQ, store, os.Getenv("OPENPATHS_COMPUTER_USE_URL"))
+	agentEngine.SetAccess(accessQ)
+	if exaCfg := handler.ExaSearchProviderConfig(cfg.Providers); exaCfg.Enabled && exaCfg.APIKey != "" {
+		agentEngine.SetExaKey(exaCfg.APIKey)
+	}
+
+	// Optional per-user response saving + private usage search.
+	saver := savedresp.New(savedRespQ, userQ, localEmbedder)
+	saver.Start()
+	defer saver.Stop()
+	if localEmbedder != nil {
+		log.Printf("Response saving enabled (semantic search via gobed)")
+	} else {
+		log.Printf("Response saving enabled (trigram search only; gobed embedder unavailable)")
+	}
+
+	// Email suppression: never send to unsubscribed/blocked addresses.
+	suppressionQ := queries.NewSuppressionQueries(database.Pool)
+	email.Suppressed = func(addr string) bool {
+		suppressed, err := suppressionQ.IsSuppressed(context.Background(), addr)
+		if err != nil {
+			log.Printf("suppression check failed for %s: %v", addr, err)
+			return false
+		}
+		return suppressed
+	}
 	// Start drip email campaign scheduler.
 	var onRegister func(string, string)
 	if os.Getenv("AWS_SMTP_USERNAME") != "" {
-		dripRunner, err := email.NewDripRunner(database.Pool, "emails")
+		dripRunner, err := email.NewDripRunner(database.Pool, "emails", cfg.JWT.Secret, cfg.Models)
 		if err != nil {
 			log.Printf("Drip email runner disabled: %v", err)
 		} else {
@@ -380,6 +475,14 @@ func main() {
 		PromptIndex:      promptIndex,
 		SkillIndex:       skillIndex,
 		SkillQ:           skillQ,
+		Saver:            saver,
+		AgentQ:           agentQ,
+		AgentEngine:      agentEngine,
+		SharedChatQ:      sharedChatQ,
+		AccessQ:          accessQ,
+		GuardQ:           guardQ,
+		TeamQ:            teamQ,
+		SuppressionQ:     suppressionQ,
 	})
 
 	done := make(chan os.Signal, 1)
@@ -401,6 +504,14 @@ func main() {
 	if err := srv.Shutdown(); err != nil {
 		log.Printf("Shutdown error: %v", err)
 	}
+}
+
+func sanitizeOpenAICompatible(req *model.ChatCompletionRequest) {
+	req.Prefill = ""
+	req.TaskTier = ""
+	req.RoutingStrategy = ""
+	req.Thinking = nil
+	req.ChatTemplateKwargs = nil
 }
 
 func initCrypto(cfg *config.Config, database *db.DB, billingEngine *billing.Engine) *crypto.Service {

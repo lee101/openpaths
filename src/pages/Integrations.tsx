@@ -55,6 +55,23 @@ asyncio.run(main())`,
     ],
   },
   {
+    id: 'claude-code-gateway',
+    name: 'Claude Code Gateway',
+    install: 'npm install -g @anthropic-ai/claude-code',
+    summary: 'Run Claude Code against any OpenPaths text model, including OpenAI-compatible NVIDIA models exposed through the Anthropic Messages API.',
+    language: 'powershell',
+    code: (_apiBase, apiKey) => `$env:ANTHROPIC_BASE_URL = "https://openpaths.io"
+$env:ANTHROPIC_AUTH_TOKEN = "${apiKey}"
+$env:ANTHROPIC_API_KEY = ""
+$env:ANTHROPIC_MODEL = "nvidia/deepseek-v4-pro"
+
+claude`,
+    notes: [
+      'ANTHROPIC_BASE_URL must include https:// and must not end in /v1; Claude Code appends /v1/messages itself.',
+      'The gateway translates Anthropic messages, tools, and streaming events for non-Anthropic providers. Long stable system prompts and tools receive safe automatic prompt-cache breakpoints.',
+    ],
+  },
+  {
     id: 'anthropic-agent-sdk',
     name: 'Anthropic Agent SDK',
     install: 'pip install claude-agent-sdk',
@@ -327,7 +344,7 @@ export function Integrations() {
     <>
       <Seo
         title="OpenPaths Integrations | OpenAI Agents, Anthropic, LangChain"
-        description="Copy-paste OpenPaths integration examples for OpenAI Agents SDK, Anthropic Agent SDK, LangChain, Vercel AI SDK, PydanticAI, Mastra, Langfuse, LiveKit, Hermes Agent, and OpenClaw."
+        description="Copy-paste OpenPaths integration examples for Claude Code, OpenAI Agents SDK, Anthropic Agent SDK, LangChain, Vercel AI SDK, PydanticAI, Mastra, Langfuse, LiveKit, Hermes Agent, and OpenClaw."
         path="/integrations"
       />
 
@@ -340,7 +357,7 @@ export function Integrations() {
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">Integrate OpenPaths With Your Agent Stack</h1>
         <p className="text-white/60 max-w-3xl font-light leading-relaxed">
           OpenPaths speaks OpenAI-compatible chat, image, audio, and embedding APIs. These examples cover agent runtimes like Hermes Agent
-          and OpenClaw plus SDK patterns from OpenAI Agents, Anthropic Agent SDK, LangChain, Vercel AI SDK, PydanticAI, Mastra, Langfuse, and LiveKit.
+          and OpenClaw plus SDK patterns from Claude Code, OpenAI Agents, Anthropic Agent SDK, LangChain, Vercel AI SDK, PydanticAI, Mastra, Langfuse, and LiveKit.
         </p>
       </div>
 

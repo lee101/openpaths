@@ -16,13 +16,16 @@ import (
 	"github.com/google/uuid"
 	"github.com/openpaths/openpaths/internal/model"
 	"github.com/openpaths/openpaths/internal/provider"
+	"github.com/openpaths/openpaths/internal/safefetch"
 	"google.golang.org/genai"
 )
 
 type GoogleProvider struct {
-	apiKey  string
-	baseURL string
-	client  *http.Client
+	apiKey      string
+	baseURL     string
+	client      *http.Client
+	imageClient *http.Client
+	cacheMgr    *GeminiCacheManager
 }
 
 func New(apiKey, baseURL string) *GoogleProvider {
@@ -30,10 +33,17 @@ func New(apiKey, baseURL string) *GoogleProvider {
 		baseURL = "https://generativelanguage.googleapis.com"
 	}
 	return &GoogleProvider{
-		apiKey:  apiKey,
-		baseURL: strings.TrimRight(baseURL, "/"),
-		client:  &http.Client{Timeout: 5 * time.Minute},
+		apiKey:      apiKey,
+		baseURL:     strings.TrimRight(baseURL, "/"),
+		client:      &http.Client{Timeout: 5 * time.Minute},
+		imageClient: safefetch.NewClient(30 * time.Second),
 	}
+}
+
+// SetCacheManager attaches a Gemini explicit-cache manager. When nil or
+// disabled, requests are sent unchanged (relying on free implicit caching).
+func (p *GoogleProvider) SetCacheManager(m *GeminiCacheManager) {
+	p.cacheMgr = m
 }
 
 func (p *GoogleProvider) Name() string { return "google" }
@@ -307,6 +317,10 @@ type geminiRequest struct {
 	SystemInstruction *geminiContent       `json:"systemInstruction,omitempty"`
 	GenerationConfig  *geminiGenerationCfg `json:"generationConfig,omitempty"`
 	Tools             []geminiToolDecl     `json:"tools,omitempty"`
+	// CachedContent references a pre-created explicit cache (e.g.
+	// "cachedContents/abc"). When set, SystemInstruction and Tools live in the
+	// cache and must be omitted from the request.
+	CachedContent string `json:"cachedContent,omitempty"`
 }
 
 type geminiContent struct {
@@ -316,8 +330,20 @@ type geminiContent struct {
 
 type geminiPart struct {
 	Text         string          `json:"text,omitempty"`
+	InlineData   *geminiBlob     `json:"inlineData,omitempty"`
+	FileData     *geminiFileData `json:"fileData,omitempty"`
 	FunctionCall *geminiFuncCall `json:"functionCall,omitempty"`
 	FunctionResp *geminiFuncResp `json:"functionResponse,omitempty"`
+}
+
+type geminiBlob struct {
+	MimeType string `json:"mimeType,omitempty"`
+	Data     string `json:"data"`
+}
+
+type geminiFileData struct {
+	MimeType string `json:"mimeType,omitempty"`
+	FileURI  string `json:"fileUri"`
 }
 
 type geminiFuncCall struct {
@@ -395,46 +421,48 @@ type geminiCandidate struct {
 }
 
 type geminiUsage struct {
-	PromptTokenCount     int `json:"promptTokenCount"`
-	CandidatesTokenCount int `json:"candidatesTokenCount"`
-	ThoughtsTokenCount   int `json:"thoughtsTokenCount"`
-	TotalTokenCount      int `json:"totalTokenCount"`
+	PromptTokenCount        int `json:"promptTokenCount"`
+	CandidatesTokenCount    int `json:"candidatesTokenCount"`
+	ThoughtsTokenCount      int `json:"thoughtsTokenCount"`
+	TotalTokenCount         int `json:"totalTokenCount"`
+	CachedContentTokenCount int `json:"cachedContentTokenCount,omitempty"`
 }
 
 func (p *GoogleProvider) ChatCompletion(ctx context.Context, req *model.ChatCompletionRequest) (*model.ChatCompletionResponse, error) {
 	gemReq := translateRequest(req)
 
-	body, err := json.Marshal(gemReq)
-	if err != nil {
-		return nil, fmt.Errorf("marshal request: %w", err)
-	}
-
-	url := fmt.Sprintf("%s/v1beta/models/%s:generateContent?key=%s", p.baseURL, req.Model, p.apiKey)
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
-	if err != nil {
-		return nil, fmt.Errorf("create request: %w", err)
-	}
-	httpReq.Header.Set("Content-Type", "application/json")
-
-	resp, err := p.client.Do(httpReq)
-	if err != nil {
-		return nil, &provider.ProviderError{
-			Provider: "google", StatusCode: 502, Message: err.Error(), Retryable: true, Err: err,
+	// Explicit context cache (default-off). When the manager decides to use a
+	// cache, the stable prefix (systemInstruction + tools) is omitted from the
+	// request and referenced via cachedContent instead.
+	var cacheKey string
+	if p.cacheMgr != nil {
+		if name, key := p.cacheMgr.Ensure(ctx, req.Model, gemReq); name != "" {
+			cacheKey = key
+			gemReq.CachedContent = name
+			gemReq.SystemInstruction = nil
+			gemReq.Tools = nil
 		}
 	}
-	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(resp.Body)
+	respBody, status, err := p.sendGenerate(ctx, req.Model, gemReq)
 	if err != nil {
-		return nil, fmt.Errorf("read response: %w", err)
+		return nil, err
 	}
-
-	if resp.StatusCode != 200 {
+	// A stale or forbidden cache: drop it and retry once with the full prefix so
+	// the request never hard-fails because of our caching.
+	if status != 200 && cacheKey != "" && (status == 403 || status == 404) {
+		p.cacheMgr.Invalidate(cacheKey)
+		respBody, status, err = p.sendGenerate(ctx, req.Model, translateRequest(req))
+		if err != nil {
+			return nil, err
+		}
+	}
+	if status != 200 {
 		return nil, &provider.ProviderError{
 			Provider:   "google",
-			StatusCode: resp.StatusCode,
+			StatusCode: status,
 			Message:    string(respBody),
-			Retryable:  resp.StatusCode >= 500 || resp.StatusCode == 429,
+			Retryable:  status >= 500 || status == 429,
 		}
 	}
 
@@ -444,6 +472,36 @@ func (p *GoogleProvider) ChatCompletion(ctx context.Context, req *model.ChatComp
 	}
 
 	return translateResponse(&gemResp, req.Model), nil
+}
+
+// sendGenerate performs one generateContent POST and returns the raw body and
+// HTTP status (or a transport-level ProviderError).
+func (p *GoogleProvider) sendGenerate(ctx context.Context, modelName string, gemReq *geminiRequest) ([]byte, int, error) {
+	body, err := json.Marshal(gemReq)
+	if err != nil {
+		return nil, 0, fmt.Errorf("marshal request: %w", err)
+	}
+
+	url := fmt.Sprintf("%s/v1beta/models/%s:generateContent?key=%s", p.baseURL, modelName, p.apiKey)
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
+	if err != nil {
+		return nil, 0, fmt.Errorf("create request: %w", err)
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	resp, err := p.client.Do(httpReq)
+	if err != nil {
+		return nil, 0, &provider.ProviderError{
+			Provider: "google", StatusCode: 502, Message: err.Error(), Retryable: true, Err: err,
+		}
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, 0, fmt.Errorf("read response: %w", err)
+	}
+	return respBody, resp.StatusCode, nil
 }
 
 func (p *GoogleProvider) Embed(ctx context.Context, req *model.EmbeddingRequest) (*model.EmbeddingResponse, error) {
@@ -729,6 +787,14 @@ func translateRequest(req *model.ChatCompletionRequest) *geminiRequest {
 		switch c := msg.Content.(type) {
 		case string:
 			parts = []geminiPart{{Text: c}}
+		case []any:
+			parts = translateGeminiParts(c)
+		case []map[string]any:
+			rawParts := make([]any, 0, len(c))
+			for _, part := range c {
+				rawParts = append(rawParts, part)
+			}
+			parts = translateGeminiParts(rawParts)
 		default:
 			// For complex content, serialize to string
 			b, _ := json.Marshal(c)
@@ -757,16 +823,82 @@ func translateRequest(req *model.ChatCompletionRequest) *geminiRequest {
 	if len(req.Tools) > 0 {
 		var funcDecls []geminiFuncDecl
 		for _, tool := range req.Tools {
+			if tool.Function == nil {
+				continue
+			}
 			funcDecls = append(funcDecls, geminiFuncDecl{
 				Name:        tool.Function.Name,
 				Description: tool.Function.Description,
 				Parameters:  tool.Function.Parameters,
 			})
 		}
-		gemReq.Tools = []geminiToolDecl{{FunctionDeclarations: funcDecls}}
+		if len(funcDecls) > 0 {
+			gemReq.Tools = []geminiToolDecl{{FunctionDeclarations: funcDecls}}
+		}
 	}
 
 	return gemReq
+}
+
+func translateGeminiParts(rawParts []any) []geminiPart {
+	parts := make([]geminiPart, 0, len(rawParts))
+	for _, raw := range rawParts {
+		block, ok := raw.(map[string]any)
+		if !ok {
+			b, _ := json.Marshal(raw)
+			parts = append(parts, geminiPart{Text: string(b)})
+			continue
+		}
+		switch blockType, _ := block["type"].(string); blockType {
+		case "text":
+			if text, ok := block["text"].(string); ok {
+				parts = append(parts, geminiPart{Text: text})
+				continue
+			}
+		case "image_url":
+			if part, ok := geminiPartFromOpenAIImageURL(block); ok {
+				parts = append(parts, part)
+				continue
+			}
+		}
+		b, _ := json.Marshal(block)
+		parts = append(parts, geminiPart{Text: string(b)})
+	}
+	return parts
+}
+
+func geminiPartFromOpenAIImageURL(block map[string]any) (geminiPart, bool) {
+	var rawURL string
+	switch v := block["image_url"].(type) {
+	case string:
+		rawURL = v
+	case map[string]any:
+		rawURL, _ = v["url"].(string)
+	}
+	rawURL = strings.TrimSpace(rawURL)
+	if rawURL == "" {
+		return geminiPart{}, false
+	}
+	if strings.HasPrefix(rawURL, "data:") {
+		mediaType, data, ok := parseGeminiDataURL(rawURL)
+		if !ok {
+			return geminiPart{}, false
+		}
+		return geminiPart{InlineData: &geminiBlob{MimeType: mediaType, Data: data}}, true
+	}
+	return geminiPart{FileData: &geminiFileData{FileURI: rawURL}}, true
+}
+
+func parseGeminiDataURL(rawURL string) (string, string, bool) {
+	header, data, ok := strings.Cut(rawURL, ",")
+	if !ok || !strings.Contains(header, ";base64") {
+		return "", "", false
+	}
+	mediaType := strings.TrimPrefix(strings.TrimSuffix(header, ";base64"), "data:")
+	if mediaType == "" {
+		mediaType = "image/jpeg"
+	}
+	return mediaType, data, true
 }
 
 func translateResponse(resp *geminiResponse, requestModel string) *model.ChatCompletionResponse {
@@ -872,9 +1004,13 @@ func translateUsage(usage *geminiUsage) *model.UsageInfo {
 	}
 
 	return &model.UsageInfo{
-		PromptTokens:     usage.PromptTokenCount,
+		PromptTokens:     usage.PromptTokenCount, // already includes cached tokens
 		CompletionTokens: completionTokens,
 		TotalTokens:      totalTokens,
+		// Informational only: Gemini 2.5 implicit caching reports the cached
+		// subset here. PromptTokenCount already includes it, so this does not
+		// affect billing — the implicit-cache discount accrues to us.
+		CacheReadTokens: usage.CachedContentTokenCount,
 	}
 }
 

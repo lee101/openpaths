@@ -18,6 +18,9 @@ type User struct {
 	AutotopupThresholdCents int64      `json:"autotopup_threshold_cents"`
 	AutotopupAmountCents    int64      `json:"autotopup_amount_cents"`
 	AutotopupLastAt         *time.Time `json:"autotopup_last_at,omitempty"`
+
+	SaveResponsesText   bool `json:"save_responses_text"`
+	SaveResponsesImages bool `json:"save_responses_images"`
 }
 
 type APIKey struct {

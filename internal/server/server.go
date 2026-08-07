@@ -17,6 +17,7 @@ import (
 	fasthttprouter "github.com/fasthttp/router"
 	"github.com/valyala/fasthttp"
 
+	"github.com/openpaths/openpaths/internal/agent"
 	"github.com/openpaths/openpaths/internal/artindex"
 	"github.com/openpaths/openpaths/internal/audio"
 	"github.com/openpaths/openpaths/internal/auth"
@@ -31,6 +32,7 @@ import (
 	"github.com/openpaths/openpaths/internal/promptlib"
 	"github.com/openpaths/openpaths/internal/provider"
 	"github.com/openpaths/openpaths/internal/router"
+	"github.com/openpaths/openpaths/internal/savedresp"
 	"github.com/openpaths/openpaths/internal/skillindex"
 	"github.com/openpaths/openpaths/internal/storage"
 	stripesvc "github.com/openpaths/openpaths/internal/stripe"
@@ -77,12 +79,23 @@ type Dependencies struct {
 	PromptIndex      *promptlib.Index
 	SkillIndex       *skillindex.Service
 	SkillQ           *queries.SkillQueries
+	Saver            *savedresp.Saver
+	AgentQ           *queries.AgentQueries
+	AgentEngine      *agent.Engine
+	SharedChatQ      *queries.SharedChatQueries
+	AccessQ          *queries.AccessQueries
+	GuardQ           *queries.GuardQueries
+	TeamQ            *queries.TeamQueries
+	SuppressionQ     *queries.SuppressionQueries
 }
 
 func New(deps *Dependencies) *Server {
 	r := fasthttprouter.New()
 
 	chatH := handler.NewChatHandler(deps.Router, deps.Billing, deps.Recorder, deps.UserQ, deps.ProviderKeyQ)
+	chatH.SetResponseSaver(deps.Saver)
+	chatH.SetAccess(deps.AccessQ)
+	orgH := handler.NewOrgHandler(deps.AccessQ, deps.GuardQ, deps.TeamQ, deps.UserQ)
 	modelsH := handler.NewModelsHandler(deps.Router)
 	authH := handler.NewAuthHandler(deps.UserQ, deps.CreditQ, deps.APIKeyQ, deps.JWTService)
 	if deps.OnRegister != nil {
@@ -94,6 +107,8 @@ func New(deps *Dependencies) *Server {
 	artH := handler.NewArtHandler(deps.ArtIndex, deps.ArtImageQ)
 	promptsH := handler.NewPromptsHandler(deps.PromptIndex)
 	skillsH := handler.NewSkillsHandler(deps.SkillIndex, deps.SkillQ)
+	agentsH := handler.NewAgentsHandler(deps.AgentQ, deps.AgentEngine)
+	agentsH.SetStorage(deps.Storage)
 	acctStatsH := handler.NewAccountStatsHandler(deps.StatsQ)
 	adminH := handler.NewAdminHandler(deps.UserQ)
 
@@ -148,16 +163,21 @@ func New(deps *Dependencies) *Server {
 	log.Printf("Search endpoint enabled at /v1/search (exa, papers, gemini, openai, grok)")
 
 	anthH := handler.NewAnthropicHandler(deps.Router, deps.Billing, deps.Recorder)
+	anthH.SetAccess(deps.AccessQ)
+	anthH.SetResponseSaver(deps.Saver)
 	r.POST("/v1/messages", apiKeyChain(anthH.HandleMessages))
 	log.Printf("Anthropic-compatible /v1/messages endpoint enabled")
 
 	imageH := handler.NewImageHandler(deps.Router, deps.Billing, deps.Recorder)
+	imageH.SetAccess(deps.AccessQ)
 	imageH.SetStorage(deps.Storage)
+	imageH.SetResponseSaver(deps.Saver)
 	r.POST("/v1/images/generations", apiKeyChain(imageH.HandleImageGeneration))
 	r.POST("/v1/images/edits", apiKeyChain(imageH.HandleImageGeneration))
 	log.Printf("Image generation endpoint enabled")
 
 	model3DH := handler.NewModel3DHandler(deps.Router, deps.Billing, deps.Recorder, deps.Model3DJobQ)
+	model3DH.SetAccess(deps.AccessQ)
 	r.POST("/v1/3d/generations", trackLongRequest(apiKeyChain(model3DH.HandleModel3DGeneration)))
 	r.GET("/v1/3d/generations/{job_id}", apiKeyChain(model3DH.HandleModel3DGenerationJob))
 	r.GET("/v1/3d/generations/{job_id}/status", apiKeyChain(model3DH.HandleModel3DGenerationJob))
@@ -176,9 +196,17 @@ func New(deps *Dependencies) *Server {
 	log.Printf("3D mesh rigging endpoint enabled")
 
 	videoH := handler.NewVideoHandler(deps.Router, deps.Billing, deps.Recorder, deps.VideoJobQ)
+	videoH.SetAccess(deps.AccessQ)
+	videoH.SetStorage(deps.Storage)
 	r.POST("/v1/videos/generations", trackLongRequest(apiKeyChain(videoH.HandleVideoGeneration)))
+	r.POST("/v1/videos/edits", trackLongRequest(apiKeyChain(videoH.HandleVideoEdit)))
+	r.POST("/v1/videos/extensions", trackLongRequest(apiKeyChain(videoH.HandleVideoExtension)))
 	r.GET("/v1/videos/generations/{job_id}", apiKeyChain(videoH.HandleVideoGenerationJob))
 	r.GET("/v1/videos/generations/{job_id}/status", apiKeyChain(videoH.HandleVideoGenerationJob))
+	r.GET("/v1/videos/edits/{job_id}", apiKeyChain(videoH.HandleVideoGenerationJob))
+	r.GET("/v1/videos/edits/{job_id}/status", apiKeyChain(videoH.HandleVideoGenerationJob))
+	r.GET("/v1/videos/extensions/{job_id}", apiKeyChain(videoH.HandleVideoGenerationJob))
+	r.GET("/v1/videos/extensions/{job_id}/status", apiKeyChain(videoH.HandleVideoGenerationJob))
 	log.Printf("Video generation endpoint enabled")
 
 	researchH := handler.NewResearchHandler(
@@ -201,6 +229,7 @@ func New(deps *Dependencies) *Server {
 	log.Printf("Time-series forecasting endpoint enabled")
 
 	speechH := handler.NewSpeechHandler(deps.Router, deps.Billing, deps.Recorder)
+	speechH.SetAccess(deps.AccessQ)
 	speechH.SetAutoEmotion(deps.AutoEmotion)
 	r.POST("/v1/audio/speech", apiKeyChain(speechH.HandleSpeechGeneration))
 	r.POST("/v1/tts", apiKeyChain(speechH.HandleSpeechGeneration))
@@ -209,6 +238,22 @@ func New(deps *Dependencies) *Server {
 	embeddingH := handler.NewEmbeddingHandler(deps.Router, deps.Billing, deps.Recorder, deps.Embedders)
 	r.POST("/v1/embeddings", apiKeyChain(embeddingH.HandleEmbedding))
 	log.Printf("Embedding endpoint enabled (%d fallback providers)", len(deps.Embedders))
+
+	// MCP server: exposes all models over the Model Context Protocol. Runs under
+	// auth+byok WITHOUT the upfront balance gate so initialize/tools/list always
+	// succeed; paid tools bill via the underlying handler (charge-after-serve).
+	mcpH := handler.NewMCPHandler(deps.Router, chatH, modelsH, imageH, embeddingH, searchH)
+	mcpChain := middleware.Chain(
+		middleware.Recovery(),
+		middleware.Logging(),
+		middleware.APIKeyAuth(deps.APIKeyQ),
+		middleware.AppAttribution(deps.AppQ),
+		middleware.BYOKLoader(deps.ProviderKeyQ),
+		middleware.RateLimit(),
+	)
+	r.POST("/mcp", mcpChain(mcpH.HandleMCP))
+	r.POST("/v1/mcp", mcpChain(mcpH.HandleMCP))
+	log.Printf("MCP server enabled at /mcp (chat, list_models, generate_image, embed, web_search)")
 
 	if len(deps.Transcribers) > 0 {
 		transcriptionH := handler.NewTranscriptionHandler(deps.Router, deps.Billing, deps.Transcribers, deps.Recorder)
@@ -225,8 +270,28 @@ func New(deps *Dependencies) *Server {
 
 	r.ServeFiles("/uploads/{filepath:*}", deps.Config.Storage.LocalDir)
 
-	r.POST("/auth/register", publicChain(authH.HandleRegister))
-	r.POST("/auth/login", publicChain(authH.HandleLogin))
+	if deps.SuppressionQ != nil {
+		unsubH := handler.NewUnsubscribeHandler(deps.SuppressionQ, deps.UserQ, deps.Config.JWT.Secret)
+		r.GET("/unsubscribe", publicChain(unsubH.HandleUnsubscribe))
+		r.POST("/unsubscribe", publicChain(unsubH.HandleUnsubscribe))
+		r.POST("/account/unsubscribe", accountChain(unsubH.HandleAccountUnsubscribe))
+	}
+
+	registerMin, registerHour, registerDay := middleware.RegisterIPLimits()
+	loginMin, loginHour, loginDay := middleware.LoginIPLimits()
+	registerChain := middleware.Chain(
+		middleware.Recovery(),
+		middleware.Logging(),
+		middleware.IPRateLimit("register", registerMin, registerHour, registerDay),
+	)
+	loginChain := middleware.Chain(
+		middleware.Recovery(),
+		middleware.Logging(),
+		middleware.IPRateLimit("login", loginMin, loginHour, loginDay),
+	)
+
+	r.POST("/auth/register", registerChain(authH.HandleRegister))
+	r.POST("/auth/login", loginChain(authH.HandleLogin))
 	r.POST("/auth/logout", publicChain(authH.HandleLogout))
 
 	r.GET("/account/keys", accountChain(accountH.HandleListAPIKeys))
@@ -234,6 +299,19 @@ func New(deps *Dependencies) *Server {
 	r.DELETE("/account/keys/{id}", accountChain(accountH.HandleRevokeAPIKey))
 	r.GET("/account/balance", accountChain(accountH.HandleGetBalance))
 	r.GET("/account/transactions", accountChain(accountH.HandleGetTransactions))
+
+	// Model IAM + billshock guards + teams (opt-in, open by default).
+	r.GET("/account/model-rules", accountChain(orgH.HandleModelRules))
+	r.POST("/account/model-rules", accountChain(orgH.HandleModelRules))
+	r.DELETE("/account/model-rules", accountChain(orgH.HandleModelRules))
+	r.GET("/account/billing-guards", accountChain(orgH.HandleBillingGuards))
+	r.POST("/account/billing-guards", accountChain(orgH.HandleBillingGuards))
+	r.GET("/account/orgs", accountChain(orgH.HandleOrgs))
+	r.POST("/account/orgs", accountChain(orgH.HandleOrgs))
+	r.POST("/account/orgs/{slug}/invites", accountChain(orgH.HandleOrgInvite))
+	r.POST("/account/orgs/{slug}/join", accountChain(orgH.HandleOrgJoin))
+	r.GET("/account/orgs/{slug}/members", accountChain(orgH.HandleOrgMembers))
+	r.DELETE("/account/orgs/{slug}/members/{user_id}", accountChain(orgH.HandleOrgMembers))
 	r.POST("/account/credits/add", accountChain(creditsH.HandleAddCredits))
 
 	if deps.ProviderKeyQ != nil {
@@ -242,10 +320,12 @@ func New(deps *Dependencies) *Server {
 		r.POST("/account/provider-keys", accountChain(pkH.HandleUpsert))
 		r.POST("/account/provider-keys/bulk", accountChain(pkH.HandleBulkUpsert))
 		r.DELETE("/account/provider-keys", accountChain(pkH.HandleDelete))
-		openAIAuthH := handler.NewOpenAIOAuthHandler(deps.ProviderKeyQ)
+		openAIAuthH := handler.NewOpenAIOAuthHandler(deps.ProviderKeyQ, deps.Config.JWT.Secret)
 		r.POST("/account/openai/start", accountChain(openAIAuthH.HandleStart))
 		r.POST("/account/openai/device/start", accountChain(openAIAuthH.HandleDeviceStart))
 		r.POST("/account/openai/device/poll", accountChain(openAIAuthH.HandleDevicePoll))
+		r.POST("/account/openai/browser/start", accountChain(openAIAuthH.HandleBrowserStart))
+		r.POST("/account/openai/browser/complete", accountChain(openAIAuthH.HandleBrowserComplete))
 		r.GET("/account/openai/callback", publicChain(openAIAuthH.HandleCallback))
 		log.Printf("BYOK provider keys endpoints enabled")
 	}
@@ -269,6 +349,7 @@ func New(deps *Dependencies) *Server {
 		r.GET("/account/autotopup/settings", accountChain(atH.HandleGetAutotopupSettings))
 
 		checkoutH := handler.NewCheckoutHandler(deps.StripeSvc, deps.UserQ, deps.Billing, deps.StripeDepositQ, deps.Config.Stripe.CreditsPriceID, deps.Config.Stripe.WebhookSecret)
+		checkoutH.SetGuards(deps.GuardQ)
 		r.POST("/account/stripe/checkout", accountChain(checkoutH.HandleCreateCheckout))
 		r.GET("/account/stripe/config", publicChain(checkoutH.HandleStripeConfig))
 		r.POST("/stripe/webhooks", publicChain(checkoutH.HandleWebhook))
@@ -295,25 +376,58 @@ func New(deps *Dependencies) *Server {
 	r.GET("/v1/art/list", publicChain(artH.HandleList))
 	r.GET("/v1/art/item", publicChain(artH.HandleItem))
 	r.GET("/v1/art/tags", publicChain(artH.HandleTags))
+	r.POST("/v1/art/index", accountChain(adminH.RequireAdmin(artH.HandleIndex)))
+	r.POST("/v1/art/reindex", accountChain(adminH.RequireAdmin(artH.HandleReindex)))
 
 	// Prompt library (the /prompts directory). Read-only, public, gobed-powered search.
 	// Served under /v1 only so the client-side /prompts SPA routes are untouched.
 	r.GET("/v1/prompts", publicChain(promptsH.HandleList))
 	r.GET("/v1/prompts/meta", publicChain(promptsH.HandleMeta))
 	r.GET("/v1/prompts/{slug}", publicChain(promptsH.HandleGet))
-
 	// Searchable agent-skill library (public, read-only, gobed-powered).
 	r.GET("/v1/skills", publicChain(skillsH.HandleList))
 	r.GET("/v1/skills/meta", publicChain(skillsH.HandleMeta))
 	r.GET("/v1/skills/search", publicChain(skillsH.HandleSearch))
 	r.GET("/v1/skills/{slug}", publicChain(skillsH.HandleGet))
 
+	// Agents: user-built tool-use agents with connected data sources.
+	r.GET("/v1/agents/presets", publicChain(agentsH.HandlePresets))
+	r.GET("/v1/agents", accountChain(agentsH.HandleList))
+	r.POST("/v1/agents", accountChain(agentsH.HandleCreate))
+	r.GET("/v1/agents/{id}", accountChain(agentsH.HandleGet))
+	r.PATCH("/v1/agents/{id}", accountChain(agentsH.HandleUpdate))
+	r.DELETE("/v1/agents/{id}", accountChain(agentsH.HandleDelete))
+	r.POST("/v1/agents/{id}/run", accountChain(agentsH.HandleRun))
+	r.POST("/v1/agents/{id}/run/stream", accountChain(agentsH.HandleRunStream))
+	r.GET("/v1/agents/{id}/runs", accountChain(agentsH.HandleRuns))
+	r.GET("/v1/agents/{id}/sources", accountChain(agentsH.HandleListSources))
+	r.POST("/v1/agents/{id}/sources", accountChain(agentsH.HandleCreateSource))
+	r.POST("/v1/agents/{id}/sources/upload", accountChain(agentsH.HandleUploadSource))
+	r.DELETE("/v1/agents/{id}/sources/{sid}", accountChain(agentsH.HandleDeleteSource))
+	r.GET("/v1/agents/{id}/search", accountChain(agentsH.HandleSearch))
+
+	// Share-a-chat: publish a transcript, read it publicly at /chat/:slug.
+	sharedChatH := handler.NewSharedChatHandler(deps.SharedChatQ)
+	r.POST("/v1/chats/share", accountChain(sharedChatH.HandleShare))
+	r.GET("/v1/chats/shared", publicChain(sharedChatH.HandleGetShared))
+
 	r.GET("/account/stats/timeseries", accountChain(acctStatsH.HandleUserTimeSeries))
 	r.GET("/account/stats/by-api-key", accountChain(acctStatsH.HandleUserSpendByAPIKey))
 	r.GET("/account/stats/by-provider", accountChain(acctStatsH.HandleUserSpendByProvider))
+	r.GET("/account/stats/by-product", accountChain(acctStatsH.HandleUserSpendByProduct))
+	r.GET("/account/stats/activity", accountChain(acctStatsH.HandleUserActivity))
 	r.GET("/account/stats/by-api-key/{key_id}/models", accountChain(acctStatsH.HandleUserAPIKeyDrilldown))
 	r.GET("/account/stats/by-provider/{provider}/models", accountChain(acctStatsH.HandleUserProviderDrilldown))
-	r.GET("/admin/users/spend", accountChain(adminH.HandleUserSpend))
+	r.GET("/admin/users/spend", accountChain(adminH.RequireAdmin(adminH.HandleUserSpend)))
+	r.GET("/admin/openai-max-plan", accountChain(adminH.RequireAdmin(adminH.HandleOpenAIMaxPlanStatus)))
+	r.POST("/admin/openai-max-plan/refresh", accountChain(adminH.RequireAdmin(adminH.HandleOpenAIMaxPlanRefresh)))
+
+	// Private saved-response search + settings (response saving feature).
+	usageH := handler.NewUsageHandler(deps.Saver, deps.UserQ)
+	r.GET("/account/usage/settings", accountChain(usageH.HandleGetSettings))
+	r.POST("/account/usage/settings", accountChain(usageH.HandleUpdateSettings))
+	r.GET("/account/usage/responses", accountChain(usageH.HandleSearch))
+	r.GET("/account/usage/responses/{id}", accountChain(usageH.HandleItem))
 
 	if deps.FineTuneQ != nil && len(deps.FineTuneProvs) > 0 {
 		ftH := handler.NewFineTuneHandler(deps.FineTuneQ, deps.FineTuneProvs, deps.Storage)
@@ -421,6 +535,7 @@ func New(deps *Dependencies) *Server {
 			{"/docs", "0.9", "weekly"},
 			{"/integrations", "0.9", "weekly"},
 			{"/playground", "0.7", "monthly"},
+			{"/fusion", "0.6", "monthly"},
 			{"/tools", "0.8", "weekly"},
 			{"/text-to-image", "0.7", "monthly"},
 			{"/image-to-3d", "0.7", "monthly"},
@@ -432,6 +547,8 @@ func New(deps *Dependencies) *Server {
 			{"/blog", "0.8", "weekly"},
 		}
 		blogSlugs := []string{
+			"use-openpaths-openai-compatible-router-anywhere",
+			"llm-creative-coding-shader-video-benchmark",
 			"openpaths-agent-integrations-hermes-openclaw",
 			"openpaths-sdk-integrations",
 			"how-openpaths-is-hosted-on-codex-infinity",
@@ -488,6 +605,15 @@ func New(deps *Dependencies) *Server {
 	if staticDir := deps.Config.Server.StaticDir; staticDir != "" {
 		handler = spaHandler(staticDir, r.Handler, deps.APIKeyQ, deps.UserQ, deps.JWTService, deps.ArtImageQ)
 		log.Printf("Serving frontend from %s", staticDir)
+	}
+
+	// Clients that set base_url to ".../v1" produce /v1/v1/... paths; tolerate it
+	inner := handler
+	handler = func(ctx *fasthttp.RequestCtx) {
+		if p := ctx.Path(); bytes.HasPrefix(p, []byte("/v1/v1/")) {
+			ctx.Request.URI().SetPathBytes(p[3:])
+		}
+		inner(ctx)
 	}
 
 	srv := &fasthttp.Server{
@@ -552,6 +678,11 @@ func spaHandler(dir string, api fasthttp.RequestHandler, apiKeyQ *queries.APIKey
 
 	return func(ctx *fasthttp.RequestCtx) {
 		path := string(ctx.Path())
+		// POST /mcp is the MCP JSON-RPC server; GET /mcp is the docs SPA page.
+		if path == "/mcp" && ctx.IsPost() {
+			api(ctx)
+			return
+		}
 		if strings.HasPrefix(path, "/v1/") ||
 			strings.HasPrefix(path, "/auth/") ||
 			strings.HasPrefix(path, "/account/") ||
@@ -565,6 +696,7 @@ func spaHandler(dir string, api fasthttp.RequestHandler, apiKeyQ *queries.APIKey
 			strings.HasPrefix(path, "/openrouter/") ||
 			strings.HasPrefix(path, "/monitoring/") ||
 			path == "/health" ||
+			path == "/unsubscribe" ||
 			strings.HasPrefix(path, "/sitemap") {
 			api(ctx)
 			return

@@ -107,8 +107,8 @@ test.describe('Route Contract', () => {
     ];
 
     for (const route of routes) {
-      await page.goto(route);
-      await page.waitForLoadState('networkidle');
+      await page.goto(route, { waitUntil: 'domcontentloaded' });
+      await expect(page.locator('#root')).toBeVisible();
     }
 
     expect(routeErrors).toEqual([]);
@@ -122,8 +122,7 @@ test.describe('Route Contract', () => {
       }
     });
 
-    await page.goto('/this-route-does-not-exist-xyz-123');
-    await page.waitForLoadState('networkidle');
+    await page.goto('/this-route-does-not-exist-xyz-123', { waitUntil: 'domcontentloaded' });
 
     await expect(page.getByRole('heading', { name: /this path leads nowhere/i })).toBeVisible();
     await expect(page.getByRole('link', { name: /browse ai art/i })).toBeVisible();

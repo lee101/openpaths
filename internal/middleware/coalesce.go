@@ -1,9 +1,9 @@
 package middleware
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
-	"strings"
 	"sync"
 	"time"
 
@@ -20,15 +20,38 @@ type coalesceEntry struct {
 }
 
 type requestCoalescer struct {
-	mu      sync.Mutex
-	entries map[string]*coalesceEntry
-	ttl     time.Duration
+	mu            sync.Mutex
+	entries       map[string]*coalesceEntry
+	ttl           time.Duration
+	pruneInterval time.Duration
+	nextPrune     time.Time
+}
+
+var coalesceablePathPrefixes = [][]byte{
+	[]byte("/v1/images/generations"),
+	[]byte("/v1/images/edits"),
+	[]byte("/v1/3d/generations"),
+	[]byte("/v1/videos/generations"),
+	[]byte("/v1/videos/edits"),
+	[]byte("/v1/videos/extensions"),
+	[]byte("/v1/music/generations"),
+	[]byte("/v1/audio/speech"),
+	[]byte("/v1/tts"),
+	[]byte("/v1/audio/transcriptions"),
+	[]byte("/v1/stt"),
+	[]byte("/v1/embeddings"),
 }
 
 func NewRequestCoalescer(ttl time.Duration) Middleware {
+	pruneInterval := ttl / 4
+	if pruneInterval <= 0 || pruneInterval > time.Minute {
+		pruneInterval = time.Minute
+	}
 	c := &requestCoalescer{
-		entries: make(map[string]*coalesceEntry),
-		ttl:     ttl,
+		entries:       make(map[string]*coalesceEntry),
+		ttl:           ttl,
+		pruneInterval: pruneInterval,
+		nextPrune:     time.Now().Add(pruneInterval),
 	}
 	return c.middleware
 }
@@ -76,9 +99,21 @@ func (c *requestCoalescer) middleware(next fasthttp.RequestHandler) fasthttp.Req
 func (c *requestCoalescer) getOrCreate(key string) (*coalesceEntry, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.pruneLocked(time.Now())
+	now := time.Now()
+	if now.After(c.nextPrune) {
+		c.pruneLocked(now)
+		c.nextPrune = now.Add(c.pruneInterval)
+	}
 	if entry := c.entries[key]; entry != nil {
-		return entry, false
+		select {
+		case <-entry.done:
+			if now.Before(entry.expiresAt) {
+				return entry, false
+			}
+			delete(c.entries, key)
+		default:
+			return entry, false
+		}
 	}
 	entry := &coalesceEntry{done: make(chan struct{})}
 	c.entries[key] = entry
@@ -107,17 +142,13 @@ func coalesceable(ctx *fasthttp.RequestCtx) bool {
 	if !ctx.IsPost() {
 		return false
 	}
-	path := string(ctx.Path())
-	return strings.HasPrefix(path, "/v1/images/generations") ||
-		strings.HasPrefix(path, "/v1/images/edits") ||
-		strings.HasPrefix(path, "/v1/3d/generations") ||
-		strings.HasPrefix(path, "/v1/videos/generations") ||
-		strings.HasPrefix(path, "/v1/music/generations") ||
-		strings.HasPrefix(path, "/v1/audio/speech") ||
-		strings.HasPrefix(path, "/v1/tts") ||
-		strings.HasPrefix(path, "/v1/audio/transcriptions") ||
-		strings.HasPrefix(path, "/v1/stt") ||
-		strings.HasPrefix(path, "/v1/embeddings")
+	path := ctx.Path()
+	for _, prefix := range coalesceablePathPrefixes {
+		if bytes.HasPrefix(path, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 func coalesceKey(ctx *fasthttp.RequestCtx) string {

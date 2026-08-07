@@ -105,7 +105,11 @@ export function ArtDetail() {
 
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
             <div className="overflow-hidden rounded-lg border border-white/10 bg-white/[0.02]">
-              <img src={item.imageUrl} alt={item.prompt} className="w-full bg-white/[0.03] object-contain" />
+              {item.mediaType === 'video' && item.videoUrl ? (
+                <video src={item.videoUrl} poster={item.posterUrl || item.thumbUrl || undefined} controls autoPlay muted loop playsInline className="w-full bg-black object-contain" data-testid="art-detail-video" />
+              ) : (
+                <img src={item.imageUrl} alt={item.prompt} className="w-full bg-white/[0.03] object-contain" />
+              )}
             </div>
             <div className="flex flex-col gap-6">
               <div>

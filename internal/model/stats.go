@@ -12,6 +12,7 @@ type ModelStats struct {
 	P50LatencyMs   float64 `json:"p50_latency_ms"`
 	P95LatencyMs   float64 `json:"p95_latency_ms"`
 	P99LatencyMs   float64 `json:"p99_latency_ms"`
+	AvgTTFTMs      float64 `json:"avg_ttft_ms"`
 	AvgTPS         float64 `json:"avg_tps"`
 	ErrorRate      float64 `json:"error_rate"`
 	TotalCostCents int64   `json:"total_cost_cents"`
@@ -47,6 +48,8 @@ type UsageBreakdown struct {
 	TotalTokensOut int64   `json:"total_tokens_out"`
 	TotalCostCents int64   `json:"total_cost_cents"`
 	AvgLatencyMs   float64 `json:"avg_latency_ms"`
+	AvgTTFTMs      float64 `json:"avg_ttft_ms"`
+	AvgTPS         float64 `json:"avg_tps"`
 	ErrorRate      float64 `json:"error_rate"`
 }
 
@@ -62,6 +65,23 @@ type APIKeySpend struct {
 // ProviderSpend is spend/usage aggregated per provider.
 type ProviderSpend struct {
 	Provider       string `json:"provider"`
+	TotalRequests  int64  `json:"total_requests"`
+	TotalCostCents int64  `json:"total_cost_cents"`
+}
+
+// ProductSpend is spend/usage aggregated per product (capability/modality:
+// chat, image, video, music, speech, transcription, embedding, 3d).
+type ProductSpend struct {
+	Product        string `json:"product"`
+	TotalRequests  int64  `json:"total_requests"`
+	TotalTokensIn  int64  `json:"total_tokens_in"`
+	TotalTokensOut int64  `json:"total_tokens_out"`
+	TotalCostCents int64  `json:"total_cost_cents"`
+}
+
+// DailyActivityPoint is one day's usage, used for the contribution heatmap.
+type DailyActivityPoint struct {
+	Date           string `json:"date"` // YYYY-MM-DD
 	TotalRequests  int64  `json:"total_requests"`
 	TotalCostCents int64  `json:"total_cost_cents"`
 }

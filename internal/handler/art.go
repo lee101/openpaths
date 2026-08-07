@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
@@ -14,6 +16,77 @@ import (
 	"github.com/openpaths/openpaths/internal/db/queries"
 	"github.com/openpaths/openpaths/internal/model"
 )
+
+// itemMediaType returns the effective media type, defaulting legacy rows to "image".
+func itemMediaType(a model.ArtImage) string {
+	if a.MediaType == "" {
+		return "image"
+	}
+	return a.MediaType
+}
+
+// HandleIndex upserts a single gallery item (image or video). Admin-only.
+// Used to index test/sample generations into the gallery search engine.
+func (h *ArtHandler) HandleIndex(ctx *fasthttp.RequestCtx) {
+	var in model.ArtImage
+	if err := json.Unmarshal(ctx.PostBody(), &in); err != nil {
+		writeError(ctx, fasthttp.StatusBadRequest, "invalid_request", "invalid JSON body")
+		return
+	}
+	in.Prompt = strings.TrimSpace(in.Prompt)
+	in.MediaType = normalizeMediaType(in.MediaType)
+	if in.MediaType == "" {
+		in.MediaType = "image"
+	}
+	if in.Prompt == "" {
+		writeError(ctx, fasthttp.StatusBadRequest, "invalid_request", "prompt required")
+		return
+	}
+	if in.MediaType == "video" && strings.TrimSpace(in.VideoURL) == "" {
+		writeError(ctx, fasthttp.StatusBadRequest, "invalid_request", "video_url required for video items")
+		return
+	}
+	if in.MediaType == "image" && strings.TrimSpace(in.ImageURL) == "" {
+		writeError(ctx, fasthttp.StatusBadRequest, "invalid_request", "image_url required for image items")
+		return
+	}
+	if in.Slug == "" {
+		in.Slug = slugify(in.Title)
+		if in.Slug == "" {
+			in.Slug = slugify(in.Prompt)
+		}
+	}
+	if in.Slug == "" {
+		writeError(ctx, fasthttp.StatusBadRequest, "invalid_request", "slug or title required")
+		return
+	}
+	if in.ID == "" {
+		in.ID = in.Slug
+	}
+	if in.Source == "" {
+		in.Source = "openpaths-gen"
+	}
+	// Videos use a poster as the thumbnail in image-grid contexts.
+	if in.MediaType == "video" && in.ThumbURL == "" {
+		in.ThumbURL = in.PosterURL
+	}
+	if err := h.db.Upsert(ctx, &in); err != nil {
+		writeError(ctx, fasthttp.StatusInternalServerError, "server_error", err.Error())
+		return
+	}
+	WriteJSONPublic(ctx, fasthttp.StatusOK, in)
+}
+
+// HandleReindex rebuilds the semantic index from the DB (picks up newly indexed
+// items for vector search). Admin-only. Browse/trigram see new rows immediately.
+func (h *ArtHandler) HandleReindex(ctx *fasthttp.RequestCtx) {
+	if h.index == nil {
+		writeError(ctx, fasthttp.StatusServiceUnavailable, "unavailable", "index disabled")
+		return
+	}
+	go h.index.Rebuild(context.Background())
+	WriteJSONPublic(ctx, fasthttp.StatusAccepted, map[string]any{"status": "reindexing"})
+}
 
 // ArtHandler serves the image prompt search engine: semantic search (gobed),
 // trigram exact/substring search + browse (Postgres), tag facets, and single-item lookups.
@@ -36,13 +109,25 @@ func (h *ArtHandler) HandleStatus(ctx *fasthttp.RequestCtx) {
 
 func artFilters(ctx *fasthttp.RequestCtx) model.ArtImageFilters {
 	f := model.ArtImageFilters{
-		Aspect: normalizeAspect(string(ctx.QueryArgs().Peek("aspect"))),
-		Tag:    strings.ToLower(strings.TrimSpace(string(ctx.QueryArgs().Peek("tag")))),
-		Source: strings.TrimSpace(string(ctx.QueryArgs().Peek("source"))),
+		Aspect:    normalizeAspect(string(ctx.QueryArgs().Peek("aspect"))),
+		Tag:       strings.ToLower(strings.TrimSpace(string(ctx.QueryArgs().Peek("tag")))),
+		Source:    strings.TrimSpace(string(ctx.QueryArgs().Peek("source"))),
+		MediaType: normalizeMediaType(string(ctx.QueryArgs().Peek("media_type"))),
 	}
 	f.MinW, _ = strconv.Atoi(string(ctx.QueryArgs().Peek("min_w")))
 	f.MinH, _ = strconv.Atoi(string(ctx.QueryArgs().Peek("min_h")))
 	return f
+}
+
+func normalizeMediaType(v string) string {
+	switch strings.ToLower(strings.TrimSpace(v)) {
+	case "video":
+		return "video"
+	case "image":
+		return "image"
+	default:
+		return ""
+	}
 }
 
 func normalizeAspect(v string) string {
@@ -454,6 +539,9 @@ func matchesFilters(item model.ArtImage, f model.ArtImageFilters) bool {
 		return false
 	}
 	if f.Source != "" && item.Source != f.Source {
+		return false
+	}
+	if f.MediaType != "" && itemMediaType(item) != f.MediaType {
 		return false
 	}
 	if f.MinW > 0 && item.Width < f.MinW {

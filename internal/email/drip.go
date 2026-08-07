@@ -5,12 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/openpaths/openpaths/internal/model"
 )
 
 type DripConfig struct {
@@ -31,13 +34,17 @@ type DripEmail struct {
 }
 
 type DripRunner struct {
-	db        *pgxpool.Pool
-	config    DripConfig
-	emailsDir string
+	db         *pgxpool.Pool
+	config     DripConfig
+	emailsDir  string
+	secret     string
+	modelCards map[string]string
 }
 
-// NewDripRunner loads the drip config and returns a runner.
-func NewDripRunner(db *pgxpool.Pool, emailsDir string) (*DripRunner, error) {
+// NewDripRunner loads the drip config and returns a runner. secret signs
+// unsubscribe tokens; models is the live catalog used to render up-to-date
+// model cards into templates.
+func NewDripRunner(db *pgxpool.Pool, emailsDir, secret string, models []model.ModelConfig) (*DripRunner, error) {
 	configPath := filepath.Join(emailsDir, "drip_config.json")
 	data, err := os.ReadFile(configPath)
 	if err != nil {
@@ -49,10 +56,17 @@ func NewDripRunner(db *pgxpool.Pool, emailsDir string) (*DripRunner, error) {
 		return nil, fmt.Errorf("parsing drip config: %w", err)
 	}
 
+	cards, err := renderModelCards(filepath.Join(emailsDir, "model_notes.json"), models)
+	if err != nil {
+		log.Printf("drip: model cards disabled: %v", err)
+	}
+
 	return &DripRunner{
-		db:        db,
-		config:    config,
-		emailsDir: emailsDir,
+		db:         db,
+		config:     config,
+		emailsDir:  emailsDir,
+		secret:     secret,
+		modelCards: cards,
 	}, nil
 }
 
@@ -127,6 +141,9 @@ func (r *DripRunner) RunScheduled(ctx context.Context) {
 			  AND u.email NOT ILIKE '%@example.com'
 			  AND u.email NOT ILIKE '%@example.org'
 			  AND NOT EXISTS (
+				SELECT 1 FROM email_suppressions s WHERE s.email = LOWER(u.email)
+			  )
+			  AND NOT EXISTS (
 				SELECT 1 FROM drip_emails_sent d
 				WHERE d.user_id = u.id::text AND d.email_id = $2
 			  )
@@ -195,6 +212,13 @@ func (r *DripRunner) sendDripEmail(ctx context.Context, userID, userEmail string
 		return nil
 	}
 
+	var suppressed bool
+	if err := r.db.QueryRow(ctx,
+		"SELECT EXISTS(SELECT 1 FROM email_suppressions WHERE email = LOWER($1))", userEmail,
+	).Scan(&suppressed); err == nil && suppressed {
+		return nil
+	}
+
 	// Load template.
 	templatePath := filepath.Join(r.emailsDir, de.Template)
 	htmlBytes, err := os.ReadFile(templatePath)
@@ -204,11 +228,15 @@ func (r *DripRunner) sendDripEmail(ctx context.Context, userID, userEmail string
 
 	// Replace template variables.
 	html := string(htmlBytes)
-	unsubscribeURL := fmt.Sprintf("%s/account?unsubscribe=true", r.config.BaseURL)
+	unsubscribeURL := fmt.Sprintf("%s/unsubscribe?e=%s&t=%s",
+		r.config.BaseURL, url.QueryEscape(strings.ToLower(userEmail)), UnsubscribeToken(r.secret, userEmail))
 	html = strings.ReplaceAll(html, "{{.UnsubscribeURL}}", unsubscribeURL)
+	for section, cards := range r.modelCards {
+		html = strings.ReplaceAll(html, "{{.ModelCards."+section+"}}", cards)
+	}
 
 	// Send the email.
-	if err := Send(userEmail, de.Subject, html); err != nil {
+	if err := SendWithUnsubscribe(userEmail, de.Subject, html, unsubscribeURL); err != nil {
 		return fmt.Errorf("sending: %w", err)
 	}
 

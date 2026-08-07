@@ -91,10 +91,36 @@ function renderMarkdown(content: string): React.ReactNode[] {
 
     const imageMatch = line.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
     if (imageMatch) {
+      const src = imageMatch[2];
+      // Video embeds: `.webm`/`.mp4` render a muted, looping <video>. The
+      // primary AV1 WebM is paired with a sibling `.mp4` (h264 fallback) and
+      // a `-poster.webp` still, by naming convention from the generator.
+      if (/\.(webm|mp4)$/i.test(src)) {
+        const stem = src.replace(/\.(webm|mp4)$/i, '');
+        elements.push(
+          <figure key={key++} className="my-8">
+            <video
+              poster={`${stem}-poster.webp`}
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="none"
+              controls
+              aria-label={imageMatch[1]}
+              className="w-full h-auto rounded-2xl border border-white/10 bg-white/5"
+            >
+              <source src={`${stem}.webm`} type="video/webm" />
+              <source src={`${stem}.mp4`} type="video/mp4" />
+            </video>
+          </figure>
+        );
+        continue;
+      }
       elements.push(
         <figure key={key++} className="my-8">
           <img
-            src={imageMatch[2]}
+            src={src}
             alt={imageMatch[1]}
             loading="lazy"
             className="w-full h-auto rounded-2xl border border-white/10 bg-white/5"

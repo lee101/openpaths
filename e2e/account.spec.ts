@@ -358,8 +358,11 @@ test.describe('Account Page', () => {
     test('overview shows transactions from API', async ({ page }) => {
       const table = page.getByTestId('activity-table');
       await expect(table).toBeVisible();
-      await expect(table.locator('text=deposit')).toBeVisible();
-      await expect(table.locator('text=usage_deduction')).toBeVisible();
+      await expect(table.locator('thead')).toContainText('Date');
+      await expect(table.locator('tbody')).toContainText('Jan 15, 2024');
+      await expect(table.locator('tbody')).toContainText('Jan 14, 2024');
+      await expect(table.locator('tbody')).not.toContainText('deposit');
+      await expect(table.locator('tbody')).not.toContainText('usage_deduction');
     });
 
     test('Add Funds button switches to billing tab', async ({ page }) => {
@@ -372,6 +375,71 @@ test.describe('Account Page', () => {
       await expect(page.locator('h1:has-text("API Keys")')).toBeVisible();
       await expect(page.getByTestId('api-key-card')).toBeVisible();
       await expect(page.getByTestId('key-status')).toContainText('Active');
+    });
+
+    test('OpenAI Max plan sign-in is hoisted above API key management', async ({ page }) => {
+      await page.getByTestId('tab-keys').click();
+      const maxPlanPanel = page.getByTestId('openai-max-plan-panel');
+      const createKeyButton = page.getByTestId('create-key-btn');
+      await expect(maxPlanPanel).toBeVisible();
+      await expect(createKeyButton).toBeVisible();
+      const createKeyHandle = await createKeyButton.elementHandle();
+      expect(createKeyHandle).not.toBeNull();
+      const isBeforeCreateKey = await maxPlanPanel.evaluate(
+        (panel, button) => Boolean(
+          panel.compareDocumentPosition(button as Node) & Node.DOCUMENT_POSITION_FOLLOWING
+        ),
+        createKeyHandle,
+      );
+      expect(isBeforeCreateKey).toBe(true);
+    });
+
+    test('browser callback fallback completes an OpenAI Max plan sign-in', async ({ page }) => {
+      let connected = false;
+      let completeBody: any = null;
+      await page.route('**/account/provider-keys', route =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ keys: connected ? [{ provider: 'openai_codex', has_auth: true, updated_at: '2026-08-04T00:00:00Z' }] : [] }),
+        })
+      );
+      await page.route('**/account/openai/browser/start', route =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            login_id: 'sealed-login-ticket',
+            authorization_url: 'https://auth.openai.test/oauth/authorize',
+            redirect_uri: 'http://localhost:1455/auth/callback',
+            expires_at: '2099-08-04T00:15:00Z',
+          }),
+        })
+      );
+      await page.route('**/account/openai/browser/complete', route => {
+        completeBody = route.request().postDataJSON();
+        connected = true;
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ status: 'success', message: 'OpenAI Max plan sign-in saved' }),
+        });
+      });
+
+      await page.reload();
+      await page.getByTestId('tab-keys').click();
+      await page.getByTestId('openai-browser-auth-start').click();
+      await expect(page.getByTestId('openai-browser-auth-panel')).toBeVisible();
+      await expect(page.getByTestId('openai-browser-auth-link')).toHaveAttribute('href', 'https://auth.openai.test/oauth/authorize');
+      await page.reload();
+      await page.getByTestId('tab-keys').click();
+      await expect(page.getByTestId('openai-browser-auth-panel')).toBeVisible();
+      const callbackURL = 'http://localhost:1455/auth/callback?code=abc&state=state-1';
+      await page.getByTestId('openai-browser-callback-input').fill(callbackURL);
+      await page.getByTestId('openai-browser-auth-complete').click();
+
+      await expect(page.getByTestId('openai-max-plan-panel')).toContainText('Connected');
+      expect(completeBody).toEqual({ login_id: 'sealed-login-ticket', callback_url: callbackURL });
     });
 
     test('keys tab shows create key button', async ({ page }) => {

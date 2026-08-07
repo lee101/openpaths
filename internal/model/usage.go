@@ -11,6 +11,7 @@ type UsageLog struct {
 	TokensIn      int       `json:"tokens_in"`
 	TokensOut     int       `json:"tokens_out"`
 	LatencyMs     int       `json:"latency_ms"`
+	TTFTMs        int       `json:"ttft_ms"`
 	TPS           float32   `json:"tps"`
 	CostCents     int64     `json:"cost_cents"`
 	Error         *string   `json:"error,omitempty"`

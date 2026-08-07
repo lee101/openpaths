@@ -47,6 +47,9 @@ func (h *MusicHandler) HandleMusicGeneration(ctx *fasthttp.RequestCtx) {
 		writeError(ctx, 400, "invalid_request", "lyrics or prompt is required")
 		return
 	}
+	if prepaidGate(ctx, h.billing, req.Model, 0) {
+		return
+	}
 
 	if req.OutputFormat == "" {
 		req.OutputFormat = "url"

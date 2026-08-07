@@ -57,6 +57,9 @@ func (h *EmbeddingHandler) HandleEmbedding(ctx *fasthttp.RequestCtx) {
 					continue
 				}
 				req.Model = cand.ModelCfg.ProviderModelID
+				if prepaidGate(ctx, h.billing, cand.ModelCfg.ID, 0) {
+					return
+				}
 				start := time.Now()
 				resp, err := embProv.Embed(ctx, &req)
 				latency := time.Since(start)

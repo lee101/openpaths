@@ -20,6 +20,7 @@ const (
 type autoTopupUserStore interface {
 	GetAutotopupInfo(ctx context.Context, userID string) (*model.User, int64, error)
 	SetAutotopupLastAt(ctx context.Context, userID string) error
+	ClaimAutotopup(ctx context.Context, userID string, debounce time.Duration) (bool, error)
 }
 
 type autoTopupChargeStore interface {
@@ -41,9 +42,13 @@ type AutoTopupService struct {
 	topupQ   autoTopupChargeStore
 	stripe   autoTopupCharger
 	engine   autoTopupDepositor
+	guards   *queries.GuardQueries
 	mu       sync.Mutex
 	inFlight map[string]bool // prevent concurrent topups per user
 }
+
+// SetGuards wires the optional max top-up cap store (unlimited when unset).
+func (s *AutoTopupService) SetGuards(g *queries.GuardQueries) { s.guards = g }
 
 func NewAutoTopupService(
 	userQ *queries.UserQueries,
@@ -130,7 +135,25 @@ func (s *AutoTopupService) doTopup(ctx context.Context, userID string) error {
 	if amountUSDCents < 50 { // Stripe minimum $0.50
 		amountUSDCents = 50
 	}
+	// Billshock guard: never auto-charge above the user's max top-up cap.
+	if s.guards != nil {
+		if ok, cap := s.guards.TopupWithinCap(ctx, userID, amountUSDCents); !ok {
+			log.Printf("autotopup skipped for %s: amount %d exceeds cap %d", userID, amountUSDCents, cap)
+			return nil
+		}
+	}
 	amountUSD := float64(amountUSDCents) / 100.0
+
+	// Claim the attempt before touching Stripe. The in-flight map only guards
+	// this process; the conditional update guards every instance at once, so a
+	// balance check racing across replicas cannot charge twice.
+	claimed, err := s.userQ.ClaimAutotopup(ctx, userID, autoTopupSuccessDebounce)
+	if err != nil {
+		return fmt.Errorf("claim: %w", err)
+	}
+	if !claimed {
+		return nil
+	}
 
 	idempotencyKey := fmt.Sprintf("autotopup-%s-%d", userID, time.Now().Unix()/int64(autoTopupFailureDebounce.Seconds()))
 

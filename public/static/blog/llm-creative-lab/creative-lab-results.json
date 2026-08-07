@@ -1,0 +1,49 @@
+{
+  "models": [
+    {
+      "name": "Claude Opus 4.8",
+      "color": "#7dd3fc",
+      "code": 4.4,
+      "visual": 4.8,
+      "motion": 4.7,
+      "discipline": 4.5,
+      "note": "coherent scenes, synchronized SVG motion"
+    },
+    {
+      "name": "GPT-5.5 direct",
+      "color": "#facc15",
+      "code": 4.7,
+      "visual": 4.1,
+      "motion": 4.2,
+      "discipline": 4.8,
+      "note": "compact code, easy to edit, less ornate"
+    },
+    {
+      "name": "GPT-5.5 xhigh",
+      "color": "#c084fc",
+      "code": 4.1,
+      "visual": 3.8,
+      "motion": 3.5,
+      "discipline": 3,
+      "note": "strong planning, can spend budget before output"
+    },
+    {
+      "name": "Gemini 3.5 Flash",
+      "color": "#34d399",
+      "code": 4,
+      "visual": 4.5,
+      "motion": 4,
+      "discipline": 3.7,
+      "note": "ambitious compositions, benefits from strict format rules"
+    },
+    {
+      "name": "Qwen3 Coder",
+      "color": "#fb7185",
+      "code": 4.3,
+      "visual": 3.5,
+      "motion": 3.4,
+      "discipline": 4.1,
+      "note": "solid mechanics and value, needs taste constraints"
+    }
+  ]
+}

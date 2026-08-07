@@ -12,6 +12,7 @@ coverage/
 *.log
 .env*
 !.env.example
+CLAUDE.md.local
 crawlers/__pycache__/
 crawlers/*.pyc
 crawlers/.venv/
@@ -23,6 +24,7 @@ monitoring/errors/
 /model
 *.safetensors
 /openpaths-api
+/openpaths-api.*
 /openpaths
 /discover
 openpath.log
@@ -42,3 +44,15 @@ scripts/art_migration_state/
 tmp/art-index-vectors.bin
 openpaths-api.prev.1780035281
 config.yaml.bak.extend
+openpaths-api
+openpaths-api.bak.20260603065516
+openpaths-api.bak.20260603065900
+openpaths-api.bak.20260603091131
+openpaths-api.prev.1780035281
+cmd/gen-eval-images/
+local
+plans
+openpaths-api.bak.20260603065516
+openpaths-api.bak.20260603065900
+openpaths-api.bak.20260603091131
+openpaths-api.bak.skills
