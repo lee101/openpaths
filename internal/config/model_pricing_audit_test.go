@@ -45,7 +45,8 @@ func TestAuditedTokenPrices(t *testing.T) {
 		"grok-4.5": {2.00, 0.30, 6.00},
 		"grok-4.3": {1.25, 0.20, 2.50},
 		// ai.google.dev/gemini-api/docs/pricing
-		"gemini-3.6-flash":      {1.50, 0, 7.50},
+		"gemini-3.7-flash":      {0.75, 0, 3.75},
+		"gemini-3.6-flash":      {0.75, 0, 3.75},
 		"gemini-3.5-flash-lite": {0.30, 0, 2.50},
 		// developers.openai.com/api/docs/pricing
 		"gpt-5.5-pro": {30.00, 0, 180.00},

@@ -78,7 +78,7 @@ test.describe('Models Page', () => {
   });
 
   test('model count is displayed', async ({ page }) => {
-    await expect(page.locator('text=/\\d+ models?/')).toBeVisible();
+    await expect(page.getByText(/^\d+ models?$/)).toBeVisible();
   });
 
   test('image models launch the image playground', async ({ page }) => {

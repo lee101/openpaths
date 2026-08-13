@@ -69,8 +69,11 @@ func (p *Provider) ChatCompletion(ctx context.Context, req *model.ChatCompletion
 			ID: modelID,
 		},
 	}
+	if effort := cursorGrokEffort(modelID, req.ReasoningEffort); effort != "" {
+		createBody.Model.Params = append(createBody.Model.Params, modelParam{ID: "effort", Value: effort})
+	}
 	if fast {
-		createBody.Model.Params = []modelParam{{ID: "fast", Value: "true"}}
+		createBody.Model.Params = append(createBody.Model.Params, modelParam{ID: "fast", Value: "true"})
 	}
 
 	agentID, runID, err := p.createAgent(ctx, createBody)
@@ -305,6 +308,30 @@ func parseModelSelection(providerModelID string) (id string, fast bool) {
 		id = "composer-2.5"
 	}
 	return id, fast
+}
+
+func cursorGrokEffort(modelID, requested string) string {
+	if modelID != "grok-4.5" && modelID != "grok-4.6" {
+		return ""
+	}
+	switch strings.ToLower(strings.TrimSpace(requested)) {
+	case "low", "medium", "high":
+		return strings.ToLower(strings.TrimSpace(requested))
+	case "xhigh":
+		if modelID == "grok-4.6" {
+			return "xhigh"
+		}
+		return "high"
+	case "minimal":
+		return "low"
+	case "max":
+		if modelID == "grok-4.6" {
+			return "xhigh"
+		}
+		return "high"
+	default:
+		return ""
+	}
 }
 
 func messagesToPrompt(messages []model.ChatMessage) string {

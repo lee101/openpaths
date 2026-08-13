@@ -603,6 +603,82 @@ func TestGenerateVideo_PassesImageToVideoInputs(t *testing.T) {
 	}
 }
 
+func TestGenerateVideo_MiniMaxH3SelectsTextEndpointAndNativeTypes(t *testing.T) {
+	var body map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/minimax/h3/text-to-video" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatal(err)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"video": map[string]any{"url": "https://example.com/h3.mp4"}})
+	}))
+	defer server.Close()
+	p := New("test-key")
+	p.baseURL, p.client = server.URL, server.Client()
+
+	_, err := p.GenerateVideo(context.Background(), &model.VideoGenerationRequest{
+		Model: "minimax/h3/text-to-video", Prompt: "cinematic garden", Duration: "5",
+		Resolution: "2k", AspectRatio: "16:9", FramesPerSecond: 24,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if body["duration"] != float64(5) || body["resolution"] != "2K" || body["aspect_ratio"] != "16:9" {
+		t.Fatalf("body = %#v", body)
+	}
+	if _, ok := body["fps"]; ok {
+		t.Fatalf("H3 must not receive fps: %#v", body)
+	}
+}
+
+func TestGenerateVideo_MiniMaxH3SelectsImageAndReferenceEndpoints(t *testing.T) {
+	paths := make([]string, 0, 2)
+	bodies := make([]map[string]any, 0, 2)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatal(err)
+		}
+		paths, bodies = append(paths, r.URL.Path), append(bodies, body)
+		_ = json.NewEncoder(w).Encode(map[string]any{"video": map[string]any{"url": "https://example.com/h3.mp4"}})
+	}))
+	defer server.Close()
+	p := New("test-key")
+	p.baseURL, p.client = server.URL, server.Client()
+
+	_, err := p.GenerateVideo(context.Background(), &model.VideoGenerationRequest{
+		Model: "minimax/h3/text-to-video", Prompt: "animate", ImageURL: "https://example.com/first.jpg",
+		EndImageURL: "https://example.com/last.jpg", Duration: "10", Resolution: "2K", AspectRatio: "9:16",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = p.GenerateVideo(context.Background(), &model.VideoGenerationRequest{
+		Model: "minimax/h3/text-to-video", Prompt: "Image 1 follows Audio 1",
+		ImageURLs: []string{"https://example.com/ref.jpg"}, AudioURLs: []string{"https://example.com/ref.wav"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if paths[0] != "/minimax/h3/image-to-video" || bodies[0]["image_url"] != "https://example.com/first.jpg" || bodies[0]["end_image_url"] != "https://example.com/last.jpg" {
+		t.Fatalf("image request path/body = %s %#v", paths[0], bodies[0])
+	}
+	if _, ok := bodies[0]["aspect_ratio"]; ok {
+		t.Fatalf("image request must follow input aspect: %#v", bodies[0])
+	}
+	if paths[1] != "/minimax/h3/reference-to-video" {
+		t.Fatalf("reference path = %s", paths[1])
+	}
+	if got := bodies[1]["reference_image_urls"].([]any); len(got) != 1 {
+		t.Fatalf("reference images = %#v", got)
+	}
+	if got := bodies[1]["reference_audio_urls"].([]any); len(got) != 1 {
+		t.Fatalf("reference audio = %#v", got)
+	}
+}
+
 func TestRigMesh_SubmitsModelURLAndParsesRiggedAssets(t *testing.T) {
 	var gotSubmit map[string]any
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

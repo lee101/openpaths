@@ -84,6 +84,11 @@ providers:
     api_key: "${TOGETHER_API_KEY}"
     enabled: true
 
+  - name: thinkingmachines
+    base_url: "https://tinker.thinkingmachines.dev/services/tinker-prod/oai/api"
+    api_key: "${TINKER_API_KEY}"
+    enabled: true
+
   - name: minimax
     base_url: "https://api.minimax.io"
     api_key: "${MINIMAX_API_KEY}"
@@ -159,15 +164,15 @@ models:
       - "deepseek-v4-flash"
       - "deepseek-chat"
       - "claude-sonnet-5"
-      - "grok-4.3"
+      - "grok-4.6"
       - "gemini-2.5-pro"
       - "or/gpt-5.5"
 
   - id: "openpaths/auto-cheap"
     provider: openai
-    provider_model_id: "gpt-5.4-nano"
+    provider_model_id: "gpt-5.6-luna"
     input_price_per_1m: 0.20
-    output_price_per_1m: 1.25
+    output_price_per_1m: 1.20
     aliases: ["auto-cheap", "auto-easy-task", "auto-easy", "openpaths-auto-cheap"]
     context_window: 400000
     max_output_tokens: 128000
@@ -573,6 +578,20 @@ models:
     supports_tools: false
     supports_vision: true
 
+  # --- MiniMax H3 via Fal (2K video with native stereo audio) ---
+  # The provider adapter selects text, first/last-frame, or multimodal-reference
+  # endpoint from the request shape while callers use this single stable ID.
+  - id: "minimax-h3"
+    provider: fal
+    provider_model_id: "minimax/h3/text-to-video"
+    price_per_second: 0.13
+    price_per_input_image: 0.08
+    free_input_image_count: 5
+    aliases: ["h3", "hailuo-h3", "hailuo-03", "minimax-hailuo-03"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
   # --- Alibaba Happy Horse via Fal (Video Generation) ---
   - id: "alibaba/happy-horse/image-to-video"
     provider: fal
@@ -619,12 +638,12 @@ models:
     supports_tools: false
     supports_vision: true
 
-  # --- Netwrck (Video Generation) ---
+  # --- Wan via Fal (Video Generation) ---
   - id: "wan"
-    provider: netwrck
-    provider_model_id: "wan"
-    price_per_video: 0.30
-    aliases: ["netwrck-wan", "wan-video"]
+    provider: fal
+    provider_model_id: "fal-ai/wan/v2.7/text-to-video"
+    price_per_second: 0.15
+    aliases: ["netwrck-wan", "wan-video", "wan-2.7"]
     supports_streaming: false
     supports_tools: false
     supports_vision: false
@@ -665,6 +684,111 @@ models:
     aliases: ["gpt5-chat", "gpt-5-chat", "gpt-5.2-chat-latest"]
     context_window: 400000
     max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "gpt-5.6-sol"
+    provider: openai
+    provider_model_id: "gpt-5.6-sol"
+    input_price_per_1m: 5.00
+    output_price_per_1m: 30.00
+    aliases: ["gpt5.6-sol", "gpt56-sol", "sol"]
+    context_window: 1050000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models:
+      - "gpt-5.5"
+      - "gpt-5.6-terra"
+      - "or/gpt-5.6-sol"
+
+  - id: "gpt-5.6-terra"
+    provider: openai
+    provider_model_id: "gpt-5.6-terra"
+    input_price_per_1m: 2.00
+    output_price_per_1m: 12.00
+    aliases: ["gpt5.6-terra", "gpt56-terra", "terra"]
+    context_window: 1050000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models:
+      - "gpt-5.4"
+      - "gpt-5.6-luna"
+      - "or/gpt-5.6-terra"
+
+  - id: "gpt-5.6-luna"
+    provider: openai
+    provider_model_id: "gpt-5.6-luna"
+    input_price_per_1m: 0.20
+    output_price_per_1m: 1.20
+    aliases: ["gpt5.6-luna", "gpt56-luna", "luna"]
+    context_window: 1050000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models:
+      - "gpt-5.4-nano"
+      - "gemini-3.1-flash-lite"
+      - "or/gpt-5.6-luna"
+
+  - id: "gpt-5.6"
+    provider: openai
+    provider_model_id: "gpt-5.6-terra"
+    input_price_per_1m: 5.00
+    output_price_per_1m: 30.00
+    aliases: ["gpt56"]
+    context_window: 1050000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "gpt-5.5-pro"
+    provider: openai
+    provider_model_id: "gpt-5.5-pro"
+    input_price_per_1m: 30.00
+    output_price_per_1m: 180.00
+    context_window: 1050000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "gpt-realtime-2.1"
+    provider: openai
+    provider_model_id: "gpt-realtime-2.1"
+    input_price_per_1m: 4.00
+    input_cache_hit_price_per_1m: 0.40
+    output_price_per_1m: 24.00
+    audio_input_price_per_1m: 32.00
+    audio_input_cache_hit_price_per_1m: 0.40
+    audio_output_price_per_1m: 64.00
+    image_input_price_per_1m: 5.00
+    image_input_cache_hit_price_per_1m: 0.50
+    context_window: 128000
+    max_output_tokens: 32000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "gpt-realtime-2.1-mini"
+    provider: openai
+    provider_model_id: "gpt-realtime-2.1-mini"
+    input_price_per_1m: 0.60
+    input_cache_hit_price_per_1m: 0.06
+    output_price_per_1m: 2.40
+    audio_input_price_per_1m: 10.00
+    audio_input_cache_hit_price_per_1m: 0.30
+    audio_output_price_per_1m: 20.00
+    image_input_price_per_1m: 0.80
+    image_input_cache_hit_price_per_1m: 0.08
+    context_window: 128000
+    max_output_tokens: 32000
     supports_streaming: true
     supports_tools: true
     supports_vision: true
@@ -781,6 +905,62 @@ models:
     aliases: ["cursor-composer-2.5-fast", "composer-2.5-fast@cursor", "composer-2-5-fast"]
     context_window: 256000
     max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: false
+    supports_vision: false
+
+  - id: "cursor-grok-4.5"
+    provider: cursor
+    provider_model_id: "grok-4.5"
+    input_price_per_1m: 2.00
+    input_cache_hit_price_per_1m: 0.30
+    output_price_per_1m: 6.00
+    aliases: ["cursor-grok-4.5", "grok-4.5@cursor", "cursor-grok-4-5"]
+    default_reasoning_effort: "high"
+    context_window: 256000
+    max_output_tokens: 16384
+    supports_streaming: true
+    supports_tools: false
+    supports_vision: false
+
+  - id: "cursor-grok-4.5-fast"
+    provider: cursor
+    provider_model_id: "grok-4.5-fast"
+    input_price_per_1m: 4.00
+    input_cache_hit_price_per_1m: 0.60
+    output_price_per_1m: 18.00
+    aliases: ["cursor-grok-4.5-fast", "grok-4.5-fast@cursor", "cursor-grok-4-5-fast"]
+    default_reasoning_effort: "high"
+    context_window: 256000
+    max_output_tokens: 16384
+    supports_streaming: true
+    supports_tools: false
+    supports_vision: false
+
+  - id: "cursor-grok-4.6"
+    provider: cursor
+    provider_model_id: "grok-4.6"
+    input_price_per_1m: 2.00
+    input_cache_hit_price_per_1m: 0.50
+    output_price_per_1m: 6.00
+    aliases: ["cursor-grok-latest", "grok-4.6@cursor", "cursor-grok-4-6"]
+    default_reasoning_effort: "high"
+    context_window: 256000
+    max_output_tokens: 16384
+    supports_streaming: true
+    supports_tools: false
+    supports_vision: false
+
+  - id: "cursor-grok-4.6-fast"
+    provider: cursor
+    provider_model_id: "grok-4.6-fast"
+    input_price_per_1m: 4.00
+    input_cache_hit_price_per_1m: 1.00
+    output_price_per_1m: 12.00
+    aliases: ["cursor-grok-latest-fast", "grok-4.6-fast@cursor", "cursor-grok-4-6-fast"]
+    default_reasoning_effort: "high"
+    context_window: 256000
+    max_output_tokens: 16384
     supports_streaming: true
     supports_tools: false
     supports_vision: false
@@ -961,8 +1141,8 @@ models:
   - id: "claude-fable-5"
     provider: anthropic
     provider_model_id: "claude-fable-5"
-    input_price_per_1m: 5.00
-    output_price_per_1m: 25.00
+    input_price_per_1m: 10.00
+    output_price_per_1m: 50.00
     aliases: ["fable-5"]
     context_window: 200000
     max_output_tokens: 128000
@@ -1146,12 +1326,37 @@ models:
     supports_vision: true
 
   # --- Google Gemini ---
+  - id: "gemini-3.7-flash"
+    provider: google
+    provider_model_id: "gemini-3.7-flash"
+    input_price_per_1m: 0.75
+    output_price_per_1m: 3.75
+    aliases: ["gemini-3.7", "gemini-flash-3.7", "gemini-flash-latest", "flash-latest"]
+    context_window: 1000000
+    max_output_tokens: 65536
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
   - id: "gemini-latest"
     provider: google
-    provider_model_id: "gemini-3.5-flash"
-    input_price_per_1m: 1.50
-    output_price_per_1m: 9.00
+    provider_model_id: "gemini-3.7-flash"
+    input_price_per_1m: 0.75
+    output_price_per_1m: 3.75
     aliases: ["google-latest", "google-gemini-latest"]
+    context_window: 1000000
+    max_output_tokens: 65536
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  # Compatibility route: the retired, more expensive Flash ID now uses 3.7.
+  - id: "gemini-3.6-flash"
+    provider: google
+    provider_model_id: "gemini-3.7-flash"
+    input_price_per_1m: 0.75
+    output_price_per_1m: 3.75
+    aliases: ["gemini-3.6"]
     context_window: 1000000
     max_output_tokens: 65536
     supports_streaming: true
@@ -1205,6 +1410,17 @@ models:
     supports_tools: true
     supports_vision: true
 
+  - id: "gemini-3.5-flash-lite"
+    provider: google
+    provider_model_id: "gemini-3.1-flash-lite"
+    input_price_per_1m: 0.30
+    output_price_per_1m: 2.50
+    context_window: 1000000
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
   - id: "gemini-3.1-flash-tts-preview"
     provider: google
     provider_model_id: "gemini-3.1-flash-tts-preview"
@@ -1216,13 +1432,54 @@ models:
     supports_vision: false
 
   # --- xAI Grok ---
+  - id: "grok-4.6"
+    provider: xai
+    provider_model_id: "grok-4.6"
+    input_price_per_1m: 2.00
+    input_cache_hit_price_per_1m: 0.30
+    output_price_per_1m: 6.00
+    long_context_threshold: 200000
+    input_price_per_1m_long: 4.00
+    input_cache_hit_price_per_1m_long: 0.60
+    output_price_per_1m_long: 12.00
+    aliases: ["grok", "grok-latest", "grok-4", "grok-reasoning", "grok-4-0709", "grok-4-1-fast-reasoning", "grok-4-1-fast-non-reasoning", "grok-4-fast-reasoning", "grok-4-fast-non-reasoning", "grok-code-fast-1", "grok-3"]
+    default_reasoning_effort: "low"
+    context_window: 500000
+    max_output_tokens: 16384
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
   - id: "grok-4.3"
     provider: xai
     provider_model_id: "grok-4.3"
     input_price_per_1m: 1.25
+    input_cache_hit_price_per_1m: 0.20
     output_price_per_1m: 2.50
-    aliases: ["grok-4", "grok-reasoning", "grok-4-0709", "grok-4-1-fast-reasoning", "grok-4-1-fast-non-reasoning", "grok-4-fast-reasoning", "grok-4-fast-non-reasoning", "grok-code-fast-1", "grok-3"]
+    long_context_threshold: 200000
+    input_price_per_1m_long: 2.50
+    input_cache_hit_price_per_1m_long: 0.40
+    output_price_per_1m_long: 5.00
     context_window: 1000000
+    max_output_tokens: 16384
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models:
+      - "grok-4.6"
+
+  - id: "grok-4.5"
+    provider: xai
+    provider_model_id: "grok-4.5"
+    input_price_per_1m: 2.00
+    input_cache_hit_price_per_1m: 0.30
+    output_price_per_1m: 6.00
+    long_context_threshold: 200000
+    input_price_per_1m_long: 4.00
+    input_cache_hit_price_per_1m_long: 0.60
+    output_price_per_1m_long: 12.00
+    default_reasoning_effort: "low"
+    context_window: 256000
     max_output_tokens: 16384
     supports_streaming: true
     supports_tools: true
@@ -1239,24 +1496,106 @@ models:
     supports_streaming: true
     supports_tools: true
     supports_vision: true
+    fallback_models:
+      - "grok-4.6"
+
+  - id: "grok-4.20-0309-reasoning"
+    provider: xai
+    provider_model_id: "grok-4.20-0309-reasoning"
+    input_price_per_1m: 1.25
+    output_price_per_1m: 2.50
+    long_context_threshold: 200000
+    input_price_per_1m_long: 2.50
+    output_price_per_1m_long: 5.00
+    context_window: 2000000
+    max_output_tokens: 16384
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "grok-4.20-0309-non-reasoning"
+    provider: xai
+    provider_model_id: "grok-4.20-0309-non-reasoning"
+    input_price_per_1m: 1.25
+    output_price_per_1m: 2.50
+    long_context_threshold: 200000
+    input_price_per_1m_long: 2.50
+    output_price_per_1m_long: 5.00
+    context_window: 2000000
+    max_output_tokens: 16384
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "grok-4.20-multi-agent-0309"
+    provider: xai
+    provider_model_id: "grok-4.5"
+    input_price_per_1m: 2.00
+    output_price_per_1m: 6.00
+    long_context_threshold: 200000
+    input_price_per_1m_long: 4.00
+    output_price_per_1m_long: 12.00
+    context_window: 256000
+    max_output_tokens: 16384
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    deprecated: true
+    deprecated_note: "Upstream retired; compatibility route uses grok-4.5."
+
+  - id: "grok-build-0.1"
+    provider: xai
+    provider_model_id: "grok-build-0.1"
+    input_price_per_1m: 1.00
+    output_price_per_1m: 2.00
+    long_context_threshold: 200000
+    input_price_per_1m_long: 2.00
+    output_price_per_1m_long: 4.00
+    context_window: 256000
+    max_output_tokens: 16384
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
 
   - id: "grok-3-mini"
     provider: xai
-    provider_model_id: "grok-3-mini"
-    input_price_per_1m: 0.30
-    output_price_per_1m: 0.50
+    provider_model_id: "grok-4.6"
+    input_price_per_1m: 1.25
+    output_price_per_1m: 2.50
+    long_context_threshold: 200000
+    input_price_per_1m_long: 2.50
+    output_price_per_1m_long: 5.00
     aliases: ["grok-mini"]
     context_window: 131000
     max_output_tokens: 16384
     supports_streaming: true
     supports_tools: true
     supports_vision: false
+    fallback_models:
+      - "grok-4.6"
 
   - id: "grok-voice-think-fast-1.0"
     provider: xai
     provider_model_id: "grok-voice-think-fast-1.0"
     price_per_hour: 3.00
     aliases: ["grok-voice", "xai-realtime"]
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "grok-voice-think-fast-2.0"
+    provider: xai
+    provider_model_id: "grok-voice-think-fast-2.0"
+    price_per_hour: 4.80
+    aliases: ["grok-voice-2"]
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "grok-voice-latest"
+    provider: xai
+    provider_model_id: "grok-voice-think-fast-2.0"
+    price_per_hour: 4.80
     supports_streaming: true
     supports_tools: true
     supports_vision: false
@@ -1276,7 +1615,10 @@ models:
     provider: xai
     provider_model_id: "grok-imagine-image"
     price_per_image: 0.02
-    price_per_input_image: 0.002
+    price_per_input_image: 0.01
+    price_per_image_by_resolution:
+      1k: 0.05
+      2k: 0.07
     aliases: ["grok-image-quality", "xai-image-quality"]
     supported_sizes: ["1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "19.5:9", "9:19.5", "auto"]
     supports_streaming: false
@@ -1285,11 +1627,23 @@ models:
     fallback_models:
       - "fal-gpt-image-2"
 
+  - id: "grok-imagine-video-1.5"
+    provider: xai
+    provider_model_id: "grok-imagine-video-1.5"
+    price_per_second_by_resolution:
+      480p: 0.08
+      720p: 0.14
+      1080p: 0.25
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
   # --- DeepSeek ---
   - id: "deepseek-v4-flash"
     provider: deepseek
     provider_model_id: "deepseek-v4-flash"
     input_price_per_1m: 0.14
+    input_cache_hit_price_per_1m: 0.0028
     output_price_per_1m: 0.28
     aliases: ["deepseek-flash", "deepseek-v4"]
     context_window: 1000000
@@ -1306,9 +1660,10 @@ models:
 
   - id: "deepseek-v4-pro"
     provider: deepseek
-    provider_model_id: "deepseek-v4-pro"
-    input_price_per_1m: 1.74
-    output_price_per_1m: 3.48
+    provider_model_id: "deepseek-v4-flash"
+    input_price_per_1m: 0.435
+    input_cache_hit_price_per_1m: 0.003625
+    output_price_per_1m: 0.87
     aliases: ["deepseek-pro", "deepseek-v4-reasoning"]
     context_window: 1000000
     max_output_tokens: 384000
@@ -1316,16 +1671,16 @@ models:
     supports_tools: true
     supports_vision: false
     fallback_models:
-      - "nvidia/deepseek-v4-pro"
+      - "nvidia/deepseek-v4-flash"
       - "deepseek-reasoner"
       - "nvidia/deepseek-v3.2"
-      - "together/deepseek-r1"
+      - "together/deepseek-v3.1"
 
   - id: "deepseek-chat"
     provider: deepseek
     provider_model_id: "deepseek-chat"
-    input_price_per_1m: 0.28
-    output_price_per_1m: 0.42
+    input_price_per_1m: 0.14
+    output_price_per_1m: 0.28
     aliases: ["deepseek"]
     context_window: 128000
     max_output_tokens: 8192
@@ -1340,8 +1695,8 @@ models:
   - id: "deepseek-reasoner"
     provider: deepseek
     provider_model_id: "deepseek-reasoner"
-    input_price_per_1m: 0.28
-    output_price_per_1m: 0.42
+    input_price_per_1m: 0.14
+    output_price_per_1m: 0.28
     context_window: 128000
     max_output_tokens: 65536
     supports_streaming: true
@@ -1403,8 +1758,8 @@ models:
   - id: "pixtral-large-latest"
     provider: mistral
     provider_model_id: "pixtral-large-latest"
-    input_price_per_1m: 2.00
-    output_price_per_1m: 6.00
+    input_price_per_1m: 0.40
+    output_price_per_1m: 2.00
     aliases: ["pixtral-large", "pixtral"]
     context_window: 131072
     max_output_tokens: 8192
@@ -1563,9 +1918,10 @@ models:
   # --- OpenRouter (fallback access to any model) ---
   - id: "or/gpt-5-codex"
     provider: openrouter
-    provider_model_id: "openai/gpt-5-codex"
-    input_price_per_1m: 1.25
-    output_price_per_1m: 10.00
+    provider_model_id: "openai/gpt-5.5-codex"
+    input_price_per_1m: 1.75
+    input_cache_hit_price_per_1m: 0.175
+    output_price_per_1m: 14.00
     aliases: ["or/gpt-5.3-codex", "or/gpt-5.2-codex"]
     context_window: 400000
     max_output_tokens: 128000
@@ -1585,6 +1941,28 @@ models:
     supports_tools: true
     supports_vision: true
 
+  - id: "or/gpt-5.4-mini"
+    provider: openrouter
+    provider_model_id: "openai/gpt-5.4-mini"
+    input_price_per_1m: 0.75
+    output_price_per_1m: 4.50
+    context_window: 400000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "or/gpt-5.4-nano"
+    provider: openrouter
+    provider_model_id: "openai/gpt-5.4-nano"
+    input_price_per_1m: 0.20
+    output_price_per_1m: 1.25
+    context_window: 400000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
   - id: "or/gpt-5.5"
     provider: openrouter
     provider_model_id: "openai/gpt-5.5"
@@ -1593,6 +1971,67 @@ models:
     aliases: ["or/gpt-5-5"]
     context_window: 1050000
     max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "or/gpt-5.6-sol"
+    provider: openrouter
+    provider_model_id: "openai/gpt-5.6-sol"
+    input_price_per_1m: 5.00
+    input_cache_hit_price_per_1m: 0.50
+    output_price_per_1m: 30.00
+    input_price_per_1m_long: 10.00
+    input_cache_hit_price_per_1m_long: 1.00
+    output_price_per_1m_long: 45.00
+    long_context_threshold: 272000
+    context_window: 1050000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "or/gpt-5.6-terra"
+    provider: openrouter
+    provider_model_id: "openai/gpt-5.6-terra"
+    input_price_per_1m: 1.00
+    input_cache_hit_price_per_1m: 0.10
+    output_price_per_1m: 6.00
+    input_price_per_1m_long: 2.00
+    input_cache_hit_price_per_1m_long: 0.20
+    output_price_per_1m_long: 9.00
+    long_context_threshold: 272000
+    context_window: 1050000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "or/gpt-5.6-luna"
+    provider: openrouter
+    provider_model_id: "openai/gpt-5.6-luna"
+    input_price_per_1m: 0.10
+    input_cache_hit_price_per_1m: 0.01
+    output_price_per_1m: 0.60
+    input_price_per_1m_long: 0.20
+    input_cache_hit_price_per_1m_long: 0.02
+    output_price_per_1m_long: 0.90
+    long_context_threshold: 272000
+    context_window: 1050000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "or/qwen3.8-max"
+    provider: openrouter
+    provider_model_id: "qwen/qwen3.8-max"
+    input_price_per_1m: 2.00
+    input_cache_hit_price_per_1m: 0.25
+    output_price_per_1m: 6.00
+    aliases: ["qwen3.8-max", "qwen3.8", "qwen-max", "qwen-latest", "qwen/qwen3.8-max"]
+    context_window: 1000000
+    max_output_tokens: 131072
     supports_streaming: true
     supports_tools: true
     supports_vision: true
@@ -1643,7 +2082,7 @@ models:
 
   - id: "or/grok-4"
     provider: openrouter
-    provider_model_id: "x-ai/grok-4.3"
+    provider_model_id: "x-ai/grok-4.6"
     input_price_per_1m: 3.00
     output_price_per_1m: 15.00
     context_window: 256000
@@ -1691,19 +2130,6 @@ models:
     supports_tools: false
     supports_vision: false
 
-  # --- OpenRouter Embedding Models ---
-  - id: "or/nemotron-embed"
-    provider: openrouter
-    provider_model_id: "nvidia/llama-nemotron-embed-vl-1b-v2:free"
-    input_price_per_1m: 0
-    output_price_per_1m: 0
-    aliases: ["nemotron-embed"]
-    context_window: 8192
-    max_output_tokens: 0
-    supports_streaming: false
-    supports_tools: false
-    supports_vision: true
-
   # --- Text-Generator.io Embedding ---
   - id: "text-embedding"
     provider: textgenerator
@@ -1720,9 +2146,9 @@ models:
   # --- OpenRouter Free Models ---
   - id: "or/stepfun-flash"
     provider: openrouter
-    provider_model_id: "stepfun/step-3.5-flash:free"
-    input_price_per_1m: 0
-    output_price_per_1m: 0
+    provider_model_id: "stepfun/step-3.5-flash"
+    input_price_per_1m: 0.10
+    output_price_per_1m: 0.30
     aliases: ["stepfun-flash", "step-flash"]
     context_window: 256000
     max_output_tokens: 8192
@@ -1732,9 +2158,9 @@ models:
 
   - id: "or/solar-pro-3"
     provider: openrouter
-    provider_model_id: "upstage/solar-pro-3:free"
-    input_price_per_1m: 0
-    output_price_per_1m: 0
+    provider_model_id: "upstage/solar-pro-3"
+    input_price_per_1m: 0.15
+    output_price_per_1m: 0.60
     aliases: ["solar-pro", "solar"]
     context_window: 128000
     max_output_tokens: 8192
@@ -1762,9 +2188,9 @@ models:
 
   - id: "or/arcee-trinity"
     provider: openrouter
-    provider_model_id: "arcee-ai/trinity-large-preview:free"
-    input_price_per_1m: 0
-    output_price_per_1m: 0
+    provider_model_id: "arcee-ai/trinity-large-thinking"
+    input_price_per_1m: 0.22
+    output_price_per_1m: 0.85
     aliases: ["arcee-trinity", "trinity"]
     context_window: 131072
     max_output_tokens: 8192
@@ -1777,38 +2203,14 @@ models:
 
   - id: "or/arcee-trinity-mini"
     provider: openrouter
-    provider_model_id: "arcee-ai/trinity-mini:free"
-    input_price_per_1m: 0
-    output_price_per_1m: 0
+    provider_model_id: "arcee-ai/trinity-large-thinking"
+    input_price_per_1m: 0.15
+    output_price_per_1m: 0.50
     aliases: ["trinity-mini"]
     context_window: 131072
     max_output_tokens: 8192
     supports_streaming: true
     supports_tools: true
-    supports_vision: false
-
-  - id: "or/lfm-thinking"
-    provider: openrouter
-    provider_model_id: "liquid/lfm-2.5-1.2b-thinking:free"
-    input_price_per_1m: 0
-    output_price_per_1m: 0
-    aliases: ["lfm-thinking"]
-    context_window: 32768
-    max_output_tokens: 8192
-    supports_streaming: true
-    supports_tools: false
-    supports_vision: false
-
-  - id: "or/lfm-instruct"
-    provider: openrouter
-    provider_model_id: "liquid/lfm-2.5-1.2b-instruct:free"
-    input_price_per_1m: 0
-    output_price_per_1m: 0
-    aliases: ["lfm-instruct", "lfm"]
-    context_window: 32768
-    max_output_tokens: 8192
-    supports_streaming: true
-    supports_tools: false
     supports_vision: false
 
   # --- Z.AI (Image Generation) ---
@@ -1925,14 +2327,64 @@ models:
   - id: "qwen3.5-397b"
     provider: together
     provider_model_id: "Qwen/Qwen3.5-397B-A17B"
-    input_price_per_1m: 0.60
-    output_price_per_1m: 3.60
+    input_price_per_1m: 1.475
+    output_price_per_1m: 4.425
     aliases: ["qwen3.5"]
     context_window: 131072
     max_output_tokens: 8192
     supports_streaming: true
     supports_tools: true
     supports_vision: false
+
+  - id: "qwen3.8-2.4t-a95b"
+    provider: together
+    provider_model_id: "Qwen/Qwen3.8-2.4T-A95B"
+    input_price_per_1m: 2.50
+    input_cache_hit_price_per_1m: 0.50
+    output_price_per_1m: 6.25
+    aliases: ["Qwen3.8-2.4T-A95B", "qwen3.8-2.4t", "qwen3.8-a95b"]
+    context_window: 262144
+    max_output_tokens: 32768
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "thinkingmachines/inkling"
+    provider: together
+    provider_model_id: "thinkingmachines/Inkling"
+    input_price_per_1m: 1.00
+    input_cache_hit_price_per_1m: 0.17
+    output_price_per_1m: 4.05
+    context_window: 524288
+    max_output_tokens: 32768
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models: ["or/inkling"]
+
+  - id: "inkling-small"
+    provider: together
+    provider_model_id: "thinkingmachines/Inkling-Small"
+    input_price_per_1m: 0.50
+    input_cache_hit_price_per_1m: 0.10
+    output_price_per_1m: 1.20
+    context_window: 524288
+    max_output_tokens: 32768
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models: ["thinkingmachines/inkling"]
+
+  - id: "or/inkling"
+    provider: openrouter
+    provider_model_id: "thinkingmachines/inkling"
+    input_price_per_1m: 1.00
+    output_price_per_1m: 4.05
+    context_window: 524288
+    max_output_tokens: 32768
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
 
   - id: "minimax-m2.5"
     provider: together
@@ -1949,8 +2401,8 @@ models:
   - id: "kimi-k2.5"
     provider: together
     provider_model_id: "moonshotai/Kimi-K2.5"
-    input_price_per_1m: 0.50
-    output_price_per_1m: 2.80
+    input_price_per_1m: 0.95
+    output_price_per_1m: 4.00
     aliases: ["kimi"]
     context_window: 131072
     max_output_tokens: 8192
@@ -1973,8 +2425,8 @@ models:
   - id: "qwen3-coder"
     provider: together
     provider_model_id: "Qwen/Qwen3-Coder-Next-FP8"
-    input_price_per_1m: 0.50
-    output_price_per_1m: 1.20
+    input_price_per_1m: 0.32
+    output_price_per_1m: 1.28
     aliases: ["qwen-coder"]
     context_window: 131072
     max_output_tokens: 8192
@@ -1985,8 +2437,8 @@ models:
   - id: "together/deepseek-r1"
     provider: together
     provider_model_id: "deepseek-ai/DeepSeek-R1"
-    input_price_per_1m: 3.00
-    output_price_per_1m: 7.00
+    input_price_per_1m: 0.14
+    output_price_per_1m: 0.28
     context_window: 128000
     max_output_tokens: 65536
     supports_streaming: true
@@ -1996,8 +2448,8 @@ models:
   - id: "together/deepseek-v3.1"
     provider: together
     provider_model_id: "deepseek-ai/DeepSeek-V3.1"
-    input_price_per_1m: 0.60
-    output_price_per_1m: 1.70
+    input_price_per_1m: 0.14
+    output_price_per_1m: 0.28
     context_window: 128000
     max_output_tokens: 8192
     supports_streaming: true
@@ -2125,7 +2577,7 @@ models:
   - id: "minimax-m2"
     provider: minimax
     provider_model_id: "MiniMax-M2"
-    input_price_per_1m: 0.26
+    input_price_per_1m: 0.13
     output_price_per_1m: 1.00
     context_window: 200000
     max_output_tokens: 128000
@@ -2258,7 +2710,7 @@ models:
   - id: "xai-tts"
     provider: xai
     provider_model_id: "tts"
-    input_price_per_1m: 15.00
+    price_per_1m_characters: 15.00
     output_price_per_1m: 0
     aliases: ["grok-tts", "tts"]
     supports_streaming: false
@@ -2299,7 +2751,7 @@ models:
   - id: "xai-stt"
     provider: xai
     provider_model_id: "stt"
-    price_per_hour: 0.20
+    price_per_hour: 0.10
     aliases: ["grok-stt", "stt"]
     supports_streaming: true
     supports_tools: false
@@ -2348,6 +2800,14 @@ models:
     provider_model_id: "gpt-4o-transcribe"
     price_per_minute: 0.006
     aliases: ["openai-transcribe"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "gpt-transcribe"
+    provider: openai
+    provider_model_id: "gpt-transcribe"
+    price_per_minute: 0.0045
     supports_streaming: false
     supports_tools: false
     supports_vision: false
@@ -2407,8 +2867,8 @@ models:
   - id: "mixtral-8x7b-32768"
     provider: groq
     provider_model_id: "mixtral-8x7b-32768"
-    input_price_per_1m: 0.24
-    output_price_per_1m: 0.24
+    input_price_per_1m: 0.59
+    output_price_per_1m: 0.79
     aliases: ["mixtral"]
     context_window: 32768
     max_output_tokens: 4096
@@ -2420,8 +2880,9 @@ models:
   - id: "fireworks/gpt-oss-120b"
     provider: fireworks
     provider_model_id: "accounts/fireworks/models/gpt-oss-120b"
-    input_price_per_1m: 0.90
-    output_price_per_1m: 0.90
+    input_price_per_1m: 0.15
+    input_cache_hit_price_per_1m: 0.015
+    output_price_per_1m: 0.60
     aliases: ["gpt-oss-120b", "gpt-oss"]
     context_window: 131072
     max_output_tokens: 16384
@@ -2432,8 +2893,8 @@ models:
   - id: "fireworks/glm-5"
     provider: fireworks
     provider_model_id: "accounts/fireworks/models/glm-5"
-    input_price_per_1m: 0.90
-    output_price_per_1m: 0.90
+    input_price_per_1m: 1.40
+    output_price_per_1m: 4.40
     aliases: ["fireworks-glm-5"]
     context_window: 131072
     max_output_tokens: 16384
@@ -2441,6 +2902,69 @@ models:
     supports_tools: true
     supports_vision: false
     fallback_models: ["glm-5"]
+
+  - id: "fireworks/glm-5.2"
+    provider: fireworks
+    provider_model_id: "accounts/fireworks/models/glm-5.2"
+    input_price_per_1m: 1.40
+    input_cache_hit_price_per_1m: 0.14
+    output_price_per_1m: 4.40
+    aliases: ["glm-5.2"]
+    context_window: 131072
+    max_output_tokens: 16384
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "fireworks/deepseek-v4-pro"
+    provider: fireworks
+    provider_model_id: "accounts/fireworks/models/deepseek-v4-pro"
+    input_price_per_1m: 1.74
+    input_cache_hit_price_per_1m: 0.145
+    output_price_per_1m: 3.48
+    context_window: 1000000
+    max_output_tokens: 384000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "fireworks/kimi-k2.6"
+    provider: fireworks
+    provider_model_id: "accounts/fireworks/models/kimi-k2.6"
+    input_price_per_1m: 0.95
+    input_cache_hit_price_per_1m: 0.16
+    output_price_per_1m: 4.00
+    context_window: 262144
+    max_output_tokens: 32768
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "nvidia/gpt-oss-120b"
+    provider: fireworks
+    provider_model_id: "accounts/fireworks/models/gpt-oss-120b"
+    input_price_per_1m: 0.15
+    output_price_per_1m: 0.60
+    deprecated: true
+    deprecated_note: "NVIDIA upstream retired; compatibility route uses Fireworks."
+    context_window: 131072
+    max_output_tokens: 16384
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "nvidia/mistral-medium-3.5"
+    provider: mistral
+    provider_model_id: "mistral-medium-latest"
+    input_price_per_1m: 0.40
+    output_price_per_1m: 2.00
+    deprecated: true
+    deprecated_note: "NVIDIA upstream retired; compatibility route uses Mistral."
+    context_window: 131072
+    max_output_tokens: 16384
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
 
   # --- NVIDIA (NIM) ---
   - id: "nvidia/minimax-m2.7"
@@ -2461,8 +2985,8 @@ models:
   - id: "nvidia/deepseek-v3.2"
     provider: nvidia
     provider_model_id: "deepseek-ai/deepseek-v3.2"
-    input_price_per_1m: 0.28
-    output_price_per_1m: 0.42
+    input_price_per_1m: 0.14
+    output_price_per_1m: 0.28
     aliases: ["deepseek-v3.2", "deepseek-3.2"]
     context_window: 128000
     max_output_tokens: 8192
@@ -2474,12 +2998,12 @@ models:
       - "together/deepseek-v3.1"
       - "or/deepseek-chat"
 
-  - id: "nvidia/deepseek-v4-pro"
+  - id: "nvidia/deepseek-v4-flash"
     provider: nvidia
-    provider_model_id: "deepseek-ai/deepseek-v4-pro"
+    provider_model_id: "deepseek-ai/deepseek-v4-flash"
     input_price_per_1m: 0
     output_price_per_1m: 0
-    aliases: ["nvidia-deepseek-v4-pro", "deepseek-v4-pro-free"]
+    aliases: ["nvidia-deepseek-v4-flash", "deepseek-v4-flash-free", "nvidia/deepseek-v4-pro"]
     context_window: 1000000
     max_output_tokens: 16384
     supports_streaming: true

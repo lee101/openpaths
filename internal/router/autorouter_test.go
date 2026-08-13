@@ -149,7 +149,7 @@ func TestAutoRouter_MediumTaskRoutesGraphConfigToGPT54Mini(t *testing.T) {
 	}
 }
 
-func TestAutoRouter_MediumTaskRoutesSecurityReviewToClaudeSonnet(t *testing.T) {
+func TestAutoRouter_MediumTaskRoutesSecurityReviewToGPT54Mini(t *testing.T) {
 	ar := NewAutoRouter(&fakeEmbedder{})
 	if err := ar.Init(context.Background()); err != nil {
 		t.Fatalf("Init() error = %v", err)
@@ -159,8 +159,8 @@ func TestAutoRouter_MediumTaskRoutesSecurityReviewToClaudeSonnet(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ResolveAuto() error = %v", err)
 	}
-	if got.ModelID != "claude-sonnet-latest" {
-		t.Fatalf("ModelID = %q, want %q", got.ModelID, "claude-sonnet-latest")
+	if got.ModelID != "gpt-5.4-mini" {
+		t.Fatalf("ModelID = %q, want %q", got.ModelID, "gpt-5.4-mini")
 	}
 }
 
@@ -176,7 +176,6 @@ func TestDefaultRoutingTables_EasyTaskIncludesRequestedProviders(t *testing.T) {
 		"deepseek-v4-flash",
 		"gemini-3.1-flash-lite",
 		"gemini-2.5-flash",
-		"claude-haiku-4-5-20251001",
 	} {
 		if !got[want] {
 			t.Fatalf("easy-task routing table missing %q", want)

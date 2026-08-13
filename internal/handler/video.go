@@ -358,6 +358,7 @@ func (h *VideoHandler) executeVideoGeneration(ctx context.Context, req model.Vid
 		if h.billing != nil {
 			cost, _ = h.billing.DeductVideoWithMediaInputs(ctx, userID, cand.ModelCfg.ID, videoDurationSeconds(string(req.Duration)), req.HasVideoInput(), req.InputImageCount(), req.Resolution, "")
 		}
+		resp.CreditsCharged = float64(cost) / 10000
 		if h.recorder != nil {
 			h.recorder.RecordSuccessWithApp(userID, apiKeyID, originalModel, cand.Provider.Name(),
 				0, 1, int(latency.Milliseconds()), 0, cost, false, app.ID, app.URL, app.Title, app.Categories)

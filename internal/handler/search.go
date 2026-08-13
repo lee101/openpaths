@@ -34,7 +34,7 @@ const (
 
 	geminiProviderName   = "gemini"
 	geminiDefaultBaseURL = "https://generativelanguage.googleapis.com"
-	geminiDefaultModel   = "gemini-3.5-flash"
+	geminiDefaultModel   = "gemini-3.7-flash"
 	geminiSearchPriceUSD = 0.004
 
 	openaiSearchProviderName = "openai"
@@ -44,7 +44,7 @@ const (
 
 	grokProviderName   = "grok"
 	grokDefaultBaseURL = "https://api.x.ai"
-	grokDefaultModel   = "grok-4.3"
+	grokDefaultModel   = "grok-latest"
 	grokSearchPriceUSD = 0.01
 )
 

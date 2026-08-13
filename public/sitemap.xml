@@ -961,6 +961,26 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/models/cursor-grok-4.5</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/cursor-grok-4.5-fast</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/cursor-grok-4.6</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/cursor-grok-4.6-fast</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/models/gpt5.3-codex</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
@@ -1011,6 +1031,11 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/models/gemini-3.7-flash</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/models/gemini-latest</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
@@ -1037,6 +1062,11 @@
   </url>
   <url>
     <loc>https://openpaths.io/models/gemini-3.1-flash-tts-preview</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/grok-4.6</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1252,6 +1282,11 @@
   </url>
   <url>
     <loc>https://openpaths.io/models/qwen3.5-397b</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/qwen3.8-2.4t-a95b</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>

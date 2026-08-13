@@ -46,13 +46,12 @@ test.describe('Global Navigation', () => {
     await expect(page.locator('h1')).toContainText('Apps And Agents');
   });
 
-  test('navigate to /account via primary account button', async ({ page }) => {
+  test('primary account button opens sign-in', async ({ page }) => {
     await page.goto('/');
     const primaryAccountButton = page.getByTestId('nav-get-started').or(page.getByTestId('nav-dashboard'));
     await primaryAccountButton.click();
-    await expect(page).toHaveURL('/account');
-    // Shows login form when not authenticated
-    await expect(page.locator('h1:has-text("Sign In")')).toBeVisible();
+    await expect(page.getByTestId('auth-modal')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Sign In' })).toBeVisible();
   });
 
   test('logo navigates home', async ({ page }) => {

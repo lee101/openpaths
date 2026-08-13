@@ -295,14 +295,14 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			{Description: "estimate near term values from sparse line chart out of distribution", ModelID: "gpt-5.4-nano", ReasoningEffort: "low"},
 			{Description: "map fields rename keys validate a small payload", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
 
-			// ===== MODERATE CODING - GPT-5.4 Mini (great price/perf) + Claude Sonnet =====
+			// ===== MODERATE CODING - GPT-5.4 Mini (great price/perf) =====
 			{Description: "implement feature add functionality new endpoint api route handler controller", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
 			{Description: "debug fix bug error exception crash investigate issue trace", ModelID: "gpt-5.4-mini", ReasoningEffort: "medium"},
-			{Description: "code review analyze quality security vulnerability check audit", ModelID: "claude-sonnet-latest", ReasoningEffort: "medium"},
+			{Description: "code review analyze quality security vulnerability check audit", ModelID: "gpt-5.4-mini", ReasoningEffort: "medium"},
 			{Description: "database query sql migration schema design model orm prisma", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
 			{Description: "data analysis csv json structured query analytics pandas numpy", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
 			{Description: "api integration third party sdk client library webhook", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
-			{Description: "authentication authorization login signup oauth jwt session", ModelID: "claude-sonnet-latest", ReasoningEffort: "medium"},
+			{Description: "authentication authorization login signup oauth jwt session", ModelID: "gpt-5.4-mini", ReasoningEffort: "medium"},
 			{Description: "backend server middleware routing request response http rest", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
 			{Description: "write comprehensive test suite integration test e2e coverage", ModelID: "gpt-5.4-mini", ReasoningEffort: "medium"},
 			{Description: "error handling validation input sanitization edge cases", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
@@ -403,8 +403,8 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			{Description: "general conversation chat casual discussion help advice", ModelID: "gemini-2.5-flash", ReasoningEffort: "none"},
 			{Description: "explain concept teach tutorial guide how to learn", ModelID: "gemini-2.5-flash", ReasoningEffort: "none"},
 			// Claude Haiku - short polished writing and quick customer-facing edits
-			{Description: "rewrite polish edit improve tone concise email message response", ModelID: "claude-haiku-4-5-20251001", ReasoningEffort: "none"},
-			{Description: "customer support reply canned response acknowledgement followup", ModelID: "claude-haiku-4-5-20251001", ReasoningEffort: "none"},
+			{Description: "rewrite polish edit improve tone concise email message response", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
+			{Description: "customer support reply canned response acknowledgement followup", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
 		},
 
 		"medium-task": {
@@ -419,10 +419,10 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			{Description: "plotly graph config chart traces layout axes dataframe transform xlsx unstructured data", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
 			{Description: "refactor codebase restructure reorganize code cleanup", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
 			{Description: "write comprehensive test suite integration test e2e", ModelID: "gpt-5.4-mini", ReasoningEffort: "medium"},
-			// Claude Sonnet - strong for security/auth/code review
-			{Description: "code review analyze quality security vulnerability check", ModelID: "claude-sonnet-latest", ReasoningEffort: "medium"},
-			{Description: "database query sql migration schema design model orm", ModelID: "claude-sonnet-latest", ReasoningEffort: "low"},
-			{Description: "authentication authorization login signup oauth jwt session", ModelID: "claude-sonnet-latest", ReasoningEffort: "medium"},
+			// GPT-5.4 Mini - strong for security/auth/code review
+			{Description: "code review analyze quality security vulnerability check", ModelID: "gpt-5.4-mini", ReasoningEffort: "medium"},
+			{Description: "database query sql migration schema design model orm", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
+			{Description: "authentication authorization login signup oauth jwt session", ModelID: "gpt-5.4-mini", ReasoningEffort: "medium"},
 			// Gemini 2.5 Flash - fast mid-tier for frontend
 			{Description: "website design frontend ui ux layout component react vue", ModelID: "gemini-2.5-flash", ReasoningEffort: "low"},
 			{Description: "css styling animation responsive design theme tailwind", ModelID: "gemini-2.5-flash", ReasoningEffort: "low"},
@@ -522,7 +522,7 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			// Medium coding
 			{Description: "debug fix bug error exception crash investigate stack trace", ModelID: "gpt-5.4-mini", ReasoningEffort: "medium"},
 			{Description: "implement feature endpoint api route handler refactor module", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
-			{Description: "code review security vulnerability quality audit", ModelID: "claude-sonnet-latest", ReasoningEffort: "medium"},
+			{Description: "code review security vulnerability quality audit", ModelID: "gpt-5.4-mini", ReasoningEffort: "medium"},
 			// 3D / Three.js / frontend visual coding — Gemini
 			{Description: "threejs webgl 3d scene mesh shader animation canvas react three fiber", ModelID: "gemini-3.5-flash", ReasoningEffort: "medium"},
 			{Description: "frontend ui ux layout component react vue svelte tailwind css", ModelID: "gemini-3.5-flash", ReasoningEffort: "medium"},
