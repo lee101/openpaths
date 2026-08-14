@@ -16,6 +16,11 @@ export interface Model {
   popularity: number;
   pricingType?: 'token' | 'request' | 'chars' | 'hour' | 'second' | 'megapixel';
   ogImage?: string;
+  promotion?: {
+    endsAt: string;
+    standardPriceInput: number;
+    standardPriceOutput: number;
+  };
 }
 
 export function parseContextLength(ctx: string): number {
@@ -29,7 +34,7 @@ export function parseContextLength(ctx: string): number {
   return num;
 }
 
-export const models: Model[] = [
+const catalogModels: Model[] = [
   // --- Black Forest Labs ---
   {
     id: 'flux-3-video-draft',
@@ -973,14 +978,19 @@ export const models: Model[] = [
     id: 'gemini-3.7-flash',
     name: 'Gemini 3.7 Flash',
     provider: 'Google',
-    description: 'Google\'s newest Flash model, priced at half the Gemini 3.6 Flash token rates.',
+    description: 'Google\'s newest Flash model for fast multimodal reasoning, coding, and agentic work.',
     contextLength: '1M',
-    priceInput: 0.75,
-    priceOutput: 3.75,
+    priceInput: 0.375,
+    priceOutput: 1.875,
     tags: ['general', 'vision', 'programming', 'reasoning', 'fast'],
     aliases: ['gemini-3.7', 'gemini-flash-3.7', 'gemini-flash-latest', 'flash-latest'],
     released: '2026-08-13',
-    popularity: 5
+    popularity: 5,
+    promotion: {
+      endsAt: '2026-08-28T00:00:00Z',
+      standardPriceInput: 0.75,
+      standardPriceOutput: 3.75,
+    }
   },
   {
     id: 'gemini-latest',
@@ -988,12 +998,17 @@ export const models: Model[] = [
     provider: 'Google',
     description: 'Tracks the current recommended Gemini frontier model. Today this routes to Gemini 3.7 Flash.',
     contextLength: '1M',
-    priceInput: 0.75,
-    priceOutput: 3.75,
+    priceInput: 0.375,
+    priceOutput: 1.875,
     tags: ['general', 'vision', 'programming', 'reasoning'],
     aliases: ['gemini-3.7-flash'],
     released: '2026-08-13',
-    popularity: 4
+    popularity: 4,
+    promotion: {
+      endsAt: '2026-08-28T00:00:00Z',
+      standardPriceInput: 0.75,
+      standardPriceOutput: 3.75,
+    }
   },
   {
     id: 'gemini-3.5-flash',
@@ -4284,3 +4299,19 @@ export const models: Model[] = [
     ogImage: '/og/og-sync-lipsync.png'
   },
 ];
+
+export function isPromotionActive(model: Model, now = Date.now()) {
+  return Boolean(model.promotion && now < Date.parse(model.promotion.endsAt));
+}
+
+// Keep catalog pricing accurate without requiring a deployment at the promo
+// boundary. During the offer the configured prices are shown; after it ends,
+// all catalog consumers receive the standard rates automatically.
+export const models: Model[] = catalogModels.map(model => {
+  if (!model.promotion || isPromotionActive(model)) return model;
+  return {
+    ...model,
+    priceInput: model.promotion.standardPriceInput,
+    priceOutput: model.promotion.standardPriceOutput,
+  };
+});

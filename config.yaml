@@ -281,6 +281,7 @@ models:
       - "720x1280"
     fallback_models:
       - "gpt-image-2"
+      - "or/gemini-3.1-flash-image"
       - "ra1"
       - "zimage"
       - "klein"
@@ -1051,6 +1052,7 @@ models:
       - "3840x2160"
       - "2160x3840"
     fallback_models:
+      - "or/gemini-3.1-flash-image"
       - "fal-gpt-image-2"
 
   - id: "gpt-image-1.5"
@@ -1329,8 +1331,19 @@ models:
   - id: "gemini-3.7-flash"
     provider: google
     provider_model_id: "gemini-3.7-flash"
-    input_price_per_1m: 0.75
-    output_price_per_1m: 3.75
+    # Pass through OpenRouter's extra 50% launch discount through August 27.
+    input_price_per_1m: 0.375
+    input_cache_hit_price_per_1m: 0.0375
+    output_price_per_1m: 1.875
+    temporary_provider_route:
+      provider: openrouter
+      provider_model_id: "google/gemini-3.7-flash"
+      expires_at: "2026-08-28T00:00:00Z"
+    scheduled_token_pricing:
+      effective_at: "2026-08-28T00:00:00Z"
+      off_peak_input_price_per_1m: 0.75
+      off_peak_input_cache_hit_price_per_1m: 0.075
+      off_peak_output_price_per_1m: 3.75
     aliases: ["gemini-3.7", "gemini-flash-3.7", "gemini-flash-latest", "flash-latest"]
     context_window: 1000000
     max_output_tokens: 65536
@@ -1341,8 +1354,18 @@ models:
   - id: "gemini-latest"
     provider: google
     provider_model_id: "gemini-3.7-flash"
-    input_price_per_1m: 0.75
-    output_price_per_1m: 3.75
+    input_price_per_1m: 0.375
+    input_cache_hit_price_per_1m: 0.0375
+    output_price_per_1m: 1.875
+    temporary_provider_route:
+      provider: openrouter
+      provider_model_id: "google/gemini-3.7-flash"
+      expires_at: "2026-08-28T00:00:00Z"
+    scheduled_token_pricing:
+      effective_at: "2026-08-28T00:00:00Z"
+      off_peak_input_price_per_1m: 0.75
+      off_peak_input_cache_hit_price_per_1m: 0.075
+      off_peak_output_price_per_1m: 3.75
     aliases: ["google-latest", "google-gemini-latest"]
     context_window: 1000000
     max_output_tokens: 65536
@@ -1938,6 +1961,19 @@ models:
     supports_vision: false
 
   # --- OpenRouter (fallback access to any model) ---
+  - id: "or/gemini-3.1-flash-image"
+    provider: openrouter
+    provider_model_id: "google/gemini-3.1-flash-image"
+    price_per_image: 0.14
+    aliases: ["or/nano-banana-2-image"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+    supported_sizes:
+      - "1024x1024"
+      - "1536x1024"
+      - "1024x1536"
+
   - id: "or/gpt-5-codex"
     provider: openrouter
     provider_model_id: "openai/gpt-5.5-codex"

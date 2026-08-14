@@ -387,8 +387,8 @@ function pickModels(ids: string[]) {
 
 function formatDollars(amount: number) {
   if (amount === 0) return '$0';
-  if (amount < 0.01) return `$${amount.toFixed(3)}`;
-  return `$${amount.toFixed(2)}`;
+  const precision = amount < 0.01 || Math.abs(amount * 100 - Math.round(amount * 100)) > 1e-9 ? 3 : 2;
+  return `$${amount.toFixed(precision)}`;
 }
 
 function ValueCard({ title, body }: { title: string; body: string }) {

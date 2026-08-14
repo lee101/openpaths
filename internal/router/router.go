@@ -26,6 +26,7 @@ type Router struct {
 	registry   *provider.Registry
 	health     *HealthTracker
 	autoRouter *AutoRouter
+	now        func() time.Time
 }
 
 func New(registry *provider.Registry, models []model.ModelConfig) *Router {
@@ -34,6 +35,7 @@ func New(registry *provider.Registry, models []model.ModelConfig) *Router {
 		aliases:  make(map[string]string),
 		registry: registry,
 		health:   NewHealthTracker(),
+		now:      time.Now,
 	}
 	for i := range models {
 		m := &models[i]
@@ -181,10 +183,11 @@ func (r *Router) Resolve(modelName string) (*model.ModelConfig, provider.Provide
 		canonical = mapped
 	}
 
-	cfg, ok := r.models[canonical]
+	baseCfg, ok := r.models[canonical]
 	if !ok {
 		return nil, nil, fmt.Errorf("model %q not found", modelName)
 	}
+	cfg := baseCfg.ProviderRouteAt(r.now())
 
 	if r.health.IsHealthy(cfg.Provider) {
 		p, err := r.registry.Get(cfg.Provider)
@@ -344,6 +347,7 @@ func (r *Router) ListModels() []model.ModelInfo {
 	now := time.Now().Unix()
 	var models []model.ModelInfo
 	for _, cfg := range r.models {
+		inputRate, cacheRate, outputRate := cfg.TokenRatesAt(r.now())
 		info := model.ModelInfo{
 			ID:              cfg.ID,
 			Object:          "model",
@@ -356,9 +360,9 @@ func (r *Router) ListModels() []model.ModelInfo {
 			Deprecated:      cfg.Deprecated,
 			DeprecatedNote:  cfg.DeprecatedNote,
 			Pricing: &model.ModelPricing{
-				InputPer1M:              cfg.InputPricePer1M,
-				InputCacheHitPer1M:      cfg.InputCacheHitPricePer1M,
-				OutputPer1M:             cfg.OutputPricePer1M,
+				InputPer1M:              inputRate,
+				InputCacheHitPer1M:      cacheRate,
+				OutputPer1M:             outputRate,
 				Per1MCharacters:         cfg.PricePer1MCharacters,
 				LongContextThreshold:    cfg.LongContextThreshold,
 				InputPer1MLong:          cfg.InputPricePer1MLong,
@@ -407,6 +411,7 @@ func (r *Router) GetModelInfo(modelName string) (model.ModelInfo, bool) {
 	if !ok {
 		return model.ModelInfo{}, false
 	}
+	inputRate, cacheRate, outputRate := cfg.TokenRatesAt(r.now())
 	return model.ModelInfo{
 		ID:              cfg.ID,
 		Object:          "model",
@@ -419,9 +424,9 @@ func (r *Router) GetModelInfo(modelName string) (model.ModelInfo, bool) {
 		Deprecated:      cfg.Deprecated,
 		DeprecatedNote:  cfg.DeprecatedNote,
 		Pricing: &model.ModelPricing{
-			InputPer1M:              cfg.InputPricePer1M,
-			InputCacheHitPer1M:      cfg.InputCacheHitPricePer1M,
-			OutputPer1M:             cfg.OutputPricePer1M,
+			InputPer1M:              inputRate,
+			InputCacheHitPer1M:      cacheRate,
+			OutputPer1M:             outputRate,
 			AudioInputPer1M:         cfg.AudioInputPricePer1M,
 			AudioInputCacheHitPer1M: cfg.AudioInputCacheHitPricePer1M,
 			AudioOutputPer1M:        cfg.AudioOutputPricePer1M,
@@ -527,10 +532,11 @@ func (r *Router) canonicalModelNameLocked(modelName string) string {
 }
 
 func (r *Router) resolveWithRetriesLocked(originalName, canonical string) ([]RouteCandidate, error) {
-	cfg, ok := r.models[canonical]
+	baseCfg, ok := r.models[canonical]
 	if !ok {
 		return nil, fmt.Errorf("model %q not found", originalName)
 	}
+	cfg := baseCfg.ProviderRouteAt(r.now())
 
 	var candidates []RouteCandidate
 
@@ -551,10 +557,11 @@ func (r *Router) resolveWithRetriesLocked(originalName, canonical string) ([]Rou
 	}
 
 	for _, fbModelID := range cfg.FallbackModels {
-		fbCfg, ok := r.models[fbModelID]
+		baseFallbackCfg, ok := r.models[fbModelID]
 		if !ok {
 			continue
 		}
+		fbCfg := baseFallbackCfg.ProviderRouteAt(r.now())
 		fbKey := r.health.ModelProviderKey(fbCfg.Provider, fbCfg.ID)
 		if r.health.IsHealthy(fbKey) {
 			if p, err := r.registry.Get(fbCfg.Provider); err == nil {

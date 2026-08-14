@@ -56,6 +56,20 @@ func TestAutoTierConfig_PrimaryModels(t *testing.T) {
 	}
 }
 
+func TestGPTImage2FallsBackToOpenRouterGoogleImage(t *testing.T) {
+	cfg := loadRepoConfig(t)
+	for _, m := range cfg.Models {
+		if m.ID != "gpt-image-2" {
+			continue
+		}
+		if len(m.FallbackModels) < 1 || m.FallbackModels[0] != "or/gemini-3.1-flash-image" {
+			t.Fatalf("gpt-image-2 fallbacks = %v, want OpenRouter Google image first", m.FallbackModels)
+		}
+		return
+	}
+	t.Fatal("gpt-image-2 model missing")
+}
+
 func TestResolveWithRetries_GPT54NanoHasThreeProviderCoverage(t *testing.T) {
 	cfg := loadRepoConfig(t)
 	r := newTestRouter(cfg.Models, "openai", "google", "anthropic", "openrouter")

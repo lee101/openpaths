@@ -159,6 +159,9 @@ const TTS_STYLES = ['Natural', 'Deadpan', 'Empathetic', 'Dramatic', 'Whispering'
 const TTS_PACES = ['Natural', 'Slow', 'Measured', 'Fast', 'Staccato', 'Urgent'] as const;
 const TTS_ACCENTS = ['American (Gen)', 'British (RP)', 'Neutral', 'Australian', 'Indian English', 'Irish', 'Scottish'] as const;
 const SPEECH_LANGUAGES = ['en', 'es', 'fr', 'de', 'it', 'pt', 'ja', 'ko', 'zh'] as const;
+const GEMINI_37_PROMO_PRICING = Date.now() < Date.parse('2026-08-28T00:00:00Z')
+  ? { input_per_1m_tokens: 0.375, output_per_1m_tokens: 1.875 }
+  : { input_per_1m_tokens: 0.75, output_per_1m_tokens: 3.75 };
 
 const FALLBACK_MODELS: CatalogModel[] = [
   { id: 'openpaths/auto', label: 'OpenPaths Auto', provider: 'OpenPaths' },
@@ -168,8 +171,8 @@ const FALLBACK_MODELS: CatalogModel[] = [
   { id: 'openpaths/auto-reasoning', label: 'OpenPaths Auto Reasoning', provider: 'OpenPaths' },
   { id: 'openpaths/auto-vision', label: 'OpenPaths Auto Vision', provider: 'OpenPaths' },
   { id: 'openpaths/auto-image', label: 'OpenPaths Auto Image', provider: 'OpenPaths', pricing: { per_image: 0.211 } },
-  { id: 'gemini-3.7-flash', label: 'Gemini 3.7 Flash', provider: 'Google', pricing: { input_per_1m_tokens: 0.75, output_per_1m_tokens: 3.75 } },
-  { id: 'gemini-latest', label: 'Gemini Latest', provider: 'Google', pricing: { input_per_1m_tokens: 0.75, output_per_1m_tokens: 3.75 } },
+  { id: 'gemini-3.7-flash', label: 'Gemini 3.7 Flash', provider: 'Google', pricing: GEMINI_37_PROMO_PRICING },
+  { id: 'gemini-latest', label: 'Gemini Latest', provider: 'Google', pricing: GEMINI_37_PROMO_PRICING },
   { id: 'gemini-3.5-flash', label: 'Gemini 3.5 Flash', provider: 'Google', pricing: { input_per_1m_tokens: 1.50, output_per_1m_tokens: 9.00 } },
   { id: 'gemini-3.1-flash-lite', label: 'Gemini 3.1 Flash Lite', provider: 'Google', pricing: { input_per_1m_tokens: 0.25, output_per_1m_tokens: 1.50 } },
   { id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', provider: 'Google' },

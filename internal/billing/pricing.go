@@ -3,7 +3,6 @@ package billing
 import (
 	"fmt"
 	"math"
-	"strconv"
 	"strings"
 	"time"
 
@@ -106,47 +105,7 @@ func (pt *PricingTable) CalculateCostWithCachedInput(modelID string, inputTokens
 }
 
 func (pt *PricingTable) tokenRates(cfg *model.ModelConfig) (float64, float64, float64) {
-	inputRate, cacheRate, outputRate := cfg.InputPricePer1M, cfg.InputCacheHitPricePer1M, cfg.OutputPricePer1M
-	schedule := cfg.ScheduledTokenPricing
-	if schedule == nil {
-		return inputRate, cacheRate, outputRate
-	}
-	nowUTC := pt.now().UTC()
-	effectiveAt, err := time.Parse(time.RFC3339, schedule.EffectiveAt)
-	if err != nil || nowUTC.Before(effectiveAt) {
-		return inputRate, cacheRate, outputRate
-	}
-	minute := nowUTC.Hour()*60 + nowUTC.Minute()
-	peak := false
-	for _, window := range schedule.PeakWindowsUTC {
-		start, startOK := utcMinute(window.Start)
-		end, endOK := utcMinute(window.End)
-		if !startOK || !endOK {
-			continue
-		}
-		if (start <= end && minute >= start && minute < end) ||
-			(start > end && (minute >= start || minute < end)) {
-			peak = true
-			break
-		}
-	}
-	if peak {
-		return schedule.PeakInputPricePer1M, schedule.PeakInputCacheHitPricePer1M, schedule.PeakOutputPricePer1M
-	}
-	return schedule.OffPeakInputPricePer1M, schedule.OffPeakInputCacheHitPer1M, schedule.OffPeakOutputPricePer1M
-}
-
-func utcMinute(value string) (int, bool) {
-	parts := strings.Split(value, ":")
-	if len(parts) != 2 {
-		return 0, false
-	}
-	hour, hourErr := strconv.Atoi(parts[0])
-	minute, minuteErr := strconv.Atoi(parts[1])
-	if hourErr != nil || minuteErr != nil || hour < 0 || hour > 23 || minute < 0 || minute > 59 {
-		return 0, false
-	}
-	return hour*60 + minute, true
+	return cfg.TokenRatesAt(pt.now())
 }
 
 func (pt *PricingTable) CalculateRealtimeCost(modelID string, usage RealtimeUsage) (int64, error) {

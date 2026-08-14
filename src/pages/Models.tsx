@@ -68,6 +68,11 @@ function isImageGenerationModel(model: typeof models[0]) {
   return model.tags.includes('art generation');
 }
 
+function formatTokenPrice(price: number) {
+  const precision = Math.abs(price * 100 - Math.round(price * 100)) > 1e-9 ? 3 : 2;
+  return price.toFixed(precision);
+}
+
 export function Models() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -269,10 +274,10 @@ export function Models() {
                 ) : (
                   <>
                     <div className="text-white/40">
-                      <span className="text-white">${model.priceInput.toFixed(2)}</span> / 1M in
+                      <span className="text-white">${formatTokenPrice(model.priceInput)}</span> / 1M in
                     </div>
                     <div className="text-white/40">
-                      <span className="text-white">${model.priceOutput.toFixed(2)}</span> / 1M out
+                      <span className="text-white">${formatTokenPrice(model.priceOutput)}</span> / 1M out
                     </div>
                   </>
                 )}
