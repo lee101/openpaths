@@ -1,18 +1,39 @@
 package model
 
+// UTCPriceWindow is a half-open daily interval [start, end) expressed as
+// zero-padded UTC times (for example, 01:00 through 04:00).
+type UTCPriceWindow struct {
+	Start string `yaml:"start" json:"start"`
+	End   string `yaml:"end" json:"end"`
+}
+
+// ScheduledTokenPricing changes token rates at EffectiveAt and can apply
+// distinct recurring peak and off-peak tariffs thereafter.
+type ScheduledTokenPricing struct {
+	EffectiveAt                 string           `yaml:"effective_at" json:"effective_at"`
+	PeakWindowsUTC              []UTCPriceWindow `yaml:"peak_windows_utc" json:"peak_windows_utc"`
+	PeakInputPricePer1M         float64          `yaml:"peak_input_price_per_1m" json:"peak_input_price_per_1m"`
+	PeakInputCacheHitPricePer1M float64          `yaml:"peak_input_cache_hit_price_per_1m" json:"peak_input_cache_hit_price_per_1m"`
+	PeakOutputPricePer1M        float64          `yaml:"peak_output_price_per_1m" json:"peak_output_price_per_1m"`
+	OffPeakInputPricePer1M      float64          `yaml:"off_peak_input_price_per_1m" json:"off_peak_input_price_per_1m"`
+	OffPeakInputCacheHitPer1M   float64          `yaml:"off_peak_input_cache_hit_price_per_1m" json:"off_peak_input_cache_hit_price_per_1m"`
+	OffPeakOutputPricePer1M     float64          `yaml:"off_peak_output_price_per_1m" json:"off_peak_output_price_per_1m"`
+}
+
 type ModelConfig struct {
-	ID                           string  `yaml:"id" json:"id"`
-	Provider                     string  `yaml:"provider" json:"provider"`
-	ProviderModelID              string  `yaml:"provider_model_id" json:"provider_model_id"`
-	InputPricePer1M              float64 `yaml:"input_price_per_1m" json:"input_price_per_1m"`
-	InputCacheHitPricePer1M      float64 `yaml:"input_cache_hit_price_per_1m,omitempty" json:"input_cache_hit_price_per_1m,omitempty"`
-	OutputPricePer1M             float64 `yaml:"output_price_per_1m" json:"output_price_per_1m"`
-	AudioInputPricePer1M         float64 `yaml:"audio_input_price_per_1m,omitempty" json:"audio_input_price_per_1m,omitempty"`
-	AudioInputCacheHitPricePer1M float64 `yaml:"audio_input_cache_hit_price_per_1m,omitempty" json:"audio_input_cache_hit_price_per_1m,omitempty"`
-	AudioOutputPricePer1M        float64 `yaml:"audio_output_price_per_1m,omitempty" json:"audio_output_price_per_1m,omitempty"`
-	ImageInputPricePer1M         float64 `yaml:"image_input_price_per_1m,omitempty" json:"image_input_price_per_1m,omitempty"`
-	ImageInputCacheHitPricePer1M float64 `yaml:"image_input_cache_hit_price_per_1m,omitempty" json:"image_input_cache_hit_price_per_1m,omitempty"`
-	PricePer1MCharacters         float64 `yaml:"price_per_1m_characters,omitempty" json:"price_per_1m_characters,omitempty"`
+	ID                           string                 `yaml:"id" json:"id"`
+	Provider                     string                 `yaml:"provider" json:"provider"`
+	ProviderModelID              string                 `yaml:"provider_model_id" json:"provider_model_id"`
+	InputPricePer1M              float64                `yaml:"input_price_per_1m" json:"input_price_per_1m"`
+	InputCacheHitPricePer1M      float64                `yaml:"input_cache_hit_price_per_1m,omitempty" json:"input_cache_hit_price_per_1m,omitempty"`
+	OutputPricePer1M             float64                `yaml:"output_price_per_1m" json:"output_price_per_1m"`
+	ScheduledTokenPricing        *ScheduledTokenPricing `yaml:"scheduled_token_pricing,omitempty" json:"scheduled_token_pricing,omitempty"`
+	AudioInputPricePer1M         float64                `yaml:"audio_input_price_per_1m,omitempty" json:"audio_input_price_per_1m,omitempty"`
+	AudioInputCacheHitPricePer1M float64                `yaml:"audio_input_cache_hit_price_per_1m,omitempty" json:"audio_input_cache_hit_price_per_1m,omitempty"`
+	AudioOutputPricePer1M        float64                `yaml:"audio_output_price_per_1m,omitempty" json:"audio_output_price_per_1m,omitempty"`
+	ImageInputPricePer1M         float64                `yaml:"image_input_price_per_1m,omitempty" json:"image_input_price_per_1m,omitempty"`
+	ImageInputCacheHitPricePer1M float64                `yaml:"image_input_cache_hit_price_per_1m,omitempty" json:"image_input_cache_hit_price_per_1m,omitempty"`
+	PricePer1MCharacters         float64                `yaml:"price_per_1m_characters,omitempty" json:"price_per_1m_characters,omitempty"`
 	// Long-context tiered pricing: when set and the request's input tokens exceed
 	// LongContextThreshold, the *Long rates apply to the whole request (e.g.
 	// Sakana Fugu Ultra charges higher rates above 272K-token contexts).

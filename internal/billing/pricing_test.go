@@ -2,9 +2,48 @@ package billing
 
 import (
 	"testing"
+	"time"
 
 	"github.com/openpaths/openpaths/internal/model"
 )
+
+func TestScheduledTokenPricingBoundaries(t *testing.T) {
+	cfg := model.ModelConfig{
+		ID: "scheduled", InputPricePer1M: .14, InputCacheHitPricePer1M: .0028, OutputPricePer1M: .28,
+		ScheduledTokenPricing: &model.ScheduledTokenPricing{
+			EffectiveAt:         "2026-08-16T16:00:00Z",
+			PeakWindowsUTC:      []model.UTCPriceWindow{{Start: "01:00", End: "04:00"}, {Start: "06:00", End: "10:00"}},
+			PeakInputPricePer1M: .44, PeakInputCacheHitPricePer1M: .014, PeakOutputPricePer1M: 1.32,
+			OffPeakInputPricePer1M: .22, OffPeakInputCacheHitPer1M: .007, OffPeakOutputPricePer1M: .66,
+		},
+	}
+	pt := NewPricingTable([]model.ModelConfig{cfg})
+	tests := []struct {
+		name string
+		at   string
+		want [3]float64
+	}{
+		{"immediately before effective time", "2026-08-16T15:59:59Z", [3]float64{.14, .0028, .28}},
+		{"effective time is off-peak", "2026-08-16T16:00:00Z", [3]float64{.22, .007, .66}},
+		{"first peak starts inclusively", "2026-08-17T01:00:00Z", [3]float64{.44, .014, 1.32}},
+		{"first peak ends exclusively", "2026-08-17T04:00:00Z", [3]float64{.22, .007, .66}},
+		{"second peak starts inclusively", "2026-08-17T06:00:00Z", [3]float64{.44, .014, 1.32}},
+		{"second peak ends exclusively", "2026-08-17T10:00:00Z", [3]float64{.22, .007, .66}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			at, err := time.Parse(time.RFC3339, tt.at)
+			if err != nil {
+				t.Fatal(err)
+			}
+			pt.now = func() time.Time { return at }
+			input, cache, output := pt.tokenRates(pt.models["scheduled"])
+			if got := [3]float64{input, cache, output}; got != tt.want {
+				t.Fatalf("rates = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
 
 func newTestPricingTable() *PricingTable {
 	models := []model.ModelConfig{

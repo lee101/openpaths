@@ -1645,6 +1645,17 @@ models:
     input_price_per_1m: 0.14
     input_cache_hit_price_per_1m: 0.0028
     output_price_per_1m: 0.28
+    scheduled_token_pricing:
+      effective_at: "2026-08-16T16:00:00Z"
+      peak_windows_utc:
+        - {start: "01:00", end: "04:00"}
+        - {start: "06:00", end: "10:00"}
+      peak_input_price_per_1m: 0.44
+      peak_input_cache_hit_price_per_1m: 0.014
+      peak_output_price_per_1m: 1.32
+      off_peak_input_price_per_1m: 0.22
+      off_peak_input_cache_hit_price_per_1m: 0.007
+      off_peak_output_price_per_1m: 0.66
     aliases: ["deepseek-flash", "deepseek-v4"]
     context_window: 1000000
     max_output_tokens: 384000
@@ -1664,6 +1675,17 @@ models:
     input_price_per_1m: 0.435
     input_cache_hit_price_per_1m: 0.003625
     output_price_per_1m: 0.87
+    scheduled_token_pricing:
+      effective_at: "2026-08-16T16:00:00Z"
+      peak_windows_utc:
+        - {start: "01:00", end: "04:00"}
+        - {start: "06:00", end: "10:00"}
+      peak_input_price_per_1m: 1.32
+      peak_input_cache_hit_price_per_1m: 0.044
+      peak_output_price_per_1m: 3.96
+      off_peak_input_price_per_1m: 0.66
+      off_peak_input_cache_hit_price_per_1m: 0.022
+      off_peak_output_price_per_1m: 1.98
     aliases: ["deepseek-pro", "deepseek-v4-reasoning"]
     context_window: 1000000
     max_output_tokens: 384000

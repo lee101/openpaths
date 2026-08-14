@@ -3,7 +3,9 @@ package billing
 import (
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
+	"time"
 
 	imgutil "github.com/openpaths/openpaths/internal/image"
 	"github.com/openpaths/openpaths/internal/model"
@@ -12,6 +14,7 @@ import (
 // PricingTable holds per-model pricing loaded from config.
 type PricingTable struct {
 	models map[string]*model.ModelConfig
+	now    func() time.Time
 }
 
 type RealtimeUsage struct {
@@ -26,7 +29,7 @@ type RealtimeUsage struct {
 }
 
 func NewPricingTable(models []model.ModelConfig) *PricingTable {
-	pt := &PricingTable{models: make(map[string]*model.ModelConfig)}
+	pt := &PricingTable{models: make(map[string]*model.ModelConfig), now: time.Now}
 	for i := range models {
 		pt.models[models[i].ID] = &models[i]
 		for _, alias := range models[i].Aliases {
@@ -71,7 +74,7 @@ func (pt *PricingTable) CalculateCostWithCachedInput(modelID string, inputTokens
 	}
 	// Long-context tiered pricing: above the threshold the whole request bills at
 	// the higher *Long rates.
-	inputRate, cacheRate, outputRate := cfg.InputPricePer1M, cfg.InputCacheHitPricePer1M, cfg.OutputPricePer1M
+	inputRate, cacheRate, outputRate := pt.tokenRates(cfg)
 	if cfg.LongContextThreshold > 0 && inputTokens > cfg.LongContextThreshold {
 		if cfg.InputPricePer1MLong > 0 {
 			inputRate = cfg.InputPricePer1MLong
@@ -100,6 +103,50 @@ func (pt *PricingTable) CalculateCostWithCachedInput(modelID string, inputTokens
 		totalCents = 1 // minimum charge
 	}
 	return totalCents, nil
+}
+
+func (pt *PricingTable) tokenRates(cfg *model.ModelConfig) (float64, float64, float64) {
+	inputRate, cacheRate, outputRate := cfg.InputPricePer1M, cfg.InputCacheHitPricePer1M, cfg.OutputPricePer1M
+	schedule := cfg.ScheduledTokenPricing
+	if schedule == nil {
+		return inputRate, cacheRate, outputRate
+	}
+	nowUTC := pt.now().UTC()
+	effectiveAt, err := time.Parse(time.RFC3339, schedule.EffectiveAt)
+	if err != nil || nowUTC.Before(effectiveAt) {
+		return inputRate, cacheRate, outputRate
+	}
+	minute := nowUTC.Hour()*60 + nowUTC.Minute()
+	peak := false
+	for _, window := range schedule.PeakWindowsUTC {
+		start, startOK := utcMinute(window.Start)
+		end, endOK := utcMinute(window.End)
+		if !startOK || !endOK {
+			continue
+		}
+		if (start <= end && minute >= start && minute < end) ||
+			(start > end && (minute >= start || minute < end)) {
+			peak = true
+			break
+		}
+	}
+	if peak {
+		return schedule.PeakInputPricePer1M, schedule.PeakInputCacheHitPricePer1M, schedule.PeakOutputPricePer1M
+	}
+	return schedule.OffPeakInputPricePer1M, schedule.OffPeakInputCacheHitPer1M, schedule.OffPeakOutputPricePer1M
+}
+
+func utcMinute(value string) (int, bool) {
+	parts := strings.Split(value, ":")
+	if len(parts) != 2 {
+		return 0, false
+	}
+	hour, hourErr := strconv.Atoi(parts[0])
+	minute, minuteErr := strconv.Atoi(parts[1])
+	if hourErr != nil || minuteErr != nil || hour < 0 || hour > 23 || minute < 0 || minute > 59 {
+		return 0, false
+	}
+	return hour*60 + minute, true
 }
 
 func (pt *PricingTable) CalculateRealtimeCost(modelID string, usage RealtimeUsage) (int64, error) {
