@@ -2,9 +2,48 @@ package billing
 
 import (
 	"testing"
+	"time"
 
 	"github.com/openpaths/openpaths/internal/model"
 )
+
+func TestScheduledTokenPricingBoundaries(t *testing.T) {
+	cfg := model.ModelConfig{
+		ID: "scheduled", InputPricePer1M: .14, InputCacheHitPricePer1M: .0028, OutputPricePer1M: .28,
+		ScheduledTokenPricing: &model.ScheduledTokenPricing{
+			EffectiveAt:         "2026-08-16T16:00:00Z",
+			PeakWindowsUTC:      []model.UTCPriceWindow{{Start: "01:00", End: "04:00"}, {Start: "06:00", End: "10:00"}},
+			PeakInputPricePer1M: .44, PeakInputCacheHitPricePer1M: .014, PeakOutputPricePer1M: 1.32,
+			OffPeakInputPricePer1M: .22, OffPeakInputCacheHitPer1M: .007, OffPeakOutputPricePer1M: .66,
+		},
+	}
+	pt := NewPricingTable([]model.ModelConfig{cfg})
+	tests := []struct {
+		name string
+		at   string
+		want [3]float64
+	}{
+		{"immediately before effective time", "2026-08-16T15:59:59Z", [3]float64{.14, .0028, .28}},
+		{"effective time is off-peak", "2026-08-16T16:00:00Z", [3]float64{.22, .007, .66}},
+		{"first peak starts inclusively", "2026-08-17T01:00:00Z", [3]float64{.44, .014, 1.32}},
+		{"first peak ends exclusively", "2026-08-17T04:00:00Z", [3]float64{.22, .007, .66}},
+		{"second peak starts inclusively", "2026-08-17T06:00:00Z", [3]float64{.44, .014, 1.32}},
+		{"second peak ends exclusively", "2026-08-17T10:00:00Z", [3]float64{.22, .007, .66}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			at, err := time.Parse(time.RFC3339, tt.at)
+			if err != nil {
+				t.Fatal(err)
+			}
+			pt.now = func() time.Time { return at }
+			input, cache, output := pt.tokenRates(pt.models["scheduled"])
+			if got := [3]float64{input, cache, output}; got != tt.want {
+				t.Fatalf("rates = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
 
 func newTestPricingTable() *PricingTable {
 	models := []model.ModelConfig{
@@ -25,8 +64,28 @@ func newTestPricingTable() *PricingTable {
 		{ID: "free-model", InputPricePer1M: 0, OutputPricePer1M: 0, Aliases: []string{"free-alias"}},
 		{ID: "fugu-ultra", InputPricePer1M: 5.00, InputCacheHitPricePer1M: 0.50, OutputPricePer1M: 30.00,
 			LongContextThreshold: 272000, InputPricePer1MLong: 10.00, InputCacheHitPricePer1MLong: 1.00, OutputPricePer1MLong: 45.00},
+		{ID: "gpt-realtime-2.1-mini", InputPricePer1M: .6, InputCacheHitPricePer1M: .06, OutputPricePer1M: 2.4,
+			AudioInputPricePer1M: 10, AudioInputCacheHitPricePer1M: .3, AudioOutputPricePer1M: 20,
+			ImageInputPricePer1M: .8, ImageInputCacheHitPricePer1M: .08},
 	}
 	return NewPricingTable(models)
+}
+
+func TestCalculateRealtimeCost(t *testing.T) {
+	pt := newTestPricingTable()
+	usage := RealtimeUsage{
+		TextInputTokens: 1000, CachedTextInputTokens: 400, TextOutputTokens: 500,
+		AudioInputTokens: 2000, CachedAudioInputTokens: 1000, AudioOutputTokens: 3000,
+		ImageInputTokens: 1000, CachedImageInputTokens: 500,
+	}
+	cost, err := pt.CalculateRealtimeCost("gpt-realtime-2.1-mini", usage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// $0.00036 + $0.000024 + $0.0012 + $0.01 + $0.0003 + $0.06 + $0.0004 + $0.00004.
+	if cost != 723 {
+		t.Fatalf("cost = %d, want 723", cost)
+	}
 }
 
 func TestCalculateVideoCostWithMediaInputs_XAIResolutionTiers(t *testing.T) {

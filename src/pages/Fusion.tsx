@@ -22,15 +22,15 @@ type FusionResponse = {
 };
 
 const MODEL_OPTIONS: FusionModel[] = [
-  { id: '~anthropic/claude-opus-latest', openpathsId: 'claude-opus-latest', label: 'Claude Opus Latest', provider: 'Anthropic', quality: true },
   { id: '~openai/gpt-latest', openpathsId: 'gpt-5.5', label: 'OpenAI GPT Latest', provider: 'OpenAI', quality: true },
   { id: '~google/gemini-pro-latest', openpathsId: 'gemini-latest', label: 'Google Gemini Pro Latest', provider: 'Google', quality: true },
-  { id: '~google/gemini-flash-latest', openpathsId: 'gemini-3.5-flash', label: 'Gemini Flash Latest', provider: 'Google', budget: true },
-  { id: 'deepseek/deepseek-v3.2', openpathsId: 'deepseek-v4-flash', label: 'DeepSeek V3.2', provider: 'DeepSeek', budget: true },
+  { id: '~google/gemini-flash-latest', openpathsId: 'gemini-3.7-flash', label: 'Gemini Flash Latest', provider: 'Google', budget: true },
+  { id: 'deepseek/deepseek-v3.2', openpathsId: 'deepseek-v4-flash', label: 'DeepSeek V3.2', provider: 'DeepSeek', budget: true, quality: true },
   { id: '~moonshotai/kimi-latest', openpathsId: 'kimi-k2.5', label: 'Kimi Latest', provider: 'Moonshot', budget: true },
-  { id: 'x-ai/grok-4', openpathsId: 'grok-4.3', label: 'Grok 4', provider: 'xAI' },
+  { id: 'x-ai/grok-4', openpathsId: 'grok-latest', label: 'Grok Latest', provider: 'xAI' },
   { id: 'qwen/qwen3-max', openpathsId: 'qwen3.5-397b', label: 'Qwen3 Max', provider: 'Qwen' },
   { id: 'glm-5.2', openpathsId: 'glm-5.2', label: 'GLM-5.2', provider: 'ZAI' },
+  { id: '~anthropic/claude-opus-latest', openpathsId: 'claude-opus-latest', label: 'Claude Opus Latest', provider: 'Anthropic' },
 ];
 
 const QUALITY_MODELS = MODEL_OPTIONS.filter(model => model.quality).map(model => model.id);

@@ -153,6 +153,14 @@ export const VIDEO_DEMOS: Record<string, VideoDemo> = {
     aspectRatio: '16:9',
     generateAudio: true,
   },
+  wan: {
+    prompt: 'Cinematic aerial shot soaring over a neon-drenched futuristic megacity at dusk, sleek glass towers reflecting magenta and cyan light, flying vehicles streaking between skyscrapers, volumetric fog, ultra-smooth glide.',
+    outputUrl: 'https://openpathsstatic.openpaths.io/static/uploads/playground/manifoldgen/wan-2.7-text-to-video-example.mp4',
+    resolution: '720p',
+    duration: '5',
+    aspectRatio: '16:9',
+    generateAudio: false,
+  },
   'fal-ai/pika/v2.2/text-to-video': {
     prompt: 'Cinematic dolly through a bioluminescent jungle at night, glowing blue spores drifting in the air, mist curling around ancient vines, a waterfall shimmering in moonlight, ultra-detailed, lush atmospheric color grade.',
     outputUrl: `${FAL_VIDEO_BASE}/pika-2.2-text-to-video.mp4`,

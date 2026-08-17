@@ -112,6 +112,8 @@ var models = []Model{
 	{"openpaths/auto-code", "OpenPaths Auto (Code)", "Auto-routes to the strongest coding model available.", "text", "code"},
 	{"gpt-5-codex", "GPT-5 Codex", "OpenAI coding model for autocomplete, refactors, and generation.", "text", "terminal"},
 	{"composer-2.5", "Composer 2.5", "Cursor's fast agentic coding model.", "text", "bolt"},
+	{"cursor-grok-4.6", "Cursor Grok 4.6", "Cursor-hosted Grok model for long-running agents and knowledge work.", "text", "smart_toy"},
+	{"cursor-grok-4.5", "Cursor Grok 4.5", "Cursor-hosted Grok model for coding and agentic knowledge work.", "text", "smart_toy"},
 	{"gpt-5.5", "GPT-5.5", "OpenAI flagship for reasoning, writing, and analysis.", "text", "smart_toy"},
 	{"claude-opus-5", "Claude Opus 5", "Anthropic's most capable model for writing and reasoning.", "text", "psychology"},
 	{"claude-opus-4-8", "Claude Opus 4.8", "Previous-gen Anthropic flagship for writing and reasoning.", "text", "psychology"},

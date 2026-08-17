@@ -18,9 +18,7 @@ crawlers/*.pyc
 crawlers/.venv/
 artificial-analysis/
 test-results/
-monitoring/logs/
-monitoring/state/
-monitoring/errors/
+monitoring/
 /model
 *.safetensors
 /openpaths-api
@@ -56,3 +54,4 @@ openpaths-api.bak.20260603065516
 openpaths-api.bak.20260603065900
 openpaths-api.bak.20260603091131
 openpaths-api.bak.skills
+AGENTS.md

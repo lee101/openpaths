@@ -69,7 +69,7 @@ export const providers: Provider[] = [
     slug: 'cursor',
     name: 'Cursor',
     url: 'https://cursor.com',
-    description: 'Composer 2.5 (standard and fast tiers) via the Cursor Cloud Agents API. Agentic coding with tool use, routed through OpenPaths chat completions.',
+    description: 'Composer 2.5 and Cursor Grok 4.5/4.6 (standard and fast tiers) via the Cursor Cloud Agents API.',
     featured: false,
     logo: '/logos/cursor.svg'
   },

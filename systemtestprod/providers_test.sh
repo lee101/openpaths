@@ -2,7 +2,7 @@
 set -uo pipefail
 
 BASE="${BASE_URL:-https://openpaths.io}"
-API_KEY="${API_KEY:-op-620d62e78837c2a0e242f4ce7efdbdbe3c55ddde2e5872ba19e2c6a758799b00}"
+API_KEY="${API_KEY:?API_KEY must be set explicitly; do not store production keys in this script}"
 PASS=0
 FAIL=0
 SKIP=0

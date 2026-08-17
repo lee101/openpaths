@@ -255,7 +255,7 @@ test.describe('Public Spaces', () => {
         id: 'u_e2e',
         email: 'e2e@openpaths.io',
         name: 'E2E',
-        secret: 'op-injected-session-key',
+        secret: 'op_injected_session_key',
         authenticated: true,
       };
     });
@@ -264,11 +264,11 @@ test.describe('Public Spaces', () => {
     await expect(page.getByRole('heading', { name: /^Text to Image$/i })).toBeVisible();
 
     // main.tsx must bridge window.userData.secret -> localStorage['op_api_key'].
-    await expect.poll(() => page.evaluate(() => localStorage.getItem('op_api_key'))).toBe('op-injected-session-key');
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('op_api_key'))).toBe('op_injected_session_key');
 
     // Snippets must use the injected key, never 'op-...' placeholder or 'undefined'.
     await page.getByRole('button', { name: /^curl$/ }).click();
-    await expect(page.getByText('Bearer op-injected-session-key')).toBeVisible();
+    await expect(page.getByText('Bearer op_injected_session_key')).toBeVisible();
     await expect(page.getByText('Bearer undefined')).toHaveCount(0);
     await expect(page.getByText('Bearer op-...')).toHaveCount(0);
   });

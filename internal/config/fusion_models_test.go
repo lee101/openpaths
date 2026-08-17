@@ -7,15 +7,15 @@ import "testing"
 // OpenPaths model ids to /v1/chat/completions, so every one must resolve to a
 // real model id or alias. Keep this list in sync when editing MODEL_OPTIONS.
 var fusionPanelModelIDs = []string{
-	"claude-opus-latest",
 	"gpt-5.5",
 	"gemini-latest",
-	"gemini-3.5-flash",
+	"gemini-3.7-flash",
 	"deepseek-v4-flash",
 	"kimi-k2.5",
 	"grok-4.3",
 	"qwen3.5-397b",
 	"glm-5.2",
+	"claude-opus-latest",
 }
 
 func TestFusionPanelModelIDsResolve(t *testing.T) {

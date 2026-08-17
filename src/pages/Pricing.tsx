@@ -8,7 +8,8 @@ type VideoPrice = {
   id: string;
   name: string;
   provider: string;
-  pricePerVideo: number;
+  unitPrice: number;
+  unitLabel: '/ video' | '/ second';
   notes: string;
 };
 
@@ -22,7 +23,7 @@ const TEXT_MODEL_IDS = [
   'minimax-m2.7',
   'gpt-5.4-mini',
   'gpt-5.5',
-  'gemini-3.5-flash',
+  'gemini-3.7-flash',
   'claude-opus-5',
 ];
 
@@ -41,45 +42,59 @@ const IMAGE_MODEL_IDS = [
 
 const VIDEO_MODELS: VideoPrice[] = [
   {
+    id: 'minimax-h3',
+    name: 'MiniMax H3',
+    provider: 'MiniMax via Fal',
+    unitPrice: 0.13,
+    unitLabel: '/ second',
+    notes: '2K video with native stereo audio; text, first/last-frame, and multimodal reference modes. First five reference images included; additional images are $0.08 each.',
+  },
+  {
     id: 'auto-video',
     name: 'Auto Video',
     provider: 'OpenPaths',
-    pricePerVideo: 0.10,
+    unitPrice: 0.10,
+    unitLabel: '/ video',
     notes: 'Auto-routed starting point across supported video providers.',
   },
   {
     id: 'ltx-video',
     name: 'LTX Video',
     provider: 'Netwrck',
-    pricePerVideo: 0.05,
+    unitPrice: 0.05,
+    unitLabel: '/ video',
     notes: 'Fast low-cost generation for lightweight clips.',
   },
   {
     id: 'hailuo-2.3',
     name: 'Hailuo 2.3',
     provider: 'MiniMax',
-    pricePerVideo: 0.10,
+    unitPrice: 0.10,
+    unitLabel: '/ video',
     notes: 'Natural motion and strong quality-per-dollar.',
   },
   {
     id: 'wan',
     name: 'Wan Video',
     provider: 'Netwrck',
-    pricePerVideo: 0.30,
+    unitPrice: 0.30,
+    unitLabel: '/ video',
     notes: 'High-quality text-to-video generation.',
   },
   {
     id: 'sora-2',
     name: 'Sora 2',
     provider: 'OpenAI',
-    pricePerVideo: 0.80,
+    unitPrice: 0.80,
+    unitLabel: '/ video',
     notes: 'Premium video generation on OpenAI infrastructure.',
   },
   {
     id: 'ra2v',
     name: 'RA2V',
     provider: 'Netwrck',
-    pricePerVideo: 1.00,
+    unitPrice: 1.00,
+    unitLabel: '/ video',
     notes: 'Scene-aware video generation with first-party economics.',
   },
 ];
@@ -326,8 +341,8 @@ export function Pricing() {
                   id: model.id,
                   name: model.name,
                   provider: model.provider,
-                  unitPrice: model.pricePerVideo,
-                  unitLabel: '/ video',
+                  unitPrice: model.unitPrice,
+                  unitLabel: model.unitLabel,
                   notes: model.notes,
                 }))}
               />
@@ -380,8 +395,8 @@ function pickModels(ids: string[]) {
 
 function formatDollars(amount: number) {
   if (amount === 0) return '$0';
-  if (amount < 0.01) return `$${amount.toFixed(3)}`;
-  return `$${amount.toFixed(2)}`;
+  const precision = amount < 0.01 || Math.abs(amount * 100 - Math.round(amount * 100)) > 1e-9 ? 3 : 2;
+  return `$${amount.toFixed(precision)}`;
 }
 
 function ValueCard({ title, body }: { title: string; body: string }) {

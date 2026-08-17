@@ -261,7 +261,7 @@ func (h *ChatHandler) HandleFusionCompletion(ctx *fasthttp.RequestCtx, req *mode
 
 	panelModels := append([]string(nil), req.Fusion.AnalysisModels...)
 	if len(panelModels) == 0 {
-		panelModels = []string{"claude-opus-latest", "gpt-5.5", "gemini-latest"}
+		panelModels = []string{"gpt-5.5", "gemini-latest", "deepseek-v4-flash"}
 	}
 	if req.Fusion.MaxPanelModels > 0 && req.Fusion.MaxPanelModels < len(panelModels) {
 		panelModels = panelModels[:req.Fusion.MaxPanelModels]

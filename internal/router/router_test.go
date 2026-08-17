@@ -3,6 +3,7 @@ package router
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/openpaths/openpaths/internal/model"
 	"github.com/openpaths/openpaths/internal/provider"
@@ -11,6 +12,49 @@ import (
 // mockProvider implements provider.Provider for testing.
 type mockProvider struct {
 	name string
+}
+
+func TestTemporaryProviderRouteAndScheduledPriceExpireTogether(t *testing.T) {
+	models := []model.ModelConfig{{
+		ID: "gemini-3.7-flash", Provider: "google", ProviderModelID: "gemini-3.7-flash",
+		InputPricePer1M: .375, InputCacheHitPricePer1M: .0375, OutputPricePer1M: 1.875,
+		TemporaryProviderRoute: &model.TemporaryProviderRoute{
+			Provider: "openrouter", ProviderModelID: "google/gemini-3.7-flash", ExpiresAt: "2026-08-28T00:00:00Z",
+		},
+		ScheduledTokenPricing: &model.ScheduledTokenPricing{
+			EffectiveAt: "2026-08-28T00:00:00Z", OffPeakInputPricePer1M: .75,
+			OffPeakInputCacheHitPer1M: .075, OffPeakOutputPricePer1M: 3.75,
+		},
+	}}
+	r := newTestRouter(models, "google", "openrouter")
+
+	assertRouteAndPrice := func(at string, wantProvider, wantProviderModel string, wantPricing [3]float64) {
+		t.Helper()
+		parsed, err := time.Parse(time.RFC3339, at)
+		if err != nil {
+			t.Fatal(err)
+		}
+		r.now = func() time.Time { return parsed }
+
+		candidates, err := r.ResolveWithRetries("gemini-3.7-flash")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(candidates) != 1 || candidates[0].Provider.Name() != wantProvider || candidates[0].ModelCfg.ProviderModelID != wantProviderModel {
+			t.Fatalf("route at %s = %+v, want %s/%s", at, candidates, wantProvider, wantProviderModel)
+		}
+		info, ok := r.GetModelInfo("gemini-3.7-flash")
+		if !ok {
+			t.Fatal("model info missing")
+		}
+		gotPricing := [3]float64{info.Pricing.InputPer1M, info.Pricing.InputCacheHitPer1M, info.Pricing.OutputPer1M}
+		if gotPricing != wantPricing {
+			t.Fatalf("pricing at %s = %v, want %v", at, gotPricing, wantPricing)
+		}
+	}
+
+	assertRouteAndPrice("2026-08-27T23:59:59Z", "openrouter", "google/gemini-3.7-flash", [3]float64{.375, .0375, 1.875})
+	assertRouteAndPrice("2026-08-28T00:00:00Z", "google", "gemini-3.7-flash", [3]float64{.75, .075, 3.75})
 }
 
 func (m *mockProvider) Name() string { return m.name }
@@ -452,6 +496,7 @@ func TestNew_DerivesGrokLatestAliasFromHighestVersion(t *testing.T) {
 
 func TestNew_GrokLatestUsesFractionalVersionOrdering(t *testing.T) {
 	models := []model.ModelConfig{
+		{ID: "grok-4.6", Provider: "xai"},
 		{ID: "grok-4.5", Provider: "xai"},
 		{ID: "grok-4.20-0309-reasoning", Provider: "xai"},
 		{ID: "grok-4.20-multi-agent-0309", Provider: "xai"},
@@ -466,8 +511,8 @@ func TestNew_GrokLatestUsesFractionalVersionOrdering(t *testing.T) {
 		if !found {
 			t.Fatalf("GetModelConfig(%q) not found", name)
 		}
-		if cfg.ID != "grok-4.5" {
-			t.Errorf("GetModelConfig(%q) ID = %q, want grok-4.5", name, cfg.ID)
+		if cfg.ID != "grok-4.6" {
+			t.Errorf("GetModelConfig(%q) ID = %q, want grok-4.6", name, cfg.ID)
 		}
 	}
 }

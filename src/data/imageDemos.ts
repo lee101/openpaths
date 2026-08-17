@@ -8,6 +8,21 @@ export interface ImageDemo {
 }
 
 export const IMAGE_DEMOS: Record<string, ImageDemo> = {
+  'flux-2-pro-preview': {
+    title: 'FLUX.2 Pro Preview generation',
+    description: 'A live BFL API generation using the default prompt upsampler, fixed safety tolerance 5, and a web-ready WebP output.',
+    outputUrl: '/static/image-gallery/bfl/flux-2-pro-preview-routing-orchid.webp',
+    prompt: 'A precision glass greenhouse at night containing a miniature Black Forest, luminous orchid petals tracing elegant routing paths through moss and ferns, cinematic product photography, subtle blue and amber light, physically accurate glass reflections, no text, no logos',
+    payload: {
+      model: 'flux-2-pro-preview',
+      prompt: 'A precision glass greenhouse at night containing a miniature Black Forest, luminous orchid petals tracing elegant routing paths through moss and ferns, cinematic product photography, subtle blue and amber light, physically accurate glass reflections, no text, no logos',
+      size: '1024x1024',
+      n: 1,
+      output_format: 'webp',
+      safety_tolerance: 5,
+      disable_pup: false,
+    },
+  },
   'fal-ai/hidream-o1-image/edit': {
     title: 'Prompted image edit example',
     description: 'Use a reference image plus an edit prompt to replace a product while preserving the photographed scene.',

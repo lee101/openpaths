@@ -77,6 +77,7 @@ const primaryNavLinks = [
   { label: 'Agents', to: '/agents', match: (path: string) => path.startsWith('/agents') },
   { label: 'Fusion', to: '/fusion', match: (path: string) => path === '/fusion' },
   { label: 'Artifacts', to: '/artifacts', match: (path: string) => path.startsWith('/artifacts') },
+  { label: 'Compound', to: '/compound', match: (path: string) => path === '/compound' },
   { label: 'Prompts', to: '/prompts', match: (path: string) => path.startsWith('/prompts') },
   { label: 'Tools', to: '/tools', match: (path: string) => path === '/tools' || path === '/image-to-3d' || path === '/text-to-3d' || path === '/rig-3d' || path === '/retexture-3d' || path === '/text-to-image' || path === '/video-extension' },
   { label: 'Search', to: '/search', match: (path: string) => path === '/search' },
@@ -117,7 +118,7 @@ export function Layout() {
           <img src="/openpaths-road-logo.svg" alt="OpenPaths" className="h-6 w-6 brightness-0 invert" />
           <span className="font-mono font-bold text-xl tracking-tighter">OpenPaths</span>
         </Link>
-        <div className="hidden xl:flex items-center gap-6 text-sm font-mono text-white/60">
+        <div className="hidden min-[1800px]:flex items-center gap-6 text-sm font-mono text-white/60">
           {primaryNavLinks.map(link => (
             <Link key={link.to} to={link.to} className={`transition-colors ${link.match(location.pathname) ? 'text-white' : 'hover:text-white'}`}>
               {link.label}
@@ -158,7 +159,7 @@ export function Layout() {
           )}
           <button
             type="button"
-            className="inline-flex h-9 w-9 items-center justify-center rounded border border-white/10 bg-white/[0.03] text-white/70 transition-colors hover:border-white/25 hover:text-white xl:hidden"
+            className="inline-flex h-9 w-9 items-center justify-center rounded border border-white/10 bg-white/[0.03] text-white/70 transition-colors hover:border-white/25 hover:text-white min-[1800px]:hidden"
             aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={mobileMenuOpen}
             onClick={() => setMobileMenuOpen(open => !open)}
@@ -167,7 +168,7 @@ export function Layout() {
           </button>
         </div>
         {mobileMenuOpen && (
-          <div className="absolute left-0 right-0 top-full border-b border-white/10 bg-black/95 px-4 py-4 shadow-2xl backdrop-blur-md xl:hidden">
+          <div className="absolute left-0 right-0 top-full border-b border-white/10 bg-black/95 px-4 py-4 shadow-2xl backdrop-blur-md min-[1800px]:hidden">
             <div className="grid grid-cols-2 gap-2 font-mono text-sm text-white/60">
               {primaryNavLinks.map(link => (
                 <Link
@@ -229,6 +230,7 @@ export function Layout() {
                   <li><Link to="/works-with-openpaths" className="hover:text-white transition-colors">Works With OpenPaths</Link></li>
                   <li><Link to="/playground" className="hover:text-white transition-colors">Playground</Link></li>
                   <li><Link to="/fusion" className="hover:text-white transition-colors">Fusion</Link></li>
+                  <li><Link to="/compound" className="hover:text-white transition-colors">Compound Designer</Link></li>
                   <li><Link to="/tools" className="hover:text-white transition-colors">Tools</Link></li>
                   <li><Link to="/text-to-image" className="hover:text-white transition-colors">Text to Image</Link></li>
                   <li><Link to="/video-extension" className="hover:text-white transition-colors">Video Extension</Link></li>
@@ -269,7 +271,7 @@ export function Layout() {
             </div>
             <div className="border-t border-white/10 pt-6 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs font-mono text-white/20">
               <span>© {new Date().getFullYear()} OpenPaths. Open source model routing.</span>
-              <div className="flex gap-4">
+              <div className="flex flex-wrap justify-center gap-x-4 gap-y-2">
                 <Link to="/docs" className="hover:text-white transition-colors">Docs</Link>
                 <Link to="/stats" className="hover:text-white transition-colors">Stats</Link>
                 <Link to="/apps/" className="hover:text-white transition-colors">Apps</Link>

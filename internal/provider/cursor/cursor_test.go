@@ -20,6 +20,27 @@ func TestParseModelSelection(t *testing.T) {
 	if id != "composer-2.5" || fast {
 		t.Fatalf("got id=%q fast=%v", id, fast)
 	}
+	id, fast = parseModelSelection("grok-4.6-fast")
+	if id != "grok-4.6" || !fast {
+		t.Fatalf("got id=%q fast=%v", id, fast)
+	}
+}
+
+func TestCursorGrokEffort(t *testing.T) {
+	tests := []struct {
+		model, requested, want string
+	}{
+		{"grok-4.5", "high", "high"},
+		{"grok-4.5", "xhigh", "high"},
+		{"grok-4.6", "xhigh", "xhigh"},
+		{"grok-4.6", "minimal", "low"},
+		{"composer-2.5", "high", ""},
+	}
+	for _, tt := range tests {
+		if got := cursorGrokEffort(tt.model, tt.requested); got != tt.want {
+			t.Errorf("cursorGrokEffort(%q, %q) = %q, want %q", tt.model, tt.requested, got, tt.want)
+		}
+	}
 }
 
 func TestMessagesToPrompt(t *testing.T) {
@@ -117,6 +138,49 @@ func TestChatCompletionStandard(t *testing.T) {
 	}
 	if createBody.Model.ID != "composer-2.5" || len(createBody.Model.Params) != 0 {
 		t.Fatalf("unexpected create body: %+v", createBody)
+	}
+}
+
+func TestChatCompletionGrokParams(t *testing.T) {
+	var createBody createAgentRequest
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/agents":
+			if err := json.NewDecoder(r.Body).Decode(&createBody); err != nil {
+				t.Fatalf("decode create: %v", err)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"agent": map[string]string{"id": "bc-grok"},
+				"run":   map[string]string{"id": "run-grok", "status": "CREATING"},
+			})
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/agents/bc-grok/runs/run-grok":
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"id": "run-grok", "status": "FINISHED", "result": "grok ok",
+			})
+		case r.Method == http.MethodDelete && r.URL.Path == "/v1/agents/bc-grok":
+			w.WriteHeader(http.StatusOK)
+		default:
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	p := New("test-key", server.URL)
+	_, err := p.ChatCompletion(context.Background(), &model.ChatCompletionRequest{
+		Model:           "grok-4.6-fast",
+		ReasoningEffort: "xhigh",
+		Messages:        []model.ChatMessage{{Role: "user", Content: "say hi"}},
+	})
+	if err != nil {
+		t.Fatalf("ChatCompletion: %v", err)
+	}
+	if createBody.Model.ID != "grok-4.6" || len(createBody.Model.Params) != 2 {
+		t.Fatalf("unexpected create body: %+v", createBody)
+	}
+	if createBody.Model.Params[0] != (modelParam{ID: "effort", Value: "xhigh"}) || createBody.Model.Params[1] != (modelParam{ID: "fast", Value: "true"}) {
+		t.Fatalf("unexpected Grok params: %+v", createBody.Model.Params)
 	}
 }
 

@@ -12,6 +12,76 @@ export interface BlogPost {
 
 export const posts: BlogPost[] = [
   {
+    slug: 'building-compound-models',
+    title: 'Build Your Own Compound Model: Auto Routing, Circuit Breakers, and Fusion in One Endpoint',
+    excerpt: 'A new visual designer for composing OpenPaths Auto, frontier models, DeepSeek, fallback rules, and Fusion into a shareable OpenAI-compatible API.',
+    date: '2026-08-05',
+    author: 'OpenPaths Team',
+    readTime: '6 min',
+    tags: ['compound models', 'routing', 'fallbacks', 'fusion', 'launch'],
+    content: `A single model name is a surprisingly rigid way to run an AI product. Your easy requests want a cheap fast model. Your hard requests want the max plan. A provider outage should not turn into a user-visible 503. And sometimes the best answer comes from asking several models and having one of them synthesize the result.
+
+Today we are introducing the [Compound Model Designer](/compound), a visual way to turn those decisions into one shareable endpoint.
+
+## A model is now a small system
+
+Compound models let you assemble a backing pool from OpenPaths Auto routes, named models, and any OpenAI-compatible provider/model id. The default example combines **Auto Think**, **Auto Code**, and **DeepSeek V4 Flash**:
+
+\`\`\`text
+request → adaptive router → Auto Think       ─┐
+                         → Auto Code          ├─ one answer
+                         → DeepSeek V4 Flash  ─┘
+\`\`\`
+
+The caller only sees one model slug. The compound model owns the routing policy behind it, so you can tune the backing pool without changing every client, agent, or integration that uses your API.
+
+## Three ways to compose
+
+The designer supports three routing modes:
+
+- **Adaptive auto** balances quality, price, latency, and live provider health on each request. Weights give you a starting preference while the router keeps unhealthy sources out of the hot path.
+- **Circuit-breaker cascade** is a predictable top-to-bottom chain. Each hop has its own timeout and retry budget; repeated failures open its circuit and the next healthy model takes over.
+- **Fusion panel** runs several models in parallel and gives the responses to a judge model. It is the right shape for research, high-stakes synthesis, and prompts where disagreement is useful signal.
+
+These modes can use the same model pool. Start with Auto plus a low-cost DeepSeek fallback, then add a frontier judge when you need a quality ceiling. Or make a budget-first chain with an expensive model only as the last hop.
+
+## Circuit breakers that behave like production infrastructure
+
+Fallback is more than a list of models. The designer exposes the rules that decide when the list changes:
+
+- open a circuit after a configurable number of failures;
+- treat timeouts, rate limits, and 5xx responses as routing signals;
+- retry within a hop without retrying the whole user request forever;
+- cool a provider down for a known window, then probe it again;
+- keep health independent per provider so a DeepSeek incident does not evict Auto or OpenAI.
+
+That gives an endpoint a useful property: it can get smarter about quality without becoming fragile about availability.
+
+## One endpoint for every client
+
+The generated endpoint is OpenAI-compatible. The shape is deliberately boring so it drops into an existing SDK, CLI, or agent framework:
+
+\`\`\`bash
+curl https://openpaths.io/v1/compound/max-plan-deepseek/chat/completions \\
+  -H "Authorization: Bearer $OPENPATHS_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "model": "max-plan-deepseek",
+    "messages": [{"role": "user", "content": "Plan this migration."}]
+  }'
+\`\`\`
+
+The artifact has a name, slug, description, model pool, routing mode, reliability rules, and visibility setting. Save it as a local draft while you experiment, or copy a share link so someone else can inspect the design and fork it. Public compounds can become reusable building blocks for a team or community.
+
+## Why make this a shareable artifact?
+
+The interesting part of routing is rarely the endpoint URL. It is the policy: which models are trusted for which work, how much failure a user should absorb, and when quality is worth paying for. A shareable compound model makes that policy legible.
+
+Teams can review a routing design like they review a prompt or a deployment config. An agent author can publish a “safe coding cascade.” A researcher can share a fusion panel with its judge and budget. A product team can keep one stable API contract while iterating on the models behind it.
+
+Open the [Compound Model Designer](/compound), start with **Max Plan + DeepSeek**, and send it a test request. When you want to understand the thinking behind the feature, the existing [Fusion space](/fusion) is still available for inspecting panel answers directly.`,
+  },
+  {
     slug: 'inkling-small-thinking-machines',
     title: 'Inkling-Small Is Live: Thinking Machines\' 276B Open-Weights Model at $0.50/$1.20',
     excerpt: 'Thinking Machines released Inkling-Small — a quarter the size of Inkling, matching it on reasoning and agentic work. It is on OpenPaths today as inkling-small, and the full-size inkling is live again too.',

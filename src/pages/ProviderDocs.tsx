@@ -34,22 +34,22 @@ const EXAMPLES: Record<string, ProviderExample> = {
     chatModel: 'openai-chat-latest',
     imageModel: 'gpt-image-2',
     videoModel: 'sora-2',
-    transcriptionModel: 'gpt-4o-transcribe',
-    realtimeModel: 'gpt-realtime-2.1',
-    realtimeURL: 'wss://api.openai.com/v1/realtime',
-    realtimeAPIKeyEnv: 'OPENAI_API_KEY',
+    transcriptionModel: 'gpt-transcribe',
+    realtimeModel: 'gpt-realtime-2.1-mini',
+    realtimeURL: 'wss://openpaths.io/v1/realtime',
+    realtimeAPIKeyEnv: 'OPENPATHS_API_KEY',
     realtimeVoice: 'marin',
     provides: [
       {
         title: 'GPT Live voice',
-        description: 'Provider-native speech-to-speech over WebRTC, WebSocket, or SIP. GPT Realtime 2.1 uses token pricing: text is $4/$24 and audio is $32/$64 per 1M input/output tokens.',
+        description: 'Live speech-to-speech through OpenPaths’ authenticated WebSocket relay. GPT Realtime 2.1 Mini uses token pricing: text is $0.60/$2.40 and audio is $10/$20 per 1M input/output tokens.',
       },
     ],
     notes: [
       'gpt-image-2 returns base64 PNGs by default — decode with base64.b64decode.',
       'sora-2 is async; OpenPaths polls for you and returns a signed content URL.',
       'Use openai-coding-latest alias for gpt-5-codex.',
-      '`gpt-realtime-2.1` is the flagship live voice route; use `gpt-realtime-2.1-mini` for lower-cost calls.',
+      '`gpt-realtime-2.1-mini` is the default low-latency voice route; use `gpt-realtime-2.1` when you need the flagship model.',
       'If the direct OpenAI GPT Image 2 path goes unhealthy, OpenPaths can fail over to Fal-hosted GPT Image 2 using the model-level circuit breaker.',
     ],
   },
@@ -63,9 +63,9 @@ const EXAMPLES: Record<string, ProviderExample> = {
     ],
   },
   google: {
-    description: 'Gemini 3.5 Flash, 2.5 Pro, 2.5 Flash, Flash Lite, plus Gemini embedding models.',
+    description: 'Gemini 3.7 Flash, 2.5 Pro, 2.5 Flash, Flash Lite, plus Gemini embedding models.',
     endpoint: '/v1',
-    chatModel: 'gemini-3.5-flash',
+    chatModel: 'gemini-3.7-flash',
     embeddingModel: 'gemini-embedding-2-preview',
     notes: [
       'Pass image URLs as content parts for vision queries.',
@@ -74,7 +74,7 @@ const EXAMPLES: Record<string, ProviderExample> = {
     ],
   },
   xai: {
-    description: 'Grok 4.5, Grok Build, Grok 4.3/4.20, Grok Imagine, plus xAI realtime Voice, Text to Speech, and Speech to Text APIs.',
+    description: 'Grok 4.6, Grok 4.5, Grok Build, Grok 4.3/4.20, Grok Imagine, plus xAI realtime Voice, Text to Speech, and Speech to Text APIs.',
     endpoint: '/v1',
     chatModel: 'grok-latest',
     imageModel: 'grok-imagine-image',
@@ -124,7 +124,7 @@ const EXAMPLES: Record<string, ProviderExample> = {
     chatModel: 'deepseek-chat',
   },
   cursor: {
-    description: 'Cursor Composer 2.5 (standard and fast tiers) via the Cursor Cloud Agents API — agentic coding with tool use, exposed as standard OpenAI-style chat completions through OpenPaths.',
+    description: 'Cursor Composer 2.5 and Cursor Grok 4.5/4.6 via the Cursor Cloud Agents API — agentic coding and knowledge work exposed as standard OpenAI-style chat completions through OpenPaths.',
     endpoint: '/v1',
     chatModel: 'composer-2.5',
     provides: [
@@ -133,13 +133,18 @@ const EXAMPLES: Record<string, ProviderExample> = {
         description: 'Cursor’s agentic coding model with tool use. Use `composer-2.5` for the standard tier and `composer-2.5-fast` for the low-latency tier.',
       },
       {
+        title: 'Cursor Grok',
+        description: 'Use `cursor-grok-4.5` or `cursor-grok-4.6` for standard reasoning, or append `-fast` for the low-latency variants.',
+      },
+      {
         title: 'OpenAI-Compatible Surface',
-        description: 'OpenPaths runs Composer through the Cursor Cloud Agents API and returns OpenAI-style chat completion responses, so existing SDKs work unchanged.',
+        description: 'OpenPaths runs Composer and Cursor Grok through the Cursor Cloud Agents API and returns OpenAI-style chat completion responses, so existing SDKs work unchanged.',
       },
     ],
     notes: [
-      'Use `composer-2.5` (standard) or `composer-2.5-fast` (fast) as the model name.',
-      'Best for coding agents, refactors, and tool-driven workflows — pass your tools array as usual.',
+      'Use `composer-2.5`, `composer-2.5-fast`, `cursor-grok-4.5`, `cursor-grok-4.5-fast`, `cursor-grok-4.6`, or `cursor-grok-4.6-fast` as the model name.',
+      'Cursor Grok supports `low`, `medium`, `high`, and (for 4.6) `xhigh` reasoning effort through the standard `reasoning_effort` field.',
+      'Best for coding agents, refactors, knowledge work, and tool-driven workflows — pass your tools array as usual.',
     ],
   },
   mistral: {
@@ -155,7 +160,7 @@ const EXAMPLES: Record<string, ProviderExample> = {
     transcriptionModel: 'whisper-large-v3-turbo',
   },
   together: {
-    description: 'Qwen, Kimi, GLM, MiniMax, DeepSeek hosted on Together, plus FLUX image models.',
+    description: 'Qwen 3.8 2.4T, Qwen 3.5, Kimi, GLM, MiniMax, DeepSeek hosted on Together, plus FLUX image models.',
     endpoint: '/v1',
     chatModel: 'qwen3.5-397b',
     imageModel: 'flux-schnell',
@@ -795,7 +800,7 @@ print(transcript.text)`,
     const realtimeURL = ex.realtimeURL || 'wss://api.x.ai/v1/realtime';
     const realtimeAPIKeyEnv = ex.realtimeAPIKeyEnv || 'XAI_API_KEY';
     const realtimeVoice = ex.realtimeVoice || 'eve';
-    const realtimeSession = realtimeAPIKeyEnv === 'OPENAI_API_KEY'
+    const realtimeSession = ex.realtimeModel.startsWith('gpt-realtime')
       ? `{
             "type": "session.update",
             "session": {
@@ -851,7 +856,7 @@ async def main():
 
 asyncio.run(main())`,
       curl: `# Realtime voice is a WebSocket endpoint.
-# Use a provider API key with a WebSocket client and connect to:
+# Use an OpenPaths API key with a WebSocket client and connect to:
 ${realtimeURL}?model=${ex.realtimeModel}`,
     });
   }

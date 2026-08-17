@@ -1,10 +1,10 @@
 import React from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, BookOpen, Image as ImageIcon, MessageSquare, Video } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookOpen, Gift, Image as ImageIcon, MessageSquare, Video } from 'lucide-react';
 import { ImageSpacePanel } from '../components/ImageSpacePanel';
 import { VideoSpacePanel } from '../components/VideoSpacePanel';
 import { Seo } from '../components/Seo';
-import { models, type Model } from '../data/models';
+import { isPromotionActive, models, type Model } from '../data/models';
 import { providersByName, getProviderLogo } from '../data/providers';
 import { IMAGE_DEMOS } from '../data/imageDemos';
 import { VIDEO_DEMOS } from '../data/videoDemos';
@@ -29,6 +29,7 @@ export function ModelPage() {
   const imageDemo = IMAGE_DEMOS[model.id];
   const videoDemo = VIDEO_DEMOS[model.id];
   const relatedModels = getRelatedModels(model);
+  const promotionActive = isPromotionActive(model);
   const title = `${model.name} API, Pricing, Context Window | OpenPaths`;
   const description = `${model.name} from ${model.provider}: ${model.description} Use model ID ${model.id} through the OpenPaths API.`;
   const canonical = `https://openpaths.io/models/${encodeURIComponent(model.id)}`;
@@ -91,6 +92,20 @@ export function ModelPage() {
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-5">{model.name}</h1>
           <p className="max-w-3xl text-lg leading-relaxed text-white/62 font-light">{model.description}</p>
         </div>
+
+        {promotionActive && model.promotion && (
+          <div className="mb-10 rounded-2xl border border-emerald-300/20 bg-emerald-300/[0.06] p-6">
+            <div className="flex items-start gap-3">
+              <Gift className="mt-0.5 h-5 w-5 shrink-0 text-emerald-200" />
+              <div>
+                <h2 className="font-semibold text-emerald-50">OpenRouter-exclusive launch discount: 50% off through August 27</h2>
+                <p className="mt-2 text-sm leading-relaxed text-emerald-50/65">
+                  OpenPaths is routing {model.name} through OpenRouter and passing the full savings on to customers: {formatCurrency(model.priceInput)} / 1M input tokens and {formatCurrency(model.priceOutput)} / 1M output tokens. Standard {formatCurrency(model.promotion.standardPriceInput)} / {formatCurrency(model.promotion.standardPriceOutput)} rates and direct Google routing resume August 28.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="grid gap-4 md:grid-cols-3 mb-10">
           <Fact label="Model ID" value={model.id} code />
@@ -208,8 +223,8 @@ function formatPrice(model: Model, price: number, label: 'input' | 'output') {
 
 function formatCurrency(value: number) {
   if (value === 0) return '$0';
-  if (value < 0.01) return `$${value.toFixed(3)}`;
-  return `$${value.toFixed(2)}`;
+  const precision = value < 0.01 || Math.abs(value * 100 - Math.round(value * 100)) > 1e-9 ? 3 : 2;
+  return `$${value.toFixed(precision)}`;
 }
 
 function mediaTask(model: Model) {

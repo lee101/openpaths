@@ -38,8 +38,9 @@ test.describe('Model Fusion space', () => {
     await expect(pre).toContainText('"type": "openpaths"');
     await expect(pre).toContainText('"analysis_models"');
     // Quality panel resolves to native OpenPaths model ids.
-    await expect(pre).toContainText('claude-opus-latest');
     await expect(pre).toContainText('gpt-5.5');
+    await expect(pre).toContainText('gemini-latest');
+    await expect(pre).toContainText('deepseek-v4-flash');
   });
 
   test('switching to the OpenRouter backend swaps endpoint and payload shape', async ({ page }) => {
@@ -53,7 +54,7 @@ test.describe('Model Fusion space', () => {
     await expect(pre).toContainText('https://openrouter.ai/api/v1/chat/completions');
     await expect(pre).toContainText('openrouter:fusion');
     // OpenRouter uses native provider-prefixed ids, not OpenPaths aliases.
-    await expect(pre).toContainText('~anthropic/claude-opus-latest');
+    await expect(pre).toContainText('~openai/gpt-latest');
     await expect(pre).toContainText('"tool_choice": "required"');
   });
 
@@ -64,7 +65,7 @@ test.describe('Model Fusion space', () => {
     await expect(page.getByText('3/8 panel models')).toBeVisible();
     await page.getByRole('button', { name: /Show request/i }).click();
     const pre = page.locator('pre');
-    await expect(pre).toContainText('gemini-3.5-flash');
+    await expect(pre).toContainText('gemini-3.7-flash');
     await expect(pre).toContainText('deepseek-v4-flash');
     await expect(pre).toContainText('kimi-k2.5');
   });
@@ -83,13 +84,13 @@ test.describe('Model Fusion space', () => {
     await expect(page.getByText(/Fused answer: experts disagree/i)).toBeVisible();
 
     // The browser sent the OpenPaths fusion payload with native panel ids. With
-    // "Fuse with: auto" the judge is the first panel model (claude-opus-latest).
+    // "Fuse with: auto" the judge is the first panel model (gpt-5.5).
     expect(requestBody).toMatchObject({
-      model: 'claude-opus-latest',
+      model: 'gpt-5.5',
       fusion: {
         type: 'openpaths',
-        model: 'claude-opus-latest',
-        analysis_models: ['claude-opus-latest', 'gpt-5.5', 'gemini-latest'],
+        model: 'gpt-5.5',
+        analysis_models: ['gpt-5.5', 'gemini-latest', 'deepseek-v4-flash'],
       },
     });
   });

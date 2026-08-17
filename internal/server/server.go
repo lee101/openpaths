@@ -136,6 +136,15 @@ func New(deps *Dependencies) *Server {
 		middleware.GuardrailCheck(middleware.GuardrailDeps{Q: deps.GuardrailQ, UserQ: deps.UserQ}),
 	)
 
+	realtimeChain := middleware.Chain(
+		middleware.Recovery(),
+		middleware.Logging(),
+		middleware.APIKeyAuth(deps.APIKeyQ),
+		middleware.AppAttribution(deps.AppQ),
+		middleware.BYOKLoader(deps.ProviderKeyQ),
+		middleware.RateLimit(),
+	)
+
 	// accountChain: API key or dashboard JWT — no balance check for account management
 	accountChain := middleware.Chain(
 		middleware.Recovery(),
@@ -151,6 +160,9 @@ func New(deps *Dependencies) *Server {
 	r.POST("/v1/chat/completions", apiKeyChain(chatH.HandleChatCompletion))
 	r.GET("/v1/models", apiKeyChain(modelsH.HandleListModels))
 	r.GET("/v1/models/{model_id}", apiKeyChain(modelsH.HandleGetModel))
+	realtimeH := handler.NewRealtimeHandler(deps.Router, deps.Billing, deps.Recorder, deps.Config.Providers)
+	r.GET("/v1/realtime", realtimeChain(realtimeH.HandleRealtime))
+	log.Printf("OpenAI Realtime WebSocket endpoint enabled at /v1/realtime")
 
 	searchH := handler.NewSearchHandler(
 		handler.ExaSearchProviderConfig(deps.Config.Providers),

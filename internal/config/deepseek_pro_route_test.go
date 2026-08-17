@@ -25,6 +25,10 @@ func TestDeepSeekV4ProRoutesToFlash(t *testing.T) {
 		if m.InputPricePer1M != 0.435 || m.OutputPricePer1M != 0.87 {
 			t.Fatalf("deepseek-v4-pro public prices changed: input=%v output=%v", m.InputPricePer1M, m.OutputPricePer1M)
 		}
+		if m.ScheduledTokenPricing == nil || m.ScheduledTokenPricing.EffectiveAt != "2026-08-16T16:00:00Z" ||
+			m.ScheduledTokenPricing.PeakInputPricePer1M != 1.32 || m.ScheduledTokenPricing.OffPeakOutputPricePer1M != 1.98 {
+			t.Fatalf("deepseek-v4-pro scheduled pricing not loaded correctly: %+v", m.ScheduledTokenPricing)
+		}
 		return
 	}
 

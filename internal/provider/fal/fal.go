@@ -969,6 +969,11 @@ func (p *FalProvider) GenerateVideo(ctx context.Context, req *model.VideoGenerat
 		falReq["enable_safety_checker"] = *req.EnableSafetyChecker
 	}
 
+	modelID := req.Model
+	if strings.HasPrefix(modelID, "minimax/h3/") {
+		modelID = applyMiniMaxH3VideoRequest(req, falReq)
+	}
+
 	// sync-3 lip-sync takes singular audio_url/video_url (plus optional sync_mode),
 	// not the plural arrays the generic video path emits.
 	if strings.Contains(req.Model, "fal-ai/sync-lipsync/") {
@@ -1014,7 +1019,7 @@ func (p *FalProvider) GenerateVideo(ctx context.Context, req *model.VideoGenerat
 		return nil, fmt.Errorf("marshal: %w", err)
 	}
 
-	endpoint := strings.TrimRight(p.queueBaseURL(), "/") + "/" + strings.TrimLeft(req.Model, "/")
+	endpoint := strings.TrimRight(p.queueBaseURL(), "/") + "/" + strings.TrimLeft(modelID, "/")
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
@@ -1046,11 +1051,102 @@ func (p *FalProvider) GenerateVideo(ctx context.Context, req *model.VideoGenerat
 		return parseFalVideoResult(respBody)
 	}
 
-	resultBody, err := p.waitFalQueueResult(ctx, req.Model, submit.RequestID)
+	resultBody, err := p.waitFalQueueResult(ctx, modelID, submit.RequestID)
 	if err != nil {
 		return nil, err
 	}
 	return parseFalVideoResult(resultBody)
+}
+
+// applyMiniMaxH3VideoRequest selects the native Fal H3 endpoint from the input
+// shape. OpenPaths exposes one stable model ID while Fal separates text,
+// first/last-frame, and multimodal reference generation into three endpoints.
+func applyMiniMaxH3VideoRequest(req *model.VideoGenerationRequest, falReq map[string]any) string {
+	delete(falReq, "fps")
+	delete(falReq, "generate_audio") // H3 always generates native stereo audio.
+	delete(falReq, "seed")
+	delete(falReq, "end_user_id")
+	delete(falReq, "enable_safety_checker")
+
+	if req.Duration != "" {
+		falReq["duration"] = intOrDefaultString(string(req.Duration), 5)
+	}
+	if resolution, ok := miniMaxH3Resolution(req.Resolution); ok {
+		falReq["resolution"] = resolution
+	} else {
+		delete(falReq, "resolution")
+	}
+
+	referenceImages := append([]string(nil), req.ImageURLs...)
+	referenceVideos := append([]string(nil), req.VideoURLs...)
+	referenceAudio := append([]string(nil), req.AudioURLs...)
+	if req.VideoURL != "" {
+		referenceVideos = append(referenceVideos, req.VideoURL)
+	}
+	if req.Video != nil && req.Video.URL != "" {
+		referenceVideos = append(referenceVideos, req.Video.URL)
+	}
+	if req.AudioURL != "" {
+		referenceAudio = append(referenceAudio, req.AudioURL)
+	}
+	for _, item := range req.Content {
+		switch item.Type {
+		case "image_url":
+			if item.ImageURL != nil && item.ImageURL.URL != "" {
+				referenceImages = append(referenceImages, item.ImageURL.URL)
+			}
+		case "video_url":
+			if item.VideoURL != nil && item.VideoURL.URL != "" {
+				referenceVideos = append(referenceVideos, item.VideoURL.URL)
+			}
+		case "audio_url":
+			if item.AudioURL != nil && item.AudioURL.URL != "" {
+				referenceAudio = append(referenceAudio, item.AudioURL.URL)
+			}
+		}
+	}
+
+	if len(referenceImages) > 0 || len(referenceVideos) > 0 || len(referenceAudio) > 0 {
+		delete(falReq, "image_url")
+		delete(falReq, "end_image_url")
+		delete(falReq, "image_urls")
+		delete(falReq, "video_urls")
+		delete(falReq, "audio_urls")
+		if req.ImageURL != "" {
+			referenceImages = append([]string{req.ImageURL}, referenceImages...)
+		}
+		if len(referenceImages) > 0 {
+			falReq["reference_image_urls"] = referenceImages
+		}
+		if len(referenceVideos) > 0 {
+			falReq["reference_video_urls"] = referenceVideos
+		}
+		if len(referenceAudio) > 0 {
+			falReq["reference_audio_urls"] = referenceAudio
+		}
+		return "minimax/h3/reference-to-video"
+	}
+
+	if req.ImageURL != "" {
+		delete(falReq, "aspect_ratio") // The input image controls H3 I2V aspect ratio.
+		return "minimax/h3/image-to-video"
+	}
+	delete(falReq, "image_url")
+	delete(falReq, "end_image_url")
+	return "minimax/h3/text-to-video"
+}
+
+func miniMaxH3Resolution(value string) (string, bool) {
+	switch strings.ToUpper(strings.TrimSpace(value)) {
+	case "768P":
+		return "768P", true
+	case "2K", "1440P":
+		return "2K", true
+	case "4K", "2160P":
+		return "4K", true
+	default:
+		return "", false
+	}
 }
 
 func (p *FalProvider) queueBaseURL() string {

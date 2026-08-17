@@ -16,6 +16,11 @@ export interface Model {
   popularity: number;
   pricingType?: 'token' | 'request' | 'chars' | 'hour' | 'second' | 'megapixel';
   ogImage?: string;
+  promotion?: {
+    endsAt: string;
+    standardPriceInput: number;
+    standardPriceOutput: number;
+  };
 }
 
 export function parseContextLength(ctx: string): number {
@@ -29,7 +34,7 @@ export function parseContextLength(ctx: string): number {
   return num;
 }
 
-export const models: Model[] = [
+const catalogModels: Model[] = [
   // --- Black Forest Labs ---
   {
     id: 'flux-3-video-draft',
@@ -596,11 +601,12 @@ export const models: Model[] = [
     id: 'claude-sonnet-5',
     name: 'Claude Sonnet 5',
     provider: 'Anthropic',
-    description: 'Best balance of speed and intelligence. Ideal for coding, analysis, and daily tasks.',
+    description: 'Best balance of speed and intelligence. Ideal for coding, analysis, and daily tasks. Use claude-sonnet-latest to auto-track the newest Sonnet.',
     contextLength: '1M',
-    priceInput: 3,
-    priceOutput: 15,
+    priceInput: 2,
+    priceOutput: 10,
     tags: ['programming', 'reasoning', 'general', 'vision'],
+    aliases: ['claude-sonnet-latest', 'claude-sonnet', 'sonnet'],
     released: '2026-06-30',
     popularity: 1
   },
@@ -795,6 +801,58 @@ export const models: Model[] = [
     popularity: 16
   },
   {
+    id: 'cursor-grok-4.5',
+    name: 'Cursor Grok 4.5',
+    provider: 'Cursor',
+    description: 'Cursor-hosted Grok 4.5 for coding, long-running agents, and knowledge work through the Cursor plan.',
+    contextLength: '256K',
+    priceInput: 2,
+    priceOutput: 6,
+    tags: ['reasoning', 'programming', 'agentic', 'general'],
+    aliases: ['grok-4.5@cursor', 'cursor-grok-4-5'],
+    released: '2026-07-08',
+    popularity: 18
+  },
+  {
+    id: 'cursor-grok-4.5-fast',
+    name: 'Cursor Grok 4.5 Fast',
+    provider: 'Cursor',
+    description: 'Fast Cursor-hosted Grok 4.5 route for lower-latency agentic work.',
+    contextLength: '256K',
+    priceInput: 4,
+    priceOutput: 18,
+    tags: ['reasoning', 'programming', 'agentic', 'fast'],
+    aliases: ['grok-4.5-fast@cursor', 'cursor-grok-4-5-fast'],
+    released: '2026-07-08',
+    popularity: 17
+  },
+  {
+    id: 'cursor-grok-4.6',
+    name: 'Cursor Grok 4.6',
+    provider: 'Cursor',
+    description: 'Cursor-hosted Grok 4.6 for long-running agents, coding, knowledge work, and interactive builds.',
+    contextLength: '256K',
+    priceInput: 2,
+    priceOutput: 6,
+    tags: ['reasoning', 'programming', 'agentic', 'general'],
+    aliases: ['cursor-grok-latest', 'grok-4.6@cursor', 'cursor-grok-4-6'],
+    released: '2026-08-12',
+    popularity: 20
+  },
+  {
+    id: 'cursor-grok-4.6-fast',
+    name: 'Cursor Grok 4.6 Fast',
+    provider: 'Cursor',
+    description: 'Fast Cursor-hosted Grok 4.6 route for lower-latency agentic work.',
+    contextLength: '256K',
+    priceInput: 4,
+    priceOutput: 12,
+    tags: ['reasoning', 'programming', 'agentic', 'fast'],
+    aliases: ['cursor-grok-latest-fast', 'grok-4.6-fast@cursor', 'cursor-grok-4-6-fast'],
+    released: '2026-08-12',
+    popularity: 19
+  },
+  {
     id: 'gpt5.3-codex',
     name: 'GPT-5.3 Codex',
     provider: 'OpenAI',
@@ -917,17 +975,40 @@ export const models: Model[] = [
 
   // --- Google Gemini ---
   {
+    id: 'gemini-3.7-flash',
+    name: 'Gemini 3.7 Flash',
+    provider: 'Google',
+    description: 'Google\'s newest Flash model for fast multimodal reasoning, coding, and agentic work.',
+    contextLength: '1M',
+    priceInput: 0.375,
+    priceOutput: 1.875,
+    tags: ['general', 'vision', 'programming', 'reasoning', 'fast'],
+    aliases: ['gemini-3.7', 'gemini-flash-3.7', 'gemini-flash-latest', 'flash-latest'],
+    released: '2026-08-13',
+    popularity: 5,
+    promotion: {
+      endsAt: '2026-08-28T00:00:00Z',
+      standardPriceInput: 0.75,
+      standardPriceOutput: 3.75,
+    }
+  },
+  {
     id: 'gemini-latest',
     name: 'Gemini Latest',
     provider: 'Google',
-    description: 'Tracks the current recommended Gemini frontier model. Today this routes to Gemini 3.5 Flash.',
+    description: 'Tracks the current recommended Gemini frontier model. Today this routes to Gemini 3.7 Flash.',
     contextLength: '1M',
-    priceInput: 1.5,
-    priceOutput: 9,
+    priceInput: 0.375,
+    priceOutput: 1.875,
     tags: ['general', 'vision', 'programming', 'reasoning'],
-    aliases: ['gemini-3.5-flash'],
-    released: '2026-05-20',
-    popularity: 4
+    aliases: ['gemini-3.7-flash'],
+    released: '2026-08-13',
+    popularity: 4,
+    promotion: {
+      endsAt: '2026-08-28T00:00:00Z',
+      standardPriceInput: 0.75,
+      standardPriceOutput: 3.75,
+    }
   },
   {
     id: 'gemini-3.5-flash',
@@ -992,6 +1073,19 @@ export const models: Model[] = [
   },
 
   // --- xAI Grok ---
+  {
+    id: 'grok-4.6',
+    name: 'Grok 4.6',
+    provider: 'xAI',
+    description: 'xAI’s latest flagship for coding, long-running agents, and complex knowledge work with configurable reasoning effort and vision.',
+    contextLength: '500K',
+    priceInput: 2,
+    priceOutput: 6,
+    tags: ['reasoning', 'programming', 'agentic', 'general', 'vision'],
+    aliases: ['grok', 'grok-latest'],
+    released: '2026-08-13',
+    popularity: 5
+  },
   {
     id: 'grok-4.5',
     name: 'Grok 4.5',
@@ -1537,6 +1631,19 @@ export const models: Model[] = [
     popularity: 19
   },
   {
+    id: 'qwen3.8-2.4t-a95b',
+    name: 'Qwen 3.8 2.4T A95B',
+    provider: 'Together AI',
+    description: 'Qwen’s 2.4T-parameter open model hosted on Together AI, with 262K context, reasoning, tool use, and multimodal input.',
+    contextLength: '262K',
+    priceInput: 2.5,
+    priceOutput: 6.25,
+    tags: ['general', 'reasoning', 'programming', 'vision', 'agentic', 'open-source'],
+    aliases: ['Qwen3.8-2.4T-A95B', 'qwen3.8-2.4t', 'qwen3.8-a95b'],
+    released: '2026-08-13',
+    popularity: 5
+  },
+  {
     id: 'qwen3-coder',
     name: 'Qwen 3 Coder',
     provider: 'OpenRouter',
@@ -1667,7 +1774,7 @@ export const models: Model[] = [
     provider: 'MiniMax',
     description: 'High-output model with 128K output tokens and tool use.',
     contextLength: '200K',
-    priceInput: 0.26,
+    priceInput: 0.13,
     priceOutput: 1,
     tags: ['general'],
     released: '2025-08-01',
@@ -2090,9 +2197,9 @@ export const models: Model[] = [
     id: 'minimax-h3',
     name: 'MiniMax H3',
     provider: 'MiniMax',
-    description: 'Native multimodal video generation from text, first/last frames, and image, video, or audio references. Supports 4–15 second output at 768P or 2K.',
+    description: 'Native multimodal video generation from text, first/last frames, and image, video, or audio references. Supports 5–15 second output at 768P or 2K; the first five reference images are included.',
     contextLength: 'N/A',
-    priceInput: 0.08,
+    priceInput: 0.13,
     priceOutput: 0,
     tags: ['video generation', 'vision', 'audio'],
     released: '2026-08-03',
@@ -2114,14 +2221,15 @@ export const models: Model[] = [
   {
     id: 'wan',
     name: 'Wan Video',
-    provider: 'Netwrck',
-    description: 'High-quality video generation from text prompts.',
+    provider: 'Wan',
+    description: 'High-quality Wan 2.7 video generation from text prompts, powered by Fal.',
     contextLength: 'N/A',
-    priceInput: 0,
+    priceInput: 0.15,
     priceOutput: 0,
     tags: ['video generation'],
     released: '2025-09-01',
-    popularity: 61
+    popularity: 61,
+    pricingType: 'second'
   },
   {
     id: 'ltx-video',
@@ -4191,3 +4299,19 @@ export const models: Model[] = [
     ogImage: '/og/og-sync-lipsync.png'
   },
 ];
+
+export function isPromotionActive(model: Model, now = Date.now()) {
+  return Boolean(model.promotion && now < Date.parse(model.promotion.endsAt));
+}
+
+// Keep catalog pricing accurate without requiring a deployment at the promo
+// boundary. During the offer the configured prices are shown; after it ends,
+// all catalog consumers receive the standard rates automatically.
+export const models: Model[] = catalogModels.map(model => {
+  if (!model.promotion || isPromotionActive(model)) return model;
+  return {
+    ...model,
+    priceInput: model.promotion.standardPriceInput,
+    priceOutput: model.promotion.standardPriceOutput,
+  };
+});

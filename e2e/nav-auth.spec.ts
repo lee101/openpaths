@@ -16,10 +16,11 @@ test.describe('Nav links when NOT logged in', () => {
     await expect(page.getByTestId('nav-dashboard')).not.toBeAttached();
   });
 
-  test('Sign In link goes to /account', async ({ page }) => {
+  test('Get Started opens the sign-in modal', async ({ page }) => {
     await page.goto('/');
     await page.getByTestId('nav-get-started').click();
-    await expect(page).toHaveURL(/\/account/);
+    await expect(page.getByTestId('auth-modal')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Sign In' })).toBeVisible();
   });
 });
 

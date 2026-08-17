@@ -159,6 +159,9 @@ const TTS_STYLES = ['Natural', 'Deadpan', 'Empathetic', 'Dramatic', 'Whispering'
 const TTS_PACES = ['Natural', 'Slow', 'Measured', 'Fast', 'Staccato', 'Urgent'] as const;
 const TTS_ACCENTS = ['American (Gen)', 'British (RP)', 'Neutral', 'Australian', 'Indian English', 'Irish', 'Scottish'] as const;
 const SPEECH_LANGUAGES = ['en', 'es', 'fr', 'de', 'it', 'pt', 'ja', 'ko', 'zh'] as const;
+const GEMINI_37_PROMO_PRICING = Date.now() < Date.parse('2026-08-28T00:00:00Z')
+  ? { input_per_1m_tokens: 0.375, output_per_1m_tokens: 1.875 }
+  : { input_per_1m_tokens: 0.75, output_per_1m_tokens: 3.75 };
 
 const FALLBACK_MODELS: CatalogModel[] = [
   { id: 'openpaths/auto', label: 'OpenPaths Auto', provider: 'OpenPaths' },
@@ -168,7 +171,8 @@ const FALLBACK_MODELS: CatalogModel[] = [
   { id: 'openpaths/auto-reasoning', label: 'OpenPaths Auto Reasoning', provider: 'OpenPaths' },
   { id: 'openpaths/auto-vision', label: 'OpenPaths Auto Vision', provider: 'OpenPaths' },
   { id: 'openpaths/auto-image', label: 'OpenPaths Auto Image', provider: 'OpenPaths', pricing: { per_image: 0.211 } },
-  { id: 'gemini-latest', label: 'Gemini Latest', provider: 'Google', pricing: { input_per_1m_tokens: 1.50, output_per_1m_tokens: 9.00 } },
+  { id: 'gemini-3.7-flash', label: 'Gemini 3.7 Flash', provider: 'Google', pricing: GEMINI_37_PROMO_PRICING },
+  { id: 'gemini-latest', label: 'Gemini Latest', provider: 'Google', pricing: GEMINI_37_PROMO_PRICING },
   { id: 'gemini-3.5-flash', label: 'Gemini 3.5 Flash', provider: 'Google', pricing: { input_per_1m_tokens: 1.50, output_per_1m_tokens: 9.00 } },
   { id: 'gemini-3.1-flash-lite', label: 'Gemini 3.1 Flash Lite', provider: 'Google', pricing: { input_per_1m_tokens: 0.25, output_per_1m_tokens: 1.50 } },
   { id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', provider: 'Google' },
@@ -185,8 +189,13 @@ const FALLBACK_MODELS: CatalogModel[] = [
   { id: 'claude-sonnet-latest', label: 'Claude Sonnet 5 (latest)', provider: 'Anthropic' },
   { id: 'claude-opus-latest', label: 'Claude Opus (latest)', provider: 'Anthropic' },
   { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku', provider: 'Anthropic' },
+  { id: 'grok-4.6', label: 'Grok 4.6', provider: 'xAI' },
   { id: 'grok-4.3', label: 'Grok 4.3', provider: 'xAI' },
   { id: 'grok-latest', label: 'Grok Latest', provider: 'xAI' },
+  { id: 'cursor-grok-4.5', label: 'Cursor Grok 4.5', provider: 'Cursor' },
+  { id: 'cursor-grok-4.5-fast', label: 'Cursor Grok 4.5 Fast', provider: 'Cursor' },
+  { id: 'cursor-grok-4.6', label: 'Cursor Grok 4.6', provider: 'Cursor' },
+  { id: 'cursor-grok-4.6-fast', label: 'Cursor Grok 4.6 Fast', provider: 'Cursor' },
   { id: 'grok-4.20-0309-non-reasoning', label: 'Grok 4.20 Non-Reasoning', provider: 'xAI' },
   { id: 'grok-3-mini', label: 'Grok 3 Mini', provider: 'xAI' },
   { id: 'xai-tts', label: 'xAI Text to Speech', provider: 'xAI', pricing: { input_per_1m_tokens: 15.00 } },
@@ -202,6 +211,7 @@ const FALLBACK_MODELS: CatalogModel[] = [
   { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B', provider: 'Groq' },
   { id: 'glm-5.2', label: 'GLM-5.2', provider: 'Z.AI', pricing: { input_per_1m_tokens: 1.40, output_per_1m_tokens: 4.40 } },
   { id: 'glm-5', label: 'GLM-5', provider: 'Together' },
+  { id: 'qwen3.8-2.4t-a95b', label: 'Qwen 3.8 2.4T A95B', provider: 'Together', pricing: { input_per_1m_tokens: 2.50, input_cache_hit_per_1m_tokens: 0.50, output_per_1m_tokens: 6.25 } },
   { id: 'qwen3.5-397b', label: 'Qwen 3.5 397B', provider: 'Together' },
   { id: 'minimax-m2.7', label: 'MiniMax M2.7', provider: 'MiniMax' },
   { id: 'minimax-m2.5-direct', label: 'MiniMax M2.5', provider: 'MiniMax' },
@@ -220,6 +230,7 @@ const FALLBACK_MODELS: CatalogModel[] = [
   { id: 'fal-ai/hidream-o1-image/edit', label: 'HiDream O1 Image Edit', provider: 'Fal', pricing: { per_megapixel: 0.011 } },
   { id: 'fal-ai/flux-2-pro/outpaint', label: 'FLUX 2 Pro Outpaint', provider: 'Fal', pricing: { first_megapixel: 0.033, extra_megapixel: 0.0165 } },
   { id: 'gemini-omni-flash-preview', label: 'Gemini Omni Flash Preview', provider: 'Google', pricing: { per_second: 0.10136 } },
+  { id: 'minimax-h3', label: 'MiniMax H3', provider: 'MiniMax', pricing: { per_second: 0.13 } },
   { id: 'seedance-2.0-fast-text-to-video', label: 'Seedance 2.0 Fast Text to Video', provider: 'Fal', pricing: { per_second: 0.26609 } },
   { id: 'seedance-2.0-text-to-video', label: 'Seedance 2.0 Text to Video', provider: 'Fal', pricing: { per_second: 0.33374 } },
   { id: 'seedance-2.0-image-to-video', label: 'Seedance 2.0 Image to Video', provider: 'Fal', pricing: { per_second: 0.33264 } },

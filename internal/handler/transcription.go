@@ -22,6 +22,7 @@ var modelToProvider = map[string]string{
 	"whisper-large-v3-turbo":     "groq",
 	"distil-whisper-large-v3-en": "groq",
 	// OpenAI
+	"gpt-transcribe":         "openai",
 	"whisper-1":              "openai",
 	"gpt-4o-transcribe":      "openai",
 	"gpt-4o-mini-transcribe": "openai",

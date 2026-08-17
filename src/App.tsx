@@ -7,6 +7,7 @@ import { Models } from './pages/Models';
 import { Account } from './pages/Account';
 import { Playground } from './pages/Playground';
 import { Fusion } from './pages/Fusion';
+import { Compound } from './pages/Compound';
 import { Blog } from './pages/Blog';
 import { BlogPost } from './pages/BlogPost';
 import { Providers } from './pages/Providers';
@@ -73,6 +74,7 @@ export default function App() {
           <Route path="agents/:id" element={<AgentDetail />} />
 		  <Route path="orgs/:slug/join" element={<OrgJoin />} />
           <Route path="fusion" element={<Fusion />} />
+          <Route path="compound" element={<Compound />} />
           <Route path="tools" element={<Tools />} />
           <Route path="image-to-3d" element={<ImageTo3D />} />
           <Route path="text-to-3d" element={<TextTo3D />} />

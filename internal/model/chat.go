@@ -209,6 +209,11 @@ type ModelPricing struct {
 	InputPer1M              float64            `json:"input_per_1m_tokens,omitempty"`
 	InputCacheHitPer1M      float64            `json:"input_cache_hit_per_1m_tokens,omitempty"`
 	OutputPer1M             float64            `json:"output_per_1m_tokens,omitempty"`
+	AudioInputPer1M         float64            `json:"audio_input_per_1m_tokens,omitempty"`
+	AudioInputCacheHitPer1M float64            `json:"audio_input_cache_hit_per_1m_tokens,omitempty"`
+	AudioOutputPer1M        float64            `json:"audio_output_per_1m_tokens,omitempty"`
+	ImageInputPer1M         float64            `json:"image_input_per_1m_tokens,omitempty"`
+	ImageInputCacheHitPer1M float64            `json:"image_input_cache_hit_per_1m_tokens,omitempty"`
 	Per1MCharacters         float64            `json:"per_1m_characters,omitempty"`
 	LongContextThreshold    int                `json:"long_context_threshold,omitempty"`
 	InputPer1MLong          float64            `json:"input_per_1m_tokens_long,omitempty"`
