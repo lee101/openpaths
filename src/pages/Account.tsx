@@ -18,6 +18,7 @@ import {
   Plus,
   Repeat,
   Save,
+  Shield,
   ShieldCheck,
   Sparkles,
   TriangleAlert,
@@ -47,6 +48,7 @@ import {
   useStripe,
 } from '@stripe/react-stripe-js';
 import { TopUpModal, getStripe } from '../components/TopUpModal';
+import { GuardrailsPanel } from '../components/GuardrailsPanel';
 import { AUTH_EVENT, clearApiKey, setApiKey as storeApiKey } from '../lib/api';
 
 const API_BASE = '';
@@ -895,7 +897,7 @@ function OpenAIMaxPlanPanel({
 }
 
 export function Account() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'keys' | 'billing' | 'analytics'>(
+  const [activeTab, setActiveTab] = useState<'overview' | 'keys' | 'billing' | 'analytics' | 'guardrails'>(
     typeof window !== 'undefined' && window.location.pathname.startsWith('/usage') ? 'analytics' : 'overview',
   );
   const [user, setUser] = useState<any>(null);
@@ -1509,6 +1511,15 @@ export function Account() {
             <Key className="w-4 h-4" /> API Keys
           </button>
           <button
+            onClick={() => setActiveTab('guardrails')}
+            data-testid="tab-guardrails"
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
+              activeTab === 'guardrails' ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/5 hover:text-white'
+            }`}
+          >
+            <Shield className="w-4 h-4" /> Guardrails
+          </button>
+          <button
             onClick={() => setActiveTab('billing')}
             data-testid="tab-billing"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
@@ -1785,6 +1796,12 @@ export function Account() {
             )}
 
             <p className="text-sm text-white/40 font-light mt-6">Do not share your API key in publicly accessible areas such as GitHub or client-side code.</p>
+          </motion.div>
+        )}
+
+        {activeTab === 'guardrails' && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+            <GuardrailsPanel apiKeys={apiKeys} />
           </motion.div>
         )}
 

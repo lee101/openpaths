@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
     "prebuild": "npm run generate:app-og && npm run generate:sitemap",
+    "generate:brand-assets": "python3 scripts/generate-logo-assets.py",
+    "generate:og": "python3 scripts/gen_og.py && python3 scripts/gen_og_providers.py && python3 scripts/gen_og_sync_lipsync.py && npm run generate:app-og",
     "generate:app-og": "tsx scripts/generate-app-og.ts",
     "build": "vite build && tsx scripts/prerender-static-meta.ts",
     "generate:sitemap": "tsx scripts/generate-sitemap.ts",
@@ -24,10 +26,16 @@
     "test:e2e:live": "npx playwright test --config=playwright.live.config.ts"
   },
   "dependencies": {
+    "@codemirror/lang-css": "^6.3.1",
+    "@codemirror/lang-html": "^6.4.11",
+    "@codemirror/lang-javascript": "^6.2.5",
+    "@codemirror/lang-json": "^6.0.2",
+    "@codemirror/theme-one-dark": "^6.1.3",
     "@google/genai": "^1.29.0",
     "@stripe/react-stripe-js": "^5.6.1",
     "@stripe/stripe-js": "^8.8.0",
     "@tailwindcss/vite": "^4.1.14",
+    "@uiw/react-codemirror": "^4.25.10",
     "@vitejs/plugin-react": "^5.0.4",
     "better-sqlite3": "^12.4.1",
     "dotenv": "^17.2.3",

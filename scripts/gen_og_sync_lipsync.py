@@ -40,7 +40,7 @@ def render_svg(svg, size):
     with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
         out = tmp.name
     try:
-        subprocess.run(['rsvg-convert', '-w', str(size), '-h', str(size), '-o', out, svg], check=True)
+        subprocess.run(['convert', '-background', 'none', svg, '-resize', f'{size}x{size}', out], check=True)
         return Image.open(out).convert('RGBA')
     finally:
         try:
@@ -66,6 +66,20 @@ def rounded(img, radius):
 img = Image.new('RGB', (W, H), BG)
 d = ImageDraw.Draw(img)
 
+# Keep the generator reproducible even when the original demo frame is not in the
+# checkout: the committed OG contains the same 360px frame in this exact crop.
+avatar_source = None
+if os.path.exists(AVATAR):
+    avatar_source = Image.open(AVATAR).convert('RGB')
+elif os.path.exists(OUT):
+    avatar_source = Image.open(OUT).convert('RGB').crop((790, 141, 1150, 501))
+
+# quiet technical grid
+for gx in range(0, W, 60):
+    d.line((gx, 0, gx, H), fill='#0d1117', width=1)
+for gy in range(0, H, 60):
+    d.line((0, gy, W, gy), fill='#0d1117', width=1)
+
 # accent frame bars
 d.rectangle([0, 0, W, 4], fill=mix(ACCENT, 230))
 d.rectangle([0, H - 4, W, H], fill=mix(ACCENT, 110))
@@ -76,8 +90,8 @@ cx, cy = W - 230, H // 2 + 6
 # glow rings behind card
 for r, a in [(250, 22), (210, 34), (170, 54)]:
     d.ellipse([cx - r, cy - r, cx + r, cy + r], outline=mix(ACCENT, a), width=1)
-if os.path.exists(AVATAR):
-    av = ImageOps.fit(Image.open(AVATAR).convert('RGB'), (card_w, card_h), centering=(0.5, 0.32))
+if avatar_source is not None:
+    av = ImageOps.fit(avatar_source, (card_w, card_h), centering=(0.5, 0.32))
     av = rounded(av, 28)
     img.paste(av, (cx - card_w // 2, cy - card_h // 2), av)
     d.rounded_rectangle([cx - card_w // 2, cy - card_h // 2, cx + card_w // 2, cy + card_h // 2],
@@ -96,9 +110,9 @@ for i in range(bars):
 
 # --- left text column ---
 x = 64
-# openpaths brand line
-d.ellipse([x, 70, x + 10, 80], fill='#22c55e')
-d.text((x + 18, 68), 'openpaths.io', fill='#ffffff66', font=f_mono)
+# OpenPaths brand line uses the canonical road mark.
+paste_svg(img, os.path.join(LOGOS, 'openpaths.svg'), 38, (x + 19, 76))
+d.text((x + 48, 68), 'OPENPATHS / MEDIA ROUTING', fill='#ffffff88', font=f_mono)
 
 # co-brand pill: fal logo + via openpaths
 paste_svg(img, os.path.join(LOGOS, 'fal.svg'), 30, (x + 16, 116))

@@ -76,6 +76,7 @@ const primaryNavLinks = [
   { label: 'Playground', to: '/playground', match: (path: string) => path === '/playground' },
   { label: 'Agents', to: '/agents', match: (path: string) => path.startsWith('/agents') },
   { label: 'Fusion', to: '/fusion', match: (path: string) => path === '/fusion' },
+  { label: 'Artifacts', to: '/artifacts', match: (path: string) => path.startsWith('/artifacts') },
   { label: 'Prompts', to: '/prompts', match: (path: string) => path.startsWith('/prompts') },
   { label: 'Tools', to: '/tools', match: (path: string) => path === '/tools' || path === '/image-to-3d' || path === '/text-to-3d' || path === '/rig-3d' || path === '/retexture-3d' || path === '/text-to-image' || path === '/video-extension' },
   { label: 'Search', to: '/search', match: (path: string) => path === '/search' },
@@ -113,7 +114,7 @@ export function Layout() {
     <div className={`bg-black text-white font-sans selection:bg-white selection:text-black flex flex-col ${isPlayground ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
       <nav className="relative border-b border-white/10 px-4 py-3 sm:px-6 sm:py-4 flex items-center justify-between bg-black/90 backdrop-blur-md z-50 shrink-0">
         <Link to="/" className="flex items-center gap-2">
-          <img src="/logo.webp" alt="OpenPaths" className="w-6 h-6" />
+          <img src="/openpaths-road-logo.svg" alt="OpenPaths" className="h-6 w-6 brightness-0 invert" />
           <span className="font-mono font-bold text-xl tracking-tighter">OpenPaths</span>
         </Link>
         <div className="hidden xl:flex items-center gap-6 text-sm font-mono text-white/60">
@@ -211,7 +212,7 @@ export function Layout() {
             <div className="grid grid-cols-2 lg:grid-cols-6 gap-8 mb-10">
               <div>
                 <div className="flex items-center gap-2 mb-4">
-                  <img src="/logo.webp" alt="OpenPaths" className="w-5 h-5" />
+                  <img src="/openpaths-road-logo.svg" alt="OpenPaths" className="h-5 w-5 brightness-0 invert" />
                   <span className="font-mono font-bold tracking-tighter">OpenPaths</span>
                 </div>
                 <p className="text-xs font-mono text-white/30 leading-relaxed">Open source model router. Millisecond routing across 400+ AI models.</p>

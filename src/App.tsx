@@ -46,6 +46,9 @@ import { OrgJoin } from './pages/OrgJoin';
 const Apps = lazy(() => import('./pages/Apps').then(module => ({ default: module.Apps })));
 const AppDetail = lazy(() => import('./pages/AppDetail').then(module => ({ default: module.AppDetail })));
 const SharedChat = lazy(() => import('./pages/SharedChat').then(module => ({ default: module.SharedChat })));
+const Artifacts = lazy(() => import('./pages/Artifacts').then(module => ({ default: module.Artifacts })));
+const ArtifactEditor = lazy(() => import('./pages/ArtifactEditor').then(module => ({ default: module.ArtifactEditor })));
+const ArtifactDetail = lazy(() => import('./pages/ArtifactDetail').then(module => ({ default: module.ArtifactDetail })));
 
 export default function App() {
   return (
@@ -96,6 +99,10 @@ export default function App() {
           <Route path="apps/" element={<Suspense fallback={<RouteLoading />}><Apps /></Suspense>} />
           <Route path="apps/:slug" element={<Suspense fallback={<RouteLoading />}><AppDetail /></Suspense>} />
           <Route path="apps/:slug/" element={<Suspense fallback={<RouteLoading />}><AppDetail /></Suspense>} />
+          <Route path="artifacts" element={<Suspense fallback={<RouteLoading />}><Artifacts /></Suspense>} />
+          <Route path="artifacts/new" element={<Suspense fallback={<RouteLoading />}><ArtifactEditor /></Suspense>} />
+          <Route path="artifacts/:id/edit" element={<Suspense fallback={<RouteLoading />}><ArtifactEditor isEdit /></Suspense>} />
+          <Route path="artifacts/:id" element={<Suspense fallback={<RouteLoading />}><ArtifactDetail /></Suspense>} />
           <Route path="evals" element={<Evals />} />
           <Route path="image-evals" element={<ImageEvals />} />
           <Route path="compare" element={<CompareIndex />} />

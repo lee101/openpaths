@@ -24,6 +24,9 @@ const ENDPOINTS = [
   { method: 'POST', path: '/v1/stt', description: 'xAI Speech to Text shortcut; defaults to xai-stt.' },
   { method: 'POST', path: '/v1/tts', description: 'xAI Text to Speech shortcut; defaults to xai-tts.' },
   { method: 'POST', path: '/v1/embeddings', description: 'Generate vector embeddings (OpenPaths, Google Gemini, Mistral, Nemotron).' },
+  { method: 'GET', path: '/v1/artifacts/{id}', description: 'Retrieve an artifact and all its files (free).' },
+  { method: 'GET', path: '/v1/artifacts/search', description: 'Search public artifacts by title, description, or tag ($1 per 1,000 searches).' },
+  { method: 'POST', path: '/v1/artifacts', description: 'Create an artifact (multi-file web app) from the API.' },
 ];
 
 type Tab = 'chat' | 'fusion' | 'images' | '3d' | 'text-to-3d' | 'videos' | 'transcription';
@@ -194,6 +197,9 @@ export function Docs() {
             </div>
             <p className="mb-4 text-sm text-white/55">
               Fallback candidates are price-sorted by default. Send <code>routing_strategy=&quot;config&quot;</code> to preserve catalogue order, or use <code>openpaths/auto-fast</code> for latency-biased routing. The stats page records latency, time to first token, throughput, and spend by provider/model.
+            </p>
+            <p className="mb-4 text-sm text-white/55">
+              Guardrails (Account → Guardrails) attach spend caps, model/provider allowlists, prompt-injection detection, PII scrub/block, and custom regex to API keys. Violations return HTTP 403 with <code>type: guardrail_error</code>; budget email alerts fire once per reset window.
             </p>
             <p className="mb-4 text-sm text-white/55">
               Inference.net is available as <code>inference_net</code> with Nemotron 3 Super, Schematron, ClipTagger, GPT-OSS, Llama, DeepSeek, Qwen, Gemma, and Mistral routes. GLM-5.2 stays on Z.ai until Inference.net advertises a compatible GLM model id.

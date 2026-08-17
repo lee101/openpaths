@@ -40,49 +40,50 @@ func (h *StatsHandler) HandleAppOGImage(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	icon := app.FaviconURL
-	if icon == "" {
-		icon = "https://openpaths.io/favicon.ico"
-	}
 	appHost := appHost(app.URL)
 	if appHost == "" {
 		appHost = app.Source
 	}
-	title := truncateRunes(app.Name, 36)
-	description := truncateRunes(app.Description, 105)
-	tokens := compactTokens(app.TotalTokens)
-	model := "Model usage tracked on OpenPaths"
-	if len(app.Models) > 0 && app.Models[0].Model != "" {
-		model = truncateRunes(app.Models[0].Model, 44)
+	title := truncateRunes(app.Name, 24)
+	description := wrapTextLines(app.Description, 50, 2)
+	for len(description) < 2 {
+		description = append(description, "")
 	}
+	tokens := compactTokens(app.TotalTokens)
+	initials := appInitials(app.Name)
 
 	svg := fmt.Sprintf(`<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
-  <rect width="1200" height="630" fill="#030303"/>
-  <rect x="56" y="54" width="1088" height="522" rx="28" fill="#0a0a0a" stroke="#202020"/>
-  <circle cx="120" cy="122" r="21" fill="#0f172a" stroke="#38bdf8" stroke-width="3"/>
-  <path d="M112 122h16M120 114v16" stroke="#e5e7eb" stroke-width="3" stroke-linecap="round"/>
-  <text x="156" y="132" fill="#f8fafc" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="30" font-weight="700">OpenPaths</text>
-  <text x="56" y="608" fill="#525252" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18">openpaths.io/apps/%s</text>
-  <image href="%s" x="86" y="205" width="116" height="116" preserveAspectRatio="xMidYMid slice"/>
-  <text x="230" y="248" fill="#ffffff" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="64" font-weight="800">%s</text>
-  <text x="232" y="292" fill="#94a3b8" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="24">%s</text>
-  <text x="86" y="384" fill="#cbd5e1" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="30">%s</text>
-  <rect x="86" y="448" width="300" height="82" rx="16" fill="#111111" stroke="#262626"/>
-  <text x="112" y="482" fill="#64748b" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18">TOKENS</text>
-  <text x="112" y="518" fill="#ffffff" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="34" font-weight="800">%s</text>
-  <rect x="414" y="448" width="574" height="82" rx="16" fill="#111111" stroke="#262626"/>
-  <text x="440" y="482" fill="#64748b" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18">TOP MODEL</text>
-  <text x="440" y="518" fill="#ffffff" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="26" font-weight="700">%s</text>
-  <rect x="1010" y="448" width="88" height="82" rx="16" fill="#083344" stroke="#155e75"/>
-  <text x="1030" y="498" fill="#67e8f9" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="28" font-weight="800">APP</text>
+  <defs><pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse"><path d="M60 0H0V60" fill="none" stroke="#0d131c"/></pattern></defs>
+  <rect width="1200" height="630" fill="#05070b"/><rect width="1200" height="630" fill="url(#grid)"/>
+  <rect width="1200" height="5" fill="#38bdf8"/><rect y="626" width="1200" height="4" fill="#102c3a"/>
+  <g transform="translate(68 54) scale(.072)"><g transform="rotate(180 256 256)" fill="none" stroke="#f6f8fb" stroke-width="34" stroke-linecap="square" stroke-linejoin="round">
+    <path d="M420 256C360 256 316 256 250 256"/><path d="M250 256C210 256 184 235 170 200C156 165 170 135 80 144"/><path d="M250 256C210 256 184 277 170 312C156 347 170 377 80 368"/>
+    <g fill="#f6f8fb" stroke="none"><path d="M13 144l54 24v-48z"/><path d="M13 368l54 24v-48z"/></g>
+  </g></g>
+  <text x="116" y="82" fill="#f6f8fb" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" font-weight="700">OPENPATHS</text>
+  <text x="232" y="82" fill="#606d7e" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18">/  APPS &amp; AGENTS</text>
+  <text x="68" y="156" fill="#38bdf8" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="17" font-weight="700">APP USAGE</text>
+  <text x="68" y="241" fill="#f6f8fb" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="64" font-weight="800">%s</text>
+  <text x="70" y="285" fill="#8190a4" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="22">%s</text>
+  <text x="70" y="361" fill="#cbd5e1" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="27">%s</text>
+  <text x="70" y="401" fill="#cbd5e1" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="27">%s</text>
+  <text x="70" y="488" fill="#64748b" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="17">MODEL ACTIVITY ATTRIBUTED THROUGH OPENPATHS</text>
+  <rect x="778" y="72" width="354" height="486" rx="34" fill="#090d14" stroke="#155e75" stroke-width="2"/>
+  <circle cx="955" cy="230" r="100" fill="#071b26" stroke="#0e7490" stroke-width="2"/><circle cx="955" cy="230" r="78" fill="#0c2531" stroke="#38bdf8"/>
+  <text x="955" y="255" text-anchor="middle" fill="#e0f2fe" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="70" font-weight="800">%s</text>
+  <text x="823" y="376" fill="#64748b" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="17">TOKENS ROUTED</text>
+  <text x="823" y="422" fill="#f6f8fb" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="34" font-weight="800">%s</text>
+  <line x1="823" y1="454" x2="1087" y2="454" stroke="#1f2937"/>
+  <text x="823" y="494" fill="#7dd3fc" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" font-weight="700">OPENPATHS APP NETWORK</text>
+  <text x="68" y="594" fill="#4b5869" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="17">openpaths.io/apps/%s</text>
 </svg>`,
-		html.EscapeString(strings.TrimSuffix(slug, ".svg")),
-		html.EscapeString(icon),
 		html.EscapeString(title),
 		html.EscapeString(appHost),
-		html.EscapeString(description),
+		html.EscapeString(description[0]),
+		html.EscapeString(description[1]),
+		html.EscapeString(initials),
 		html.EscapeString(tokens),
-		html.EscapeString(model),
+		html.EscapeString(strings.TrimSuffix(slug, ".svg")),
 	)
 
 	ctx.SetContentType("image/svg+xml; charset=utf-8")
@@ -319,6 +320,55 @@ func truncateRunes(value string, max int) string {
 		return string(runes[:max])
 	}
 	return string(runes[:max-1]) + "..."
+}
+
+func wrapTextLines(value string, maxRunes, limit int) []string {
+	words := strings.Fields(strings.TrimSpace(value))
+	if limit <= 0 || len(words) == 0 {
+		return nil
+	}
+	lines := make([]string, 0, limit)
+	for _, word := range words {
+		if len(lines) == 0 {
+			lines = append(lines, word)
+			continue
+		}
+		candidate := lines[len(lines)-1] + " " + word
+		if len([]rune(candidate)) <= maxRunes {
+			lines[len(lines)-1] = candidate
+			continue
+		}
+		if len(lines) == limit {
+			runes := []rune(candidate)
+			if len(runes) > maxRunes-3 {
+				runes = runes[:maxRunes-3]
+			}
+			lines[len(lines)-1] = string(runes) + "..."
+			break
+		}
+		lines = append(lines, word)
+	}
+	return lines
+}
+
+func appInitials(value string) string {
+	words := strings.FieldsFunc(strings.TrimSpace(value), func(r rune) bool {
+		return r == ' ' || r == '\t' || r == '.' || r == '_' || r == '-'
+	})
+	initials := make([]rune, 0, 2)
+	for _, word := range words {
+		runes := []rune(word)
+		if len(runes) > 0 {
+			initials = append(initials, runes[0])
+		}
+		if len(initials) == 2 {
+			break
+		}
+	}
+	if len(initials) == 0 {
+		return "APP"
+	}
+	return strings.ToUpper(string(initials))
 }
 
 func compactTokens(value int64) string {

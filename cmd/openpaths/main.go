@@ -107,6 +107,8 @@ func main() {
 	savedRespQ := queries.NewSavedResponseQueries(database.Pool)
 	agentQ := queries.NewAgentQueries(database.Pool)
 	sharedChatQ := queries.NewSharedChatQueries(database.Pool)
+	artifactQ := queries.NewArtifactQueries(database.Pool)
+	guardrailQ := queries.NewGuardrailQueries(database.Pool)
 
 	jwtService := auth.NewJWTService(cfg.JWT.Secret, cfg.JWT.ExpirationHours)
 
@@ -481,8 +483,10 @@ func main() {
 		SharedChatQ:      sharedChatQ,
 		AccessQ:          accessQ,
 		GuardQ:           guardQ,
+		GuardrailQ:       guardrailQ,
 		TeamQ:            teamQ,
 		SuppressionQ:     suppressionQ,
+		ArtifactQ:        artifactQ,
 	})
 
 	done := make(chan os.Signal, 1)

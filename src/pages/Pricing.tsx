@@ -117,6 +117,14 @@ const SEARCH_ROWS = [
     unitLabel: '/ search',
     notes: 'Applied AI NZ papers.app.nz research search. Equivalent to $1 per 1,000 searches.',
   },
+  {
+    id: 'artifact-search',
+    name: 'Artifact Search',
+    provider: 'OpenPaths',
+    unitPrice: 0.001,
+    unitLabel: '/ search',
+    notes: 'Search public artifacts by title, description, or tag. $1 per 1,000 searches. Retrieving an artifact by ID is free.',
+  },
 ];
 
 const PRICING_PAGE_TITLE = 'OpenPaths Pricing | Near-Zero Markup AI Model Routing';

@@ -17,6 +17,7 @@ import (
 	"github.com/openpaths/openpaths/internal/billing"
 	responsecache "github.com/openpaths/openpaths/internal/cache"
 	"github.com/openpaths/openpaths/internal/db/queries"
+	"github.com/openpaths/openpaths/internal/guardrails"
 	"github.com/openpaths/openpaths/internal/metrics"
 	"github.com/openpaths/openpaths/internal/middleware"
 	"github.com/openpaths/openpaths/internal/model"
@@ -117,6 +118,13 @@ func (h *ChatHandler) HandleChatCompletion(ctx *fasthttp.RequestCtx) {
 	if err != nil {
 		writeError(ctx, 403, "model_not_permitted", err.Error())
 		return
+	}
+	if providers := middleware.GuardrailProviders(ctx); len(providers) > 0 {
+		candidates, err = guardrails.FilterRouteCandidates(candidates, providers)
+		if err != nil {
+			writeError(ctx, 403, "provider_not_allowed", err.Error())
+			return
+		}
 	}
 	callerEffort := req.ReasoningEffort
 

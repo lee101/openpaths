@@ -209,6 +209,7 @@ models:
     supports_tools: true
     supports_vision: true
     fallback_models:
+      - "nvidia/deepseek-v4-pro"
       - "gemini-2.5-flash"
       - "gemini-3.1-flash-lite"
       - "gpt-5.6-luna"
@@ -458,6 +459,34 @@ models:
     price_first_megapixel: 0.033
     price_extra_megapixel: 0.0165
     aliases: ["flux-2-pro-outpaint", "flux-outpaint", "outpaint", "fal-outpaint"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "fal-ai/flux-2-pro/inpaint"
+    provider: fal
+    provider_model_id: "fal-ai/flux-2-pro/inpaint"
+    price_first_megapixel: 0.033
+    price_extra_megapixel: 0.0165
+    aliases: ["flux-2-pro-inpaint", "flux-inpaint", "inpaint", "fal-inpaint"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "flux-img2img"
+    provider: fal
+    provider_model_id: "fal-ai/flux/dev/image-to-image"
+    price_per_image: 0.025
+    aliases: ["flux-image-to-image", "img2img", "fal-flux-img2img"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "lightning-img2img"
+    provider: fal
+    provider_model_id: "fal-ai/fast-lightning-sdxl/image-to-image"
+    price_per_image: 0.003
+    aliases: ["livedraw", "fast-img2img", "lightning-i2i", "fal-lightning-img2img"]
     supports_streaming: false
     supports_tools: false
     supports_vision: true
@@ -1652,8 +1681,11 @@ models:
     supports_tools: true
     supports_vision: false
     fallback_models:
+      - "nvidia/deepseek-v4-pro"
+      - "deepseek-chat"
       - "nvidia/deepseek-v3.2"
       - "together/deepseek-v3.1"
+      - "or/deepseek-chat"
 
   - id: "deepseek-v4-pro"
     provider: deepseek

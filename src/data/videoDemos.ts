@@ -1,4 +1,4 @@
-export const SEEDANCE_LOGO_URL = 'https://openpathsstatic.openpaths.io/static/uploads/playground/seedance/openpaths-logo.webp';
+export const SEEDANCE_LOGO_URL = 'https://openpaths.io/logo-512.webp';
 export const HAPPY_HORSE_RAP_IMAGE_URL = 'https://openpathsstatic.openpaths.io/static/uploads/playground/happy-horse/rap.png';
 const HH11_BASE = 'https://openpathsstatic.openpaths.io/static/uploads/playground/happy-horse-v1.1';
 export const HAPPY_HORSE_V11_IMAGE_URL = `${HH11_BASE}/rap.png`;

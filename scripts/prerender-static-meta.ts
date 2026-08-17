@@ -21,6 +21,11 @@ const indexHtml = readFileSync(join(DIST_DIR, 'index.html'), 'utf8');
 
 const routes: StaticMeta[] = [
   {
+    path: '/artifacts',
+    title: 'Artifacts Gallery | OpenPaths',
+    description: 'Build, host, and publish interactive AI artifacts. An IDE on the web where any OpenPaths model writes, edits, and ships self-contained web apps to a public gallery.',
+  },
+  {
     path: '/art',
     title: 'ZImage Prompt Search | OpenPaths',
     description: 'Browse and search a large ZImage generated-art prompt index, then try any prompt against OpenPaths image generation models.',

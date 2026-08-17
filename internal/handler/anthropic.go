@@ -13,6 +13,7 @@ import (
 
 	"github.com/openpaths/openpaths/internal/billing"
 	"github.com/openpaths/openpaths/internal/db/queries"
+	"github.com/openpaths/openpaths/internal/guardrails"
 	"github.com/openpaths/openpaths/internal/metrics"
 	"github.com/openpaths/openpaths/internal/middleware"
 	"github.com/openpaths/openpaths/internal/model"
@@ -161,6 +162,13 @@ func (h *AnthropicHandler) HandleMessages(ctx *fasthttp.RequestCtx) {
 	if err != nil {
 		writeAnthError(ctx, 403, "permission_error", err.Error())
 		return
+	}
+	if providers := middleware.GuardrailProviders(ctx); len(providers) > 0 {
+		candidates, err = guardrails.FilterRouteCandidates(candidates, providers)
+		if err != nil {
+			writeAnthError(ctx, 403, "permission_error", err.Error())
+			return
+		}
 	}
 
 	for i, cand := range candidates {

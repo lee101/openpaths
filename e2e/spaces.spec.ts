@@ -231,7 +231,7 @@ test.describe('Public Spaces', () => {
     await expect(page.getByTestId('video-start-image-dropzone')).toBeVisible();
     await expect(page.getByTestId('video-end-image-dropzone')).toBeVisible();
     await expect(page.locator('input[type="file"][accept="image/*"]').first()).toBeVisible();
-    await expect(page.getByTestId('video-image-url')).toHaveValue('https://openpathsstatic.openpaths.io/static/uploads/playground/seedance/openpaths-logo.webp');
+    await expect(page.getByTestId('video-image-url')).toHaveValue('https://openpaths.io/logo-512.webp');
     await expect(page.getByTestId('preview-video-start-image').locator('img')).toBeVisible();
     const promptInput = page.locator('textarea[placeholder*="Describe the video"]');
     await expect(promptInput).toHaveValue(/Animate the supplied OpenPaths logo/);
@@ -242,7 +242,7 @@ test.describe('Public Spaces', () => {
     await expect(generatedCode).toContainText('op-video-e2e-key');
     await expect(generatedCode).toContainText('/videos/generations');
     await expect(generatedCode).toContainText('"model": "seedance-2.0-image-to-video"');
-    await expect(generatedCode).toContainText('"image_url": "https://openpathsstatic.openpaths.io/static/uploads/playground/seedance/openpaths-logo.webp"');
+    await expect(generatedCode).toContainText('"image_url": "https://openpaths.io/logo-512.webp"');
 
     await page.getByRole('button', { name: 'cURL' }).click();
     await expect(generatedCode).toContainText('Authorization: Bearer op-video-e2e-key');

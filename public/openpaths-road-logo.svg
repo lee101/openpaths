@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">OpenPaths road logo</title>
+  <desc id="desc">A road that opens into two curved paths.</desc>
+
+  <g transform="rotate(180 256 256)">
+    <g fill="none" stroke="#111827" stroke-width="34" stroke-linecap="square" stroke-linejoin="round">
+      <path d="M420 256 C360 256 316 256 250 256" />
+      <path d="M250 256 C210 256 184 235 170 200 C156 165 170 135 80 144" />
+      <path d="M250 256 C210 256 184 277 170 312 C156 347 170 377 80 368" />
+    </g>
+
+    <g fill="#111827">
+      <polygon points="13,144 67,168 67,120" />
+      <polygon points="13,368 67,392 67,344" />
+    </g>
+  </g>
+</svg>

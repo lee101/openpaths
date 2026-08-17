@@ -85,8 +85,10 @@ type Dependencies struct {
 	SharedChatQ      *queries.SharedChatQueries
 	AccessQ          *queries.AccessQueries
 	GuardQ           *queries.GuardQueries
+	GuardrailQ       *queries.GuardrailQueries
 	TeamQ            *queries.TeamQueries
 	SuppressionQ     *queries.SuppressionQueries
+	ArtifactQ        *queries.ArtifactQueries
 }
 
 func New(deps *Dependencies) *Server {
@@ -119,6 +121,7 @@ func New(deps *Dependencies) *Server {
 		middleware.AppAttribution(deps.AppQ),
 		middleware.BYOKLoader(deps.ProviderKeyQ),
 		middleware.RateLimit(),
+		middleware.GuardrailCheck(middleware.GuardrailDeps{Q: deps.GuardrailQ, UserQ: deps.UserQ}),
 		middleware.BalanceCheck(deps.Billing),
 		middleware.NewRequestCoalescer(24*time.Hour),
 	)
@@ -130,6 +133,7 @@ func New(deps *Dependencies) *Server {
 		middleware.AppAttribution(deps.AppQ),
 		middleware.BYOKLoader(deps.ProviderKeyQ),
 		middleware.RateLimit(),
+		middleware.GuardrailCheck(middleware.GuardrailDeps{Q: deps.GuardrailQ, UserQ: deps.UserQ}),
 	)
 
 	// accountChain: API key or dashboard JWT — no balance check for account management
@@ -219,6 +223,21 @@ func New(deps *Dependencies) *Server {
 	r.GET("/v1/deep-research/{job_id}", apiKeyChain(researchH.HandleGet))
 	log.Printf("Deep research endpoint enabled at /v1/deep-research")
 
+	artifactsH := handler.NewArtifactHandler(deps.ArtifactQ, deps.Billing)
+	// Public API: free get, billed search ($1/1000), list + create via API key.
+	r.GET("/v1/artifacts", publicChain(artifactsH.HandleListPublic))
+	r.GET("/v1/artifacts/search", searchChain(artifactsH.HandleSearch))
+	r.POST("/v1/artifacts", searchChain(artifactsH.HandleCreate))
+	r.GET("/v1/artifacts/{id}", publicChain(artifactsH.HandleGet))
+	// Dashboard: owner-scoped CRUD + free search of own+public.
+	r.GET("/account/artifacts", accountChain(artifactsH.HandleListMine))
+	r.POST("/account/artifacts", accountChain(artifactsH.HandleCreate))
+	r.GET("/account/artifacts/search", accountChain(artifactsH.HandleSearchMine))
+	r.GET("/account/artifacts/{id}", accountChain(artifactsH.HandleGetMine))
+	r.PUT("/account/artifacts/{id}", accountChain(artifactsH.HandleUpdate))
+	r.DELETE("/account/artifacts/{id}", accountChain(artifactsH.HandleDelete))
+	log.Printf("Artifacts endpoints enabled at /v1/artifacts and /account/artifacts")
+
 	musicH := handler.NewMusicHandler(deps.Router, deps.Billing, deps.Recorder)
 	r.POST("/v1/music/generations", apiKeyChain(musicH.HandleMusicGeneration))
 	log.Printf("Music generation endpoint enabled")
@@ -299,6 +318,16 @@ func New(deps *Dependencies) *Server {
 	r.DELETE("/account/keys/{id}", accountChain(accountH.HandleRevokeAPIKey))
 	r.GET("/account/balance", accountChain(accountH.HandleGetBalance))
 	r.GET("/account/transactions", accountChain(accountH.HandleGetTransactions))
+
+	guardrailH := handler.NewGuardrailHandler(deps.GuardrailQ, deps.APIKeyQ)
+	r.GET("/account/guardrails", accountChain(guardrailH.HandleList))
+	r.POST("/account/guardrails", accountChain(guardrailH.HandleCreate))
+	r.GET("/account/guardrails/events", accountChain(guardrailH.HandleEvents))
+	r.GET("/account/guardrails/{id}", accountChain(guardrailH.HandleGet))
+	r.PUT("/account/guardrails/{id}", accountChain(guardrailH.HandleUpdate))
+	r.DELETE("/account/guardrails/{id}", accountChain(guardrailH.HandleDelete))
+	r.PUT("/account/guardrails/{id}/assignments", accountChain(guardrailH.HandleAssignments))
+	log.Printf("Guardrails endpoints enabled at /account/guardrails")
 
 	// Model IAM + billshock guards + teams (opt-in, open by default).
 	r.GET("/account/model-rules", accountChain(orgH.HandleModelRules))
