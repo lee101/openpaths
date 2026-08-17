@@ -222,7 +222,6 @@ deploy_site() {
     aws s3 sync "${DIST_DIR}/" "s3://${STATIC_BUCKET}/" \
         --endpoint-url "${R2_ENDPOINT}" \
         --size-only \
-        --delete \
         --exclude "static/data/zimage-art/*" \
         --exclude "static/uploads/*" \
         --exclude "uploads/*" \
@@ -256,7 +255,7 @@ deploy_api() {
     scp_cmd dist/openpaths-api "${API_HOST}:${REMOTE_DIR}/openpaths-api.new"
 
     green "syncing frontend dist..."
-    rsync_cmd --delete --exclude='openpaths-api*' dist/ "${API_HOST}:${REMOTE_DIR}/dist/"
+    rsync_cmd --exclude='openpaths-api*' dist/ "${API_HOST}:${REMOTE_DIR}/dist/"
 
     green "syncing config..."
     scp_cmd config.yaml "${API_HOST}:${REMOTE_DIR}/config.yaml"
