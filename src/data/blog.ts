@@ -12,6 +12,43 @@ export interface BlogPost {
 
 export const posts: BlogPost[] = [
   {
+    slug: 'openpaths-harness-pinf',
+    title: 'Meet pinf: A Local Coding Harness for OpenPaths',
+    excerpt: 'A local autonomous coding harness that connects long-running work to OpenPaths-compatible model routing.',
+    date: '2026-08-18',
+    author: 'OpenPaths Team',
+    readTime: '5 min',
+    tags: ['harness', 'coding agents', 'openpaths', 'deepseek'],
+    content: `Coding agents are most useful when they can stay with a task: inspect a repository, make a change, run checks, and continue until the work is actually finished. That is the job of **pinf**, a local harness designed for long-running autonomous coding.
+
+## Install in one command
+
+\`\`\`bash
+curl -fsSL https://raw.githubusercontent.com/lee101/pi-infinity/main/install.sh | sh
+\`\`\`
+
+The installer uses npm (or bun when npm is unavailable) and installs the \`pinf\` command from the Pi Infinity package. Run \`pinf\` in a project directory, set the API key for your chosen provider, and the harness is ready.
+
+## Why OpenPaths fits the harness
+
+OpenPaths gives the harness a single OpenAI-compatible surface while keeping provider choice flexible. OpenRouter-backed requests can sort providers by price, so routine work can take the cheapest healthy route instead of paying frontier prices for every token. Harder tasks can still use a stronger model or an explicit route.
+
+\`\`\`bash
+export OPENPATHS_API_KEY=your-key
+pinf --auto-next-steps "review this repository, fix the failing checks, and verify the result"
+\`\`\`
+
+The harness keeps the agent loop local: tools execute where the repository lives, sessions remain available for continuation, and the model endpoint is a configurable part of the setup rather than the whole product.
+
+## DeepSeek for practical iteration
+
+DeepSeek is a useful fit for the middle of the loop: code search, explanation, test repair, and structured refactors. OpenPaths can route those requests through a DeepSeek model while leaving room to escalate difficult reasoning or use a cheaper route for mechanical work.
+
+The important design is not one permanent model choice. It is a small harness with a stable tool loop and routing that can adapt as price, latency, and provider health change.
+
+See the [OpenPaths harness page](/op) for the installer and the short setup path.`
+  },
+  {
     slug: 'building-compound-models',
     title: 'Build Your Own Compound Model: Auto Routing, Circuit Breakers, and Fusion in One Endpoint',
     excerpt: 'A new visual designer for composing OpenPaths Auto, frontier models, DeepSeek, fallback rules, and Fusion into a shareable OpenAI-compatible API.',

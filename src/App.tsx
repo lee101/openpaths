@@ -10,6 +10,7 @@ import { Fusion } from './pages/Fusion';
 import { Compound } from './pages/Compound';
 import { Blog } from './pages/Blog';
 import { BlogPost } from './pages/BlogPost';
+import { OpenPathsHarness } from './pages/OpenPathsHarness';
 import { Providers } from './pages/Providers';
 import { ProviderPage } from './pages/ProviderPage';
 import { Docs } from './pages/Docs';
@@ -111,6 +112,7 @@ export default function App() {
           <Route path="compare/*" element={<Compare />} />
           <Route path="blog" element={<Blog />} />
           <Route path="blog/:slug" element={<BlogPost />} />
+          <Route path="op" element={<OpenPathsHarness />} />
           <Route path="alternatives" element={<Alternatives />} />
           <Route path="alternatives/:slug" element={<BlogPost />} />
           <Route path="*" element={<NotFound />} />
@@ -121,5 +123,5 @@ export default function App() {
 }
 
 function RouteLoading() {
-  return <div className="mx-auto max-w-7xl px-6 py-16 font-mono text-sm text-white/35">Loading...</div>;
+  return <div className="mx-auto max-w-7xl px-6 py-16 font-mono text-sm text-white/50">Loading...</div>;
 }
