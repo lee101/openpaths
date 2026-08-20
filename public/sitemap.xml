@@ -266,6 +266,11 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/providers/manifoldgen</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/providers/netwrck</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -414,6 +419,11 @@
     <loc>https://openpaths.io/providers/papers</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/manifoldgen/docs</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://openpaths.io/netwrck/docs</loc>
@@ -2319,6 +2329,16 @@
     <loc>https://openpaths.io/models/sync-lipsync-v3</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/blog/qwen-uncensored-blackhat-boundary-test</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/blog/openpaths-harness-pinf</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/building-compound-models</loc>

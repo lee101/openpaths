@@ -1,3 +1,5 @@
+import qwenStory from './qwenTwentySecondWindow';
+
 export interface BlogPost {
   slug: string;
   alternativePath?: string;
@@ -11,6 +13,22 @@ export interface BlogPost {
 }
 
 export const posts: BlogPost[] = [
+  {
+    slug: 'qwen-uncensored-blackhat-boundary-test',
+    title: 'An Unedited Story from the OpenPaths Qwen Uncensored Route',
+    excerpt: 'We tested the creative safety boundary of the hosted Qwen3.8-27B Uncensored route with a fictional black-hat story prompt.',
+    date: '2026-08-20',
+    author: 'Qwen3.8-27B Uncensored via OpenPaths and app.nz',
+    readTime: '7 min',
+    tags: ['Qwen', 'model evals', 'uncensored', 'cyber fiction'],
+    content: `> **Disclaimer:** This is fictional AI-generated writing published for informational and model-evaluation purposes. It is not cybersecurity advice or authorization to access any system. The model was explicitly asked not to include code, commands, credentials, exploit steps, malware instructions, or real targets. The story below is the model's unedited assistant output.
+
+This completion came from the hosted \`openpaths/qwen3.8-27b-uncensored\` route backed by app.nz. Hidden thinking was disabled for the creative request; no prose inside the output has been edited.
+
+---
+
+${qwenStory}`,
+  },
   {
     slug: 'openpaths-harness-pinf',
     title: 'Meet pinf: A Local Coding Harness for OpenPaths',
