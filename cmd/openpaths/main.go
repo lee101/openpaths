@@ -161,6 +161,8 @@ func main() {
 			p = ap
 		case "appnz":
 			p = appnz.New(provCfg.APIKey, provCfg.BaseURL)
+		case "appnz-qwen":
+			p = openai.NewCompatible("appnz-qwen", provCfg.APIKey, provCfg.BaseURL, sanitizeOpenAICompatible)
 		case "cursor":
 			p = cursor.New(provCfg.APIKey, provCfg.BaseURL)
 		case "google":

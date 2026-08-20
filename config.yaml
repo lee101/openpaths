@@ -144,7 +144,28 @@ providers:
     api_key: "${APPNZ_API_KEY}"
     enabled: true
 
+  - name: appnz-qwen
+    base_url: "${APPNZ_QWEN_BASE_URL}"
+    api_key: "${APPNZ_QWEN_API_KEY}"
+    enabled: true
+
 models:
+
+  # app.nz hosted, scale-to-zero Qwen3.8-27B uncensored GGUF. The public
+  # output rate is the optimization target; measured deployment throughput is
+  # checked before production promotion.
+  - id: "openpaths/qwen3.8-27b-uncensored"
+    provider: appnz-qwen
+    provider_model_id: "qwen3.8-27b-uncensored"
+    input_price_per_1m: 0.50
+    output_price_per_1m: 4.50
+    aliases: ["qwen3.8-27b-uncensored", "qwen-27b-uncensored", "appnz-qwen"]
+    context_window: 32768
+    max_output_tokens: 32768
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
   # --- OpenPaths Auto (hero + variants; embedding-routed) ---
   - id: "openpaths/auto"
     provider: google
