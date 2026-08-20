@@ -145,7 +145,7 @@ providers:
     enabled: true
 
   - name: appnz-qwen
-    base_url: "${APPNZ_QWEN_BASE_URL}"
+    base_url: "https://app.nz/api/cogs/8a021d0d-55dd-4f66-8398-c67ca20c47ff"
     api_key: "${APPNZ_QWEN_API_KEY}"
     enabled: true
 
