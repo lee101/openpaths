@@ -147,10 +147,10 @@ export function Agents() {
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-12 sm:py-16">
-      <section className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.08] via-white/[0.03] to-transparent px-6 py-9 sm:px-10 sm:py-12">
+      <section className="relative overflow-hidden rounded-2xl border border-white/20 bg-gradient-to-br from-white/[0.08] via-white/[0.03] to-transparent px-6 py-9 sm:px-10 sm:py-12">
         <div className="pointer-events-none absolute -right-24 -top-36 h-80 w-80 rounded-full bg-violet-500/10 blur-3xl" />
         <div className="relative max-w-3xl">
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-1 font-mono text-[11px] text-white/55">
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/30 px-3 py-1 font-mono text-[11px] text-white/55">
             <BrainCircuit className="h-3.5 w-3.5" /> OpenPaths Agents
           </div>
           <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">Give a model a job, tools, and knowledge.</h1>
@@ -161,7 +161,7 @@ export function Agents() {
             <button onClick={() => openBuilder(null)} className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 font-mono text-sm font-bold text-black transition-colors hover:bg-white/90">
               <Plus className="h-4 w-4" /> Build your own
             </button>
-            <a href="#presets" className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-4 py-2.5 font-mono text-sm text-white/70 transition-colors hover:border-white/30 hover:text-white">
+            <a href="#presets" className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-4 py-2.5 font-mono text-sm text-white/70 transition-colors hover:border-white/50 hover:text-white">
               Explore presets <ArrowRight className="h-4 w-4" />
             </a>
           </div>
@@ -170,7 +170,7 @@ export function Agents() {
 
       {err && !builderOpen && <div className="mt-5 rounded-lg border border-red-400/20 bg-red-400/5 px-4 py-3 font-mono text-sm text-red-300">{err}</div>}
 
-      <section className="mt-10 grid gap-px overflow-hidden rounded-xl border border-white/10 bg-white/10 sm:grid-cols-3">
+      <section className="mt-10 grid gap-px overflow-hidden rounded-xl border border-white/20 bg-white/10 sm:grid-cols-3">
         <WorkflowStep icon={Bot} number="01" title="Choose its role" text="Use a preset or define the instructions, model, and tools yourself." />
         <WorkflowStep icon={FileText} number="02" title="Add knowledge" text="Upload files that are converted into clean, searchable Markdown." />
         <WorkflowStep icon={Wrench} number="03" title="Run with a trace" text="See model turns, tool calls, timing, output, and cost as it works." />
@@ -180,27 +180,27 @@ export function Agents() {
         <section className="mt-14">
           <div className="mb-5 flex items-end justify-between gap-4">
             <div>
-              <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/35">Workspace</div>
+              <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/50">Workspace</div>
               <h2 className="mt-1 text-2xl font-semibold">Your agents</h2>
             </div>
-            <button onClick={() => openBuilder(null)} className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 px-3 py-2 font-mono text-xs text-white/70 hover:border-white/30 hover:text-white">
+            <button onClick={() => openBuilder(null)} className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 px-3 py-2 font-mono text-xs text-white/70 hover:border-white/50 hover:text-white">
               <Plus className="h-3.5 w-3.5" /> New agent
             </button>
           </div>
           {loading ? (
-            <div className="flex items-center gap-2 font-mono text-sm text-white/35"><Loader2 className="h-4 w-4 animate-spin" /> Loading agents…</div>
+            <div className="flex items-center gap-2 font-mono text-sm text-white/50"><Loader2 className="h-4 w-4 animate-spin" /> Loading agents…</div>
           ) : agents.length === 0 ? (
-            <button onClick={() => openBuilder(null)} className="w-full rounded-xl border border-dashed border-white/15 px-5 py-8 text-left transition-colors hover:border-white/30 hover:bg-white/[0.03]">
+            <button onClick={() => openBuilder(null)} className="w-full rounded-xl border border-dashed border-white/15 px-5 py-8 text-left transition-colors hover:border-white/50 hover:bg-white/[0.06]">
               <div className="font-medium">No agents yet</div>
-              <div className="mt-1 font-mono text-xs text-white/40">Choose a preset below or create a custom agent.</div>
+              <div className="mt-1 font-mono text-xs text-white/55">Choose a preset below or create a custom agent.</div>
             </button>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {agents.map(agent => (
-                <Link key={agent.id} to={`/agents/${agent.id}`} className="group block rounded-xl border border-white/10 bg-white/[0.035] p-5 transition-colors hover:border-white/25 hover:bg-white/[0.055]">
+                <Link key={agent.id} to={`/agents/${agent.id}`} className="group block rounded-xl border border-white/20 bg-white/[0.06] p-5 transition-colors hover:border-white/45 hover:bg-white/[0.08]">
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-black/30"><Bot className="h-4 w-4 text-white/65" /></div>
-                    <ArrowRight className="h-4 w-4 text-white/20 transition-transform group-hover:translate-x-0.5 group-hover:text-white/60" />
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/20 bg-black/30"><Bot className="h-4 w-4 text-white/65" /></div>
+                    <ArrowRight className="h-4 w-4 text-white/35 transition-transform group-hover:translate-x-0.5 group-hover:text-white/60" />
                   </div>
                   <div className="mt-5 font-semibold">{agent.name}</div>
                   <div className="mt-1 min-h-9 text-xs leading-5 text-white/45 line-clamp-2">{agent.description || 'Custom OpenPaths agent'}</div>
@@ -217,7 +217,7 @@ export function Agents() {
 
       <section id="presets" className="mt-16 scroll-mt-24">
         <div className="mb-6 max-w-2xl">
-          <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/35">Ready to use</div>
+          <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/50">Ready to use</div>
           <h2 className="mt-1 text-2xl font-semibold">Preset agents</h2>
           <p className="mt-2 text-sm leading-6 text-white/45">Open any preset to see its instructions, tools, and example tasks. You can customize everything before creating it.</p>
         </div>
@@ -225,14 +225,14 @@ export function Agents() {
           {presets.map(preset => {
             const Icon = presetIcons[preset.key] || Bot;
             return (
-              <button key={preset.key} onClick={() => openBuilder(preset)} className="group flex min-h-72 flex-col rounded-xl border border-white/10 bg-white/[0.035] p-5 text-left transition-all hover:-translate-y-0.5 hover:border-white/25 hover:bg-white/[0.055]">
+              <button key={preset.key} onClick={() => openBuilder(preset)} className="group flex min-h-72 flex-col rounded-xl border border-white/20 bg-white/[0.06] p-5 text-left transition-all hover:-translate-y-0.5 hover:border-white/45 hover:bg-white/[0.08]">
                 <div className="flex items-start justify-between">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-black/30"><Icon className="h-5 w-5 text-white/70" /></div>
-                  <ArrowRight className="h-4 w-4 text-white/20 transition-transform group-hover:translate-x-0.5 group-hover:text-white/60" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/20 bg-black/30"><Icon className="h-5 w-5 text-white/70" /></div>
+                  <ArrowRight className="h-4 w-4 text-white/35 transition-transform group-hover:translate-x-0.5 group-hover:text-white/60" />
                 </div>
                 <div className="mt-5 font-semibold">{preset.name}</div>
                 <div className="mt-2 flex-1 text-xs leading-5 text-white/45">{preset.description}</div>
-                {preset.example_prompts?.[0] && <div className="mt-4 border-l border-white/15 pl-3 text-[11px] leading-4 text-white/35">“{preset.example_prompts[0]}”</div>}
+                {preset.example_prompts?.[0] && <div className="mt-4 border-l border-white/15 pl-3 text-[11px] leading-4 text-white/50">“{preset.example_prompts[0]}”</div>}
                 <div className="mt-5 font-mono text-[11px] text-white/60">{loggedIn ? 'Preview & build' : 'See how it works'} →</div>
               </button>
             );
@@ -241,7 +241,7 @@ export function Agents() {
       </section>
 
       {!loggedIn && (
-        <section className="mt-14 flex flex-col items-start justify-between gap-5 rounded-xl border border-white/10 bg-white/[0.035] p-6 sm:flex-row sm:items-center">
+        <section className="mt-14 flex flex-col items-start justify-between gap-5 rounded-xl border border-white/20 bg-white/[0.06] p-6 sm:flex-row sm:items-center">
           <div>
             <h2 className="text-lg font-semibold">Ready to build and run?</h2>
             <p className="mt-1 text-sm text-white/45">Sign in to save agents, connect private files, and view run history.</p>
@@ -309,27 +309,27 @@ function BuilderDialog({ loggedIn, preset, draft, setDraft, tools, files, addFil
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 p-0 backdrop-blur-sm sm:items-center sm:p-5" role="dialog" aria-modal="true" aria-label={preset ? `Build ${preset.name}` : 'Build an agent'} onMouseDown={event => event.target === event.currentTarget && onClose()}>
-      <div className="max-h-[94vh] w-full max-w-4xl overflow-y-auto rounded-t-2xl border border-white/10 bg-[#0a0a0a] shadow-2xl sm:rounded-2xl">
-        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-white/10 bg-[#0a0a0a]/95 px-5 py-4 backdrop-blur sm:px-7">
+      <div className="max-h-[94vh] w-full max-w-4xl overflow-y-auto rounded-t-2xl border border-white/20 bg-[#0a0a0a] shadow-2xl sm:rounded-2xl">
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-white/20 bg-[#0a0a0a]/95 px-5 py-4 backdrop-blur sm:px-7">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04]"><Icon className="h-5 w-5 text-white/70" /></div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/20 bg-white/[0.07]"><Icon className="h-5 w-5 text-white/70" /></div>
             <div>
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/35">{preset ? 'Preset agent' : 'Custom agent'}</div>
+              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/50">{preset ? 'Preset agent' : 'Custom agent'}</div>
               <h2 className="text-lg font-semibold">{preset?.name || 'Build your own agent'}</h2>
             </div>
           </div>
-          <button onClick={onClose} disabled={creating} aria-label="Close builder" className="rounded-lg p-2 text-white/40 hover:bg-white/5 hover:text-white disabled:opacity-30"><X className="h-5 w-5" /></button>
+          <button onClick={onClose} disabled={creating} aria-label="Close builder" className="rounded-lg p-2 text-white/55 hover:bg-white/10 hover:text-white disabled:opacity-30"><X className="h-5 w-5" /></button>
         </div>
 
         <div className="grid lg:grid-cols-[1fr_18rem]">
           <div className="space-y-6 p-5 sm:p-7">
             {preset && (
-              <div className="rounded-xl border border-white/10 bg-white/[0.035] p-4">
-                <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/35">What it does</div>
+              <div className="rounded-xl border border-white/20 bg-white/[0.06] p-4">
+                <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/50">What it does</div>
                 <p className="mt-2 text-sm leading-6 text-white/60">{preset.description}</p>
                 {!!preset.example_prompts?.length && (
                   <div className="mt-4 space-y-2">
-                    <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/35">Try asking</div>
+                    <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/50">Try asking</div>
                     {preset.example_prompts.map(prompt => <div key={prompt} className="flex gap-2 text-xs leading-5 text-white/50"><ArrowRight className="mt-1 h-3 w-3 shrink-0" />{prompt}</div>)}
                   </div>
                 )}
@@ -357,13 +357,13 @@ function BuilderDialog({ loggedIn, preset, draft, setDraft, tools, files, addFil
                 {tools.map(tool => {
                   const enabled = draft.config.tools.includes(tool.name);
                   return (
-                    <button key={tool.name} type="button" onClick={() => toggleTool(tool.name)} className={`rounded-lg border p-3 text-left transition-colors ${enabled ? 'border-white/30 bg-white/[0.08]' : 'border-white/10 bg-white/[0.025] hover:border-white/20'}`}>
+                    <button key={tool.name} type="button" onClick={() => toggleTool(tool.name)} className={`rounded-lg border p-3 text-left transition-colors ${enabled ? 'border-white/30 bg-white/[0.11]' : 'border-white/20 bg-white/[0.05] hover:border-white/40'}`}>
                       <div className="flex items-center gap-2">
                         <span className={`flex h-4 w-4 items-center justify-center rounded border ${enabled ? 'border-white bg-white text-black' : 'border-white/25'}`}>{enabled && <Check className="h-3 w-3" />}</span>
                         <span className="font-mono text-xs text-white/75">{tool.label}</span>
                         {tool.experimental && <span className="rounded bg-amber-400/10 px-1 font-mono text-[9px] text-amber-200">beta</span>}
                       </div>
-                      <div className="mt-2 text-[11px] leading-4 text-white/35">{tool.description}</div>
+                      <div className="mt-2 text-[11px] leading-4 text-white/50">{tool.description}</div>
                     </button>
                   );
                 })}
@@ -371,30 +371,30 @@ function BuilderDialog({ loggedIn, preset, draft, setDraft, tools, files, addFil
             </div>
           </div>
 
-          <aside className="border-t border-white/10 bg-white/[0.018] p-5 sm:p-7 lg:border-l lg:border-t-0">
-            <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/35">Knowledge</div>
+          <aside className="border-t border-white/20 bg-white/[0.04] p-5 sm:p-7 lg:border-l lg:border-t-0">
+            <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/50">Knowledge</div>
             <h3 className="mt-1 text-sm font-semibold">Add files now</h3>
-            <p className="mt-2 text-xs leading-5 text-white/40">Files become structured Markdown and searchable chunks. Useful document images are compressed to WebP; small or oddly shaped images are skipped.</p>
-            <label className="mt-4 flex cursor-pointer flex-col items-center rounded-xl border border-dashed border-white/15 px-4 py-6 text-center transition-colors hover:border-white/30 hover:bg-white/[0.03]">
+            <p className="mt-2 text-xs leading-5 text-white/55">Files become structured Markdown and searchable chunks. Useful document images are compressed to WebP; small or oddly shaped images are skipped.</p>
+            <label className="mt-4 flex cursor-pointer flex-col items-center rounded-xl border border-dashed border-white/15 px-4 py-6 text-center transition-colors hover:border-white/50 hover:bg-white/[0.06]">
               <Upload className="h-5 w-5 text-white/45" />
               <span className="mt-2 font-mono text-xs text-white/65">Choose files</span>
-              <span className="mt-1 text-[10px] text-white/30">PDF, Word, PowerPoint, Excel, HTML, Markdown, CSV, JSON · 25 MB each</span>
+              <span className="mt-1 text-[10px] text-white/45">PDF, Word, PowerPoint, Excel, HTML, Markdown, CSV, JSON · 25 MB each</span>
               <input type="file" multiple className="hidden" accept=".pdf,.doc,.docx,.pptx,.xls,.xlsx,.html,.htm,.md,.markdown,.txt,.csv,.json,.epub,.ipynb,.zip,.rtf,.odt" onChange={event => { addFiles(event.target.files); event.target.value = ''; }} />
             </label>
             <div className="mt-3 space-y-2">
               {files.map((file, index) => (
-                <div key={`${file.name}-${index}`} className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2">
-                  <FileText className="h-3.5 w-3.5 shrink-0 text-white/35" />
+                <div key={`${file.name}-${index}`} className="flex items-center gap-2 rounded-lg border border-white/20 bg-black/30 px-3 py-2">
+                  <FileText className="h-3.5 w-3.5 shrink-0 text-white/50" />
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-mono text-[10px] text-white/65">{file.name}</div>
-                    <div className="text-[9px] text-white/30">{formatBytes(file.size)}</div>
+                    <div className="text-[9px] text-white/45">{formatBytes(file.size)}</div>
                   </div>
-                  <button onClick={() => removeFile(index)} aria-label={`Remove ${file.name}`} className="text-white/25 hover:text-white"><X className="h-3.5 w-3.5" /></button>
+                  <button onClick={() => removeFile(index)} aria-label={`Remove ${file.name}`} className="text-white/40 hover:text-white"><X className="h-3.5 w-3.5" /></button>
                 </div>
               ))}
             </div>
 
-            <div className="mt-6 border-t border-white/10 pt-5">
+            <div className="mt-6 border-t border-white/20 pt-5">
               {error && <div className="mb-3 text-xs leading-5 text-red-300">{error}</div>}
               {progress && <div className="mb-3 flex items-start gap-2 font-mono text-[10px] leading-4 text-white/45"><Loader2 className="mt-0.5 h-3 w-3 shrink-0 animate-spin" />{progress}</div>}
               {loggedIn ? (
@@ -404,7 +404,7 @@ function BuilderDialog({ loggedIn, preset, draft, setDraft, tools, files, addFil
               ) : (
                 <Link to={`/account?next=${encodeURIComponent(`/agents?preset=${preset?.key || 'custom'}`)}`} className="flex w-full items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 font-mono text-sm font-bold text-black hover:bg-white/90">Sign in to build <ArrowRight className="h-4 w-4" /></Link>
               )}
-              <p className="mt-2 text-center text-[10px] leading-4 text-white/25">You can change tools, instructions, and sources later.</p>
+              <p className="mt-2 text-center text-[10px] leading-4 text-white/40">You can change tools, instructions, and sources later.</p>
             </div>
           </aside>
         </div>
@@ -416,15 +416,15 @@ function BuilderDialog({ loggedIn, preset, draft, setDraft, tools, files, addFil
 function WorkflowStep({ icon: Icon, number, title, text }: { icon: React.ComponentType<{ className?: string }>; number: string; title: string; text: string }) {
   return (
     <div className="bg-black p-5 sm:p-6">
-      <div className="flex items-center justify-between"><Icon className="h-4 w-4 text-white/45" /><span className="font-mono text-[10px] text-white/20">{number}</span></div>
+      <div className="flex items-center justify-between"><Icon className="h-4 w-4 text-white/45" /><span className="font-mono text-[10px] text-white/35">{number}</span></div>
       <div className="mt-5 text-sm font-medium">{title}</div>
-      <div className="mt-1 text-xs leading-5 text-white/40">{text}</div>
+      <div className="mt-1 text-xs leading-5 text-white/55">{text}</div>
     </div>
   );
 }
 
 function Tag({ children }: { children: React.ReactNode; key?: React.Key }) {
-  return <span className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-1 font-mono text-[9px] text-white/45">{children}</span>;
+  return <span className="rounded-md border border-white/20 bg-white/[0.07] px-2 py-1 font-mono text-[9px] text-white/45">{children}</span>;
 }
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
@@ -432,7 +432,7 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
     <label className="block">
       <div className="mb-1.5 flex items-baseline justify-between gap-3">
         <span className="text-xs font-medium text-white/70">{label}</span>
-        {hint && <span className="hidden text-[10px] text-white/30 sm:block">{hint}</span>}
+        {hint && <span className="hidden text-[10px] text-white/45 sm:block">{hint}</span>}
       </div>
       {children}
     </label>

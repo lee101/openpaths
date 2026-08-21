@@ -46,7 +46,7 @@ export function PromptDetail() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center gap-2 bg-black px-6 text-white/40">
+      <div className="flex min-h-screen items-center gap-2 bg-black px-6 text-white/55">
         <Loader2 className="h-5 w-5 animate-spin" /> Loading prompt…
       </div>
     );
@@ -82,24 +82,24 @@ export function PromptDetail() {
           </div>
 
           <div className="mb-3 flex flex-wrap items-center gap-2 font-mono text-[11px] uppercase tracking-wide text-white/45">
-            <Link to={prompt.modalityUrl} className="rounded border border-white/10 px-2 py-1 hover:border-white/30 hover:text-white">{prompt.modalityName.replace(' prompts', '')}</Link>
+            <Link to={prompt.modalityUrl} className="rounded border border-white/20 px-2 py-1 hover:border-white/50 hover:text-white">{prompt.modalityName.replace(' prompts', '')}</Link>
             {prompt.isFree && <span className="inline-flex items-center gap-1 rounded border border-emerald-400/30 px-2 py-1 text-emerald-300/80"><Bolt className="h-3 w-3" /> free</span>}
-            {prompt.featured && <span className="inline-flex items-center gap-1 rounded border border-white/10 px-2 py-1"><Sparkles className="h-3 w-3" /> featured</span>}
+            {prompt.featured && <span className="inline-flex items-center gap-1 rounded border border-white/20 px-2 py-1"><Sparkles className="h-3 w-3" /> featured</span>}
           </div>
 
           <h1 className="max-w-3xl text-3xl font-bold tracking-tight md:text-5xl">{prompt.title}</h1>
           <p className="mt-3 max-w-3xl text-base leading-relaxed text-white/60">{prompt.summary}</p>
 
           <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
-            <span className="font-mono text-xs text-white/40">Recommended model:</span>
-            <Link to={prompt.modelUrl} className="rounded border border-white/10 px-2 py-1 font-mono text-xs text-white/70 hover:border-white/30 hover:text-white">{prompt.modelName}</Link>
+            <span className="font-mono text-xs text-white/55">Recommended model:</span>
+            <Link to={prompt.modelUrl} className="rounded border border-white/20 px-2 py-1 font-mono text-xs text-white/70 hover:border-white/50 hover:text-white">{prompt.modelName}</Link>
           </div>
 
           {/* Prompt body */}
-          <div className="mt-6 rounded border border-white/10 bg-white/[0.02]">
-            <div className="flex items-center justify-between border-b border-white/10 px-4 py-2.5">
-              <span className="font-mono text-xs uppercase tracking-wide text-white/40">Prompt</span>
-              <button onClick={copy} className="inline-flex items-center gap-1.5 rounded border border-white/10 px-2.5 py-1 font-mono text-xs text-white/60 hover:border-white/30 hover:text-white">
+          <div className="mt-6 rounded border border-white/20 bg-white/[0.05]">
+            <div className="flex items-center justify-between border-b border-white/20 px-4 py-2.5">
+              <span className="font-mono text-xs uppercase tracking-wide text-white/55">Prompt</span>
+              <button onClick={copy} className="inline-flex items-center gap-1.5 rounded border border-white/20 px-2.5 py-1 font-mono text-xs text-white/60 hover:border-white/50 hover:text-white">
                 {copied ? <><Check className="h-3.5 w-3.5" /> Copied</> : <><Copy className="h-3.5 w-3.5" /> Copy</>}
               </button>
             </div>
@@ -110,7 +110,7 @@ export function PromptDetail() {
             <Link to={promptPlaygroundHref(prompt)} className="inline-flex h-12 items-center justify-center gap-2 rounded border border-white bg-white px-5 font-mono text-sm font-bold text-black hover:bg-white/90">
               Open in Playground <ArrowRight className="h-4 w-4" />
             </Link>
-            <button onClick={copy} className="inline-flex h-12 items-center justify-center gap-2 rounded border border-white/15 px-5 font-mono text-sm text-white/75 hover:border-white/35 hover:text-white">
+            <button onClick={copy} className="inline-flex h-12 items-center justify-center gap-2 rounded border border-white/15 px-5 font-mono text-sm text-white/75 hover:border-white/55 hover:text-white">
               {copied ? <><Check className="h-4 w-4" /> Copied</> : <><Copy className="h-4 w-4" /> Copy prompt</>}
             </button>
           </div>
@@ -118,7 +118,7 @@ export function PromptDetail() {
           {prompt.tags.length > 0 && (
             <div className="mt-6 flex flex-wrap gap-1.5">
               {prompt.tags.map(tag => (
-                <Link key={tag} to={`/prompts?q=${encodeURIComponent(tag)}`} className="rounded bg-white/[0.04] px-2 py-1 font-mono text-xs text-white/45 hover:text-white/70">#{tag}</Link>
+                <Link key={tag} to={`/prompts?q=${encodeURIComponent(tag)}`} className="rounded bg-white/[0.07] px-2 py-1 font-mono text-xs text-white/45 hover:text-white/70">#{tag}</Link>
               ))}
             </div>
           )}

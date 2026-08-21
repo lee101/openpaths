@@ -55,9 +55,9 @@ export function BflProviderShowcase({ models }: { models: Model[] }) {
 
   return (
     <div className="space-y-14">
-      <section id="flux-3-video" className="scroll-mt-24 rounded-2xl border border-white/12 bg-white/[0.025] overflow-hidden">
-        <div className="border-b border-white/10 p-6 md:p-8">
-          <div className="mb-3 flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-white/40">
+      <section id="flux-3-video" className="scroll-mt-24 rounded-2xl border border-white/12 bg-white/[0.05] overflow-hidden">
+        <div className="border-b border-white/20 p-6 md:p-8">
+          <div className="mb-3 flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-white/55">
             <Video className="h-4 w-4" /> Video
           </div>
           <h2 className="text-3xl font-bold tracking-tight md:text-4xl">FLUX 3 Video</h2>
@@ -66,7 +66,7 @@ export function BflProviderShowcase({ models }: { models: Model[] }) {
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
             {VIDEO_FEATURES.map(feature => (
-              <span key={feature} className="rounded-full border border-white/10 bg-black/30 px-3 py-1.5 text-xs text-white/60">{feature}</span>
+              <span key={feature} className="rounded-full border border-white/20 bg-black/30 px-3 py-1.5 text-xs text-white/60">{feature}</span>
             ))}
           </div>
         </div>
@@ -75,8 +75,8 @@ export function BflProviderShowcase({ models }: { models: Model[] }) {
           <div className="overflow-x-auto p-6 md:p-8">
             <h3 className="mb-4 text-lg font-bold">Per-second pricing</h3>
             <table className="w-full min-w-[560px] text-left text-sm">
-              <thead className="font-mono text-[10px] uppercase tracking-wider text-white/35">
-                <tr className="border-b border-white/10">
+              <thead className="font-mono text-[10px] uppercase tracking-wider text-white/50">
+                <tr className="border-b border-white/20">
                   <th className="pb-3 pr-4">Model</th>
                   <th className="pb-3 px-3">Text / image → video</th>
                   <th className="pb-3 px-3">Video → video</th>
@@ -86,25 +86,25 @@ export function BflProviderShowcase({ models }: { models: Model[] }) {
               <tbody>
                 <tr className="border-b border-white/8 align-top">
                   <td className="py-4 pr-4 font-semibold">FLUX 3 Video Draft</td>
-                  <td className="px-3 py-4"><strong>$0.06</strong> <span className="text-white/40">HD</span></td>
-                  <td className="px-3 py-4 text-white/30">—</td>
+                  <td className="px-3 py-4"><strong>$0.06</strong> <span className="text-white/55">HD</span></td>
+                  <td className="px-3 py-4 text-white/45">—</td>
                   <td className="py-4 pl-3 text-white/55">Rapid exploration</td>
                 </tr>
                 <tr className="align-top">
                   <td className="py-4 pr-4 font-semibold">FLUX 3 Video</td>
-                  <td className="px-3 py-4"><strong>$0.17</strong> <span className="text-white/40">HD</span><br /><strong>$0.29</strong> <span className="text-white/40">FHD</span></td>
-                  <td className="px-3 py-4"><strong>$0.41</strong> <span className="text-white/40">HD</span><br /><strong>$0.53</strong> <span className="text-white/40">FHD</span></td>
+                  <td className="px-3 py-4"><strong>$0.17</strong> <span className="text-white/55">HD</span><br /><strong>$0.29</strong> <span className="text-white/55">FHD</span></td>
+                  <td className="px-3 py-4"><strong>$0.41</strong> <span className="text-white/55">HD</span><br /><strong>$0.53</strong> <span className="text-white/55">FHD</span></td>
                   <td className="py-4 pl-3 text-white/55">Quality, cost and latency</td>
                 </tr>
               </tbody>
             </table>
-            <p className="mt-4 text-xs leading-relaxed text-white/38">
+            <p className="mt-4 text-xs leading-relaxed text-white/50">
               Partial output seconds round up. HD is above 0.5 through 1.0MP per frame (for example 1280×704 or 960×960); FHD is above 1.0 through 2.0MP (for example 1920×1088 or 1440×1440). Draft is HD-only; enhancing a draft to FHD uses the regular FHD rate for the selected mode. Audio is included, and clips can be up to 20 seconds.
             </p>
           </div>
 
-          <div className="border-t border-white/10 bg-black/20 p-6 md:p-8 lg:border-l lg:border-t-0">
-            <div className="mb-5 font-mono text-xs uppercase tracking-[0.18em] text-white/40">Pricing calculator</div>
+          <div className="border-t border-white/20 bg-black/20 p-6 md:p-8 lg:border-l lg:border-t-0">
+            <div className="mb-5 font-mono text-xs uppercase tracking-[0.18em] text-white/55">Pricing calculator</div>
             <Control label="Video mode">
               <Toggle options={[['text-image', 'Text / image → video'], ['video', 'Video → video']]} value={mode} onChange={value => chooseMode(value as VideoMode)} />
             </Control>
@@ -115,13 +115,13 @@ export function BflProviderShowcase({ models }: { models: Model[] }) {
               <Toggle options={[['HD', 'HD'], ['FHD', 'FHD']]} value={resolution} onChange={value => setResolution(value as Resolution)} disabled={draft ? ['FHD'] : []} />
             </Control>
             <label className="block">
-              <span className="mb-2 block font-mono text-[10px] uppercase tracking-wider text-white/40">Duration (seconds)</span>
+              <span className="mb-2 block font-mono text-[10px] uppercase tracking-wider text-white/55">Duration (seconds)</span>
               <input className="w-full accent-white" type="range" min={1} max={20} value={duration} onChange={event => setDuration(Number(event.target.value))} />
               <div className="mt-1 text-right font-mono text-sm">{duration}s</div>
             </label>
-            <div className="mt-6 rounded-xl border border-white/10 bg-white/[0.04] p-5">
+            <div className="mt-6 rounded-xl border border-white/20 bg-white/[0.07] p-5">
               <div className="flex justify-between text-sm text-white/50"><span>Rate</span><span>${rate.toFixed(2)} / second</span></div>
-              <div className="mt-3 flex items-end justify-between border-t border-white/10 pt-4"><span className="font-mono text-xs uppercase tracking-wider text-white/40">Total</span><strong className="text-3xl">${total.toFixed(2)}</strong></div>
+              <div className="mt-3 flex items-end justify-between border-t border-white/20 pt-4"><span className="font-mono text-xs uppercase tracking-wider text-white/55">Total</span><strong className="text-3xl">${total.toFixed(2)}</strong></div>
             </div>
             <div className="mt-4 flex flex-wrap gap-3 text-xs">
               <ModelLink model={byId.get('flux-3-video-draft')} />
@@ -139,14 +139,14 @@ export function BflProviderShowcase({ models }: { models: Model[] }) {
 }
 
 function Control({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div className="mb-5"><div className="mb-2 font-mono text-[10px] uppercase tracking-wider text-white/40">{label}</div>{children}</div>;
+  return <div className="mb-5"><div className="mb-2 font-mono text-[10px] uppercase tracking-wider text-white/55">{label}</div>{children}</div>;
 }
 
 function Toggle({ options, value, onChange, disabled = [] }: { options: string[][]; value: string; onChange: (value: string) => void; disabled?: string[] }) {
   return (
     <div className="grid grid-cols-2 gap-2">
       {options.map(([key, label]) => (
-        <button key={key} type="button" disabled={disabled.includes(key)} onClick={() => onChange(key)} className={`rounded border px-3 py-2 text-xs transition-colors ${value === key ? 'border-white bg-white text-black' : 'border-white/10 bg-white/[0.03] text-white/55 hover:border-white/25 hover:text-white'} disabled:cursor-not-allowed disabled:opacity-25`}>
+        <button key={key} type="button" disabled={disabled.includes(key)} onClick={() => onChange(key)} className={`rounded border px-3 py-2 text-xs transition-colors ${value === key ? 'border-white bg-white text-black' : 'border-white/20 bg-white/[0.06] text-white/55 hover:border-white/45 hover:text-white'} disabled:cursor-not-allowed disabled:opacity-25`}>
           {label}
         </button>
       ))}
@@ -159,19 +159,19 @@ function FamilySection({ id, eyebrow, title, description, icon, ids, byId }: { i
   return (
     <section id={id} className="scroll-mt-24">
       <div className="mb-5">
-        <div className="mb-2 flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em] text-white/40">{icon}{eyebrow}</div>
+        <div className="mb-2 flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em] text-white/55">{icon}{eyebrow}</div>
         <h2 className="text-3xl font-bold tracking-tight">{title}</h2>
         <p className="mt-2 max-w-3xl text-sm font-light leading-relaxed text-white/58">{description}</p>
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {items.map(model => (
-          <Link key={model.id} to={modelPath(model.id)} className="group rounded-xl border border-white/10 bg-white/[0.02] p-5 transition-colors hover:border-white/25 hover:bg-white/[0.045]">
+          <Link key={model.id} to={modelPath(model.id)} className="group rounded-xl border border-white/20 bg-white/[0.05] p-5 transition-colors hover:border-white/45 hover:bg-white/[0.07]">
             <div className="mb-3 flex items-start justify-between gap-3">
-              <div><h3 className="font-bold tracking-tight">{model.name}</h3><code className="mt-1 block text-[10px] text-white/35">{model.id}</code></div>
+              <div><h3 className="font-bold tracking-tight">{model.name}</h3><code className="mt-1 block text-[10px] text-white/50">{model.id}</code></div>
               <span className="shrink-0 rounded bg-white/8 px-2 py-1 font-mono text-[10px] text-white/50">{catalogPrice(model)}</span>
             </div>
             <p className="line-clamp-3 text-sm font-light leading-relaxed text-white/55">{model.description}</p>
-            <div className="mt-4 flex items-center gap-1 font-mono text-[10px] text-white/35 transition-colors group-hover:text-white/70">Model details <ArrowRight className="h-3 w-3" /></div>
+            <div className="mt-4 flex items-center gap-1 font-mono text-[10px] text-white/50 transition-colors group-hover:text-white/70">Model details <ArrowRight className="h-3 w-3" /></div>
           </Link>
         ))}
       </div>

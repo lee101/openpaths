@@ -203,7 +203,7 @@ console.log(data.model_glb.url);`,
         <div className="mx-auto max-w-7xl">
           <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <div className="mb-3 inline-flex items-center gap-2 rounded border border-white/10 bg-white/[0.03] px-3 py-1 text-xs font-mono text-white/45">
+              <div className="mb-3 inline-flex items-center gap-2 rounded border border-white/20 bg-white/[0.06] px-3 py-1 text-xs font-mono text-white/45">
                 <Boxes className="h-3.5 w-3.5" /> Auto Image + Fal Pixal3D
               </div>
               <h1 className="max-w-3xl text-4xl font-bold tracking-tight md:text-6xl">Text to 3D</h1>
@@ -212,45 +212,45 @@ console.log(data.model_glb.url);`,
               </p>
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs font-mono text-white/45 sm:grid-cols-3">
-              <span className="rounded border border-white/10 px-3 py-2">Image: ${imagePrice.toFixed(3)}</span>
-              <span className="rounded border border-white/10 px-3 py-2">3D: ${model3dPrice.toFixed(2)}</span>
-              <span className="rounded border border-white/10 px-3 py-2">Total: ~${estTotal.toFixed(2)}</span>
+              <span className="rounded border border-white/20 px-3 py-2">Image: ${imagePrice.toFixed(3)}</span>
+              <span className="rounded border border-white/20 px-3 py-2">3D: ${model3dPrice.toFixed(2)}</span>
+              <span className="rounded border border-white/20 px-3 py-2">Total: ~${estTotal.toFixed(2)}</span>
             </div>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-[420px_minmax(0,1fr)]">
-            <section className="rounded-lg border border-white/10 bg-white/[0.02] p-5">
+            <section className="rounded-lg border border-white/20 bg-white/[0.05] p-5">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="font-mono text-sm font-bold uppercase tracking-wider text-white/70">Generate</h2>
-                <button type="button" onClick={() => { setPrompt(DEFAULT_PROMPT); setResult(null); setModelUrl(DEFAULT_MODEL_URL); }} className="text-xs font-mono text-white/40 hover:text-white">
+                <button type="button" onClick={() => { setPrompt(DEFAULT_PROMPT); setResult(null); setModelUrl(DEFAULT_MODEL_URL); }} className="text-xs font-mono text-white/55 hover:text-white">
                   sword default
                 </button>
               </div>
 
               <label className="mb-3 block">
-                <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/40">OpenPaths API key</span>
+                <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/55">OpenPaths API key</span>
                 <input
                   value={apiKey}
                   onChange={e => setApiKey(e.target.value)}
                   placeholder="op-..."
-                  className="w-full rounded border border-white/10 bg-black px-3 py-2 text-sm font-mono text-white placeholder:text-white/25 focus:border-white/30 focus:outline-none"
+                  className="w-full rounded border border-white/20 bg-black px-3 py-2 text-sm font-mono text-white placeholder:text-white/45 focus:border-white/50 focus:outline-none"
                 />
               </label>
 
               <label className="mb-3 block">
-                <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/40">Prompt</span>
+                <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/55">Prompt</span>
                 <textarea
                   value={prompt}
                   onChange={e => setPrompt(e.target.value)}
                   rows={5}
                   placeholder="Describe a single object on a clean background..."
-                  className="w-full resize-y rounded border border-white/10 bg-black px-3 py-2 text-sm text-white placeholder:text-white/25 focus:border-white/30 focus:outline-none"
+                  className="w-full resize-y rounded border border-white/20 bg-black px-3 py-2 text-sm text-white placeholder:text-white/45 focus:border-white/50 focus:outline-none"
                 />
               </label>
 
               <label className="mb-3 block">
-                <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/40">Image model</span>
-                <select value={imageModel} onChange={e => setImageModel(e.target.value)} className="w-full rounded border border-white/10 bg-black px-3 py-2 text-sm font-mono text-white focus:border-white/30 focus:outline-none">
+                <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/55">Image model</span>
+                <select value={imageModel} onChange={e => setImageModel(e.target.value)} className="w-full rounded border border-white/20 bg-black px-3 py-2 text-sm font-mono text-white focus:border-white/50 focus:outline-none">
                   {IMAGE_MODELS.map(m => (
                     <option key={m.id} value={m.id}>{m.label} — ${m.price.toFixed(3)}</option>
                   ))}
@@ -259,21 +259,21 @@ console.log(data.model_glb.url);`,
 
               <div className="grid grid-cols-3 gap-3">
                 <label>
-                  <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/40">Size</span>
-                  <select value={size} onChange={e => setSize(e.target.value)} className="w-full rounded border border-white/10 bg-black px-2 py-2 text-xs font-mono text-white focus:border-white/30 focus:outline-none">
+                  <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/55">Size</span>
+                  <select value={size} onChange={e => setSize(e.target.value)} className="w-full rounded border border-white/20 bg-black px-2 py-2 text-xs font-mono text-white focus:border-white/50 focus:outline-none">
                     {SIZES.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </label>
                 <label>
-                  <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/40">Structure</span>
-                  <select value={resolution} onChange={e => setResolution(Number(e.target.value))} className="w-full rounded border border-white/10 bg-black px-2 py-2 text-xs font-mono text-white focus:border-white/30 focus:outline-none">
+                  <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/55">Structure</span>
+                  <select value={resolution} onChange={e => setResolution(Number(e.target.value))} className="w-full rounded border border-white/20 bg-black px-2 py-2 text-xs font-mono text-white focus:border-white/50 focus:outline-none">
                     <option value={1024}>1024</option>
                     <option value={1536}>1536</option>
                   </select>
                 </label>
                 <label>
-                  <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/40">Texture</span>
-                  <select value={textureSize} onChange={e => setTextureSize(Number(e.target.value))} className="w-full rounded border border-white/10 bg-black px-2 py-2 text-xs font-mono text-white focus:border-white/30 focus:outline-none">
+                  <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/55">Texture</span>
+                  <select value={textureSize} onChange={e => setTextureSize(Number(e.target.value))} className="w-full rounded border border-white/20 bg-black px-2 py-2 text-xs font-mono text-white focus:border-white/50 focus:outline-none">
                     <option value={1024}>1024</option>
                     <option value={2048}>2048</option>
                     <option value={4096}>4096</option>
@@ -281,7 +281,7 @@ console.log(data.model_glb.url);`,
                 </label>
               </div>
 
-              <button type="button" onClick={() => setRemesh(v => !v)} className={`mt-3 w-full rounded border px-3 py-2 text-xs font-mono transition-colors ${remesh ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' : 'border-white/10 bg-black text-white/45'}`}>
+              <button type="button" onClick={() => setRemesh(v => !v)} className={`mt-3 w-full rounded border px-3 py-2 text-xs font-mono transition-colors ${remesh ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' : 'border-white/20 bg-black text-white/45'}`}>
                 Remesh {remesh ? 'on' : 'off'}
               </button>
 
@@ -295,22 +295,22 @@ console.log(data.model_glb.url);`,
                 {loading ? 'Generating 3D...' : `Generate 3D (~$${billed.toFixed(2)})`}
               </button>
 
-              <p className="mt-2 text-center text-[10px] font-mono text-white/30">Image + 3D can take 40–90s.</p>
+              <p className="mt-2 text-center text-[10px] font-mono text-white/45">Image + 3D can take 40–90s.</p>
 
               {error && <p className="mt-3 rounded border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs font-mono text-red-200">{error}</p>}
             </section>
 
-            <section className="overflow-hidden rounded-lg border border-white/10 bg-white/[0.02]">
-              <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+            <section className="overflow-hidden rounded-lg border border-white/20 bg-white/[0.05]">
+              <div className="flex items-center justify-between border-b border-white/20 px-4 py-3">
                 <div>
                   <h2 className="font-mono text-sm font-bold uppercase tracking-wider text-white/70">3D Viewer</h2>
-                  <p className="mt-1 text-xs font-mono text-white/35">{result ? 'Generated result' : 'Default Pixal3D sword result'}</p>
+                  <p className="mt-1 text-xs font-mono text-white/50">{result ? 'Generated result' : 'Default Pixal3D sword result'}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <a href={modelUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded border border-white/10 px-3 py-2 text-xs font-mono text-white/50 hover:text-white">
+                  <a href={modelUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded border border-white/20 px-3 py-2 text-xs font-mono text-white/50 hover:text-white">
                     <ExternalLink className="h-3.5 w-3.5" /> Open
                   </a>
-                  <a href={modelUrl} download className="inline-flex items-center gap-2 rounded border border-white/10 px-3 py-2 text-xs font-mono text-white/50 hover:text-white">
+                  <a href={modelUrl} download className="inline-flex items-center gap-2 rounded border border-white/20 px-3 py-2 text-xs font-mono text-white/50 hover:text-white">
                     <Download className="h-3.5 w-3.5" /> GLB
                   </a>
                 </div>
@@ -319,8 +319,8 @@ console.log(data.model_glb.url);`,
                 <ModelViewer src={modelUrl} />
               </div>
               {result?.image?.url && (
-                <div className="flex items-center gap-3 border-t border-white/10 px-4 py-3">
-                  <img src={result.image.url} alt="Generated image" className="h-16 w-16 flex-none rounded border border-white/10 bg-black object-cover" />
+                <div className="flex items-center gap-3 border-t border-white/20 px-4 py-3">
+                  <img src={result.image.url} alt="Generated image" className="h-16 w-16 flex-none rounded border border-white/20 bg-black object-cover" />
                   <div className="min-w-0 text-xs font-mono text-white/45">
                     <div className="mb-1 text-white/60">Generated image{result.image.model ? ` · ${result.image.model}` : ''}</div>
                     <a href={result.image.url} target="_blank" rel="noreferrer" className="block truncate hover:text-white">{result.image.url}</a>
@@ -336,7 +336,7 @@ console.log(data.model_glb.url);`,
           </div>
 
           <div className="mt-6 grid min-w-0 gap-6 lg:grid-cols-2">
-            <section className="min-w-0 overflow-hidden rounded-lg border border-white/10 bg-white/[0.02] p-5">
+            <section className="min-w-0 overflow-hidden rounded-lg border border-white/20 bg-white/[0.05] p-5">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                 <h2 className="font-mono text-sm font-bold uppercase tracking-wider text-white/70">API code</h2>
                 <div className="flex items-center gap-2">
@@ -345,12 +345,12 @@ console.log(data.model_glb.url);`,
                       key={snippet}
                       type="button"
                       onClick={() => setActiveSnippet(snippet)}
-                      className={`rounded border px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-[0.14em] transition-colors ${activeSnippet === snippet ? 'border-white/30 bg-white/10 text-white' : 'border-white/10 text-white/35 hover:text-white'}`}
+                      className={`rounded border px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-[0.14em] transition-colors ${activeSnippet === snippet ? 'border-white/30 bg-white/10 text-white' : 'border-white/20 text-white/50 hover:text-white'}`}
                     >
                       {snippet === 'javascript' ? 'JS' : snippet}
                     </button>
                   ))}
-                  <button type="button" onClick={copySnippet} className="inline-flex items-center gap-1.5 rounded border border-white/10 px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-[0.14em] text-white/45 hover:text-white">
+                  <button type="button" onClick={copySnippet} className="inline-flex items-center gap-1.5 rounded border border-white/20 px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-[0.14em] text-white/45 hover:text-white">
                     <Copy className="h-3 w-3" /> {copied ? 'Copied' : 'Copy'}
                   </button>
                 </div>
@@ -359,12 +359,12 @@ console.log(data.model_glb.url);`,
                 language={activeSnippet === 'javascript' ? 'javascript' : activeSnippet === 'curl' ? 'bash' : 'python'}
                 label={activeSnippet === 'javascript' ? 'JavaScript' : activeSnippet === 'curl' ? 'cURL' : 'Python'}
                 code={snippets[activeSnippet]}
-                containerClassName="border border-white/10 rounded-lg overflow-hidden bg-black/40"
-                headerClassName="bg-white/[0.03]"
+                containerClassName="border border-white/20 rounded-lg overflow-hidden bg-black/40"
+                headerClassName="bg-white/[0.06]"
                 preClassName="text-xs"
               />
             </section>
-            <section className="min-w-0 overflow-hidden rounded-lg border border-white/10 bg-white/[0.02] p-5">
+            <section className="min-w-0 overflow-hidden rounded-lg border border-white/20 bg-white/[0.05] p-5">
               <h2 className="mb-3 font-mono text-sm font-bold uppercase tracking-wider text-white/70">How it works &amp; pricing</h2>
               <ol className="mb-4 list-decimal space-y-2 pl-5 text-sm leading-relaxed text-white/55">
                 <li>Your prompt is sent to the auto image route (or the model you pick).</li>

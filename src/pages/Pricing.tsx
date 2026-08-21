@@ -161,7 +161,7 @@ export function Pricing() {
 
         <section className="relative mx-auto max-w-7xl px-6 py-20 md:py-28">
           <div className="max-w-4xl">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 font-mono text-xs text-white/70">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.07] px-3 py-1.5 font-mono text-xs text-white/70">
               <Coins className="h-3.5 w-3.5" />
               Transparent pay-as-you-go pricing
             </div>
@@ -203,7 +203,7 @@ export function Pricing() {
           </div>
         </section>
 
-        <section className="relative border-y border-white/10 bg-white/[0.02]">
+        <section className="relative border-y border-white/20 bg-white/[0.05]">
           <div className="mx-auto grid max-w-7xl gap-px px-6 py-0 md:grid-cols-2 xl:grid-cols-4">
             <WorkloadCard
               icon={<Sparkles className="h-5 w-5" />}
@@ -360,7 +360,7 @@ export function Pricing() {
         </section>
 
         <section className="relative mx-auto max-w-7xl px-6 py-20">
-          <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] p-8 md:p-10">
+          <div className="rounded-[28px] border border-white/20 bg-[linear-gradient(135deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] p-8 md:p-10">
             <div className="max-w-3xl">
               <div className="mb-3 font-mono text-xs uppercase tracking-[0.24em] text-white/45">Pricing FAQ</div>
               <h2 className="text-3xl font-bold tracking-tight md:text-4xl">Common questions</h2>
@@ -401,7 +401,7 @@ function formatDollars(amount: number) {
 
 function ValueCard({ title, body }: { title: string; body: string }) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+    <div className="rounded-3xl border border-white/20 bg-white/[0.06] p-6">
       <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
       <p className="mt-3 text-sm leading-relaxed text-white/62">{body}</p>
     </div>
@@ -420,18 +420,18 @@ function WorkloadCard({
   pricing: string;
 }) {
   return (
-    <div className="border border-white/10 bg-black/40 p-6">
+    <div className="border border-white/20 bg-black/40 p-6">
       <div className="mb-4 text-white/75">{icon}</div>
       <h3 className="text-lg font-semibold tracking-tight">{title}</h3>
       <p className="mt-3 text-sm leading-relaxed text-white/60">{body}</p>
-      <div className="mt-4 font-mono text-[11px] uppercase tracking-[0.18em] text-white/40">{pricing}</div>
+      <div className="mt-4 font-mono text-[11px] uppercase tracking-[0.18em] text-white/55">{pricing}</div>
     </div>
   );
 }
 
 function DetailCard({ title, body }: { title: string; body: string }) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-black/45 p-6">
+    <div className="rounded-3xl border border-white/20 bg-black/45 p-6">
       <h3 className="text-lg font-semibold tracking-tight">{title}</h3>
       <p className="mt-3 text-sm leading-relaxed text-white/62">{body}</p>
     </div>
@@ -450,7 +450,7 @@ function SectionHeading({
   return (
     <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
       <div>
-        <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 font-mono text-xs text-white/65">
+        <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.07] px-3 py-1 font-mono text-xs text-white/65">
           {icon}
           {title}
         </div>
@@ -462,10 +462,10 @@ function SectionHeading({
 
 function TokenPricingTable({ models }: { models: Model[] }) {
   return (
-    <div className="overflow-hidden rounded-[28px] border border-white/10 bg-black/45">
+    <div className="overflow-hidden rounded-[28px] border border-white/20 bg-black/45">
       <div className="overflow-x-auto">
         <table className="min-w-full text-left">
-          <thead className="border-b border-white/10 bg-white/[0.03] font-mono text-[11px] uppercase tracking-[0.18em] text-white/45">
+          <thead className="border-b border-white/20 bg-white/[0.06] font-mono text-[11px] uppercase tracking-[0.18em] text-white/45">
             <tr>
               <th className="px-4 py-3">Model</th>
               <th className="px-4 py-3">Provider</th>
@@ -507,10 +507,10 @@ function RequestPricingTable({
   }>;
 }) {
   return (
-    <div className="overflow-hidden rounded-[28px] border border-white/10 bg-black/45">
+    <div className="overflow-hidden rounded-[28px] border border-white/20 bg-black/45">
       <div className="overflow-x-auto">
         <table className="min-w-full text-left">
-          <thead className="border-b border-white/10 bg-white/[0.03] font-mono text-[11px] uppercase tracking-[0.18em] text-white/45">
+          <thead className="border-b border-white/20 bg-white/[0.06] font-mono text-[11px] uppercase tracking-[0.18em] text-white/45">
             <tr>
               <th className="px-4 py-3">Model</th>
               <th className="px-4 py-3">Provider</th>
@@ -539,7 +539,7 @@ function RequestPricingTable({
 
 function FaqCard({ question, answer }: { question: string; answer: string }) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-black/45 p-6">
+    <div className="rounded-3xl border border-white/20 bg-black/45 p-6">
       <h3 className="text-lg font-semibold tracking-tight">{question}</h3>
       <p className="mt-3 text-sm leading-relaxed text-white/62">{answer}</p>
     </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, BookOpen, Gift, Image as ImageIcon, MessageSquare, Video } from 'lucide-react';
 import { ImageSpacePanel } from '../components/ImageSpacePanel';
 import { VideoSpacePanel } from '../components/VideoSpacePanel';
@@ -14,6 +14,8 @@ const NON_CHAT_TAGS = ['art generation', 'video generation', 'audio', 'embedding
 
 export function ModelPage() {
   const { modelId = '' } = useParams<{ modelId: string }>();
+  const [searchParams] = useSearchParams();
+  const initialPrompt = searchParams.get('prompt') || undefined;
   const navigate = useNavigate();
   const decodedId = decodeURIComponent(modelId);
   const model = models.find(item => item.id === decodedId);
@@ -116,11 +118,11 @@ export function ModelPage() {
           <Fact label="Provider" value={model.provider} />
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 mb-10">
+        <div className="rounded-2xl border border-white/20 bg-white/[0.05] p-6 mb-10">
           <h2 className="text-xl font-bold tracking-tight mb-4">Capabilities</h2>
           <div className="flex flex-wrap gap-2">
             {model.tags.map(tag => (
-              <span key={tag} className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-mono text-white/65">
+              <span key={tag} className="rounded-full border border-white/20 bg-white/[0.07] px-3 py-1.5 text-xs font-mono text-white/65">
                 {tag}
               </span>
             ))}
@@ -155,7 +157,7 @@ export function ModelPage() {
           {provider && (
             <Link
               to={providerDocsPath(provider.slug)}
-              className="inline-flex items-center justify-center gap-2 rounded border border-white/15 bg-white/[0.03] px-5 py-3 font-mono text-sm text-white/70 hover:text-white hover:border-white/30 transition-colors"
+              className="inline-flex items-center justify-center gap-2 rounded border border-white/15 bg-white/[0.06] px-5 py-3 font-mono text-sm text-white/70 hover:text-white hover:border-white/50 transition-colors"
             >
               <BookOpen className="w-4 h-4" /> {model.provider} docs
             </Link>
@@ -163,18 +165,19 @@ export function ModelPage() {
         </div>
 
         {isVideo && (
-          <section id="model-workspace" className="mt-12 scroll-mt-24 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
-            <VideoSpacePanel modelId={model.id} modelName={model.name} demo={videoDemo} />
+          <section id="model-workspace" className="mt-12 scroll-mt-24 overflow-hidden rounded-2xl border border-white/20 bg-white/[0.05]">
+            <VideoSpacePanel modelId={model.id} modelName={model.name} demo={videoDemo} initialPrompt={initialPrompt} />
           </section>
         )}
 
         {isImage && (
-          <section id={isVideo ? undefined : 'model-workspace'} className="mt-12 scroll-mt-24 rounded-2xl border border-white/10 bg-white/[0.02] overflow-hidden">
+          <section id={isVideo ? undefined : 'model-workspace'} className="mt-12 scroll-mt-24 rounded-2xl border border-white/20 bg-white/[0.05] overflow-hidden">
             <ImageSpacePanel
               modelId={model.id}
               modelName={model.name}
               imageToImage={model.tags.includes('image-to-image')}
               demo={imageDemo}
+              initialPrompt={initialPrompt}
             />
           </section>
         )}
@@ -187,8 +190,8 @@ export function ModelPage() {
 
 function Fact({ label, value, code = false }: { label: string; value: string; code?: boolean }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-5 min-w-0">
-      <div className="text-xs font-mono uppercase tracking-[0.18em] text-white/35 mb-2">{label}</div>
+    <div className="rounded-xl border border-white/20 bg-white/[0.05] p-5 min-w-0">
+      <div className="text-xs font-mono uppercase tracking-[0.18em] text-white/50 mb-2">{label}</div>
       {code ? (
         <code className="block truncate text-sm text-white/80">{value}</code>
       ) : (
@@ -260,7 +263,7 @@ function RelatedModels({ current, related }: { current: Model; related: Model[] 
   const task = mediaTask(current);
   if (!related.length) return null;
   return (
-    <section className="mt-12 border-t border-white/10 pt-10" aria-labelledby="related-models-heading">
+    <section className="mt-12 border-t border-white/20 pt-10" aria-labelledby="related-models-heading">
       <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 id="related-models-heading" className="text-2xl font-bold tracking-tight">Related {task} models</h2>
@@ -272,12 +275,12 @@ function RelatedModels({ current, related }: { current: Model; related: Model[] 
       </div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {related.map(model => (
-          <Link key={model.id} to={modelPath(model.id)} className="group rounded-xl border border-white/10 bg-white/[0.02] p-4 transition-colors hover:border-white/25 hover:bg-white/[0.04]">
+          <Link key={model.id} to={modelPath(model.id)} className="group rounded-xl border border-white/20 bg-white/[0.05] p-4 transition-colors hover:border-white/45 hover:bg-white/[0.07]">
             <div className="mb-2 flex items-start justify-between gap-3">
               <h3 className="font-semibold tracking-tight text-white/85 group-hover:text-white">{model.name}</h3>
-              <ArrowRight className="mt-1 h-3.5 w-3.5 shrink-0 text-white/25 group-hover:text-white/65" />
+              <ArrowRight className="mt-1 h-3.5 w-3.5 shrink-0 text-white/40 group-hover:text-white/65" />
             </div>
-            <code className="block truncate text-[11px] text-white/35">{model.id}</code>
+            <code className="block truncate text-[11px] text-white/50">{model.id}</code>
             <p className="mt-3 line-clamp-2 text-xs leading-relaxed text-white/48">{model.description}</p>
           </Link>
         ))}

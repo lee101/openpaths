@@ -86,7 +86,7 @@ export function Mcp() {
 
       <section className="max-w-5xl mx-auto px-6 py-16">
         <div className="mb-12">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/[0.04] text-xs font-mono text-white/60 mb-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/20 bg-white/[0.07] text-xs font-mono text-white/60 mb-6">
             <Server className="w-3.5 h-3.5" />
             Model Context Protocol
           </div>
@@ -101,8 +101,8 @@ export function Mcp() {
 
         {/* Connection details */}
         <div className="grid md:grid-cols-2 gap-4 mb-12">
-          <div className="border border-white/10 bg-white/[0.02] rounded-xl p-5">
-            <div className="text-xs font-mono text-white/40 mb-2">ENDPOINT (Streamable HTTP)</div>
+          <div className="border border-white/20 bg-white/[0.05] rounded-xl p-5">
+            <div className="text-xs font-mono text-white/55 mb-2">ENDPOINT (Streamable HTTP)</div>
             <button
               onClick={() => copy('url', url)}
               className="flex items-center gap-2 font-mono text-sm text-white hover:text-white/80 break-all text-left"
@@ -111,8 +111,8 @@ export function Mcp() {
               {url}
             </button>
           </div>
-          <div className="border border-white/10 bg-white/[0.02] rounded-xl p-5">
-            <div className="text-xs font-mono text-white/40 mb-2">AUTH HEADER</div>
+          <div className="border border-white/20 bg-white/[0.05] rounded-xl p-5">
+            <div className="text-xs font-mono text-white/55 mb-2">AUTH HEADER</div>
             <button
               onClick={() => copy('key', `Authorization: Bearer ${exampleKey}`)}
               className="flex items-center gap-2 font-mono text-sm text-white hover:text-white/80 break-all text-left"
@@ -121,7 +121,7 @@ export function Mcp() {
               Bearer {apiKey ? exampleKey.slice(0, 11) + '••••••••' : 'OPENPATHS_API_KEY'}
             </button>
             {!apiKey && (
-              <p className="text-xs text-white/40 mt-2">
+              <p className="text-xs text-white/55 mt-2">
                 <Link to="/account" className="underline hover:text-white/70">Sign in</Link> to inject your real key into these snippets.
               </p>
             )}
@@ -133,21 +133,21 @@ export function Mcp() {
           <h2 className="text-2xl font-bold tracking-tight mb-4 flex items-center gap-2">
             <Wrench className="w-5 h-5 text-white/60" /> Tools
           </h2>
-          <div className="border border-white/10 rounded-xl overflow-hidden">
+          <div className="border border-white/20 rounded-xl overflow-hidden">
             {tools.map((t, i) => (
               <div
                 key={t.name}
-                className={`p-4 ${i > 0 ? 'border-t border-white/10' : ''} bg-white/[0.02]`}
+                className={`p-4 ${i > 0 ? 'border-t border-white/20' : ''} bg-white/[0.05]`}
               >
                 <div className="flex flex-wrap items-baseline gap-3 mb-1">
                   <span className="font-mono text-sm text-white font-bold">{t.name}</span>
-                  <span className="font-mono text-xs text-white/40">{t.args}</span>
+                  <span className="font-mono text-xs text-white/55">{t.args}</span>
                 </div>
                 <p className="text-sm text-white/60 font-light">{t.desc}</p>
               </div>
             ))}
           </div>
-          <p className="text-sm text-white/40 mt-3">
+          <p className="text-sm text-white/55 mt-3">
             Use <span className="font-mono text-white/70">model: "auto"</span> to let OpenPaths pick
             the best model per request, or any id from{' '}
             <Link to="/models" className="underline hover:text-white/70">the model directory</Link>.
@@ -181,7 +181,7 @@ export function Mcp() {
           <CodeBlock code={curlExample} language="bash" label="curl" />
         </div>
 
-        <div className="border border-white/10 bg-white/[0.02] rounded-xl p-5 text-sm text-white/50 font-light">
+        <div className="border border-white/20 bg-white/[0.05] rounded-xl p-5 text-sm text-white/50 font-light">
           Pay-as-you-go billing applies per call to paid tools (chat, image, embed, web_search), using
           the same credits as the API. <Link to="/pricing" className="underline hover:text-white/70">See pricing</Link>.
           BYOK provider keys are honored automatically when configured in your{' '}

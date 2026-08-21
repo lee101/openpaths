@@ -114,15 +114,15 @@ JSON`;
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/40">{label}</span>
+      <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/55">{label}</span>
       {children}
     </label>
   );
 }
 
 const selectCls =
-  'w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30';
-const inputCls = selectCls + ' placeholder:text-white/25';
+  'w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/50';
+const inputCls = selectCls + ' placeholder:text-white/45';
 
 async function responseJSON(resp: Response) {
   const text = await resp.text();
@@ -154,14 +154,14 @@ async function pollVideoJob(apiKey: string, id: string): Promise<any> {
   throw new Error('Video generation timed out after 15 minutes.');
 }
 
-export function VideoSpacePanel({ modelId, modelName, demo }: { modelId: string; modelName: string; demo?: VideoDemo }) {
+export function VideoSpacePanel({ modelId, modelName, demo, initialPrompt }: { modelId: string; modelName: string; demo?: VideoDemo; initialPrompt?: string }) {
   const spec = useMemo(() => getVideoParamSpec(modelId), [modelId]);
   const starter = useMemo(() => demo || starterDemo(modelId, spec), [demo, modelId, spec]);
 
   const [lang, setLang] = useState<Lang>('python');
   const [copied, setCopied] = useState(false);
   const [apiKey, setApiKey] = useState(storedAPIKey);
-  const [prompt, setPrompt] = useState(starter.prompt);
+  const [prompt, setPrompt] = useState(initialPrompt || starter.prompt);
   const [inputMode, setInputMode] = useState<VideoInputMode>(() => starterInputMode(starter, spec));
   const [imageUrl, setImageUrl] = useState(starter.imageUrl || starter.imageUrls?.[0] || '');
   const [endImageUrl, setEndImageUrl] = useState(starter.endImageUrl || '');
@@ -179,7 +179,7 @@ export function VideoSpacePanel({ modelId, modelName, demo }: { modelId: string;
   const [error, setError] = useState('');
 
   useEffect(() => {
-    setPrompt(starter.prompt);
+    setPrompt(initialPrompt || starter.prompt);
     setInputMode(starterInputMode(starter, spec));
     setImageUrl(starter.imageUrl || starter.imageUrls?.[0] || '');
     setEndImageUrl(starter.endImageUrl || '');
@@ -192,7 +192,7 @@ export function VideoSpacePanel({ modelId, modelName, demo }: { modelId: string;
     setGenerated(false);
     setAdv(EMPTY_ADVANCED);
     setError('');
-  }, [starter, spec]);
+  }, [initialPrompt, starter, spec]);
 
   useEffect(() => {
     if (apiKey.trim()) localStorage.setItem('op_api_key', apiKey.trim());
@@ -308,7 +308,7 @@ export function VideoSpacePanel({ modelId, modelName, demo }: { modelId: string;
 
   return (
     <div className="grid gap-0 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]" data-testid="mp-video-panel">
-      <div className="border-b border-white/10 lg:border-b-0 lg:border-r">
+      <div className="border-b border-white/20 lg:border-b-0 lg:border-r">
         <div className="relative bg-black">
           <video
             key={outputUrl}
@@ -326,25 +326,25 @@ export function VideoSpacePanel({ modelId, modelName, demo }: { modelId: string;
             {generated ? 'Generated output' : demo ? 'Example output' : 'Starter output preview'}
           </div>
         </div>
-        <div className={`grid gap-4 border-t border-white/10 p-4 ${previewImage ? 'md:grid-cols-[140px_minmax(0,1fr)]' : ''}`}>
+        <div className={`grid gap-4 border-t border-white/20 p-4 ${previewImage ? 'md:grid-cols-[140px_minmax(0,1fr)]' : ''}`}>
           {previewImage ? (
             <div>
-              <div className="mb-2 text-[10px] font-mono uppercase tracking-[0.16em] text-white/35">Input image</div>
+              <div className="mb-2 text-[10px] font-mono uppercase tracking-[0.16em] text-white/50">Input image</div>
               <img
                 src={previewImage}
                 alt={`${modelName} reference input`}
-                className="aspect-square w-full rounded-lg border border-white/10 bg-white/[0.03] object-contain"
+                className="aspect-square w-full rounded-lg border border-white/20 bg-white/[0.06] object-contain"
                 data-testid="mp-video-input-preview"
               />
             </div>
           ) : null}
           <div className="min-w-0">
-            <div className="mb-2 text-[10px] font-mono uppercase tracking-[0.16em] text-white/35">Current prompt</div>
+            <div className="mb-2 text-[10px] font-mono uppercase tracking-[0.16em] text-white/50">Current prompt</div>
             <p className="text-sm leading-relaxed text-white/58">{prompt}</p>
-            <div className="mt-4 flex flex-wrap gap-2 text-[10px] font-mono uppercase tracking-[0.14em] text-white/35">
-              <span className="rounded border border-white/10 px-2 py-1">{resolution}</span>
-              <span className="rounded border border-white/10 px-2 py-1">{duration === 'auto' ? 'auto duration' : `${duration}s`}</span>
-              <span className="rounded border border-white/10 px-2 py-1">{aspectRatio}</span>
+            <div className="mt-4 flex flex-wrap gap-2 text-[10px] font-mono uppercase tracking-[0.14em] text-white/50">
+              <span className="rounded border border-white/20 px-2 py-1">{resolution}</span>
+              <span className="rounded border border-white/20 px-2 py-1">{duration === 'auto' ? 'auto duration' : `${duration}s`}</span>
+              <span className="rounded border border-white/20 px-2 py-1">{aspectRatio}</span>
             </div>
           </div>
         </div>
@@ -401,7 +401,7 @@ export function VideoSpacePanel({ modelId, modelName, demo }: { modelId: string;
               </select>
             </Field>
             {spec.safetyTolerance !== undefined && (
-              <div className="rounded border border-white/10 bg-white/[0.03] px-3 py-2 font-mono text-xs text-white/50" data-testid="mp-video-safety-tolerance">
+              <div className="rounded border border-white/20 bg-white/[0.06] px-3 py-2 font-mono text-xs text-white/50" data-testid="mp-video-safety-tolerance">
                 Safety tolerance <span className="text-white">{spec.safetyTolerance}</span> · fixed
               </div>
             )}
@@ -419,7 +419,7 @@ export function VideoSpacePanel({ modelId, modelName, demo }: { modelId: string;
                   className={inputCls}
                   data-testid="mp-video-image-url"
                 />
-                <label className="inline-flex shrink-0 cursor-pointer items-center justify-center rounded border border-white/12 px-3 text-white/55 transition-colors hover:border-white/30 hover:text-white">
+                <label className="inline-flex shrink-0 cursor-pointer items-center justify-center rounded border border-white/12 px-3 text-white/55 transition-colors hover:border-white/50 hover:text-white">
                   {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                   <span className="sr-only">Upload input image</span>
                   <input type="file" accept="image/*" className="sr-only" onChange={e => uploadImage(e.target.files?.[0])} />
@@ -474,7 +474,7 @@ export function VideoSpacePanel({ modelId, modelName, demo }: { modelId: string;
               className={`w-full rounded border px-3 py-2 font-mono text-xs transition-colors ${
                 spec.enableSafetyChecker || generateAudio
                   ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200'
-                  : 'border-white/10 bg-black text-white/50'
+                  : 'border-white/20 bg-black text-white/50'
               }`}
               data-testid="mp-video-generate-audio"
             >
@@ -554,13 +554,13 @@ export function VideoSpacePanel({ modelId, modelName, demo }: { modelId: string;
         {error && <p className="mt-3 rounded border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs font-mono text-red-200" role="alert">{error}</p>}
       </div>
 
-      <div className="border-t border-white/10 p-5 lg:col-span-2">
+      <div className="border-t border-white/20 p-5 lg:col-span-2">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h3 className="font-mono text-xs font-bold uppercase tracking-[0.14em] text-white/65">Video API example</h3>
-            <p className="mt-1 text-xs text-white/35">Prompt, image, and settings update this code immediately.</p>
+            <p className="mt-1 text-xs text-white/50">Prompt, image, and settings update this code immediately.</p>
           </div>
-          <button type="button" onClick={copy} className="inline-flex items-center gap-2 rounded border border-white/12 px-3 py-2 font-mono text-xs text-white/60 transition-colors hover:border-white/30 hover:text-white">
+          <button type="button" onClick={copy} className="inline-flex items-center gap-2 rounded border border-white/12 px-3 py-2 font-mono text-xs text-white/60 transition-colors hover:border-white/50 hover:text-white">
             {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
             {copied ? 'Copied' : 'Copy request'}
           </button>
@@ -571,7 +571,7 @@ export function VideoSpacePanel({ modelId, modelName, demo }: { modelId: string;
               key={l}
               type="button"
               onClick={() => setLang(l)}
-              className={`rounded px-3 py-1.5 font-mono text-xs transition-colors ${lang === l ? 'bg-white text-black' : 'border border-white/10 text-white/45 hover:text-white'}`}
+              className={`rounded px-3 py-1.5 font-mono text-xs transition-colors ${lang === l ? 'bg-white text-black' : 'border border-white/20 text-white/45 hover:text-white'}`}
             >
               {l === 'javascript' ? 'JavaScript' : l === 'python' ? 'Python' : 'cURL'}
             </button>
@@ -580,10 +580,10 @@ export function VideoSpacePanel({ modelId, modelName, demo }: { modelId: string;
         <CodeBlock
           code={snippet}
           language={lang === 'curl' ? 'bash' : lang}
-          containerClassName="overflow-hidden rounded-lg border border-white/10 bg-black/60"
+          containerClassName="overflow-hidden rounded-lg border border-white/20 bg-black/60"
           preClassName="max-h-[420px] text-xs"
         />
-        <div className="mt-3 flex items-center gap-2 text-[11px] text-white/32">
+        <div className="mt-3 flex items-center gap-2 text-[11px] text-white/45">
           <Video className="h-3.5 w-3.5" /> Output replaces the preview without leaving this model page.
         </div>
       </div>

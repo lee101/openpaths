@@ -53,7 +53,7 @@ export function ArtificialAnalysisBenchmarkSection({ compact = false }: Benchmar
           href={artificialAnalysisSnapshot.sourceUrl}
           target="_blank"
           rel="noreferrer noopener"
-          className="font-mono text-xs text-white/40 underline decoration-white/15 underline-offset-4 hover:text-white"
+          className="font-mono text-xs text-white/55 underline decoration-white/15 underline-offset-4 hover:text-white"
         >
           Crawled {new Date(artificialAnalysisSnapshot.crawledAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}
         </a>
@@ -69,8 +69,8 @@ export function ArtificialAnalysisBenchmarkSection({ compact = false }: Benchmar
       )}
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <div className="overflow-hidden rounded-lg border border-white/10 bg-white/[0.02]">
-          <div className="border-b border-white/10 px-4 py-3">
+        <div className="overflow-hidden rounded-lg border border-white/20 bg-white/[0.05]">
+          <div className="border-b border-white/20 px-4 py-3">
             <h3 className="font-mono text-sm uppercase tracking-[0.16em] text-white/65">Intelligence Index</h3>
           </div>
           <div className="h-[340px] p-3">
@@ -93,8 +93,8 @@ export function ArtificialAnalysisBenchmarkSection({ compact = false }: Benchmar
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-lg border border-white/10 bg-white/[0.02]">
-          <div className="border-b border-white/10 px-4 py-3">
+        <div className="overflow-hidden rounded-lg border border-white/20 bg-white/[0.05]">
+          <div className="border-b border-white/20 px-4 py-3">
             <h3 className="font-mono text-sm uppercase tracking-[0.16em] text-white/65">Intelligence vs. Price</h3>
           </div>
           <div className="h-[340px] p-3">
@@ -133,7 +133,7 @@ export function ArtificialAnalysisBenchmarkSection({ compact = false }: Benchmar
 
 function BenchmarkMetric({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
+    <div className="rounded-lg border border-white/20 bg-white/[0.06] p-4">
       <div className="mb-3 flex items-center justify-between text-white/45">
         <p className="font-mono text-xs uppercase tracking-[0.16em]">{label}</p>
         {icon}
@@ -171,7 +171,7 @@ function BarTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null;
   const item = payload[0].payload;
   return (
-    <div className="rounded-lg border border-white/10 bg-black px-3 py-2 text-sm shadow-xl">
+    <div className="rounded-lg border border-white/20 bg-black px-3 py-2 text-sm shadow-xl">
       <p className="font-mono text-white">{item.name}</p>
       <p className="text-white/55">{item.creator}</p>
       <p className="mt-1 font-mono text-cyan-200">{displayScore(item.intelligence)} AA Index</p>
@@ -183,7 +183,7 @@ function ScatterTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null;
   const item = payload[0].payload as ChartPoint;
   return (
-    <div className="rounded-lg border border-white/10 bg-black px-3 py-2 text-sm shadow-xl">
+    <div className="rounded-lg border border-white/20 bg-black px-3 py-2 text-sm shadow-xl">
       <p className="font-mono text-white">{item.name}</p>
       <p className="text-white/55">{item.creator}</p>
       <p className="mt-1 font-mono text-cyan-200">{displayScore(item.intelligence)} AA Index</p>

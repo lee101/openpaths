@@ -585,7 +585,7 @@ function ImagePreviewStrip({ urls, label }: { urls: string[]; label: string }) {
   return (
     <div className="mt-2 flex gap-2 overflow-x-auto pb-1" data-testid={`preview-${label}`}>
       {urls.slice(0, 6).map((url, idx) => (
-        <a key={`${url}-${idx}`} href={url} target="_blank" rel="noreferrer" className="group relative h-16 w-16 flex-none overflow-hidden rounded border border-white/10 bg-black">
+        <a key={`${url}-${idx}`} href={url} target="_blank" rel="noreferrer" className="group relative h-16 w-16 flex-none overflow-hidden rounded border border-white/20 bg-black">
           <img src={url} alt={`${label} ${idx + 1}`} className="h-full w-full object-cover transition-opacity group-hover:opacity-80" loading="lazy" />
         </a>
       ))}
@@ -841,12 +841,12 @@ function renderMarkdown(text: string): React.ReactNode[] {
         i++;
       }
       nodes.push(
-        <div key={nodes.length} className="my-2 overflow-x-auto rounded-lg border border-white/10">
+        <div key={nodes.length} className="my-2 overflow-x-auto rounded-lg border border-white/20">
           <table className="w-full text-sm border-collapse">
             <thead>
-              <tr className="bg-white/[0.04]">
+              <tr className="bg-white/[0.07]">
                 {header.map((cell, j) => (
-                  <th key={j} className="border-b border-white/10 px-3 py-2 text-left font-semibold whitespace-nowrap">
+                  <th key={j} className="border-b border-white/20 px-3 py-2 text-left font-semibold whitespace-nowrap">
                     {renderInline(cell)}
                   </th>
                 ))}
@@ -854,7 +854,7 @@ function renderMarkdown(text: string): React.ReactNode[] {
             </thead>
             <tbody>
               {rows.map((row, r) => (
-                <tr key={r} className="border-b border-white/5 last:border-0">
+                <tr key={r} className="border-b border-white/20 last:border-0">
                   {header.map((_, c) => (
                     <td key={c} className="px-3 py-2 align-top">{renderInline(row[c] ?? '')}</td>
                   ))}
@@ -869,7 +869,7 @@ function renderMarkdown(text: string): React.ReactNode[] {
 
     // Horizontal rule
     if (line.match(/^\s*(-{3,}|\*{3,}|_{3,})\s*$/)) {
-      nodes.push(<hr key={nodes.length} className="my-3 border-white/10" />);
+      nodes.push(<hr key={nodes.length} className="my-3 border-white/20" />);
       i++;
       continue;
     }
@@ -976,10 +976,10 @@ function MarkdownCodeBlock({ code, lang }: { code: string; lang: string; key?: R
   };
 
   return (
-    <div className="my-2 rounded-lg border border-white/10 overflow-hidden bg-white/[0.03]">
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/10 bg-white/[0.02]">
-        <span className="text-[10px] font-mono text-white/30 uppercase">{lang || 'code'}</span>
-        <button onClick={copy} className="text-white/30 hover:text-white/60 transition-colors p-0.5">
+    <div className="my-2 rounded-lg border border-white/20 overflow-hidden bg-white/[0.06]">
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/20 bg-white/[0.05]">
+        <span className="text-[10px] font-mono text-white/45 uppercase">{lang || 'code'}</span>
+        <button onClick={copy} className="text-white/45 hover:text-white/60 transition-colors p-0.5">
           {copied ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
         </button>
       </div>
@@ -2894,30 +2894,30 @@ JSON`;
       )}
       <div className="flex flex-col h-full flex-1 min-w-0">
       {/* Toolbar */}
-      <div className="border-b border-white/10 px-4 py-2.5 flex items-center gap-2 bg-white/[0.02] overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>*]:shrink-0">
+      <div className="border-b border-white/20 px-4 py-2.5 flex items-center gap-2 bg-white/[0.05] overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>*]:shrink-0">
         <button
           onClick={() => setSidebarOpen(v => !v)}
           title="Chats & project folders"
-          className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border transition-colors ${sidebarOpen ? 'border-white/30 bg-white/10 text-white' : 'border-white/10 text-white/60 hover:text-white hover:border-white/20'}`}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border transition-colors ${sidebarOpen ? 'border-white/30 bg-white/10 text-white' : 'border-white/20 text-white/60 hover:text-white hover:border-white/40'}`}
         >
           <PanelLeft className="w-3.5 h-3.5" /> Chats
         </button>
         <button
           onClick={() => newChatInFolder(pendingFolderIdRef.current)}
           title="Start a new chat"
-          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border border-white/10 text-white/60 hover:text-white hover:border-white/20 transition-colors"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border border-white/20 text-white/60 hover:text-white hover:border-white/40 transition-colors"
         >
           <MessageSquarePlus className="w-3.5 h-3.5" /> New
         </button>
         <button
           onClick={() => setShowSettings(!showSettings)}
-          className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border transition-colors ${showSettings ? 'border-white/30 bg-white/10 text-white' : 'border-white/10 text-white/60 hover:text-white hover:border-white/20'}`}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border transition-colors ${showSettings ? 'border-white/30 bg-white/10 text-white' : 'border-white/20 text-white/60 hover:text-white hover:border-white/40'}`}
         >
           <Settings className="w-3.5 h-3.5" /> Settings
         </button>
         {!primaryIsImage && !primaryIsVideo && !primaryIsSpeech && !primaryIsMusic && (
-          <div className="flex items-center gap-0.5 px-1.5 py-1 rounded border border-white/10" title="Reasoning effort">
-            <Brain className="w-3.5 h-3.5 text-white/40 mr-0.5" />
+          <div className="flex items-center gap-0.5 px-1.5 py-1 rounded border border-white/20" title="Reasoning effort">
+            <Brain className="w-3.5 h-3.5 text-white/55 mr-0.5" />
             {([['', 'Off'], ['low', 'Low'], ['medium', 'Med'], ['high', 'High']] as const).map(([val, label]) => (
               <button
                 key={val}
@@ -2932,21 +2932,21 @@ JSON`;
         <button
           onClick={addPane}
           disabled={panes.length >= 4}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border border-white/10 text-white/60 hover:text-white hover:border-white/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border border-white/20 text-white/60 hover:text-white hover:border-white/40 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <Plus className="w-3.5 h-3.5" /> Compare
         </button>
         <button
           type="button"
           onClick={exportPlaygroundJSON}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border border-white/10 text-white/60 hover:text-white hover:border-white/20 transition-colors"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border border-white/20 text-white/60 hover:text-white hover:border-white/40 transition-colors"
         >
           <Download className="w-3.5 h-3.5" /> Export
         </button>
         <button
           type="button"
           onClick={() => importFileInputRef.current?.click()}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border border-white/10 text-white/60 hover:text-white hover:border-white/20 transition-colors"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border border-white/20 text-white/60 hover:text-white hover:border-white/40 transition-colors"
         >
           <Upload className="w-3.5 h-3.5" /> Import
         </button>
@@ -2963,7 +2963,7 @@ JSON`;
         {hasMessages && (
           <button
             onClick={clearAll}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border border-white/10 text-white/60 hover:text-white hover:border-white/20 transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border border-white/20 text-white/60 hover:text-white hover:border-white/40 transition-colors"
           >
             <Trash2 className="w-3.5 h-3.5" /> Clear
           </button>
@@ -2974,7 +2974,7 @@ JSON`;
             setSoundEnabled(v => !v);
             if (!soundEnabled) playCompletionSound();
           }}
-          className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border transition-colors ${soundEnabled ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' : 'border-white/10 text-white/60 hover:text-white hover:border-white/20'}`}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border transition-colors ${soundEnabled ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' : 'border-white/20 text-white/60 hover:text-white hover:border-white/40'}`}
           title="Play a sound when a response finishes"
         >
           <Volume2 className="w-3.5 h-3.5" /> Sound
@@ -2982,7 +2982,7 @@ JSON`;
         {(hasMessages || primaryIsImage || primaryIsVideo || primaryIsSpeech || primaryIsMusic) && (
           <button
             onClick={() => setShowCode(!showCode)}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border transition-colors ${showCode ? 'border-white/30 bg-white/10 text-white' : 'border-white/10 text-white/60 hover:text-white hover:border-white/20'}`}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border transition-colors ${showCode ? 'border-white/30 bg-white/10 text-white' : 'border-white/20 text-white/60 hover:text-white hover:border-white/40'}`}
           >
             <Code2 className="w-3.5 h-3.5" /> Copy Code
           </button>
@@ -2990,7 +2990,7 @@ JSON`;
         {hasMessages && (
           <button
             onClick={shareChat}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border border-white/10 text-white/60 hover:text-white hover:border-white/20 transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border border-white/20 text-white/60 hover:text-white hover:border-white/40 transition-colors"
             title="Copy a public link to this chat"
           >
             {shareCopied ? <><Check className="w-3.5 h-3.5 text-green-400" /> Share link copied</> : <><Share2 className="w-3.5 h-3.5" /> Share</>}
@@ -3009,14 +3009,14 @@ JSON`;
             )
           )}
           {panes.length > 1 && (
-            <span className="text-[10px] font-mono text-white/25">{panes.length}/4 models</span>
+            <span className="text-[10px] font-mono text-white/50">{panes.length}/4 models</span>
           )}
-          <span className="text-[10px] font-mono text-white/25">
+          <span className="text-[10px] font-mono text-white/50">
             {primaryIsMusic ? 'music generation' : primaryIsSpeech ? `${speechVoice} | ${speechLanguage}` : primaryIsVideo ? `${videoResolution} | ${videoDuration}s | ${videoAspectRatio}` : primaryIsImage ? `${imageSize} | ${imageQuality} | ${imageCount} img` : `temp ${temperature} | max ${maxTokens}`}
           </span>
           {!primaryIsImage && !primaryIsVideo && !primaryIsSpeech && !primaryIsMusic && (
             <>
-              <span className="text-[10px] font-mono text-white/25" title="Estimated input tokens before sending">
+              <span className="text-[10px] font-mono text-white/50" title="Estimated input tokens before sending">
                 ctx {fmtTokens(projectedInputTokens)}{primaryContextWindow ? `/${fmtTokens(primaryContextWindow)}` : ''}
                 {projectedContextPct !== null ? ` (${projectedContextPct}%)` : ''}
               </span>
@@ -3032,30 +3032,30 @@ JSON`;
 
       {/* Settings Panel */}
       {showSettings && (
-        <div className="border-b border-white/10 px-4 py-4 bg-white/[0.02]">
+        <div className="border-b border-white/20 px-4 py-4 bg-white/[0.05]">
           <div className="max-w-4xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
-              <label className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">API Key</label>
+              <label className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">API Key</label>
               <input
                 type="password"
                 value={apiKey}
                 onChange={e => setApiKey(e.target.value)}
                 placeholder="op-..."
-                className="w-full bg-black border border-white/10 rounded px-3 py-2 text-sm font-mono text-white placeholder:text-white/20 focus:outline-none focus:border-white/30"
+                className="w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-sm font-mono text-white placeholder:text-white/45 focus:outline-none focus:border-white/50"
               />
             </div>
             <div>
-              <label className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">System Prompt</label>
+              <label className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">System Prompt</label>
               <textarea
                 value={systemPrompt}
                 onChange={e => setSystemPrompt(e.target.value)}
                 rows={2}
-                className="w-full bg-black border border-white/10 rounded px-3 py-2 text-sm font-mono text-white placeholder:text-white/20 focus:outline-none focus:border-white/30 resize-none"
+                className="w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-sm font-mono text-white placeholder:text-white/45 focus:outline-none focus:border-white/50 resize-none"
                 placeholder="You are a helpful assistant."
               />
             </div>
             <div>
-              <label className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">
+              <label className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">
                 Temperature <span className="text-white/60">{temperature}</span>
               </label>
               <input
@@ -3067,12 +3067,12 @@ JSON`;
                 onChange={e => setTemperature(parseFloat(e.target.value))}
                 className="w-full accent-white h-1"
               />
-              <div className="flex justify-between text-[9px] font-mono text-white/20 mt-0.5">
+              <div className="flex justify-between text-[9px] font-mono text-white/45 mt-0.5">
                 <span>Precise</span><span>Creative</span>
               </div>
             </div>
             <div>
-              <label className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">
+              <label className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">
                 Max Tokens <span className="text-white/60">{maxTokens.toLocaleString()}</span>
               </label>
               <input
@@ -3084,12 +3084,12 @@ JSON`;
                 onChange={e => setMaxTokens(parseInt(e.target.value))}
                 className="w-full accent-white h-1"
               />
-              <div className="flex justify-between text-[9px] font-mono text-white/20 mt-0.5">
+              <div className="flex justify-between text-[9px] font-mono text-white/45 mt-0.5">
                 <span>256</span><span>16,384</span>
               </div>
             </div>
             <div>
-              <label className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">
+              <label className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">
                 Top P <span className="text-white/60">{topP.toFixed(2)}</span>
               </label>
               <input
@@ -3102,12 +3102,12 @@ JSON`;
                 className="w-full accent-white h-1"
                 data-testid="playground-top-p"
               />
-              <div className="flex justify-between text-[9px] font-mono text-white/20 mt-0.5">
+              <div className="flex justify-between text-[9px] font-mono text-white/45 mt-0.5">
                 <span>Focused</span><span>Open</span>
               </div>
             </div>
             <div>
-              <label className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">
+              <label className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">
                 Presence <span className="text-white/60">{presencePenalty.toFixed(1)}</span>
               </label>
               <input
@@ -3120,12 +3120,12 @@ JSON`;
                 className="w-full accent-white h-1"
                 data-testid="playground-presence-penalty"
               />
-              <div className="flex justify-between text-[9px] font-mono text-white/20 mt-0.5">
+              <div className="flex justify-between text-[9px] font-mono text-white/45 mt-0.5">
                 <span>Repeat</span><span>Explore</span>
               </div>
             </div>
             <div>
-              <label className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">
+              <label className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">
                 Frequency <span className="text-white/60">{frequencyPenalty.toFixed(1)}</span>
               </label>
               <input
@@ -3138,12 +3138,12 @@ JSON`;
                 className="w-full accent-white h-1"
                 data-testid="playground-frequency-penalty"
               />
-              <div className="flex justify-between text-[9px] font-mono text-white/20 mt-0.5">
+              <div className="flex justify-between text-[9px] font-mono text-white/45 mt-0.5">
                 <span>Reuse</span><span>Vary</span>
               </div>
             </div>
             <div>
-              <label className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">
+              <label className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">
                 Text Size <span className="text-white/60">{messageTextSize}px</span>
               </label>
               <input
@@ -3156,14 +3156,14 @@ JSON`;
                 className="w-full accent-white h-1"
                 data-testid="playground-text-size"
               />
-              <div className="flex justify-between text-[9px] font-mono text-white/20 mt-0.5">
+              <div className="flex justify-between text-[9px] font-mono text-white/45 mt-0.5">
                 <span>Compact</span><span>Large</span>
               </div>
             </div>
-            <label className="flex items-center justify-between gap-3 rounded border border-white/10 bg-black px-3 py-2">
+            <label className="flex items-center justify-between gap-3 rounded border border-white/20 bg-black px-3 py-2">
               <span>
-                <span className="block text-[10px] font-mono text-white/40 uppercase tracking-wider">Export attachments</span>
-                <span className="block text-[10px] font-mono text-white/25">Include attachment URLs and extracted text in JSON exports.</span>
+                <span className="block text-[10px] font-mono text-white/55 uppercase tracking-wider">Export attachments</span>
+                <span className="block text-[10px] font-mono text-white/50">Include attachment URLs and extracted text in JSON exports.</span>
               </span>
               <input
                 type="checkbox"
@@ -3174,7 +3174,7 @@ JSON`;
               />
             </label>
             <div>
-              <label className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">
+              <label className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">
                 Auto-Prune Local Chats <span className="text-white/60">{autoArchiveDays ? `${autoArchiveDays}d` : 'Off'}</span>
               </label>
               <input
@@ -3187,7 +3187,7 @@ JSON`;
                 className="w-full accent-white h-1"
                 data-testid="playground-auto-archive-days"
               />
-              <div className="flex justify-between text-[9px] font-mono text-white/20 mt-0.5">
+              <div className="flex justify-between text-[9px] font-mono text-white/45 mt-0.5">
                 <span>Keep</span><span>180d</span>
               </div>
             </div>
@@ -3201,48 +3201,48 @@ JSON`;
       )}
 
       {primaryIsImage && (
-        <div className="border-b border-white/10 px-4 py-3 bg-black/40">
+        <div className="border-b border-white/20 px-4 py-3 bg-black/40">
           <div className="max-w-5xl grid grid-cols-2 md:grid-cols-6 gap-3">
             {!primaryIsOutpaintImage && <label className="block">
-              <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Size</span>
+              <span className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">Size</span>
               <select
                 value={imageSize}
                 onChange={e => setImageSize(e.target.value as typeof IMAGE_SIZES[number])}
-                className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30"
+                className="w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/50"
                 data-testid="image-size"
               >
                 {(primaryIsBFLImage ? BFL_IMAGE_SIZES : IMAGE_SIZES).map(size => <option key={size} value={size} className="bg-black text-white">{size}</option>)}
               </select>
             </label>}
             {!primaryIsOutpaintImage && !primaryIsBFLImage && <label className="block">
-              <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Quality</span>
+              <span className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">Quality</span>
               <select
                 value={imageQuality}
                 onChange={e => setImageQuality(e.target.value as typeof IMAGE_QUALITIES[number])}
-                className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30"
+                className="w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/50"
                 data-testid="image-quality"
               >
                 {IMAGE_QUALITIES.map(q => <option key={q} value={q} className="bg-black text-white">{q}</option>)}
               </select>
             </label>}
             {!primaryIsOutpaintImage && <label className="block">
-              <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Images</span>
+              <span className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">Images</span>
               <input
                 type="number"
                 min="1"
                 max="4"
                 value={imageCount}
                 onChange={e => setImageCount(Math.max(1, Math.min(4, Number(e.target.value) || 1)))}
-                className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30"
+                className="w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/50"
                 data-testid="image-count"
               />
             </label>}
             {!primaryIsOutpaintImage && <label className="block">
-              <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Response</span>
+              <span className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">Response</span>
               <select
                 value={imageResponseFormat}
                 onChange={e => setImageResponseFormat(e.target.value as typeof IMAGE_RESPONSE_FORMATS[number])}
-                className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30"
+                className="w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/50"
                 data-testid="image-response-format"
               >
                 {IMAGE_RESPONSE_FORMATS.map(format => <option key={format} value={format} className="bg-black text-white">{format}</option>)}
@@ -3251,29 +3251,29 @@ JSON`;
             {primaryIsBFLImage && (
               <>
                 <label className="block">
-                  <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Output</span>
-                  <select value={imageOutputFormat} onChange={e => setImageOutputFormat(e.target.value)} className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30" data-testid="image-output-format">
+                  <span className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">Output</span>
+                  <select value={imageOutputFormat} onChange={e => setImageOutputFormat(e.target.value)} className="w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/50" data-testid="image-output-format">
                     {['webp', 'png', 'jpeg'].map(format => <option key={format} value={format} className="bg-black text-white">{format}</option>)}
                   </select>
                 </label>
                 <label className="block">
-                  <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Prompt upsampling</span>
-                  <button type="button" onClick={() => setImagePromptUpsampling(value => !value)} className={`w-full border rounded px-3 py-2 text-xs font-mono transition-colors ${imagePromptUpsampling ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' : 'border-white/10 bg-black text-white/50'}`} data-testid="image-prompt-upsampling">
+                  <span className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">Prompt upsampling</span>
+                  <button type="button" onClick={() => setImagePromptUpsampling(value => !value)} className={`w-full border rounded px-3 py-2 text-xs font-mono transition-colors ${imagePromptUpsampling ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' : 'border-white/20 bg-black text-white/50'}`} data-testid="image-prompt-upsampling">
                     {imagePromptUpsampling ? 'on · richer prompt' : 'off · exact prompt'}
                   </button>
                 </label>
                 <div className="block">
-                  <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Safety tolerance</span>
-                  <div className="w-full border border-white/10 rounded bg-white/[0.03] px-3 py-2 text-xs font-mono text-white/55" data-testid="image-safety-tolerance"><span className="text-white">5</span> · fixed</div>
+                  <span className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">Safety tolerance</span>
+                  <div className="w-full border border-white/20 rounded bg-white/[0.06] px-3 py-2 text-xs font-mono text-white/55" data-testid="image-safety-tolerance"><span className="text-white">5</span> · fixed</div>
                 </div>
               </>
             )}
             {!primaryIsOutpaintImage && !primaryIsBFLImage && <label className="block">
-              <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Aspect</span>
+              <span className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">Aspect</span>
               <select
                 value={imageAspectRatio}
                 onChange={e => setImageAspectRatio(e.target.value as typeof IMAGE_ASPECT_RATIOS[number])}
-                className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30"
+                className="w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/50"
                 data-testid="image-aspect-ratio"
               >
                 {IMAGE_ASPECT_RATIOS.map(ratio => <option key={ratio} value={ratio} className="bg-black text-white">{ratio}</option>)}
@@ -3286,32 +3286,32 @@ JSON`;
               ['Right', outpaintRight, setOutpaintRight],
             ].map(([label, value, setter]) => (
               <label key={label as string} className="block">
-                <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">{label as string}</span>
+                <span className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">{label as string}</span>
                 <input
                   type="number"
                   min="0"
                   max="2048"
                   value={value as number}
                   onChange={e => (setter as React.Dispatch<React.SetStateAction<number>>)(Math.max(0, Math.min(2048, Number(e.target.value) || 0)))}
-                  className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30"
+                  className="w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/50"
                 />
               </label>
             ))}
             <label
-              className={`block col-span-2 md:col-span-1 rounded border p-2 transition-colors ${dragTarget === 'image-inputs' ? 'border-emerald-400/60 bg-emerald-400/10' : 'border-white/10 bg-white/[0.015]'}`}
+              className={`block col-span-2 md:col-span-1 rounded border p-2 transition-colors ${dragTarget === 'image-inputs' ? 'border-emerald-400/60 bg-emerald-400/10' : 'border-white/20 bg-white/[0.04]'}`}
               data-testid="image-input-dropzone"
               {...referenceDropHandlers('image-inputs')}
             >
-              <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">
+              <span className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">
                 {primaryIsOutpaintImage ? 'Source image' : 'Input URLs'}
-                <span className="text-white/25 normal-case tracking-normal"> · drag, paste, or pick</span>
+                <span className="text-white/40 normal-case tracking-normal"> · drag, paste, or pick</span>
               </span>
               <textarea
                 value={imageInputUrls}
                 onChange={e => setImageInputUrls(normalizeUploadUrlText(e.target.value))}
                 rows={1}
                 placeholder={primaryIsOutpaintImage ? 'Required source image URL' : 'Optional image URLs'}
-                className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30 resize-none"
+                className="w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/45 focus:outline-none focus:border-white/50 resize-none"
                 data-testid="image-input-urls"
               />
               <input
@@ -3320,7 +3320,7 @@ JSON`;
                 multiple
                 disabled={uploadingRefs || !apiKey}
                 onChange={e => e.target.files && uploadReferenceFiles(e.target.files, 'image-inputs')}
-                className="mt-1 block w-full text-[10px] font-mono text-white/35 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-white/60 disabled:opacity-40"
+                className="mt-1 block w-full text-[10px] font-mono text-white/50 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-white/60 disabled:opacity-40"
                 data-testid="image-input-upload"
               />
               <ImagePreviewStrip urls={parseImageInputUrls(imageInputUrls)} label="image-input-urls" />
@@ -3330,11 +3330,11 @@ JSON`;
       )}
 
       {primaryIsVideo && (
-        <div className="border-b border-white/10 px-4 py-3 bg-black/40">
+        <div className="border-b border-white/20 px-4 py-3 bg-black/40">
           <div className="max-w-5xl grid grid-cols-2 md:grid-cols-7 gap-3">
             {videoSpec.inputModes && (
               <label className="block col-span-2 md:col-span-2">
-                <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Video mode</span>
+                <span className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">Video mode</span>
                 <select
                   value={videoInputMode}
                   onChange={e => {
@@ -3342,7 +3342,7 @@ JSON`;
                     setVideoInputMode(next);
                     if (next === 'image-to-video' && !videoImageUrl) setVideoImageUrl('https://openpaths.io/static/blog/video-tips/coast-poster.webp');
                   }}
-                  className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30"
+                  className="w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/50"
                   data-testid="video-input-mode"
                 >
                   {videoSpec.inputModes.map(mode => (
@@ -3354,33 +3354,33 @@ JSON`;
               </label>
             )}
             <label className="block">
-              <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Resolution</span>
-              <select value={videoResolution} onChange={e => setVideoResolution(e.target.value as typeof VIDEO_RESOLUTIONS[number])} className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30" data-testid="video-resolution">
+              <span className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">Resolution</span>
+              <select value={videoResolution} onChange={e => setVideoResolution(e.target.value as typeof VIDEO_RESOLUTIONS[number])} className="w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/50" data-testid="video-resolution">
                 {videoSpec.resolutions.map(v => <option key={v} value={v} className="bg-black text-white">{v}</option>)}
               </select>
             </label>
             <label className="block">
-              <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Duration</span>
-              <select value={videoDuration} onChange={e => setVideoDuration(e.target.value as typeof VIDEO_DURATIONS[number])} className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30" data-testid="video-duration">
+              <span className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">Duration</span>
+              <select value={videoDuration} onChange={e => setVideoDuration(e.target.value as typeof VIDEO_DURATIONS[number])} className="w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/50" data-testid="video-duration">
                 {videoSpec.durations.map(v => <option key={v} value={v} className="bg-black text-white">{v}</option>)}
               </select>
             </label>
             <label className="block">
-              <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Aspect</span>
-              <select value={videoAspectRatio} onChange={e => setVideoAspectRatio(e.target.value as typeof VIDEO_ASPECT_RATIOS[number])} className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30" data-testid="video-aspect-ratio">
+              <span className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">Aspect</span>
+              <select value={videoAspectRatio} onChange={e => setVideoAspectRatio(e.target.value as typeof VIDEO_ASPECT_RATIOS[number])} className="w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/50" data-testid="video-aspect-ratio">
                 {videoSpec.aspectRatios.map(v => <option key={v} value={v} className="bg-black text-white">{v}</option>)}
               </select>
             </label>
             <label className="block">
-              <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">{primaryIsHappyHorseVideo ? 'Safety' : 'Audio'}</span>
-              <button type="button" onClick={() => !primaryIsHappyHorseVideo && setVideoGenerateAudio(v => !v)} className={`w-full border rounded px-3 py-2 text-xs font-mono transition-colors ${(primaryIsHappyHorseVideo || videoGenerateAudio) ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' : 'border-white/10 bg-black text-white/50'}`} data-testid="video-generate-audio">
+              <span className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">{primaryIsHappyHorseVideo ? 'Safety' : 'Audio'}</span>
+              <button type="button" onClick={() => !primaryIsHappyHorseVideo && setVideoGenerateAudio(v => !v)} className={`w-full border rounded px-3 py-2 text-xs font-mono transition-colors ${(primaryIsHappyHorseVideo || videoGenerateAudio) ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' : 'border-white/20 bg-black text-white/50'}`} data-testid="video-generate-audio">
                 {primaryIsHappyHorseVideo || videoGenerateAudio ? 'on' : 'off'}
               </button>
             </label>
             {videoSpec.safetyTolerance !== undefined && (
               <div className="block">
-                <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Safety tolerance</span>
-                <div className="w-full border border-white/10 rounded bg-white/[0.03] px-3 py-2 text-xs font-mono text-white/55" data-testid="video-safety-tolerance">
+                <span className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">Safety tolerance</span>
+                <div className="w-full border border-white/20 rounded bg-white/[0.06] px-3 py-2 text-xs font-mono text-white/55" data-testid="video-safety-tolerance">
                   <span className="text-white">{videoSpec.safetyTolerance}</span> · fixed
                 </div>
               </div>
@@ -3389,105 +3389,105 @@ JSON`;
               videoInputMode === 'image-to-video' ? (
                 <>
                   <label
-                    className={`block col-span-2 md:col-span-2 rounded border p-2 transition-colors ${dragTarget === 'image' ? 'border-emerald-400/60 bg-emerald-400/10' : 'border-white/10 bg-white/[0.015]'}`}
+                    className={`block col-span-2 md:col-span-2 rounded border p-2 transition-colors ${dragTarget === 'image' ? 'border-emerald-400/60 bg-emerald-400/10' : 'border-white/20 bg-white/[0.04]'}`}
                     data-testid="video-start-image-dropzone"
                     {...referenceDropHandlers('image')}
                   >
-                    <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Start image</span>
-                    <input value={videoImageUrl} onChange={e => setVideoImageUrl(normalizeUploadedAssetUrl(e.target.value))} placeholder="https://..." className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30" data-testid="video-image-url" />
-                    <input type="file" accept="image/*" disabled={uploadingRefs} onChange={e => e.target.files && uploadReferenceFiles(e.target.files, 'image')} className="mt-1 block w-full text-[10px] font-mono text-white/35 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-white/60" />
+                    <span className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">Start image</span>
+                    <input value={videoImageUrl} onChange={e => setVideoImageUrl(normalizeUploadedAssetUrl(e.target.value))} placeholder="https://..." className="w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/45 focus:outline-none focus:border-white/50" data-testid="video-image-url" />
+                    <input type="file" accept="image/*" disabled={uploadingRefs} onChange={e => e.target.files && uploadReferenceFiles(e.target.files, 'image')} className="mt-1 block w-full text-[10px] font-mono text-white/50 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-white/60" />
                     <SingleImagePreview url={videoImageUrl} label="video-start-image" />
                   </label>
                   <label
-                    className={`block col-span-2 md:col-span-1 rounded border p-2 transition-colors ${dragTarget === 'end-image' ? 'border-emerald-400/60 bg-emerald-400/10' : 'border-white/10 bg-white/[0.015]'}`}
+                    className={`block col-span-2 md:col-span-1 rounded border p-2 transition-colors ${dragTarget === 'end-image' ? 'border-emerald-400/60 bg-emerald-400/10' : 'border-white/20 bg-white/[0.04]'}`}
                     data-testid="video-end-image-dropzone"
                     {...referenceDropHandlers('end-image')}
                   >
-                    <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">End image</span>
-                    <input value={videoEndImageUrl} onChange={e => setVideoEndImageUrl(normalizeUploadedAssetUrl(e.target.value))} placeholder="optional URL" className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30" data-testid="video-end-image-url" />
-                    <input type="file" accept="image/*" disabled={uploadingRefs} onChange={e => e.target.files && uploadReferenceFiles(e.target.files, 'end-image')} className="mt-1 block w-full text-[10px] font-mono text-white/35 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-white/60" />
+                    <span className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">End image</span>
+                    <input value={videoEndImageUrl} onChange={e => setVideoEndImageUrl(normalizeUploadedAssetUrl(e.target.value))} placeholder="optional URL" className="w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/45 focus:outline-none focus:border-white/50" data-testid="video-end-image-url" />
+                    <input type="file" accept="image/*" disabled={uploadingRefs} onChange={e => e.target.files && uploadReferenceFiles(e.target.files, 'end-image')} className="mt-1 block w-full text-[10px] font-mono text-white/50 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-white/60" />
                     <SingleImagePreview url={videoEndImageUrl} label="video-end-image" />
                   </label>
                 </>
               ) : videoInputMode === 'video-to-video' ? (
                 <label className="block col-span-2 md:col-span-3">
-                  <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Input video URL</span>
-                  <textarea value={videoVideoUrls} onChange={e => setVideoVideoUrls(e.target.value)} rows={1} placeholder="https://example.com/input-video.mp4" className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30 resize-none" data-testid="video-video-urls" />
-                  <input type="file" accept="video/mp4,video/quicktime,video/*" disabled={uploadingRefs} onChange={e => e.target.files && uploadReferenceFiles(e.target.files, 'video')} className="mt-1 block w-full text-[10px] font-mono text-white/35 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-white/60" />
+                  <span className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">Input video URL</span>
+                  <textarea value={videoVideoUrls} onChange={e => setVideoVideoUrls(e.target.value)} rows={1} placeholder="https://example.com/input-video.mp4" className="w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/45 focus:outline-none focus:border-white/50 resize-none" data-testid="video-video-urls" />
+                  <input type="file" accept="video/mp4,video/quicktime,video/*" disabled={uploadingRefs} onChange={e => e.target.files && uploadReferenceFiles(e.target.files, 'video')} className="mt-1 block w-full text-[10px] font-mono text-white/50 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-white/60" />
                 </label>
               ) : null
             ) : primaryIsImageToVideo ? (
               <>
                 <label
-                  className={`block col-span-2 md:col-span-2 rounded border p-2 transition-colors ${dragTarget === 'image' ? 'border-emerald-400/60 bg-emerald-400/10' : 'border-white/10 bg-white/[0.015]'}`}
+                  className={`block col-span-2 md:col-span-2 rounded border p-2 transition-colors ${dragTarget === 'image' ? 'border-emerald-400/60 bg-emerald-400/10' : 'border-white/20 bg-white/[0.04]'}`}
                   data-testid="video-start-image-dropzone"
                   {...referenceDropHandlers('image')}
                 >
-                  <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Start image</span>
-                  <input value={videoImageUrl} onChange={e => setVideoImageUrl(normalizeUploadedAssetUrl(e.target.value))} placeholder="https://..." className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30" data-testid="video-image-url" />
-                  <input type="file" accept="image/*" disabled={uploadingRefs} onChange={e => e.target.files && uploadReferenceFiles(e.target.files, 'image')} className="mt-1 block w-full text-[10px] font-mono text-white/35 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-white/60" />
+                  <span className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">Start image</span>
+                  <input value={videoImageUrl} onChange={e => setVideoImageUrl(normalizeUploadedAssetUrl(e.target.value))} placeholder="https://..." className="w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/45 focus:outline-none focus:border-white/50" data-testid="video-image-url" />
+                  <input type="file" accept="image/*" disabled={uploadingRefs} onChange={e => e.target.files && uploadReferenceFiles(e.target.files, 'image')} className="mt-1 block w-full text-[10px] font-mono text-white/50 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-white/60" />
                   <SingleImagePreview url={videoImageUrl} label="video-start-image" />
                 </label>
                 <label
-                  className={`block col-span-2 md:col-span-1 rounded border p-2 transition-colors ${dragTarget === 'end-image' ? 'border-emerald-400/60 bg-emerald-400/10' : 'border-white/10 bg-white/[0.015]'}`}
+                  className={`block col-span-2 md:col-span-1 rounded border p-2 transition-colors ${dragTarget === 'end-image' ? 'border-emerald-400/60 bg-emerald-400/10' : 'border-white/20 bg-white/[0.04]'}`}
                   data-testid="video-end-image-dropzone"
                   {...referenceDropHandlers('end-image')}
                 >
-                  <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">End image</span>
-                  <input value={videoEndImageUrl} onChange={e => setVideoEndImageUrl(normalizeUploadedAssetUrl(e.target.value))} placeholder="optional URL" className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30" data-testid="video-end-image-url" />
-                  <input type="file" accept="image/*" disabled={uploadingRefs} onChange={e => e.target.files && uploadReferenceFiles(e.target.files, 'end-image')} className="mt-1 block w-full text-[10px] font-mono text-white/35 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-white/60" />
+                  <span className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">End image</span>
+                  <input value={videoEndImageUrl} onChange={e => setVideoEndImageUrl(normalizeUploadedAssetUrl(e.target.value))} placeholder="optional URL" className="w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/45 focus:outline-none focus:border-white/50" data-testid="video-end-image-url" />
+                  <input type="file" accept="image/*" disabled={uploadingRefs} onChange={e => e.target.files && uploadReferenceFiles(e.target.files, 'end-image')} className="mt-1 block w-full text-[10px] font-mono text-white/50 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-white/60" />
                   <SingleImagePreview url={videoEndImageUrl} label="video-end-image" />
                 </label>
               </>
             ) : primaryIsReferenceToVideo ? (
               <>
                 <label className="block col-span-2 md:col-span-1">
-                  <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Images</span>
-                  <textarea value={videoImageUrls} onChange={e => setVideoImageUrls(normalizeUploadUrlText(e.target.value))} rows={1} placeholder="image URLs" className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30 resize-none" data-testid="video-image-urls" />
-                  <input type="file" accept="image/*" multiple disabled={uploadingRefs} onChange={e => e.target.files && uploadReferenceFiles(e.target.files, 'images')} className="mt-1 block w-full text-[10px] font-mono text-white/35 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-white/60" />
+                  <span className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">Images</span>
+                  <textarea value={videoImageUrls} onChange={e => setVideoImageUrls(normalizeUploadUrlText(e.target.value))} rows={1} placeholder="image URLs" className="w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/45 focus:outline-none focus:border-white/50 resize-none" data-testid="video-image-urls" />
+                  <input type="file" accept="image/*" multiple disabled={uploadingRefs} onChange={e => e.target.files && uploadReferenceFiles(e.target.files, 'images')} className="mt-1 block w-full text-[10px] font-mono text-white/50 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-white/60" />
                   <ImagePreviewStrip urls={parseImageInputUrls(videoImageUrls)} label="video-image-urls" />
                 </label>
                 <label className="block col-span-2 md:col-span-1">
-                  <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Videos</span>
-                  <textarea value={videoVideoUrls} onChange={e => setVideoVideoUrls(e.target.value)} rows={1} placeholder="video URLs" className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30 resize-none" data-testid="video-video-urls" />
-                  <input type="file" accept="video/mp4,video/quicktime,video/*" multiple disabled={uploadingRefs} onChange={e => e.target.files && uploadReferenceFiles(e.target.files, 'video')} className="mt-1 block w-full text-[10px] font-mono text-white/35 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-white/60" />
+                  <span className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">Videos</span>
+                  <textarea value={videoVideoUrls} onChange={e => setVideoVideoUrls(e.target.value)} rows={1} placeholder="video URLs" className="w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/45 focus:outline-none focus:border-white/50 resize-none" data-testid="video-video-urls" />
+                  <input type="file" accept="video/mp4,video/quicktime,video/*" multiple disabled={uploadingRefs} onChange={e => e.target.files && uploadReferenceFiles(e.target.files, 'video')} className="mt-1 block w-full text-[10px] font-mono text-white/50 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-white/60" />
                 </label>
                 <label className="block col-span-2 md:col-span-1">
-                  <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Audio refs</span>
-                  <textarea value={videoAudioUrls} onChange={e => setVideoAudioUrls(e.target.value)} rows={1} placeholder="audio URLs" className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30 resize-none" data-testid="video-audio-urls" />
-                  <input type="file" accept="audio/*" multiple disabled={uploadingRefs} onChange={e => e.target.files && uploadReferenceFiles(e.target.files, 'audio')} className="mt-1 block w-full text-[10px] font-mono text-white/35 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-white/60" />
+                  <span className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">Audio refs</span>
+                  <textarea value={videoAudioUrls} onChange={e => setVideoAudioUrls(e.target.value)} rows={1} placeholder="audio URLs" className="w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/45 focus:outline-none focus:border-white/50 resize-none" data-testid="video-audio-urls" />
+                  <input type="file" accept="audio/*" multiple disabled={uploadingRefs} onChange={e => e.target.files && uploadReferenceFiles(e.target.files, 'audio')} className="mt-1 block w-full text-[10px] font-mono text-white/50 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-white/60" />
                 </label>
               </>
             ) : null}
           </div>
           <div className="max-w-5xl mt-2">
-            <button type="button" onClick={() => setShowVideoAdvanced(v => !v)} className="font-mono text-[10px] uppercase tracking-wider text-white/40 hover:text-white" data-testid="video-advanced-toggle">
+            <button type="button" onClick={() => setShowVideoAdvanced(v => !v)} className="font-mono text-[10px] uppercase tracking-wider text-white/55 hover:text-white" data-testid="video-advanced-toggle">
               {showVideoAdvanced ? '− Advanced args' : '+ Advanced args'}
             </button>
             {showVideoAdvanced && (
               <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-3" data-testid="video-advanced">
                 {videoSpec.negativePrompt && (
                   <label className="block col-span-2 md:col-span-1">
-                    <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Negative prompt</span>
-                    <input value={videoAdvanced.negativePrompt} onChange={e => setVideoAdvanced(p => ({ ...p, negativePrompt: e.target.value }))} placeholder="blurry, distorted" className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30" data-testid="video-negative-prompt" />
+                    <span className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">Negative prompt</span>
+                    <input value={videoAdvanced.negativePrompt} onChange={e => setVideoAdvanced(p => ({ ...p, negativePrompt: e.target.value }))} placeholder="blurry, distorted" className="w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/45 focus:outline-none focus:border-white/50" data-testid="video-negative-prompt" />
                   </label>
                 )}
                 {videoSpec.seed && (
                   <label className="block">
-                    <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Seed</span>
-                    <input value={videoAdvanced.seed} onChange={e => setVideoAdvanced(p => ({ ...p, seed: e.target.value }))} inputMode="numeric" placeholder="random" className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30" data-testid="video-seed" />
+                    <span className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">Seed</span>
+                    <input value={videoAdvanced.seed} onChange={e => setVideoAdvanced(p => ({ ...p, seed: e.target.value }))} inputMode="numeric" placeholder="random" className="w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/45 focus:outline-none focus:border-white/50" data-testid="video-seed" />
                   </label>
                 )}
                 {videoSpec.numFrames && (
                   <label className="block">
-                    <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Num frames</span>
-                    <input value={videoAdvanced.numFrames} onChange={e => setVideoAdvanced(p => ({ ...p, numFrames: e.target.value }))} inputMode="numeric" placeholder={videoSpec.numFrames.placeholder} className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30" data-testid="video-num-frames" />
+                    <span className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">Num frames</span>
+                    <input value={videoAdvanced.numFrames} onChange={e => setVideoAdvanced(p => ({ ...p, numFrames: e.target.value }))} inputMode="numeric" placeholder={videoSpec.numFrames.placeholder} className="w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/45 focus:outline-none focus:border-white/50" data-testid="video-num-frames" />
                   </label>
                 )}
                 {videoSpec.framesPerSecond && (
                   <label className="block">
-                    <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">FPS</span>
-                    <select value={videoAdvanced.framesPerSecond} onChange={e => setVideoAdvanced(p => ({ ...p, framesPerSecond: e.target.value }))} className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30" data-testid="video-fps">
+                    <span className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">FPS</span>
+                    <select value={videoAdvanced.framesPerSecond} onChange={e => setVideoAdvanced(p => ({ ...p, framesPerSecond: e.target.value }))} className="w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/50" data-testid="video-fps">
                       <option value="" className="bg-black text-white">default</option>
                       {videoSpec.framesPerSecond.options.map(o => <option key={o} value={o} className="bg-black text-white">{o}</option>)}
                     </select>
@@ -3495,20 +3495,20 @@ JSON`;
                 )}
                 {videoSpec.guidanceScale && (
                   <label className="block">
-                    <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Guidance</span>
-                    <input value={videoAdvanced.guidanceScale} onChange={e => setVideoAdvanced(p => ({ ...p, guidanceScale: e.target.value }))} inputMode="decimal" placeholder={videoSpec.guidanceScale.placeholder} className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30" data-testid="video-guidance-scale" />
+                    <span className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">Guidance</span>
+                    <input value={videoAdvanced.guidanceScale} onChange={e => setVideoAdvanced(p => ({ ...p, guidanceScale: e.target.value }))} inputMode="decimal" placeholder={videoSpec.guidanceScale.placeholder} className="w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/45 focus:outline-none focus:border-white/50" data-testid="video-guidance-scale" />
                   </label>
                 )}
                 {videoSpec.numInferenceSteps && (
                   <label className="block">
-                    <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Steps</span>
-                    <input value={videoAdvanced.numInferenceSteps} onChange={e => setVideoAdvanced(p => ({ ...p, numInferenceSteps: e.target.value }))} inputMode="numeric" placeholder={videoSpec.numInferenceSteps.placeholder} className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30" data-testid="video-num-inference-steps" />
+                    <span className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">Steps</span>
+                    <input value={videoAdvanced.numInferenceSteps} onChange={e => setVideoAdvanced(p => ({ ...p, numInferenceSteps: e.target.value }))} inputMode="numeric" placeholder={videoSpec.numInferenceSteps.placeholder} className="w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/45 focus:outline-none focus:border-white/50" data-testid="video-num-inference-steps" />
                   </label>
                 )}
                 {videoSpec.outputFormats && (
                   <label className="block">
-                    <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Format</span>
-                    <select value={videoAdvanced.outputFormat} onChange={e => setVideoAdvanced(p => ({ ...p, outputFormat: e.target.value }))} className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30" data-testid="video-output-format">
+                    <span className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">Format</span>
+                    <select value={videoAdvanced.outputFormat} onChange={e => setVideoAdvanced(p => ({ ...p, outputFormat: e.target.value }))} className="w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/50" data-testid="video-output-format">
                       <option value="" className="bg-black text-white">default</option>
                       {videoSpec.outputFormats.map(o => <option key={o} value={o} className="bg-black text-white">{o}</option>)}
                     </select>
@@ -3521,13 +3521,13 @@ JSON`;
       )}
 
       {primaryIsSpeech && (
-        <div className="border-b border-white/10 px-4 py-3 bg-black/40">
+        <div className="border-b border-white/20 px-4 py-3 bg-black/40">
           {primaryIsGeminiSpeech ? (
             <div className="max-w-5xl space-y-3">
               <button
                 type="button"
                 onClick={() => setSpeechAutoEmotion(v => !v)}
-                className={`inline-flex items-center gap-2 border rounded px-3 py-2 text-xs font-mono transition-colors ${speechAutoEmotion ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' : 'border-white/10 bg-black text-white/50 hover:text-white/75'}`}
+                className={`inline-flex items-center gap-2 border rounded px-3 py-2 text-xs font-mono transition-colors ${speechAutoEmotion ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' : 'border-white/20 bg-black text-white/50 hover:text-white/75'}`}
                 data-testid="speech-auto-emotion"
               >
                 <span className={`w-2 h-2 rounded-full ${speechAutoEmotion ? 'bg-emerald-300' : 'bg-white/20'}`} />
@@ -3568,22 +3568,22 @@ JSON`;
           ) : (
             <div className="max-w-xl grid grid-cols-2 gap-3">
               <label className="block">
-                <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Voice</span>
+                <span className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">Voice</span>
                 <select
                   value={speechVoice}
                   onChange={e => setSpeechVoice(e.target.value)}
-                  className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30"
+                  className="w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/50"
                   data-testid="speech-voice"
                 >
                   {SPEECH_VOICES.map(voice => <option key={voice} value={voice} className="bg-black text-white">{voice}</option>)}
                 </select>
               </label>
               <label className="block">
-                <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider block mb-1.5">Language</span>
+                <span className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">Language</span>
                 <select
                   value={speechLanguage}
                   onChange={e => setSpeechLanguage(e.target.value as typeof SPEECH_LANGUAGES[number])}
-                  className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30"
+                  className="w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/50"
                   data-testid="speech-language"
                 >
                   {SPEECH_LANGUAGES.map(language => <option key={language} value={language} className="bg-black text-white">{language}</option>)}
@@ -3591,26 +3591,26 @@ JSON`;
               </label>
             </div>
           )}
-          <p className="mt-2 text-[10px] font-mono text-white/30">{primaryIsGeminiSpeech ? '$1.00 input / $20.00 output per 1M tokens' : '$15.00 / 1M input characters'}</p>
+          <p className="mt-2 text-[10px] font-mono text-white/45">{primaryIsGeminiSpeech ? '$1.00 input / $20.00 output per 1M tokens' : '$15.00 / 1M input characters'}</p>
         </div>
       )}
 
       {/* Code Panel */}
       {showCode && (
-        <div className="border-b border-white/10 bg-white/[0.02]">
+        <div className="border-b border-white/20 bg-white/[0.05]">
           <div className="flex items-center gap-1 px-4 pt-3 pb-0">
             {(['python', 'js', 'go', 'curl'] as const).map(lang => (
               <button
                 key={lang}
                 onClick={() => setCodeLang(lang)}
-                className={`px-3 py-1.5 text-xs font-mono rounded-t border-t border-l border-r transition-colors ${codeLang === lang ? 'border-white/20 bg-black text-white' : 'border-transparent text-white/40 hover:text-white/70'}`}
+                className={`px-3 py-1.5 text-xs font-mono rounded-t border-t border-l border-r transition-colors ${codeLang === lang ? 'border-white/20 bg-black text-white' : 'border-transparent text-white/55 hover:text-white/70'}`}
               >
                 {lang === 'python' ? 'Python' : lang === 'js' ? 'JavaScript' : lang === 'go' ? 'Go' : 'cURL'}
               </button>
             ))}
             <button
               onClick={copyCode}
-              className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono border border-white/10 rounded text-white/60 hover:text-white hover:border-white/25 transition-colors mb-0.5"
+              className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono border border-white/20 rounded text-white/60 hover:text-white hover:border-white/45 transition-colors mb-0.5"
             >
               {codeCopied ? <><Check className="w-3 h-3 text-green-400" /> Copied</> : <><Copy className="w-3 h-3" /> Copy</>}
             </button>
@@ -3618,7 +3618,7 @@ JSON`;
           <HighlightedCodeBlock
             code={generateCode(codeLang)}
             language={codeLang === 'js' ? 'javascript' : codeLang === 'curl' ? 'bash' : codeLang}
-            preClassName="px-4 pb-4 overflow-x-auto text-[12px] font-mono leading-relaxed text-white/80 bg-black mx-4 mb-3 rounded-b rounded-tr border border-white/10 pt-3"
+            preClassName="px-4 pb-4 overflow-x-auto text-[12px] font-mono leading-relaxed text-white/80 bg-black mx-4 mb-3 rounded-b rounded-tr border border-white/20 pt-3"
             testId="playground-generated-code"
           />
         </div>
@@ -3627,9 +3627,9 @@ JSON`;
       {/* Model Panes */}
       <div className="flex-1 flex overflow-hidden">
         {panes.map(pane => (
-          <div key={pane.id} className="flex-1 flex flex-col border-r border-white/10 last:border-r-0 min-w-0">
+          <div key={pane.id} className="flex-1 flex flex-col border-r border-white/20 last:border-r-0 min-w-0">
             {/* Pane Header */}
-            <div className="flex items-center gap-2 px-3 py-2 border-b border-white/10 bg-white/[0.02]">
+            <div className="flex items-center gap-2 px-3 py-2 border-b border-white/20 bg-white/[0.05]">
               <ModelSelect
                 value={pane.modelId}
                 onChange={m => changeModel(pane.id, m)}
@@ -3642,7 +3642,7 @@ JSON`;
                   </span>
                 )}
                 {pane.tokensUsed !== null && !pane.streaming && (
-                  <span className="text-[10px] font-mono text-white/30" title="Total tokens">
+                  <span className="text-[10px] font-mono text-white/45" title="Total tokens">
                     {pane.tokensUsed.toLocaleString()} tok
                   </span>
                 )}
@@ -3657,10 +3657,10 @@ JSON`;
                   </span>
                 )}
                 {pane.streaming && (
-                  <Loader2 className="w-3 h-3 animate-spin text-white/40" />
+                  <Loader2 className="w-3 h-3 animate-spin text-white/55" />
                 )}
                 {panes.length > 1 && (
-                  <button onClick={() => removePane(pane.id)} className="text-white/20 hover:text-white/60">
+                  <button onClick={() => removePane(pane.id)} className="text-white/45 hover:text-white/60">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 )}
@@ -3701,7 +3701,7 @@ JSON`;
                       <div className="flex-1 text-xs font-mono text-red-400/80 bg-red-400/5 rounded-lg p-3 border border-red-400/10">
                         {pane.error}
                       </div>
-                      <button onClick={() => retryLast(pane.id)} className="shrink-0 p-1.5 text-white/30 hover:text-white/60 transition-colors" title="Retry">
+                      <button onClick={() => retryLast(pane.id)} className="shrink-0 p-1.5 text-white/45 hover:text-white/60 transition-colors" title="Retry">
                         <RotateCcw className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -3715,7 +3715,7 @@ JSON`;
       </div>
 
       {/* Input */}
-      <div className="border-t border-white/10 p-3 bg-white/[0.02]">
+      <div className="border-t border-white/20 p-3 bg-white/[0.05]">
         {(chatAttachments.length > 0 || chatFileError) && (
           <div className={`mx-auto mb-2 ${panes.length === 1 ? 'max-w-3xl' : 'max-w-4xl'}`}>
             {chatAttachments.length > 0 && (
@@ -3723,20 +3723,20 @@ JSON`;
                 {chatAttachments.map(att => (
                   <div
                     key={att.id}
-                    className="group inline-flex max-w-full items-center gap-2 rounded-lg border border-white/10 bg-black px-2.5 py-1.5 text-xs font-mono text-white/60 hover:border-white/25 hover:text-white/80"
+                    className="group inline-flex max-w-full items-center gap-2 rounded-lg border border-white/20 bg-black px-2.5 py-1.5 text-xs font-mono text-white/60 hover:border-white/45 hover:text-white/80"
                     title={attachmentSummary(att)}
                   >
                     {att.kind === 'video' ? <Film className="h-3.5 w-3.5 shrink-0" /> : att.kind === 'image' ? <Eye className="h-3.5 w-3.5 shrink-0" /> : att.kind === 'pdf' || att.kind === 'text' ? <FileText className="h-3.5 w-3.5 shrink-0" /> : <FileIcon className="h-3.5 w-3.5 shrink-0" />}
                     <a href={att.url} target="_blank" rel="noreferrer" className="truncate hover:text-white">
                       {att.name}
                     </a>
-                    <span className="shrink-0 text-white/25">{formatBytes(att.size)}</span>
+                    <span className="shrink-0 text-white/40">{formatBytes(att.size)}</span>
                     <button
                       type="button"
                       onClick={() => {
                         removeChatAttachment(att.id);
                       }}
-                      className="shrink-0 rounded p-0.5 text-white/25 hover:bg-white/10 hover:text-white"
+                      className="shrink-0 rounded p-0.5 text-white/40 hover:bg-white/10 hover:text-white"
                       aria-label={`Remove ${att.name}`}
                     >
                       <X className="h-3 w-3" />
@@ -3757,7 +3757,7 @@ JSON`;
             type="button"
             onClick={() => chatFileInputRef.current?.click()}
             disabled={!apiKey || uploadingChatFiles}
-            className="border border-white/10 text-white/40 px-3 py-3 rounded-lg hover:text-white/70 hover:border-white/25 transition-colors disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
+            className="border border-white/20 text-white/55 px-3 py-3 rounded-lg hover:text-white/70 hover:border-white/45 transition-colors disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
             title="Attach PDFs, documents, images, videos, or other files"
             data-testid="chat-attach-file"
           >
@@ -3784,7 +3784,7 @@ JSON`;
             disabled={!apiKey}
             autoFocus
             data-testid="chat-input"
-            className="flex-1 bg-black border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/10 resize-none overflow-y-hidden disabled:opacity-30 transition-colors"
+            className="flex-1 bg-white/[0.06] border border-white/30 rounded-lg px-4 py-3 text-sm text-white placeholder:text-white/55 focus:outline-none focus:border-white/70 focus:ring-1 focus:ring-white/25 resize-none overflow-y-hidden disabled:opacity-30 transition-colors"
             style={{ minHeight: '44px', maxHeight: '200px' }}
           />
           <SavePromptButton
@@ -3813,7 +3813,7 @@ JSON`;
           )}
         </div>
         {!apiKey && (
-          <p className="text-center text-xs font-mono text-white/30 mt-2">
+          <p className="text-center text-xs font-mono text-white/45 mt-2">
             <button onClick={() => setShowSettings(true)} className="underline hover:text-white/60 transition-colors">Set your API key</button> or <a href="/account" className="underline hover:text-white/60 transition-colors">create an account</a> to get started
           </p>
         )}
@@ -3856,44 +3856,44 @@ function GeminiSpeakerControls({
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-mono text-white/50 uppercase tracking-wider">{label}</span>
-        {info && <span className="text-[10px] font-mono text-white/30">{info.style} · {info.pitch}</span>}
+        {info && <span className="text-[10px] font-mono text-white/45">{info.style} · {info.pitch}</span>}
       </div>
       <label className="block">
-        <span className="text-[10px] font-mono text-white/35 uppercase tracking-wider block mb-1">Audio profile</span>
+        <span className="text-[10px] font-mono text-white/50 uppercase tracking-wider block mb-1">Audio profile</span>
         <input
           value={profile}
           onChange={e => onProfile(e.target.value)}
-          className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30"
+          className="w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/45 focus:outline-none focus:border-white/50"
         />
       </label>
       <div className="grid grid-cols-3 gap-2">
         <label className="block">
-          <span className="text-[10px] font-mono text-white/35 uppercase tracking-wider block mb-1">Style</span>
-          <select value={style} onChange={e => onStyle(e.target.value)} className="w-full bg-black border border-white/10 rounded px-2 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30">
+          <span className="text-[10px] font-mono text-white/50 uppercase tracking-wider block mb-1">Style</span>
+          <select value={style} onChange={e => onStyle(e.target.value)} className="w-full bg-white/[0.06] border border-white/30 rounded px-2 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/50">
             {TTS_STYLES.map(v => <option key={v} value={v} className="bg-black text-white">{v}</option>)}
           </select>
         </label>
         <label className="block">
-          <span className="text-[10px] font-mono text-white/35 uppercase tracking-wider block mb-1">Pace</span>
-          <select value={pace} onChange={e => onPace(e.target.value)} className="w-full bg-black border border-white/10 rounded px-2 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30">
+          <span className="text-[10px] font-mono text-white/50 uppercase tracking-wider block mb-1">Pace</span>
+          <select value={pace} onChange={e => onPace(e.target.value)} className="w-full bg-white/[0.06] border border-white/30 rounded px-2 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/50">
             {TTS_PACES.map(v => <option key={v} value={v} className="bg-black text-white">{v}</option>)}
           </select>
         </label>
         <label className="block">
-          <span className="text-[10px] font-mono text-white/35 uppercase tracking-wider block mb-1">Accent</span>
-          <select value={accent} onChange={e => onAccent(e.target.value)} className="w-full bg-black border border-white/10 rounded px-2 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/30">
+          <span className="text-[10px] font-mono text-white/50 uppercase tracking-wider block mb-1">Accent</span>
+          <select value={accent} onChange={e => onAccent(e.target.value)} className="w-full bg-white/[0.06] border border-white/30 rounded px-2 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/50">
             {TTS_ACCENTS.map(v => <option key={v} value={v} className="bg-black text-white">{v}</option>)}
           </select>
         </label>
       </div>
       <label className="block">
-        <span className="text-[10px] font-mono text-white/35 uppercase tracking-wider block mb-1">Voice</span>
+        <span className="text-[10px] font-mono text-white/50 uppercase tracking-wider block mb-1">Voice</span>
         <input
           list="gemini-tts-voices"
           value={voice}
           onChange={e => onVoice(e.target.value)}
           placeholder="Search voices"
-          className="w-full bg-black border border-white/10 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/25 focus:outline-none focus:border-white/30"
+          className="w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-white/45 focus:outline-none focus:border-white/50"
         />
       </label>
     </div>
@@ -3925,34 +3925,34 @@ function EmptyState({ onPrompt, hasApiKey, isImage, isSpeech, isGeminiSpeech, is
 
   return (
     <div className="h-full flex flex-col items-center justify-center px-6 py-12">
-      <div className="text-white/10 mb-6">
+      <div className="text-white/40 mb-6">
         <Zap className="w-10 h-10" />
       </div>
       {hasApiKey ? (
         <>
           {imageDemo && (
-            <div className="w-full max-w-sm mb-6 rounded-xl overflow-hidden border border-white/10 bg-black/40">
+            <div className="w-full max-w-sm mb-6 rounded-xl overflow-hidden border border-white/20 bg-black/40">
               <img src={imageDemo.outputUrl} alt="Verified HiDream generated sample" className="w-full h-auto block" />
               <button
                 onClick={() => onPrompt(imageDemo.prompt)}
-                className="w-full px-3 py-2 text-left text-xs font-mono text-white/45 hover:text-white/75 border-t border-white/10 transition-colors"
+                className="w-full px-3 py-2 text-left text-xs font-mono text-white/45 hover:text-white/75 border-t border-white/20 transition-colors"
               >
                 Run this verified prompt
               </button>
             </div>
           )}
           {videoDemo && (
-            <div className="w-full max-w-lg mb-6 rounded-xl overflow-hidden border border-white/10 bg-black/40">
+            <div className="w-full max-w-lg mb-6 rounded-xl overflow-hidden border border-white/20 bg-black/40">
               <video src={videoDemo.outputUrl} controls muted loop playsInline className="w-full h-auto block" />
               <button
                 onClick={() => onPrompt(videoDemo.prompt)}
-                className="w-full px-3 py-2 text-left text-xs font-mono text-white/45 hover:text-white/75 border-t border-white/10 transition-colors"
+                className="w-full px-3 py-2 text-left text-xs font-mono text-white/45 hover:text-white/75 border-t border-white/20 transition-colors"
               >
                 Run this verified prompt
               </button>
             </div>
           )}
-          <p className="text-sm font-mono text-white/20 mb-6">
+          <p className="text-sm font-mono text-white/45 mb-6">
             {imageDemo || videoDemo ? 'Verified sample output is loaded' : isMusic ? 'Describe a song or clip to generate' : isSpeech ? 'Enter text to synthesize' : isImage ? 'Describe an image to generate' : 'Try a prompt to get started'}
           </p>
           {!imageDemo && !videoDemo && (
@@ -3965,7 +3965,7 @@ function EmptyState({ onPrompt, hasApiKey, isImage, isSpeech, isGeminiSpeech, is
                   if (ex) onPrompt(ex.text);
                 }}
                 data-testid="example-select"
-                className="w-full bg-black border border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-white/60 focus:outline-none focus:border-white/30"
+                className="w-full bg-white/[0.06] border border-white/30 rounded-lg px-3 py-2 text-xs font-mono text-white/60 focus:outline-none focus:border-white/50"
               >
                 <option value="" disabled>Load an example prompt…</option>
                 {examples.map((ex, i) => (
@@ -3978,7 +3978,7 @@ function EmptyState({ onPrompt, hasApiKey, isImage, isSpeech, isGeminiSpeech, is
                   <button
                     key={i}
                     onClick={() => onPrompt(ex.text)}
-                    className="text-xs font-mono text-white/40 border border-white/10 rounded-lg px-3 py-2 hover:border-white/25 hover:text-white/60 hover:bg-white/[0.02] transition-colors text-left"
+                    className="text-xs font-mono text-white/55 border border-white/20 rounded-lg px-3 py-2 hover:border-white/45 hover:text-white/60 hover:bg-white/[0.05] transition-colors text-left"
                   >
                     {ex.label}
                   </button>
@@ -3987,14 +3987,14 @@ function EmptyState({ onPrompt, hasApiKey, isImage, isSpeech, isGeminiSpeech, is
 
               {saved.length > 0 && (
                 <div className="w-full">
-                  <p className="text-[11px] font-mono uppercase tracking-wide text-white/25 mb-1.5">Saved prompts</p>
+                  <p className="text-[11px] font-mono uppercase tracking-wide text-white/40 mb-1.5">Saved prompts</p>
                   <div className="flex flex-wrap gap-2 justify-center">
                     {saved.slice(0, 8).map(sp => (
-                      <span key={sp.id} className="group inline-flex items-center gap-1 text-xs font-mono text-white/45 border border-white/10 rounded-lg pl-3 pr-1.5 py-2 hover:border-white/25">
+                      <span key={sp.id} className="group inline-flex items-center gap-1 text-xs font-mono text-white/45 border border-white/20 rounded-lg pl-3 pr-1.5 py-2 hover:border-white/45">
                         <button onClick={() => onPrompt(sp.prompt)} className="hover:text-white/70">{sp.title}</button>
                         <button
                           onClick={() => setSaved(removeSavedPrompt(sp.id))}
-                          className="text-white/20 hover:text-white/60"
+                          className="text-white/45 hover:text-white/60"
                           title="Remove saved prompt"
                         >
                           <X className="w-3 h-3" />
@@ -4005,7 +4005,7 @@ function EmptyState({ onPrompt, hasApiKey, isImage, isSpeech, isGeminiSpeech, is
                 </div>
               )}
 
-              <Link to={`/prompts${libType === 'text' ? '' : `/type/${libType}`}`} className="text-[11px] font-mono text-white/30 hover:text-white/60 transition-colors">
+              <Link to={`/prompts${libType === 'text' ? '' : `/type/${libType}`}`} className="text-[11px] font-mono text-white/60 hover:text-white/80 transition-colors">
                 Browse the full prompt library →
               </Link>
             </div>
@@ -4014,7 +4014,7 @@ function EmptyState({ onPrompt, hasApiKey, isImage, isSpeech, isGeminiSpeech, is
       ) : (
         <>
           <p className="text-sm font-mono text-white/60 mb-2">Sign in to start comparing models</p>
-          <p className="text-xs font-mono text-white/30 mb-6 max-w-sm text-center leading-relaxed">
+          <p className="text-xs font-mono text-white/45 mb-6 max-w-sm text-center leading-relaxed">
             One API key for every major model — GPT, Claude, Gemini, Grok, DeepSeek, Llama, and more.
           </p>
           <div className="flex gap-2">
@@ -4026,7 +4026,7 @@ function EmptyState({ onPrompt, hasApiKey, isImage, isSpeech, isGeminiSpeech, is
             </a>
             <a
               href="/models"
-              className="text-xs font-mono text-white/50 border border-white/10 rounded-lg px-4 py-2 hover:text-white hover:border-white/25 transition-colors"
+              className="text-xs font-mono text-white/50 border border-white/20 rounded-lg px-4 py-2 hover:text-white hover:border-white/45 transition-colors"
             >
               Browse models
             </a>
@@ -4054,7 +4054,7 @@ function SavePromptButton({ text, modelId, modality }: { text: string; modelId?:
       disabled={disabled}
       data-testid="chat-save-prompt"
       title="Save this prompt"
-      className="border border-white/10 text-white/40 px-3 py-3 rounded-lg hover:text-white/70 hover:border-white/25 transition-colors disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
+      className="border border-white/20 text-white/55 px-3 py-3 rounded-lg hover:text-white/70 hover:border-white/45 transition-colors disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
     >
       {done ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
     </button>
@@ -4135,7 +4135,7 @@ function MessageBubble({
       {hasCopyable && (
         <button
           onClick={copy}
-          className="p-1.5 rounded-md text-white/30 hover:text-white hover:bg-white/10 transition-colors"
+          className="p-1.5 rounded-md text-white/45 hover:text-white hover:bg-white/10 transition-colors"
           title="Copy message"
           aria-label="Copy message"
           data-testid="msg-copy"
@@ -4147,7 +4147,7 @@ function MessageBubble({
         <button
           onClick={() => setEditing(true)}
           disabled={streaming}
-          className="p-1.5 rounded-md text-white/30 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          className="p-1.5 rounded-md text-white/45 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           title="Edit message"
           aria-label="Edit message"
           data-testid="msg-edit"
@@ -4159,7 +4159,7 @@ function MessageBubble({
         <button
           onClick={onFork}
           disabled={streaming || forkDisabled}
-          className="p-1.5 rounded-md text-white/30 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          className="p-1.5 rounded-md text-white/45 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           title={forkDisabled ? 'Maximum 4 panes' : 'Fork chat from here'}
           aria-label="Fork chat from here"
           data-testid="msg-fork"
@@ -4171,7 +4171,7 @@ function MessageBubble({
         <button
           onClick={onRetry}
           disabled={streaming}
-          className="p-1.5 rounded-md text-white/30 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          className="p-1.5 rounded-md text-white/45 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           title={isUser ? 'Resend from here' : 'Regenerate response'}
           aria-label={isUser ? 'Resend from here' : 'Regenerate response'}
           data-testid="msg-retry"
@@ -4183,7 +4183,7 @@ function MessageBubble({
         <button
           onClick={onDelete}
           disabled={streaming}
-          className="p-1.5 rounded-md text-white/30 hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          className="p-1.5 rounded-md text-white/45 hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           title="Delete message"
           aria-label="Delete message"
           data-testid="msg-delete"
@@ -4197,13 +4197,13 @@ function MessageBubble({
   return (
     <div className={`group ${isUser ? 'flex flex-col items-end' : ''}`}>
       {timestamp && (
-        <div className={`mb-1 text-[10px] font-mono text-white/25 ${isUser ? 'text-right' : ''}`}>
+        <div className={`mb-1 text-[10px] font-mono text-white/50 ${isUser ? 'text-right' : ''}`}>
           {timestamp}
         </div>
       )}
       <div className={`${isUser ? 'max-w-[85%]' : 'w-full'}`}>
         {editing ? (
-          <div className={`${isUser ? 'w-[min(32rem,85vw)]' : 'w-full max-w-3xl'} rounded-xl border border-white/10 bg-black/80 p-2`}>
+          <div className={`${isUser ? 'w-[min(32rem,85vw)]' : 'w-full max-w-3xl'} rounded-xl border border-white/20 bg-black/80 p-2`}>
             <textarea
               value={draft}
               onChange={event => setDraft(event.target.value)}
@@ -4220,7 +4220,7 @@ function MessageBubble({
               }}
               rows={Math.min(8, Math.max(3, draft.split('\n').length))}
               autoFocus
-              className="w-full resize-y rounded border border-white/10 bg-black px-3 py-2 text-sm leading-relaxed text-white outline-none focus:border-white/30"
+              className="w-full resize-y rounded border border-white/20 bg-black px-3 py-2 text-sm leading-relaxed text-white outline-none focus:border-white/50"
               data-testid="msg-edit-input"
             />
             <div className="mt-2 flex justify-end gap-2">
@@ -4230,7 +4230,7 @@ function MessageBubble({
                   setDraft(message.content);
                   setEditing(false);
                 }}
-                className="rounded border border-white/10 px-2.5 py-1.5 text-xs font-mono text-white/45 hover:text-white"
+                className="rounded border border-white/20 px-2.5 py-1.5 text-xs font-mono text-white/45 hover:text-white"
               >
                 Cancel
               </button>
@@ -4257,12 +4257,12 @@ function MessageBubble({
                     href={att.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex max-w-full items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-[11px] font-mono text-white/55 hover:border-white/25 hover:text-white/80"
+                    className="inline-flex max-w-full items-center gap-2 rounded-lg border border-white/20 bg-white/[0.07] px-2.5 py-1.5 text-[11px] font-mono text-white/55 hover:border-white/45 hover:text-white/80"
                     title={attachmentSummary(att)}
                   >
                     {att.kind === 'video' ? <Film className="h-3.5 w-3.5 shrink-0" /> : att.kind === 'image' ? <Eye className="h-3.5 w-3.5 shrink-0" /> : att.kind === 'pdf' || att.kind === 'text' ? <FileText className="h-3.5 w-3.5 shrink-0" /> : <FileIcon className="h-3.5 w-3.5 shrink-0" />}
                     <span className="truncate">{att.name}</span>
-                    <span className="shrink-0 text-white/25">{formatBytes(att.size)}</span>
+                    <span className="shrink-0 text-white/40">{formatBytes(att.size)}</span>
                   </a>
                 ))}
               </div>
@@ -4275,21 +4275,21 @@ function MessageBubble({
                 href={imageSrc}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block rounded-xl overflow-hidden border border-white/10 bg-black/40 max-w-lg"
+                className="block rounded-xl overflow-hidden border border-white/20 bg-black/40 max-w-lg"
               >
                 <img src={imageSrc} alt={message.content || 'Generated image'} className="w-full h-auto block" />
               </a>
             )}
             {message.videoUrl && (
-              <div className="rounded-xl overflow-hidden border border-white/10 bg-black/40 max-w-2xl">
+              <div className="rounded-xl overflow-hidden border border-white/20 bg-black/40 max-w-2xl">
                 <video src={message.videoUrl} controls className="w-full h-auto block" />
-                <a href={message.videoUrl} target="_blank" rel="noopener noreferrer" className="block px-3 py-2 text-xs font-mono text-white/40 hover:text-white/70 border-t border-white/10">
+                <a href={message.videoUrl} target="_blank" rel="noopener noreferrer" className="block px-3 py-2 text-xs font-mono text-white/55 hover:text-white/70 border-t border-white/20">
                   Open video
                 </a>
               </div>
             )}
             {audioSrc && (
-              <div className="rounded-xl border border-white/10 bg-black/40 max-w-xl p-3">
+              <div className="rounded-xl border border-white/20 bg-black/40 max-w-xl p-3">
                 <div className="flex items-center gap-2 mb-2 text-xs font-mono text-white/45">
                   <Volume2 className="w-3.5 h-3.5" /> Generated speech
                 </div>
@@ -4349,26 +4349,26 @@ function ModelSelect({ value, onChange, models }: { value: string; onChange: (v:
         className="flex items-center gap-1 text-xs font-mono text-white/80 hover:text-white truncate"
       >
         <span className="truncate">{currentLabel}</span>
-        <ChevronDown className={`w-3 h-3 shrink-0 text-white/30 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-3 h-3 shrink-0 text-white/45 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div className="absolute top-full left-0 mt-1 w-96 max-h-96 overflow-hidden bg-black border border-white/10 rounded-lg shadow-xl z-50 flex flex-col">
-          <div className="p-2 border-b border-white/10">
+        <div className="absolute top-full left-0 mt-1 w-96 max-h-96 overflow-hidden bg-white/[0.06] border border-white/30 rounded-lg shadow-xl z-50 flex flex-col">
+          <div className="p-2 border-b border-white/20">
             <input
               ref={searchRef}
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search models..."
-              className="w-full bg-white/5 border-none rounded px-2.5 py-1.5 text-xs font-mono text-white placeholder:text-white/20 focus:outline-none"
+              className="w-full bg-white/10 border-none rounded px-2.5 py-1.5 text-xs font-mono text-white placeholder:text-white/45 focus:outline-none"
             />
           </div>
           <div className="overflow-y-auto flex-1">
             {Object.keys(grouped).length === 0 ? (
-              <div className="px-3 py-4 text-xs font-mono text-white/30 text-center">No models found</div>
+              <div className="px-3 py-4 text-xs font-mono text-white/45 text-center">No models found</div>
             ) : (
               Object.entries(grouped).map(([provider, provModels]) => (
                 <div key={provider}>
-                  <div className="px-3 py-1.5 text-[10px] font-mono text-white/30 uppercase tracking-wider sticky top-0 bg-black">
+                  <div className="px-3 py-1.5 text-[10px] font-mono text-white/45 uppercase tracking-wider sticky top-0 bg-black">
                     {provider}
                   </div>
                   {provModels.map(m => {
@@ -4379,15 +4379,15 @@ function ModelSelect({ value, onChange, models }: { value: string; onChange: (v:
                       <button
                         key={m.id}
                         onClick={() => { onChange(m.id); setOpen(false); }}
-                        className={`w-full text-left px-3 py-1.5 text-xs font-mono hover:bg-white/5 transition-colors flex items-center gap-2 ${m.id === value ? 'text-white bg-white/5' : 'text-white/70'}`}
+                        className={`w-full text-left px-3 py-1.5 text-xs font-mono hover:bg-white/10 transition-colors flex items-center gap-2 ${m.id === value ? 'text-white bg-white/10' : 'text-white/70'}`}
                       >
                         <span className="truncate flex-1">{m.label}</span>
-                        <span className="flex items-center gap-1 shrink-0 text-white/30">
+                        <span className="flex items-center gap-1 shrink-0 text-white/45">
                           {m.capabilities?.vision && <Eye className="w-3 h-3" aria-label="vision" />}
                           {m.capabilities?.tools && <Wrench className="w-3 h-3" aria-label="tools" />}
                         </span>
                         {(pin !== undefined || pout !== undefined) && (
-                          <span className="text-[10px] font-mono text-white/30 shrink-0 tabular-nums">
+                          <span className="text-[10px] font-mono text-white/45 shrink-0 tabular-nums">
                             {speech ? `$${pin?.toFixed(2) ?? '?'}/chars` : `$${pin?.toFixed(2) ?? '?'}/${pout?.toFixed(2) ?? '?'}`}
                           </span>
                         )}
@@ -4398,8 +4398,8 @@ function ModelSelect({ value, onChange, models }: { value: string; onChange: (v:
               ))
             )}
           </div>
-          <div className="px-3 py-1.5 border-t border-white/10 bg-white/[0.02]">
-            <p className="text-[9px] font-mono text-white/25">Token models show $ per 1M input / output tokens. Speech shows $ per 1M characters.</p>
+          <div className="px-3 py-1.5 border-t border-white/20 bg-white/[0.05]">
+            <p className="text-[9px] font-mono text-white/40">Token models show $ per 1M input / output tokens. Speech shows $ per 1M characters.</p>
           </div>
         </div>
       )}

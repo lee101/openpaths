@@ -64,7 +64,7 @@ export function Apps() {
             </p>
           </div>
           <div className="flex items-center gap-2 sm:justify-end">
-            <div className="grid flex-1 grid-cols-3 rounded-lg border border-white/10 bg-white/[0.03] p-1 sm:flex-none">
+            <div className="grid flex-1 grid-cols-3 rounded-lg border border-white/20 bg-white/[0.06] p-1 sm:flex-none">
               {PERIODS.map(option => (
                 <button
                   key={option}
@@ -78,7 +78,7 @@ export function Apps() {
             <button
               onClick={() => void load()}
               disabled={loading}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white text-black hover:bg-white/90 disabled:opacity-60 sm:w-auto sm:px-4"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-white/20 bg-white text-black hover:bg-white/90 disabled:opacity-60 sm:w-auto sm:px-4"
               aria-label="Refresh app stats"
             >
               <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
@@ -95,26 +95,26 @@ export function Apps() {
 
         {error && <div className="mb-6 rounded-lg border border-red-400/20 bg-red-500/10 p-4 text-sm text-red-100">{error}</div>}
 
-        <div className="rounded-lg border border-white/10 bg-white/[0.02] p-2">
+        <div className="rounded-lg border border-white/20 bg-white/[0.05] p-2">
           <div className="mb-2 flex items-center justify-between px-2 py-2">
             <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em] text-white/45">
               <Database className="h-4 w-4" />
               Usage leaderboard
             </div>
-            <div className="hidden font-mono text-xs text-white/30 sm:block">{period}</div>
+            <div className="hidden font-mono text-xs text-white/45 sm:block">{period}</div>
           </div>
           {apps.length === 0 && !loading ? (
-            <div className="rounded-lg border border-dashed border-white/10 px-4 py-12 text-center font-mono text-sm text-white/35">No app usage has been recorded for this period.</div>
+            <div className="rounded-lg border border-dashed border-white/20 px-4 py-12 text-center font-mono text-sm text-white/50">No app usage has been recorded for this period.</div>
           ) : (
             <div className="space-y-2">
               {apps.map((app, index) => {
                 const percent = Math.max(4, Math.min(100, (app.total_tokens / maxTokens) * 100));
                 return (
-                  <article key={app.app_id} className="rounded-lg border border-white/10 bg-black/35 p-3 transition-colors hover:border-white/20 sm:p-4">
+                  <article key={app.app_id} className="rounded-lg border border-white/20 bg-black/35 p-3 transition-colors hover:border-white/40 sm:p-4">
                     <div className="grid gap-3 lg:grid-cols-[minmax(0,1.15fr)_minmax(260px,0.85fr)_150px] lg:items-start">
                       <div className="min-w-0">
                         <div className="flex min-w-0 items-start gap-3">
-                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-white/10 bg-white/[0.04] font-mono text-xs text-white/45">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-white/20 bg-white/[0.07] font-mono text-xs text-white/45">
                             {index + 1}
                           </div>
                           <img src={app.favicon_url || '/favicon.ico'} alt="" className="h-9 w-9 shrink-0 rounded bg-white/10 object-cover" />
@@ -127,14 +127,14 @@ export function Apps() {
                                 {sourceLabel(app.source)}
                               </span>
                             </div>
-                            <div className="mt-1 truncate font-mono text-xs text-white/35">{host(app.url) || sourceLabel(app.source)}</div>
+                            <div className="mt-1 truncate font-mono text-xs text-white/50">{host(app.url) || sourceLabel(app.source)}</div>
                           </div>
                         </div>
                         {app.description && <p className="mt-3 line-clamp-2 text-sm leading-5 text-white/50">{app.description}</p>}
                         {app.categories?.length > 0 && (
                           <div className="mt-3 flex flex-wrap gap-1.5">
                             {app.categories.slice(0, 3).map(category => (
-                              <span key={`${app.app_id}-${category}`} className="rounded border border-white/10 px-2 py-1 font-mono text-[11px] text-white/45">
+                              <span key={`${app.app_id}-${category}`} className="rounded border border-white/20 px-2 py-1 font-mono text-[11px] text-white/45">
                                 {category}
                               </span>
                             ))}
@@ -143,7 +143,7 @@ export function Apps() {
                       </div>
 
                       <div className="min-w-0">
-                        <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-white/30">Top models</div>
+                        <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-white/45">Top models</div>
                         <div className="space-y-2">
                           {(app.models || []).slice(0, 3).map(model => (
                             <div key={`${app.app_id}-${model.source}-${model.model || 'all'}-${model.provider}`} className="min-w-0">
@@ -157,7 +157,7 @@ export function Apps() {
                             </div>
                           ))}
                           {(app.models || []).length === 0 && (
-                            <div className="font-mono text-xs text-white/30">No model breakdown yet</div>
+                            <div className="font-mono text-xs text-white/45">No model breakdown yet</div>
                           )}
                         </div>
                       </div>
@@ -165,13 +165,13 @@ export function Apps() {
                       <div className="lg:text-right">
                         <div className="flex items-end justify-between gap-3 lg:block">
                           <div>
-                            <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/30">Tokens</div>
+                            <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/45">Tokens</div>
                             <Link to={`/apps/${encodeURIComponent(app.slug)}/`} className="font-mono text-xl font-semibold text-white hover:underline sm:text-2xl">
                               {formatTokens(app.total_tokens)}
                             </Link>
                           </div>
                           {app.total_requests > 0 && (
-                            <div className="font-mono text-xs text-white/35 lg:mt-1">
+                            <div className="font-mono text-xs text-white/50 lg:mt-1">
                               {app.total_requests.toLocaleString('en-US')} req
                             </div>
                           )}
@@ -194,7 +194,7 @@ export function Apps() {
 
 function Metric({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3 sm:p-4">
+    <div className="rounded-lg border border-white/20 bg-white/[0.06] p-3 sm:p-4">
       <div className="mb-2 flex items-center gap-2 text-white/45 sm:mb-3">{icon}<span className="font-mono text-[11px] uppercase tracking-[0.16em] sm:text-xs">{label}</span></div>
       <div className="font-mono text-xl font-semibold text-white sm:text-2xl">{value}</div>
     </div>

@@ -65,7 +65,7 @@ export function AppDetail() {
           <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
             <div>
               <div className="mb-4 flex flex-wrap items-center gap-3">
-                <img src={app.favicon_url || '/favicon.ico'} alt="" className="h-14 w-14 rounded-lg border border-white/10 bg-white/10 object-cover" />
+                <img src={app.favicon_url || '/favicon.ico'} alt="" className="h-14 w-14 rounded-lg border border-white/20 bg-white/10 object-cover" />
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <h1 className="text-3xl font-semibold tracking-tight sm:text-5xl">{app.name}</h1>
@@ -73,7 +73,7 @@ export function AppDetail() {
                       {sourceLabel(app.source)}
                     </span>
                   </div>
-                  <a href={app.url} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex max-w-full items-center gap-2 truncate font-mono text-sm text-white/40 hover:text-white">
+                  <a href={app.url} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex max-w-full items-center gap-2 truncate font-mono text-sm text-white/55 hover:text-white">
                     <Globe2 className="h-4 w-4 shrink-0" />
                     {host(app.url)}
                     <ExternalLink className="h-3.5 w-3.5 shrink-0" />
@@ -84,19 +84,19 @@ export function AppDetail() {
               {app.categories?.length > 0 && (
                 <div className="mt-5 flex flex-wrap gap-2">
                   {app.categories.map(category => (
-                    <span key={category} className="rounded border border-white/10 px-3 py-1.5 font-mono text-xs text-white/50">{category}</span>
+                    <span key={category} className="rounded border border-white/20 px-3 py-1.5 font-mono text-xs text-white/50">{category}</span>
                   ))}
                 </div>
               )}
             </div>
 
-            <aside className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
+            <aside className="rounded-lg border border-white/20 bg-white/[0.06] p-4">
               <div className="mb-4 flex items-center justify-between">
-                <div className="font-mono text-xs uppercase tracking-[0.18em] text-white/40">Usage window</div>
+                <div className="font-mono text-xs uppercase tracking-[0.18em] text-white/55">Usage window</div>
                 <select
                   value={period}
                   onChange={event => setPeriod(event.target.value)}
-                  className="rounded border border-white/10 bg-black px-3 py-2 font-mono text-sm text-white"
+                  className="rounded border border-white/20 bg-black px-3 py-2 font-mono text-sm text-white"
                 >
                   <option value="24h">24h</option>
                   <option value="7d">7d</option>
@@ -107,8 +107,8 @@ export function AppDetail() {
                 <Stat label="Tokens" value={formatTokens(app.total_tokens)} />
                 <Stat label="Requests" value={app.total_requests.toLocaleString('en-US')} />
               </div>
-              <div className="mt-4 rounded border border-white/10 bg-black/30 p-3">
-                <div className="mb-2 flex items-center gap-2 font-mono text-xs uppercase tracking-[0.16em] text-white/35">
+              <div className="mt-4 rounded border border-white/20 bg-black/30 p-3">
+                <div className="mb-2 flex items-center gap-2 font-mono text-xs uppercase tracking-[0.16em] text-white/50">
                   <Layers3 className="h-4 w-4" />
                   Attribution
                 </div>
@@ -119,7 +119,7 @@ export function AppDetail() {
             </aside>
           </section>
 
-          <section className="mt-8 rounded-lg border border-white/10 bg-white/[0.02] p-3 sm:p-4">
+          <section className="mt-8 rounded-lg border border-white/20 bg-white/[0.05] p-3 sm:p-4">
             <div className="mb-4 flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em] text-white/45">
               <BarChart3 className="h-4 w-4" />
               Model usage
@@ -127,11 +127,11 @@ export function AppDetail() {
             {(app.models || []).length > 0 ? (
               <div className="space-y-3">
                 {app.models.map(model => (
-                  <div key={`${model.source}-${model.provider}-${model.model || 'all'}`} className="rounded-lg border border-white/10 bg-black/30 p-3">
+                  <div key={`${model.source}-${model.provider}-${model.model || 'all'}`} className="rounded-lg border border-white/20 bg-black/30 p-3">
                     <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
                       <div className="min-w-0">
                         <div className="truncate font-mono text-sm text-white">{model.model || sourceLabel(model.source)}</div>
-                        <div className="mt-1 font-mono text-xs text-white/35">{model.provider || sourceLabel(model.source)}</div>
+                        <div className="mt-1 font-mono text-xs text-white/50">{model.provider || sourceLabel(model.source)}</div>
                       </div>
                       <div className="font-mono text-lg font-semibold text-white">{formatTokens(model.total_tokens)}</div>
                     </div>
@@ -142,7 +142,7 @@ export function AppDetail() {
                 ))}
               </div>
             ) : (
-              <div className="rounded-lg border border-dashed border-white/10 px-4 py-12 text-center text-sm text-white/40">
+              <div className="rounded-lg border border-dashed border-white/20 px-4 py-12 text-center text-sm text-white/55">
                 Model-level breakdown will appear after the next crawler refresh or opt-in usage rollup.
               </div>
             )}
@@ -155,8 +155,8 @@ export function AppDetail() {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded border border-white/10 bg-black/30 p-3">
-      <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/30">{label}</div>
+    <div className="rounded border border-white/20 bg-black/30 p-3">
+      <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/45">{label}</div>
       <div className="mt-2 font-mono text-xl font-semibold text-white">{value}</div>
     </div>
   );

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Box, Boxes, Clapperboard, GitMerge, ImageIcon, Layers, Palette, PersonStanding, Sparkles } from 'lucide-react';
+import { ArrowRight, Box, Boxes, Clapperboard, GitMerge, ImageIcon, Layers, Palette, PersonStanding, Sparkles, WandSparkles } from 'lucide-react';
 import { Seo } from '../components/Seo';
 
 const TOOLS = [
@@ -11,6 +11,14 @@ const TOOLS = [
     tagline: 'Auto image endpoint',
     description: 'Generate an image from a prompt. The auto image route picks the best model (GPT Image 2, RA1, Flux), or pin your own.',
     price: 'from ~$0.04 / image',
+  },
+  {
+    to: '/image-edit',
+    icon: WandSparkles,
+    name: 'Image Style Transfer',
+    tagline: 'GPT Image 2 · routed edits',
+    description: 'Upload a source image and describe the new visual world. The shared image-edit route handles GPT Image 2 and fallbacks.',
+    price: '~$0.30 / edit',
   },
   {
     to: '/video-extension',
@@ -82,7 +90,7 @@ export function Tools() {
       <div className="px-6 py-12">
         <div className="mx-auto max-w-6xl">
           <div className="mb-10">
-            <div className="mb-4 inline-flex items-center gap-2 rounded border border-white/10 bg-white/[0.03] px-3 py-1 text-xs font-mono text-white/45">
+            <div className="mb-4 inline-flex items-center gap-2 rounded border border-white/20 bg-white/[0.06] px-3 py-1 text-xs font-mono text-white/45">
               <Sparkles className="h-3.5 w-3.5" /> Tools
             </div>
             <h1 className="text-4xl font-bold tracking-tight md:text-5xl">OpenPaths Tools</h1>
@@ -98,28 +106,28 @@ export function Tools() {
                 <Link
                   key={tool.to}
                   to={tool.to}
-                  className="group flex flex-col gap-3 rounded-lg border border-white/10 bg-white/[0.02] p-6 transition-colors hover:border-white/30 hover:bg-white/[0.04]"
+                  className="group flex flex-col gap-3 rounded-lg border border-white/20 bg-white/[0.05] p-6 transition-colors hover:border-white/50 hover:bg-white/[0.07]"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <span className="inline-flex h-10 w-10 items-center justify-center rounded border border-white/10 bg-white/[0.04] text-white/70">
+                      <span className="inline-flex h-10 w-10 items-center justify-center rounded border border-white/20 bg-white/[0.07] text-white/70">
                         <Icon className="h-5 w-5" />
                       </span>
                       <div>
                         <div className="text-lg font-bold tracking-tight">{tool.name}</div>
-                        <div className="text-[11px] font-mono uppercase tracking-[0.16em] text-white/35">{tool.tagline}</div>
+                        <div className="text-[11px] font-mono uppercase tracking-[0.16em] text-white/50">{tool.tagline}</div>
                       </div>
                     </div>
-                    <ArrowRight className="h-4 w-4 text-white/30 transition-colors group-hover:text-white/70" />
+                    <ArrowRight className="h-4 w-4 text-white/45 transition-colors group-hover:text-white/70" />
                   </div>
                   <p className="text-sm leading-relaxed text-white/55">{tool.description}</p>
-                  <div className="mt-auto text-xs font-mono text-white/40">{tool.price}</div>
+                  <div className="mt-auto text-xs font-mono text-white/55">{tool.price}</div>
                 </Link>
               );
             })}
           </div>
 
-          <p className="mt-8 text-sm font-mono text-white/40">
+          <p className="mt-8 text-sm font-mono text-white/55">
             Looking for raw endpoints? See the <Link to="/docs" className="text-white underline underline-offset-4">API docs</Link>.
           </p>
         </div>

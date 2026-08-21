@@ -32,11 +32,11 @@ export function Blog() {
           >
             <Link
               to={`/blog/${post.slug}`}
-              className="block border border-white/10 bg-white/[0.02] rounded-lg p-8 hover:bg-white/[0.04] hover:border-white/20 transition-all group"
+              className="block border border-white/20 bg-white/[0.05] rounded-lg p-8 hover:bg-white/[0.07] hover:border-white/40 transition-all group"
             >
               <div className="flex flex-wrap gap-2 mb-4">
                 {post.tags.map(tag => (
-                  <span key={tag} className="px-2 py-0.5 bg-white/5 border border-white/10 rounded text-[10px] font-mono text-white/50">
+                  <span key={tag} className="px-2 py-0.5 bg-white/10 border border-white/20 rounded text-[10px] font-mono text-white/50">
                     {tag}
                   </span>
                 ))}
@@ -51,11 +51,11 @@ export function Blog() {
               </p>
 
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4 text-xs font-mono text-white/30">
+                <div className="flex items-center gap-4 text-xs font-mono text-white/45">
                   <span className="flex items-center gap-1.5"><Calendar className="w-3 h-3" />{post.date}</span>
                   <span className="flex items-center gap-1.5"><Clock className="w-3 h-3" />{post.readTime}</span>
                 </div>
-                <span className="text-sm font-mono text-white/40 group-hover:text-white transition-colors flex items-center gap-1">
+                <span className="text-sm font-mono text-white/55 group-hover:text-white transition-colors flex items-center gap-1">
                   Read <ArrowRight className="w-3 h-3" />
                 </span>
               </div>

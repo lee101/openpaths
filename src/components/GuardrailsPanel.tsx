@@ -142,12 +142,12 @@ export function GuardrailsPanel({ apiKeys }: Props) {
       )}
 
       {loading ? (
-        <div className="flex items-center gap-2 text-white/40 font-mono text-sm">
+        <div className="flex items-center gap-2 text-white/55 font-mono text-sm">
           <Loader2 className="w-4 h-4 animate-spin" /> Loading…
         </div>
       ) : items.length === 0 && !draft ? (
-        <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.02] p-10 text-center">
-          <Shield className="w-8 h-8 text-white/25 mx-auto mb-3" />
+        <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.05] p-10 text-center">
+          <Shield className="w-8 h-8 text-white/40 mx-auto mb-3" />
           <p className="text-white/50 font-mono text-sm">No guardrails yet. Create one to cap spend or scrub PII on selected keys.</p>
         </div>
       ) : (
@@ -156,17 +156,17 @@ export function GuardrailsPanel({ apiKeys }: Props) {
             const keyCount = (g.assignments || []).filter(a => a.target_type === 'api_key').length;
             const isDefault = (g.assignments || []).some(a => a.target_type === 'user');
             return (
-              <div key={g.id} className="rounded-xl border border-white/10 bg-white/[0.02] p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div key={g.id} className="rounded-xl border border-white/20 bg-white/[0.05] p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <div className="font-semibold tracking-tight">{g.name}</div>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {summarize(g).map(t => (
-                      <span key={t} className="text-[11px] font-mono uppercase tracking-wider px-2 py-1 rounded bg-white/5 text-white/55 border border-white/10">
+                      <span key={t} className="text-[11px] font-mono uppercase tracking-wider px-2 py-1 rounded bg-white/10 text-white/55 border border-white/20">
                         {t}
                       </span>
                     ))}
                   </div>
-                  <div className="mt-2 text-xs font-mono text-white/35">
+                  <div className="mt-2 text-xs font-mono text-white/50">
                     {keyCount} key{keyCount === 1 ? '' : 's'}
                     {isDefault ? ' · account default' : ''}
                   </div>
@@ -182,7 +182,7 @@ export function GuardrailsPanel({ apiKeys }: Props) {
                   <button
                     type="button"
                     onClick={() => void remove(g.id)}
-                    className="rounded-lg border border-white/10 p-2 text-white/40 hover:text-red-300 hover:border-red-400/30"
+                    className="rounded-lg border border-white/20 p-2 text-white/55 hover:text-red-300 hover:border-red-400/30"
                     aria-label="Delete"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -196,14 +196,14 @@ export function GuardrailsPanel({ apiKeys }: Props) {
 
       {draft && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-0 sm:p-6">
-          <div className="w-full max-w-3xl max-h-[92vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl border border-white/10 bg-[#0b0b0c] shadow-2xl">
-            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/10 bg-[#0b0b0c]/95 px-5 py-4 backdrop-blur">
+          <div className="w-full max-w-3xl max-h-[92vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl border border-white/20 bg-[#0b0b0c] shadow-2xl">
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/20 bg-[#0b0b0c]/95 px-5 py-4 backdrop-blur">
               <div>
-                <div className="text-xs font-mono uppercase tracking-[0.2em] text-white/35">Guardrail</div>
+                <div className="text-xs font-mono uppercase tracking-[0.2em] text-white/50">Guardrail</div>
                 <input
                   value={draft.name}
                   onChange={e => setEditing({ ...draft, name: e.target.value })}
-                  className="mt-1 bg-transparent text-xl font-semibold tracking-tight outline-none border-b border-transparent focus:border-white/20 w-full"
+                  className="mt-1 bg-transparent text-xl font-semibold tracking-tight outline-none border-b border-transparent focus:border-white/40 w-full"
                 />
               </div>
               <button type="button" onClick={() => setEditing(null)} className="p-2 rounded-lg hover:bg-white/10" aria-label="Close">
@@ -230,7 +230,7 @@ export function GuardrailsPanel({ apiKeys }: Props) {
                           reset_interval: draft.reset_interval || 'daily',
                         });
                       }}
-                      className="mt-1 w-full rounded-lg bg-black border border-white/10 px-3 py-2 text-sm text-white"
+                      className="mt-1 w-full rounded-lg bg-white/[0.06] border border-white/30 px-3 py-2 text-sm text-white"
                     />
                   </label>
                   <label className="block text-xs font-mono text-white/45">
@@ -238,7 +238,7 @@ export function GuardrailsPanel({ apiKeys }: Props) {
                     <select
                       value={draft.reset_interval || 'daily'}
                       onChange={e => setEditing({ ...draft, reset_interval: e.target.value as any })}
-                      className="mt-1 w-full rounded-lg bg-black border border-white/10 px-3 py-2 text-sm text-white"
+                      className="mt-1 w-full rounded-lg bg-white/[0.06] border border-white/30 px-3 py-2 text-sm text-white"
                     >
                       <option value="daily">Daily</option>
                       <option value="weekly">Weekly</option>
@@ -340,7 +340,7 @@ export function GuardrailsPanel({ apiKeys }: Props) {
                   {PII_SLUGS.map(slug => {
                     const existing = draft.sensitive_info.filters.find(f => f.slug === slug);
                     return (
-                      <div key={slug} className="flex flex-wrap items-center gap-2 rounded-lg border border-white/10 px-3 py-2">
+                      <div key={slug} className="flex flex-wrap items-center gap-2 rounded-lg border border-white/20 px-3 py-2">
                         <label className="flex items-center gap-2 text-sm font-mono w-36">
                           <input
                             type="checkbox"
@@ -388,7 +388,7 @@ export function GuardrailsPanel({ apiKeys }: Props) {
                           const custom_filters = draft.custom_filters.map((x, j) => j === i ? { ...x, name: e.target.value } : x);
                           setEditing({ ...draft, custom_filters });
                         }}
-                        className="rounded-lg bg-black border border-white/10 px-3 py-2 text-sm"
+                        className="rounded-lg bg-white/[0.06] border border-white/30 px-3 py-2 text-sm"
                       />
                       <input
                         value={cf.pattern}
@@ -397,7 +397,7 @@ export function GuardrailsPanel({ apiKeys }: Props) {
                           const custom_filters = draft.custom_filters.map((x, j) => j === i ? { ...x, pattern: e.target.value } : x);
                           setEditing({ ...draft, custom_filters });
                         }}
-                        className="rounded-lg bg-black border border-white/10 px-3 py-2 text-sm font-mono"
+                        className="rounded-lg bg-white/[0.06] border border-white/30 px-3 py-2 text-sm font-mono"
                       />
                       <select
                         value={cf.action}
@@ -405,7 +405,7 @@ export function GuardrailsPanel({ apiKeys }: Props) {
                           const custom_filters = draft.custom_filters.map((x, j) => j === i ? { ...x, action: e.target.value as CustomFilter['action'] } : x);
                           setEditing({ ...draft, custom_filters });
                         }}
-                        className="rounded-lg bg-black border border-white/10 px-2 py-2 text-sm"
+                        className="rounded-lg bg-white/[0.06] border border-white/30 px-2 py-2 text-sm"
                       >
                         {ACTIONS.map(a => <option key={a} value={a}>{a}</option>)}
                       </select>
@@ -415,7 +415,7 @@ export function GuardrailsPanel({ apiKeys }: Props) {
                           ...draft,
                           custom_filters: draft.custom_filters.filter((_, j) => j !== i),
                         })}
-                        className="p-2 text-white/40 hover:text-red-300"
+                        className="p-2 text-white/55 hover:text-red-300"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -440,7 +440,7 @@ export function GuardrailsPanel({ apiKeys }: Props) {
                   Account default (all keys without their own guardrail)
                 </label>
                 {apiKeys.length === 0 ? (
-                  <p className="text-xs font-mono text-white/35">No API keys yet.</p>
+                  <p className="text-xs font-mono text-white/50">No API keys yet.</p>
                 ) : (
                   <div className="space-y-2">
                     {apiKeys.map(k => (
@@ -454,7 +454,7 @@ export function GuardrailsPanel({ apiKeys }: Props) {
                               : selectedKeys.filter(id => id !== k.id));
                           }}
                         />
-                        {k.name || 'Key'} <span className="text-white/30">{k.key_prefix}…</span>
+                        {k.name || 'Key'} <span className="text-white/45">{k.key_prefix}…</span>
                       </label>
                     ))}
                   </div>
@@ -462,7 +462,7 @@ export function GuardrailsPanel({ apiKeys }: Props) {
               </Section>
             </div>
 
-            <div className="sticky bottom-0 flex justify-end gap-2 border-t border-white/10 bg-[#0b0b0c]/95 px-5 py-4 backdrop-blur">
+            <div className="sticky bottom-0 flex justify-end gap-2 border-t border-white/20 bg-[#0b0b0c]/95 px-5 py-4 backdrop-blur">
               <button type="button" onClick={() => setEditing(null)} className="rounded-lg border border-white/15 px-4 py-2 text-sm font-mono hover:bg-white/10">
                 Cancel
               </button>
@@ -486,7 +486,7 @@ function Section({ title, subtitle, children }: { title: string; subtitle: strin
   return (
     <section>
       <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
-      <p className="text-xs font-mono text-white/40 mt-1 mb-4">{subtitle}</p>
+      <p className="text-xs font-mono text-white/55 mt-1 mb-4">{subtitle}</p>
       {children}
     </section>
   );
@@ -500,7 +500,7 @@ function ToggleChip(props: ChipProps & React.Attributes) {
       type="button"
       onClick={onClick}
       className={`rounded-md px-2.5 py-1 text-[11px] font-mono uppercase tracking-wider border transition-colors ${
-        active ? 'bg-white text-black border-white' : 'bg-transparent text-white/50 border-white/15 hover:border-white/30'
+        active ? 'bg-white text-black border-white' : 'bg-transparent text-white/50 border-white/15 hover:border-white/50'
       }`}
     >
       {label}
@@ -535,7 +535,7 @@ function TagInput({
           onChange={e => setDraft(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
           placeholder={placeholder}
-          className="flex-1 rounded-lg bg-black border border-white/10 px-3 py-2 text-sm font-mono"
+          className="flex-1 rounded-lg bg-white/[0.06] border border-white/30 px-3 py-2 text-sm font-mono"
         />
         <button type="button" onClick={add} className="rounded-lg border border-white/15 px-3 py-2 text-xs font-mono hover:bg-white/10">
           Add
@@ -544,9 +544,9 @@ function TagInput({
       {values.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-2">
           {values.map(v => (
-            <span key={v} className="inline-flex items-center gap-1 rounded bg-white/5 border border-white/10 px-2 py-1 text-xs font-mono">
+            <span key={v} className="inline-flex items-center gap-1 rounded bg-white/10 border border-white/20 px-2 py-1 text-xs font-mono">
               {v}
-              <button type="button" onClick={() => onChange(values.filter(x => x !== v))} className="text-white/40 hover:text-white">
+              <button type="button" onClick={() => onChange(values.filter(x => x !== v))} className="text-white/55 hover:text-white">
                 <X className="w-3 h-3" />
               </button>
             </span>

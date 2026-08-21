@@ -18,6 +18,14 @@ export const FALLBACK_LOGO = '/logos/openpaths.svg';
 
 export const providers: Provider[] = [
   {
+    slug: 'manifoldgen',
+    name: 'ManifoldGen',
+    url: 'https://manifoldgen.com',
+    description: 'First-party K-Fold video generation through the ManifoldGen API, with real H3 video examples and a creator-focused workflow for cinematic motion.',
+    featured: true,
+    logo: 'https://manifoldgenstatic.manifoldgen.com/static/brand/logo-64.webp'
+  },
+  {
     slug: 'netwrck',
     name: 'Netwrck',
     url: 'https://netwrck.com',

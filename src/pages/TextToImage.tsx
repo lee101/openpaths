@@ -146,7 +146,7 @@ console.log(data.data[0].url);`,
         <div className="mx-auto max-w-7xl">
           <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <div className="mb-3 inline-flex items-center gap-2 rounded border border-white/10 bg-white/[0.03] px-3 py-1 text-xs font-mono text-white/45">
+              <div className="mb-3 inline-flex items-center gap-2 rounded border border-white/20 bg-white/[0.06] px-3 py-1 text-xs font-mono text-white/45">
                 <ImageIcon className="h-3.5 w-3.5" /> Auto Image endpoint
               </div>
               <h1 className="max-w-3xl text-4xl font-bold tracking-tight md:text-6xl">Text to Image</h1>
@@ -155,45 +155,45 @@ console.log(data.data[0].url);`,
               </p>
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs font-mono text-white/45">
-              <span className="rounded border border-white/10 px-3 py-2">{model}</span>
-              <span className="rounded border border-white/10 px-3 py-2">~${price.toFixed(3)}/image</span>
+              <span className="rounded border border-white/20 px-3 py-2">{model}</span>
+              <span className="rounded border border-white/20 px-3 py-2">~${price.toFixed(3)}/image</span>
             </div>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-[420px_minmax(0,1fr)]">
-            <section className="rounded-lg border border-white/10 bg-white/[0.02] p-5">
+            <section className="rounded-lg border border-white/20 bg-white/[0.05] p-5">
               <h2 className="mb-4 font-mono text-sm font-bold uppercase tracking-wider text-white/70">Generate</h2>
 
               <label className="mb-3 block">
-                <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/40">OpenPaths API key</span>
+                <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/55">OpenPaths API key</span>
                 <input
                   value={apiKey}
                   onChange={e => setApiKey(e.target.value)}
                   placeholder="op-..."
-                  className="w-full rounded border border-white/10 bg-black px-3 py-2 text-sm font-mono text-white placeholder:text-white/25 focus:border-white/30 focus:outline-none"
+                  className="w-full rounded border border-white/20 bg-black px-3 py-2 text-sm font-mono text-white placeholder:text-white/45 focus:border-white/50 focus:outline-none"
                 />
               </label>
 
               <label className="mb-3 block">
-                <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/40">Prompt</span>
+                <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/55">Prompt</span>
                 <textarea
                   value={prompt}
                   onChange={e => setPrompt(e.target.value)}
                   rows={5}
-                  className="w-full resize-y rounded border border-white/10 bg-black px-3 py-2 text-sm text-white placeholder:text-white/25 focus:border-white/30 focus:outline-none"
+                  className="w-full resize-y rounded border border-white/20 bg-black px-3 py-2 text-sm text-white placeholder:text-white/45 focus:border-white/50 focus:outline-none"
                 />
               </label>
 
               <div className="grid grid-cols-2 gap-3">
                 <label>
-                  <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/40">Model</span>
-                  <select value={model} onChange={e => setModel(e.target.value)} className="w-full rounded border border-white/10 bg-black px-2 py-2 text-xs font-mono text-white focus:border-white/30 focus:outline-none">
+                  <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/55">Model</span>
+                  <select value={model} onChange={e => setModel(e.target.value)} className="w-full rounded border border-white/20 bg-black px-2 py-2 text-xs font-mono text-white focus:border-white/50 focus:outline-none">
                     {IMAGE_MODELS.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
                   </select>
                 </label>
                 <label>
-                  <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/40">Size</span>
-                  <select value={size} onChange={e => setSize(e.target.value)} className="w-full rounded border border-white/10 bg-black px-2 py-2 text-xs font-mono text-white focus:border-white/30 focus:outline-none">
+                  <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/55">Size</span>
+                  <select value={size} onChange={e => setSize(e.target.value)} className="w-full rounded border border-white/20 bg-black px-2 py-2 text-xs font-mono text-white focus:border-white/50 focus:outline-none">
                     {SIZES.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </label>
@@ -212,8 +212,8 @@ console.log(data.data[0].url);`,
               {error && <p className="mt-3 rounded border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs font-mono text-red-200">{error}</p>}
             </section>
 
-            <section className="overflow-hidden rounded-lg border border-white/10 bg-white/[0.02]">
-              <div className="border-b border-white/10 px-4 py-3">
+            <section className="overflow-hidden rounded-lg border border-white/20 bg-white/[0.05]">
+              <div className="border-b border-white/20 px-4 py-3">
                 <h2 className="font-mono text-sm font-bold uppercase tracking-wider text-white/70">Result</h2>
               </div>
               <div className="flex min-h-[420px] items-center justify-center p-5">
@@ -222,10 +222,10 @@ console.log(data.data[0].url);`,
                     {images.map((d, i) => {
                       const src = imageSrc(d);
                       return (
-                        <div key={i} className="overflow-hidden rounded border border-white/10 bg-black">
+                        <div key={i} className="overflow-hidden rounded border border-white/20 bg-black">
                           {src && <img src={src} alt={`Generated ${i + 1}`} className="h-auto w-full" />}
                           {src && (
-                            <a href={src} download={`openpaths-${i + 1}.png`} className="flex items-center justify-center gap-2 border-t border-white/10 px-3 py-2 text-xs font-mono text-white/50 hover:text-white">
+                            <a href={src} download={`openpaths-${i + 1}.png`} className="flex items-center justify-center gap-2 border-t border-white/20 px-3 py-2 text-xs font-mono text-white/50 hover:text-white">
                               <Download className="h-3.5 w-3.5" /> Download
                             </a>
                           )}
@@ -234,13 +234,13 @@ console.log(data.data[0].url);`,
                     })}
                   </div>
                 ) : (
-                  <p className="text-sm font-mono text-white/30">{loading ? 'Generating image...' : 'Your generated image will appear here.'}</p>
+                  <p className="text-sm font-mono text-white/45">{loading ? 'Generating image...' : 'Your generated image will appear here.'}</p>
                 )}
               </div>
             </section>
           </div>
 
-          <section className="mt-6 min-w-0 overflow-hidden rounded-lg border border-white/10 bg-white/[0.02] p-5">
+          <section className="mt-6 min-w-0 overflow-hidden rounded-lg border border-white/20 bg-white/[0.05] p-5">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
               <h2 className="font-mono text-sm font-bold uppercase tracking-wider text-white/70">API code</h2>
               <div className="flex items-center gap-2">
@@ -249,12 +249,12 @@ console.log(data.data[0].url);`,
                     key={snippet}
                     type="button"
                     onClick={() => setActiveSnippet(snippet)}
-                    className={`rounded border px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-[0.14em] transition-colors ${activeSnippet === snippet ? 'border-white/30 bg-white/10 text-white' : 'border-white/10 text-white/35 hover:text-white'}`}
+                    className={`rounded border px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-[0.14em] transition-colors ${activeSnippet === snippet ? 'border-white/30 bg-white/10 text-white' : 'border-white/20 text-white/50 hover:text-white'}`}
                   >
                     {snippet === 'javascript' ? 'JS' : snippet}
                   </button>
                 ))}
-                <button type="button" onClick={copySnippet} className="inline-flex items-center gap-1.5 rounded border border-white/10 px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-[0.14em] text-white/45 hover:text-white">
+                <button type="button" onClick={copySnippet} className="inline-flex items-center gap-1.5 rounded border border-white/20 px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-[0.14em] text-white/45 hover:text-white">
                   <Copy className="h-3 w-3" /> {copied ? 'Copied' : 'Copy'}
                 </button>
               </div>
@@ -263,8 +263,8 @@ console.log(data.data[0].url);`,
               language={activeSnippet === 'javascript' ? 'javascript' : activeSnippet === 'curl' ? 'bash' : 'python'}
               label={activeSnippet === 'javascript' ? 'JavaScript' : activeSnippet === 'curl' ? 'cURL' : 'Python'}
               code={snippets[activeSnippet]}
-              containerClassName="border border-white/10 rounded-lg overflow-hidden bg-black/40"
-              headerClassName="bg-white/[0.03]"
+              containerClassName="border border-white/20 rounded-lg overflow-hidden bg-black/40"
+              headerClassName="bg-white/[0.06]"
               preClassName="text-xs"
             />
           </section>

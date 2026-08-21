@@ -1,18 +1,21 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
-import { Zap, Code2, ArrowRight, Github, Search, Layers, Activity, Sparkles, ArrowUpRight, Image as ImageIcon, Video } from 'lucide-react';
+import { Zap, Code2, ArrowRight, Github, Search, Layers, Activity, Sparkles, ArrowUpRight, Video } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { CodeBlock } from '../components/CodeBlock';
 import { artGallery } from '../data/artGallery';
 import { videoGallery } from '../data/videoGallery';
+import { models } from '../data/models';
 import { getProviderLogo, providersByName } from '../data/providers';
 import { Seo } from '../components/Seo';
 
 export function Landing() {
   const [activeTab, setActiveTab] = useState<'python' | 'curl'>('python');
+  const [visibleArtCount, setVisibleArtCount] = useState(4);
+  const [visibleVideoCount, setVisibleVideoCount] = useState(3);
   const apiKey = localStorage.getItem('op_api_key') || 'op_...';
-  const galleryGrid = artGallery;
-  const videoGrid = videoGallery;
+  const galleryGrid = artGallery.slice(0, visibleArtCount);
+  const videoGrid = videoGallery.slice(0, visibleVideoCount);
 
   return (
     <>
@@ -23,7 +26,7 @@ export function Landing() {
       />
 
       {/* Hero */}
-      <section className="relative overflow-hidden border-b border-white/10">
+      <section className="relative overflow-hidden border-b border-white/20">
         <HeroMeshCanvas />
         <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.06),_transparent_32%),linear-gradient(180deg,_rgba(0,0,0,0.04),_rgba(0,0,0,0.22)_58%,_#000_96%)]" />
         <div className="relative px-6 py-28 md:py-40 min-h-[680px] max-w-7xl mx-auto flex flex-col items-center justify-center text-center">
@@ -35,7 +38,7 @@ export function Landing() {
         >
           <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter mb-6 leading-[0.9]">
             The Open Source <br />
-            <span className="text-white/40">Model Router.</span>
+            <span className="text-white/55">Model Router.</span>
           </h1>
           <p className="text-lg md:text-xl text-white/60 max-w-2xl mx-auto mb-10 font-light leading-relaxed">
             <span className="text-white font-medium">You don't have to pick a model.</span> Try the <code className="text-white font-mono text-base">openpaths/auto</code> models, auto thinking, and the <code className="text-white font-mono text-base">-latest</code> series to help you stay on the frontier — often better than pinning one provider.
@@ -53,8 +56,8 @@ export function Landing() {
       </section>
 
       {/* Stats / Marquee-ish */}
-      <section className="border-y border-white/10 bg-white/[0.02] py-8 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-6 flex flex-wrap justify-center md:justify-between items-center gap-8 font-mono text-sm text-white/40">
+      <section className="border-y border-white/20 bg-white/[0.05] py-8 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6 flex flex-wrap justify-center md:justify-between items-center gap-8 font-mono text-sm text-white/55">
           <div className="flex items-center gap-2"><Activity className="w-4 h-4" /> 99.99% Uptime</div>
           <div className="flex items-center gap-2"><Layers className="w-4 h-4" /> 100+ Models</div>
           <div className="flex items-center gap-2"><Zap className="w-4 h-4" /> &lt;50ms Latency</div>
@@ -63,9 +66,9 @@ export function Landing() {
       </section>
 
       {/* OpenPaths Auto */}
-      <section id="auto" className="px-6 py-24 max-w-7xl mx-auto border-t border-white/10">
+      <section id="auto" className="px-6 py-24 max-w-7xl mx-auto border-t border-white/20">
         <div className="mb-12 text-center max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/15 bg-white/[0.03] text-xs font-mono mb-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/15 bg-white/[0.06] text-xs font-mono mb-6">
             <Sparkles className="w-3.5 h-3.5" />
             OpenPaths Auto
           </div>
@@ -83,7 +86,7 @@ export function Landing() {
           <AutoVariantCard modelId="openpaths/auto-vision" title="Auto Vision" purpose="Image understanding" backends="Gemini Flash; Lite for thumbnails" />
           <AutoVariantCard modelId="openpaths/auto-image" title="Auto Image" purpose="Image generation" backends="GPT Image 2 → RA1 fallback" className="md:col-span-2 lg:col-span-1" />
         </div>
-        <p className="mt-8 text-center text-white/40 font-mono text-xs">
+        <p className="mt-8 text-center text-white/55 font-mono text-xs">
           Take the hassle out of model upgrades — every variant tracks the frontier for you. Legacy IDs still work: <code className="text-white/60">auto</code>, <code className="text-white/60">auto-easy-task</code>, <code className="text-white/60">auto-think</code>, <code className="text-white/60">auto-image</code>
         </p>
       </section>
@@ -95,8 +98,8 @@ export function Landing() {
           <p className="text-white/60 font-mono text-sm">Just change the base URL and API key. That's it.</p>
         </div>
         
-        <div className="border border-white/10 bg-black rounded-lg overflow-hidden shadow-2xl shadow-white/5">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-white/[0.02]">
+        <div className="border border-white/20 bg-black rounded-lg overflow-hidden shadow-2xl shadow-white/5">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-white/20 bg-white/[0.05]">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-white/20" />
               <div className="w-3 h-3 rounded-full bg-white/20" />
@@ -105,13 +108,13 @@ export function Landing() {
             <div className="flex gap-2 font-mono text-xs">
               <button 
                 onClick={() => setActiveTab('python')}
-                className={`px-3 py-1 rounded transition-colors ${activeTab === 'python' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white'}`}
+                className={`px-3 py-1 rounded transition-colors ${activeTab === 'python' ? 'bg-white/10 text-white' : 'text-white/55 hover:text-white'}`}
               >
                 Python
               </button>
               <button 
                 onClick={() => setActiveTab('curl')}
-                className={`px-3 py-1 rounded transition-colors ${activeTab === 'curl' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white'}`}
+                className={`px-3 py-1 rounded transition-colors ${activeTab === 'curl' ? 'bg-white/10 text-white' : 'text-white/55 hover:text-white'}`}
               >
                 cURL
               </button>
@@ -134,26 +137,21 @@ export function Landing() {
           </div>
         </div>
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 font-mono text-xs text-white/50">
-          <div className="border border-white/10 rounded-lg p-4 bg-white/[0.02]">
+          <div className="border border-white/20 rounded-lg p-4 bg-white/[0.05]">
             OpenAI-compatible params: <span className="text-white">model</span>, <span className="text-white">messages</span>, <span className="text-white">temperature</span>, <span className="text-white">top_p</span>, <span className="text-white">max_tokens</span>, <span className="text-white">stream</span>, <span className="text-white">tools</span>, <span className="text-white">response_format</span>, <span className="text-white">reasoning_effort</span>.
           </div>
-          <div className="border border-white/10 rounded-lg p-4 bg-white/[0.02]">
+          <div className="border border-white/20 rounded-lg p-4 bg-white/[0.05]">
             <span className="text-white">reasoning_effort</span> supports <span className="text-white">none</span>, <span className="text-white">low</span>, <span className="text-white">medium</span>, <span className="text-white">high</span>, and <span className="text-white">auto</span>.
           </div>
         </div>
       </section>
 
       {/* Art Playground */}
-      <section id="art-playground" className="px-6 py-24 max-w-7xl mx-auto border-t border-white/10">
-        <div className="relative overflow-hidden rounded-[32px] border border-white/10 bg-[radial-gradient(circle_at_top_left,_rgba(245,158,11,0.14),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(45,212,191,0.12),_transparent_34%),linear-gradient(180deg,_rgba(255,255,255,0.04),_rgba(255,255,255,0.02))] p-6 md:p-8 lg:p-10">
+      <section id="art-playground" className="relative overflow-hidden border-y border-white/20 bg-[radial-gradient(circle_at_top_left,_rgba(245,158,11,0.14),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(45,212,191,0.12),_transparent_34%),linear-gradient(180deg,_rgba(255,255,255,0.04),_rgba(255,255,255,0.02))] px-4 py-16 md:px-8 md:py-20">
           <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(120deg,transparent_0%,rgba(255,255,255,0.04)_45%,transparent_65%)] opacity-60" />
-          <div className="relative">
+          <div className="relative mx-auto max-w-[1800px]">
             <div className="grid gap-8">
               <div>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/15 bg-black/30 text-xs font-mono mb-6">
-                  <ImageIcon className="w-3.5 h-3.5" />
-                  Live Art Playground
-                </div>
                 <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                   <div className="max-w-3xl">
                     <h2 className="text-3xl md:text-5xl font-bold tracking-tight leading-[0.95] mb-4">
@@ -176,7 +174,7 @@ export function Landing() {
                   </div>
                 </div>
 
-                <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
                   {galleryGrid.map((item, index) => (
                     <motion.article
                       key={item.slug}
@@ -184,15 +182,17 @@ export function Landing() {
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true, amount: 0.15 }}
                       transition={{ duration: 0.35, delay: index * 0.04 }}
-                      className="overflow-hidden rounded-[24px] border border-white/10 bg-black/45 group"
+                      className="overflow-hidden rounded-[24px] border border-white/20 bg-black/45 group"
                     >
                       <div className="relative aspect-square overflow-hidden">
-                        <img
-                          src={item.imageUrl}
-                          alt={item.title}
-                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                          loading="lazy"
-                        />
+                        <Link to={galleryModelPath(item.providerModelId, item.prompt)} className="absolute inset-0 z-0">
+                          <img
+                            src={item.imageUrl}
+                            alt={item.title}
+                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                            loading="lazy"
+                          />
+                        </Link>
                         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/25 to-transparent" />
                         <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-3">
                           <div className="flex items-center gap-2 rounded-full border border-white/15 bg-black/55 px-2.5 py-1.5 backdrop-blur">
@@ -208,14 +208,26 @@ export function Landing() {
                           </Link>
                         </div>
                         <div className="absolute bottom-0 left-0 right-0 p-4">
-                          <div className="text-xs uppercase tracking-[0.22em] text-white/35 mb-2">{item.model}</div>
-                          <h3 className="text-xl font-bold tracking-tight">{item.title}</h3>
+                          <div className="text-xs uppercase tracking-[0.22em] text-white/50 mb-2">{item.model}</div>
+                          <Link to={galleryModelPath(item.providerModelId, item.prompt)} className="relative z-10 text-xl font-bold tracking-tight hover:underline underline-offset-4">{item.title}</Link>
                           <PromptText text={item.prompt} className="mt-2 text-sm text-white/65" />
+                          <Link to={`/art?q=${encodeURIComponent(item.prompt)}`} className="relative z-10 mt-3 inline-flex text-[11px] font-mono uppercase tracking-[0.14em] text-white/45 hover:text-white">Find similar art <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link>
                         </div>
                       </div>
                     </motion.article>
                   ))}
                 </div>
+                {visibleArtCount < artGallery.length && (
+                  <div className="mt-5 flex justify-center">
+                    <button
+                      type="button"
+                      onClick={() => setVisibleArtCount((count) => Math.min(count + 4, artGallery.length))}
+                      className="border border-white/20 bg-black/30 px-5 py-3 font-mono text-xs uppercase tracking-[0.16em] text-white/70 transition-colors hover:bg-white hover:text-black"
+                    >
+                      Load more art
+                    </button>
+                  </div>
+                )}
 
                 <div className="mt-12">
                   <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
@@ -229,7 +241,7 @@ export function Landing() {
                       Browse video models <ArrowRight className="h-4 w-4" />
                     </Link>
                   </div>
-                  <div className="grid gap-4 lg:grid-cols-3">
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                     {videoGrid.map((item, index) => (
                       <motion.article
                         key={item.slug}
@@ -237,33 +249,46 @@ export function Landing() {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true, amount: 0.15 }}
                         transition={{ duration: 0.35, delay: index * 0.05 }}
-                        className="overflow-hidden rounded-lg border border-white/10 bg-black/45"
+                        className="overflow-hidden rounded-lg border border-white/20 bg-black/45"
                       >
                         <div className="relative aspect-video bg-black">
-                          <video src={item.videoUrl} poster={item.posterUrl} className="h-full w-full object-cover" muted loop playsInline controls preload="metadata" />
+                          <Link to={galleryModelPath(item.model, item.prompt)} className="block h-full w-full">
+                            <video src={item.videoUrl} poster={item.posterUrl} className="h-full w-full object-cover" muted loop playsInline controls preload="metadata" />
+                          </Link>
                           <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-2 rounded-full border border-white/15 bg-black/60 px-2.5 py-1.5 backdrop-blur">
                             <img src={getProviderLogo(item.provider)} alt={`${item.provider} logo`} className={`h-4 w-4 rounded-sm object-contain ${item.provider === 'Black Forest Labs' ? 'bg-white p-px' : ''}`} />
                             <span className="font-mono text-[11px] text-white/80">{item.model}</span>
                           </div>
                         </div>
                         <div className="p-4">
-                          <div className="mb-2 text-[11px] uppercase tracking-[0.22em] text-white/35">{item.resolution} · {item.duration}s · WebM</div>
-                          <h4 className="text-lg font-bold tracking-tight">{item.title}</h4>
+                          <div className="mb-2 text-[11px] uppercase tracking-[0.22em] text-white/50">{item.resolution} · {item.duration}s · WebM</div>
+                          <Link to={galleryModelPath(item.model, item.prompt)} className="text-lg font-bold tracking-tight hover:underline underline-offset-4">{item.title}</Link>
                           <PromptText text={item.prompt} className="mt-2 text-sm text-white/60" />
+                          <Link to={`/art?q=${encodeURIComponent(item.prompt)}`} className="mt-3 inline-flex text-[11px] font-mono uppercase tracking-[0.14em] text-white/45 hover:text-white">Find similar art <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link>
                         </div>
                       </motion.article>
                     ))}
                   </div>
+                  {visibleVideoCount < videoGallery.length && (
+                    <div className="mt-5 flex justify-center">
+                      <button
+                        type="button"
+                        onClick={() => setVisibleVideoCount((count) => Math.min(count + 3, videoGallery.length))}
+                        className="border border-white/20 bg-black/30 px-5 py-3 font-mono text-xs uppercase tracking-[0.16em] text-white/70 transition-colors hover:bg-white hover:text-black"
+                      >
+                        Load more videos
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
             </div>
           </div>
-        </div>
       </section>
 
       {/* Features */}
-      <section id="features" className="px-6 py-24 max-w-7xl mx-auto border-t border-white/10">
+      <section id="features" className="px-6 py-24 max-w-7xl mx-auto border-t border-white/20">
         <div className="mb-16">
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">Built for scale.</h2>
           <p className="text-white/60 font-mono text-sm max-w-2xl">We handle the complexity of routing, fallbacks, and payments so you can focus on building your product.</p>
@@ -298,7 +323,7 @@ export function Landing() {
       </section>
 
       {/* CTA */}
-      <section className="px-6 py-32 border-t border-white/10 text-center bg-white/[0.02]">
+      <section className="px-6 py-32 border-t border-white/20 text-center bg-white/[0.05]">
         <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-6">Ready to find your path?</h2>
         <p className="text-white/60 mb-10 max-w-xl mx-auto">Join thousands of developers building the future of AI with open, transparent, and fast model routing.</p>
         <Link to="/account" className="bg-white text-black px-8 py-4 font-mono font-bold hover:bg-white/90 transition-colors inline-block rounded">
@@ -312,6 +337,13 @@ export function Landing() {
 function providerDocsPath(providerName: string): string {
   const provider = providersByName[providerName];
   return provider ? `/${provider.slug}/docs` : '/providers';
+}
+
+function galleryModelPath(modelId: string, prompt: string): string {
+  const model = models.find(item => item.id === modelId);
+  return model
+    ? `/models/${encodeURIComponent(model.id)}?prompt=${encodeURIComponent(prompt)}`
+    : `/models?q=${encodeURIComponent(modelId)}`;
 }
 
 function HeroMeshCanvas() {
@@ -457,21 +489,21 @@ function AutoVariantCard({
   className?: string;
 }) {
   return (
-    <div className={`border border-white/10 rounded-lg p-5 bg-black/40 hover:bg-white/[0.03] transition-colors ${className}`}>
+    <div className={`border border-white/20 rounded-lg p-5 bg-black/40 hover:bg-white/[0.06] transition-colors ${className}`}>
       <div className="text-white font-bold mb-1">{title}</div>
       <code className="text-xs text-emerald-400/90 block mb-3">{modelId}</code>
       <p className="text-white/70 text-xs leading-relaxed mb-2">{purpose}</p>
-      <p className="text-white/40 text-[11px] leading-relaxed">{backends}</p>
+      <p className="text-white/55 text-[11px] leading-relaxed">{backends}</p>
     </div>
   );
 }
 
 function FeatureCard({ icon, title, description, to }: { icon: React.ReactNode, title: string, description: string, to: string }) {
   return (
-    <Link to={to} className="bg-black p-8 group hover:bg-white/[0.02] transition-colors h-full block focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40">
-      <div className="mb-6 text-white/40 group-hover:text-white transition-colors flex items-start justify-between gap-4">
+    <Link to={to} className="bg-black p-8 group hover:bg-white/[0.05] transition-colors h-full block focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40">
+      <div className="mb-6 text-white/55 group-hover:text-white transition-colors flex items-start justify-between gap-4">
         {icon}
-        <ArrowUpRight className="w-4 h-4 text-white/20 group-hover:text-white/60 transition-colors shrink-0" />
+        <ArrowUpRight className="w-4 h-4 text-white/35 group-hover:text-white/60 transition-colors shrink-0" />
       </div>
       <h3 className="text-xl font-bold mb-3 tracking-tight">{title}</h3>
       <p className="text-sm text-white/60 leading-relaxed font-light">{description}</p>

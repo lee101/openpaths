@@ -238,7 +238,7 @@ console.log(data.choices[0].message.content);`, [endpoint, keyLabel, payload]);
 
       <div className="min-h-full bg-black px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto flex max-w-7xl flex-col gap-5">
-          <header className="flex flex-col gap-4 border-b border-white/10 pb-5 lg:flex-row lg:items-end lg:justify-between">
+          <header className="flex flex-col gap-4 border-b border-white/20 pb-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <div className="mb-3 inline-flex items-center gap-2 rounded border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 font-mono text-xs font-bold uppercase tracking-[0.16em] text-cyan-100">
                 <GitMerge className="h-3.5 w-3.5" /> Model Fusion <span className="rounded bg-white px-1.5 py-0.5 text-[10px] text-black">Beta</span>
@@ -261,9 +261,9 @@ console.log(data.choices[0].message.content);`, [endpoint, keyLabel, payload]);
 
           <div className="grid gap-5 lg:grid-cols-[420px_minmax(0,1fr)]">
             <aside className="space-y-4">
-              <section className="rounded border border-white/10 bg-white/[0.03] p-4">
-                <label className="mb-2 block font-mono text-xs font-bold uppercase tracking-[0.14em] text-white/40">Fusion backend</label>
-                <div className="mb-4 flex rounded border border-white/10 bg-black p-1">
+              <section className="rounded border border-white/20 bg-white/[0.06] p-4">
+                <label className="mb-2 block font-mono text-xs font-bold uppercase tracking-[0.14em] text-white/55">Fusion backend</label>
+                <div className="mb-4 flex rounded border border-white/20 bg-black p-1">
                   {(['openpaths', 'openrouter'] as FusionBackend[]).map(option => (
                     <button
                       key={option}
@@ -275,7 +275,7 @@ console.log(data.choices[0].message.content);`, [endpoint, keyLabel, payload]);
                     </button>
                   ))}
                 </div>
-                <label className="mb-2 block font-mono text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+                <label className="mb-2 block font-mono text-xs font-bold uppercase tracking-[0.14em] text-white/55">
                   {backend === 'openpaths' ? 'OpenPaths API key' : 'OpenRouter API key'}
                 </label>
                 <input
@@ -283,17 +283,17 @@ console.log(data.choices[0].message.content);`, [endpoint, keyLabel, payload]);
                   onChange={event => setApiKey(event.target.value)}
                   type="password"
                   placeholder={backend === 'openpaths' ? 'op-...' : 'sk-or-...'}
-                  className="h-11 w-full rounded border border-white/10 bg-black px-3 font-mono text-sm text-white outline-none transition-colors placeholder:text-white/20 focus:border-white/35"
+                  className="h-11 w-full rounded border border-white/20 bg-black px-3 font-mono text-sm text-white outline-none transition-colors placeholder:text-white/45 focus:border-white/60"
                 />
-                <p className="mt-2 text-xs leading-5 text-white/35">
+                <p className="mt-2 text-xs leading-5 text-white/50">
                   {backend === 'openpaths'
                     ? 'Runs panel and judge calls through OpenPaths billing and model aliases.'
                     : 'Uses OpenRouter server tools directly with openrouter:fusion.'}
                 </p>
               </section>
 
-              <section className="rounded border border-white/10 bg-white/[0.03] p-4">
-                <div className="mb-3 flex rounded border border-white/10 bg-black p-1">
+              <section className="rounded border border-white/20 bg-white/[0.06] p-4">
+                <div className="mb-3 flex rounded border border-white/20 bg-black p-1">
                   {(['quality', 'budget', 'custom'] as FusionPreset[]).map(option => (
                     <button
                       key={option}
@@ -311,7 +311,7 @@ console.log(data.choices[0].message.content);`, [endpoint, keyLabel, payload]);
                     const count = selectedModels.filter(id => id === model.id).length;
                     const active = count > 0;
                     return (
-                      <div key={model.id} className={`flex items-center gap-1 rounded border transition-colors ${active ? 'border-white/30 bg-white/[0.08]' : 'border-white/10 bg-black'}`}>
+                      <div key={model.id} className={`flex items-center gap-1 rounded border transition-colors ${active ? 'border-white/30 bg-white/[0.11]' : 'border-white/20 bg-black'}`}>
                         <button
                           type="button"
                           onClick={() => toggleModel(model.id)}
@@ -322,9 +322,9 @@ console.log(data.choices[0].message.content);`, [endpoint, keyLabel, payload]);
                           </span>
                           <span className="min-w-0 flex-1">
                             <span className="block truncate font-mono text-sm text-white">{model.label}</span>
-                            <span className="block truncate font-mono text-[11px] text-white/35">{model.id}</span>
+                            <span className="block truncate font-mono text-[11px] text-white/50">{model.id}</span>
                           </span>
-                          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-white/30">{model.provider}</span>
+                          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-white/45">{model.provider}</span>
                           {count > 1 && (
                             <span className="rounded bg-white/20 px-1.5 py-0.5 font-mono text-[10px] text-white">{count}x</span>
                           )}
@@ -334,7 +334,7 @@ console.log(data.choices[0].message.content);`, [endpoint, keyLabel, payload]);
                           onClick={() => addModelCopy(model.id)}
                           disabled={selectedModels.length >= 8}
                           title="Add another copy"
-                          className="flex h-full items-center px-2 text-white/30 hover:text-white disabled:opacity-20"
+                          className="flex h-full items-center px-2 text-white/45 hover:text-white disabled:opacity-20"
                           aria-label={`Add another ${model.label}`}
                         >
                           <Plus className="h-3.5 w-3.5" />
@@ -352,9 +352,9 @@ console.log(data.choices[0].message.content);`, [endpoint, keyLabel, payload]);
                       if (event.key === 'Enter') addCustomModel();
                     }}
                     placeholder="provider/model-id"
-                    className="h-10 min-w-0 flex-1 rounded border border-white/10 bg-black px-3 font-mono text-xs text-white outline-none placeholder:text-white/20 focus:border-white/35"
+                    className="h-10 min-w-0 flex-1 rounded border border-white/20 bg-black px-3 font-mono text-xs text-white outline-none placeholder:text-white/45 focus:border-white/60"
                   />
-                  <button type="button" onClick={addCustomModel} className="inline-flex h-10 w-10 items-center justify-center rounded border border-white/10 bg-white/[0.04] text-white/70 hover:border-white/25 hover:text-white" aria-label="Add model">
+                  <button type="button" onClick={addCustomModel} className="inline-flex h-10 w-10 items-center justify-center rounded border border-white/20 bg-white/[0.07] text-white/70 hover:border-white/45 hover:text-white" aria-label="Add model">
                     <Plus className="h-4 w-4" />
                   </button>
                 </div>
@@ -362,7 +362,7 @@ console.log(data.choices[0].message.content);`, [endpoint, keyLabel, payload]);
                 {selectedModels.some(id => !MODEL_OPTIONS.some(model => model.id === id)) && (
                   <div className="mt-3 flex flex-wrap gap-2">
                     {selectedModels.map((id, i) => !MODEL_OPTIONS.some(model => model.id === id) ? (
-                      <button key={i} type="button" onClick={() => removeModelAt(i)} className="inline-flex max-w-full items-center gap-1 rounded border border-white/10 bg-white/[0.04] px-2 py-1 font-mono text-[11px] text-white/55 hover:text-white">
+                      <button key={i} type="button" onClick={() => removeModelAt(i)} className="inline-flex max-w-full items-center gap-1 rounded border border-white/20 bg-white/[0.07] px-2 py-1 font-mono text-[11px] text-white/55 hover:text-white">
                         <span className="truncate">{id}</span><X className="h-3 w-3" />
                       </button>
                     ) : null)}
@@ -370,36 +370,36 @@ console.log(data.choices[0].message.content);`, [endpoint, keyLabel, payload]);
                 )}
               </section>
 
-              <section className="rounded border border-white/10 bg-white/[0.03] p-4">
-                <label className="mb-2 block font-mono text-xs font-bold uppercase tracking-[0.14em] text-white/40">Fuse with</label>
+              <section className="rounded border border-white/20 bg-white/[0.06] p-4">
+                <label className="mb-2 block font-mono text-xs font-bold uppercase tracking-[0.14em] text-white/55">Fuse with</label>
                 <div className="relative">
                   <select
                     value={fuseWith}
                     onChange={event => setFuseWith(event.target.value)}
-                    className="h-11 w-full appearance-none rounded border border-white/10 bg-black px-3 pr-9 font-mono text-sm text-white outline-none focus:border-white/35"
+                    className="h-11 w-full appearance-none rounded border border-white/20 bg-black px-3 pr-9 font-mono text-sm text-white outline-none focus:border-white/60"
                   >
                     <option value="auto">Auto (first source)</option>
                     {Array.from(new Set<string>(selectedModels)).map(id => (
                       <option key={id} value={id}>{modelLabel(id)}</option>
                     ))}
                   </select>
-                  <ChevronDown className="pointer-events-none absolute right-3 top-3.5 h-4 w-4 text-white/35" />
+                  <ChevronDown className="pointer-events-none absolute right-3 top-3.5 h-4 w-4 text-white/50" />
                 </div>
 
                 <div className="mt-4 grid grid-cols-2 gap-3">
                   <label className="block">
-                    <span className="mb-1 block font-mono text-[11px] uppercase tracking-[0.12em] text-white/35">Tool calls</span>
+                    <span className="mb-1 block font-mono text-[11px] uppercase tracking-[0.12em] text-white/50">Tool calls</span>
                     <input
                       value={maxToolCalls}
                       onChange={event => setMaxToolCalls(Math.max(1, Math.min(16, Number(event.target.value) || 1)))}
                       min={1}
                       max={16}
                       type="number"
-                      className="h-10 w-full rounded border border-white/10 bg-black px-3 font-mono text-sm text-white outline-none focus:border-white/35"
+                      className="h-10 w-full rounded border border-white/20 bg-black px-3 font-mono text-sm text-white outline-none focus:border-white/60"
                     />
                   </label>
                   <label className="block">
-                    <span className="mb-1 block font-mono text-[11px] uppercase tracking-[0.12em] text-white/35">Temperature</span>
+                    <span className="mb-1 block font-mono text-[11px] uppercase tracking-[0.12em] text-white/50">Temperature</span>
                     <input
                       value={temperature}
                       onChange={event => setTemperature(Math.max(0, Math.min(2, Number(event.target.value) || 0)))}
@@ -407,20 +407,20 @@ console.log(data.choices[0].message.content);`, [endpoint, keyLabel, payload]);
                       max={2}
                       step={0.1}
                       type="number"
-                      className="h-10 w-full rounded border border-white/10 bg-black px-3 font-mono text-sm text-white outline-none focus:border-white/35"
+                      className="h-10 w-full rounded border border-white/20 bg-black px-3 font-mono text-sm text-white outline-none focus:border-white/60"
                     />
                   </label>
                 </div>
 
-                <label className="mt-4 flex items-center justify-between gap-3 rounded border border-white/10 bg-black px-3 py-2.5">
+                <label className="mt-4 flex items-center justify-between gap-3 rounded border border-white/20 bg-black px-3 py-2.5">
                   <span>
                     <span className="block font-mono text-sm text-white">Force fusion</span>
-                    <span className="block font-mono text-[11px] text-white/35">Sets tool_choice to required.</span>
+                    <span className="block font-mono text-[11px] text-white/50">Sets tool_choice to required.</span>
                   </span>
                   <input type="checkbox" checked={forceFusion} onChange={event => setForceFusion(event.target.checked)} className="h-4 w-4 accent-white" />
                 </label>
                 {backend === 'openpaths' && (
-                  <p className="mt-3 rounded border border-white/10 bg-black px-3 py-2 text-xs leading-5 text-white/35">
+                  <p className="mt-3 rounded border border-white/20 bg-black px-3 py-2 text-xs leading-5 text-white/50">
                     OpenPaths fusion always runs the selected panel and judge. The force-fusion toggle only affects OpenRouter server-tool requests.
                   </p>
                 )}
@@ -428,29 +428,29 @@ console.log(data.choices[0].message.content);`, [endpoint, keyLabel, payload]);
             </aside>
 
             <main className="space-y-4">
-              <section className="rounded border border-white/10 bg-white/[0.03] p-4">
+              <section className="rounded border border-white/20 bg-white/[0.06] p-4">
                 <div className="mb-3 flex items-center justify-between gap-3">
-                  <label className="font-mono text-xs font-bold uppercase tracking-[0.14em] text-white/40">Base prompt</label>
-                  <span className="font-mono text-[11px] text-white/30">{selectedModels.length}/8 panel models</span>
+                  <label className="font-mono text-xs font-bold uppercase tracking-[0.14em] text-white/55">Base prompt</label>
+                  <span className="font-mono text-[11px] text-white/45">{selectedModels.length}/8 panel models</span>
                 </div>
                 <textarea
                   value={prompt}
                   onChange={event => setPrompt(event.target.value)}
-                  className="min-h-[170px] w-full resize-y rounded border border-white/10 bg-black p-4 text-sm leading-6 text-white outline-none placeholder:text-white/20 focus:border-white/35"
+                  className="min-h-[170px] w-full resize-y rounded border border-white/20 bg-black p-4 text-sm leading-6 text-white outline-none placeholder:text-white/45 focus:border-white/60"
                   placeholder="Ask a question that benefits from multiple perspectives..."
                 />
-                <label className="mb-2 mt-4 block font-mono text-xs font-bold uppercase tracking-[0.14em] text-white/40">Fusion prompt</label>
+                <label className="mb-2 mt-4 block font-mono text-xs font-bold uppercase tracking-[0.14em] text-white/55">Fusion prompt</label>
                 <textarea
                   value={fusionPrompt}
                   onChange={event => setFusionPrompt(event.target.value)}
-                  className="min-h-[92px] w-full resize-y rounded border border-white/10 bg-black p-3 text-sm leading-6 text-white outline-none placeholder:text-white/20 focus:border-white/35"
+                  className="min-h-[92px] w-full resize-y rounded border border-white/20 bg-black p-3 text-sm leading-6 text-white outline-none placeholder:text-white/45 focus:border-white/60"
                   placeholder="Tell the judge how to merge panel answers..."
                 />
                 <div className="mt-3 flex flex-wrap gap-2">
                   {selectedModels.map((id, i) => (
-                    <span key={i} className="inline-flex items-center gap-2 rounded border border-white/10 bg-black px-2.5 py-1.5 font-mono text-xs text-white/55">
+                    <span key={i} className="inline-flex items-center gap-2 rounded border border-white/20 bg-black px-2.5 py-1.5 font-mono text-xs text-white/55">
                       {modelLabel(id)}
-                      <button type="button" onClick={() => removeModelAt(i)} className="text-white/30 hover:text-white" aria-label={`Remove ${modelLabel(id)}`}>
+                      <button type="button" onClick={() => removeModelAt(i)} className="text-white/45 hover:text-white" aria-label={`Remove ${modelLabel(id)}`}>
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </span>
@@ -458,12 +458,12 @@ console.log(data.choices[0].message.content);`, [endpoint, keyLabel, payload]);
                 </div>
               </section>
 
-              <section className="rounded border border-white/10 bg-white/[0.03]">
-                <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-                  <div className="inline-flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+              <section className="rounded border border-white/20 bg-white/[0.06]">
+                <div className="flex items-center justify-between border-b border-white/20 px-4 py-3">
+                  <div className="inline-flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-[0.14em] text-white/55">
                     <Sparkles className="h-3.5 w-3.5" /> Result
                   </div>
-                  {response && <span className="font-mono text-xs text-white/35">{(response.latencyMs / 1000).toFixed(1)}s</span>}
+                  {response && <span className="font-mono text-xs text-white/50">{(response.latencyMs / 1000).toFixed(1)}s</span>}
                 </div>
                 <div className="min-h-[240px] p-4">
                   {error && <div className="rounded border border-red-400/25 bg-red-500/10 p-4 text-sm leading-6 text-red-100">{error}</div>}
@@ -473,7 +473,7 @@ console.log(data.choices[0].message.content);`, [endpoint, keyLabel, payload]);
                     </div>
                   )}
                   {!loading && !error && !response && (
-                    <div className="flex min-h-[200px] items-center justify-center text-center font-mono text-sm text-white/30">
+                    <div className="flex min-h-[200px] items-center justify-center text-center font-mono text-sm text-white/45">
                       The fused answer will appear here.
                     </div>
                   )}
@@ -485,12 +485,12 @@ console.log(data.choices[0].message.content);`, [endpoint, keyLabel, payload]);
                 </div>
               </section>
 
-              <section className="rounded border border-white/10 bg-white/[0.03]">
-                <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+              <section className="rounded border border-white/20 bg-white/[0.06]">
+                <div className="flex items-center justify-between border-b border-white/20 px-4 py-3">
                   <button type="button" onClick={() => setShowCode(open => !open)} className="font-mono text-xs font-bold uppercase tracking-[0.14em] text-white/45 hover:text-white">
                     {showCode ? 'Hide request' : 'Show request'}
                   </button>
-                  <button type="button" onClick={copyCode} className="inline-flex items-center gap-2 rounded border border-white/10 px-2.5 py-1.5 font-mono text-xs text-white/50 hover:border-white/25 hover:text-white">
+                  <button type="button" onClick={copyCode} className="inline-flex items-center gap-2 rounded border border-white/20 px-2.5 py-1.5 font-mono text-xs text-white/50 hover:border-white/45 hover:text-white">
                     {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                     {copied ? 'Copied' : 'Copy'}
                   </button>

@@ -58,12 +58,12 @@ export function Model3DDrop({ minHeight = 320 }: { minHeight?: number }) {
 
   if (objectUrl) {
     return (
-      <div className="overflow-hidden rounded-lg border border-white/10 bg-white/[0.02]">
-        <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+      <div className="overflow-hidden rounded-lg border border-white/20 bg-white/[0.05]">
+        <div className="flex items-center justify-between border-b border-white/20 px-4 py-3">
           <div className="flex items-center gap-2 text-xs font-mono text-white/55">
             <Box className="h-3.5 w-3.5" /> {fileName}
           </div>
-          <button type="button" onClick={clear} className="inline-flex items-center gap-1.5 rounded border border-white/10 px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-[0.14em] text-white/45 hover:text-white">
+          <button type="button" onClick={clear} className="inline-flex items-center gap-1.5 rounded border border-white/20 px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-[0.14em] text-white/45 hover:text-white">
             <X className="h-3 w-3" /> Clear
           </button>
         </div>
@@ -76,7 +76,7 @@ export function Model3DDrop({ minHeight = 320 }: { minHeight?: number }) {
 
   return (
     <label
-      className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-4 text-center text-xs font-mono transition-colors ${dragging ? 'border-emerald-300/50 bg-emerald-400/10 text-emerald-100' : 'border-white/10 bg-black/40 text-white/45 hover:border-white/25'}`}
+      className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-4 text-center text-xs font-mono transition-colors ${dragging ? 'border-emerald-300/50 bg-emerald-400/10 text-emerald-100' : 'border-white/20 bg-black/40 text-white/45 hover:border-white/45'}`}
       style={{ minHeight }}
       {...dropHandlers}
     >

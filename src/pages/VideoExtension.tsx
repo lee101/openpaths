@@ -166,7 +166,7 @@ console.log(data.result?.video_url ?? data.video_url ?? data.id);`,
         <div className="mx-auto max-w-7xl">
           <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <div className="mb-3 inline-flex items-center gap-2 rounded border border-white/10 bg-white/[0.03] px-3 py-1 text-xs font-mono text-white/45">
+              <div className="mb-3 inline-flex items-center gap-2 rounded border border-white/20 bg-white/[0.06] px-3 py-1 text-xs font-mono text-white/45">
                 <Video className="h-3.5 w-3.5" /> Grok video edit and extension
               </div>
               <h1 className="max-w-3xl text-4xl font-bold tracking-tight md:text-6xl">Video Edit / Extension</h1>
@@ -175,15 +175,15 @@ console.log(data.result?.video_url ?? data.video_url ?? data.id);`,
               </p>
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs font-mono text-white/45">
-              <span className="rounded border border-white/10 px-3 py-2">{model}</span>
-              <span className="rounded border border-white/10 px-3 py-2">{mode === 'extension' ? `~$${price.toFixed(2)}+` : 'input based'}</span>
+              <span className="rounded border border-white/20 px-3 py-2">{model}</span>
+              <span className="rounded border border-white/20 px-3 py-2">{mode === 'extension' ? `~$${price.toFixed(2)}+` : 'input based'}</span>
             </div>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-[430px_minmax(0,1fr)]">
-            <section className="rounded-lg border border-white/10 bg-white/[0.02] p-5">
+            <section className="rounded-lg border border-white/20 bg-white/[0.05] p-5">
               <h2 className="mb-4 font-mono text-sm font-bold uppercase tracking-wider text-white/70">{actionLabel}</h2>
-              <div className="mb-3 grid grid-cols-2 gap-2 rounded border border-white/10 bg-black p-1">
+              <div className="mb-3 grid grid-cols-2 gap-2 rounded border border-white/20 bg-black p-1">
                 {(['extension', 'edit'] as const).map(option => (
                   <button key={option} type="button" onClick={() => setMode(option)} className={`rounded px-3 py-2 text-xs font-mono uppercase tracking-[0.14em] transition-colors ${mode === option ? 'bg-white text-black' : 'text-white/45 hover:text-white'}`}>
                     {option === 'extension' ? 'Extend' : 'Edit'}
@@ -191,12 +191,12 @@ console.log(data.result?.video_url ?? data.video_url ?? data.id);`,
                 ))}
               </div>
               <label className="mb-3 block">
-                <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/40">OpenPaths API key</span>
-                <input value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="op-..." className="w-full rounded border border-white/10 bg-black px-3 py-2 text-sm font-mono text-white placeholder:text-white/25 focus:border-white/30 focus:outline-none" />
+                <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/55">OpenPaths API key</span>
+                <input value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="op-..." className="w-full rounded border border-white/20 bg-black px-3 py-2 text-sm font-mono text-white placeholder:text-white/45 focus:border-white/50 focus:outline-none" />
               </label>
               <label className="mb-3 block">
-                <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/40">Source video URL</span>
-                <input value={videoUrl} onChange={e => setVideoUrl(normalizeUploadedAssetUrl(e.target.value))} placeholder="https://.../clip.mp4" className="w-full rounded border border-white/10 bg-black px-3 py-2 text-sm font-mono text-white placeholder:text-white/25 focus:border-white/30 focus:outline-none" />
+                <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/55">Source video URL</span>
+                <input value={videoUrl} onChange={e => setVideoUrl(normalizeUploadedAssetUrl(e.target.value))} placeholder="https://.../clip.mp4" className="w-full rounded border border-white/20 bg-black px-3 py-2 text-sm font-mono text-white placeholder:text-white/45 focus:border-white/50 focus:outline-none" />
               </label>
               <label className="mb-3 flex cursor-pointer items-center justify-center gap-2 rounded border border-dashed border-white/15 bg-black px-3 py-3 text-xs font-mono text-white/45 hover:text-white">
                 <Upload className="h-4 w-4" />
@@ -204,24 +204,24 @@ console.log(data.result?.video_url ?? data.video_url ?? data.id);`,
                 <input type="file" accept="video/mp4,video/*" className="hidden" onChange={e => e.target.files?.[0] && uploadVideo(e.target.files[0])} />
               </label>
               <label className="mb-3 block">
-                <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/40">{mode === 'edit' ? 'Requested edit' : 'What happens next'}</span>
-                <textarea value={prompt} onChange={e => setPrompt(e.target.value)} rows={5} className="w-full resize-y rounded border border-white/10 bg-black px-3 py-2 text-sm text-white placeholder:text-white/25 focus:border-white/30 focus:outline-none" />
+                <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/55">{mode === 'edit' ? 'Requested edit' : 'What happens next'}</span>
+                <textarea value={prompt} onChange={e => setPrompt(e.target.value)} rows={5} className="w-full resize-y rounded border border-white/20 bg-black px-3 py-2 text-sm text-white placeholder:text-white/45 focus:border-white/50 focus:outline-none" />
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <label>
-                  <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/40">Model</span>
-                  <select value={model} onChange={e => setModel(e.target.value)} className="w-full rounded border border-white/10 bg-black px-2 py-2 text-xs font-mono text-white focus:border-white/30 focus:outline-none">
+                  <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/55">Model</span>
+                  <select value={model} onChange={e => setModel(e.target.value)} className="w-full rounded border border-white/20 bg-black px-2 py-2 text-xs font-mono text-white focus:border-white/50 focus:outline-none">
                     {MODELS.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
                   </select>
                 </label>
                 {mode === 'extension' ? <label>
-                  <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/40">Extension seconds</span>
-                  <select value={duration} onChange={e => setDuration(e.target.value)} className="w-full rounded border border-white/10 bg-black px-2 py-2 text-xs font-mono text-white focus:border-white/30 focus:outline-none">
+                  <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/55">Extension seconds</span>
+                  <select value={duration} onChange={e => setDuration(e.target.value)} className="w-full rounded border border-white/20 bg-black px-2 py-2 text-xs font-mono text-white focus:border-white/50 focus:outline-none">
                     {DURATIONS.map(s => <option key={s} value={s}>{s}s</option>)}
                   </select>
-                </label> : <div className="rounded border border-white/10 bg-black px-3 py-2 text-xs font-mono text-white/40">Duration, aspect ratio, and resolution are inherited from the input video.</div>}
+                </label> : <div className="rounded border border-white/20 bg-black px-3 py-2 text-xs font-mono text-white/55">Duration, aspect ratio, and resolution are inherited from the input video.</div>}
               </div>
-              <label className="mt-3 flex items-center justify-between gap-3 rounded border border-white/10 bg-black px-3 py-2 text-xs font-mono text-white/55">
+              <label className="mt-3 flex items-center justify-between gap-3 rounded border border-white/20 bg-black px-3 py-2 text-xs font-mono text-white/55">
                 <span>Backend WebM reencode</span>
                 <input type="checkbox" checked={outputFormat === 'webm'} onChange={e => setOutputFormat(e.target.checked ? 'webm' : 'mp4')} className="h-4 w-4 accent-white" />
               </label>
@@ -232,41 +232,41 @@ console.log(data.result?.video_url ?? data.video_url ?? data.id);`,
               {error && <p className="mt-3 rounded border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs font-mono text-red-200">{error}</p>}
             </section>
 
-            <section className="overflow-hidden rounded-lg border border-white/10 bg-white/[0.02]">
-              <div className="border-b border-white/10 px-4 py-3">
+            <section className="overflow-hidden rounded-lg border border-white/20 bg-white/[0.05]">
+              <div className="border-b border-white/20 px-4 py-3">
                 <h2 className="font-mono text-sm font-bold uppercase tracking-wider text-white/70">Result</h2>
               </div>
               <div className="flex min-h-[430px] items-center justify-center p-5">
                 {resultUrl ? (
-                  <div className="w-full overflow-hidden rounded border border-white/10 bg-black">
+                  <div className="w-full overflow-hidden rounded border border-white/20 bg-black">
                     <video src={resultUrl} controls className="h-auto w-full" />
-                    <div className="flex border-t border-white/10 text-xs font-mono text-white/50">
+                    <div className="flex border-t border-white/20 text-xs font-mono text-white/50">
                       <a href={resultUrl} download={`openpaths-${mode === 'edit' ? 'edited' : 'extended'}-video.mp4`} className="flex flex-1 items-center justify-center gap-2 px-3 py-2 hover:text-white"><Download className="h-3.5 w-3.5" /> Download</a>
-                      <a href={resultUrl} target="_blank" rel="noopener noreferrer" className="flex flex-1 items-center justify-center gap-2 border-l border-white/10 px-3 py-2 hover:text-white"><ExternalLink className="h-3.5 w-3.5" /> Open</a>
+                      <a href={resultUrl} target="_blank" rel="noopener noreferrer" className="flex flex-1 items-center justify-center gap-2 border-l border-white/20 px-3 py-2 hover:text-white"><ExternalLink className="h-3.5 w-3.5" /> Open</a>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm font-mono text-white/30">{loading ? `${actionLabel}ing video...` : `Your ${mode === 'edit' ? 'edited' : 'extended'} video will appear here.`}</p>
+                  <p className="text-sm font-mono text-white/45">{loading ? `${actionLabel}ing video...` : `Your ${mode === 'edit' ? 'edited' : 'extended'} video will appear here.`}</p>
                 )}
               </div>
             </section>
           </div>
 
-          <section className="mt-6 min-w-0 overflow-hidden rounded-lg border border-white/10 bg-white/[0.02] p-5">
+          <section className="mt-6 min-w-0 overflow-hidden rounded-lg border border-white/20 bg-white/[0.05] p-5">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
               <h2 className="font-mono text-sm font-bold uppercase tracking-wider text-white/70">API code</h2>
               <div className="flex items-center gap-2">
                 {(['javascript', 'curl'] as const).map(snippet => (
-                  <button key={snippet} type="button" onClick={() => setActiveSnippet(snippet)} className={`rounded border px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-[0.14em] transition-colors ${activeSnippet === snippet ? 'border-white/30 bg-white/10 text-white' : 'border-white/10 text-white/35 hover:text-white'}`}>
+                  <button key={snippet} type="button" onClick={() => setActiveSnippet(snippet)} className={`rounded border px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-[0.14em] transition-colors ${activeSnippet === snippet ? 'border-white/30 bg-white/10 text-white' : 'border-white/20 text-white/50 hover:text-white'}`}>
                     {snippet === 'javascript' ? 'JS' : snippet}
                   </button>
                 ))}
-                <button type="button" onClick={copySnippet} className="inline-flex items-center gap-1.5 rounded border border-white/10 px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-[0.14em] text-white/45 hover:text-white">
+                <button type="button" onClick={copySnippet} className="inline-flex items-center gap-1.5 rounded border border-white/20 px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-[0.14em] text-white/45 hover:text-white">
                   <Copy className="h-3 w-3" /> {copied ? 'Copied' : 'Copy'}
                 </button>
               </div>
             </div>
-            <CodeBlock language={activeSnippet === 'curl' ? 'bash' : 'javascript'} label={activeSnippet === 'curl' ? 'cURL' : 'JavaScript'} code={snippets[activeSnippet]} containerClassName="overflow-hidden rounded-lg border border-white/10 bg-black/40" headerClassName="bg-white/[0.03]" preClassName="text-xs" />
+            <CodeBlock language={activeSnippet === 'curl' ? 'bash' : 'javascript'} label={activeSnippet === 'curl' ? 'cURL' : 'JavaScript'} code={snippets[activeSnippet]} containerClassName="overflow-hidden rounded-lg border border-white/20 bg-black/40" headerClassName="bg-white/[0.06]" preClassName="text-xs" />
           </section>
         </div>
       </div>

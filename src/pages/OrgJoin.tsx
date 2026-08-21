@@ -50,8 +50,8 @@ export function OrgJoin() {
 
   return (
     <div className="mx-auto flex min-h-[65vh] max-w-xl items-center px-6 py-16">
-      <div className="w-full rounded-3xl border border-white/10 bg-white/[0.03] p-8 text-center shadow-2xl">
-        <p className="mb-3 font-mono text-xs uppercase tracking-[0.22em] text-white/35">Organization invitation</p>
+      <div className="w-full rounded-3xl border border-white/20 bg-white/[0.06] p-8 text-center shadow-2xl">
+        <p className="mb-3 font-mono text-xs uppercase tracking-[0.22em] text-white/50">Organization invitation</p>
         <h1 className="mb-4 text-3xl font-bold tracking-tight">
           {state === 'success' ? 'Invitation accepted' : 'Join OpenPaths'}
         </h1>

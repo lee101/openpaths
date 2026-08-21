@@ -28,6 +28,7 @@ import { TextTo3D } from './pages/TextTo3D';
 import { Rig3D } from './pages/Rig3D';
 import { Retexture3D } from './pages/Retexture3D';
 import { TextToImage } from './pages/TextToImage';
+import { ImageEdit } from './pages/ImageEdit';
 import { VideoExtension } from './pages/VideoExtension';
 import { Tools } from './pages/Tools';
 import { Alternatives } from './pages/Alternatives';
@@ -82,6 +83,7 @@ export default function App() {
           <Route path="rig-3d" element={<Rig3D />} />
           <Route path="retexture-3d" element={<Retexture3D />} />
           <Route path="text-to-image" element={<TextToImage />} />
+          <Route path="image-edit" element={<ImageEdit />} />
           <Route path="video-extension" element={<VideoExtension />} />
           <Route path="search" element={<Search />} />
           <Route path="art" element={<ZImageArt />} />

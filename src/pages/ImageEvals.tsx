@@ -30,7 +30,7 @@ function LeaderboardTable({ rows, limit }: { rows: ImageLeaderboardModel[]; limi
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[820px] text-left text-sm">
-        <thead className="font-mono text-xs uppercase tracking-[0.14em] text-white/35">
+        <thead className="font-mono text-xs uppercase tracking-[0.14em] text-white/50">
           <tr>
             <th className="px-4 py-3">#</th>
             <th className="px-4 py-3">Model</th>
@@ -46,7 +46,7 @@ function LeaderboardTable({ rows, limit }: { rows: ImageLeaderboardModel[]; limi
             const hosted = matchOpenPathsModel(model.name);
             return (
               <tr key={model.id} className="text-white/70">
-                <td className="px-4 py-4 font-mono text-white/40">{model.rank}</td>
+                <td className="px-4 py-4 font-mono text-white/55">{model.rank}</td>
                 <td className="px-4 py-4">
                   <div className="font-mono text-white">{model.name}</div>
                   {model.openWeights && <div className="text-xs text-emerald-300/70">open weights</div>}
@@ -64,7 +64,7 @@ function LeaderboardTable({ rows, limit }: { rows: ImageLeaderboardModel[]; limi
                       {hosted.openpathsId}
                     </Link>
                   ) : (
-                    <span className="font-mono text-xs text-white/25">—</span>
+                    <span className="font-mono text-xs text-white/40">—</span>
                   )}
                 </td>
               </tr>
@@ -105,12 +105,12 @@ export function ImageEvals() {
               href={artificialAnalysisImageSnapshot.sourceUrl}
               target="_blank"
               rel="noreferrer noopener"
-              className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 px-4 py-3 font-mono text-sm text-white/65 transition-colors hover:border-white/30 hover:text-white"
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/20 px-4 py-3 font-mono text-sm text-white/65 transition-colors hover:border-white/50 hover:text-white"
             >
               Source <ExternalLink className="h-4 w-4" />
             </a>
           </div>
-          <p className="mt-3 font-mono text-xs text-white/35">Crawled {crawledOn()} · {leaders.length} of {artificialAnalysisImageSnapshot.textToImage.length} ranked models shown</p>
+          <p className="mt-3 font-mono text-xs text-white/50">Crawled {crawledOn()} · {leaders.length} of {artificialAnalysisImageSnapshot.textToImage.length} ranked models shown</p>
         </section>
 
         {/* Example gallery — one real generation per OpenPaths generator */}
@@ -129,7 +129,7 @@ export function ImageEvals() {
           </p>
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {OPENPATHS_IMAGE_MODELS.map(model => (
-              <figure key={model.slug} className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
+              <figure key={model.slug} className="overflow-hidden rounded-2xl border border-white/20 bg-white/[0.05]">
                 <div className="aspect-square w-full bg-black/40">
                   <img src={model.image} alt={`${model.label} example generation`} loading="lazy" className="h-full w-full object-cover" />
                 </div>
@@ -142,7 +142,7 @@ export function ImageEvals() {
                       </span>
                     )}
                   </div>
-                  <div className="mt-0.5 text-xs text-white/40">{model.provider}</div>
+                  <div className="mt-0.5 text-xs text-white/55">{model.provider}</div>
                   <p className="mt-2 text-xs leading-relaxed text-white/55">{model.blurb}</p>
                   <Link to="/text-to-image" className="mt-3 inline-flex font-mono text-xs text-cyan-200 hover:text-white">
                     Try {model.openpathsId} →
@@ -154,20 +154,20 @@ export function ImageEvals() {
         </section>
 
         {/* Text-to-Image leaderboard */}
-        <section className="mb-12 overflow-hidden rounded-lg border border-white/10 bg-white/[0.02]">
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 px-4 py-3">
+        <section className="mb-12 overflow-hidden rounded-lg border border-white/20 bg-white/[0.05]">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/20 px-4 py-3">
             <h2 className="font-mono text-sm uppercase tracking-[0.16em] text-white/65">Text-to-Image Arena</h2>
-            <span className="font-mono text-xs text-white/35">{artificialAnalysisImageSnapshot.textToImage.length} models · blind preference Elo</span>
+            <span className="font-mono text-xs text-white/50">{artificialAnalysisImageSnapshot.textToImage.length} models · blind preference Elo</span>
           </div>
           <LeaderboardTable rows={leaders} limit={20} />
         </section>
 
         {/* Image editing leaderboard */}
         {editing.length > 0 && (
-          <section className="overflow-hidden rounded-lg border border-white/10 bg-white/[0.02]">
-            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 px-4 py-3">
+          <section className="overflow-hidden rounded-lg border border-white/20 bg-white/[0.05]">
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/20 px-4 py-3">
               <h2 className="font-mono text-sm uppercase tracking-[0.16em] text-white/65">Image Editing Arena</h2>
-              <span className="font-mono text-xs text-white/35">{editing.length} models</span>
+              <span className="font-mono text-xs text-white/50">{editing.length} models</span>
             </div>
             <LeaderboardTable rows={editing} limit={12} />
           </section>

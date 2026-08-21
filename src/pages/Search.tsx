@@ -250,9 +250,9 @@ export function Search() {
       />
       <div className="min-h-screen bg-black">
         {/* Hero / search box */}
-        <section className="border-b border-white/10 bg-gradient-to-b from-white/[0.04] to-transparent">
+        <section className="border-b border-white/20 bg-gradient-to-b from-white/[0.04] to-transparent">
           <div className="mx-auto max-w-4xl px-6 pb-8 pt-14 text-center">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 font-mono text-[11px] uppercase tracking-[0.22em] text-white/45">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.06] px-3 py-1 font-mono text-[11px] uppercase tracking-[0.22em] text-white/45">
               <Globe className="h-3.5 w-3.5" /> OpenPaths Search
             </div>
             <h1 className="text-4xl font-bold tracking-tight md:text-6xl">Search the web with AI</h1>
@@ -261,14 +261,14 @@ export function Search() {
             </p>
 
             <form onSubmit={runSearch} className="mt-7">
-              <div className="flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-4 py-2 shadow-lg shadow-black/30 focus-within:border-white/40">
-                <SearchIcon className="h-5 w-5 shrink-0 text-white/40" />
+              <div className="flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.07] px-4 py-2 shadow-lg shadow-black/30 focus-within:border-white/40">
+                <SearchIcon className="h-5 w-5 shrink-0 text-white/55" />
                 <input
                   value={query}
                   onChange={e => setQuery(e.target.value)}
                   placeholder="Ask anything…"
                   aria-label="Search query"
-                  className="w-full bg-transparent px-1 py-2 text-base outline-none placeholder:text-white/35"
+                  className="w-full bg-transparent px-1 py-2 text-base outline-none placeholder:text-white/45"
                 />
                 <button
                   type="submit"
@@ -287,7 +287,7 @@ export function Search() {
                     key={p.id}
                     type="button"
                     onClick={() => setProviderId(p.id)}
-                    className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors ${provider.id === p.id ? 'border-white bg-white text-black' : 'border-white/10 bg-white/[0.03] text-white/65 hover:border-white/30'}`}
+                    className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors ${provider.id === p.id ? 'border-white bg-white text-black' : 'border-white/20 bg-white/[0.06] text-white/65 hover:border-white/50'}`}
                   >
                     <img src={p.logo} alt="" className={`h-4 w-4 rounded-sm ${provider.id === p.id ? '' : 'opacity-80'}`} />
                     {p.label}
@@ -313,7 +313,7 @@ export function Search() {
 
             {/* Answer block (answer providers) */}
             {isAnswer && answer?.answer && (
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+              <div className="rounded-2xl border border-white/20 bg-white/[0.06] p-6">
                 <div className="mb-3 flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em] text-white/45">
                   <img src={provider.logo} alt="" className="h-4 w-4 rounded-sm" />
                   {provider.label} answer{answer.model ? ` · ${answer.model}` : ''}
@@ -322,7 +322,7 @@ export function Search() {
                 {answer.searchQueries && answer.searchQueries.length > 0 && (
                   <div className="mt-4 flex flex-wrap gap-2">
                     {answer.searchQueries.map((q, i) => (
-                      <span key={i} className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 font-mono text-[11px] text-white/50">{q}</span>
+                      <span key={i} className="rounded-full border border-white/20 bg-white/[0.07] px-2.5 py-1 font-mono text-[11px] text-white/50">{q}</span>
                     ))}
                   </div>
                 )}
@@ -331,24 +331,24 @@ export function Search() {
 
             {/* Sources / results */}
             {responseText && (
-              <CodeBlock code={responseText} language="markdown" preClassName="rounded-xl border border-white/10 bg-black/60 p-4 text-xs leading-6" />
+              <CodeBlock code={responseText} language="markdown" preClassName="rounded-xl border border-white/20 bg-black/60 p-4 text-xs leading-6" />
             )}
 
             {results.length > 0 && (
-              <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+              <div className="rounded-2xl border border-white/20 bg-white/[0.05] p-5">
                 <div className="mb-4 flex items-end justify-between gap-3">
                   <h2 className="text-lg font-bold tracking-tight">{isAnswer ? 'Sources' : 'Results'}</h2>
-                  <span className="font-mono text-xs text-white/40">{results.length} link{results.length === 1 ? '' : 's'}</span>
+                  <span className="font-mono text-xs text-white/55">{results.length} link{results.length === 1 ? '' : 's'}</span>
                 </div>
                 <div className="space-y-3">
                   {results.map((result, idx) => {
                     const fav = result.favicon || faviconFor(result.url);
                     return (
-                      <article key={result.id || result.url || idx} className="rounded-xl border border-white/10 bg-black/35 p-4 hover:border-white/20">
+                      <article key={result.id || result.url || idx} className="rounded-xl border border-white/20 bg-black/35 p-4 hover:border-white/40">
                         <div className="flex gap-3">
                           {fav && <img src={fav} alt="" className="mt-0.5 h-5 w-5 rounded-sm" loading="lazy" />}
                           <div className="min-w-0 flex-1">
-                            {result.url && <div className="truncate font-mono text-[11px] text-white/40">{hostLabel(result.url)}</div>}
+                            {result.url && <div className="truncate font-mono text-[11px] text-white/55">{hostLabel(result.url)}</div>}
                             <a href={result.url} target="_blank" rel="noreferrer" className="font-semibold text-white hover:underline">
                               {result.title || result.url || 'Untitled result'}
                             </a>
@@ -373,28 +373,28 @@ export function Search() {
             )}
 
             {!loading && response && results.length === 0 && !responseText && !answer?.answer && (
-              <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 text-sm text-white/45">No results returned.</div>
+              <div className="rounded-2xl border border-white/20 bg-white/[0.05] p-6 text-sm text-white/45">No results returned.</div>
             )}
 
             {!response && !loading && !error && (
-              <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.01] p-10 text-center text-sm text-white/40">
+              <div className="rounded-2xl border border-dashed border-white/20 bg-white/[0.03] p-10 text-center text-sm text-white/55">
                 Results will appear here. Pick an engine above and hit Search.
               </div>
             )}
 
             {/* Code example */}
-            <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+            <div className="rounded-2xl border border-white/20 bg-white/[0.05] p-5">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div>
                   <h2 className="font-semibold tracking-tight">Code example</h2>
                   <p className="mt-1 text-sm text-white/50">OpenPaths <span className="font-mono">/v1/search</span> request for the current settings.</p>
                 </div>
-                <button type="button" onClick={copyCurl} className="inline-flex items-center gap-2 rounded border border-white/10 px-3 py-2 font-mono text-xs text-white/70 hover:border-white/25 hover:text-white">
+                <button type="button" onClick={copyCurl} className="inline-flex items-center gap-2 rounded border border-white/20 px-3 py-2 font-mono text-xs text-white/70 hover:border-white/45 hover:text-white">
                   {copied ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5" />}
                   {copied ? 'Copied' : 'Copy'}
                 </button>
               </div>
-              <CodeBlock code={curl} language="bash" preClassName="rounded-xl border border-white/10 bg-black/60 p-4 text-xs leading-6" />
+              <CodeBlock code={curl} language="bash" preClassName="rounded-xl border border-white/20 bg-black/60 p-4 text-xs leading-6" />
             </div>
           </main>
 
@@ -402,13 +402,13 @@ export function Search() {
           <aside className="order-1 space-y-4 lg:order-2">
             <Panel title="Request" icon={<SearchIcon className="h-4 w-4" />}>
               <div className="flex items-center gap-2">
-                <img src={provider.logo} alt="" className="h-7 w-7 rounded-lg border border-white/10 bg-white p-1.5" />
+                <img src={provider.logo} alt="" className="h-7 w-7 rounded-lg border border-white/20 bg-white p-1.5" />
                 <div className="min-w-0">
                   <div className="truncate text-sm font-semibold">{provider.label}</div>
                   <div className="truncate text-[11px] text-white/45">{provider.blurb}</div>
                 </div>
                 {provider.docs && (
-                  <a href={provider.docs} className="ml-auto inline-flex items-center gap-1 rounded border border-white/10 px-2 py-1 font-mono text-[11px] text-white/55 hover:border-white/30 hover:text-white">
+                  <a href={provider.docs} className="ml-auto inline-flex items-center gap-1 rounded border border-white/20 px-2 py-1 font-mono text-[11px] text-white/55 hover:border-white/50 hover:text-white">
                     Docs <ExternalLink className="h-3 w-3" />
                   </a>
                 )}
@@ -419,7 +419,7 @@ export function Search() {
                 value={apiKey}
                 onChange={e => setApiKey(e.target.value)}
                 placeholder="op-..."
-                className="mt-2 w-full rounded border border-white/10 bg-black px-3 py-2.5 font-mono text-sm outline-none focus:border-white/35"
+                className="mt-2 w-full rounded border border-white/20 bg-black px-3 py-2.5 font-mono text-sm outline-none focus:border-white/60"
               />
 
               {isAnswer && (
@@ -429,7 +429,7 @@ export function Search() {
                     value={model}
                     onChange={e => setModel(e.target.value)}
                     placeholder={provider.defaultModel}
-                    className="mt-2 w-full rounded border border-white/10 bg-black px-3 py-2.5 font-mono text-sm outline-none focus:border-white/35"
+                    className="mt-2 w-full rounded border border-white/20 bg-black px-3 py-2.5 font-mono text-sm outline-none focus:border-white/60"
                   />
                 </>
               )}
@@ -452,7 +452,7 @@ export function Search() {
                         key={item.value}
                         type="button"
                         onClick={() => setType(item.value)}
-                        className={`rounded border px-2 py-2 text-left transition-colors ${type === item.value ? 'border-white bg-white text-black' : 'border-white/10 bg-white/[0.03] text-white/65 hover:border-white/25'}`}
+                        className={`rounded border px-2 py-2 text-left transition-colors ${type === item.value ? 'border-white bg-white text-black' : 'border-white/20 bg-white/[0.06] text-white/65 hover:border-white/45'}`}
                       >
                         <div className="text-xs font-bold">{item.label}</div>
                         <div className="text-[10px] opacity-65">{item.latency}</div>
@@ -502,7 +502,7 @@ export function Search() {
             {provider.id === 'exa' && (
               <>
                 <div>
-                  <button type="button" onClick={() => setShowOptions(v => !v)} className="flex w-full items-center justify-between rounded border border-white/10 bg-white/[0.02] px-3 py-2 text-xs font-mono uppercase tracking-[0.18em] text-white/45 hover:border-white/25">
+                  <button type="button" onClick={() => setShowOptions(v => !v)} className="flex w-full items-center justify-between rounded border border-white/20 bg-white/[0.05] px-3 py-2 text-xs font-mono uppercase tracking-[0.18em] text-white/45 hover:border-white/45">
                     <span className="inline-flex items-center gap-2"><SlidersHorizontal className="h-3.5 w-3.5" /> Advanced options</span>
                     <span>{showOptions ? '–' : '+'}</span>
                   </button>
@@ -608,7 +608,7 @@ export function Search() {
 
 function Panel({ title, icon, children }: { title: string; icon?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+    <div className="rounded-2xl border border-white/20 bg-white/[0.05] p-4">
       <div className="mb-4 flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em] text-white/45">
         {icon}
         {title}
@@ -638,8 +638,8 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-      <div className="font-mono text-xs uppercase tracking-[0.18em] text-white/35">{label}</div>
+    <div className="rounded-2xl border border-white/20 bg-white/[0.05] p-4">
+      <div className="font-mono text-xs uppercase tracking-[0.18em] text-white/50">{label}</div>
       <div className="mt-2 truncate text-xl font-bold tracking-tight">{value}</div>
     </div>
   );

@@ -42,14 +42,14 @@ export function CompareIndex() {
             </div>
             <Link
               to="/evals"
-              className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 px-4 py-3 font-mono text-sm text-white/65 transition-colors hover:border-white/30 hover:text-white"
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/20 px-4 py-3 font-mono text-sm text-white/65 transition-colors hover:border-white/50 hover:text-white"
             >
               Browse evals <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </section>
 
-        <section className="mb-10 rounded-lg border border-white/10 bg-white/[0.02] p-5">
+        <section className="mb-10 rounded-lg border border-white/20 bg-white/[0.05] p-5">
           <div className="mb-4 flex items-center gap-2 font-mono text-xs uppercase tracking-[0.16em] text-white/45">
             <Search className="h-4 w-4" />
             URL format
@@ -63,21 +63,21 @@ export function CompareIndex() {
           <section className="mb-10">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-2xl font-semibold tracking-tight">Popular comparisons</h2>
-              <span className="font-mono text-xs text-white/35">Based on the current Artificial Analysis snapshot</span>
+              <span className="font-mono text-xs text-white/50">Based on the current Artificial Analysis snapshot</span>
             </div>
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
               {popularPairs.map(model => (
                 <Link
                   key={model.slug}
                   to={`/compare/${anchor.slug}-vs-${model.slug}`}
-                  className="group rounded-lg border border-white/10 bg-white/[0.03] p-4 transition-colors hover:border-white/30 hover:bg-white/[0.05]"
+                  className="group rounded-lg border border-white/20 bg-white/[0.06] p-4 transition-colors hover:border-white/50 hover:bg-white/[0.08]"
                 >
                   <div className="mb-4 flex items-center justify-between gap-3">
                     <div>
-                      <p className="font-mono text-xs text-white/35">{anchor.creator.name} vs {model.creator.name}</p>
+                      <p className="font-mono text-xs text-white/50">{anchor.creator.name} vs {model.creator.name}</p>
                       <h3 className="mt-1 text-lg font-semibold tracking-tight text-white">{anchor.shortName} vs {model.shortName}</h3>
                     </div>
-                    <ArrowRight className="h-4 w-4 flex-none text-white/30 transition-colors group-hover:text-white" />
+                    <ArrowRight className="h-4 w-4 flex-none text-white/45 transition-colors group-hover:text-white" />
                   </div>
                   <div className="grid grid-cols-2 gap-3 font-mono text-xs text-white/50">
                     <span>AA {displayScore(model.evaluations.intelligenceIndex)}</span>
@@ -117,7 +117,7 @@ export function Compare() {
         path={`/compare/${pair}`}
       />
       <div className="mx-auto max-w-7xl px-6 py-12">
-        <Link to="/evals" className="mb-10 inline-flex items-center gap-2 font-mono text-sm text-white/40 transition-colors hover:text-white">
+        <Link to="/evals" className="mb-10 inline-flex items-center gap-2 font-mono text-sm text-white/55 transition-colors hover:text-white">
           <ArrowLeft className="h-4 w-4" />
           Evals
         </Link>
@@ -143,21 +143,21 @@ export function Compare() {
           ))}
         </div>
 
-        <section className="overflow-hidden rounded-lg border border-white/10 bg-white/[0.02]">
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 px-4 py-3">
+        <section className="overflow-hidden rounded-lg border border-white/20 bg-white/[0.05]">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/20 px-4 py-3">
             <h2 className="font-mono text-sm uppercase tracking-[0.16em] text-white/65">Head-to-head breakdown</h2>
             <a
               href={artificialAnalysisSnapshot.sourceUrl}
               target="_blank"
               rel="noreferrer noopener"
-              className="inline-flex items-center gap-1 font-mono text-xs text-white/40 hover:text-white"
+              className="inline-flex items-center gap-1 font-mono text-xs text-white/55 hover:text-white"
             >
               Artificial Analysis <ExternalLink className="h-3.5 w-3.5" />
             </a>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[900px] text-left text-sm">
-              <thead className="font-mono text-xs uppercase tracking-[0.14em] text-white/35">
+              <thead className="font-mono text-xs uppercase tracking-[0.14em] text-white/50">
                 <tr>
                   <th className="px-4 py-3">Metric</th>
                   {models.map(model => (
@@ -207,7 +207,7 @@ function AddModelCompare({ models }: { models: ArtificialAnalysisModel[] }) {
   if (availableModels.length === 0) return null;
 
   return (
-    <section className="mb-8 rounded-lg border border-white/10 bg-white/[0.02] p-4">
+    <section className="mb-8 rounded-lg border border-white/20 bg-white/[0.05] p-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="font-mono text-sm uppercase tracking-[0.16em] text-white/65">Add another model</h2>
@@ -217,7 +217,7 @@ function AddModelCompare({ models }: { models: ArtificialAnalysisModel[] }) {
           <select
             value={effectiveSelectedSlug}
             onChange={event => setSelectedSlug(event.target.value)}
-            className="h-11 min-w-[260px] rounded-lg border border-white/10 bg-black px-3 font-mono text-sm text-white outline-none transition-colors hover:border-white/25 focus:border-cyan-300"
+            className="h-11 min-w-[260px] rounded-lg border border-white/20 bg-black px-3 font-mono text-sm text-white outline-none transition-colors hover:border-white/45 focus:border-cyan-300"
           >
             {availableModels.map(model => (
               <option key={model.slug} value={model.slug}>
@@ -240,13 +240,13 @@ function AddModelCompare({ models }: { models: ArtificialAnalysisModel[] }) {
 
 function ModelSummary({ model }: { model: ArtificialAnalysisModel }) {
   return (
-    <div className="rounded-lg border border-white/10 bg-white/[0.03] p-5">
+    <div className="rounded-lg border border-white/20 bg-white/[0.06] p-5">
       <div className="mb-5 flex items-start justify-between gap-4">
         <div>
-          <p className="font-mono text-xs uppercase tracking-[0.16em] text-white/35">{model.creator.name}</p>
+          <p className="font-mono text-xs uppercase tracking-[0.16em] text-white/50">{model.creator.name}</p>
           <h2 className="mt-2 text-2xl font-semibold tracking-tight">{model.shortName}</h2>
         </div>
-        <span className="rounded-md border border-white/10 px-2 py-1 font-mono text-xs text-white/45">
+        <span className="rounded-md border border-white/20 px-2 py-1 font-mono text-xs text-white/45">
           {model.reasoning ? 'Reasoning' : 'Non-reasoning'}
         </span>
       </div>
@@ -264,8 +264,8 @@ function ModelSummary({ model }: { model: ArtificialAnalysisModel }) {
 
 function Fact({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md border border-white/10 bg-black/20 p-3">
-      <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/35">{label}</p>
+    <div className="rounded-md border border-white/20 bg-black/20 p-3">
+      <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/50">{label}</p>
       <p className="mt-1 font-mono text-lg text-white">{value}</p>
     </div>
   );
@@ -329,7 +329,7 @@ function CompareNotFound({ pair }: { pair: string }) {
   return (
     <div className="mx-auto max-w-5xl px-6 py-16">
       <Seo title="Model comparison not found | OpenPaths" description="Choose two crawled Artificial Analysis models to compare." path={`/compare/${pair}`} />
-      <Link to="/evals" className="mb-10 inline-flex items-center gap-2 font-mono text-sm text-white/40 transition-colors hover:text-white">
+      <Link to="/evals" className="mb-10 inline-flex items-center gap-2 font-mono text-sm text-white/55 transition-colors hover:text-white">
         <ArrowLeft className="h-4 w-4" />
         Evals
       </Link>
@@ -342,7 +342,7 @@ function CompareNotFound({ pair }: { pair: string }) {
           <Link
             key={model.slug}
             to={`/compare/${examples[0].slug}-vs-${model.slug}`}
-            className="rounded-lg border border-white/10 px-3 py-2 font-mono text-sm text-white/60 hover:border-white/30 hover:text-white"
+            className="rounded-lg border border-white/20 px-3 py-2 font-mono text-sm text-white/60 hover:border-white/50 hover:text-white"
           >
             {examples[0].shortName} vs {model.shortName}
           </Link>

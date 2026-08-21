@@ -100,18 +100,18 @@ export function TopUpModal({
             initial={{ opacity: 0, scale: 0.96, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 10 }}
-            className="bg-[#090909] border border-white/10 rounded-3xl w-full max-w-2xl p-6 md:p-8 max-h-[90vh] overflow-y-auto shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
+            className="bg-[#090909] border border-white/20 rounded-3xl w-full max-w-2xl p-6 md:p-8 max-h-[90vh] overflow-y-auto shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
             data-testid="stripe-modal"
           >
             <div className="flex items-start justify-between gap-4 mb-6">
               <div>
-                <p className="text-xs font-mono uppercase tracking-[0.2em] text-white/35 mb-2">Prepaid credits</p>
+                <p className="text-xs font-mono uppercase tracking-[0.2em] text-white/50 mb-2">Prepaid credits</p>
                 <h2 className="text-2xl font-bold tracking-tight">{clientSecret ? 'Complete Stripe payment' : 'Add funds'}</h2>
                 <p className="text-sm text-white/55 mt-2 max-w-xl">
                   Stripe is the payment source of truth. OpenPaths keeps the spend model prepaid so your credit balance stays predictable.
                 </p>
               </div>
-              <button onClick={onClose} className="text-white/40 hover:text-white transition-colors shrink-0" data-testid="stripe-modal-close">
+              <button onClick={onClose} className="text-white/55 hover:text-white transition-colors shrink-0" data-testid="stripe-modal-close">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -125,7 +125,7 @@ export function TopUpModal({
                       <h3 className="text-lg font-semibold text-white">Keep at least {formatUsdWhole(RECOMMENDED_THRESHOLD_USD)} ready</h3>
                       <p className="text-sm text-white/60 mt-2">Most teams avoid interruptions by keeping a larger prepaid reserve and using auto-topup as backup.</p>
                     </div>
-                    <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
+                    <div className="rounded-2xl border border-white/20 bg-black/30 px-4 py-3">
                       <div className="text-xs font-mono text-white/45 mb-1">Top-up now</div>
                       <div className="text-2xl font-semibold">{formatUsdWhole(RECOMMENDED_TOPUP_USD)}</div>
                     </div>
@@ -141,7 +141,7 @@ export function TopUpModal({
                       className={`rounded-2xl border px-4 py-4 text-left transition-colors ${
                         amount === a
                           ? 'border-white bg-white text-black'
-                          : 'border-white/10 bg-white/[0.03] text-white hover:border-white/30'
+                          : 'border-white/20 bg-white/[0.06] text-white hover:border-white/50'
                       }`}
                     >
                       <div className="text-xs font-mono uppercase tracking-[0.16em] opacity-60">Credit pack</div>
@@ -151,9 +151,9 @@ export function TopUpModal({
                 </div>
 
                 <div className="mb-6">
-                  <label className="text-xs font-mono uppercase tracking-[0.16em] text-white/40 block mb-2">Custom amount</label>
+                  <label className="text-xs font-mono uppercase tracking-[0.16em] text-white/55 block mb-2">Custom amount</label>
                   <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 font-mono">$</span>
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/55 font-mono">$</span>
                     <input
                       type="number"
                       min="1"
@@ -161,7 +161,7 @@ export function TopUpModal({
                       value={amount}
                       onChange={e => setAmount(Number(e.target.value))}
                       data-testid="custom-amount-input"
-                      className="w-full bg-black border border-white/10 rounded-2xl py-4 pl-10 pr-4 text-white font-mono focus:outline-none focus:border-white/30"
+                      className="w-full bg-white/[0.06] border border-white/30 rounded-2xl py-4 pl-10 pr-4 text-white font-mono focus:outline-none focus:border-white/50"
                     />
                   </div>
                 </div>

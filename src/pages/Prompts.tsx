@@ -81,17 +81,17 @@ export function Prompts({ scope = 'all' }: PromptsProps) {
     <>
       <Seo title={heading.seoTitle} description={heading.seoDescription} path={heading.path} />
       <div className="min-h-screen bg-black">
-        <section className="border-b border-white/10 bg-white/[0.02]">
+        <section className="border-b border-white/20 bg-white/[0.05]">
           <div className="mx-auto max-w-7xl px-6 py-10">
-            <div className="mb-4 inline-flex items-center gap-2 rounded border border-white/10 bg-black px-3 py-2 font-mono text-xs uppercase tracking-[0.18em] text-white/50">
+            <div className="mb-4 inline-flex items-center gap-2 rounded border border-white/20 bg-black px-3 py-2 font-mono text-xs uppercase tracking-[0.18em] text-white/50">
               <Sparkles className="h-4 w-4" /> Prompt library
             </div>
             <h1 className="max-w-4xl text-4xl font-bold tracking-tight md:text-6xl">{heading.title}</h1>
             <p className="mt-4 max-w-3xl text-base leading-relaxed text-white/60">{heading.subtitle}</p>
             <div className="mt-5 flex flex-wrap gap-2 text-xs font-mono text-white/45">
-              <span className="rounded border border-white/10 px-2 py-1">{total_.toLocaleString('en-US')} prompts</span>
-              {meta && <span className="rounded border border-white/10 px-2 py-1">{meta.categories.length} categories</span>}
-              {meta && <span className="rounded border border-white/10 px-2 py-1">{meta.models.length} models</span>}
+              <span className="rounded border border-white/20 px-2 py-1">{total_.toLocaleString('en-US')} prompts</span>
+              {meta && <span className="rounded border border-white/20 px-2 py-1">{meta.categories.length} categories</span>}
+              {meta && <span className="rounded border border-white/20 px-2 py-1">{meta.models.length} models</span>}
             </div>
           </div>
         </section>
@@ -99,12 +99,12 @@ export function Prompts({ scope = 'all' }: PromptsProps) {
         <main className="mx-auto max-w-7xl px-6 py-8">
           {/* Search */}
           <label className="relative mb-5 block">
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/35" />
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/50" />
             <input
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder="Search prompts by intent, model, tag, or use case..."
-              className="h-14 w-full rounded border border-white/10 bg-white/[0.03] pl-12 pr-12 text-base text-white outline-none transition-colors placeholder:text-white/30 focus:border-white/35"
+              className="h-14 w-full rounded border border-white/20 bg-white/[0.06] pl-12 pr-12 text-base text-white outline-none transition-colors placeholder:text-white/45 focus:border-white/60"
             />
             {searching && <Loader2 className="absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 animate-spin text-white/45" />}
           </label>
@@ -123,8 +123,8 @@ export function Prompts({ scope = 'all' }: PromptsProps) {
           {scope === 'all' && meta && (
             <div className="mb-6 flex flex-wrap gap-2">
               {meta.categories.map(c => (
-                <Link key={c.slug} to={`/prompts/category/${c.slug}`} className="rounded border border-white/10 px-3 py-1.5 font-mono text-xs text-white/55 hover:border-white/30 hover:text-white">
-                  {c.shortName} <span className="text-white/30">{meta.counts.byCategory[c.slug] ?? 0}</span>
+                <Link key={c.slug} to={`/prompts/category/${c.slug}`} className="rounded border border-white/20 px-3 py-1.5 font-mono text-xs text-white/55 hover:border-white/50 hover:text-white">
+                  {c.shortName} <span className="text-white/45">{meta.counts.byCategory[c.slug] ?? 0}</span>
                 </Link>
               ))}
             </div>
@@ -135,18 +135,18 @@ export function Prompts({ scope = 'all' }: PromptsProps) {
             <div className="mb-8 flex flex-wrap items-center gap-2 text-sm text-white/45">
               <Tag className="h-4 w-4" />
               {popularTags.map(tag => (
-                <button key={tag} type="button" onClick={() => setQuery(tag)} className="rounded border border-white/10 px-2 py-1 font-mono text-xs text-white/55 hover:border-white/25 hover:text-white">
+                <button key={tag} type="button" onClick={() => setQuery(tag)} className="rounded border border-white/20 px-2 py-1 font-mono text-xs text-white/55 hover:border-white/45 hover:text-white">
                   {tag}
                 </button>
               ))}
-              {query && semantic && <span className="font-mono text-xs text-white/30">· semantic search</span>}
+              {query && semantic && <span className="font-mono text-xs text-white/45">· semantic search</span>}
             </div>
           )}
 
           {loading && results.length === 0 ? (
-            <div className="flex items-center gap-2 py-16 text-white/40"><Loader2 className="h-5 w-5 animate-spin" /> Loading prompts…</div>
+            <div className="flex items-center gap-2 py-16 text-white/55"><Loader2 className="h-5 w-5 animate-spin" /> Loading prompts…</div>
           ) : results.length === 0 ? (
-            <div className="py-16 text-center font-mono text-sm text-white/40">No prompts found. Try a different search.</div>
+            <div className="py-16 text-center font-mono text-sm text-white/55">No prompts found. Try a different search.</div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {results.map(prompt => (
@@ -162,19 +162,19 @@ export function Prompts({ scope = 'all' }: PromptsProps) {
 
 export function PromptCard({ prompt }: { prompt: LibraryPrompt; key?: React.Key }) {
   return (
-    <div className="group flex flex-col rounded border border-white/10 bg-white/[0.02] p-4 transition-colors hover:border-white/25">
-      <div className="mb-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-wide text-white/40">
-        <span className="rounded border border-white/10 px-1.5 py-0.5">{prompt.modalityName.replace(' prompts', '')}</span>
+    <div className="group flex flex-col rounded border border-white/20 bg-white/[0.05] p-4 transition-colors hover:border-white/45">
+      <div className="mb-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-wide text-white/55">
+        <span className="rounded border border-white/20 px-1.5 py-0.5">{prompt.modalityName.replace(' prompts', '')}</span>
         {prompt.isFree && <span className="inline-flex items-center gap-1 rounded border border-emerald-400/30 px-1.5 py-0.5 text-emerald-300/80"><Bolt className="h-3 w-3" /> free</span>}
       </div>
       <Link to={prompt.url} className="text-lg font-semibold text-white group-hover:underline">{prompt.title}</Link>
       <p className="mt-1 line-clamp-2 text-sm text-white/55">{prompt.summary}</p>
       <div className="mt-3 flex flex-wrap gap-1.5">
         {prompt.tags.slice(0, 4).map(tag => (
-          <span key={tag} className="rounded bg-white/[0.04] px-1.5 py-0.5 font-mono text-[11px] text-white/40">{tag}</span>
+          <span key={tag} className="rounded bg-white/[0.07] px-1.5 py-0.5 font-mono text-[11px] text-white/55">{tag}</span>
         ))}
       </div>
-      <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-3">
+      <div className="mt-4 flex items-center justify-between border-t border-white/20 pt-3">
         <span className="font-mono text-xs text-white/45">{prompt.modelName}</span>
         <div className="flex items-center gap-3">
           <Link to={prompt.url} className="font-mono text-xs text-white/55 hover:text-white">Details</Link>
@@ -192,9 +192,9 @@ function FilterChip({ active, onClick, label, count }: { active: boolean; onClic
     <button
       type="button"
       onClick={onClick}
-      className={`rounded border px-3 py-1.5 font-mono text-xs transition-colors ${active ? 'border-white bg-white text-black' : 'border-white/10 text-white/55 hover:border-white/30 hover:text-white'}`}
+      className={`rounded border px-3 py-1.5 font-mono text-xs transition-colors ${active ? 'border-white bg-white text-black' : 'border-white/20 text-white/55 hover:border-white/50 hover:text-white'}`}
     >
-      {label}{typeof count === 'number' ? <span className={active ? 'text-black/50' : 'text-white/30'}> {count}</span> : null}
+      {label}{typeof count === 'number' ? <span className={active ? 'text-black/50' : 'text-white/45'}> {count}</span> : null}
     </button>
   );
 }

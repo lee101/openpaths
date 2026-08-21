@@ -103,15 +103,15 @@ export function Model3DUpload({ apiKey, onUploaded, minHeight = 320 }: Model3DUp
 
   if (objectUrl) {
     return (
-      <div className="overflow-hidden rounded-lg border border-white/10 bg-white/[0.02]">
-        <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+      <div className="overflow-hidden rounded-lg border border-white/20 bg-white/[0.05]">
+        <div className="flex items-center justify-between border-b border-white/20 px-4 py-3">
           <div className="flex min-w-0 items-center gap-2 text-xs font-mono text-white/55">
             <Box className="h-3.5 w-3.5 flex-none" /> <span className="truncate">{fileName}</span>
           </div>
           <div className="flex items-center gap-2">
             {uploading && <span className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-[0.14em] text-white/45"><Loader2 className="h-3 w-3 animate-spin" /> Uploading</span>}
             {publicUrl && !uploading && <span className="text-[10px] font-mono uppercase tracking-[0.14em] text-emerald-300">Uploaded</span>}
-            <button type="button" onClick={clear} className="inline-flex items-center gap-1.5 rounded border border-white/10 px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-[0.14em] text-white/45 hover:text-white">
+            <button type="button" onClick={clear} className="inline-flex items-center gap-1.5 rounded border border-white/20 px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-[0.14em] text-white/45 hover:text-white">
               <X className="h-3 w-3" /> Clear
             </button>
           </div>
@@ -119,9 +119,9 @@ export function Model3DUpload({ apiKey, onUploaded, minHeight = 320 }: Model3DUp
         <div style={{ minHeight }}>
           <ModelViewer src={objectUrl} minHeight={minHeight} />
         </div>
-        {error && <p className="border-t border-white/10 px-4 py-2 text-xs font-mono text-red-300">{error}</p>}
+        {error && <p className="border-t border-white/20 px-4 py-2 text-xs font-mono text-red-300">{error}</p>}
         {publicUrl && (
-          <a href={publicUrl} target="_blank" rel="noreferrer" className="block truncate border-t border-white/10 px-4 py-2 text-xs font-mono text-emerald-200/80 hover:text-emerald-100">
+          <a href={publicUrl} target="_blank" rel="noreferrer" className="block truncate border-t border-white/20 px-4 py-2 text-xs font-mono text-emerald-200/80 hover:text-emerald-100">
             {publicUrl}
           </a>
         )}
@@ -131,7 +131,7 @@ export function Model3DUpload({ apiKey, onUploaded, minHeight = 320 }: Model3DUp
 
   return (
     <label
-      className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-4 text-center text-xs font-mono transition-colors ${dragging ? 'border-emerald-300/50 bg-emerald-400/10 text-emerald-100' : 'border-white/10 bg-black/40 text-white/45 hover:border-white/25'}`}
+      className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-4 text-center text-xs font-mono transition-colors ${dragging ? 'border-emerald-300/50 bg-emerald-400/10 text-emerald-100' : 'border-white/20 bg-black/40 text-white/45 hover:border-white/45'}`}
       style={{ minHeight }}
       {...dropHandlers}
     >

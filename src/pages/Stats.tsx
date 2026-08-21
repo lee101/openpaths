@@ -177,7 +177,7 @@ export function Stats() {
           <h1 className="text-4xl md:text-5xl font-semibold tracking-tight">Model Usage Stats</h1>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <div className="inline-flex rounded-lg border border-white/10 bg-white/[0.03] p-1">
+          <div className="inline-flex rounded-lg border border-white/20 bg-white/[0.06] p-1">
             {PERIODS.map(option => (
               <button
                 key={option.value}
@@ -193,7 +193,7 @@ export function Stats() {
           <button
             onClick={() => void load()}
             disabled={loading}
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white text-black px-4 py-3 font-mono text-sm font-bold hover:bg-white/90 disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/20 bg-white text-black px-4 py-3 font-mono text-sm font-bold hover:bg-white/90 disabled:opacity-60"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
@@ -219,22 +219,22 @@ export function Stats() {
 
       <ArtificialAnalysisBenchmarkSection compact />
 
-      <section className="mb-8 overflow-hidden rounded-lg border border-white/10 bg-white/[0.02]">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 px-4 py-3">
+      <section className="mb-8 overflow-hidden rounded-lg border border-white/20 bg-white/[0.05]">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/20 px-4 py-3">
           <h2 className="font-mono text-sm uppercase tracking-[0.18em] text-white/70">Model probe timings</h2>
-          <span className="font-mono text-sm text-white/40">
+          <span className="font-mono text-sm text-white/55">
             {probeSummary
               ? `${probeSummary.ok}/${probeSummary.total} ok`
               : 'No probes yet'}
             {latestProbedAt ? ` · ${new Date(latestProbedAt).toLocaleString()}` : ''}
           </span>
         </div>
-        <p className="border-b border-white/10 px-4 py-2 font-mono text-xs text-white/40">
+        <p className="border-b border-white/20 px-4 py-2 font-mono text-xs text-white/55">
           Periodic &quot;say hi&quot; chat completions per model (records latency in usage_logs).
         </p>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[720px] text-left">
-            <thead className="text-xs font-mono uppercase tracking-[0.16em] text-white/35">
+            <thead className="text-xs font-mono uppercase tracking-[0.16em] text-white/50">
               <tr>
                 <th className="px-4 py-3">Model</th>
                 <th className="px-4 py-3">Provider</th>
@@ -246,7 +246,7 @@ export function Stats() {
             <tbody className="divide-y divide-white/10">
               {sortedProbes.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center font-mono text-sm text-white/35">
+                  <td colSpan={5} className="px-4 py-8 text-center font-mono text-sm text-white/50">
                     No probe results yet. Probes run every 6h after API start.
                   </td>
                 </tr>
@@ -271,10 +271,10 @@ export function Stats() {
         </div>
       </section>
 
-      <section className="mb-8 overflow-hidden rounded-lg border border-white/10 bg-white/[0.02]">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 px-4 py-3">
+      <section className="mb-8 overflow-hidden rounded-lg border border-white/20 bg-white/[0.05]">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/20 px-4 py-3">
           <h2 className="font-mono text-sm uppercase tracking-[0.18em] text-white/70">Models Used By Day</h2>
-          <span className="font-mono text-sm text-white/40">Top {chartModels.length || 0} models</span>
+          <span className="font-mono text-sm text-white/55">Top {chartModels.length || 0} models</span>
         </div>
         <div className="h-[340px] px-3 py-5">
           {chartData.length > 0 ? (
@@ -306,11 +306,11 @@ export function Stats() {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="flex h-full items-center justify-center font-mono text-sm text-white/35">No daily model usage for this period.</div>
+            <div className="flex h-full items-center justify-center font-mono text-sm text-white/50">No daily model usage for this period.</div>
           )}
         </div>
         {chartModels.length > 0 && (
-          <div className="flex flex-wrap gap-3 border-t border-white/10 px-4 py-3">
+          <div className="flex flex-wrap gap-3 border-t border-white/20 px-4 py-3">
             {chartModels.map((model, index) => (
               <div key={model} className="flex min-w-0 items-center gap-2 text-xs font-mono text-white/55">
                 <span className="h-2.5 w-2.5 flex-none rounded-sm" style={{ backgroundColor: MODEL_COLORS[index % MODEL_COLORS.length] }} />
@@ -323,24 +323,24 @@ export function Stats() {
 
       <div className="space-y-6">
         {loading && rows.length === 0 && (
-          <div className="rounded-lg border border-white/10 p-10 text-center font-mono text-sm text-white/40">
+          <div className="rounded-lg border border-white/20 p-10 text-center font-mono text-sm text-white/55">
             Loading usage stats...
           </div>
         )}
         {!loading && rows.length === 0 && !error && (
-          <div className="rounded-lg border border-white/10 p-10 text-center font-mono text-sm text-white/40">
+          <div className="rounded-lg border border-white/20 p-10 text-center font-mono text-sm text-white/55">
             No usage recorded for this period.
           </div>
         )}
         {byTask.map(group => (
-          <section key={group.task} className="overflow-hidden rounded-lg border border-white/10">
-            <div className="flex items-center justify-between gap-4 bg-white/[0.04] px-4 py-3">
+          <section key={group.task} className="overflow-hidden rounded-lg border border-white/20">
+            <div className="flex items-center justify-between gap-4 bg-white/[0.07] px-4 py-3">
               <h2 className="font-mono text-sm uppercase tracking-[0.18em] text-white/70">{group.task}</h2>
               <span className="font-mono text-sm text-white/45">{formatNumber(group.requests)} requests</span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[920px] text-left">
-                <thead className="text-xs font-mono uppercase tracking-[0.16em] text-white/35">
+                <thead className="text-xs font-mono uppercase tracking-[0.16em] text-white/50">
                   <tr>
                     <th className="px-4 py-3">Provider</th>
                     <th className="px-4 py-3">Model</th>
@@ -381,7 +381,7 @@ export function Stats() {
 
 function Metric({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-white/10 bg-white/[0.03] p-5">
+    <div className="rounded-lg border border-white/20 bg-white/[0.06] p-5">
       <div className="mb-4 flex items-center justify-between text-white/45">
         <p className="font-mono text-xs uppercase tracking-[0.18em]">{label}</p>
         {icon}

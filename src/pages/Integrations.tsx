@@ -350,7 +350,7 @@ export function Integrations() {
 
       <section className="max-w-6xl mx-auto px-6 py-16">
       <div className="mb-12">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/[0.04] text-xs font-mono text-white/60 mb-6">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/20 bg-white/[0.07] text-xs font-mono text-white/60 mb-6">
           <PlugZap className="w-3.5 h-3.5" />
           SDK Integrations
         </div>
@@ -362,22 +362,22 @@ export function Integrations() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
-        <div className="border border-white/10 bg-white/[0.02] rounded-2xl p-5">
-          <div className="text-xs font-mono text-white/40 mb-2">Base URL</div>
+        <div className="border border-white/20 bg-white/[0.05] rounded-2xl p-5">
+          <div className="text-xs font-mono text-white/55 mb-2">Base URL</div>
           <code className="text-sm text-white/80 break-all" data-testid="integrations-base-url">{apiBase}</code>
         </div>
-        <div className="border border-white/10 bg-white/[0.02] rounded-2xl p-5">
-          <div className="text-xs font-mono text-white/40 mb-2">API Key</div>
+        <div className="border border-white/20 bg-white/[0.05] rounded-2xl p-5">
+          <div className="text-xs font-mono text-white/55 mb-2">API Key</div>
           <code className="text-sm text-white/80 break-all" data-testid="integrations-api-key">{exampleKey}</code>
         </div>
-        <div className="border border-white/10 bg-white/[0.02] rounded-2xl p-5">
-          <div className="text-xs font-mono text-white/40 mb-2">Model IDs</div>
+        <div className="border border-white/20 bg-white/[0.05] rounded-2xl p-5">
+          <div className="text-xs font-mono text-white/55 mb-2">Model IDs</div>
           <div className="text-sm text-white/70 font-mono">auto-medium-task · auto-hard-task · openai-chat-latest</div>
         </div>
       </div>
 
       {!apiKey && (
-        <div className="border border-white/10 bg-white/[0.02] rounded-2xl p-5 mb-10 text-sm text-white/60">
+        <div className="border border-white/20 bg-white/[0.05] rounded-2xl p-5 mb-10 text-sm text-white/60">
           Sign in on the <Link to="/account" className="text-white underline underline-offset-4">account page</Link> to auto-fill these examples with your real OpenPaths API key.
         </div>
       )}
@@ -386,26 +386,26 @@ export function Integrations() {
         {integrations.map(integration => {
           const code = integration.code(apiBase, exampleKey);
           return (
-            <article key={integration.id} className="border border-white/10 bg-white/[0.02] rounded-2xl overflow-hidden" data-testid={`integration-${integration.id}`}>
-              <div className="p-6 border-b border-white/10">
+            <article key={integration.id} className="border border-white/20 bg-white/[0.05] rounded-2xl overflow-hidden" data-testid={`integration-${integration.id}`}>
+              <div className="p-6 border-b border-white/20">
                 <div className="flex items-start justify-between gap-4 mb-3">
                   <div>
                     <h2 className="text-2xl font-bold tracking-tight mb-2">{integration.name}</h2>
                     <p className="text-sm text-white/60 leading-relaxed">{integration.summary}</p>
                   </div>
-                  <Network className="w-5 h-5 text-white/35 shrink-0 mt-1" />
+                  <Network className="w-5 h-5 text-white/50 shrink-0 mt-1" />
                 </div>
-                <code className="block rounded-lg bg-black/50 border border-white/10 px-3 py-2 text-xs text-white/65 overflow-x-auto">
+                <code className="block rounded-lg bg-black/50 border border-white/20 px-3 py-2 text-xs text-white/65 overflow-x-auto">
                   {integration.install}
                 </code>
               </div>
 
               <div className="p-6">
                 <div className="flex items-center justify-between mb-3">
-                  <div className="text-xs font-mono text-white/40">Copy-paste example</div>
+                  <div className="text-xs font-mono text-white/55">Copy-paste example</div>
                   <button
                     onClick={() => copyCode(integration.id, code)}
-                    className="inline-flex items-center gap-2 border border-white/10 px-3 py-1.5 rounded-lg text-xs font-mono text-white/70 hover:text-white hover:border-white/20 transition-colors"
+                    className="inline-flex items-center gap-2 border border-white/20 px-3 py-1.5 rounded-lg text-xs font-mono text-white/70 hover:text-white hover:border-white/40 transition-colors"
                     data-testid={`copy-${integration.id}`}
                   >
                     {copied === integration.id ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
@@ -415,7 +415,7 @@ export function Integrations() {
                 <CodeBlock
                   code={code}
                   language={integration.language}
-                  preClassName="rounded-xl border border-white/10 bg-black/60 p-4 text-xs leading-6 max-h-[420px]"
+                  preClassName="rounded-xl border border-white/20 bg-black/60 p-4 text-xs leading-6 max-h-[420px]"
                   testId={`code-${integration.id}`}
                 />
                 <ul className="mt-4 space-y-2">

@@ -76,7 +76,7 @@ export function CodeBlock({
       {resolvedLabel && (
         <div
           className={joinClasses(
-            'px-4 py-2 border-b border-white/10 text-[10px] font-mono uppercase tracking-[0.18em] text-white/30',
+            'px-4 py-2 border-b border-white/20 text-[10px] font-mono uppercase tracking-[0.18em] text-white/45',
             headerClassName,
           )}
         >

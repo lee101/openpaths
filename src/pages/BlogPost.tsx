@@ -32,7 +32,7 @@ function renderMarkdown(content: string): React.ReactNode[] {
           </thead>
           <tbody>
             {body.map((row, ri) => (
-              <tr key={ri} className="border-b border-white/5">
+              <tr key={ri} className="border-b border-white/20">
                 {row.map((cell, ci) => (
                   <td key={ci} className="py-2 px-3 text-white/50">{cell.trim()}</td>
                 ))}
@@ -58,8 +58,8 @@ function renderMarkdown(content: string): React.ReactNode[] {
               code={codeLines.join('\n')}
               language={codeLang}
               label={codeLang}
-              containerClassName="my-6 border border-white/10 rounded-lg overflow-hidden bg-black/40"
-              headerClassName="bg-white/[0.03]"
+              containerClassName="my-6 border border-white/20 rounded-lg overflow-hidden bg-black/40"
+              headerClassName="bg-white/[0.06]"
               preClassName="text-sm"
             />
           </React.Fragment>
@@ -108,7 +108,7 @@ function renderMarkdown(content: string): React.ReactNode[] {
               preload="none"
               controls
               aria-label={imageMatch[1]}
-              className="w-full h-auto rounded-2xl border border-white/10 bg-white/5"
+              className="w-full h-auto rounded-2xl border border-white/20 bg-white/10"
             >
               <source src={`${stem}.webm`} type="video/webm" />
               <source src={`${stem}.mp4`} type="video/mp4" />
@@ -123,7 +123,7 @@ function renderMarkdown(content: string): React.ReactNode[] {
             src={src}
             alt={imageMatch[1]}
             loading="lazy"
-            className="w-full h-auto rounded-2xl border border-white/10 bg-white/5"
+            className="w-full h-auto rounded-2xl border border-white/20 bg-white/10"
           />
         </figure>
       );
@@ -245,13 +245,13 @@ export function BlogPost() {
         transition={{ duration: 0.3 }}
         className="max-w-3xl mx-auto px-6 py-12"
       >
-      <Link to={isAlternative ? '/alternatives' : '/blog'} className="inline-flex items-center gap-2 text-sm font-mono text-white/40 hover:text-white transition-colors mb-12">
+      <Link to={isAlternative ? '/alternatives' : '/blog'} className="inline-flex items-center gap-2 text-sm font-mono text-white/55 hover:text-white transition-colors mb-12">
         <ArrowLeft className="w-4 h-4" /> {isAlternative ? 'All Alternatives' : 'All Posts'}
       </Link>
 
       <div className="flex flex-wrap gap-2 mb-6">
         {post.tags.map(tag => (
-          <span key={tag} className="px-2 py-0.5 bg-white/5 border border-white/10 rounded text-[10px] font-mono text-white/50">
+          <span key={tag} className="px-2 py-0.5 bg-white/10 border border-white/20 rounded text-[10px] font-mono text-white/50">
             {tag}
           </span>
         ))}
@@ -259,7 +259,7 @@ export function BlogPost() {
 
       <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-6 leading-tight">{post.title}</h1>
 
-      <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-white/30 mb-12 pb-8 border-b border-white/10">
+      <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-white/45 mb-12 pb-8 border-b border-white/20">
         <span className="flex items-center gap-1.5"><User className="w-3 h-3" />{post.author}</span>
         <span className="flex items-center gap-1.5"><Calendar className="w-3 h-3" />{post.date}</span>
         <span className="flex items-center gap-1.5"><Clock className="w-3 h-3" />{post.readTime}</span>
@@ -269,8 +269,8 @@ export function BlogPost() {
         {rendered}
       </article>
 
-      <div className="mt-16 pt-8 border-t border-white/10">
-        <Link to={isAlternative ? '/alternatives' : '/blog'} className="inline-flex items-center gap-2 text-sm font-mono text-white/40 hover:text-white transition-colors">
+      <div className="mt-16 pt-8 border-t border-white/20">
+        <Link to={isAlternative ? '/alternatives' : '/blog'} className="inline-flex items-center gap-2 text-sm font-mono text-white/55 hover:text-white transition-colors">
           <ArrowLeft className="w-4 h-4" /> Back to {isAlternative ? 'alternatives' : 'all posts'}
         </Link>
       </div>

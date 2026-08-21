@@ -41,7 +41,7 @@ func NewWithAttribution(apiKey, baseURL, appReferer, appTitle, appCategories str
 		appTitle = "OpenPaths"
 	}
 	return &OpenRouterProvider{
-		OpenAIProvider: oai.New(apiKey, baseURL),
+		OpenAIProvider: oai.NewCompatible("openrouter", apiKey, baseURL, sanitizeForOpenRouter),
 		apiKey:         apiKey,
 		baseURL:        baseURL,
 		appReferer:     appReferer,

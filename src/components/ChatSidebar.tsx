@@ -54,9 +54,9 @@ export function ChatSidebar({ activeId, onSelect, onNewChat }: Props) {
   const ids: string[] = Array.from(selected);
 
   return (
-    <div className="flex flex-col h-full w-64 shrink-0 border-r border-white/10 bg-black/30 text-sm">
+    <div className="flex flex-col h-full w-64 shrink-0 border-r border-white/20 bg-black/30 text-sm">
       {/* Header */}
-      <div className="flex items-center gap-1 px-2 py-2 border-b border-white/10">
+      <div className="flex items-center gap-1 px-2 py-2 border-b border-white/20">
         <button
           onClick={() => onNewChat(view.kind === 'folder' ? view.id : null)}
           className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md bg-white/10 hover:bg-white/15 text-white/90 text-xs font-medium"
@@ -80,14 +80,14 @@ export function ChatSidebar({ activeId, onSelect, onNewChat }: Props) {
       </div>
 
       {/* Search */}
-      <div className="px-2 py-2 border-b border-white/10 space-y-2">
+      <div className="px-2 py-2 border-b border-white/20 space-y-2">
         <div className="relative">
-          <Search className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-white/40" />
+          <Search className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-white/55" />
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search chats"
-            className="w-full pl-7 pr-2 py-1.5 rounded-md bg-white/5 border border-white/10 text-xs text-white/90 placeholder-white/40 focus:outline-none focus:border-white/25"
+            className="w-full pl-7 pr-2 py-1.5 rounded-md bg-white/10 border border-white/20 text-xs text-white/90 placeholder-white/40 focus:outline-none focus:border-white/45"
           />
         </div>
         {tags.length > 0 && (
@@ -96,7 +96,7 @@ export function ChatSidebar({ activeId, onSelect, onNewChat }: Props) {
               <button
                 key={t}
                 onClick={() => setTag(tag === t ? '' : t)}
-                className={`px-1.5 py-0.5 rounded text-[10px] flex items-center gap-1 ${tag === t ? 'bg-sky-500/30 text-sky-200' : 'bg-white/5 text-white/50 hover:bg-white/10'}`}
+                className={`px-1.5 py-0.5 rounded text-[10px] flex items-center gap-1 ${tag === t ? 'bg-sky-500/30 text-sky-200' : 'bg-white/10 text-white/50 hover:bg-white/10'}`}
               >
                 <TagIcon className="w-2.5 h-2.5" />{t}
               </button>
@@ -111,23 +111,23 @@ export function ChatSidebar({ activeId, onSelect, onNewChat }: Props) {
         <NavRow label="Unfiled" active={view.kind === 'unfiled'} count={conv.folderCount(null)} onClick={() => setView({ kind: 'unfiled' })} icon={<FolderIcon className="w-3.5 h-3.5 opacity-50" />} />
         <NavRow label="Archived" active={view.kind === 'archived'} onClick={() => setView({ kind: 'archived' })} icon={<Archive className="w-3.5 h-3.5" />} />
 
-        <div className="mt-2 mb-1 px-2 text-[10px] uppercase tracking-wide text-white/30">Folders</div>
+        <div className="mt-2 mb-1 px-2 text-[10px] uppercase tracking-wide text-white/45">Folders</div>
         {folders.map(f => {
           const isOpen = !collapsed[f.id];
           const inView = view.kind === 'folder' && view.id === f.id;
           const folderItems = isOpen ? conv.filterConversations({ folderId: f.id, search, tag: tag || undefined }) : [];
           return (
             <div key={f.id}>
-              <div className={`group flex items-center gap-1 px-1.5 py-1 rounded-md cursor-pointer ${inView ? 'bg-white/10' : 'hover:bg-white/5'}`}>
-                <button onClick={() => setCollapsed(c => ({ ...c, [f.id]: isOpen }))} className="text-white/40 hover:text-white/70">
+              <div className={`group flex items-center gap-1 px-1.5 py-1 rounded-md cursor-pointer ${inView ? 'bg-white/10' : 'hover:bg-white/10'}`}>
+                <button onClick={() => setCollapsed(c => ({ ...c, [f.id]: isOpen }))} className="text-white/55 hover:text-white/70">
                   {isOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                 </button>
                 <button onClick={() => setView({ kind: 'folder', id: f.id })} className="flex-1 flex items-center gap-1.5 min-w-0 text-left">
                   <FolderIcon className="w-3.5 h-3.5 shrink-0" style={f.color ? { color: f.color } : undefined} />
                   <span className="truncate text-white/85 text-xs">{f.name}</span>
-                  <span className="text-[10px] text-white/30">{conv.folderCount(f.id)}</span>
+                  <span className="text-[10px] text-white/45">{conv.folderCount(f.id)}</span>
                 </button>
-                <button onClick={() => setEditingFolder(f)} className="opacity-0 group-hover:opacity-100 p-0.5 text-white/40 hover:text-white/80">
+                <button onClick={() => setEditingFolder(f)} className="opacity-0 group-hover:opacity-100 p-0.5 text-white/55 hover:text-white/80">
                   <Settings2 className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -144,8 +144,8 @@ export function ChatSidebar({ activeId, onSelect, onNewChat }: Props) {
 
       {/* Conversation list for non-folder views */}
       {view.kind !== 'folder' && (
-        <div className="border-t border-white/10 flex-1 overflow-y-auto px-1 py-1 min-h-[40%]">
-          {items.length === 0 && <div className="px-3 py-6 text-center text-xs text-white/30">No chats</div>}
+        <div className="border-t border-white/20 flex-1 overflow-y-auto px-1 py-1 min-h-[40%]">
+          {items.length === 0 && <div className="px-3 py-6 text-center text-xs text-white/45">No chats</div>}
           {items.map((c: Conversation) => (
             <ConvRow key={c.id} c={c} depth={0} active={c.id === activeId} selectMode={selectMode} selected={selected.has(c.id)}
               folders={folders} menuOpen={menuFor === c.id}
@@ -157,10 +157,10 @@ export function ChatSidebar({ activeId, onSelect, onNewChat }: Props) {
 
       {/* Bulk action bar */}
       {selectMode && (
-        <div className="border-t border-white/10 p-2 bg-black/40">
+        <div className="border-t border-white/20 p-2 bg-black/40">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs text-white/60">{selected.size} selected</span>
-            <button onClick={clearSelect} className="text-white/40 hover:text-white"><X className="w-3.5 h-3.5" /></button>
+            <button onClick={clearSelect} className="text-white/55 hover:text-white"><X className="w-3.5 h-3.5" /></button>
           </div>
           <div className="grid grid-cols-3 gap-1">
             <BulkBtn icon={<Archive className="w-3.5 h-3.5" />} label="Archive" disabled={!ids.length} onClick={() => { conv.bulkArchive(ids, view.kind !== 'archived'); clearSelect(); }} />
@@ -185,9 +185,9 @@ export function ChatSidebar({ activeId, onSelect, onNewChat }: Props) {
 
 function NavRow({ label, active, count, onClick, icon }: { label: string; active: boolean; count?: number; onClick: () => void; icon: React.ReactNode }) {
   return (
-    <button onClick={onClick} className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs ${active ? 'bg-white/10 text-white' : 'text-white/70 hover:bg-white/5'}`}>
+    <button onClick={onClick} className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs ${active ? 'bg-white/10 text-white' : 'text-white/70 hover:bg-white/10'}`}>
       {icon}<span className="flex-1 text-left">{label}</span>
-      {count != null && count > 0 && <span className="text-[10px] text-white/30">{count}</span>}
+      {count != null && count > 0 && <span className="text-[10px] text-white/45">{count}</span>}
     </button>
   );
 }
@@ -201,7 +201,7 @@ const ConvRow: React.FC<ConvRowProps> = ({ c, depth, active, selectMode, selecte
   return (
     <div
       onClick={onSelect}
-      className={`group flex items-center gap-1.5 pr-1 py-1 rounded-md cursor-pointer ${active ? 'bg-sky-500/15 ring-1 ring-sky-500/30' : 'hover:bg-white/5'}`}
+      className={`group flex items-center gap-1.5 pr-1 py-1 rounded-md cursor-pointer ${active ? 'bg-sky-500/15 ring-1 ring-sky-500/30' : 'hover:bg-white/10'}`}
       style={{ paddingLeft: 8 + depth * 14 }}
     >
       {selectMode && (
@@ -214,12 +214,12 @@ const ConvRow: React.FC<ConvRowProps> = ({ c, depth, active, selectMode, selecte
         <div className="truncate text-xs text-white/85">{c.title}</div>
         {c.tags.length > 0 && (
           <div className="flex gap-1 mt-0.5">
-            {c.tags.slice(0, 3).map(t => <span key={t} className="px-1 rounded bg-white/5 text-[9px] text-white/40">{t}</span>)}
+            {c.tags.slice(0, 3).map(t => <span key={t} className="px-1 rounded bg-white/10 text-[9px] text-white/55">{t}</span>)}
           </div>
         )}
       </div>
       {!selectMode && (
-        <button onClick={e => { e.stopPropagation(); onMenu(); }} className="opacity-0 group-hover:opacity-100 p-0.5 text-white/40 hover:text-white">
+        <button onClick={e => { e.stopPropagation(); onMenu(); }} className="opacity-0 group-hover:opacity-100 p-0.5 text-white/55 hover:text-white">
           <MoreHorizontal className="w-3.5 h-3.5" />
         </button>
       )}
@@ -238,11 +238,11 @@ function ConvMenu({ id, folders, archived, onClose }: { id: string; folders: Fol
         <MenuItem icon={c.pinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />} label={c.pinned ? 'Unpin' : 'Pin'} onClick={() => act(() => conv.togglePinned(id))} />
         <MenuItem icon={<Pin className="w-3.5 h-3.5 opacity-0" />} label="Rename" onClick={() => act(() => { const t = prompt('Rename chat:', c.title); if (t) conv.renameConversation(id, t); })} />
         <MenuItem icon={<TagIcon className="w-3.5 h-3.5" />} label="Edit tags" onClick={() => act(() => { const t = prompt('Tags (comma separated):', c.tags.join(', ')); if (t !== null) conv.setTags(id, t.split(',')); })} />
-        <div className="px-2 py-1 text-[10px] uppercase text-white/30">Move to</div>
+        <div className="px-2 py-1 text-[10px] uppercase text-white/45">Move to</div>
         <MenuItem icon={<FolderIcon className="w-3.5 h-3.5 opacity-50" />} label="Unfiled" onClick={() => act(() => conv.moveToFolder(id, null))} />
         {folders.map(f => <MenuItem key={f.id} icon={<FolderIcon className="w-3.5 h-3.5" />} label={f.name} onClick={() => act(() => conv.moveToFolder(id, f.id))} />)}
         <MenuItem icon={<FolderPlus className="w-3.5 h-3.5" />} label="New folder…" onClick={() => act(() => { const n = prompt('Folder name:'); if (n) conv.moveToFolder(id, conv.createFolder(n).id); })} />
-        <div className="my-1 border-t border-white/10" />
+        <div className="my-1 border-t border-white/20" />
         <MenuItem icon={archived ? <ArchiveRestore className="w-3.5 h-3.5" /> : <Archive className="w-3.5 h-3.5" />} label={archived ? 'Unarchive' : 'Archive'} onClick={() => act(() => conv.archiveConversation(id, !archived))} />
         <MenuItem icon={<Trash2 className="w-3.5 h-3.5" />} label="Delete" danger onClick={() => act(() => { if (confirm('Delete this chat?')) conv.deleteConversation(id); })} />
       </div>
@@ -285,7 +285,7 @@ function FolderEditor({ folder, onClose }: { folder: Folder; onClose: () => void
       <div className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(92vw,440px)] rounded-xl border border-white/15 bg-zinc-900 p-4 shadow-2xl">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-white flex items-center gap-2"><FolderIcon className="w-4 h-4" /> Project folder</h3>
-          <button onClick={onClose} className="text-white/40 hover:text-white"><X className="w-4 h-4" /></button>
+          <button onClick={onClose} className="text-white/55 hover:text-white"><X className="w-4 h-4" /></button>
         </div>
         <div className="space-y-3 text-xs">
           <Field label="Name"><input value={name} onChange={e => setName(e.target.value)} className={inputCls} /></Field>
@@ -311,14 +311,14 @@ function FolderEditor({ folder, onClose }: { folder: Folder; onClose: () => void
   );
 }
 
-const inputCls = 'w-full px-2 py-1.5 rounded-md bg-white/5 border border-white/10 text-white/90 placeholder-white/30 focus:outline-none focus:border-white/25';
+const inputCls = 'w-full px-2 py-1.5 rounded-md bg-white/10 border border-white/20 text-white/90 placeholder-white/30 focus:outline-none focus:border-white/45';
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <label className="block">
       <div className="text-white/60 mb-1">{label}</div>
       {children}
-      {hint && <div className="text-[10px] text-white/30 mt-0.5">{hint}</div>}
+      {hint && <div className="text-[10px] text-white/45 mt-0.5">{hint}</div>}
     </label>
   );
 }

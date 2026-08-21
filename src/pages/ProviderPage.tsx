@@ -47,10 +47,10 @@ export function ProviderPage() {
               srcSet={provider.logoSrcSet}
               sizes="56px"
               alt={`${provider.name} logo`}
-              className={`w-14 h-14 rounded-xl border border-white/10 p-2 object-contain ${provider.slug === 'black-forest-labs' ? 'bg-white' : 'bg-white/[0.04]'}`}
+              className={`w-14 h-14 rounded-xl border border-white/20 p-2 object-contain ${provider.slug === 'black-forest-labs' ? 'bg-white' : 'bg-white/[0.07]'}`}
             />
             <div>
-              <div className="text-xs font-mono uppercase tracking-[0.22em] text-white/40 mb-3">Provider</div>
+              <div className="text-xs font-mono uppercase tracking-[0.22em] text-white/55 mb-3">Provider</div>
               <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-4">{provider.name}</h1>
               <p className="max-w-3xl text-white/62 leading-relaxed font-light">
                 {provider.description}
@@ -70,7 +70,7 @@ export function ProviderPage() {
                 href={provider.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 rounded border border-white/15 bg-white/[0.03] px-4 py-3 text-sm font-mono text-white/70 hover:text-white hover:border-white/30 transition-colors"
+                className="inline-flex items-center justify-center gap-2 rounded border border-white/15 bg-white/[0.06] px-4 py-3 text-sm font-mono text-white/70 hover:text-white hover:border-white/50 transition-colors"
               >
                 <ExternalLink className="w-4 h-4" /> Website
               </a>
@@ -86,7 +86,7 @@ export function ProviderPage() {
               <Stat label="Provider" value={`provider: "${provider.slug}"`} />
             </div>
 
-            <div className="rounded-xl border border-white/10 bg-white/[0.02] p-6">
+            <div className="rounded-xl border border-white/20 bg-white/[0.05] p-6">
               <h2 className="text-2xl font-bold tracking-tight mb-2">{provider.name} search</h2>
               <p className="text-sm text-white/58 leading-relaxed font-light max-w-3xl mb-6">
                 {provider.name} is a search API, not an LLM. Route requests through the OpenPaths
@@ -103,7 +103,7 @@ export function ProviderPage() {
                 </Link>
                 <Link
                   to={providerDocsPath(provider.slug)}
-                  className="inline-flex items-center gap-2 rounded border border-white/15 bg-white/[0.03] px-4 py-2.5 text-sm font-mono text-white/70 hover:text-white hover:border-white/30 transition-colors"
+                  className="inline-flex items-center gap-2 rounded border border-white/15 bg-white/[0.06] px-4 py-2.5 text-sm font-mono text-white/70 hover:text-white hover:border-white/50 transition-colors"
                 >
                   <BookOpen className="w-4 h-4" /> API docs
                 </Link>
@@ -139,12 +139,12 @@ export function ProviderPage() {
                 <Link
                   key={model.id}
                   to={modelPath(model.id)}
-                  className="rounded-xl border border-white/10 bg-white/[0.02] p-5 hover:border-white/25 hover:bg-white/[0.04] transition-colors"
+                  className="rounded-xl border border-white/20 bg-white/[0.05] p-5 hover:border-white/45 hover:bg-white/[0.07] transition-colors"
                 >
                   <div className="flex items-start justify-between gap-4 mb-3">
                     <div>
                       <h3 className="font-bold tracking-tight text-lg">{model.name}</h3>
-                      <code className="mt-1 block text-xs text-white/40 truncate">{model.id}</code>
+                      <code className="mt-1 block text-xs text-white/55 truncate">{model.id}</code>
                     </div>
                     <span className="shrink-0 rounded bg-white/10 px-2 py-1 text-[10px] font-mono text-white/60">
                       {model.contextLength !== 'N/A' ? `${model.contextLength} ctx` : model.tags[0]}
@@ -165,8 +165,8 @@ export function ProviderPage() {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-5">
-      <div className="text-xs font-mono uppercase tracking-[0.18em] text-white/35 mb-2">{label}</div>
+    <div className="rounded-xl border border-white/20 bg-white/[0.05] p-5">
+      <div className="text-xs font-mono uppercase tracking-[0.18em] text-white/50 mb-2">{label}</div>
       <div className="text-2xl font-bold tracking-tight">{value}</div>
     </div>
   );

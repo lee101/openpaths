@@ -47,7 +47,7 @@ export function Evals() {
               href={artificialAnalysisSnapshot.sourceUrl}
               target="_blank"
               rel="noreferrer noopener"
-              className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 px-4 py-3 font-mono text-sm text-white/65 transition-colors hover:border-white/30 hover:text-white"
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/20 px-4 py-3 font-mono text-sm text-white/65 transition-colors hover:border-white/50 hover:text-white"
             >
               Source <ExternalLink className="h-4 w-4" />
             </a>
@@ -56,14 +56,14 @@ export function Evals() {
 
         <ArtificialAnalysisBenchmarkSection />
 
-        <section className="mt-10 overflow-hidden rounded-lg border border-white/10 bg-white/[0.02]">
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 px-4 py-3">
+        <section className="mt-10 overflow-hidden rounded-lg border border-white/20 bg-white/[0.05]">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/20 px-4 py-3">
             <h2 className="font-mono text-sm uppercase tracking-[0.16em] text-white/65">Eval Breakdown</h2>
-            <span className="font-mono text-xs text-white/35">{artificialAnalysisModels.length} crawled models</span>
+            <span className="font-mono text-xs text-white/50">{artificialAnalysisModels.length} crawled models</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[980px] text-left text-sm">
-              <thead className="font-mono text-xs uppercase tracking-[0.14em] text-white/35">
+              <thead className="font-mono text-xs uppercase tracking-[0.14em] text-white/50">
                 <tr>
                   <th className="px-4 py-3">Model</th>
                   <th className="px-4 py-3">Price</th>
@@ -79,7 +79,7 @@ export function Evals() {
                   <tr key={model.id} className="text-white/70">
                     <td className="px-4 py-4">
                       <div className="font-mono text-white">{model.shortName}</div>
-                      <div className="text-xs text-white/40">{model.creator.name}</div>
+                      <div className="text-xs text-white/55">{model.creator.name}</div>
                     </td>
                     <td className="px-4 py-4 font-mono">{formatDollars(model.prices.blendedPerMTokens, 3)}</td>
                     <td className="px-4 py-4 font-mono">{formatNumber(model.performance.outputTokensPerSecond)} tok/s</td>

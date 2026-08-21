@@ -39,16 +39,16 @@ function ModeBadge({ mode }: { mode: SearchResponse['mode'] }) {
     );
   }
   if (mode === 'trigram') {
-    return <span className="text-[11px] font-mono text-white/50 bg-white/5 border border-white/10 px-2 py-0.5 rounded-full">exact</span>;
+    return <span className="text-[11px] font-mono text-white/50 bg-white/10 border border-white/20 px-2 py-0.5 rounded-full">exact</span>;
   }
-  return <span className="text-[11px] font-mono text-white/40 bg-white/5 border border-white/10 px-2 py-0.5 rounded-full">recent</span>;
+  return <span className="text-[11px] font-mono text-white/55 bg-white/10 border border-white/20 px-2 py-0.5 rounded-full">recent</span>;
 }
 
 function ImageCard({ item, onClick }: { item: SavedResponse; onClick: () => void; key?: React.Key }) {
   return (
     <button
       onClick={onClick}
-      className="group relative aspect-square overflow-hidden rounded-xl border border-white/10 bg-white/5 hover:border-white/30 transition-colors"
+      className="group relative aspect-square overflow-hidden rounded-xl border border-white/20 bg-white/10 hover:border-white/50 transition-colors"
     >
       <img
         src={item.thumb_url || item.image_url}
@@ -67,9 +67,9 @@ function TextCard({ item, onClick }: { item: SavedResponse; onClick: () => void;
   return (
     <button
       onClick={onClick}
-      className="w-full text-left rounded-xl border border-white/10 bg-white/5 hover:border-white/30 transition-colors p-4"
+      className="w-full text-left rounded-xl border border-white/20 bg-white/10 hover:border-white/50 transition-colors p-4"
     >
-      <div className="flex items-center gap-2 mb-2 text-[11px] font-mono text-white/40">
+      <div className="flex items-center gap-2 mb-2 text-[11px] font-mono text-white/55">
         <span className="text-white/70">{item.model}</span>
         {item.provider && <span>· {item.provider}</span>}
         <span className="ml-auto">{timeAgo(item.created_at)}</span>
@@ -105,37 +105,37 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/80 p-4 sm:p-8" onClick={onClose}>
       <div
-        className="relative w-full max-w-3xl rounded-2xl border border-white/10 bg-neutral-950 p-6 my-4"
+        className="relative w-full max-w-3xl rounded-2xl border border-white/20 bg-neutral-950 p-6 my-4"
         onClick={e => e.stopPropagation()}
       >
-        <button onClick={onClose} className="absolute right-4 top-4 text-white/40 hover:text-white">
+        <button onClick={onClose} className="absolute right-4 top-4 text-white/55 hover:text-white">
           <X className="w-5 h-5" />
         </button>
         {loading || !item ? (
-          <div className="flex items-center justify-center py-16 text-white/40">
+          <div className="flex items-center justify-center py-16 text-white/55">
             <Loader2 className="w-6 h-6 animate-spin" />
           </div>
         ) : (
           <>
-            <div className="flex items-center gap-2 mb-3 text-[11px] font-mono text-white/40">
+            <div className="flex items-center gap-2 mb-3 text-[11px] font-mono text-white/55">
               <span className="text-white/70">{item.model}</span>
               {item.provider && <span>· {item.provider}</span>}
               <span className="ml-auto">{new Date(item.created_at).toLocaleString()}</span>
             </div>
             {item.kind === 'image' ? (
-              <img src={item.image_url} alt={item.prompt} className="w-full rounded-xl border border-white/10 mb-4" />
+              <img src={item.image_url} alt={item.prompt} className="w-full rounded-xl border border-white/20 mb-4" />
             ) : null}
-            <div className="mb-1 text-xs uppercase tracking-wide text-white/40">Prompt</div>
+            <div className="mb-1 text-xs uppercase tracking-wide text-white/55">Prompt</div>
             <p className="whitespace-pre-wrap text-sm text-white/90 mb-4">{item.prompt}</p>
             {item.kind === 'text' && item.input && item.input !== item.prompt && (
               <details className="mb-4">
-                <summary className="cursor-pointer text-xs uppercase tracking-wide text-white/40">Full input</summary>
+                <summary className="cursor-pointer text-xs uppercase tracking-wide text-white/55">Full input</summary>
                 <pre className="mt-2 whitespace-pre-wrap text-xs text-white/60 max-h-60 overflow-y-auto">{item.input}</pre>
               </details>
             )}
             {item.kind === 'text' && item.output && (
               <>
-                <div className="mb-1 text-xs uppercase tracking-wide text-white/40">Output</div>
+                <div className="mb-1 text-xs uppercase tracking-wide text-white/55">Output</div>
                 <pre className="whitespace-pre-wrap text-sm text-white/80 mb-4 max-h-96 overflow-y-auto">{item.output}</pre>
               </>
             )}
@@ -144,8 +144,8 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
             )}
 
             {similar.length > 0 && (
-              <div className="mt-6 border-t border-white/10 pt-4">
-                <div className="mb-3 flex items-center gap-2 text-xs uppercase tracking-wide text-white/40">
+              <div className="mt-6 border-t border-white/20 pt-4">
+                <div className="mb-3 flex items-center gap-2 text-xs uppercase tracking-wide text-white/55">
                   <Sparkles className="w-3.5 h-3.5" /> Similar {item.kind === 'image' ? 'images' : 'prompts'}
                 </div>
                 {item.kind === 'image' ? (
@@ -154,7 +154,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
                       <button
                         key={s.id}
                         onClick={() => setActiveId(s.id)}
-                        className="aspect-square overflow-hidden rounded-lg border border-white/10 hover:border-white/30"
+                        className="aspect-square overflow-hidden rounded-lg border border-white/20 hover:border-white/50"
                       >
                         <img src={s.thumb_url || s.image_url} alt={s.prompt} loading="lazy" className="h-full w-full object-cover" />
                       </button>
@@ -166,7 +166,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
                       <button
                         key={s.id}
                         onClick={() => setActiveId(s.id)}
-                        className="block w-full text-left text-sm text-white/70 hover:text-white rounded-lg border border-white/10 hover:border-white/30 px-3 py-2"
+                        className="block w-full text-left text-sm text-white/70 hover:text-white rounded-lg border border-white/20 hover:border-white/50 px-3 py-2"
                       >
                         {truncate(s.prompt, 140)}
                       </button>
@@ -246,24 +246,24 @@ function UsageSearchPage({ kind }: { kind: 'text' | 'image' }) {
         <div className="mt-4 flex gap-2 text-sm">
           <Link
             to="/usage/prompts"
-            className={`rounded-full px-4 py-1.5 transition-colors ${!isImage ? 'bg-white/10 text-white' : 'text-white/50 hover:bg-white/5'}`}
+            className={`rounded-full px-4 py-1.5 transition-colors ${!isImage ? 'bg-white/10 text-white' : 'text-white/50 hover:bg-white/10'}`}
           >
             Prompts
           </Link>
           <Link
             to="/usage/images"
-            className={`rounded-full px-4 py-1.5 transition-colors ${isImage ? 'bg-white/10 text-white' : 'text-white/50 hover:bg-white/5'}`}
+            className={`rounded-full px-4 py-1.5 transition-colors ${isImage ? 'bg-white/10 text-white' : 'text-white/50 hover:bg-white/10'}`}
           >
             Images
           </Link>
-          <Link to="/account" className="ml-auto rounded-full px-4 py-1.5 text-white/50 hover:bg-white/5 transition-colors">
+          <Link to="/account" className="ml-auto rounded-full px-4 py-1.5 text-white/50 hover:bg-white/10 transition-colors">
             Settings
           </Link>
         </div>
       </div>
 
       {!authed ? (
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-10 text-center">
+        <div className="rounded-2xl border border-white/20 bg-white/10 p-10 text-center">
           <p className="text-white/70">Sign in to search your saved responses.</p>
           <Link to="/account" className="mt-4 inline-block rounded-xl border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10">
             Go to account
@@ -272,16 +272,16 @@ function UsageSearchPage({ kind }: { kind: 'text' | 'image' }) {
       ) : (
         <>
           <div className="relative mb-6">
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/30" />
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/45" />
             <input
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder={`Search your ${isImage ? 'images' : 'prompts and outputs'}…`}
-              className="w-full rounded-2xl border border-white/10 bg-white/5 py-3 pl-12 pr-4 text-white placeholder-white/30 focus:border-white/30 focus:outline-none"
+              className="w-full rounded-2xl border border-white/20 bg-white/10 py-3 pl-12 pr-4 text-white placeholder-white/30 focus:border-white/50 focus:outline-none"
             />
           </div>
 
-          <div className="mb-4 flex items-center gap-3 text-sm text-white/40">
+          <div className="mb-4 flex items-center gap-3 text-sm text-white/55">
             {loading ? (
               <span className="inline-flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" /> Loading…
@@ -299,9 +299,9 @@ function UsageSearchPage({ kind }: { kind: 'text' | 'image' }) {
           {error && <p className="text-sm text-rose-300">{error}</p>}
 
           {!loading && total === 0 && !error && (
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-10 text-center">
+            <div className="rounded-2xl border border-white/20 bg-white/10 p-10 text-center">
               <p className="text-white/70">No saved {isImage ? 'images' : 'prompts'} yet.</p>
-              <p className="mt-2 text-sm text-white/40">
+              <p className="mt-2 text-sm text-white/55">
                 Turn on response saving in your account settings, then generate {isImage ? 'an image' : 'some text'}.
               </p>
               <Link to="/account" className="mt-4 inline-block rounded-xl border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10">

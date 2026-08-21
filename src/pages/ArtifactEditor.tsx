@@ -242,7 +242,7 @@ export function ArtifactEditor({ isEdit }: { isEdit?: boolean }) {
   };
 
   if (loading) {
-    return <div className="flex h-[60vh] items-center justify-center text-white/40"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+    return <div className="flex h-[60vh] items-center justify-center text-white/55"><Loader2 className="h-6 w-6 animate-spin" /></div>;
   }
 
   return (
@@ -254,12 +254,12 @@ export function ArtifactEditor({ isEdit }: { isEdit?: boolean }) {
             <ArrowLeft className="h-3.5 w-3.5" /> Artifacts
           </button>
           <div className="flex items-center gap-2">
-            <select value={visibility} onChange={e => setVisibility(e.target.value as any)} className="h-9 rounded-lg border border-white/10 bg-black px-2 font-mono text-xs text-white">
+            <select value={visibility} onChange={e => setVisibility(e.target.value as any)} className="h-9 rounded-lg border border-white/20 bg-black px-2 font-mono text-xs text-white">
               <option value="private">Private</option>
               <option value="unlisted">Unlisted</option>
               <option value="public">Public</option>
             </select>
-            <button onClick={() => save(false)} disabled={saving} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-white/15 bg-white/[0.04] px-3 font-mono text-xs text-white hover:bg-white/[0.08] disabled:opacity-50">
+            <button onClick={() => save(false)} disabled={saving} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-white/15 bg-white/[0.07] px-3 font-mono text-xs text-white hover:bg-white/[0.11] disabled:opacity-50">
               {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />} Save
             </button>
             <button onClick={() => save(true)} disabled={saving} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-cyan-300 px-3 font-mono text-xs font-semibold text-black hover:bg-cyan-200 disabled:opacity-50">
@@ -272,18 +272,18 @@ export function ArtifactEditor({ isEdit }: { isEdit?: boolean }) {
 
         <div className="grid gap-4 lg:grid-cols-[200px_1fr_1fr] xl:grid-cols-[220px_1fr_1fr_360px]">
           {/* File tree */}
-          <div className="rounded-lg border border-white/10 bg-white/[0.02] p-2">
+          <div className="rounded-lg border border-white/20 bg-white/[0.05] p-2">
             <div className="mb-2 flex items-center justify-between px-1">
-              <span className="font-mono text-[10px] uppercase tracking-wider text-white/35">Files</span>
-              <button onClick={addFile} title="Add file" className="text-white/40 hover:text-white"><FilePlus className="h-3.5 w-3.5" /></button>
+              <span className="font-mono text-[10px] uppercase tracking-wider text-white/50">Files</span>
+              <button onClick={addFile} title="Add file" className="text-white/55 hover:text-white"><FilePlus className="h-3.5 w-3.5" /></button>
             </div>
             <ul className="space-y-0.5">
               {files.map(f => (
-                <li key={f.path} className={`group flex items-center justify-between rounded px-2 py-1 font-mono text-xs ${active === f.path ? 'bg-white/10 text-white' : 'text-white/55 hover:bg-white/[0.04]'}`}>
+                <li key={f.path} className={`group flex items-center justify-between rounded px-2 py-1 font-mono text-xs ${active === f.path ? 'bg-white/10 text-white' : 'text-white/55 hover:bg-white/[0.07]'}`}>
                   <button onClick={() => setActive(f.path)} className="flex-1 truncate text-left">{f.path}</button>
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
-                    <button onClick={() => setEntry(f.path)} title="Set as preview entry" className={entry === f.path ? 'text-cyan-300' : 'text-white/30 hover:text-white'}><Play className="h-3 w-3" /></button>
-                    {files.length > 1 && <button onClick={() => removeFile(f.path)} title="Delete" className="text-white/30 hover:text-red-300"><Trash2 className="h-3 w-3" /></button>}
+                    <button onClick={() => setEntry(f.path)} title="Set as preview entry" className={entry === f.path ? 'text-cyan-300' : 'text-white/45 hover:text-white'}><Play className="h-3 w-3" /></button>
+                    {files.length > 1 && <button onClick={() => removeFile(f.path)} title="Delete" className="text-white/45 hover:text-red-300"><Trash2 className="h-3 w-3" /></button>}
                   </div>
                 </li>
               ))}
@@ -291,8 +291,8 @@ export function ArtifactEditor({ isEdit }: { isEdit?: boolean }) {
           </div>
 
           {/* Editor */}
-          <div className="overflow-hidden rounded-lg border border-white/10">
-            <div className="border-b border-white/10 bg-white/[0.02] px-3 py-1.5 font-mono text-[11px] text-white/45">{active}</div>
+          <div className="overflow-hidden rounded-lg border border-white/20">
+            <div className="border-b border-white/20 bg-white/[0.05] px-3 py-1.5 font-mono text-[11px] text-white/45">{active}</div>
             <CodeMirror
               value={activeFile?.content || ''}
               height="640px"
@@ -304,8 +304,8 @@ export function ArtifactEditor({ isEdit }: { isEdit?: boolean }) {
           </div>
 
           {/* Preview */}
-          <div className="overflow-hidden rounded-lg border border-white/10 bg-white">
-            <div className="flex items-center justify-between border-b border-white/10 bg-white/[0.02] px-3 py-1.5">
+          <div className="overflow-hidden rounded-lg border border-white/20 bg-white">
+            <div className="flex items-center justify-between border-b border-white/20 bg-white/[0.05] px-3 py-1.5">
               <span className="font-mono text-[11px] text-white/45">Preview · {entry}</span>
               <button onClick={() => setPreview(p => p + 1)} className="font-mono text-[11px] text-cyan-300 hover:text-cyan-200">Refresh</button>
             </div>
@@ -314,25 +314,25 @@ export function ArtifactEditor({ isEdit }: { isEdit?: boolean }) {
 
           {/* Agent + meta */}
           <div className="flex flex-col gap-4 xl:row-span-1">
-            <div className="flex flex-col rounded-lg border border-white/10 bg-white/[0.02]">
-              <div className="flex items-center gap-2 border-b border-white/10 px-3 py-2 font-mono text-[11px] uppercase tracking-wider text-white/45">
+            <div className="flex flex-col rounded-lg border border-white/20 bg-white/[0.05]">
+              <div className="flex items-center gap-2 border-b border-white/20 px-3 py-2 font-mono text-[11px] uppercase tracking-wider text-white/45">
                 <Sparkles className="h-3.5 w-3.5 text-cyan-300" /> Agent
               </div>
-              <div className="flex items-center gap-2 border-b border-white/10 px-3 py-2">
-                <input list="artifact-models" value={model} onChange={e => setModel(e.target.value)} className="h-8 flex-1 rounded border border-white/10 bg-black px-2 font-mono text-xs text-white outline-none focus:border-cyan-300" />
+              <div className="flex items-center gap-2 border-b border-white/20 px-3 py-2">
+                <input list="artifact-models" value={model} onChange={e => setModel(e.target.value)} className="h-8 flex-1 rounded border border-white/20 bg-black px-2 font-mono text-xs text-white outline-none focus:border-cyan-300" />
                 <datalist id="artifact-models">
                   {DEFAULT_MODELS.map(m => <option key={m} value={m} />)}
                 </datalist>
               </div>
               <div className="max-h-[300px] min-h-[120px] flex-1 space-y-3 overflow-y-auto p-3">
-                {chat.length === 0 && <p className="font-mono text-xs text-white/30">Describe what to build or change. The agent edits your files and uses your credits.</p>}
+                {chat.length === 0 && <p className="font-mono text-xs text-white/45">Describe what to build or change. The agent edits your files and uses your credits.</p>}
                 {chat.map((m, i) => (
-                  <div key={i} className={`rounded-lg px-3 py-2 text-xs leading-relaxed ${m.role === 'user' ? 'bg-cyan-300/10 text-white' : 'bg-white/[0.04] text-white/75'}`}>
+                  <div key={i} className={`rounded-lg px-3 py-2 text-xs leading-relaxed ${m.role === 'user' ? 'bg-cyan-300/10 text-white' : 'bg-white/[0.07] text-white/75'}`}>
                     {m.content || (streaming && i === chat.length - 1 ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : '')}
                   </div>
                 ))}
               </div>
-              <form onSubmit={e => { e.preventDefault(); void runAgent(); }} className="border-t border-white/10 p-2">
+              <form onSubmit={e => { e.preventDefault(); void runAgent(); }} className="border-t border-white/20 p-2">
                 <div className="flex items-end gap-2">
                   <textarea
                     value={prompt}
@@ -340,7 +340,7 @@ export function ArtifactEditor({ isEdit }: { isEdit?: boolean }) {
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void runAgent(); } }}
                     rows={2}
                     placeholder="Build a snake game…"
-                    className="flex-1 resize-none rounded-lg border border-white/10 bg-black px-2 py-1.5 font-mono text-xs text-white outline-none focus:border-cyan-300"
+                    className="flex-1 resize-none rounded-lg border border-white/20 bg-black px-2 py-1.5 font-mono text-xs text-white outline-none focus:border-cyan-300"
                   />
                   {streaming ? (
                     <button type="button" onClick={() => abortRef.current?.abort()} className="grid h-9 w-9 place-items-center rounded-lg border border-white/15 text-white/60 hover:text-white"><X className="h-4 w-4" /></button>
@@ -351,11 +351,11 @@ export function ArtifactEditor({ isEdit }: { isEdit?: boolean }) {
               </form>
             </div>
 
-            <div className="space-y-2 rounded-lg border border-white/10 bg-white/[0.02] p-3">
-              <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Title" className="w-full rounded border border-white/10 bg-black px-2 py-1.5 text-sm text-white outline-none focus:border-cyan-300" />
-              <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Description" rows={2} className="w-full resize-none rounded border border-white/10 bg-black px-2 py-1.5 text-xs text-white/80 outline-none focus:border-cyan-300" />
-              <input value={imageUrl} onChange={e => setImageUrl(e.target.value)} placeholder="Cover image URL" className="w-full rounded border border-white/10 bg-black px-2 py-1.5 font-mono text-xs text-white/70 outline-none focus:border-cyan-300" />
-              <input value={tags} onChange={e => setTags(e.target.value)} placeholder="tags, comma, separated" className="w-full rounded border border-white/10 bg-black px-2 py-1.5 font-mono text-xs text-white/70 outline-none focus:border-cyan-300" />
+            <div className="space-y-2 rounded-lg border border-white/20 bg-white/[0.05] p-3">
+              <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Title" className="w-full rounded border border-white/20 bg-black px-2 py-1.5 text-sm text-white outline-none focus:border-cyan-300" />
+              <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Description" rows={2} className="w-full resize-none rounded border border-white/20 bg-black px-2 py-1.5 text-xs text-white/80 outline-none focus:border-cyan-300" />
+              <input value={imageUrl} onChange={e => setImageUrl(e.target.value)} placeholder="Cover image URL" className="w-full rounded border border-white/20 bg-black px-2 py-1.5 font-mono text-xs text-white/70 outline-none focus:border-cyan-300" />
+              <input value={tags} onChange={e => setTags(e.target.value)} placeholder="tags, comma, separated" className="w-full rounded border border-white/20 bg-black px-2 py-1.5 font-mono text-xs text-white/70 outline-none focus:border-cyan-300" />
             </div>
           </div>
         </div>

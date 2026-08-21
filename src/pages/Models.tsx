@@ -152,21 +152,21 @@ export function Models() {
       <div className="flex flex-col gap-6 mb-12">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/55" />
             <input
               type="text"
               placeholder="Search models by name, provider, or ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-lg py-3 pl-12 pr-4 text-white placeholder:text-white/40 focus:outline-none focus:border-white/30 transition-colors font-mono text-sm"
+              className="w-full bg-white/10 border border-white/20 rounded-lg py-3 pl-12 pr-4 text-white placeholder:text-white/45 focus:outline-none focus:border-white/50 transition-colors font-mono text-sm"
             />
           </div>
           <div className="relative">
-            <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 pointer-events-none" />
+            <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/55 pointer-events-none" />
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortOption)}
-              className="appearance-none bg-white/5 border border-white/10 rounded-lg py-3 pl-9 pr-8 text-white text-sm font-mono focus:outline-none focus:border-white/30 transition-colors cursor-pointer"
+              className="appearance-none bg-white/10 border border-white/20 rounded-lg py-3 pl-9 pr-8 text-white text-sm font-mono focus:outline-none focus:border-white/50 transition-colors cursor-pointer"
             >
               {SORT_OPTIONS.map(opt => (
                 <option key={opt.value} value={opt.value} className="bg-black text-white">
@@ -177,7 +177,7 @@ export function Models() {
           </div>
         </div>
         <div className="flex flex-wrap gap-2 items-center">
-          <TagIcon className="w-4 h-4 text-white/40 mr-2" />
+          <TagIcon className="w-4 h-4 text-white/55 mr-2" />
           {ALL_TAGS.map(tag => (
             <button
               key={tag}
@@ -185,7 +185,7 @@ export function Models() {
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-mono transition-colors ${
                 selectedTags.includes(tag)
                   ? 'bg-white text-black border-white'
-                  : 'bg-transparent border-white/20 text-white/60 hover:border-white/40 hover:text-white'
+                  : 'bg-transparent border-white/20 text-white/60 hover:border-white/60 hover:text-white'
               }`}
             >
               {TAG_ICONS[tag]}
@@ -195,7 +195,7 @@ export function Models() {
           {selectedTags.length > 0 && (
             <button
               onClick={() => setSelectedTags([])}
-              className="text-xs font-mono text-white/40 hover:text-white ml-2 underline underline-offset-4"
+              className="text-xs font-mono text-white/55 hover:text-white ml-2 underline underline-offset-4"
             >
               Clear
             </button>
@@ -204,7 +204,7 @@ export function Models() {
       </div>
 
       {/* Count */}
-      <div className="mb-6 text-sm font-mono text-white/40">
+      <div className="mb-6 text-sm font-mono text-white/55">
         {filteredModels.length} model{filteredModels.length !== 1 ? 's' : ''}
       </div>
 
@@ -216,11 +216,11 @@ export function Models() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: idx * 0.05 }}
             key={model.id}
-            className="border border-white/10 bg-white/[0.02] rounded-xl p-6 hover:bg-white/[0.04] hover:border-white/20 transition-all group flex flex-col"
+            className="border border-white/20 bg-white/[0.05] rounded-xl p-6 hover:bg-white/[0.07] hover:border-white/40 transition-all group flex flex-col"
           >
             <div className="flex justify-between items-start mb-4">
               <div>
-                <div className="text-xs font-mono text-white/40 mb-1 flex items-center gap-1.5">
+                <div className="text-xs font-mono text-white/55 mb-1 flex items-center gap-1.5">
                   <img src={getProviderLogo(model.provider)} alt="" className={`w-4 h-4 rounded-sm object-contain ${model.provider === 'Black Forest Labs' ? 'bg-white p-px' : ''}`} />
                   {providersByName[model.provider] ? (
                     <Link to={providerPath(providersByName[model.provider].slug)} className="hover:text-white transition-colors underline underline-offset-2 decoration-white/20">
@@ -244,39 +244,39 @@ export function Models() {
             <div className="space-y-4 mt-auto">
               <div className="flex flex-wrap gap-2">
                 {model.tags.map(tag => (
-                  <span key={tag} className="px-2 py-1 bg-white/5 border border-white/10 rounded text-[10px] font-mono text-white/60 flex items-center gap-1">
+                  <span key={tag} className="px-2 py-1 bg-white/10 border border-white/20 rounded text-[10px] font-mono text-white/60 flex items-center gap-1">
                     {TAG_ICONS[tag]} {tag}
                   </span>
                 ))}
               </div>
 
-              <div className="pt-4 border-t border-white/10 flex justify-between items-center text-xs font-mono">
+              <div className="pt-4 border-t border-white/20 flex justify-between items-center text-xs font-mono">
                 {model.pricingType === 'request' ? (
-                  <div className="text-white/40">
+                  <div className="text-white/55">
                     <span className="text-white">${model.priceInput < 0.01 ? model.priceInput.toFixed(3) : model.priceInput.toFixed(2)}</span> / request
                   </div>
                 ) : model.pricingType === 'chars' ? (
-                  <div className="text-white/40">
+                  <div className="text-white/55">
                     <span className="text-white">${model.priceInput.toFixed(2)}</span> / 1M chars
                   </div>
                 ) : model.pricingType === 'hour' ? (
-                  <div className="text-white/40">
+                  <div className="text-white/55">
                     <span className="text-white">${model.priceInput.toFixed(2)}</span> / hour
                   </div>
                 ) : model.pricingType === 'second' ? (
-                  <div className="text-white/40">
+                  <div className="text-white/55">
                     <span className="text-white">${model.priceInput.toFixed(2)}</span> / second
                   </div>
                 ) : model.pricingType === 'megapixel' ? (
-                  <div className="text-white/40">
+                  <div className="text-white/55">
                     <span className="text-white">${model.priceInput.toFixed(3)}</span> / MP
                   </div>
                 ) : (
                   <>
-                    <div className="text-white/40">
+                    <div className="text-white/55">
                       <span className="text-white">${formatTokenPrice(model.priceInput)}</span> / 1M in
                     </div>
-                    <div className="text-white/40">
+                    <div className="text-white/55">
                       <span className="text-white">${formatTokenPrice(model.priceOutput)}</span> / 1M out
                     </div>
                   </>
@@ -284,14 +284,14 @@ export function Models() {
               </div>
 
               <div className="pt-2 flex items-center gap-2">
-                <code className="flex-1 bg-black border border-white/10 rounded px-3 py-2 text-[10px] text-white/40 truncate group-hover:text-white/80 transition-colors">
+                <code className="flex-1 bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-[10px] text-white/55 truncate group-hover:text-white/80 transition-colors">
                   {model.id}
                 </code>
                 {isChatModel(model) && (
                   <button
                     onClick={() => navigate(`/playground?model=${encodeURIComponent(model.id)}`)}
                     title="Chat with this model"
-                    className="shrink-0 flex items-center gap-1 px-2.5 py-2 bg-white/5 border border-white/10 rounded text-[10px] font-mono text-white/50 hover:text-white hover:bg-white/10 hover:border-white/25 transition-colors"
+                    className="shrink-0 flex items-center gap-1 px-2.5 py-2 bg-white/10 border border-white/20 rounded text-[10px] font-mono text-white/50 hover:text-white hover:bg-white/10 hover:border-white/45 transition-colors"
                   >
                     <MessageSquare className="w-3 h-3" /> Chat
                   </button>
@@ -300,7 +300,7 @@ export function Models() {
                   <button
                     onClick={() => navigate(`/playground?model=${encodeURIComponent(model.id)}&mode=image`)}
                     title="Generate images with this model"
-                    className="shrink-0 flex items-center gap-1 px-2.5 py-2 bg-white/5 border border-white/10 rounded text-[10px] font-mono text-white/50 hover:text-white hover:bg-white/10 hover:border-white/25 transition-colors"
+                    className="shrink-0 flex items-center gap-1 px-2.5 py-2 bg-white/10 border border-white/20 rounded text-[10px] font-mono text-white/50 hover:text-white hover:bg-white/10 hover:border-white/45 transition-colors"
                   >
                     <ImageIcon className="w-3 h-3" /> Generate
                   </button>
@@ -312,10 +312,10 @@ export function Models() {
       </div>
 
       {filteredModels.length === 0 && (
-        <div className="text-center py-24 border border-white/10 border-dashed rounded-xl">
-          <Search className="w-8 h-8 text-white/20 mx-auto mb-4" />
+        <div className="text-center py-24 border border-white/20 border-dashed rounded-xl">
+          <Search className="w-8 h-8 text-white/35 mx-auto mb-4" />
           <h3 className="text-lg font-medium mb-2">No models found</h3>
-          <p className="text-white/40 font-mono text-sm">Try adjusting your search or filters.</p>
+          <p className="text-white/55 font-mono text-sm">Try adjusting your search or filters.</p>
         </div>
       )}
       </div>

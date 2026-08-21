@@ -14,11 +14,11 @@ export function NotFound() {
       />
       <div className="min-h-screen bg-black">
         <div className="mx-auto flex max-w-3xl flex-col items-start px-6 py-20">
-          <span className="font-mono text-xs uppercase tracking-[0.18em] text-white/40">Error 404</span>
+          <span className="font-mono text-xs uppercase tracking-[0.18em] text-white/55">Error 404</span>
           <h1 className="mt-4 text-4xl font-bold tracking-tight md:text-6xl">This path leads nowhere</h1>
           <p className="mt-4 max-w-xl text-base leading-relaxed text-white/60">
             We couldn&rsquo;t find{' '}
-            <code className="rounded bg-white/[0.06] px-1.5 py-0.5 font-mono text-sm text-white/75">
+            <code className="rounded bg-white/[0.09] px-1.5 py-0.5 font-mono text-sm text-white/75">
               {location.pathname}
             </code>
             . It may have moved or never existed. Try browsing AI art or generating your own with the
@@ -34,20 +34,20 @@ export function NotFound() {
             </Link>
             <Link
               to="/text-to-image"
-              className="inline-flex items-center gap-2 rounded border border-white/15 px-4 py-2 font-mono text-sm text-white/75 hover:border-white/35 hover:text-white"
+              className="inline-flex items-center gap-2 rounded border border-white/15 px-4 py-2 font-mono text-sm text-white/75 hover:border-white/55 hover:text-white"
             >
               Text-to-image tool <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
               to="/"
-              className="inline-flex items-center gap-2 rounded border border-white/15 px-4 py-2 font-mono text-sm text-white/75 hover:border-white/35 hover:text-white"
+              className="inline-flex items-center gap-2 rounded border border-white/15 px-4 py-2 font-mono text-sm text-white/75 hover:border-white/55 hover:text-white"
             >
               Home
             </Link>
           </div>
 
-          <nav className="mt-12 w-full border-t border-white/10 pt-8">
-            <h2 className="mb-4 font-mono text-xs uppercase tracking-[0.16em] text-white/40">Popular destinations</h2>
+          <nav className="mt-12 w-full border-t border-white/20 pt-8">
+            <h2 className="mb-4 font-mono text-xs uppercase tracking-[0.16em] text-white/55">Popular destinations</h2>
             <div className="flex flex-wrap gap-2">
               {[
                 { to: '/art/tag/portrait', label: 'Portrait art' },
@@ -60,7 +60,7 @@ export function NotFound() {
                 <Link
                   key={link.to}
                   to={link.to}
-                  className="rounded border border-white/10 px-3 py-1.5 font-mono text-xs text-white/55 hover:border-white/30 hover:text-white"
+                  className="rounded border border-white/20 px-3 py-1.5 font-mono text-xs text-white/55 hover:border-white/50 hover:text-white"
                 >
                   {link.label}
                 </Link>

@@ -73,7 +73,7 @@ export function Docs() {
 
       <section className="max-w-6xl mx-auto px-6 py-16">
       <div className="mb-12">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/[0.04] text-xs font-mono text-white/60 mb-6">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/20 bg-white/[0.07] text-xs font-mono text-white/60 mb-6">
           <BookOpen className="w-3.5 h-3.5" />
           API Docs
         </div>
@@ -93,7 +93,7 @@ export function Docs() {
           {!apiKey && (
             <Link
               to="/account"
-              className="inline-flex items-center gap-2 border border-white/15 px-4 py-2.5 rounded-lg text-sm font-mono text-white/80 hover:text-white hover:border-white/30 transition-colors"
+              className="inline-flex items-center gap-2 border border-white/15 px-4 py-2.5 rounded-lg text-sm font-mono text-white/80 hover:text-white hover:border-white/50 transition-colors"
               data-testid="docs-get-key"
             >
               <KeyRound className="w-4 h-4" /> Sign up for a free API key
@@ -109,15 +109,15 @@ export function Docs() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-6 mb-12">
-        <div className="border border-white/10 bg-white/[0.02] rounded-2xl p-6" data-testid="docs-code-card">
+        <div className="border border-white/20 bg-white/[0.05] rounded-2xl p-6" data-testid="docs-code-card">
           <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
             <div>
-              <div className="text-xs font-mono text-white/40 mb-1">Base URL</div>
+              <div className="text-xs font-mono text-white/55 mb-1">Base URL</div>
               <code className="text-sm text-white/80" data-testid="docs-base-url">{apiBase}</code>
             </div>
             <button
               onClick={copyExample}
-              className="inline-flex items-center gap-2 border border-white/10 px-3 py-2 rounded-lg text-xs font-mono text-white/70 hover:text-white hover:border-white/20 transition-colors"
+              className="inline-flex items-center gap-2 border border-white/20 px-3 py-2 rounded-lg text-xs font-mono text-white/70 hover:text-white hover:border-white/40 transition-colors"
               data-testid="docs-copy-curl"
             >
               {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
@@ -125,14 +125,14 @@ export function Docs() {
             </button>
           </div>
 
-          <div className="flex gap-1 mb-4 border-b border-white/10">
+          <div className="flex gap-1 mb-4 border-b border-white/20">
             {(['chat', 'fusion', 'images', '3d', 'text-to-3d', 'videos', 'transcription'] as const).map(t => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
                 data-testid={`docs-tab-${t}`}
                 className={`px-3 py-2 text-xs font-mono transition-colors border-b-2 -mb-px ${
-                  tab === t ? 'text-white border-white' : 'text-white/40 hover:text-white/70 border-transparent'
+                  tab === t ? 'text-white border-white' : 'text-white/55 hover:text-white/70 border-transparent'
                 }`}
               >
                 {TAB_LABELS[t]}
@@ -140,7 +140,7 @@ export function Docs() {
             ))}
           </div>
 
-          <div className="mb-2 text-xs font-mono text-white/40">{active.description}</div>
+          <div className="mb-2 text-xs font-mono text-white/55">{active.description}</div>
 
           <div className="grid gap-4 md:grid-cols-2">
             {[
@@ -150,11 +150,11 @@ export function Docs() {
               { label: 'cURL', language: 'bash', code: active.curl, testId: 'docs-curl' },
             ].map(sample => (
               <div key={sample.label}>
-                <div className="text-xs font-mono text-white/40 mb-2">{sample.label}</div>
+                <div className="text-xs font-mono text-white/55 mb-2">{sample.label}</div>
                 <CodeBlock
                   code={sample.code}
                   language={sample.language}
-                  preClassName="rounded-xl border border-white/10 bg-black/60 p-4 text-xs leading-6"
+                  preClassName="rounded-xl border border-white/20 bg-black/60 p-4 text-xs leading-6"
                   testId={sample.testId}
                 />
               </div>
@@ -162,7 +162,7 @@ export function Docs() {
           </div>
         </div>
 
-        <div className="border border-white/10 bg-white/[0.02] rounded-2xl p-6">
+        <div className="border border-white/20 bg-white/[0.05] rounded-2xl p-6">
           <div className="flex items-start gap-3 mb-4">
             <KeyRound className="w-5 h-5 text-white/50 mt-0.5" />
             <div>
@@ -179,13 +179,13 @@ export function Docs() {
               <code className="break-all text-sm text-white/80" data-testid="docs-api-key">{apiKey}</code>
             </div>
           ) : (
-            <div className="rounded-xl border border-white/10 bg-black/40 p-4 mb-5 text-sm text-white/60">
+            <div className="rounded-xl border border-white/20 bg-black/40 p-4 mb-5 text-sm text-white/60">
               Sign in on the <Link to="/account" className="text-white underline underline-offset-4">account page</Link> to auto-generate an API key on this device.
             </div>
           )}
 
-          <div className="rounded-xl border border-white/10 bg-black/40 p-4 mb-5">
-            <div className="text-xs font-mono text-white/40 mb-2">OpenPaths Auto (embedding-routed)</div>
+          <div className="rounded-xl border border-white/20 bg-black/40 p-4 mb-5">
+            <div className="text-xs font-mono text-white/55 mb-2">OpenPaths Auto (embedding-routed)</div>
             <div className="space-y-1 text-sm text-white/70 font-mono mb-4" data-testid="docs-auto-models">
               <div><code>openpaths/auto</code> — default chat; legacy <code>auto</code></div>
               <div><code>openpaths/auto-code</code> — agents, refactors, bug fixes</div>
@@ -204,7 +204,7 @@ export function Docs() {
             <p className="mb-4 text-sm text-white/55">
               Inference.net is available as <code>inference_net</code> with Nemotron 3 Super, Schematron, ClipTagger, GPT-OSS, Llama, DeepSeek, Qwen, Gemma, and Mistral routes. GLM-5.2 stays on Z.ai until Inference.net advertises a compatible GLM model id.
             </p>
-            <div className="text-xs font-mono text-white/40 mb-2">Latest aliases</div>
+            <div className="text-xs font-mono text-white/55 mb-2">Latest aliases</div>
             <div className="space-y-1 text-sm text-white/70 font-mono" data-testid="docs-latest-aliases">
               <div><code>openai-chat-latest</code>{' -> '}<code>gpt-5-chat-latest</code></div>
               <div><code>openai-coding-latest</code>{' -> '}<code>gpt-5-codex</code></div>
@@ -214,21 +214,21 @@ export function Docs() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-white/10 bg-black/40 p-4 mb-5">
-            <div className="text-xs font-mono text-white/40 mb-2">Opt-in app attribution</div>
+          <div className="rounded-xl border border-white/20 bg-black/40 p-4 mb-5">
+            <div className="text-xs font-mono text-white/55 mb-2">Opt-in app attribution</div>
             <p className="text-sm text-white/60 mb-3">
               Send `HTTP-Referer` with your app URL and `X-OpenRouter-Title` or `X-Title` with your app name. OpenPaths records app-level model and token stats only when those headers are present.
             </p>
             <CodeBlock
               language="bash"
               code={`-H "HTTP-Referer: https://your-app.example"\n-H "X-OpenRouter-Title: Your App"\n-H "X-OpenRouter-Categories: cli-agent,programming-app"`}
-              preClassName="rounded-lg border border-white/10 bg-black/60 p-3 text-xs leading-5"
+              preClassName="rounded-lg border border-white/20 bg-black/60 p-3 text-xs leading-5"
             />
           </div>
 
           <div className="space-y-3">
             {ENDPOINTS.map(endpoint => (
-              <div key={endpoint.path} className="rounded-xl border border-white/10 p-4">
+              <div key={endpoint.path} className="rounded-xl border border-white/20 p-4">
                 <div className="flex items-center gap-3 mb-1">
                   <span className="font-mono text-[11px] px-2 py-1 rounded bg-white/10 text-white/80">{endpoint.method}</span>
                   <code className="text-sm text-white/90">{endpoint.path}</code>
@@ -240,7 +240,7 @@ export function Docs() {
         </div>
       </div>
 
-      <div className="border border-white/10 bg-white/[0.02] rounded-2xl p-6">
+      <div className="border border-white/20 bg-white/[0.05] rounded-2xl p-6">
         <h2 className="text-xl font-bold tracking-tight mb-2">Provider guides</h2>
         <p className="text-sm text-white/60 font-light mb-5">
           Each provider has its own endpoints, default models, and copy-paste examples. Open a guide to see Python and cURL snippets,
@@ -251,20 +251,20 @@ export function Docs() {
             <Link
               key={p.slug}
               to={`/${p.slug}/docs`}
-              className="group rounded-xl border border-white/10 bg-white/[0.01] p-4 hover:border-white/30 hover:bg-white/[0.04] transition-colors flex items-start gap-3"
+              className="group rounded-xl border border-white/20 bg-white/[0.03] p-4 hover:border-white/50 hover:bg-white/[0.07] transition-colors flex items-start gap-3"
               data-testid={`docs-provider-${p.slug}`}
             >
               <img
                 src={p.logo || FALLBACK_LOGO}
                 alt=""
-                className="w-9 h-9 rounded-lg border border-white/10 bg-white/[0.04] p-1.5 object-contain shrink-0"
+                className="w-9 h-9 rounded-lg border border-white/20 bg-white/[0.07] p-1.5 object-contain shrink-0"
               />
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
                   <span className="text-sm font-bold tracking-tight truncate">{p.name}</span>
-                  <ArrowRight className="w-3.5 h-3.5 text-white/30 group-hover:text-white/70 transition-colors shrink-0" />
+                  <ArrowRight className="w-3.5 h-3.5 text-white/45 group-hover:text-white/70 transition-colors shrink-0" />
                 </div>
-                <div className="text-[11px] font-mono text-white/40 mb-1">/{p.slug}/docs</div>
+                <div className="text-[11px] font-mono text-white/55 mb-1">/{p.slug}/docs</div>
                 <p className="text-xs text-white/50 leading-relaxed line-clamp-2">{p.description}</p>
               </div>
             </Link>

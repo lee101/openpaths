@@ -155,7 +155,7 @@ export function AdminLee() {
         <button
           onClick={() => void load()}
           disabled={loading}
-          className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white text-black px-4 py-3 font-mono text-sm font-bold hover:bg-white/90 disabled:opacity-60"
+          className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/20 bg-white text-black px-4 py-3 font-mono text-sm font-bold hover:bg-white/90 disabled:opacity-60"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           Refresh
@@ -179,7 +179,7 @@ export function AdminLee() {
         <Metric label="Gross margin" value={formatUsageUnits(marginUnits)} icon={<ShieldCheck className="w-5 h-5" />} />
       </div>
 
-      <div className="mb-8 rounded-lg border border-white/10 bg-white/[0.03] p-5">
+      <div className="mb-8 rounded-lg border border-white/20 bg-white/[0.06] p-5">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <div className="flex items-center gap-2 text-white/45 text-xs font-mono uppercase tracking-[0.18em] mb-2">
@@ -221,10 +221,10 @@ export function AdminLee() {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-white/10">
+      <div className="overflow-hidden rounded-lg border border-white/20">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1080px] text-left">
-            <thead className="bg-white/[0.04] text-xs font-mono uppercase tracking-[0.16em] text-white/45">
+            <thead className="bg-white/[0.07] text-xs font-mono uppercase tracking-[0.16em] text-white/45">
               <tr>
                 <th className="px-4 py-3">User</th>
                 <th className="px-4 py-3">Stripe net</th>
@@ -239,14 +239,14 @@ export function AdminLee() {
             <tbody className="divide-y divide-white/10">
               {loading && users.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-10 text-center font-mono text-sm text-white/40">
+                  <td colSpan={8} className="px-4 py-10 text-center font-mono text-sm text-white/55">
                     Loading admin spend...
                   </td>
                 </tr>
               )}
               {!loading && users.length === 0 && !error && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-10 text-center font-mono text-sm text-white/40">
+                  <td colSpan={8} className="px-4 py-10 text-center font-mono text-sm text-white/55">
                     No users found.
                   </td>
                 </tr>
@@ -256,7 +256,7 @@ export function AdminLee() {
                   <td className="px-4 py-4">
                     <div className="font-medium text-white">{user.name || 'Unnamed user'}</div>
                     <div className="font-mono text-xs text-white/45">{user.email}</div>
-                    <div className="mt-1 flex gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-white/35">
+                    <div className="mt-1 flex gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-white/50">
                       {user.is_admin && <span className="text-emerald-300">Admin</span>}
                       {user.disabled && <span className="text-red-300">Disabled</span>}
                     </div>
@@ -269,7 +269,7 @@ export function AdminLee() {
                   <td className="px-4 py-4 font-mono">{formatUsageUnits(user.api_spend_cents)}</td>
                   <td className="px-4 py-4 font-mono">
                     {formatUsageUnits(user.provider_base_cost_cents)}
-                    {user.provider_estimated && <span className="block text-xs text-white/35">estimate</span>}
+                    {user.provider_estimated && <span className="block text-xs text-white/50">estimate</span>}
                   </td>
                   <td className="px-4 py-4 font-mono">{formatNumber(user.api_requests)}</td>
                   <td className="px-4 py-4 font-mono">{formatUsageUnits(user.balance_cents)}</td>
@@ -286,7 +286,7 @@ export function AdminLee() {
 
 function Metric({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-white/10 bg-white/[0.03] p-5">
+    <div className="rounded-lg border border-white/20 bg-white/[0.06] p-5">
       <div className="mb-4 flex items-center justify-between text-white/45">
         <p className="font-mono text-xs uppercase tracking-[0.18em]">{label}</p>
         {icon}

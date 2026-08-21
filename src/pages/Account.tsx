@@ -239,7 +239,7 @@ function AuthForms({ onAuth }: { onAuth: (token: string, user: any, newApiKey?: 
             value={name}
             onChange={e => setName(e.target.value)}
             placeholder="Name"
-            className="w-full bg-black border border-white/10 rounded-lg py-3 px-4 text-white font-mono focus:outline-none focus:border-white/30"
+            className="w-full bg-white/[0.06] border border-white/30 rounded-lg py-3 px-4 text-white font-mono focus:outline-none focus:border-white/50"
           />
         )}
         <input
@@ -248,7 +248,7 @@ function AuthForms({ onAuth }: { onAuth: (token: string, user: any, newApiKey?: 
           onChange={e => setEmail(e.target.value)}
           placeholder="Email"
           required
-          className="w-full bg-black border border-white/10 rounded-lg py-3 px-4 text-white font-mono focus:outline-none focus:border-white/30"
+          className="w-full bg-white/[0.06] border border-white/30 rounded-lg py-3 px-4 text-white font-mono focus:outline-none focus:border-white/50"
           data-testid="auth-email"
         />
         <div className="relative">
@@ -259,7 +259,7 @@ function AuthForms({ onAuth }: { onAuth: (token: string, user: any, newApiKey?: 
             placeholder="Password"
             required
             minLength={8}
-            className="w-full bg-black border border-white/10 rounded-lg py-3 px-4 pr-12 text-white font-mono focus:outline-none focus:border-white/30"
+            className="w-full bg-white/[0.06] border border-white/30 rounded-lg py-3 px-4 pr-12 text-white font-mono focus:outline-none focus:border-white/50"
             data-testid="auth-password"
           />
           <button
@@ -267,7 +267,7 @@ function AuthForms({ onAuth }: { onAuth: (token: string, user: any, newApiKey?: 
             onClick={() => setShowPassword(v => !v)}
             aria-label={showPassword ? 'Hide password' : 'Show password'}
             data-testid="auth-password-toggle"
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/55 hover:text-white/70 transition-colors"
           >
             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
@@ -287,7 +287,7 @@ function AuthForms({ onAuth }: { onAuth: (token: string, user: any, newApiKey?: 
           setMode(mode === 'login' ? 'register' : 'login');
           setError('');
         }}
-        className="mt-4 text-sm font-mono text-white/40 hover:text-white transition-colors"
+        className="mt-4 text-sm font-mono text-white/55 hover:text-white transition-colors"
         data-testid="auth-toggle"
       >
         {mode === 'login' ? 'Need an account? Register' : 'Already have an account? Sign In'}
@@ -350,7 +350,7 @@ function SaveCardForm({
 
   return (
     <form onSubmit={saveCard}>
-      <div className="rounded-2xl border border-white/10 bg-black/30 p-4 mb-4">
+      <div className="rounded-2xl border border-white/20 bg-black/30 p-4 mb-4">
         <PaymentElement />
       </div>
       {error && <p className="text-red-400 text-sm font-mono mb-4">{error}</p>}
@@ -410,16 +410,16 @@ function PaymentMethodSetupModal({
             initial={{ opacity: 0, scale: 0.96, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 10 }}
-            className="bg-[#090909] border border-white/10 rounded-3xl w-full max-w-xl p-6 md:p-8"
+            className="bg-[#090909] border border-white/20 rounded-3xl w-full max-w-xl p-6 md:p-8"
             data-testid="payment-method-modal"
           >
             <div className="flex items-start justify-between gap-4 mb-6">
               <div>
-                <p className="text-xs font-mono uppercase tracking-[0.2em] text-white/35 mb-2">Stripe card</p>
+                <p className="text-xs font-mono uppercase tracking-[0.2em] text-white/50 mb-2">Stripe card</p>
                 <h2 className="text-2xl font-bold tracking-tight">Save a card for auto-topup</h2>
                 <p className="text-sm text-white/55 mt-2">Your card stays in Stripe. OpenPaths uses it only for the prepaid auto-topup rule you save here.</p>
               </div>
-              <button onClick={onClose} className="text-white/40 hover:text-white transition-colors shrink-0">
+              <button onClick={onClose} className="text-white/55 hover:text-white transition-colors shrink-0">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -499,7 +499,7 @@ function ContributionHeatmap({ data }: { data: ActivityDay[] }) {
   return (
     <div>
       <div className="flex items-baseline justify-between mb-4">
-        <p className="text-xs text-white/40 font-mono">
+        <p className="text-xs text-white/55 font-mono">
           {totalRequests.toLocaleString()} requests · {activeDays} active {activeDays === 1 ? 'day' : 'days'} in the last year
         </p>
       </div>
@@ -507,13 +507,13 @@ function ContributionHeatmap({ data }: { data: ActivityDay[] }) {
         <div className="inline-flex flex-col gap-1" style={{ minWidth: 'max-content' }}>
           <div className="flex gap-[3px] ml-[26px] mb-1">
             {monthLabels.map((label, i) => (
-              <div key={i} className="text-[9px] text-white/30 font-mono" style={{ width: 11 }}>
+              <div key={i} className="text-[9px] text-white/45 font-mono" style={{ width: 11 }}>
                 {label}
               </div>
             ))}
           </div>
           <div className="flex">
-            <div className="flex flex-col gap-[3px] mr-1 text-[9px] text-white/30 font-mono justify-around" style={{ height: 7 * 14 }}>
+            <div className="flex flex-col gap-[3px] mr-1 text-[9px] text-white/45 font-mono justify-around" style={{ height: 7 * 14 }}>
               <span>Mon</span>
               <span>Wed</span>
               <span>Fri</span>
@@ -543,7 +543,7 @@ function ContributionHeatmap({ data }: { data: ActivityDay[] }) {
               ))}
             </div>
           </div>
-          <div className="flex items-center gap-1 justify-end mt-2 text-[9px] text-white/30 font-mono">
+          <div className="flex items-center gap-1 justify-end mt-2 text-[9px] text-white/45 font-mono">
             <span>Less</span>
             {colors.map((c, i) => (
               <div key={i} style={{ width: 11, height: 11, borderRadius: 2, background: c }} />
@@ -609,16 +609,16 @@ function ResponseSavingCard() {
   const anyOn = text || images;
 
   return (
-    <div className="rounded-3xl border border-white/10 bg-black/35 p-6 mb-8" data-testid="response-saving-card">
+    <div className="rounded-3xl border border-white/20 bg-black/35 p-6 mb-8" data-testid="response-saving-card">
       <div className="flex items-center gap-3 mb-1">
         <div className="rounded-2xl bg-violet-500/15 p-2.5">
           <Save className="w-5 h-5 text-violet-300" />
         </div>
         <div>
           <h3 className="text-lg font-semibold tracking-tight">Response saving</h3>
-          <p className="text-xs font-mono uppercase tracking-[0.16em] text-white/35">Searchable prompt &amp; image history</p>
+          <p className="text-xs font-mono uppercase tracking-[0.16em] text-white/50">Searchable prompt &amp; image history</p>
         </div>
-        {saving && <span className="ml-auto text-xs text-white/40">saving…</span>}
+        {saving && <span className="ml-auto text-xs text-white/55">saving…</span>}
       </div>
       <p className="text-sm text-white/55 mt-3 mb-5 max-w-2xl">
         Save the inputs and outputs of your generations to your private history, then search them semantically (find similar
@@ -626,22 +626,22 @@ function ResponseSavingCard() {
       </p>
 
       <div className="space-y-3">
-        <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+        <div className="flex items-center justify-between rounded-2xl border border-white/20 bg-white/[0.06] px-4 py-3">
           <div className="flex items-center gap-3">
             <FileText className="w-4 h-4 text-white/50" />
             <div>
               <div className="text-sm text-white">Save text generations</div>
-              <div className="text-xs text-white/40">Chat &amp; messages — prompt, transcript, output</div>
+              <div className="text-xs text-white/55">Chat &amp; messages — prompt, transcript, output</div>
             </div>
           </div>
           <Toggle on={text} onClick={() => loaded && persist(!text, images)} />
         </div>
-        <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+        <div className="flex items-center justify-between rounded-2xl border border-white/20 bg-white/[0.06] px-4 py-3">
           <div className="flex items-center gap-3">
             <ImageIcon className="w-4 h-4 text-white/50" />
             <div>
               <div className="text-sm text-white">Save image generations</div>
-              <div className="text-xs text-white/40">Prompt + generated image URL</div>
+              <div className="text-xs text-white/55">Prompt + generated image URL</div>
             </div>
           </div>
           <Toggle on={images} onClick={() => loaded && persist(text, !images)} />
@@ -769,7 +769,7 @@ function OpenAIMaxPlanPanel({
           <button
             onClick={onStartBrowser}
             disabled={deviceLoading || browserLoading}
-            className="rounded-2xl border border-white/15 bg-black/20 px-4 py-3 text-sm font-mono text-white hover:border-white/30 transition-colors disabled:opacity-50"
+            className="rounded-2xl border border-white/15 bg-black/20 px-4 py-3 text-sm font-mono text-white hover:border-white/50 transition-colors disabled:opacity-50"
             data-testid="openai-browser-auth-start"
           >
             {browserLoading && !browserAuth ? 'Starting...' : 'Use browser callback'}
@@ -784,12 +784,12 @@ function OpenAIMaxPlanPanel({
               <div className="text-xs font-mono uppercase tracking-[0.14em] text-sky-100/50 mb-2">Device sign-in</div>
               <p className="text-sm text-white/70 mb-3">{deviceMessage || 'Open the sign-in link and enter this code.'}</p>
               <div className="flex flex-wrap items-center gap-3">
-                <code className="rounded-xl border border-white/10 bg-black/35 px-4 py-3 font-mono text-lg tracking-[0.18em] text-white" data-testid="openai-device-code">
+                <code className="rounded-xl border border-white/20 bg-black/35 px-4 py-3 font-mono text-lg tracking-[0.18em] text-white" data-testid="openai-device-code">
                   {deviceAuth.user_code}
                 </code>
                 <button
                   onClick={() => onCopy(deviceAuth.user_code)}
-                  className="rounded-xl border border-white/10 bg-black/25 p-3 text-white/60 transition-colors hover:text-white"
+                  className="rounded-xl border border-white/20 bg-black/25 p-3 text-white/60 transition-colors hover:text-white"
                   aria-label="Copy OpenAI device code"
                   data-testid="openai-device-code-copy"
                 >
@@ -797,7 +797,7 @@ function OpenAIMaxPlanPanel({
                 </button>
               </div>
               {deviceAuth.expires_at && (
-                <p className="mt-3 text-xs font-mono text-white/35">
+                <p className="mt-3 text-xs font-mono text-white/50">
                   Expires {new Date(deviceAuth.expires_at).toLocaleTimeString()}
                 </p>
               )}
@@ -815,7 +815,7 @@ function OpenAIMaxPlanPanel({
               <button
                 onClick={onPollDevice}
                 disabled={deviceStatus === 'polling'}
-                className="rounded-2xl border border-white/15 bg-black/20 px-4 py-3 text-sm font-mono text-white transition-colors hover:border-white/30 disabled:opacity-50"
+                className="rounded-2xl border border-white/15 bg-black/20 px-4 py-3 text-sm font-mono text-white transition-colors hover:border-white/50 disabled:opacity-50"
                 data-testid="openai-device-auth-poll"
               >
                 {deviceStatus === 'polling' ? 'Checking...' : 'Check status'}
@@ -848,7 +848,7 @@ function OpenAIMaxPlanPanel({
                 value={browserInput}
                 onChange={event => onBrowserInput(event.target.value)}
                 placeholder="http://localhost:1455/auth/callback?code=...&state=..."
-                className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-mono text-white placeholder:text-white/25 focus:border-violet-300/40 focus:outline-none"
+                className="min-w-0 flex-1 rounded-2xl border border-white/20 bg-black/35 px-4 py-3 text-sm font-mono text-white placeholder:text-white/45 focus:border-violet-300/40 focus:outline-none"
                 data-testid="openai-browser-callback-input"
               />
               <button
@@ -861,7 +861,7 @@ function OpenAIMaxPlanPanel({
               </button>
             </div>
             {browserAuth.expires_at && (
-              <p className="text-xs font-mono text-white/35">Expires {new Date(browserAuth.expires_at).toLocaleTimeString()}</p>
+              <p className="text-xs font-mono text-white/50">Expires {new Date(browserAuth.expires_at).toLocaleTimeString()}</p>
             )}
           </div>
         </div>
@@ -877,14 +877,14 @@ function OpenAIMaxPlanPanel({
           {error}
         </div>
       )}
-      <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4">
-        <div className="text-xs font-mono uppercase tracking-[0.14em] text-white/35 mb-2">Status</div>
+      <div className="mt-5 rounded-2xl border border-white/20 bg-black/20 p-4">
+        <div className="text-xs font-mono uppercase tracking-[0.14em] text-white/50 mb-2">Status</div>
         {connected ? (
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm text-white/75">OpenAI Codex sign-in saved.</p>
-              <p className="text-xs text-white/40 mt-1">OAuth tokens refresh automatically before expiry; rejected credentials are refreshed and retried once.</p>
-              {updatedAt && <p className="text-xs text-white/40 mt-1">Last updated {new Date(updatedAt).toLocaleString()}</p>}
+              <p className="text-xs text-white/55 mt-1">OAuth tokens refresh automatically before expiry; rejected credentials are refreshed and retried once.</p>
+              {updatedAt && <p className="text-xs text-white/55 mt-1">Last updated {new Date(updatedAt).toLocaleString()}</p>}
             </div>
             <span className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1 text-xs font-mono text-emerald-200">Connected</span>
           </div>
@@ -1486,8 +1486,8 @@ export function Account() {
       <aside className="w-full md:w-64 shrink-0">
         <div className="mb-8">
           <h2 className="text-xl font-bold tracking-tight mb-1">Account</h2>
-          <p className="text-sm font-mono text-white/40">{user?.email}</p>
-          <button onClick={logout} className="mt-2 text-xs font-mono text-white/30 hover:text-white flex items-center gap-1" data-testid="logout-btn">
+          <p className="text-sm font-mono text-white/55">{user?.email}</p>
+          <button onClick={logout} className="mt-2 text-xs font-mono text-white/45 hover:text-white flex items-center gap-1" data-testid="logout-btn">
             <LogOut className="w-3 h-3" /> Sign Out
           </button>
         </div>
@@ -1496,7 +1496,7 @@ export function Account() {
             onClick={() => setActiveTab('overview')}
             data-testid="tab-overview"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
-              activeTab === 'overview' ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/5 hover:text-white'
+              activeTab === 'overview' ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/10 hover:text-white'
             }`}
           >
             <Activity className="w-4 h-4" /> Overview
@@ -1505,7 +1505,7 @@ export function Account() {
             onClick={() => setActiveTab('keys')}
             data-testid="tab-keys"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
-              activeTab === 'keys' ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/5 hover:text-white'
+              activeTab === 'keys' ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/10 hover:text-white'
             }`}
           >
             <Key className="w-4 h-4" /> API Keys
@@ -1514,7 +1514,7 @@ export function Account() {
             onClick={() => setActiveTab('guardrails')}
             data-testid="tab-guardrails"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
-              activeTab === 'guardrails' ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/5 hover:text-white'
+              activeTab === 'guardrails' ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/10 hover:text-white'
             }`}
           >
             <Shield className="w-4 h-4" /> Guardrails
@@ -1523,7 +1523,7 @@ export function Account() {
             onClick={() => setActiveTab('billing')}
             data-testid="tab-billing"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
-              activeTab === 'billing' ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/5 hover:text-white'
+              activeTab === 'billing' ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/10 hover:text-white'
             }`}
           >
             <CreditCard className="w-4 h-4" /> Billing
@@ -1532,7 +1532,7 @@ export function Account() {
             onClick={() => setActiveTab('analytics')}
             data-testid="tab-analytics"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
-              activeTab === 'analytics' ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/5 hover:text-white'
+              activeTab === 'analytics' ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/10 hover:text-white'
             }`}
           >
             <BarChart2 className="w-4 h-4" /> Usage
@@ -1543,11 +1543,11 @@ export function Account() {
       <main className="flex-1 min-w-0">
         {activeTab === 'overview' && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-            <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.16),transparent_42%),radial-gradient(circle_at_top_right,rgba(245,158,11,0.14),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-7 md:p-8 mb-8">
+            <div className="relative overflow-hidden rounded-[28px] border border-white/20 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.16),transparent_42%),radial-gradient(circle_at_top_right,rgba(245,158,11,0.14),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-7 md:p-8 mb-8">
               <div className="absolute inset-0 bg-[linear-gradient(120deg,transparent,rgba(255,255,255,0.05),transparent)] opacity-40 pointer-events-none" />
               <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
                 <div className="max-w-2xl">
-                  <p className="text-xs font-mono uppercase tracking-[0.24em] text-white/35 mb-3">Prepaid credits</p>
+                  <p className="text-xs font-mono uppercase tracking-[0.24em] text-white/50 mb-3">Prepaid credits</p>
                   <h1 className="text-4xl md:text-5xl font-semibold tracking-tight mb-4">Keep spend predictable.</h1>
                   <p className="text-base text-white/65 max-w-xl">
                     Stripe handles the payment side. OpenPaths stays prepaid, so the balance you see here is still the source of truth for runtime usage.
@@ -1561,7 +1561,7 @@ export function Account() {
                     </button>
                     <button
                       onClick={() => setActiveTab('billing')}
-                      className="rounded-2xl border border-white/15 bg-white/[0.03] px-5 py-3 text-sm font-mono text-white hover:border-white/30 transition-colors inline-flex items-center gap-2"
+                      className="rounded-2xl border border-white/15 bg-white/[0.06] px-5 py-3 text-sm font-mono text-white hover:border-white/50 transition-colors inline-flex items-center gap-2"
                     >
                       Review billing <ArrowUpRight className="w-4 h-4" />
                     </button>
@@ -1569,14 +1569,14 @@ export function Account() {
                 </div>
 
                 <div className="grid sm:grid-cols-2 gap-4 min-w-[min(100%,28rem)]">
-                  <div className="rounded-3xl border border-white/10 bg-black/35 p-5" data-testid="balance-card">
-                    <div className="text-xs font-mono uppercase tracking-[0.16em] text-white/35 mb-2">Current balance</div>
+                  <div className="rounded-3xl border border-white/20 bg-black/35 p-5" data-testid="balance-card">
+                    <div className="text-xs font-mono uppercase tracking-[0.16em] text-white/50 mb-2">Current balance</div>
                     <div className="text-4xl font-light tracking-tight mb-3" data-testid="balance">{balanceDisplay}</div>
                     <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-mono ${balanceTone.pill}`}>{balanceTone.label}</span>
                   </div>
 
-                  <div className="rounded-3xl border border-white/10 bg-black/35 p-5" data-testid="overview-autotopup-card">
-                    <div className="text-xs font-mono uppercase tracking-[0.16em] text-white/35 mb-2">Auto-topup rule</div>
+                  <div className="rounded-3xl border border-white/20 bg-black/35 p-5" data-testid="overview-autotopup-card">
+                    <div className="text-xs font-mono uppercase tracking-[0.16em] text-white/50 mb-2">Auto-topup rule</div>
                     <div className="text-2xl font-semibold tracking-tight mb-2">{autotopupSettings.enabled ? 'Enabled' : 'Recommended'}</div>
                     <p className="text-sm text-white/60 mb-4">
                       {autotopupSettings.enabled
@@ -1617,7 +1617,7 @@ export function Account() {
                         </button>
                         <button
                           onClick={() => setActiveTab('billing')}
-                          className="rounded-2xl border border-white/15 bg-black/20 px-4 py-3 text-sm font-mono text-white hover:border-white/30 transition-colors"
+                          className="rounded-2xl border border-white/15 bg-black/20 px-4 py-3 text-sm font-mono text-white hover:border-white/50 transition-colors"
                         >
                           Configure billing
                         </button>
@@ -1626,8 +1626,8 @@ export function Account() {
                   </div>
                 </div>
 
-                <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
-                  <div className="text-xs font-mono uppercase tracking-[0.16em] text-white/35 mb-3">Quick top-up</div>
+                <div className="rounded-3xl border border-white/20 bg-white/[0.06] p-6">
+                  <div className="text-xs font-mono uppercase tracking-[0.16em] text-white/50 mb-3">Quick top-up</div>
                   <div className="grid grid-cols-2 gap-3">
                     {QUICK_TOPUP_AMOUNTS.slice(0, 4).map(amount => (
                       <button
@@ -1636,7 +1636,7 @@ export function Account() {
                         className={`rounded-2xl border px-4 py-4 text-left transition-colors ${
                           amount === RECOMMENDED_TOPUP_USD
                             ? 'border-emerald-300/25 bg-emerald-500/10'
-                            : 'border-white/10 bg-black/20 hover:border-white/30'
+                            : 'border-white/20 bg-black/20 hover:border-white/50'
                         }`}
                       >
                         <div className="text-2xl font-semibold">{formatUsdWhole(amount)}</div>
@@ -1648,15 +1648,15 @@ export function Account() {
             )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-10">
-              <div className="border border-white/10 bg-white/[0.02] rounded-3xl p-6">
-                <div className="text-sm font-mono text-white/40 mb-2">API Keys</div>
+              <div className="border border-white/20 bg-white/[0.05] rounded-3xl p-6">
+                <div className="text-sm font-mono text-white/55 mb-2">API Keys</div>
                 <div className="text-4xl font-light tracking-tight mb-4" data-testid="keys-count">{apiKeys.length}</div>
                 <button onClick={() => setActiveTab('keys')} className="text-xs font-mono text-white border border-white/20 px-3 py-2 rounded-xl hover:bg-white/10 transition-colors">
                   Manage keys
                 </button>
               </div>
-              <div className="border border-white/10 bg-white/[0.02] rounded-3xl p-6">
-                <div className="text-sm font-mono text-white/40 mb-2">Saved payment method</div>
+              <div className="border border-white/20 bg-white/[0.05] rounded-3xl p-6">
+                <div className="text-sm font-mono text-white/55 mb-2">Saved payment method</div>
                 <div className="text-2xl font-semibold tracking-tight mb-4">{hasCards ? 'Ready for auto-topup' : 'No card saved'}</div>
                 <button
                   onClick={() => setActiveTab('billing')}
@@ -1675,9 +1675,9 @@ export function Account() {
                     View billing history
                   </button>
                 </div>
-                <div className="border border-white/10 rounded-3xl overflow-hidden">
+                <div className="border border-white/20 rounded-3xl overflow-hidden">
                   <table className="w-full text-left text-sm" data-testid="activity-table">
-                    <thead className="bg-white/5 font-mono text-xs text-white/40 border-b border-white/10">
+                    <thead className="bg-white/10 font-mono text-xs text-white/55 border-b border-white/20">
                       <tr>
                         <th className="px-6 py-3 font-normal">Date</th>
                         <th className="px-6 py-3 font-normal">Description</th>
@@ -1730,7 +1730,7 @@ export function Account() {
             {newKeyResult && (
               <div className="border border-green-500/30 bg-green-500/5 rounded-xl p-4 mb-6" data-testid="new-key-banner">
                 <p className="text-sm text-green-400 mb-2 font-bold">New key created. Save it now because it will not be shown again.</p>
-                <div className="flex items-center gap-2 bg-black border border-white/10 rounded-lg p-3">
+                <div className="flex items-center gap-2 bg-white/[0.06] border border-white/30 rounded-lg p-3">
                   <code className="flex-1 font-mono text-sm text-white/80 break-all" data-testid="new-key-value">
                     {newKeyVisible ? newKeyResult : maskApiKey(newKeyResult)}
                   </code>
@@ -1761,7 +1761,7 @@ export function Account() {
                 value={newKeyName}
                 onChange={e => setNewKeyName(e.target.value)}
                 placeholder="Key name (optional)"
-                className="flex-1 bg-black border border-white/10 rounded-lg py-2 px-4 text-white font-mono text-sm focus:outline-none focus:border-white/30"
+                className="flex-1 bg-white/[0.06] border border-white/30 rounded-lg py-2 px-4 text-white font-mono text-sm focus:outline-none focus:border-white/50"
               />
               <button
                 onClick={createKey}
@@ -1773,14 +1773,14 @@ export function Account() {
             </div>
 
             {apiKeys.length === 0 ? (
-              <p className="text-white/40 font-mono text-sm">No API keys yet. Create one to get started.</p>
+              <p className="text-white/55 font-mono text-sm">No API keys yet. Create one to get started.</p>
             ) : (
               <div className="space-y-3">
                 {apiKeys.map((k: any) => (
-                  <div key={k.id} className="border border-white/10 bg-white/[0.02] rounded-xl p-4 flex items-center justify-between" data-testid="api-key-card">
+                  <div key={k.id} className="border border-white/20 bg-white/[0.05] rounded-xl p-4 flex items-center justify-between" data-testid="api-key-card">
                     <div>
                       <div className="font-bold text-sm">{k.name}</div>
-                      <code className="font-mono text-xs text-white/40">{k.key_prefix}...</code>
+                      <code className="font-mono text-xs text-white/55">{k.key_prefix}...</code>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="px-2 py-1 bg-green-500/10 text-green-400 text-[10px] font-mono rounded border border-green-500/20" data-testid="key-status">
@@ -1795,7 +1795,7 @@ export function Account() {
               </div>
             )}
 
-            <p className="text-sm text-white/40 font-light mt-6">Do not share your API key in publicly accessible areas such as GitHub or client-side code.</p>
+            <p className="text-sm text-white/55 font-light mt-6">Do not share your API key in publicly accessible areas such as GitHub or client-side code.</p>
           </motion.div>
         )}
 
@@ -1826,17 +1826,17 @@ export function Account() {
             )}
 
             <div className="grid gap-6 lg:grid-cols-[1.25fr_0.95fr] mb-8">
-              <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.18),transparent_40%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-7">
+              <div className="relative overflow-hidden rounded-[28px] border border-white/20 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.18),transparent_40%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-7">
                 <div className="absolute inset-0 bg-[linear-gradient(115deg,transparent,rgba(255,255,255,0.05),transparent)] opacity-40 pointer-events-none" />
                 <div className="relative">
                   <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
                     <div>
-                      <p className="text-xs font-mono uppercase tracking-[0.2em] text-white/35 mb-2">Prepaid balance</p>
+                      <p className="text-xs font-mono uppercase tracking-[0.2em] text-white/50 mb-2">Prepaid balance</p>
                       <div className="text-5xl font-light tracking-tight mb-3" data-testid="billing-balance">{balanceDisplay}</div>
                       <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-mono ${balanceTone.pill}`}>{balanceTone.label}</span>
                     </div>
-                    <div className="rounded-3xl border border-white/10 bg-black/30 px-5 py-4 min-w-[12rem]">
-                      <div className="text-xs font-mono uppercase tracking-[0.16em] text-white/35 mb-2">Recommended reserve</div>
+                    <div className="rounded-3xl border border-white/20 bg-black/30 px-5 py-4 min-w-[12rem]">
+                      <div className="text-xs font-mono uppercase tracking-[0.16em] text-white/50 mb-2">Recommended reserve</div>
                       <div className="text-lg font-semibold">{formatUsdWhole(RECOMMENDED_THRESHOLD_USD)}</div>
                     </div>
                   </div>
@@ -1853,7 +1853,7 @@ export function Account() {
                         className={`rounded-2xl border px-4 py-4 text-left transition-colors ${
                           amount === RECOMMENDED_TOPUP_USD
                             ? 'border-emerald-300/25 bg-emerald-500/10'
-                            : 'border-white/10 bg-black/25 hover:border-white/30'
+                            : 'border-white/20 bg-black/25 hover:border-white/50'
                         }`}
                       >
                         <div className="text-2xl font-semibold">{formatUsdWhole(amount)}</div>
@@ -1906,7 +1906,7 @@ export function Account() {
                           )}
                           <button
                             onClick={() => setPostTopupPrompt(false)}
-                            className="rounded-2xl border border-white/15 bg-black/20 px-4 py-3 text-sm font-mono text-white hover:border-white/30 transition-colors"
+                            className="rounded-2xl border border-white/15 bg-black/20 px-4 py-3 text-sm font-mono text-white hover:border-white/50 transition-colors"
                             data-testid="post-topup-dismiss"
                           >
                             Not now
@@ -1917,10 +1917,10 @@ export function Account() {
                   </div>
                 )}
 
-                <div ref={autotopupCardRef} className="border border-white/10 bg-white/[0.02] rounded-[28px] p-6" data-testid="autotopup-card">
+                <div ref={autotopupCardRef} className="border border-white/20 bg-white/[0.05] rounded-[28px] p-6" data-testid="autotopup-card">
                   <div className="flex items-start justify-between gap-4 mb-5">
                     <div>
-                      <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-[0.18em] text-white/35 mb-2">
+                      <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-[0.18em] text-white/50 mb-2">
                         <Repeat className="w-4 h-4" /> Auto-topup
                       </div>
                       <h2 className="text-xl font-semibold tracking-tight">{autotopupSettings.enabled ? 'Enabled' : 'Backup funding rule'}</h2>
@@ -1946,10 +1946,10 @@ export function Account() {
                     </button>
                   </div>
 
-                  <div className="rounded-2xl border border-white/10 bg-black/20 p-4 mb-4">
+                  <div className="rounded-2xl border border-white/20 bg-black/20 p-4 mb-4">
                     <div className="flex items-center justify-between gap-3 mb-3">
                       <div>
-                        <p className="text-xs font-mono uppercase tracking-[0.14em] text-white/35">Recommended default</p>
+                        <p className="text-xs font-mono uppercase tracking-[0.14em] text-white/50">Recommended default</p>
                         <p className="text-sm text-white/60 mt-1">{recommendedRuleCopy}</p>
                       </div>
                       <button
@@ -1969,9 +1969,9 @@ export function Account() {
                   </div>
 
                   <div className="mb-4">
-                    <label className="text-xs font-mono uppercase tracking-[0.14em] text-white/35 block mb-2">Trigger when balance falls below</label>
+                    <label className="text-xs font-mono uppercase tracking-[0.14em] text-white/50 block mb-2">Trigger when balance falls below</label>
                     <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/35 font-mono">$</span>
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50 font-mono">$</span>
                       <input
                         type="number"
                         min="1"
@@ -1984,15 +1984,15 @@ export function Account() {
                           }))
                         }
                         data-testid="autotopup-threshold-input"
-                        className="w-full bg-black border border-white/10 rounded-2xl py-3 pl-10 pr-4 text-white font-mono focus:outline-none focus:border-white/30"
+                        className="w-full bg-white/[0.06] border border-white/30 rounded-2xl py-3 pl-10 pr-4 text-white font-mono focus:outline-none focus:border-white/50"
                       />
                     </div>
                   </div>
 
                   <div className="mb-5">
-                    <label className="text-xs font-mono uppercase tracking-[0.14em] text-white/35 block mb-2">Top-up amount</label>
+                    <label className="text-xs font-mono uppercase tracking-[0.14em] text-white/50 block mb-2">Top-up amount</label>
                     <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/35 font-mono">$</span>
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50 font-mono">$</span>
                       <input
                         type="number"
                         min="5"
@@ -2005,19 +2005,19 @@ export function Account() {
                           }))
                         }
                         data-testid="autotopup-amount-input"
-                        className="w-full bg-black border border-white/10 rounded-2xl py-3 pl-10 pr-4 text-white font-mono focus:outline-none focus:border-white/30"
+                        className="w-full bg-white/[0.06] border border-white/30 rounded-2xl py-3 pl-10 pr-4 text-white font-mono focus:outline-none focus:border-white/50"
                       />
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-white/10 bg-black/20 p-4 mb-5">
+                  <div className="rounded-2xl border border-white/20 bg-black/20 p-4 mb-5">
                     <div className="flex items-start gap-3">
                       <ShieldCheck className="w-5 h-5 text-white/45 mt-0.5" />
                       <div>
                         <p className="text-sm text-white/70">
                           {hasCards ? 'A Stripe card is on file.' : 'Save a Stripe card first before enabling auto-topup.'}
                         </p>
-                        <p className="text-xs text-white/40 mt-1">This only funds prepaid credits. It does not switch you to postpaid billing.</p>
+                        <p className="text-xs text-white/55 mt-1">This only funds prepaid credits. It does not switch you to postpaid billing.</p>
                       </div>
                     </div>
                   </div>
@@ -2036,7 +2036,7 @@ export function Account() {
                     <button
                       onClick={saveAutotopup}
                       disabled={savingAutotopup || (autotopupSettings.enabled && !hasCards)}
-                      className="rounded-2xl border border-white/15 bg-white/[0.03] px-4 py-3 text-sm font-mono text-white hover:border-white/30 transition-colors disabled:opacity-50"
+                      className="rounded-2xl border border-white/15 bg-white/[0.06] px-4 py-3 text-sm font-mono text-white hover:border-white/50 transition-colors disabled:opacity-50"
                       data-testid="autotopup-save-btn"
                     >
                       {savingAutotopup ? 'Saving...' : autotopupSettings.enabled ? 'Save auto-topup rule' : 'Save as disabled'}
@@ -2044,10 +2044,10 @@ export function Account() {
                   </div>
                 </div>
 
-                <div className="border border-white/10 bg-white/[0.02] rounded-[28px] p-6" data-testid="stripe-card">
+                <div className="border border-white/20 bg-white/[0.05] rounded-[28px] p-6" data-testid="stripe-card">
                   <div className="flex items-center justify-between gap-4 mb-5">
                     <div>
-                      <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-[0.18em] text-white/35 mb-2">
+                      <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-[0.18em] text-white/50 mb-2">
                         <CreditCard className="w-4 h-4" /> Saved cards
                       </div>
                       <h2 className="text-xl font-semibold tracking-tight">{hasCards ? 'Stripe payment method on file' : 'No Stripe card saved'}</h2>
@@ -2055,7 +2055,7 @@ export function Account() {
                     {stripePk && (
                       <button
                         onClick={startCardSetup}
-                        className="rounded-2xl border border-white/15 bg-white/[0.03] px-4 py-3 text-sm font-mono text-white hover:border-white/30 transition-colors"
+                        className="rounded-2xl border border-white/15 bg-white/[0.06] px-4 py-3 text-sm font-mono text-white hover:border-white/50 transition-colors"
                       >
                         {hasCards ? 'Replace card' : 'Add card'}
                       </button>
@@ -2065,10 +2065,10 @@ export function Account() {
                   {paymentMethods.length > 0 ? (
                     <div className="space-y-3">
                       {paymentMethods.map(pm => (
-                        <div key={pm.id} className="rounded-2xl border border-white/10 bg-black/20 p-4 flex items-center justify-between gap-3" data-testid="saved-card">
+                        <div key={pm.id} className="rounded-2xl border border-white/20 bg-black/20 p-4 flex items-center justify-between gap-3" data-testid="saved-card">
                           <div>
                             <div className="font-semibold">{maskCard(pm)}</div>
-                            <div className="text-xs font-mono text-white/40 mt-1">
+                            <div className="text-xs font-mono text-white/55 mt-1">
                               Expires {String(pm.card?.exp_month || '').padStart(2, '0')}/{pm.card?.exp_year}
                             </div>
                           </div>
@@ -2079,7 +2079,7 @@ export function Account() {
                       ))}
                     </div>
                   ) : (
-                    <div className="rounded-2xl border border-dashed border-white/10 bg-black/20 p-5">
+                    <div className="rounded-2xl border border-dashed border-white/20 bg-black/20 p-5">
                       <p className="text-sm text-white/60">Add a Stripe card if you want prepaid credits to refill automatically.</p>
                     </div>
                   )}
@@ -2104,9 +2104,9 @@ export function Account() {
             {transactions.length > 0 && (
               <>
                 <h2 className="text-xl font-bold tracking-tight mb-4">Transaction history</h2>
-                <div className="border border-white/10 rounded-3xl overflow-hidden">
+                <div className="border border-white/20 rounded-3xl overflow-hidden">
                   <table className="w-full text-left text-sm" data-testid="payment-history-table">
-                    <thead className="bg-white/5 font-mono text-xs text-white/40 border-b border-white/10">
+                    <thead className="bg-white/10 font-mono text-xs text-white/55 border-b border-white/20">
                       <tr>
                         <th className="px-6 py-3 font-normal">Date</th>
                         <th className="px-6 py-3 font-normal">Type</th>
@@ -2136,14 +2136,14 @@ export function Account() {
             <div className="flex items-center justify-between mb-8">
               <div>
                 <h1 className="text-2xl font-bold tracking-tight">Usage & Spend</h1>
-                <p className="text-sm text-white/40 font-mono mt-1">Spend by product, by API key, and how often you use the platform</p>
+                <p className="text-sm text-white/55 font-mono mt-1">Spend by product, by API key, and how often you use the platform</p>
               </div>
               <div className="flex gap-2 font-mono text-sm">
                 {(['24h', '7d', '30d', '90d'] as const).map(p => (
                   <button
                     key={p}
                     onClick={() => setAnalyticsPeriod(p)}
-                    className={`px-3 py-1.5 rounded-lg transition-colors ${analyticsPeriod === p ? 'bg-white text-black font-bold' : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white'}`}
+                    className={`px-3 py-1.5 rounded-lg transition-colors ${analyticsPeriod === p ? 'bg-white text-black font-bold' : 'bg-white/10 text-white/60 hover:bg-white/10 hover:text-white'}`}
                   >
                     {p}
                   </button>
@@ -2152,7 +2152,7 @@ export function Account() {
             </div>
 
             {analyticsLoading ? (
-              <div className="flex items-center justify-center h-48 text-white/40 font-mono text-sm">Loading analytics…</div>
+              <div className="flex items-center justify-center h-48 text-white/55 font-mono text-sm">Loading analytics…</div>
             ) : drilldown ? (
               <div>
                 <button
@@ -2164,13 +2164,13 @@ export function Account() {
                 <h2 className="text-lg font-bold tracking-tight mb-1">
                   {drilldown.type === 'key' ? 'API Key' : 'Provider'}: <span className="font-mono text-white/70">{drilldown.label}</span>
                 </h2>
-                <p className="text-sm text-white/40 font-mono mb-6">Model breakdown · {analyticsPeriod}</p>
+                <p className="text-sm text-white/55 font-mono mb-6">Model breakdown · {analyticsPeriod}</p>
                 {drilldown.models.length === 0 ? (
-                  <p className="text-white/40 font-mono text-sm">No usage data for this period.</p>
+                  <p className="text-white/55 font-mono text-sm">No usage data for this period.</p>
                 ) : (
-                  <div className="border border-white/10 rounded-3xl overflow-hidden">
+                  <div className="border border-white/20 rounded-3xl overflow-hidden">
                     <table className="w-full text-left text-sm font-mono">
-                      <thead className="bg-white/5 text-xs text-white/40 border-b border-white/10">
+                      <thead className="bg-white/10 text-xs text-white/55 border-b border-white/20">
                         <tr>
                           <th className="px-6 py-3 font-normal">Model</th>
                           <th className="px-6 py-3 font-normal">Provider</th>
@@ -2180,7 +2180,7 @@ export function Account() {
                       </thead>
                       <tbody className="divide-y divide-white/10">
                         {drilldown.models.map((m, i) => (
-                          <tr key={i} className="hover:bg-white/5">
+                          <tr key={i} className="hover:bg-white/10">
                             <td className="px-6 py-3 text-white/90">{m.model}</td>
                             <td className="px-6 py-3 text-white/50 capitalize">{m.provider}</td>
                             <td className="px-6 py-3 text-right text-white/70">{m.total_requests.toLocaleString()}</td>
@@ -2195,22 +2195,22 @@ export function Account() {
             ) : (
               <div className="space-y-8">
                 {/* Activity contribution heatmap */}
-                <div className="border border-white/10 rounded-3xl p-6">
+                <div className="border border-white/20 rounded-3xl p-6">
                   <h2 className="text-base font-bold tracking-tight mb-1">Activity</h2>
-                  <p className="text-xs text-white/40 font-mono mb-5">How often you use the platform · last year</p>
+                  <p className="text-xs text-white/55 font-mono mb-5">How often you use the platform · last year</p>
                   {activity.length === 0 ? (
-                    <div className="h-32 flex items-center justify-center text-white/30 font-mono text-sm">No activity yet</div>
+                    <div className="h-32 flex items-center justify-center text-white/45 font-mono text-sm">No activity yet</div>
                   ) : (
                     <ContributionHeatmap data={activity} />
                   )}
                 </div>
 
                 {/* Spend by product */}
-                <div className="border border-white/10 rounded-3xl p-6">
+                <div className="border border-white/20 rounded-3xl p-6">
                   <h2 className="text-base font-bold tracking-tight mb-1">Spend by product</h2>
-                  <p className="text-xs text-white/40 font-mono mb-5">Cost across capabilities · {analyticsPeriod}</p>
+                  <p className="text-xs text-white/55 font-mono mb-5">Cost across capabilities · {analyticsPeriod}</p>
                   {spendByProduct.length === 0 ? (
-                    <div className="h-48 flex items-center justify-center text-white/30 font-mono text-sm">No data for this period</div>
+                    <div className="h-48 flex items-center justify-center text-white/45 font-mono text-sm">No data for this period</div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
                       <ResponsiveContainer width="100%" height={240}>
@@ -2240,9 +2240,9 @@ export function Account() {
                           />
                         </PieChart>
                       </ResponsiveContainer>
-                      <div className="border border-white/10 rounded-2xl overflow-hidden">
+                      <div className="border border-white/20 rounded-2xl overflow-hidden">
                         <table className="w-full text-left text-sm font-mono">
-                          <thead className="bg-white/5 text-xs text-white/40 border-b border-white/10">
+                          <thead className="bg-white/10 text-xs text-white/55 border-b border-white/20">
                             <tr>
                               <th className="px-4 py-3 font-normal">Product</th>
                               <th className="px-4 py-3 font-normal text-right">Requests</th>
@@ -2251,7 +2251,7 @@ export function Account() {
                           </thead>
                           <tbody className="divide-y divide-white/10">
                             {spendByProduct.map((p, i) => (
-                              <tr key={i} className="hover:bg-white/5">
+                              <tr key={i} className="hover:bg-white/10">
                                 <td className="px-4 py-3 text-white/90">
                                   <span className="inline-block w-2.5 h-2.5 rounded-sm mr-2 align-middle" style={{ background: productMeta(p.product).color }} />
                                   {productMeta(p.product).label}
@@ -2268,11 +2268,11 @@ export function Account() {
                 </div>
 
                 {/* Spend over time */}
-                <div className="border border-white/10 rounded-3xl p-6">
+                <div className="border border-white/20 rounded-3xl p-6">
                   <h2 className="text-base font-bold tracking-tight mb-1">Spend over time</h2>
-                  <p className="text-xs text-white/40 font-mono mb-5">Cost in USD · {analyticsPeriod}</p>
+                  <p className="text-xs text-white/55 font-mono mb-5">Cost in USD · {analyticsPeriod}</p>
                   {spendTimeSeries.length === 0 ? (
-                    <div className="h-48 flex items-center justify-center text-white/30 font-mono text-sm">No data for this period</div>
+                    <div className="h-48 flex items-center justify-center text-white/45 font-mono text-sm">No data for this period</div>
                   ) : (
                     <ResponsiveContainer width="100%" height={200}>
                       <LineChart data={spendTimeSeries} margin={{ top: 4, right: 8, bottom: 4, left: 0 }}>
@@ -2311,11 +2311,11 @@ export function Account() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Spend by API key */}
-                  <div className="border border-white/10 rounded-3xl p-6">
+                  <div className="border border-white/20 rounded-3xl p-6">
                     <h2 className="text-base font-bold tracking-tight mb-1">Spend by API key</h2>
-                    <p className="text-xs text-white/40 font-mono mb-5">Click a bar to drill down · {analyticsPeriod}</p>
+                    <p className="text-xs text-white/55 font-mono mb-5">Click a bar to drill down · {analyticsPeriod}</p>
                     {spendByKey.length === 0 ? (
-                      <div className="h-48 flex items-center justify-center text-white/30 font-mono text-sm">No data for this period</div>
+                      <div className="h-48 flex items-center justify-center text-white/45 font-mono text-sm">No data for this period</div>
                     ) : (
                       <ResponsiveContainer width="100%" height={220}>
                         <BarChart data={spendByKey} margin={{ top: 4, right: 8, bottom: 30, left: 0 }}
@@ -2357,16 +2357,16 @@ export function Account() {
                       </ResponsiveContainer>
                     )}
                     {spendByKey.length > 0 && (
-                      <p className="text-xs text-white/30 font-mono mt-3 text-center">Click a bar to see model breakdown</p>
+                      <p className="text-xs text-white/45 font-mono mt-3 text-center">Click a bar to see model breakdown</p>
                     )}
                   </div>
 
                   {/* Spend by provider */}
-                  <div className="border border-white/10 rounded-3xl p-6">
+                  <div className="border border-white/20 rounded-3xl p-6">
                     <h2 className="text-base font-bold tracking-tight mb-1">Spend by provider</h2>
-                    <p className="text-xs text-white/40 font-mono mb-5">Click a bar to drill down · {analyticsPeriod}</p>
+                    <p className="text-xs text-white/55 font-mono mb-5">Click a bar to drill down · {analyticsPeriod}</p>
                     {spendByProvider.length === 0 ? (
-                      <div className="h-48 flex items-center justify-center text-white/30 font-mono text-sm">No data for this period</div>
+                      <div className="h-48 flex items-center justify-center text-white/45 font-mono text-sm">No data for this period</div>
                     ) : (
                       <ResponsiveContainer width="100%" height={220}>
                         <BarChart data={spendByProvider} margin={{ top: 4, right: 8, bottom: 30, left: 0 }}
@@ -2408,7 +2408,7 @@ export function Account() {
                       </ResponsiveContainer>
                     )}
                     {spendByProvider.length > 0 && (
-                      <p className="text-xs text-white/30 font-mono mt-3 text-center">Click a bar to see model breakdown</p>
+                      <p className="text-xs text-white/45 font-mono mt-3 text-center">Click a bar to see model breakdown</p>
                     )}
                   </div>
                 </div>
@@ -2416,9 +2416,9 @@ export function Account() {
                 {/* Summary table */}
                 {(spendByKey.length > 0 || spendByProvider.length > 0) && (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="border border-white/10 rounded-3xl overflow-hidden">
+                    <div className="border border-white/20 rounded-3xl overflow-hidden">
                       <table className="w-full text-left text-sm font-mono">
-                        <thead className="bg-white/5 text-xs text-white/40 border-b border-white/10">
+                        <thead className="bg-white/10 text-xs text-white/55 border-b border-white/20">
                           <tr>
                             <th className="px-6 py-3 font-normal">API Key</th>
                             <th className="px-6 py-3 font-normal text-right">Requests</th>
@@ -2429,12 +2429,12 @@ export function Account() {
                           {spendByKey.map((k, i) => (
                             <tr
                               key={i}
-                              className="hover:bg-white/5 cursor-pointer"
+                              className="hover:bg-white/10 cursor-pointer"
                               onClick={() => void loadDrilldown('key', k.api_key_id, `${k.key_name} (${k.key_prefix}…)`)}
                             >
                               <td className="px-6 py-3 text-white/90">
                                 <span>{k.key_name}</span>
-                                <span className="text-white/30 ml-2">{k.key_prefix}…</span>
+                                <span className="text-white/45 ml-2">{k.key_prefix}…</span>
                               </td>
                               <td className="px-6 py-3 text-right text-white/60">{k.total_requests.toLocaleString()}</td>
                               <td className="px-6 py-3 text-right text-emerald-300">{formatBalanceUnits(k.total_cost_cents)}</td>
@@ -2443,9 +2443,9 @@ export function Account() {
                         </tbody>
                       </table>
                     </div>
-                    <div className="border border-white/10 rounded-3xl overflow-hidden">
+                    <div className="border border-white/20 rounded-3xl overflow-hidden">
                       <table className="w-full text-left text-sm font-mono">
-                        <thead className="bg-white/5 text-xs text-white/40 border-b border-white/10">
+                        <thead className="bg-white/10 text-xs text-white/55 border-b border-white/20">
                           <tr>
                             <th className="px-6 py-3 font-normal">Provider</th>
                             <th className="px-6 py-3 font-normal text-right">Requests</th>
@@ -2456,7 +2456,7 @@ export function Account() {
                           {spendByProvider.map((p, i) => (
                             <tr
                               key={i}
-                              className="hover:bg-white/5 cursor-pointer capitalize"
+                              className="hover:bg-white/10 cursor-pointer capitalize"
                               onClick={() => void loadDrilldown('provider', p.provider, p.provider)}
                             >
                               <td className="px-6 py-3 text-white/90">{p.provider}</td>

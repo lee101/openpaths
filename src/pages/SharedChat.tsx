@@ -56,15 +56,15 @@ export function SharedChat() {
   if (error) {
     return (
       <div className="max-w-3xl mx-auto px-6 py-24 text-center">
-        <MessageSquare className="w-8 h-8 mx-auto mb-4 text-white/20" />
+        <MessageSquare className="w-8 h-8 mx-auto mb-4 text-white/35" />
         <h1 className="text-2xl font-bold tracking-tight mb-2">Chat not found</h1>
-        <p className="text-sm font-mono text-white/40">{error}</p>
+        <p className="text-sm font-mono text-white/55">{error}</p>
       </div>
     );
   }
 
   if (!data) {
-    return <div className="max-w-3xl mx-auto px-6 py-24 font-mono text-sm text-white/35">Loading shared chat...</div>;
+    return <div className="max-w-3xl mx-auto px-6 py-24 font-mono text-sm text-white/50">Loading shared chat...</div>;
   }
 
   const createdAt = data.created_at ? new Date(data.created_at) : null;
@@ -72,11 +72,11 @@ export function SharedChat() {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
       <div className="mb-8">
-        <p className="text-xs font-mono uppercase tracking-[0.2em] text-white/35 mb-2">Shared chat</p>
+        <p className="text-xs font-mono uppercase tracking-[0.2em] text-white/50 mb-2">Shared chat</p>
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight mb-3">{data.title || 'Shared conversation'}</h1>
-        <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-white/40">
+        <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-white/55">
           {data.model && (
-            <span className="rounded border border-white/15 bg-white/[0.04] px-2 py-1 text-white/70" data-testid="shared-chat-model">
+            <span className="rounded border border-white/15 bg-white/[0.07] px-2 py-1 text-white/70" data-testid="shared-chat-model">
               {data.model}
             </span>
           )}
@@ -90,8 +90,8 @@ export function SharedChat() {
       </div>
 
       {data.system_prompt && (
-        <div className="mb-6 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3">
-          <p className="text-[10px] font-mono uppercase tracking-[0.16em] text-white/30 mb-1">System prompt</p>
+        <div className="mb-6 rounded-xl border border-white/20 bg-white/[0.05] px-4 py-3">
+          <p className="text-[10px] font-mono uppercase tracking-[0.16em] text-white/45 mb-1">System prompt</p>
           <p className="text-sm text-white/60 whitespace-pre-wrap break-words">{data.system_prompt}</p>
         </div>
       )}
@@ -106,7 +106,7 @@ export function SharedChat() {
             </div>
           ) : (
             <div key={i} className="flex justify-start">
-              <div className="max-w-[85%] rounded-2xl rounded-bl-sm border border-white/10 bg-white/[0.02] px-4 py-2.5 text-sm leading-relaxed text-white/90 whitespace-pre-wrap break-words">
+              <div className="max-w-[85%] rounded-2xl rounded-bl-sm border border-white/20 bg-white/[0.05] px-4 py-2.5 text-sm leading-relaxed text-white/90 whitespace-pre-wrap break-words">
                 {m.content}
               </div>
             </div>
@@ -114,7 +114,7 @@ export function SharedChat() {
         ))}
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 border-t border-white/10 pt-6">
+      <div className="flex flex-wrap items-center gap-3 border-t border-white/20 pt-6">
         <button
           onClick={continueInPlayground}
           className="bg-white text-black px-5 py-2.5 rounded-lg font-mono font-bold text-sm hover:bg-white/90 transition-colors flex items-center gap-2"
@@ -125,7 +125,7 @@ export function SharedChat() {
         {!hasKey && (
           <button
             onClick={() => setAuthOpen(true)}
-            className="border border-white/15 px-5 py-2.5 rounded-lg font-mono text-sm text-white/70 hover:text-white hover:border-white/30 transition-colors flex items-center gap-2"
+            className="border border-white/15 px-5 py-2.5 rounded-lg font-mono text-sm text-white/70 hover:text-white hover:border-white/50 transition-colors flex items-center gap-2"
             data-testid="shared-chat-signup"
           >
             <Sparkles className="w-4 h-4" /> Try OpenPaths free

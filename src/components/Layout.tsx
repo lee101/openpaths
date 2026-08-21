@@ -113,7 +113,7 @@ export function Layout() {
 
   return (
     <div className={`bg-black text-white font-sans selection:bg-white selection:text-black flex flex-col ${isPlayground ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
-      <nav className="relative border-b border-white/10 px-4 py-3 sm:px-6 sm:py-4 flex items-center justify-between bg-black/90 backdrop-blur-md z-50 shrink-0">
+      <nav className="relative border-b border-white/20 px-4 py-3 sm:px-6 sm:py-4 flex items-center justify-between bg-black/90 backdrop-blur-md z-50 shrink-0">
         <Link to="/" className="flex items-center gap-2">
           <img src="/openpaths-road-logo.svg" alt="OpenPaths" className="h-6 w-6 brightness-0 invert" />
           <span className="font-mono font-bold text-xl tracking-tighter">OpenPaths</span>
@@ -159,7 +159,7 @@ export function Layout() {
           )}
           <button
             type="button"
-            className="inline-flex h-9 w-9 items-center justify-center rounded border border-white/10 bg-white/[0.03] text-white/70 transition-colors hover:border-white/25 hover:text-white min-[1800px]:hidden"
+            className="inline-flex h-9 w-9 items-center justify-center rounded border border-white/20 bg-white/[0.06] text-white/70 transition-colors hover:border-white/45 hover:text-white min-[1800px]:hidden"
             aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={mobileMenuOpen}
             onClick={() => setMobileMenuOpen(open => !open)}
@@ -168,18 +168,18 @@ export function Layout() {
           </button>
         </div>
         {mobileMenuOpen && (
-          <div className="absolute left-0 right-0 top-full border-b border-white/10 bg-black/95 px-4 py-4 shadow-2xl backdrop-blur-md min-[1800px]:hidden">
+          <div className="absolute left-0 right-0 top-full border-b border-white/20 bg-black/95 px-4 py-4 shadow-2xl backdrop-blur-md min-[1800px]:hidden">
             <div className="grid grid-cols-2 gap-2 font-mono text-sm text-white/60">
               {primaryNavLinks.map(link => (
                 <Link
                   key={link.to}
                   to={link.to}
-                  className={`rounded border px-3 py-2 transition-colors ${link.match(location.pathname) ? 'border-white/25 bg-white/[0.08] text-white' : 'border-white/8 bg-white/[0.02] hover:border-white/20 hover:text-white'}`}
+                  className={`rounded border px-3 py-2 transition-colors ${link.match(location.pathname) ? 'border-white/25 bg-white/[0.11] text-white' : 'border-white/8 bg-white/[0.05] hover:border-white/40 hover:text-white'}`}
                 >
                   {link.label}
                 </Link>
               ))}
-              <a href="/#api" className="rounded border border-white/8 bg-white/[0.02] px-3 py-2 transition-colors hover:border-white/20 hover:text-white">
+              <a href="/#api" className="rounded border border-white/8 bg-white/[0.05] px-3 py-2 transition-colors hover:border-white/40 hover:text-white">
                 API
               </a>
               {!isLoggedIn && (
@@ -208,7 +208,7 @@ export function Layout() {
       </main>
 
       {!isPlayground && (
-        <footer className="border-t border-white/10 px-6 py-12 mt-auto">
+        <footer className="border-t border-white/20 px-6 py-12 mt-auto">
           <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-2 lg:grid-cols-6 gap-8 mb-10">
               <div>
@@ -216,11 +216,11 @@ export function Layout() {
                   <img src="/openpaths-road-logo.svg" alt="OpenPaths" className="h-5 w-5 brightness-0 invert" />
                   <span className="font-mono font-bold tracking-tighter">OpenPaths</span>
                 </div>
-                <p className="text-xs font-mono text-white/30 leading-relaxed">Open source model router. Millisecond routing across 400+ AI models.</p>
+                <p className="text-xs font-mono text-white/45 leading-relaxed">Open source model router. Millisecond routing across 400+ AI models.</p>
               </div>
               <div>
                 <h4 className="text-xs font-mono font-bold text-white/60 uppercase tracking-widest mb-3">Product</h4>
-                <ul className="space-y-2 text-sm font-mono text-white/40">
+                <ul className="space-y-2 text-sm font-mono text-white/55">
                   <li><Link to="/models" className="hover:text-white transition-colors">Models</Link></li>
                   <li><Link to="/providers" className="hover:text-white transition-colors">Providers</Link></li>
                   <li><Link to="/stats" className="hover:text-white transition-colors">Stats</Link></li>
@@ -250,7 +250,7 @@ export function Layout() {
               </div>
               <div className="col-span-2 lg:col-span-3">
                 <h4 className="text-xs font-mono font-bold text-white/60 uppercase tracking-widest mb-3">Network</h4>
-                <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2 text-sm font-mono text-white/40">
+                <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2 text-sm font-mono text-white/55">
                   {networkLinks.map((link) => (
                     <li key={link.href}>
                       <a href={link.href} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
@@ -262,14 +262,14 @@ export function Layout() {
               </div>
               <div>
                 <h4 className="text-xs font-mono font-bold text-white/60 uppercase tracking-widest mb-3">Social</h4>
-                <ul className="space-y-2 text-sm font-mono text-white/40">
+                <ul className="space-y-2 text-sm font-mono text-white/55">
                   <li><a href="https://twitter.com/Netwrck" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Twitter</a></li>
                   <li><a href="https://github.com/Netwrck" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">GitHub</a></li>
                   <li><a href="https://codex-infinity.com/@lee101/openpaths" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Codex</a></li>
                 </ul>
               </div>
             </div>
-            <div className="border-t border-white/10 pt-6 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs font-mono text-white/20">
+            <div className="border-t border-white/20 pt-6 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs font-mono text-white/35">
               <span>© {new Date().getFullYear()} OpenPaths. Open source model routing.</span>
               <div className="flex flex-wrap justify-center gap-x-4 gap-y-2">
                 <Link to="/docs" className="hover:text-white transition-colors">Docs</Link>

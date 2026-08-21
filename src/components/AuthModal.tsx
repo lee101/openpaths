@@ -66,15 +66,15 @@ export function AuthModal({ open, onClose, onSuccess }: { open: boolean; onClose
             initial={{ opacity: 0, scale: 0.96, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 10 }}
-            className="bg-[#090909] border border-white/10 rounded-3xl w-full max-w-md p-6 md:p-8 shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
+            className="bg-[#090909] border border-white/20 rounded-3xl w-full max-w-md p-6 md:p-8 shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
             data-testid="auth-modal"
           >
             <div className="flex items-start justify-between gap-4 mb-6">
               <div>
-                <p className="text-xs font-mono uppercase tracking-[0.2em] text-white/35 mb-2">OpenPaths</p>
+                <p className="text-xs font-mono uppercase tracking-[0.2em] text-white/50 mb-2">OpenPaths</p>
                 <h2 className="text-2xl font-bold tracking-tight">{mode === 'login' ? 'Sign In' : 'Create Account'}</h2>
               </div>
-              <button onClick={onClose} className="text-white/40 hover:text-white transition-colors shrink-0" data-testid="auth-modal-close">
+              <button onClick={onClose} className="text-white/55 hover:text-white transition-colors shrink-0" data-testid="auth-modal-close">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -84,7 +84,7 @@ export function AuthModal({ open, onClose, onSuccess }: { open: boolean; onClose
                   value={name}
                   onChange={e => setName(e.target.value)}
                   placeholder="Name"
-                  className="w-full bg-black border border-white/10 rounded-lg py-3 px-4 text-white font-mono focus:outline-none focus:border-white/30"
+                  className="w-full bg-white/[0.06] border border-white/30 rounded-lg py-3 px-4 text-white font-mono focus:outline-none focus:border-white/50"
                 />
               )}
               <input
@@ -93,7 +93,7 @@ export function AuthModal({ open, onClose, onSuccess }: { open: boolean; onClose
                 onChange={e => setEmail(e.target.value)}
                 placeholder="Email"
                 required
-                className="w-full bg-black border border-white/10 rounded-lg py-3 px-4 text-white font-mono focus:outline-none focus:border-white/30"
+                className="w-full bg-white/[0.06] border border-white/30 rounded-lg py-3 px-4 text-white font-mono focus:outline-none focus:border-white/50"
                 data-testid="auth-modal-email"
               />
               <div className="relative">
@@ -104,14 +104,14 @@ export function AuthModal({ open, onClose, onSuccess }: { open: boolean; onClose
                   placeholder="Password"
                   required
                   minLength={8}
-                  className="w-full bg-black border border-white/10 rounded-lg py-3 px-4 pr-12 text-white font-mono focus:outline-none focus:border-white/30"
+                  className="w-full bg-white/[0.06] border border-white/30 rounded-lg py-3 px-4 pr-12 text-white font-mono focus:outline-none focus:border-white/50"
                   data-testid="auth-modal-password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(v => !v)}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/55 hover:text-white/70 transition-colors"
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -131,7 +131,7 @@ export function AuthModal({ open, onClose, onSuccess }: { open: boolean; onClose
                 setMode(mode === 'login' ? 'register' : 'login');
                 setError('');
               }}
-              className="mt-4 text-sm font-mono text-white/40 hover:text-white transition-colors"
+              className="mt-4 text-sm font-mono text-white/55 hover:text-white transition-colors"
               data-testid="auth-modal-toggle"
             >
               {mode === 'login' ? 'Need an account? Register' : 'Already have an account? Sign In'}

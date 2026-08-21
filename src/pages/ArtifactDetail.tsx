@@ -69,7 +69,7 @@ export function ArtifactDetail() {
     }
   };
 
-  if (loading) return <div className="flex h-[60vh] items-center justify-center text-white/40"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+  if (loading) return <div className="flex h-[60vh] items-center justify-center text-white/55"><Loader2 className="h-6 w-6 animate-spin" /></div>;
   if (error || !artifact) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-20 text-center">
@@ -105,14 +105,14 @@ export function ArtifactDetail() {
           <div>
             <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">{artifact.title}</h1>
             {artifact.description && <p className="mt-3 max-w-2xl text-white/60">{artifact.description}</p>}
-            <div className="mt-3 flex items-center gap-4 font-mono text-xs text-white/35">
+            <div className="mt-3 flex items-center gap-4 font-mono text-xs text-white/50">
               <span className="inline-flex items-center gap-1"><Eye className="h-3 w-3" /> {artifact.view_count} views</span>
               {artifact.tags?.length > 0 && <span>{artifact.tags.join(' · ')}</span>}
             </div>
           </div>
           <div className="flex items-center gap-2">
             {isOwner && (
-              <Link to={`/artifacts/${artifact.id}/edit`} className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/[0.04] px-3 py-2 font-mono text-xs text-white hover:bg-white/[0.08]">
+              <Link to={`/artifacts/${artifact.id}/edit`} className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/[0.07] px-3 py-2 font-mono text-xs text-white hover:bg-white/[0.11]">
                 <Pencil className="h-3.5 w-3.5" /> Edit
               </Link>
             )}
@@ -122,25 +122,25 @@ export function ArtifactDetail() {
           </div>
         </div>
 
-        <div className="mb-3 inline-flex rounded-lg border border-white/10 bg-white/[0.03] p-1">
+        <div className="mb-3 inline-flex rounded-lg border border-white/20 bg-white/[0.06] p-1">
           <button onClick={() => setView('preview')} className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 font-mono text-xs ${view === 'preview' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white'}`}><Eye className="h-3.5 w-3.5" /> Preview</button>
           <button onClick={() => setView('code')} className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 font-mono text-xs ${view === 'code' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white'}`}><Code2 className="h-3.5 w-3.5" /> Code</button>
         </div>
 
         {view === 'preview' ? (
-          <div className="overflow-hidden rounded-lg border border-white/10 bg-white">
+          <div className="overflow-hidden rounded-lg border border-white/20 bg-white">
             <iframe title="preview" srcDoc={previewDoc} sandbox="allow-scripts allow-modals allow-forms allow-popups" className="h-[640px] w-full bg-white" />
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-[200px_1fr]">
-            <ul className="space-y-0.5 rounded-lg border border-white/10 bg-white/[0.02] p-2">
+            <ul className="space-y-0.5 rounded-lg border border-white/20 bg-white/[0.05] p-2">
               {artifact.files?.map(f => (
                 <li key={f.path}>
-                  <button onClick={() => setActiveFile(f.path)} className={`w-full truncate rounded px-2 py-1 text-left font-mono text-xs ${activeFile === f.path ? 'bg-white/10 text-white' : 'text-white/55 hover:bg-white/[0.04]'}`}>{f.path}</button>
+                  <button onClick={() => setActiveFile(f.path)} className={`w-full truncate rounded px-2 py-1 text-left font-mono text-xs ${activeFile === f.path ? 'bg-white/10 text-white' : 'text-white/55 hover:bg-white/[0.07]'}`}>{f.path}</button>
                 </li>
               ))}
             </ul>
-            <pre className="max-h-[640px] overflow-auto rounded-lg border border-white/10 bg-black p-4 font-mono text-[13px] leading-relaxed text-white/80">
+            <pre className="max-h-[640px] overflow-auto rounded-lg border border-white/20 bg-black p-4 font-mono text-[13px] leading-relaxed text-white/80">
               <code>{file?.content || ''}</code>
             </pre>
           </div>

@@ -22,8 +22,8 @@ const STATUS_LABEL: Record<WorksWithStatus, string> = {
 const STATUS_CLASS: Record<WorksWithStatus, string> = {
   'native-merged': 'border-green-400/30 text-green-300 bg-green-400/10',
   'native-pr': 'border-cyan-400/30 text-cyan-300 bg-cyan-400/10',
-  compatible: 'border-white/15 text-white/70 bg-white/[0.04]',
-  listed: 'border-white/10 text-white/45 bg-white/[0.02]',
+  compatible: 'border-white/15 text-white/70 bg-white/[0.07]',
+  listed: 'border-white/20 text-white/45 bg-white/[0.05]',
 };
 
 const appIcon = (app: WorksWithApp) => worksWithFavicon(app.url);
@@ -69,7 +69,7 @@ export function WorksWith() {
       />
       <section className="max-w-6xl mx-auto px-6 py-16">
         <div className="mb-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/[0.04] text-xs font-mono text-white/60 mb-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/20 bg-white/[0.07] text-xs font-mono text-white/60 mb-6">
             <PlugZap className="w-3.5 h-3.5" />
             {counts.total} apps · {counts.oss} open source
           </div>
@@ -85,26 +85,26 @@ export function WorksWith() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <div className="border border-white/10 bg-white/[0.02] rounded-2xl p-5">
-            <div className="text-xs font-mono text-white/40 mb-2">Base URL</div>
+          <div className="border border-white/20 bg-white/[0.05] rounded-2xl p-5">
+            <div className="text-xs font-mono text-white/55 mb-2">Base URL</div>
             <code className="text-sm text-white/80 break-all" data-testid="works-base-url">{apiBase}</code>
           </div>
-          <div className="border border-white/10 bg-white/[0.02] rounded-2xl p-5">
-            <div className="text-xs font-mono text-white/40 mb-2">API Key</div>
+          <div className="border border-white/20 bg-white/[0.05] rounded-2xl p-5">
+            <div className="text-xs font-mono text-white/55 mb-2">API Key</div>
             <code className="text-sm text-white/80 break-all">{exampleKey}</code>
           </div>
-          <div className="border border-white/10 bg-white/[0.02] rounded-2xl p-5">
-            <div className="text-xs font-mono text-white/40 mb-2">Model IDs</div>
+          <div className="border border-white/20 bg-white/[0.05] rounded-2xl p-5">
+            <div className="text-xs font-mono text-white/55 mb-2">Model IDs</div>
             <div className="text-sm text-white/70 font-mono">openpaths/auto · auto-code · auto-reasoning</div>
           </div>
         </div>
 
-        <div className="border border-white/10 bg-white/[0.02] rounded-2xl overflow-hidden mb-12">
-          <div className="flex items-center justify-between px-5 py-3 border-b border-white/10">
-            <div className="text-xs font-mono text-white/40">Verify your key works anywhere</div>
+        <div className="border border-white/20 bg-white/[0.05] rounded-2xl overflow-hidden mb-12">
+          <div className="flex items-center justify-between px-5 py-3 border-b border-white/20">
+            <div className="text-xs font-mono text-white/55">Verify your key works anywhere</div>
             <button
               onClick={copySnippet}
-              className="inline-flex items-center gap-2 border border-white/10 px-3 py-1.5 rounded-lg text-xs font-mono text-white/70 hover:text-white hover:border-white/20 transition-colors"
+              className="inline-flex items-center gap-2 border border-white/20 px-3 py-1.5 rounded-lg text-xs font-mono text-white/70 hover:text-white hover:border-white/40 transition-colors"
             >
               {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
               {copied ? 'Copied' : 'Copy'}
@@ -115,12 +115,12 @@ export function WorksWith() {
 
         {grouped.map(group => (
           <div key={group.category} className="mb-12">
-            <h2 className="text-sm font-mono uppercase tracking-[0.24em] text-white/40 mb-4">{group.category}</h2>
+            <h2 className="text-sm font-mono uppercase tracking-[0.24em] text-white/55 mb-4">{group.category}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {group.apps.map(app => (
                 <article
                   key={app.slug}
-                  className="border border-white/10 bg-white/[0.02] rounded-2xl p-5 flex flex-col gap-3"
+                  className="border border-white/20 bg-white/[0.05] rounded-2xl p-5 flex flex-col gap-3"
                   data-testid={`works-app-${app.slug}`}
                 >
                   <div className="flex items-start gap-3">
@@ -128,7 +128,7 @@ export function WorksWith() {
                       src={appIcon(app)}
                       alt=""
                       loading="lazy"
-                      className="w-9 h-9 rounded-lg bg-white/5 border border-white/10 shrink-0"
+                      className="w-9 h-9 rounded-lg bg-white/10 border border-white/20 shrink-0"
                     />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -146,7 +146,7 @@ export function WorksWith() {
                   </div>
 
                   {app.setup && (
-                    <p className="text-xs text-white/45 font-mono leading-relaxed border-l border-white/10 pl-3">
+                    <p className="text-xs text-white/45 font-mono leading-relaxed border-l border-white/20 pl-3">
                       {app.setup}
                     </p>
                   )}
@@ -160,7 +160,7 @@ export function WorksWith() {
                         <Github className="w-3.5 h-3.5" /> Repo
                       </a>
                     )}
-                    {app.oss && <span className="text-white/30">open source</span>}
+                    {app.oss && <span className="text-white/45">open source</span>}
                   </div>
                 </article>
               ))}
@@ -168,7 +168,7 @@ export function WorksWith() {
           </div>
         ))}
 
-        <div className="border border-white/10 bg-white/[0.02] rounded-2xl p-6 text-sm text-white/60">
+        <div className="border border-white/20 bg-white/[0.05] rounded-2xl p-6 text-sm text-white/60">
           Building one of these — or your own app? Point it at{' '}
           <code className="text-white/80">{apiBase}</code>, grab a key on the{' '}
           <Link to="/account" className="text-white underline underline-offset-4">account page</Link>, and

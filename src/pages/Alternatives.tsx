@@ -48,7 +48,7 @@ export function Alternatives() {
 
       <div className="mx-auto max-w-7xl px-6 py-14">
         <section className="mb-14 max-w-4xl">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 font-mono text-xs uppercase tracking-[0.18em] text-white/45">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.06] px-3 py-1 font-mono text-xs uppercase tracking-[0.18em] text-white/45">
             Alternatives
           </div>
           <h1 className="text-4xl font-semibold tracking-tight md:text-6xl">
@@ -61,7 +61,7 @@ export function Alternatives() {
             <Link to="/account" className="inline-flex items-center gap-2 rounded bg-white px-4 py-2 font-mono text-sm font-bold text-black transition-colors hover:bg-white/90">
               Start routing <ArrowRight className="h-4 w-4" />
             </Link>
-            <Link to="/pricing" className="inline-flex items-center gap-2 rounded border border-white/12 px-4 py-2 font-mono text-sm text-white/70 transition-colors hover:border-white/30 hover:text-white">
+            <Link to="/pricing" className="inline-flex items-center gap-2 rounded border border-white/12 px-4 py-2 font-mono text-sm text-white/70 transition-colors hover:border-white/50 hover:text-white">
               View pricing
             </Link>
           </div>
@@ -69,8 +69,8 @@ export function Alternatives() {
 
         <section className="mb-14 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {comparisonHighlights.map((item) => (
-            <div key={item.title} className="rounded-lg border border-white/10 bg-white/[0.02] p-5">
-              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded border border-white/10 bg-white/[0.04] text-white/70">
+            <div key={item.title} className="rounded-lg border border-white/20 bg-white/[0.05] p-5">
+              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded border border-white/20 bg-white/[0.07] text-white/70">
                 {item.icon}
               </div>
               <h2 className="mb-2 text-lg font-semibold tracking-tight">{item.title}</h2>
@@ -79,18 +79,18 @@ export function Alternatives() {
           ))}
         </section>
 
-        <section className="mb-16 overflow-hidden rounded-lg border border-white/10 bg-white/[0.02]">
-          <div className="grid border-b border-white/10 md:grid-cols-3">
+        <section className="mb-16 overflow-hidden rounded-lg border border-white/20 bg-white/[0.05]">
+          <div className="grid border-b border-white/20 md:grid-cols-3">
             <div className="p-5">
-              <div className="font-mono text-xs uppercase tracking-[0.18em] text-white/40">Compare</div>
+              <div className="font-mono text-xs uppercase tracking-[0.18em] text-white/55">Compare</div>
               <div className="mt-2 text-xl font-semibold">OpenPaths vs the usual options</div>
             </div>
-            <div className="border-t border-white/10 p-5 md:border-l md:border-t-0">
-              <div className="font-mono text-xs uppercase tracking-[0.18em] text-white/40">Typical gateway</div>
+            <div className="border-t border-white/20 p-5 md:border-l md:border-t-0">
+              <div className="font-mono text-xs uppercase tracking-[0.18em] text-white/55">Typical gateway</div>
               <p className="mt-2 text-sm leading-relaxed text-white/50">One catalog, but often marketplace-scoped billing, manual model selection, and uneven coverage outside chat.</p>
             </div>
-            <div className="border-t border-white/10 p-5 md:border-l md:border-t-0">
-              <div className="font-mono text-xs uppercase tracking-[0.18em] text-white/40">OpenPaths</div>
+            <div className="border-t border-white/20 p-5 md:border-l md:border-t-0">
+              <div className="font-mono text-xs uppercase tracking-[0.18em] text-white/55">OpenPaths</div>
               <p className="mt-2 text-sm leading-relaxed text-white/50">One OpenAI-compatible API for routed text, media, embeddings, search, and 3D generation with pooled credits and fallbacks.</p>
             </div>
           </div>
@@ -107,7 +107,7 @@ export function Alternatives() {
         <section>
           <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <div className="font-mono text-xs uppercase tracking-[0.18em] text-white/40">Alternative Guides</div>
+              <div className="font-mono text-xs uppercase tracking-[0.18em] text-white/55">Alternative Guides</div>
               <h2 className="mt-2 text-3xl font-semibold tracking-tight">Pick the comparison that matches your stack.</h2>
             </div>
             <Link to="/blog" className="font-mono text-sm text-white/45 transition-colors hover:text-white">
@@ -125,13 +125,13 @@ export function Alternatives() {
               >
                 <Link
                   to={post.alternativePath || `/blog/${post.slug}`}
-                  className="group block h-full rounded-lg border border-white/10 bg-white/[0.02] p-6 transition-all hover:border-white/24 hover:bg-white/[0.045]"
+                  className="group block h-full rounded-lg border border-white/20 bg-white/[0.05] p-6 transition-all hover:border-white/45 hover:bg-white/[0.07]"
                 >
                   <div className="mb-4 flex flex-wrap items-center gap-2">
-                    <span className="rounded border border-white/10 bg-white/[0.04] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.14em] text-white/45">
+                    <span className="rounded border border-white/20 bg-white/[0.07] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.14em] text-white/45">
                       {competitorName(post.title)}
                     </span>
-                    <span className="font-mono text-xs text-white/28">{post.readTime}</span>
+                    <span className="font-mono text-xs text-white/40">{post.readTime}</span>
                   </div>
                   <h3 className="mb-3 text-xl font-semibold tracking-tight transition-colors group-hover:text-white">
                     {post.title}
@@ -139,7 +139,7 @@ export function Alternatives() {
                   <p className="mb-6 text-sm leading-relaxed text-white/50">
                     {post.excerpt}
                   </p>
-                  <div className="flex items-center gap-2 font-mono text-sm text-white/40 transition-colors group-hover:text-white">
+                  <div className="flex items-center gap-2 font-mono text-sm text-white/55 transition-colors group-hover:text-white">
                     Read comparison <ArrowRight className="h-4 w-4" />
                   </div>
                 </Link>

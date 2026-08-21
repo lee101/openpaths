@@ -28,6 +28,22 @@ interface ProviderExample {
 }
 
 const EXAMPLES: Record<string, ProviderExample> = {
+  manifoldgen: {
+    description: 'ManifoldGen is the first-party K-Fold video generator: a creator-focused ManifoldGen API for cinematic H3 video generation, with text-to-video and real gallery outputs.',
+    endpoint: '/v1',
+    videoModel: 'kfold-video',
+    provides: [
+      {
+        title: 'K-Fold video generation',
+        description: 'Generate cinematic clips through the ManifoldGen API. The K-Fold route is backed by ManifoldGen H3 video generation and supports prompt, aspect ratio, duration, steps, audio, and output format controls.',
+      },
+    ],
+    notes: [
+      'Use kfold-video with /v1/videos/generations through OpenPaths.',
+      'ManifoldGen gallery examples on the homepage are real K-Fold/H3 outputs hosted by ManifoldGen.',
+      'For the provider-native creator workflow, visit manifoldgen.com.',
+    ],
+  },
   openai: {
     description: 'OpenAI GPT-5, GPT Realtime voice, o3/o4 reasoning, GPT Image 2, Sora 2 video, and transcription — routed through OpenPaths.',
     endpoint: '/v1',
@@ -444,11 +460,11 @@ export function ProviderDocs() {
               srcSet={provider.logoSrcSet}
               sizes="48px"
               alt=""
-              className={`w-12 h-12 rounded-lg border border-white/10 p-2 object-contain ${provider.slug === 'black-forest-labs' ? 'bg-white' : 'bg-white/[0.04]'}`}
+              className={`w-12 h-12 rounded-lg border border-white/20 p-2 object-contain ${provider.slug === 'black-forest-labs' ? 'bg-white' : 'bg-white/[0.07]'}`}
             />
           )}
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/[0.04] text-xs font-mono text-white/60 mb-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/20 bg-white/[0.07] text-xs font-mono text-white/60 mb-3">
               <BookOpen className="w-3.5 h-3.5" />
               {providerName} Docs
             </div>
@@ -463,7 +479,7 @@ export function ProviderDocs() {
             href={provider.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-mono text-white/60 border border-white/10 rounded-lg hover:text-white hover:border-white/30 transition-colors self-start"
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-mono text-white/60 border border-white/20 rounded-lg hover:text-white hover:border-white/50 transition-colors self-start"
           >
             <ExternalLink className="w-3.5 h-3.5" /> {providerName} website
           </a>
@@ -499,7 +515,7 @@ export function ProviderDocs() {
         {!apiKey && (
           <Link
             to="/account"
-            className="inline-flex items-center gap-2 border border-white/15 px-4 py-2.5 rounded-lg text-sm font-mono text-white/80 hover:text-white hover:border-white/30 transition-colors"
+            className="inline-flex items-center gap-2 border border-white/15 px-4 py-2.5 rounded-lg text-sm font-mono text-white/80 hover:text-white hover:border-white/50 transition-colors"
             data-testid="provider-docs-get-key"
           >
             <KeyRound className="w-4 h-4" /> Sign up for a free API key
@@ -507,12 +523,12 @@ export function ProviderDocs() {
         )}
       </div>
 
-      <div className="border border-white/10 bg-white/[0.02] rounded-2xl p-6 mb-8">
-        <div className="text-xs font-mono text-white/40 mb-1">Base URL</div>
+      <div className="border border-white/20 bg-white/[0.05] rounded-2xl p-6 mb-8">
+        <div className="text-xs font-mono text-white/55 mb-1">Base URL</div>
         <code className="text-sm text-white/80" data-testid="provider-docs-base-url">{apiBase}</code>
         {example?.notes && example.notes.length > 0 && (
           <div className="mt-4">
-            <div className="text-xs font-mono text-white/40 mb-2">Notes</div>
+            <div className="text-xs font-mono text-white/55 mb-2">Notes</div>
             <ul className="list-disc list-inside space-y-1 text-sm text-white/70">
               {example.notes.map((n, i) => <li key={i}>{n}</li>)}
             </ul>
@@ -530,7 +546,7 @@ export function ProviderDocs() {
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             {example.provides.map((item) => (
-              <div key={item.title} className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+              <div key={item.title} className="rounded-2xl border border-white/20 bg-white/[0.05] p-5">
                 <h3 className="text-base font-semibold tracking-tight mb-2">{item.title}</h3>
                 <p className="text-sm text-white/60 font-light leading-relaxed">{item.description}</p>
               </div>
@@ -541,7 +557,7 @@ export function ProviderDocs() {
 
       <div className="space-y-8">
         {snippets.map(snip => (
-          <div key={snip.title} className="border border-white/10 bg-white/[0.02] rounded-2xl p-6">
+          <div key={snip.title} className="border border-white/20 bg-white/[0.05] rounded-2xl p-6">
             <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
               <div>
                 <h2 className="text-xl font-bold tracking-tight">{snip.title}</h2>
@@ -549,7 +565,7 @@ export function ProviderDocs() {
               </div>
               <button
                 onClick={() => copy(snip.title, snip.curl)}
-                className="inline-flex items-center gap-2 border border-white/10 px-3 py-2 rounded-lg text-xs font-mono text-white/70 hover:text-white hover:border-white/20 transition-colors"
+                className="inline-flex items-center gap-2 border border-white/20 px-3 py-2 rounded-lg text-xs font-mono text-white/70 hover:text-white hover:border-white/40 transition-colors"
               >
                 {copied === snip.title ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
                 {copied === snip.title ? 'Copied' : 'Copy cURL'}
@@ -557,19 +573,19 @@ export function ProviderDocs() {
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <div className="text-xs font-mono text-white/40 mb-2">Python</div>
+                <div className="text-xs font-mono text-white/55 mb-2">Python</div>
                 <CodeBlock
                   code={snip.python}
                   language="python"
-                  preClassName="rounded-xl border border-white/10 bg-black/60 p-4 text-xs leading-6"
+                  preClassName="rounded-xl border border-white/20 bg-black/60 p-4 text-xs leading-6"
                 />
               </div>
               <div>
-                <div className="text-xs font-mono text-white/40 mb-2">cURL</div>
+                <div className="text-xs font-mono text-white/55 mb-2">cURL</div>
                 <CodeBlock
                   code={snip.curl}
                   language="bash"
-                  preClassName="rounded-xl border border-white/10 bg-black/60 p-4 text-xs leading-6"
+                  preClassName="rounded-xl border border-white/20 bg-black/60 p-4 text-xs leading-6"
                 />
               </div>
             </div>
@@ -578,20 +594,20 @@ export function ProviderDocs() {
       </div>
 
       {providerModels.length > 0 && (
-        <div className="border border-white/10 bg-white/[0.02] rounded-2xl p-6 mt-10">
+        <div className="border border-white/20 bg-white/[0.05] rounded-2xl p-6 mt-10">
           <h2 className="text-xl font-bold tracking-tight mb-3">Available models on {providerName}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {providerModels.map(m => (
               <Link
                 key={m.id}
                 to={`/playground?model=${encodeURIComponent(m.id)}`}
-                className="rounded-xl border border-white/10 px-4 py-3 hover:border-white/30 transition-colors flex items-center justify-between gap-3"
+                className="rounded-xl border border-white/20 px-4 py-3 hover:border-white/50 transition-colors flex items-center justify-between gap-3"
               >
                 <div className="min-w-0">
                   <div className="text-sm font-mono text-white truncate">{m.name}</div>
                   <div className="text-xs text-white/50 truncate">{m.description}</div>
                 </div>
-                <span className="text-[10px] font-mono text-white/40 shrink-0">{m.contextLength}</span>
+                <span className="text-[10px] font-mono text-white/55 shrink-0">{m.contextLength}</span>
               </Link>
             ))}
           </div>

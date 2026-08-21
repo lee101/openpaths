@@ -80,23 +80,23 @@ export function Artifacts() {
         </div>
 
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="inline-flex rounded-lg border border-white/10 bg-white/[0.03] p-1">
+          <div className="inline-flex rounded-lg border border-white/20 bg-white/[0.06] p-1">
             <TabButton active={tab === 'public'} onClick={() => setTab('public')} icon={<Globe className="h-3.5 w-3.5" />} label="Public" />
             <TabButton active={tab === 'mine'} onClick={() => setTab('mine')} icon={<Lock className="h-3.5 w-3.5" />} label="Mine" />
           </div>
           <form onSubmit={onSearch} className="relative flex-1 sm:max-w-md">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/55" />
             <input
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder={tab === 'public' ? 'Search public artifacts ($1 / 1k)' : 'Search your artifacts'}
-              className="w-full rounded-lg border border-white/10 bg-black py-2.5 pl-10 pr-3 font-mono text-sm text-white outline-none transition-colors focus:border-cyan-300"
+              className="w-full rounded-lg border border-white/20 bg-black py-2.5 pl-10 pr-3 font-mono text-sm text-white outline-none transition-colors focus:border-cyan-300"
             />
           </form>
         </div>
 
         {tab === 'mine' && !loggedIn && (
-          <div className="rounded-lg border border-white/10 bg-white/[0.02] p-8 text-center text-white/60">
+          <div className="rounded-lg border border-white/20 bg-white/[0.05] p-8 text-center text-white/60">
             <p>
               <Link to="/account" className="text-cyan-300 underline underline-offset-4">Sign in</Link> to see and build your own artifacts.
             </p>
@@ -108,13 +108,13 @@ export function Artifacts() {
         )}
 
         {loading ? (
-          <div className="flex items-center justify-center py-24 text-white/40">
+          <div className="flex items-center justify-center py-24 text-white/55">
             <Loader2 className="h-5 w-5 animate-spin" />
           </div>
         ) : items.length === 0 ? (
           (tab === 'mine' && !loggedIn) ? null : (
-            <div className="rounded-lg border border-dashed border-white/10 py-24 text-center">
-              <Boxes className="mx-auto mb-4 h-8 w-8 text-white/20" />
+            <div className="rounded-lg border border-dashed border-white/20 py-24 text-center">
+              <Boxes className="mx-auto mb-4 h-8 w-8 text-white/35" />
               <p className="text-white/50 font-mono text-sm">
                 {tab === 'mine' ? 'No artifacts yet — create your first one.' : 'No public artifacts found.'}
               </p>
@@ -149,13 +149,13 @@ function ArtifactCard({ artifact }: { artifact: Artifact; key?: React.Key }) {
   return (
     <Link
       to={`/artifacts/${artifact.slug || artifact.id}`}
-      className="group flex flex-col overflow-hidden rounded-xl border border-white/10 bg-white/[0.02] transition-colors hover:border-white/25 hover:bg-white/[0.04]"
+      className="group flex flex-col overflow-hidden rounded-xl border border-white/20 bg-white/[0.05] transition-colors hover:border-white/45 hover:bg-white/[0.07]"
     >
       <div className="aspect-[16/9] w-full overflow-hidden bg-gradient-to-br from-white/[0.06] to-transparent">
         {artifact.image_url ? (
           <img src={artifact.image_url} alt="" loading="lazy" className="h-full w-full object-cover" />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-white/15">
+          <div className="flex h-full w-full items-center justify-center text-white/30">
             <Boxes className="h-10 w-10" />
           </div>
         )}
@@ -163,10 +163,10 @@ function ArtifactCard({ artifact }: { artifact: Artifact; key?: React.Key }) {
       <div className="flex flex-1 flex-col p-5">
         <div className="mb-2 flex items-center gap-2">
           <h3 className="flex-1 truncate text-lg font-semibold tracking-tight">{artifact.title}</h3>
-          {artifact.visibility !== 'public' && <Lock className="h-3.5 w-3.5 flex-none text-white/30" />}
+          {artifact.visibility !== 'public' && <Lock className="h-3.5 w-3.5 flex-none text-white/45" />}
         </div>
         <p className="line-clamp-2 flex-1 text-sm font-light text-white/55">{artifact.description || 'No description.'}</p>
-        <div className="mt-4 flex items-center justify-between font-mono text-[11px] text-white/35">
+        <div className="mt-4 flex items-center justify-between font-mono text-[11px] text-white/50">
           <span className="inline-flex items-center gap-1"><Eye className="h-3 w-3" /> {artifact.view_count}</span>
           {artifact.tags?.length > 0 && <span className="truncate">{artifact.tags.slice(0, 3).join(' · ')}</span>}
         </div>

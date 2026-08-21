@@ -48,13 +48,13 @@ export function Providers() {
       </div>
 
       <div className="mb-12">
-        <div className="mb-4 text-xs font-mono uppercase tracking-[0.22em] text-white/40">Jump to provider</div>
+        <div className="mb-4 text-xs font-mono uppercase tracking-[0.22em] text-white/55">Jump to provider</div>
         <div className="flex flex-wrap gap-2">
           {providers.map(provider => (
             <a
               key={provider.slug}
               href={`#${provider.slug}`}
-              className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 font-mono text-xs text-white/65 hover:border-white/30 hover:bg-white/[0.06] hover:text-white transition-colors"
+              className="rounded-full border border-white/20 bg-white/[0.06] px-3 py-1.5 font-mono text-xs text-white/65 hover:border-white/50 hover:bg-white/[0.09] hover:text-white transition-colors"
             >
               {provider.name}
             </a>
@@ -76,7 +76,7 @@ export function Providers() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: idx * 0.05 }}
               id={provider.slug}
-              className="scroll-mt-24 border border-white/20 bg-white/[0.04] rounded-xl p-6 hover:bg-white/[0.06] hover:border-white/30 transition-all flex flex-col"
+              className="scroll-mt-24 border border-white/20 bg-white/[0.07] rounded-xl p-6 hover:bg-white/[0.09] hover:border-white/50 transition-all flex flex-col"
             >
               <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-3">
@@ -96,34 +96,34 @@ export function Providers() {
                     href={provider.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white/60 border border-white/10 rounded hover:text-white hover:border-white/30 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white/60 border border-white/20 rounded hover:text-white hover:border-white/50 transition-colors"
                   >
                     <ExternalLink className="w-3 h-3" /> Website
                   </a>
                 )}
                 <Link
                   to={providerDocsPath(provider.slug)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white/60 border border-white/10 rounded hover:text-white hover:border-white/30 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white/60 border border-white/20 rounded hover:text-white hover:border-white/50 transition-colors"
                 >
                   <ArrowRight className="w-3 h-3" /> Docs
                 </Link>
                 <Link
                   to={providerPath(provider.slug)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white/60 border border-white/10 rounded hover:text-white hover:border-white/30 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white/60 border border-white/20 rounded hover:text-white hover:border-white/50 transition-colors"
                 >
                   <ArrowRight className="w-3 h-3" /> Provider Page
                 </Link>
                 {provider.kind === 'search' ? (
                   <Link
                     to="/search"
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white/60 border border-white/10 rounded hover:text-white hover:border-white/30 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white/60 border border-white/20 rounded hover:text-white hover:border-white/50 transition-colors"
                   >
                     <ArrowRight className="w-3 h-3" /> Try Search
                   </Link>
                 ) : (
                   <Link
                     to={`/models?q=${encodeURIComponent(provider.name)}`}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white/60 border border-white/10 rounded hover:text-white hover:border-white/30 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white/60 border border-white/20 rounded hover:text-white hover:border-white/50 transition-colors"
                   >
                     <ArrowRight className="w-3 h-3" /> View Models
                   </Link>
@@ -145,7 +145,7 @@ export function Providers() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: idx * 0.05 }}
               id={provider.slug}
-              className="scroll-mt-24 border border-white/10 bg-white/[0.02] rounded-xl p-6 hover:bg-white/[0.04] hover:border-white/20 transition-all flex flex-col"
+              className="scroll-mt-24 border border-white/20 bg-white/[0.05] rounded-xl p-6 hover:bg-white/[0.07] hover:border-white/40 transition-all flex flex-col"
             >
               <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-3">
@@ -164,33 +164,33 @@ export function Providers() {
                   href={provider.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white/60 border border-white/10 rounded hover:text-white hover:border-white/30 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white/60 border border-white/20 rounded hover:text-white hover:border-white/50 transition-colors"
                 >
                   <ExternalLink className="w-3 h-3" /> Website
                 </a>
                 <Link
                   to={providerDocsPath(provider.slug)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white/60 border border-white/10 rounded hover:text-white hover:border-white/30 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white/60 border border-white/20 rounded hover:text-white hover:border-white/50 transition-colors"
                 >
                   <ArrowRight className="w-3 h-3" /> Docs
                 </Link>
                 <Link
                   to={providerPath(provider.slug)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white/60 border border-white/10 rounded hover:text-white hover:border-white/30 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white/60 border border-white/20 rounded hover:text-white hover:border-white/50 transition-colors"
                 >
                   <ArrowRight className="w-3 h-3" /> Provider Page
                 </Link>
                 {provider.kind === 'search' ? (
                   <Link
                     to="/search"
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white/60 border border-white/10 rounded hover:text-white hover:border-white/30 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white/60 border border-white/20 rounded hover:text-white hover:border-white/50 transition-colors"
                   >
                     <ArrowRight className="w-3 h-3" /> Try Search
                   </Link>
                 ) : (
                   <Link
                     to={`/models?q=${encodeURIComponent(provider.name)}`}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white/60 border border-white/10 rounded hover:text-white hover:border-white/30 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white/60 border border-white/20 rounded hover:text-white hover:border-white/50 transition-colors"
                   >
                     <ArrowRight className="w-3 h-3" /> View Models
                   </Link>

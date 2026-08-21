@@ -326,7 +326,7 @@ console.log(data.model_glb.url);`,
         <div className="mx-auto max-w-7xl">
           <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <div className="mb-3 inline-flex items-center gap-2 rounded border border-white/10 bg-white/[0.03] px-3 py-1 text-xs font-mono text-white/45">
+              <div className="mb-3 inline-flex items-center gap-2 rounded border border-white/20 bg-white/[0.06] px-3 py-1 text-xs font-mono text-white/45">
                 <Box className="h-3.5 w-3.5" /> {engine === 'meshy-v6' ? 'Fal Meshy v6' : engine === 'tripo' ? 'Fal Tripo p1' : 'Fal Pixal3D'}
               </div>
               <h1 className="max-w-3xl text-4xl font-bold tracking-tight md:text-6xl">Image to 3D</h1>
@@ -335,42 +335,42 @@ console.log(data.model_glb.url);`,
               </p>
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs font-mono text-white/45 sm:grid-cols-4">
-              <span className="rounded border border-white/10 px-3 py-2">1024: $0.30</span>
-              <span className="rounded border border-white/10 px-3 py-2">2048: $0.42</span>
-              <span className="rounded border border-white/10 px-3 py-2">4096: $0.42</span>
-              <span className="rounded border border-white/10 px-3 py-2">GLB output</span>
+              <span className="rounded border border-white/20 px-3 py-2">1024: $0.30</span>
+              <span className="rounded border border-white/20 px-3 py-2">2048: $0.42</span>
+              <span className="rounded border border-white/20 px-3 py-2">4096: $0.42</span>
+              <span className="rounded border border-white/20 px-3 py-2">GLB output</span>
             </div>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-[420px_minmax(0,1fr)]">
-            <section className="rounded-lg border border-white/10 bg-white/[0.02] p-5">
+            <section className="rounded-lg border border-white/20 bg-white/[0.05] p-5">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="font-mono text-sm font-bold uppercase tracking-wider text-white/70">Generate</h2>
-                <button type="button" onClick={() => { setImageUrl(DEFAULT_IMAGE_URL); setUploadedImageUrl(''); setModelUrl(DEFAULT_MODEL_URL); setResult(null); }} className="text-xs font-mono text-white/40 hover:text-white">
+                <button type="button" onClick={() => { setImageUrl(DEFAULT_IMAGE_URL); setUploadedImageUrl(''); setModelUrl(DEFAULT_MODEL_URL); setResult(null); }} className="text-xs font-mono text-white/55 hover:text-white">
                   sword default
                 </button>
               </div>
 
               <label className="mb-3 block">
-                <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/40">OpenPaths API key</span>
+                <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/55">OpenPaths API key</span>
                 <input
                   value={apiKey}
                   onChange={e => setApiKey(e.target.value)}
                   placeholder="op-..."
-                  className="w-full rounded border border-white/10 bg-black px-3 py-2 text-sm font-mono text-white placeholder:text-white/25 focus:border-white/30 focus:outline-none"
+                  className="w-full rounded border border-white/20 bg-black px-3 py-2 text-sm font-mono text-white placeholder:text-white/45 focus:border-white/50 focus:outline-none"
                 />
               </label>
 
               <label className="mb-3 block">
-                <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/40">Image URL</span>
+                <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/55">Image URL</span>
                 <input
                   value={imageUrl}
                   onChange={e => setImageUrl(normalizeUploadedAssetUrl(e.target.value))}
-                  className="w-full rounded border border-white/10 bg-black px-3 py-2 text-sm font-mono text-white placeholder:text-white/25 focus:border-white/30 focus:outline-none"
+                  className="w-full rounded border border-white/20 bg-black px-3 py-2 text-sm font-mono text-white placeholder:text-white/45 focus:border-white/50 focus:outline-none"
                 />
                 {imageUrl && (
-                  <div className="mt-2 flex items-center gap-3 rounded border border-white/10 bg-white/[0.02] p-2">
-                    <img src={imageUrl} alt="Selected reference" className="h-14 w-14 flex-none rounded border border-white/10 bg-black object-cover" />
+                  <div className="mt-2 flex items-center gap-3 rounded border border-white/20 bg-white/[0.05] p-2">
+                    <img src={imageUrl} alt="Selected reference" className="h-14 w-14 flex-none rounded border border-white/20 bg-black object-cover" />
                     <a href={imageUrl} target="_blank" rel="noreferrer" className="min-w-0 truncate text-xs font-mono text-white/45 hover:text-white">
                       {imageUrl}
                     </a>
@@ -379,7 +379,7 @@ console.log(data.model_glb.url);`,
               </label>
 
               <label
-                className={`mb-3 flex cursor-pointer items-center gap-3 rounded border border-dashed px-3 py-3 text-xs font-mono transition-colors ${draggingReference ? 'border-emerald-300/50 bg-emerald-400/10 text-emerald-100' : 'border-white/10 bg-black/50 text-white/45 hover:border-white/20'}`}
+                className={`mb-3 flex cursor-pointer items-center gap-3 rounded border border-dashed px-3 py-3 text-xs font-mono transition-colors ${draggingReference ? 'border-emerald-300/50 bg-emerald-400/10 text-emerald-100' : 'border-white/20 bg-black/50 text-white/45 hover:border-white/40'}`}
                 {...referenceDropHandlers}
               >
                 <Upload className="h-4 w-4" />
@@ -396,7 +396,7 @@ console.log(data.model_glb.url);`,
               {uploadedImageUrl && (
                 <div className="mb-4 overflow-hidden rounded border border-emerald-400/25 bg-emerald-400/10">
                   <div className="flex gap-3 p-3">
-                    <img src={uploadedImageUrl} alt="Uploaded reference" className="h-20 w-20 flex-none rounded border border-white/10 bg-black object-cover" />
+                    <img src={uploadedImageUrl} alt="Uploaded reference" className="h-20 w-20 flex-none rounded border border-white/20 bg-black object-cover" />
                     <div className="min-w-0">
                       <div className="mb-1 text-[10px] font-mono uppercase tracking-[0.16em] text-emerald-200">Upload complete</div>
                       <p className="text-xs leading-relaxed text-white/55">This image is now selected for 3D generation.</p>
@@ -409,8 +409,8 @@ console.log(data.model_glb.url);`,
               )}
 
               <label className="mb-3 block">
-                <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/40">Engine</span>
-                <select value={engine} onChange={e => { setEngine(e.target.value as 'pixal3d' | 'meshy-v6' | 'tripo'); setResult(null); }} className="w-full rounded border border-white/10 bg-black px-3 py-2 text-sm font-mono text-white focus:border-white/30 focus:outline-none">
+                <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/55">Engine</span>
+                <select value={engine} onChange={e => { setEngine(e.target.value as 'pixal3d' | 'meshy-v6' | 'tripo'); setResult(null); }} className="w-full rounded border border-white/20 bg-black px-3 py-2 text-sm font-mono text-white focus:border-white/50 focus:outline-none">
                   <option value="pixal3d">Pixal3D — fast, textured ($0.30–$0.42)</option>
                   <option value="meshy-v6">Meshy v6 — higher quality ($0.80)</option>
                   <option value="tripo">Tripo p1 — sharp geometry ($0.40–$0.50)</option>
@@ -421,15 +421,15 @@ console.log(data.model_glb.url);`,
                 <>
                   <div className="grid grid-cols-2 gap-3">
                     <label>
-                      <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/40">Structure</span>
-                      <select value={resolution} onChange={e => setResolution(Number(e.target.value))} className="w-full rounded border border-white/10 bg-black px-3 py-2 text-sm font-mono text-white focus:border-white/30 focus:outline-none">
+                      <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/55">Structure</span>
+                      <select value={resolution} onChange={e => setResolution(Number(e.target.value))} className="w-full rounded border border-white/20 bg-black px-3 py-2 text-sm font-mono text-white focus:border-white/50 focus:outline-none">
                         <option value={1024}>1024</option>
                         <option value={1536}>1536</option>
                       </select>
                     </label>
                     <label>
-                      <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/40">Texture</span>
-                      <select value={textureSize} onChange={e => setTextureSize(Number(e.target.value))} className="w-full rounded border border-white/10 bg-black px-3 py-2 text-sm font-mono text-white focus:border-white/30 focus:outline-none">
+                      <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/55">Texture</span>
+                      <select value={textureSize} onChange={e => setTextureSize(Number(e.target.value))} className="w-full rounded border border-white/20 bg-black px-3 py-2 text-sm font-mono text-white focus:border-white/50 focus:outline-none">
                         <option value={1024}>1024</option>
                         <option value={2048}>2048</option>
                         <option value={4096}>4096</option>
@@ -437,7 +437,7 @@ console.log(data.model_glb.url);`,
                     </label>
                   </div>
 
-                  <button type="button" onClick={() => setRemesh(v => !v)} className={`mt-3 w-full rounded border px-3 py-2 text-xs font-mono transition-colors ${remesh ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' : 'border-white/10 bg-black text-white/45'}`}>
+                  <button type="button" onClick={() => setRemesh(v => !v)} className={`mt-3 w-full rounded border px-3 py-2 text-xs font-mono transition-colors ${remesh ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' : 'border-white/20 bg-black text-white/45'}`}>
                     Remesh {remesh ? 'on' : 'off'}
                   </button>
                 </>
@@ -445,23 +445,23 @@ console.log(data.model_glb.url);`,
                 <>
                   <div className="grid grid-cols-2 gap-3">
                     <label>
-                      <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/40">Topology</span>
-                      <select value={topology} onChange={e => setTopology(e.target.value as 'triangle' | 'quad')} className="w-full rounded border border-white/10 bg-black px-3 py-2 text-sm font-mono text-white focus:border-white/30 focus:outline-none">
+                      <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/55">Topology</span>
+                      <select value={topology} onChange={e => setTopology(e.target.value as 'triangle' | 'quad')} className="w-full rounded border border-white/20 bg-black px-3 py-2 text-sm font-mono text-white focus:border-white/50 focus:outline-none">
                         <option value="triangle">triangle</option>
                         <option value="quad">quad</option>
                       </select>
                     </label>
                     <label>
-                      <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/40">Target polycount</span>
-                      <input type="number" min={1000} max={300000} step={1000} value={targetPolycount} onChange={e => setTargetPolycount(Number(e.target.value) || 30000)} className="w-full rounded border border-white/10 bg-black px-3 py-2 text-sm font-mono text-white focus:border-white/30 focus:outline-none" />
+                      <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/55">Target polycount</span>
+                      <input type="number" min={1000} max={300000} step={1000} value={targetPolycount} onChange={e => setTargetPolycount(Number(e.target.value) || 30000)} className="w-full rounded border border-white/20 bg-black px-3 py-2 text-sm font-mono text-white focus:border-white/50 focus:outline-none" />
                     </label>
                   </div>
 
                   <div className="mt-3 grid grid-cols-2 gap-3">
-                    <button type="button" onClick={() => setShouldTexture(v => !v)} className={`rounded border px-3 py-2 text-xs font-mono transition-colors ${shouldTexture ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' : 'border-white/10 bg-black text-white/45'}`}>
+                    <button type="button" onClick={() => setShouldTexture(v => !v)} className={`rounded border px-3 py-2 text-xs font-mono transition-colors ${shouldTexture ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' : 'border-white/20 bg-black text-white/45'}`}>
                       Texture {shouldTexture ? 'on' : 'off'}
                     </button>
-                    <button type="button" onClick={() => setRemesh(v => !v)} className={`rounded border px-3 py-2 text-xs font-mono transition-colors ${remesh ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' : 'border-white/10 bg-black text-white/45'}`}>
+                    <button type="button" onClick={() => setRemesh(v => !v)} className={`rounded border px-3 py-2 text-xs font-mono transition-colors ${remesh ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' : 'border-white/20 bg-black text-white/45'}`}>
                       Remesh {remesh ? 'on' : 'off'}
                     </button>
                   </div>
@@ -469,11 +469,11 @@ console.log(data.model_glb.url);`,
               ) : (
                 <>
                   <label className="block">
-                    <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/40">Face limit (0 = adaptive)</span>
-                    <input type="number" min={0} max={500000} step={1000} value={targetPolycount} onChange={e => setTargetPolycount(Number(e.target.value) || 0)} className="w-full rounded border border-white/10 bg-black px-3 py-2 text-sm font-mono text-white focus:border-white/30 focus:outline-none" />
+                    <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/55">Face limit (0 = adaptive)</span>
+                    <input type="number" min={0} max={500000} step={1000} value={targetPolycount} onChange={e => setTargetPolycount(Number(e.target.value) || 0)} className="w-full rounded border border-white/20 bg-black px-3 py-2 text-sm font-mono text-white focus:border-white/50 focus:outline-none" />
                   </label>
 
-                  <button type="button" onClick={() => setShouldTexture(v => !v)} className={`mt-3 w-full rounded border px-3 py-2 text-xs font-mono transition-colors ${shouldTexture ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' : 'border-white/10 bg-black text-white/45'}`}>
+                  <button type="button" onClick={() => setShouldTexture(v => !v)} className={`mt-3 w-full rounded border px-3 py-2 text-xs font-mono transition-colors ${shouldTexture ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' : 'border-white/20 bg-black text-white/45'}`}>
                     Texture {shouldTexture ? 'on ($0.50)' : 'off ($0.40)'}
                   </button>
                 </>
@@ -491,25 +491,25 @@ console.log(data.model_glb.url);`,
 
               {error && <p className="mt-3 rounded border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs font-mono text-red-200">{error}</p>}
 
-              <div className="mt-5 overflow-hidden rounded border border-white/10 bg-black">
+              <div className="mt-5 overflow-hidden rounded border border-white/20 bg-black">
                 <img src={imageUrl} alt="Input reference" className="h-auto w-full" />
               </div>
             </section>
 
-            <section className="overflow-hidden rounded-lg border border-white/10 bg-white/[0.02]">
-              <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+            <section className="overflow-hidden rounded-lg border border-white/20 bg-white/[0.05]">
+              <div className="flex items-center justify-between border-b border-white/20 px-4 py-3">
                 <div>
                   <h2 className="font-mono text-sm font-bold uppercase tracking-wider text-white/70">3D Viewer</h2>
-                  <p className="mt-1 text-xs font-mono text-white/35">{result ? 'Generated result' : 'Default Pixal3D sword result'}</p>
+                  <p className="mt-1 text-xs font-mono text-white/50">{result ? 'Generated result' : 'Default Pixal3D sword result'}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button type="button" onClick={copyCurl} className="inline-flex items-center gap-2 rounded border border-white/10 px-3 py-2 text-xs font-mono text-white/50 hover:text-white">
+                  <button type="button" onClick={copyCurl} className="inline-flex items-center gap-2 rounded border border-white/20 px-3 py-2 text-xs font-mono text-white/50 hover:text-white">
                     <Copy className="h-3.5 w-3.5" /> {copied ? 'Copied' : 'Curl'}
                   </button>
-                  <a href={modelUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded border border-white/10 px-3 py-2 text-xs font-mono text-white/50 hover:text-white">
+                  <a href={modelUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded border border-white/20 px-3 py-2 text-xs font-mono text-white/50 hover:text-white">
                     <ExternalLink className="h-3.5 w-3.5" /> Open
                   </a>
-                  <a href={modelUrl} download className="inline-flex items-center gap-2 rounded border border-white/10 px-3 py-2 text-xs font-mono text-white/50 hover:text-white">
+                  <a href={modelUrl} download className="inline-flex items-center gap-2 rounded border border-white/20 px-3 py-2 text-xs font-mono text-white/50 hover:text-white">
                     <Download className="h-3.5 w-3.5" /> GLB
                   </a>
                 </div>
@@ -526,7 +526,7 @@ console.log(data.model_glb.url);`,
           </div>
 
           <div className="mt-6 grid min-w-0 gap-6 lg:grid-cols-2">
-            <section className="min-w-0 overflow-hidden rounded-lg border border-white/10 bg-white/[0.02] p-5">
+            <section className="min-w-0 overflow-hidden rounded-lg border border-white/20 bg-white/[0.05] p-5">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                 <h2 className="font-mono text-sm font-bold uppercase tracking-wider text-white/70">API code</h2>
                 <div className="flex items-center gap-2">
@@ -535,12 +535,12 @@ console.log(data.model_glb.url);`,
                       key={snippet}
                       type="button"
                       onClick={() => setActiveSnippet(snippet)}
-                      className={`rounded border px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-[0.14em] transition-colors ${activeSnippet === snippet ? 'border-white/30 bg-white/10 text-white' : 'border-white/10 text-white/35 hover:text-white'}`}
+                      className={`rounded border px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-[0.14em] transition-colors ${activeSnippet === snippet ? 'border-white/30 bg-white/10 text-white' : 'border-white/20 text-white/50 hover:text-white'}`}
                     >
                       {snippet === 'javascript' ? 'JS' : snippet}
                     </button>
                   ))}
-                  <button type="button" onClick={copySnippet} className="inline-flex items-center gap-1.5 rounded border border-white/10 px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-[0.14em] text-white/45 hover:text-white">
+                  <button type="button" onClick={copySnippet} className="inline-flex items-center gap-1.5 rounded border border-white/20 px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-[0.14em] text-white/45 hover:text-white">
                     <Copy className="h-3 w-3" /> {copied ? 'Copied' : 'Copy'}
                   </button>
                 </div>
@@ -549,18 +549,18 @@ console.log(data.model_glb.url);`,
                 language={activeSnippet === 'javascript' ? 'javascript' : activeSnippet === 'curl' ? 'bash' : 'python'}
                 label={activeSnippet === 'javascript' ? 'JavaScript' : activeSnippet === 'curl' ? 'cURL' : 'Python'}
                 code={snippets[activeSnippet]}
-                containerClassName="border border-white/10 rounded-lg overflow-hidden bg-black/40"
-                headerClassName="bg-white/[0.03]"
+                containerClassName="border border-white/20 rounded-lg overflow-hidden bg-black/40"
+                headerClassName="bg-white/[0.06]"
                 preClassName="text-xs"
               />
             </section>
-            <section className="min-w-0 overflow-hidden rounded-lg border border-white/10 bg-white/[0.02] p-5">
+            <section className="min-w-0 overflow-hidden rounded-lg border border-white/20 bg-white/[0.05] p-5">
               <h2 className="mb-3 font-mono text-sm font-bold uppercase tracking-wider text-white/70">Preview your own 3D file</h2>
               <p className="mb-4 text-sm leading-relaxed text-white/55">
                 Already have a model? Drop a <code className="text-white/70">.glb</code> or <code className="text-white/70">.gltf</code> to preview it instantly — nothing is uploaded.
               </p>
               <Model3DDrop minHeight={260} />
-              <p className="mt-4 break-words text-xs font-mono text-white/35">Sword default prompt: {DEFAULT_PROMPT}</p>
+              <p className="mt-4 break-words text-xs font-mono text-white/50">Sword default prompt: {DEFAULT_PROMPT}</p>
             </section>
           </div>
         </div>
