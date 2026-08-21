@@ -206,6 +206,23 @@ models:
       - "openpaths/auto-fast"
       - "deepseek-v4-flash"
 
+  # Free OpenRouter stealth route. Keep DeepSeek Flash as the first fallback
+  # because the upstream stealth model can disappear or temporarily reject
+  # requests without notice.
+  - id: "openpaths/stealth/ox-alpha"
+    provider: openrouter
+    provider_model_id: "stealth/ox-alpha"
+    input_price_per_1m: 0
+    output_price_per_1m: 0
+    aliases: ["stealth/ox-alpha", "ox-alpha", "openpaths-ox-alpha"]
+    context_window: 1000000
+    max_output_tokens: 32768
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+    fallback_models:
+      - "deepseek-v4-flash"
+
   - id: "openpaths/auto-cheap"
     provider: openai
     provider_model_id: "gpt-5.6-luna"
