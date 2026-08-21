@@ -29,7 +29,7 @@ type Provider struct {
 
 func New(apiKey string) *Provider {
 	return &Provider{
-		OpenAIProvider: openai.New(apiKey, baseURL),
+		OpenAIProvider: openai.NewRequiringUserTurn("minimax", apiKey, baseURL),
 		apiKey:         apiKey,
 		client:         &http.Client{Timeout: 5 * time.Minute},
 		baseURL:        baseURL,

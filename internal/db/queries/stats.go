@@ -452,6 +452,104 @@ func (q *StatsQueries) GetUserSpendByProduct(ctx context.Context, userID, period
 	return result, nil
 }
 
+// GetUserSpendByApp groups usage by the caller-supplied app attribution. The
+// app ID is present for normalized URLs; title/URL are retained as a fallback
+// so clients that send only X-Title still remain visible to the account owner.
+func (q *StatsQueries) GetUserSpendByApp(ctx context.Context, userID, period string) ([]model.AppSpend, error) {
+	since := time.Now().Add(-parsePeriod(period))
+	rows, err := q.pool.Query(ctx,
+		`SELECT COALESCE(ul.app_id::text, ''), MAX(COALESCE(ul.app_url, '')), MAX(COALESCE(ul.app_title, '')),
+				ul.model, ul.provider, COUNT(*)::bigint,
+				COALESCE(SUM(ul.tokens_in), 0)::bigint,
+				COALESCE(SUM(ul.tokens_out), 0)::bigint,
+				COALESCE(SUM(ul.cost_cents), 0)::bigint
+		 FROM usage_logs ul
+		 WHERE ul.user_id = $1 AND ul.created_at >= $2
+			AND (ul.app_id IS NOT NULL OR NULLIF(ul.app_url, '') IS NOT NULL OR NULLIF(ul.app_title, '') IS NOT NULL)
+		 GROUP BY ul.app_id,
+			CASE WHEN ul.app_id IS NULL THEN COALESCE(ul.app_url, '') ELSE '' END,
+			CASE WHEN ul.app_id IS NULL THEN COALESCE(ul.app_title, '') ELSE '' END,
+			ul.model, ul.provider
+		 ORDER BY SUM(ul.cost_cents) DESC, COUNT(*) DESC`,
+		userID, since,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("get user spend by app: %w", err)
+	}
+	defer rows.Close()
+
+	byKey := make(map[string]*model.AppSpend)
+	var order []string
+	for rows.Next() {
+		var appID, appURL, appTitle, modelName, provider string
+		var requests, tokensIn, tokensOut, cost int64
+		if err := rows.Scan(&appID, &appURL, &appTitle, &modelName, &provider, &requests, &tokensIn, &tokensOut, &cost); err != nil {
+			return nil, fmt.Errorf("scan user app spend: %w", err)
+		}
+		key := appID + "\x00" + appURL + "\x00" + appTitle
+		app := byKey[key]
+		if app == nil {
+			app = &model.AppSpend{AppID: appID, AppURL: appURL, AppTitle: appTitle}
+			byKey[key] = app
+			order = append(order, key)
+		}
+		app.TotalRequests += requests
+		app.TotalTokensIn += tokensIn
+		app.TotalTokensOut += tokensOut
+		app.TotalCostCents += cost
+		app.Models = append(app.Models, model.AppModelSpend{
+			Model: modelName, Provider: provider, TotalRequests: requests,
+			TotalTokensIn: tokensIn, TotalTokensOut: tokensOut, TotalCostCents: cost,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate user app spend: %w", err)
+	}
+
+	result := make([]model.AppSpend, 0, len(order))
+	for _, key := range order {
+		result = append(result, *byKey[key])
+	}
+	return result, nil
+}
+
+// GetUserRecentUsage returns request-level metadata for an activity page.
+// It deliberately omits prompts and response bodies.
+func (q *StatsQueries) GetUserRecentUsage(ctx context.Context, userID, period string, limit int) ([]model.UsageEvent, error) {
+	since := time.Now().Add(-parsePeriod(period))
+	if limit <= 0 || limit > 200 {
+		limit = 50
+	}
+	rows, err := q.pool.Query(ctx,
+		`SELECT ul.id::text, ul.model, ul.provider, ul.tokens_in, ul.tokens_out, ul.cost_cents,
+				ul.status_code, ul.error, ul.api_key_id::text, COALESCE(ak.name, ''),
+				COALESCE(ul.app_id::text, ''), COALESCE(ul.app_url, ''), COALESCE(ul.app_title, ''), ul.created_at
+		 FROM usage_logs ul
+		 LEFT JOIN api_keys ak ON ak.id = ul.api_key_id
+		 WHERE ul.user_id = $1 AND ul.created_at >= $2
+		 ORDER BY ul.created_at DESC
+		 LIMIT $3`, userID, since, limit)
+	if err != nil {
+		return nil, fmt.Errorf("get user recent usage: %w", err)
+	}
+	defer rows.Close()
+
+	var result []model.UsageEvent
+	for rows.Next() {
+		var e model.UsageEvent
+		if err := rows.Scan(&e.ID, &e.Model, &e.Provider, &e.TokensIn, &e.TokensOut,
+			&e.CostCents, &e.StatusCode, &e.Error, &e.APIKeyID, &e.APIKeyName,
+			&e.AppID, &e.AppURL, &e.AppTitle, &e.CreatedAt); err != nil {
+			return nil, fmt.Errorf("scan user recent usage: %w", err)
+		}
+		result = append(result, e)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate user recent usage: %w", err)
+	}
+	return result, nil
+}
+
 // GetUserDailyActivity returns per-day request counts and spend for the last
 // `days` days, used to render a GitHub-style contribution heatmap.
 func (q *StatsQueries) GetUserDailyActivity(ctx context.Context, userID string, days int) ([]model.DailyActivityPoint, error) {

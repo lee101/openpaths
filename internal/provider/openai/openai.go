@@ -97,6 +97,17 @@ func sanitizeForOpenAI(req *model.ChatCompletionRequest) {
 	req.ChatTemplateKwargs = nil
 }
 
+// NewRequiringUserTurn builds an OpenAI-compatible provider for an upstream
+// that, unlike OpenAI itself, rejects a conversation carrying no user turn
+// (MiniMax answers "invalid params, chat content is empty"). A system-only
+// message list is reshaped so those upstreams stay servable.
+func NewRequiringUserTurn(providerName, apiKey, baseURL string) *OpenAIProvider {
+	return NewCompatible(providerName, apiKey, baseURL, func(req *model.ChatCompletionRequest) {
+		sanitizeForOpenAI(req)
+		model.PromoteSystemToUser(req)
+	})
+}
+
 // isReasoningModel reports whether the model is an OpenAI reasoning-class model
 // (o-series, or the GPT-5 family excluding the gpt-5-chat aliases). These
 // models reject the legacy max_tokens parameter and only accept the default

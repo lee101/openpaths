@@ -950,6 +950,8 @@ export function Account() {
   const [spendByKey, setSpendByKey] = useState<{ api_key_id: string; key_prefix: string; key_name: string; total_requests: number; total_cost_cents: number }[]>([]);
   const [spendByProvider, setSpendByProvider] = useState<{ provider: string; total_requests: number; total_cost_cents: number }[]>([]);
   const [spendByProduct, setSpendByProduct] = useState<{ product: string; total_requests: number; total_tokens_in: number; total_tokens_out: number; total_cost_cents: number }[]>([]);
+  const [spendByModel, setSpendByModel] = useState<{ model: string; provider: string; total_requests: number; total_tokens_in: number; total_tokens_out: number; total_cost_cents: number }[]>([]);
+  const [spendByApp, setSpendByApp] = useState<{ app_id?: string; app_url?: string; app_title?: string; total_requests: number; total_tokens_in: number; total_tokens_out: number; total_cost_cents: number; models?: { model: string; provider: string; total_tokens_in: number; total_tokens_out: number; total_cost_cents: number }[] }[]>([]);
   const [activity, setActivity] = useState<{ date: string; total_requests: number; total_cost_cents: number }[]>([]);
   const [drilldown, setDrilldown] = useState<{ type: 'key' | 'provider'; id: string; label: string; models: { model: string; provider: string; total_requests: number; total_cost_cents: number }[] } | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
@@ -1111,17 +1113,21 @@ export function Account() {
     setAnalyticsLoading(true);
     const interval = period === '24h' ? '1h' : period === '7d' ? '6h' : '1d';
     try {
-      const [tsRes, keyRes, provRes, prodRes] = await Promise.all([
+      const [tsRes, keyRes, provRes, prodRes, modelRes, appRes] = await Promise.all([
         api(`/account/stats/timeseries?period=${period}&interval=${interval}&metric=cost`),
         api(`/account/stats/by-api-key?period=${period}`),
         api(`/account/stats/by-provider?period=${period}`),
         api(`/account/stats/by-product?period=${period}`),
+        api(`/account/stats/by-model?period=${period}`),
+        api(`/account/stats/by-app?period=${period}`),
       ]);
-      const [tsData, keyData, provData, prodData] = await Promise.all([tsRes.json(), keyRes.json(), provRes.json(), prodRes.json()]);
+      const [tsData, keyData, provData, prodData, modelData, appData] = await Promise.all([tsRes.json(), keyRes.json(), provRes.json(), prodRes.json(), modelRes.json(), appRes.json()]);
       setSpendTimeSeries(Array.isArray(tsData.data) ? tsData.data : []);
       setSpendByKey(Array.isArray(keyData.keys) ? keyData.keys : []);
       setSpendByProvider(Array.isArray(provData.providers) ? provData.providers : []);
       setSpendByProduct(Array.isArray(prodData.products) ? prodData.products : []);
+      setSpendByModel(Array.isArray(modelData.models) ? modelData.models : []);
+      setSpendByApp(Array.isArray(appData.apps) ? appData.apps : []);
     } catch {}
     setAnalyticsLoading(false);
   }, [apiKey]);
@@ -2265,6 +2271,36 @@ export function Account() {
                       </div>
                     </div>
                   )}
+                </div>
+
+                {/* Spend by model and caller app */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="border border-white/10 rounded-3xl overflow-hidden">
+                    <div className="border-b border-white/10 px-6 py-5">
+                      <h2 className="text-base font-bold tracking-tight">Spend by model</h2>
+                      <p className="text-xs text-white/40 font-mono mt-1">Every routed model · {analyticsPeriod}</p>
+                    </div>
+                    {spendByModel.length === 0 ? (
+                      <div className="h-48 flex items-center justify-center text-white/30 font-mono text-sm">No model usage for this period</div>
+                    ) : (
+                      <div className="max-h-[420px] overflow-auto"><table className="w-full text-left text-sm font-mono">
+                        <thead className="sticky top-0 bg-[#0b0b0b] text-xs text-white/40 border-b border-white/10"><tr><th className="px-5 py-3 font-normal">Model</th><th className="px-5 py-3 font-normal text-right">Tokens</th><th className="px-5 py-3 font-normal text-right">Spend</th></tr></thead>
+                        <tbody className="divide-y divide-white/10">{spendByModel.map((m, i) => <tr key={`${m.model}-${m.provider}-${i}`}><td className="px-5 py-3"><div className="text-white/90">{m.model}</div><div className="text-xs text-white/35">{m.provider} · {m.total_requests.toLocaleString()} req</div></td><td className="px-5 py-3 text-right text-white/60">{(m.total_tokens_in + m.total_tokens_out).toLocaleString()}</td><td className="px-5 py-3 text-right text-emerald-300">{formatBalanceUnits(m.total_cost_cents)}</td></tr>)}</tbody>
+                      </table></div>
+                    )}
+                  </div>
+
+                  <div className="border border-white/10 rounded-3xl overflow-hidden">
+                    <div className="border-b border-white/10 px-6 py-5">
+                      <h2 className="text-base font-bold tracking-tight">Usage by app</h2>
+                      <p className="text-xs text-white/40 font-mono mt-1">Referer + X-Title attribution · {analyticsPeriod}</p>
+                    </div>
+                    {spendByApp.length === 0 ? (
+                      <div className="h-48 flex items-center justify-center text-white/30 font-mono text-sm">No app attribution for this period</div>
+                    ) : (
+                      <div className="divide-y divide-white/10 max-h-[420px] overflow-auto">{spendByApp.map((app, i) => <details key={`${app.app_id}-${app.app_url}-${i}`} className="px-5 py-4"><summary className="cursor-pointer list-none"><div className="flex items-center justify-between gap-3"><div className="min-w-0"><div className="truncate text-white/90">{app.app_title || app.app_url || 'Unnamed app'}</div><div className="truncate font-mono text-xs text-white/35">{app.app_url || 'No URL supplied'}</div></div><div className="shrink-0 text-right font-mono text-xs"><div className="text-white/60">{app.total_requests.toLocaleString()} req</div><div className="text-emerald-300">{formatBalanceUnits(app.total_cost_cents)}</div></div></div></summary>{app.models?.length ? <div className="mt-3 space-y-2 border-l border-white/10 pl-3">{app.models.map((m, j) => <div key={`${m.model}-${m.provider}-${j}`} className="flex justify-between gap-3 font-mono text-xs"><span className="text-white/55">{m.model} <span className="text-white/30">({m.provider})</span></span><span className="text-white/45">{(m.total_tokens_in + m.total_tokens_out).toLocaleString()} tok · {formatBalanceUnits(m.total_cost_cents)}</span></div>)}</div> : null}</details>)}</div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Spend over time */}

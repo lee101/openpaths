@@ -158,6 +158,13 @@
       "subject": "You're an OpenPaths Pro — Advanced Tips & What's Coming",
       "template": "20-power-user.html",
       "description": "Multi-key management, streaming, webhooks, upcoming features"
+    },
+    {
+      "id": 23,
+      "delay_days": 1,
+      "subject": "GLM-5.3 is live - 1M context, same price as 5.2",
+      "template": "23-glm-5.3.html",
+      "description": "GLM-5.3 launch: 1M context, always-on reasoning, glm-latest alias, same-price route-up from 5.2/5.1"
     }
   ]
 }

@@ -111,12 +111,16 @@ func (p *ZAIProvider) doChat(ctx context.Context, body []byte) (*http.Response, 
 }
 
 // sanitizeForZAI removes cross-provider hints that Z.AI's raw chat endpoint
-// does not understand.
+// does not understand, and reshapes message lists Z.AI rejects but the
+// OpenAI-compatible surface we present accepts.
 func sanitizeForZAI(req *model.ChatCompletionRequest) {
 	req.Prefill = ""
 	req.TaskTier = ""
 	req.RoutingStrategy = ""
 	req.Thinking = nil
+	// Every model on this surface is a GLM, so the user-turn reshaping always
+	// applies here.
+	model.PromoteSystemToUser(req)
 }
 
 func (p *ZAIProvider) ChatCompletion(ctx context.Context, req *model.ChatCompletionRequest) (*model.ChatCompletionResponse, error) {

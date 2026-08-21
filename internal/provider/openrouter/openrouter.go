@@ -60,6 +60,11 @@ func sanitizeForOpenRouter(req *model.ChatCompletionRequest) {
 	req.TaskTier = ""
 	req.RoutingStrategy = ""
 	req.Thinking = nil
+	// OpenRouter passes the message list straight through, so GLM's rejection of
+	// a system-only conversation reaches callers who route to it directly.
+	if model.NeedsUserTurn(req.Model) {
+		model.PromoteSystemToUser(req)
+	}
 }
 
 func (p *OpenRouterProvider) ChatCompletion(ctx context.Context, req *model.ChatCompletionRequest) (*model.ChatCompletionResponse, error) {

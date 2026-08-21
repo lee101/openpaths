@@ -1670,6 +1670,18 @@ const catalogModels: Model[] = [
 
   // --- GLM / Z.AI ---
   {
+    id: 'glm-5.3',
+    name: 'GLM-5.3',
+    provider: 'Z.AI',
+    description: 'Newest GLM flagship with 1M context and always-on reasoning at low/high/max effort. Routes direct to z.ai, falling back to OpenRouter then GLM-5.2.',
+    contextLength: '1M',
+    priceInput: 1.4,
+    priceOutput: 4.4,
+    tags: ['general', 'reasoning', 'agentic', 'programming', 'open-source'],
+    released: '2026-08-13',
+    popularity: 20
+  },
+  {
     id: 'glm-5.2',
     name: 'GLM-5.2',
     provider: 'Z.AI',

@@ -7,29 +7,15 @@
 import { expect, test } from '@playwright/test';
 
 const BASE = process.env.TARGET_URL || 'http://localhost:8090';
-const shouldRun = process.env.RUN_XAI_VIDEO_E2E === '1' && !!process.env.XAI_API_KEY;
-
-function uniqueEmail() {
-  return `e2e-xai-video-${Date.now()}-${Math.random().toString(36).slice(2)}@test.openpaths.io`;
-}
+const paidApiKey = process.env.PAID_MODEL_API_KEY || '';
+const shouldRun = process.env.RUN_XAI_VIDEO_E2E === '1' && !!process.env.XAI_API_KEY && !!paidApiKey;
 
 async function getApiKey(request: any): Promise<string> {
-  const res = await request.post(`${BASE}/auth/register`, {
-    data: { email: uniqueEmail(), password: 'testpass1234', name: 'xAI Video E2E' },
-  });
-  expect(res.status()).toBe(201);
-  const body = await res.json();
-  const apiKey = body.api_key as string;
-  const creditRes = await request.post(`${BASE}/account/credits/add`, {
-    headers: { Authorization: `Bearer ${apiKey}` },
-    data: { amount_cents: 10000, description: 'xai video e2e credits' },
-  });
-  expect(creditRes.status()).toBe(200);
-  return apiKey;
+  return paidApiKey;
 }
 
 test.describe('xAI Grok Imagine video live', () => {
-  test.skip(!shouldRun, 'set RUN_XAI_VIDEO_E2E=1 and XAI_API_KEY to run the live video test');
+  test.skip(!shouldRun, 'set RUN_XAI_VIDEO_E2E=1, XAI_API_KEY, and PAID_MODEL_API_KEY to run the live video test');
 
   test('generates and backend-reencodes a Grok video to WebM', async ({ request }) => {
     test.setTimeout(20 * 60 * 1000);

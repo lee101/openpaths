@@ -202,3 +202,20 @@ func TestGenerateImage_EmptyData(t *testing.T) {
 		t.Fatal("expected error for empty data")
 	}
 }
+
+func TestSanitizeForZAIPromotesSystemOnly(t *testing.T) {
+	req := &model.ChatCompletionRequest{
+		Prefill:  "H",
+		Messages: []model.ChatMessage{{Role: "system", Content: "say only hi"}},
+	}
+	sanitizeForZAI(req)
+	if req.Prefill != "" {
+		t.Errorf("prefill not cleared: %q", req.Prefill)
+	}
+	if req.Messages[0].Role != "user" {
+		t.Errorf("role = %q, want user", req.Messages[0].Role)
+	}
+	if req.Messages[0].Content != "say only hi" {
+		t.Errorf("content mutated: %v", req.Messages[0].Content)
+	}
+}
