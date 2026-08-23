@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -47,7 +49,14 @@ func RateLimit() Middleware {
 				return
 			}
 
-			if !rl.allow(apiKey.ID, apiKey.RateLimitRPM) {
+			limit := apiKey.RateLimitRPM
+			if limit <= 0 {
+				limit = 1
+			}
+			// Enforce both the key limit and an account-wide ceiling. Otherwise a
+			// user can create many keys and multiply the default allowance.
+			userLimit := envRateLimit("USER_RATE_LIMIT_RPM", 120)
+			if !rl.allow(apiKey.ID, limit) || !rl.allow("user:"+apiKey.UserID, userLimit) {
 				ctx.SetStatusCode(429)
 				ctx.SetContentType("application/json")
 				ctx.SetBodyString(`{"error":{"message":"Rate limit exceeded","type":"rate_limit_error","code":"rate_limit_exceeded"}}`)
@@ -57,6 +66,15 @@ func RateLimit() Middleware {
 			next(ctx)
 		}
 	}
+}
+
+func envRateLimit(name string, def int) int {
+	if raw := os.Getenv(name); raw != "" {
+		if v, err := strconv.Atoi(raw); err == nil && v > 0 {
+			return v
+		}
+	}
+	return def
 }
 
 func (rl *rateLimiter) shard(key string) *rlShard {

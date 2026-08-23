@@ -95,6 +95,8 @@ export default function App() {
           <Route path="prompts/model/*" element={<Prompts scope="model" />} />
           <Route path="prompts/:slug" element={<PromptDetail />} />
           <Route path="account" element={<Account />} />
+          <Route path="account/apikeys" element={<Account />} />
+          <Route path="apikeys" element={<Account />} />
           <Route path="usage" element={<Account />} />
           <Route path="usage/prompts" element={<UsagePrompts />} />
           <Route path="usage/images" element={<UsageImages />} />

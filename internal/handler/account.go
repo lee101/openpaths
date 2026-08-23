@@ -43,6 +43,22 @@ type createKeyRequest struct {
 	Name string `json:"name"`
 }
 
+type revokeKeysRequest struct { IDs []string `json:"ids"` }
+
+func (h *AccountHandler) HandleRevokeAPIKeys(ctx *fasthttp.RequestCtx) {
+	userID, _ := ctx.UserValue(middleware.CtxKeyUserID).(string)
+	var req revokeKeysRequest
+	if err := json.Unmarshal(ctx.PostBody(), &req); err != nil || len(req.IDs) == 0 {
+		writeError(ctx, 400, "invalid_request", "ids are required")
+		return
+	}
+	if err := h.apiKeyQ.RevokeMany(ctx, req.IDs, userID); err != nil {
+		writeError(ctx, 500, "server_error", "Failed to revoke API keys")
+		return
+	}
+	writeJSON(ctx, 200, map[string]any{"message": "API keys revoked", "count": len(req.IDs)})
+}
+
 // HandleCreateAPIKey handles POST /account/keys.
 func (h *AccountHandler) HandleCreateAPIKey(ctx *fasthttp.RequestCtx) {
 	userID, _ := ctx.UserValue(middleware.CtxKeyUserID).(string)

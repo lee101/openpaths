@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Activity,
   ArrowUpRight,
@@ -24,6 +24,7 @@ import {
   TriangleAlert,
   Wallet,
   X,
+  Trash2,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -897,8 +898,10 @@ function OpenAIMaxPlanPanel({
 }
 
 export function Account() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'overview' | 'keys' | 'billing' | 'analytics' | 'guardrails'>(
-    typeof window !== 'undefined' && window.location.pathname.startsWith('/usage') ? 'analytics' : 'overview',
+    typeof window !== 'undefined' && window.location.pathname.startsWith('/usage') ? 'analytics' :
+      (typeof window !== 'undefined' && (window.location.pathname === '/apikeys' || window.location.pathname === '/account/apikeys') ? 'keys' : 'overview'),
   );
   const [user, setUser] = useState<any>(null);
   const [apiKey, setApiKey] = useState<string | null>(null);
@@ -907,6 +910,8 @@ export function Account() {
   const [balanceUnits, setBalanceUnits] = useState<number | null>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [apiKeys, setApiKeys] = useState<any[]>([]);
+  const [selectedKeyIds, setSelectedKeyIds] = useState<string[]>([]);
+  const selectingKeysRef = useRef(false);
   const [providerKeys, setProviderKeys] = useState<any[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [hasPaymentMethod, setHasPaymentMethod] = useState(false);
@@ -1213,8 +1218,35 @@ export function Account() {
 
   const revokeKey = async (id: string) => {
     await api(`/account/keys/${id}`, { method: 'DELETE' });
+    setSelectedKeyIds(ids => ids.filter(keyId => keyId !== id));
     void fetchKeys();
   };
+
+  const toggleKeySelection = (id: string) => {
+    setSelectedKeyIds(ids => ids.includes(id) ? ids.filter(keyId => keyId !== id) : [...ids, id]);
+  };
+  const beginKeySelection = (id: string) => {
+    selectingKeysRef.current = true;
+    setSelectedKeyIds([id]);
+  };
+  const extendKeySelection = (id: string) => {
+    if (selectingKeysRef.current) setSelectedKeyIds(ids => ids.includes(id) ? ids : [...ids, id]);
+  };
+  const bulkRevokeKeys = async () => {
+    const ids = selectedKeyIds;
+    if (!ids.length) return;
+    const res = await api('/account/keys', { method: 'DELETE', body: JSON.stringify({ ids }) });
+    if (res.ok) {
+      setSelectedKeyIds([]);
+      void fetchKeys();
+    }
+  };
+
+  useEffect(() => {
+    const stopSelecting = () => { selectingKeysRef.current = false; };
+    window.addEventListener('mouseup', stopSelecting);
+    return () => window.removeEventListener('mouseup', stopSelecting);
+  }, []);
 
   const startOpenAIDeviceAuth = async () => {
     setOpenAIDeviceLoading(true);
@@ -1493,7 +1525,7 @@ export function Account() {
         </div>
         <nav className="flex flex-col gap-2 font-mono text-sm">
           <button
-            onClick={() => setActiveTab('overview')}
+            onClick={() => { setActiveTab('overview'); navigate('/account'); }}
             data-testid="tab-overview"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
               activeTab === 'overview' ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/10 hover:text-white'
@@ -1502,7 +1534,7 @@ export function Account() {
             <Activity className="w-4 h-4" /> Overview
           </button>
           <button
-            onClick={() => setActiveTab('keys')}
+            onClick={() => { setActiveTab('keys'); navigate('/account/apikeys'); }}
             data-testid="tab-keys"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
               activeTab === 'keys' ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/10 hover:text-white'
@@ -1511,7 +1543,7 @@ export function Account() {
             <Key className="w-4 h-4" /> API Keys
           </button>
           <button
-            onClick={() => setActiveTab('guardrails')}
+            onClick={() => { setActiveTab('guardrails'); navigate('/account?tab=guardrails'); }}
             data-testid="tab-guardrails"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
               activeTab === 'guardrails' ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/10 hover:text-white'
@@ -1520,7 +1552,7 @@ export function Account() {
             <Shield className="w-4 h-4" /> Guardrails
           </button>
           <button
-            onClick={() => setActiveTab('billing')}
+            onClick={() => { setActiveTab('billing'); navigate('/account?tab=billing'); }}
             data-testid="tab-billing"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
               activeTab === 'billing' ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/10 hover:text-white'
@@ -1529,7 +1561,7 @@ export function Account() {
             <CreditCard className="w-4 h-4" /> Billing
           </button>
           <button
-            onClick={() => setActiveTab('analytics')}
+            onClick={() => { setActiveTab('analytics'); navigate('/usage'); }}
             data-testid="tab-analytics"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
               activeTab === 'analytics' ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/10 hover:text-white'
@@ -1651,7 +1683,7 @@ export function Account() {
               <div className="border border-white/20 bg-white/[0.05] rounded-3xl p-6">
                 <div className="text-sm font-mono text-white/55 mb-2">API Keys</div>
                 <div className="text-4xl font-light tracking-tight mb-4" data-testid="keys-count">{apiKeys.length}</div>
-                <button onClick={() => setActiveTab('keys')} className="text-xs font-mono text-white border border-white/20 px-3 py-2 rounded-xl hover:bg-white/10 transition-colors">
+                <button onClick={() => { setActiveTab('keys'); navigate('/account/apikeys'); }} className="text-xs font-mono text-white border border-white/20 px-3 py-2 rounded-xl hover:bg-white/10 transition-colors">
                   Manage keys
                 </button>
               </div>
@@ -1704,6 +1736,11 @@ export function Account() {
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
             <div className="flex justify-between items-center mb-8">
               <h1 className="text-3xl font-bold tracking-tight">API Keys</h1>
+              {selectedKeyIds.length > 0 && (
+                <button onClick={() => void bulkRevokeKeys()} className="flex items-center gap-2 rounded border border-red-400/30 px-3 py-2 text-xs font-mono text-red-300 hover:bg-red-500/10">
+                  <Trash2 className="w-4 h-4" /> Delete {selectedKeyIds.length} selected
+                </button>
+              )}
             </div>
 
             <OpenAIMaxPlanPanel
@@ -1777,8 +1814,9 @@ export function Account() {
             ) : (
               <div className="space-y-3">
                 {apiKeys.map((k: any) => (
-                  <div key={k.id} className="border border-white/20 bg-white/[0.05] rounded-xl p-4 flex items-center justify-between" data-testid="api-key-card">
+                  <div key={k.id} onMouseDown={() => beginKeySelection(k.id)} onMouseEnter={() => extendKeySelection(k.id)} className={`border bg-white/[0.05] rounded-xl p-4 flex items-center justify-between select-none cursor-pointer ${selectedKeyIds.includes(k.id) ? 'border-red-400/60 bg-red-500/10' : 'border-white/20'}`} data-testid="api-key-card">
                     <div>
+                      <input type="checkbox" checked={selectedKeyIds.includes(k.id)} onChange={() => toggleKeySelection(k.id)} onClick={e => e.stopPropagation()} aria-label={`Select ${k.name}`} className="mr-3 accent-red-400" />
                       <div className="font-bold text-sm">{k.name}</div>
                       <code className="font-mono text-xs text-white/55">{k.key_prefix}...</code>
                     </div>

@@ -104,7 +104,7 @@ func New(deps *Dependencies) *Server {
 		authH.SetOnRegister(deps.OnRegister)
 	}
 	accountH := handler.NewAccountHandler(deps.APIKeyQ, deps.CreditQ, deps.Billing, deps.StripeReconciler)
-	creditsH := handler.NewCreditsHandler(deps.Billing)
+	creditsH := handler.NewCreditsHandler(deps.Billing, deps.UserQ)
 	statsH := handler.NewStatsHandler(deps.StatsQ, deps.AppQ, deps.ModelProbeQ)
 	artH := handler.NewArtHandler(deps.ArtIndex, deps.ArtImageQ)
 	promptsH := handler.NewPromptsHandler(deps.PromptIndex)
@@ -327,6 +327,7 @@ func New(deps *Dependencies) *Server {
 
 	r.GET("/account/keys", accountChain(accountH.HandleListAPIKeys))
 	r.POST("/account/keys", accountChain(accountH.HandleCreateAPIKey))
+	r.DELETE("/account/keys", accountChain(accountH.HandleRevokeAPIKeys))
 	r.DELETE("/account/keys/{id}", accountChain(accountH.HandleRevokeAPIKey))
 	r.GET("/account/balance", accountChain(accountH.HandleGetBalance))
 	r.GET("/account/transactions", accountChain(accountH.HandleGetTransactions))

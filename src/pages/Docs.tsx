@@ -199,7 +199,7 @@ export function Docs() {
               Fallback candidates are price-sorted by default. Send <code>routing_strategy=&quot;config&quot;</code> to preserve catalogue order, or use <code>openpaths/auto-fast</code> for latency-biased routing. The stats page records latency, time to first token, throughput, and spend by provider/model.
             </p>
             <p className="mb-4 text-sm text-white/55">
-              Guardrails (Account → Guardrails) attach spend caps, model/provider allowlists, prompt-injection detection, PII scrub/block, and custom regex to API keys. Violations return HTTP 403 with <code>type: guardrail_error</code>; budget email alerts fire once per reset window.
+              Guardrails (Account → Guardrails) attach spend caps, model/provider allowlists or blocklists, prompt-injection detection, PII scrub/block, and custom regex to API keys. An account default automatically applies to current and future keys without a key-specific policy; blocklists win over allowlists. Budget block/email actions and model/provider violation email alerts are independently toggleable. Violations return HTTP 403 with <code>type: guardrail_error</code>; budget email alerts fire once per reset window.
             </p>
             <p className="mb-4 text-sm text-white/55">
               Inference.net is available as <code>inference_net</code> with Nemotron 3 Super, Schematron, ClipTagger, GPT-OSS, Llama, DeepSeek, Qwen, Gemma, and Mistral routes. GLM-5.2 stays on Z.ai until Inference.net advertises a compatible GLM model id.

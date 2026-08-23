@@ -18,14 +18,16 @@ func (r routeCand) ProviderName() string {
 	return ""
 }
 
-// FilterRouteCandidates applies provider allowlist to router candidates.
-func FilterRouteCandidates(candidates []router.RouteCandidate, allowed []string) ([]router.RouteCandidate, error) {
-	if len(allowed) == 0 {
+// FilterRouteCandidates applies provider allow and deny rules to router
+// candidates. Deny rules win when a provider appears in both lists.
+func FilterRouteCandidates(candidates []router.RouteCandidate, allowed, blocked []string) ([]router.RouteCandidate, error) {
+	if len(allowed) == 0 && len(blocked) == 0 {
 		return candidates, nil
 	}
 	out := make([]router.RouteCandidate, 0, len(candidates))
 	for _, c := range candidates {
-		if ProviderAllowed(allowed, routeCand{c}.ProviderName()) {
+		provider := routeCand{c}.ProviderName()
+		if !ProviderBlocked(blocked, provider) && ProviderAllowed(allowed, provider) {
 			out = append(out, c)
 		}
 	}

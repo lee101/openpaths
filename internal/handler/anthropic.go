@@ -163,9 +163,10 @@ func (h *AnthropicHandler) HandleMessages(ctx *fasthttp.RequestCtx) {
 		writeAnthError(ctx, 403, "permission_error", err.Error())
 		return
 	}
-	if providers := middleware.GuardrailProviders(ctx); len(providers) > 0 {
-		candidates, err = guardrails.FilterRouteCandidates(candidates, providers)
+	if providers, blocked := middleware.GuardrailProviders(ctx), middleware.GuardrailBlockedProviders(ctx); len(providers) > 0 || len(blocked) > 0 {
+		candidates, err = guardrails.FilterRouteCandidates(candidates, providers, blocked)
 		if err != nil {
+			middleware.NotifyGuardrailAccessViolation(ctx, "OpenPaths guardrail: provider access blocked", err.Error())
 			writeAnthError(ctx, 403, "permission_error", err.Error())
 			return
 		}

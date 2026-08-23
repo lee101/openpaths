@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+root=$(git rev-parse --show-toplevel)
+command -v gitleaks >/dev/null 2>&1 || { echo 'pre-push: install gitleaks (or set SKIP_GITLEAKS=1 for an emergency bypass)' >&2; [ "${SKIP_GITLEAKS:-}" = 1 ] && exit 0; exit 1; }
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ -n "$local_sha" ] || continue
+  [ "$remote_sha" = "0000000000000000000000000000000000000000" ] && range="$local_sha" || range="$remote_sha..$local_sha"
+  gitleaks git --config "$root/.gitleaks.toml" --redact --no-banner --exit-code 1 --log-opts="$range"
+done
+

@@ -15,6 +15,7 @@ Nothing is written unless the new key validates against the OpenRouter API.
     export OPENROUTER_PROVISIONING_KEY=...        # OpenRouter dashboard -> Provisioning
     python3 rotation/rotate_openrouter_everywhere.py --dry-run
     python3 rotation/rotate_openrouter_everywhere.py
+    python3 rotation/rotate_openrouter_everywhere.py --deploy-prod --purge-others
     python3 rotation/rotate_openrouter_everywhere.py --purge-others
 """
 
@@ -23,6 +24,7 @@ from __future__ import annotations
 import argparse
 import re
 import shutil
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -40,6 +42,8 @@ from rotate_provider_key import (  # noqa: E402
 
 ENV_KEY = "OPENROUTER_API_KEY"
 SECRET_RC = Path.home() / ".secretbashrc"
+PROD_HOST = "administrator@93.127.141.100"
+PROD_DIR = "/nvme0n1-disk/code/openpaths"
 CODE_ROOTS = [Path("/nvme0n1-disk/code"), Path("/sdb-disk/code")]
 
 # Repo .env files that feed a running service. Backups (.bak*, .last) and
@@ -165,11 +169,36 @@ def restart_hint() -> None:
     log("  twohelixes     twohelixes-server                    (:7474)")
     log("")
     log("Off-host consumers are NOT covered by this script:")
-    log("  - openpaths prod (93.127.141.100) - ./deploy.sh env")
+    log("  - openpaths prod is covered when --deploy-prod is used")
     log("  - Evangeler prod (Starlink/Auckland box)")
     log("  - codex-infinity frozen standby")
     log("  - any k8s secret or CI secret holding the key")
     log("  Update those BEFORE --purge-others, or they break.")
+
+
+def deploy_prod() -> None:
+    """Install the already-updated repo .env on prod and restart only OpenPaths."""
+    log("\nDeploying the updated .env to OpenPaths prod...")
+    deploy_env = subprocess.run(
+        ["scp", "-o", "StrictHostKeyChecking=no", str(Path(__file__).resolve().parents[1] / ".env"), f"{PROD_HOST}:{PROD_DIR}/.env"],
+        check=False,
+    )
+    if deploy_env.returncode != 0:
+        raise subprocess.CalledProcessError(deploy_env.returncode, deploy_env.args)
+    subprocess.run(
+        [
+            "ssh",
+            "-o",
+            "StrictHostKeyChecking=no",
+            PROD_HOST,
+            "sudo",
+            "supervisorctl",
+            "restart",
+            "openpaths",
+        ],
+        check=True,
+    )
+    log("  OpenPaths prod restarted with the replacement key")
 
 
 def main() -> int:
@@ -179,6 +208,11 @@ def main() -> int:
         "--purge-others",
         action="store_true",
         help="delete every other key in the OpenRouter account after installing the new one",
+    )
+    parser.add_argument(
+        "--deploy-prod",
+        action="store_true",
+        help="sync the updated .env to OpenPaths prod and restart its API before any purge",
     )
     parser.add_argument("--alias", default=None, help="label for the new key")
     args = parser.parse_args()
@@ -216,8 +250,15 @@ def main() -> int:
     log(f"  {changed} file(s) {'would be ' if args.dry_run else ''}updated")
 
     if args.purge_others:
+        if not args.deploy_prod:
+            log("\nRefusing --purge-others without --deploy-prod; prod must receive the new key first.")
+            return 2
+        if not args.dry_run:
+            deploy_prod()
         log("\nPurging other keys in the account:")
         purge_other_keys(provisioning_key, new_hash, args.dry_run)
+    elif args.deploy_prod and not args.dry_run:
+        deploy_prod()
     else:
         log("\nOther keys left in place (pass --purge-others to delete them).")
 

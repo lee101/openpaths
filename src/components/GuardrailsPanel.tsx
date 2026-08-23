@@ -66,8 +66,11 @@ export function GuardrailsPanel({ apiKeys }: Props) {
       limit_cents: g.limit_cents,
       reset_interval: g.reset_interval || 'daily',
       budget_actions: g.budget_actions?.length ? g.budget_actions : ['block'],
+      email_on_violation: !!g.email_on_violation,
       allowed_models: [...(g.allowed_models || [])],
       allowed_providers: [...(g.allowed_providers || [])],
+      blocked_models: [...(g.blocked_models || [])],
+      blocked_providers: [...(g.blocked_providers || [])],
       prompt_injection: {
         enabled: !!g.prompt_injection?.enabled,
         action: g.prompt_injection?.action || 'block',
@@ -123,7 +126,7 @@ export function GuardrailsPanel({ apiKeys }: Props) {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Guardrails</h1>
           <p className="text-sm text-white/45 font-mono mt-2 max-w-xl">
-            Apply spend limits, model/provider allowlists, prompt-injection detection, PII handling, and custom regex to API keys.
+            Apply spend limits, model/provider allowlists or blocklists, prompt-injection detection, PII handling, and custom regex to API keys.
           </p>
         </div>
         <button
@@ -212,7 +215,7 @@ export function GuardrailsPanel({ apiKeys }: Props) {
             </div>
 
             <div className="p-5 space-y-8">
-              <Section title="Budget Policies" subtitle="Credit limit that resets on a schedule.">
+              <Section title="Budget Policies" subtitle="Credit limit that resets on a schedule; choose whether to block and/or email.">
                 <div className="grid sm:grid-cols-3 gap-3">
                   <label className="block text-xs font-mono text-white/45">
                     Limit (USD)
@@ -267,14 +270,28 @@ export function GuardrailsPanel({ apiKeys }: Props) {
                     </div>
                   </div>
                 </div>
+                <label className="mt-4 flex items-center gap-2 text-sm font-mono text-white/70">
+                  <input
+                    type="checkbox"
+                    checked={draft.email_on_violation}
+                    onChange={e => setEditing({ ...draft, email_on_violation: e.target.checked })}
+                  />
+                  Email alert when a model or provider access rule blocks a request
+                </label>
               </Section>
 
-              <Section title="Model & Provider Access" subtitle="Empty allowlists mean unrestricted.">
+              <Section title="Model & Provider Access" subtitle="Blocklists always win. Empty allowlists mean unrestricted.">
                 <TagInput
                   label="Allowed models (globs ok)"
                   values={draft.allowed_models}
                   placeholder="gpt-5*, anthropic/*, deepseek-v4-flash"
                   onChange={allowed_models => setEditing({ ...draft, allowed_models })}
+                />
+                <TagInput
+                  label="Blocked models (globs ok)"
+                  values={draft.blocked_models}
+                  placeholder="gpt-4*, */preview"
+                  onChange={blocked_models => setEditing({ ...draft, blocked_models })}
                 />
                 <div className="mt-4">
                   <div className="text-xs font-mono text-white/45 mb-2">Allowed providers</div>
@@ -291,6 +308,27 @@ export function GuardrailsPanel({ apiKeys }: Props) {
                             allowed_providers: has
                               ? draft.allowed_providers.filter(x => x !== p)
                               : [...draft.allowed_providers, p],
+                          });
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <div className="text-xs font-mono text-white/45 mb-2">Blocked providers</div>
+                  <div className="flex flex-wrap gap-2">
+                    {PROVIDER_OPTIONS.map(p => (
+                      <ToggleChip
+                        key={p}
+                        active={draft.blocked_providers.includes(p)}
+                        label={p}
+                        onClick={() => {
+                          const has = draft.blocked_providers.includes(p);
+                          setEditing({
+                            ...draft,
+                            blocked_providers: has
+                              ? draft.blocked_providers.filter(x => x !== p)
+                              : [...draft.blocked_providers, p],
                           });
                         }}
                       />
@@ -434,10 +472,10 @@ export function GuardrailsPanel({ apiKeys }: Props) {
                 </div>
               </Section>
 
-              <Section title="Apply to" subtitle="One guardrail per key. Account default covers unassigned keys.">
+              <Section title="Apply to" subtitle="One guardrail per key. Account defaults cover every current and future unassigned key.">
                 <label className="flex items-center gap-2 text-sm font-mono text-white/70 mb-3">
                   <input type="checkbox" checked={userDefault} onChange={e => setUserDefault(e.target.checked)} />
-                  Account default (all keys without their own guardrail)
+                  Account default (all current and future keys without their own guardrail)
                 </label>
                 {apiKeys.length === 0 ? (
                   <p className="text-xs font-mono text-white/50">No API keys yet.</p>

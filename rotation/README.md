@@ -40,6 +40,10 @@ ANTHROPIC_NEW_API_KEY="sk-ant-api03-..." python3 rotation/rotate_provider_key.py
 MISTRAL_NEW_API_KEY="..." python3 rotation/rotate_provider_key.py mistral
 NOUS_NEW_API_KEY="..."    python3 rotation/rotate_provider_key.py nous
 python3 rotation/rotate_provider_key.py all
+
+# OpenRouter fan-out, including ~/.secretbashrc and OpenPaths prod. The purge
+# is refused unless prod is updated and restarted first.
+python3 rotation/rotate_openrouter_everywhere.py --deploy-prod --purge-others
 ```
 
 Run the tests (no network — the HTTP layer is stubbed):
@@ -55,3 +59,26 @@ The script reads credentials from the shell environment first and then from `.en
 ```bash
 python3 rotation/rotate_provider_key.py openai --no-env-write
 ```
+
+`rotate_openrouter_everywhere.py --deploy-prod` copies the updated repo `.env` to
+OpenPaths prod and restarts only the `openpaths` supervisor service. It does not
+touch the database, guardrail definitions, or assignments. `--purge-others`
+requires `--deploy-prod` so old OpenRouter keys are not removed before prod has
+the replacement.
+
+Rotation-only management credentials can be moved out of `.env` into encrypted
+`.envsecret.*` files with:
+
+```bash
+rotation/rotate-passwords.sh --init
+rotation/rotate-passwords.sh
+```
+
+The command prompts for the password each time, decrypts only into a temporary
+directory, and removes the plaintext files on exit. The password is never stored
+in the repository or script.
+
+Anthropic is supported when a freshly-created console key is supplied for one
+run, for example: `ANTHROPIC_NEW_API_KEY='...' rotation/rotate-passwords.sh`.
+Without that variable it is skipped safely; OpenAI and OpenRouter remain fully
+automatable with the encrypted management bundles.

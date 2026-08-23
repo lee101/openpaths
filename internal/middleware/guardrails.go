@@ -15,14 +15,19 @@ import (
 	"github.com/openpaths/openpaths/internal/model"
 )
 
-const CtxKeyGuardrailProviders = "guardrail_providers"
+const (
+	CtxKeyGuardrailProviders        = "guardrail_providers"
+	CtxKeyGuardrailBlockedProviders = "guardrail_blocked_providers"
+	CtxKeyGuardrailEmailOnViolation = "guardrail_email_on_violation"
+	CtxKeyGuardrailUserQueries      = "guardrail_user_queries"
+)
 
 type GuardrailDeps struct {
 	Q     *queries.GuardrailQueries
 	UserQ *queries.UserQueries
 }
 
-// GuardrailCheck enforces budget, model allowlist, and content filters.
+// GuardrailCheck enforces budget, model/provider access rules, and content filters.
 func GuardrailCheck(deps GuardrailDeps) Middleware {
 	return func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 		return func(ctx *fasthttp.RequestCtx) {
@@ -45,6 +50,13 @@ func GuardrailCheck(deps GuardrailDeps) Middleware {
 			if err != nil || len(policies) == 0 {
 				next(ctx)
 				return
+			}
+			for _, g := range policies {
+				if g.EmailOnViolation {
+					ctx.SetUserValue(CtxKeyGuardrailEmailOnViolation, true)
+					ctx.SetUserValue(CtxKeyGuardrailUserQueries, deps.UserQ)
+					break
+				}
 			}
 
 			now := time.Now().UTC()
@@ -115,6 +127,7 @@ func GuardrailCheck(deps GuardrailDeps) Middleware {
 			modelID := requestModel(ctx)
 			if modelID != "" {
 				if hit, providers := guardrails.EvaluateAccess(policies, modelID); hit != nil {
+					NotifyGuardrailAccessViolation(ctx, "OpenPaths guardrail: model/provider access blocked", hit.Message)
 					gid := hit.Guardrail
 					detail, _ := json.Marshal(hit)
 					_ = deps.Q.InsertEvent(ctx, &queries.GuardrailEvent{
@@ -123,13 +136,21 @@ func GuardrailCheck(deps GuardrailDeps) Middleware {
 					})
 					writeGuardrailError(ctx, "model_not_allowed", hit.Message, map[string]any{"guardrail_id": hit.Guardrail, "model": modelID})
 					return
-				} else if len(providers) > 0 {
-					ctx.SetUserValue(CtxKeyGuardrailProviders, providers)
+				} else {
+					if len(providers) > 0 {
+						ctx.SetUserValue(CtxKeyGuardrailProviders, providers)
+					}
+					if blocked := guardrails.BlockedProviders(policies); len(blocked) > 0 {
+						ctx.SetUserValue(CtxKeyGuardrailBlockedProviders, blocked)
+					}
 				}
 			} else {
 				_, providers := guardrails.EvaluateAccess(policies, "")
 				if len(providers) > 0 {
 					ctx.SetUserValue(CtxKeyGuardrailProviders, providers)
+				}
+				if blocked := guardrails.BlockedProviders(policies); len(blocked) > 0 {
+					ctx.SetUserValue(CtxKeyGuardrailBlockedProviders, blocked)
 				}
 			}
 
@@ -181,6 +202,24 @@ func GuardrailCheck(deps GuardrailDeps) Middleware {
 func GuardrailProviders(ctx *fasthttp.RequestCtx) []string {
 	v, _ := ctx.UserValue(CtxKeyGuardrailProviders).([]string)
 	return v
+}
+
+func GuardrailBlockedProviders(ctx *fasthttp.RequestCtx) []string {
+	v, _ := ctx.UserValue(CtxKeyGuardrailBlockedProviders).([]string)
+	return v
+}
+
+// NotifyGuardrailAccessViolation sends an optional access-rule alert. The
+// middleware stores the account's user-query handle only for requests that
+// opted into these alerts, so normal requests do not perform email work.
+func NotifyGuardrailAccessViolation(ctx *fasthttp.RequestCtx, subject, body string) {
+	enabled, _ := ctx.UserValue(CtxKeyGuardrailEmailOnViolation).(bool)
+	if !enabled {
+		return
+	}
+	userID, _ := ctx.UserValue(CtxKeyUserID).(string)
+	userQ, _ := ctx.UserValue(CtxKeyGuardrailUserQueries).(*queries.UserQueries)
+	go notifyGuardrail(userQ, userID, subject, body)
 }
 
 func writeGuardrailError(ctx *fasthttp.RequestCtx, code, message string, meta map[string]any) {

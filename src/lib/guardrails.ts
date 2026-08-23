@@ -33,8 +33,11 @@ export interface Guardrail {
   limit_cents: number | null;
   reset_interval: ResetInterval | null;
   budget_actions: string[];
+  email_on_violation: boolean;
   allowed_models: string[];
   allowed_providers: string[];
+  blocked_models: string[];
+  blocked_providers: string[];
   prompt_injection: PromptInjectionConfig;
   sensitive_info: { filters: SensitiveFilter[] };
   custom_filters: CustomFilter[];
@@ -48,8 +51,11 @@ export interface GuardrailInput {
   limit_cents: number | null;
   reset_interval: ResetInterval | null;
   budget_actions: string[];
+  email_on_violation: boolean;
   allowed_models: string[];
   allowed_providers: string[];
+  blocked_models: string[];
+  blocked_providers: string[];
   prompt_injection: PromptInjectionConfig;
   sensitive_info: { filters: SensitiveFilter[] };
   custom_filters: CustomFilter[];
@@ -91,8 +97,11 @@ function normalize(g: any): Guardrail {
     sensitive_info: { filters: si.filters || [] },
     custom_filters: Array.isArray(cf) ? cf : [],
     budget_actions: g.budget_actions || [],
+    email_on_violation: !!g.email_on_violation,
     allowed_models: g.allowed_models || [],
     allowed_providers: g.allowed_providers || [],
+    blocked_models: g.blocked_models || [],
+    blocked_providers: g.blocked_providers || [],
     assignments: g.assignments || [],
   };
 }
@@ -103,8 +112,11 @@ export function emptyGuardrailInput(): GuardrailInput {
     limit_cents: null,
     reset_interval: 'daily',
     budget_actions: ['block'],
+    email_on_violation: false,
     allowed_models: [],
     allowed_providers: [],
+    blocked_models: [],
+    blocked_providers: [],
     prompt_injection: { enabled: false, action: 'block', patterns: [] },
     sensitive_info: { filters: [] },
     custom_filters: [],
@@ -166,7 +178,7 @@ export function summarize(g: Guardrail): string[] {
   if (g.limit_cents != null && g.limit_cents > 0) {
     tags.push(`$${centsToUsd(g.limit_cents).toFixed(0)} / ${g.reset_interval || 'daily'}`);
   }
-  if (g.allowed_models.length || g.allowed_providers.length) tags.push('Access');
+  if (g.allowed_models.length || g.allowed_providers.length || g.blocked_models.length || g.blocked_providers.length) tags.push('Access');
   if (g.prompt_injection?.enabled) tags.push('Injection');
   if (g.sensitive_info?.filters?.length) tags.push('PII');
   if (g.custom_filters?.length) tags.push('Regex');

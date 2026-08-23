@@ -8,11 +8,11 @@ import (
 )
 
 const (
-	APIKeyPrefix = "op-"
+	APIKeyPrefix = "sk-op-"
 	keyLength    = 32
 )
 
-// GenerateAPIKey creates a new API key with the "op-" prefix.
+// GenerateAPIKey creates a new API key with the "sk-op-" prefix.
 // Returns (rawKey, hash, prefix).
 func GenerateAPIKey() (string, string, string, error) {
 	bytes := make([]byte, keyLength)
@@ -22,7 +22,7 @@ func GenerateAPIKey() (string, string, string, error) {
 
 	rawKey := APIKeyPrefix + hex.EncodeToString(bytes)
 	hash := HashAPIKey(rawKey)
-	prefix := rawKey[:11] // "op-" + first 8 hex chars
+	prefix := rawKey[:14] // "sk-op-" + first 8 hex chars
 
 	return rawKey, hash, prefix, nil
 }

@@ -98,6 +98,34 @@ func TestIntersectProviders(t *testing.T) {
 	}
 }
 
+func TestEvaluateAccess_BlocklistWinsOverAllowlist(t *testing.T) {
+	g := &queries.Guardrail{
+		ID: "g1", Name: "no-old-models",
+		AllowedModels: []string{"gpt-*"},
+		BlockedModels: []string{"gpt-4*"},
+	}
+
+	hit, _ := EvaluateAccess([]*queries.Guardrail{g}, "gpt-4o")
+	if hit == nil || hit.Stage != StageModel {
+		t.Fatalf("expected model block, got %#v", hit)
+	}
+
+	hit, _ = EvaluateAccess([]*queries.Guardrail{g}, "gpt-5")
+	if hit != nil {
+		t.Fatalf("expected gpt-5 to be allowed, got %#v", hit)
+	}
+}
+
+func TestBlockedProvidersUnion(t *testing.T) {
+	got := BlockedProviders([]*queries.Guardrail{
+		{BlockedProviders: []string{"OpenAI", "anthropic"}},
+		{BlockedProviders: []string{"anthropic", "GOOGLE"}},
+	})
+	if len(got) != 3 || got[0] != "openai" || got[1] != "anthropic" || got[2] != "google" {
+		t.Fatalf("got blocked providers %v", got)
+	}
+}
+
 func contains(s, sub string) bool {
 	return len(sub) == 0 || (len(s) >= len(sub) && indexOf(s, sub) >= 0)
 }

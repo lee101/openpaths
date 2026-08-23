@@ -117,3 +117,15 @@ func (q *APIKeyQueries) Revoke(ctx context.Context, id, userID string) error {
 	}
 	return nil
 }
+
+func (q *APIKeyQueries) RevokeMany(ctx context.Context, ids []string, userID string) error {
+	tx, err := q.pool.Begin(ctx)
+	if err != nil { return fmt.Errorf("begin revoke api keys: %w", err) }
+	defer tx.Rollback(ctx)
+	for _, id := range ids {
+		if _, err := tx.Exec(ctx, "UPDATE api_keys SET revoked = TRUE WHERE id = $1 AND user_id = $2", id, userID); err != nil {
+			return fmt.Errorf("revoke api keys: %w", err)
+		}
+	}
+	return tx.Commit(ctx)
+}

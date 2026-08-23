@@ -11,8 +11,8 @@ func TestGenerateAPIKey_HasOpPrefix(t *testing.T) {
 		t.Fatalf("GenerateAPIKey returned unexpected error: %v", err)
 	}
 
-	if !strings.HasPrefix(rawKey, "op-") {
-		t.Errorf("expected raw key to start with %q, got %q", "op-", rawKey)
+	if !strings.HasPrefix(rawKey, "sk-op-") {
+		t.Errorf("expected raw key to start with %q, got %q", "sk-op-", rawKey)
 	}
 }
 
@@ -34,7 +34,7 @@ func TestGenerateAPIKey_ProducesUniqueKeys(t *testing.T) {
 }
 
 func TestHashAPIKey_IsDeterministic(t *testing.T) {
-	key := "op-abcdef1234567890abcdef1234567890"
+	key := APIKeyPrefix + "test-key"
 
 	hash1 := HashAPIKey(key)
 	hash2 := HashAPIKey(key)
@@ -44,23 +44,23 @@ func TestHashAPIKey_IsDeterministic(t *testing.T) {
 	}
 }
 
-func TestGenerateAPIKey_PrefixIsFirst11Chars(t *testing.T) {
+func TestGenerateAPIKey_PrefixIsFirst14Chars(t *testing.T) {
 	rawKey, _, prefix, err := GenerateAPIKey()
 	if err != nil {
 		t.Fatalf("GenerateAPIKey returned unexpected error: %v", err)
 	}
 
-	expected := rawKey[:11]
+	expected := rawKey[:14]
 	if prefix != expected {
-		t.Errorf("expected prefix %q (first 11 chars of raw key), got %q", expected, prefix)
+		t.Errorf("expected prefix %q (first 14 chars of raw key), got %q", expected, prefix)
 	}
 
-	// The prefix should start with "op-" followed by 8 hex characters.
-	if !strings.HasPrefix(prefix, "op-") {
-		t.Errorf("prefix should start with %q, got %q", "op-", prefix)
+	// The prefix should start with "sk-op-" followed by 8 hex characters.
+	if !strings.HasPrefix(prefix, "sk-op-") {
+		t.Errorf("prefix should start with %q, got %q", "sk-op-", prefix)
 	}
-	if len(prefix) != 11 {
-		t.Errorf("prefix should be 11 characters, got %d", len(prefix))
+	if len(prefix) != 14 {
+		t.Errorf("prefix should be 14 characters, got %d", len(prefix))
 	}
 }
 
@@ -93,7 +93,7 @@ func TestGenerateAPIKey_RawKeyLength(t *testing.T) {
 		t.Fatalf("GenerateAPIKey returned unexpected error: %v", err)
 	}
 
-	// "op-" (3 chars) + hex-encoded 32 bytes (64 chars) = 67 chars total.
+	// "sk-op-" (6 chars) + hex-encoded 32 bytes (64 chars) = 70 chars total.
 	expectedLen := len(APIKeyPrefix) + 64
 	if len(rawKey) != expectedLen {
 		t.Errorf("expected raw key length %d, got %d (key: %q)", expectedLen, len(rawKey), rawKey)
@@ -102,9 +102,9 @@ func TestGenerateAPIKey_RawKeyLength(t *testing.T) {
 
 func TestHashAPIKey_DifferentKeysProduceDifferentHashes(t *testing.T) {
 	keys := []string{
-		"op-aaaaaaaaaaaaaaaa",
-		"op-bbbbbbbbbbbbbbbb",
-		"op-cccccccccccccccc",
+		"sk-op-aaaaaaaaaaaaaaaa",
+		"sk-op-bbbbbbbbbbbbbbbb",
+		"sk-op-cccccccccccccccc",
 	}
 
 	hashes := make(map[string]string, len(keys))
@@ -123,7 +123,7 @@ func TestHashAPIKey_DifferentKeysProduceDifferentHashes(t *testing.T) {
 }
 
 func TestHashAPIKey_ReturnsHexString(t *testing.T) {
-	hash := HashAPIKey("op-testkey123")
+	hash := HashAPIKey("sk-op-testkey123")
 
 	// SHA-256 produces 32 bytes = 64 hex characters.
 	if len(hash) != 64 {

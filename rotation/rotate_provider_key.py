@@ -20,6 +20,7 @@ from typing import Callable
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_ENV_FILE = ROOT / ".env"
+FANOUT_ROOTS = [Path("/vfast/data/code"), Path("/nvme0n1-disk/code"), Path("/sdb-disk/code")]
 
 
 class RotationError(RuntimeError):
@@ -671,6 +672,56 @@ def update_env_file(path: Path, key: str, value: str) -> Path:
     return backup
 
 
+def env_assignment_value(line: str, key: str) -> str | None:
+    match = re.match(rf"^\s*(?:export\s+)?{re.escape(key)}\s*=\s*(.*?)\s*$", line)
+    if not match:
+        return None
+    value = match.group(1)
+    if len(value) >= 2 and value[0] in "'\"" and value[-1] == value[0]:
+        value = value[1:-1]
+    return value
+
+
+def discover_fanout_files() -> list[Path]:
+    found: set[Path] = set()
+    for root in FANOUT_ROOTS:
+        if not root.is_dir():
+            continue
+        for pattern in ("*/.env", "*/*/.env", "*/.env.local", "*/*/.env.local"):
+            found.update(root.glob(pattern))
+    return sorted(path for path in found if ".bak" not in path.name and ".example" not in path.name)
+
+
+def fanout_key(env_key: str, old_secret: str, new_secret: str, source: Path) -> list[Path]:
+    if not old_secret:
+        return []
+    changed: list[Path] = []
+    for path in discover_fanout_files():
+        if path.resolve() == source.resolve() or not path.is_file():
+            continue
+        original = path.read_text()
+        lines = original.splitlines()
+        replaced = False
+        updated: list[str] = []
+        for line in lines:
+            if env_assignment_value(line, env_key) == old_secret:
+                left, right = line.split("=", 1)
+                prefix = left + "="
+                first = right.lstrip()[:1]
+                quote = first if first in "'\"" else ""
+                updated.append(f"{prefix}{quote}{new_secret}{quote}")
+                replaced = True
+            else:
+                updated.append(line)
+        if not replaced:
+            continue
+        backup = path.with_name(f"{path.name}.bak-rotation-{time.strftime('%Y%m%d%H%M%S')}")
+        shutil.copy2(path, backup)
+        path.write_text("\n".join(updated) + "\n")
+        changed.append(path)
+    return changed
+
+
 def revoke_previous_key(provider: str, result: RotationResult, env_file_values: dict[str, str]) -> dict[str, object]:
     old_secret = env_file_values.get(result.env_key, "")
 
@@ -699,10 +750,11 @@ def revoke_previous_key(provider: str, result: RotationResult, env_file_values: 
     return {"revoked": False, "reason": "provider revocation is not implemented"}
 
 
-def rotate_provider(provider: str, env_file: Path, alias_prefix: str, no_env_write: bool) -> None:
+def rotate_provider(provider: str, env_file: Path, alias_prefix: str, no_env_write: bool, fanout: bool) -> None:
     env_file_values = parse_env_file(env_file)
     alias = f"{alias_prefix}-{provider}-{time.strftime('%Y%m%d%H%M%S')}"
     result = ROTATORS[provider](alias, env_file_values)
+    old_secret = env_file_values.get(result.env_key, "")
 
     if no_env_write:
         print(f"created {provider} key for {result.env_key}; .env was not changed")
@@ -715,6 +767,9 @@ def rotate_provider(provider: str, env_file: Path, alias_prefix: str, no_env_wri
     print(f"backup: {backup}")
     metadata = {k: v for k, v in result.metadata.items() if v is not None}
     metadata["previous_key"] = revoke_result
+    if fanout:
+        propagated = fanout_key(result.env_key, old_secret, result.secret, env_file)
+        print(f"propagated {result.env_key} to {len(propagated)} additional .env file(s)")
     print(json.dumps(metadata, indent=2))
 
 
@@ -734,6 +789,11 @@ def main() -> int:
         action="store_true",
         help="Create the provider key but skip writing .env.",
     )
+    parser.add_argument(
+        "--fanout",
+        action="store_true",
+        help="Update matching copies of the rotated key in nearby .env files.",
+    )
     args = parser.parse_args()
 
     all_mode = args.provider == "all"
@@ -741,7 +801,7 @@ def main() -> int:
     errors = 0
     for provider in providers:
         try:
-            rotate_provider(provider, Path(args.env_file).resolve(), args.alias_prefix, args.no_env_write)
+            rotate_provider(provider, Path(args.env_file).resolve(), args.alias_prefix, args.no_env_write, args.fanout)
         except RotationError as exc:
             if all_mode and str(exc).startswith("Missing required environment variable:"):
                 print(f"{provider}: skipped ({exc})")

@@ -1,0 +1,7 @@
+[[rules]]
+id = "openpaths-api-key"
+description = "openpaths user API key"
+regex = '''sk-op-[A-Za-z0-9_-]{24,}'''
+secretGroup = 0
+entropy = 3.5
+

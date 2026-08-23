@@ -90,8 +90,8 @@ var piiPatterns = map[string]*regexp.Regexp{
 }
 
 var (
-	reLookahead  = regexp.MustCompile(`\(\?=|\(\?!`)
-	reLookbehind = regexp.MustCompile(`\(\?<=|\(\?<!`)
+	reLookahead   = regexp.MustCompile(`\(\?=|\(\?!`)
+	reLookbehind  = regexp.MustCompile(`\(\?<=|\(\?<!`)
 	reNestedQuant = regexp.MustCompile(`\([^)]*[+*][^)]*\)[+*]`)
 )
 
@@ -190,6 +190,48 @@ func ProviderAllowed(allowed []string, provider string) bool {
 		}
 	}
 	return false
+}
+
+func MatchesAny(patterns []string, value string) bool {
+	for _, pattern := range patterns {
+		if strings.TrimSpace(pattern) == "" {
+			continue
+		}
+		if MatchGlob(pattern, value) {
+			return true
+		}
+	}
+	return false
+}
+
+func ModelBlocked(blocked []string, modelID string) bool {
+	return MatchesAny(blocked, modelID)
+}
+
+func ProviderBlocked(blocked []string, provider string) bool {
+	return MatchesAny(blocked, provider)
+}
+
+// BlockedProviders returns the union of all provider deny rules. A deny rule
+// is deliberately not converted into an allowlist: the router may discover
+// providers after this middleware runs, so the deny list must travel with the
+// request to the candidate filter.
+func BlockedProviders(policies []*queries.Guardrail) []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, g := range policies {
+		if g == nil {
+			continue
+		}
+		for _, p := range g.BlockedProviders {
+			p = strings.ToLower(strings.TrimSpace(p))
+			if p != "" && !seen[p] {
+				seen[p] = true
+				out = append(out, p)
+			}
+		}
+	}
+	return out
 }
 
 func IntersectProviders(lists ...[]string) []string {
@@ -392,17 +434,24 @@ func EvaluateContent(policies []*queries.Guardrail, text string) EvalResult {
 	return res
 }
 
-// EvaluateAccess checks model allowlists and builds provider intersection.
+// EvaluateAccess checks model allow/block lists and builds provider allowlist intersection.
 func EvaluateAccess(policies []*queries.Guardrail, modelID string) (blocked *Hit, providers []string) {
 	var providerLists [][]string
 	for _, g := range policies {
 		if g == nil {
 			continue
 		}
+		if modelID != "" && ModelBlocked(g.BlockedModels, modelID) {
+			return &Hit{
+				Stage: StageModel, Action: ActionBlock, Guardrail: g.ID, Name: g.Name,
+				Message:    fmt.Sprintf("Model %q is blocked by guardrail %q", modelID, g.Name),
+				ShouldStop: true,
+			}, nil
+		}
 		if modelID != "" && !ModelAllowed(g.AllowedModels, modelID) {
 			return &Hit{
 				Stage: StageModel, Action: ActionBlock, Guardrail: g.ID, Name: g.Name,
-				Message: fmt.Sprintf("Model %q is not allowed by guardrail %q", modelID, g.Name),
+				Message:    fmt.Sprintf("Model %q is not allowed by guardrail %q", modelID, g.Name),
 				ShouldStop: true,
 			}, nil
 		}

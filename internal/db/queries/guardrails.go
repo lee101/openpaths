@@ -18,8 +18,11 @@ type Guardrail struct {
 	LimitCents       *int64          `json:"limit_cents"`
 	ResetInterval    *string         `json:"reset_interval"`
 	BudgetActions    []string        `json:"budget_actions"`
+	EmailOnViolation bool            `json:"email_on_violation"`
 	AllowedModels    []string        `json:"allowed_models"`
 	AllowedProviders []string        `json:"allowed_providers"`
+	BlockedModels    []string        `json:"blocked_models"`
+	BlockedProviders []string        `json:"blocked_providers"`
 	PromptInjection  json.RawMessage `json:"prompt_injection"`
 	SensitiveInfo    json.RawMessage `json:"sensitive_info"`
 	CustomFilters    json.RawMessage `json:"custom_filters"`
@@ -57,13 +60,15 @@ func NewGuardrailQueries(pool *pgxpool.Pool) *GuardrailQueries {
 }
 
 const guardrailCols = `id::text, user_id::text, name, limit_cents, reset_interval, budget_actions,
-	allowed_models, allowed_providers, prompt_injection, sensitive_info, custom_filters, created_at, updated_at`
+	email_on_violation, allowed_models, allowed_providers, blocked_models, blocked_providers,
+	prompt_injection, sensitive_info, custom_filters, created_at, updated_at`
 
 func scanGuardrail(row pgx.Row) (*Guardrail, error) {
 	g := &Guardrail{}
 	err := row.Scan(
-		&g.ID, &g.UserID, &g.Name, &g.LimitCents, &g.ResetInterval, &g.BudgetActions,
-		&g.AllowedModels, &g.AllowedProviders, &g.PromptInjection, &g.SensitiveInfo, &g.CustomFilters,
+		&g.ID, &g.UserID, &g.Name, &g.LimitCents, &g.ResetInterval, &g.BudgetActions, &g.EmailOnViolation,
+		&g.AllowedModels, &g.AllowedProviders, &g.BlockedModels, &g.BlockedProviders,
+		&g.PromptInjection, &g.SensitiveInfo, &g.CustomFilters,
 		&g.CreatedAt, &g.UpdatedAt,
 	)
 	if err != nil {
@@ -77,6 +82,12 @@ func scanGuardrail(row pgx.Row) (*Guardrail, error) {
 	}
 	if g.AllowedProviders == nil {
 		g.AllowedProviders = []string{}
+	}
+	if g.BlockedModels == nil {
+		g.BlockedModels = []string{}
+	}
+	if g.BlockedProviders == nil {
+		g.BlockedProviders = []string{}
 	}
 	if len(g.PromptInjection) == 0 {
 		g.PromptInjection = json.RawMessage(`{}`)
@@ -136,11 +147,13 @@ func (q *GuardrailQueries) Create(ctx context.Context, g *Guardrail) (*Guardrail
 	normalizeGuardrail(g)
 	row := q.pool.QueryRow(ctx, `
 		INSERT INTO guardrails (user_id, name, limit_cents, reset_interval, budget_actions,
-			allowed_models, allowed_providers, prompt_injection, sensitive_info, custom_filters)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+			email_on_violation, allowed_models, allowed_providers, blocked_models, blocked_providers,
+			prompt_injection, sensitive_info, custom_filters)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
 		RETURNING `+guardrailCols,
-		g.UserID, g.Name, g.LimitCents, g.ResetInterval, g.BudgetActions,
-		g.AllowedModels, g.AllowedProviders, g.PromptInjection, g.SensitiveInfo, g.CustomFilters,
+		g.UserID, g.Name, g.LimitCents, g.ResetInterval, g.BudgetActions, g.EmailOnViolation,
+		g.AllowedModels, g.AllowedProviders, g.BlockedModels, g.BlockedProviders,
+		g.PromptInjection, g.SensitiveInfo, g.CustomFilters,
 	)
 	return scanGuardrail(row)
 }
@@ -150,13 +163,15 @@ func (q *GuardrailQueries) Update(ctx context.Context, g *Guardrail) (*Guardrail
 	row := q.pool.QueryRow(ctx, `
 		UPDATE guardrails SET
 			name = $3, limit_cents = $4, reset_interval = $5, budget_actions = $6,
-			allowed_models = $7, allowed_providers = $8,
-			prompt_injection = $9, sensitive_info = $10, custom_filters = $11,
+			email_on_violation = $7, allowed_models = $8, allowed_providers = $9,
+			blocked_models = $10, blocked_providers = $11,
+			prompt_injection = $12, sensitive_info = $13, custom_filters = $14,
 			updated_at = now()
 		WHERE id = $1 AND user_id = $2
 		RETURNING `+guardrailCols,
-		g.ID, g.UserID, g.Name, g.LimitCents, g.ResetInterval, g.BudgetActions,
-		g.AllowedModels, g.AllowedProviders, g.PromptInjection, g.SensitiveInfo, g.CustomFilters,
+		g.ID, g.UserID, g.Name, g.LimitCents, g.ResetInterval, g.BudgetActions, g.EmailOnViolation,
+		g.AllowedModels, g.AllowedProviders, g.BlockedModels, g.BlockedProviders,
+		g.PromptInjection, g.SensitiveInfo, g.CustomFilters,
 	)
 	return scanGuardrail(row)
 }
@@ -251,7 +266,9 @@ func (q *GuardrailQueries) ReplaceAssignments(ctx context.Context, guardrailID, 
 	return tx.Commit(ctx)
 }
 
-// ResolveForRequest returns key-assigned policy and/or user-default policy (0–2).
+// ResolveForRequest returns the key-specific policy, or the account default
+// when the key has no specific assignment. The account default is therefore
+// inherited by keys created in the future.
 func (q *GuardrailQueries) ResolveForRequest(ctx context.Context, userID, apiKeyID string) ([]*Guardrail, error) {
 	var out []*Guardrail
 	seen := map[string]bool{}
@@ -288,8 +305,13 @@ func (q *GuardrailQueries) ResolveForRequest(ctx context.Context, userID, apiKey
 			return nil, err
 		}
 	}
-	if err := load("user", userID); err != nil {
-		return nil, err
+	// A key-specific policy overrides the account default. This is important
+	// for accounts that use a restrictive default for all current and future
+	// keys but need a separately configured exception for a key.
+	if len(out) == 0 {
+		if err := load("user", userID); err != nil {
+			return nil, err
+		}
 	}
 	return out, nil
 }
@@ -368,6 +390,12 @@ func normalizeGuardrail(g *Guardrail) {
 	}
 	if g.AllowedProviders == nil {
 		g.AllowedProviders = []string{}
+	}
+	if g.BlockedModels == nil {
+		g.BlockedModels = []string{}
+	}
+	if g.BlockedProviders == nil {
+		g.BlockedProviders = []string{}
 	}
 	if len(g.PromptInjection) == 0 {
 		g.PromptInjection = json.RawMessage(`{}`)

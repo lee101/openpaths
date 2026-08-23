@@ -49,8 +49,11 @@ type guardrailBody struct {
 	LimitCents       *int64          `json:"limit_cents"`
 	ResetInterval    *string         `json:"reset_interval"`
 	BudgetActions    []string        `json:"budget_actions"`
+	EmailOnViolation bool            `json:"email_on_violation"`
 	AllowedModels    []string        `json:"allowed_models"`
 	AllowedProviders []string        `json:"allowed_providers"`
+	BlockedModels    []string        `json:"blocked_models"`
+	BlockedProviders []string        `json:"blocked_providers"`
 	PromptInjection  json.RawMessage `json:"prompt_injection"`
 	SensitiveInfo    json.RawMessage `json:"sensitive_info"`
 	CustomFilters    json.RawMessage `json:"custom_filters"`
@@ -70,7 +73,9 @@ func (h *GuardrailHandler) HandleCreate(ctx *fasthttp.RequestCtx) {
 	g := &queries.Guardrail{
 		UserID: userID, Name: req.Name,
 		LimitCents: req.LimitCents, ResetInterval: req.ResetInterval,
-		BudgetActions: req.BudgetActions, AllowedModels: req.AllowedModels, AllowedProviders: req.AllowedProviders,
+		BudgetActions: req.BudgetActions, EmailOnViolation: req.EmailOnViolation,
+		AllowedModels: req.AllowedModels, AllowedProviders: req.AllowedProviders,
+		BlockedModels: req.BlockedModels, BlockedProviders: req.BlockedProviders,
 		PromptInjection: req.PromptInjection, SensitiveInfo: req.SensitiveInfo, CustomFilters: req.CustomFilters,
 	}
 	out, err := h.q.Create(ctx, g)
@@ -96,7 +101,9 @@ func (h *GuardrailHandler) HandleUpdate(ctx *fasthttp.RequestCtx) {
 	g := &queries.Guardrail{
 		ID: id, UserID: userID, Name: req.Name,
 		LimitCents: req.LimitCents, ResetInterval: req.ResetInterval,
-		BudgetActions: req.BudgetActions, AllowedModels: req.AllowedModels, AllowedProviders: req.AllowedProviders,
+		BudgetActions: req.BudgetActions, EmailOnViolation: req.EmailOnViolation,
+		AllowedModels: req.AllowedModels, AllowedProviders: req.AllowedProviders,
+		BlockedModels: req.BlockedModels, BlockedProviders: req.BlockedProviders,
 		PromptInjection: req.PromptInjection, SensitiveInfo: req.SensitiveInfo, CustomFilters: req.CustomFilters,
 	}
 	out, err := h.q.Update(ctx, g)
