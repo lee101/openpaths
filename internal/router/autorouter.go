@@ -295,17 +295,17 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			{Description: "estimate near term values from sparse line chart out of distribution", ModelID: "gpt-5.4-nano", ReasoningEffort: "low"},
 			{Description: "map fields rename keys validate a small payload", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
 
-			// ===== MODERATE CODING - GPT-5.4 Mini (great price/perf) =====
-			{Description: "implement feature add functionality new endpoint api route handler controller", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
-			{Description: "debug fix bug error exception crash investigate issue trace", ModelID: "gpt-5.4-mini", ReasoningEffort: "medium"},
-			{Description: "code review analyze quality security vulnerability check audit", ModelID: "gpt-5.4-mini", ReasoningEffort: "medium"},
-			{Description: "database query sql migration schema design model orm prisma", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
+			// ===== MODERATE CODING - openpaths/stealth/ox-alpha (free) + GPT-5.4 Mini =====
+			{Description: "implement feature add functionality new endpoint api route handler controller", ModelID: "openpaths/stealth/ox-alpha", ReasoningEffort: "medium"},
+			{Description: "debug fix bug error exception crash investigate issue trace", ModelID: "openpaths/stealth/ox-alpha", ReasoningEffort: "high"},
+			{Description: "code review analyze quality security vulnerability check audit", ModelID: "openpaths/stealth/ox-alpha", ReasoningEffort: "high"},
+			{Description: "database query sql migration schema design model orm prisma", ModelID: "openpaths/stealth/ox-alpha", ReasoningEffort: "low"},
+			{Description: "api integration third party sdk client library webhook", ModelID: "openpaths/stealth/ox-alpha", ReasoningEffort: "low"},
+			{Description: "authentication authorization login signup oauth jwt session", ModelID: "openpaths/stealth/ox-alpha", ReasoningEffort: "medium"},
+			{Description: "backend server middleware routing request response http rest", ModelID: "openpaths/stealth/ox-alpha", ReasoningEffort: "low"},
+			{Description: "write comprehensive test suite integration test e2e coverage", ModelID: "openpaths/stealth/ox-alpha", ReasoningEffort: "medium"},
+			{Description: "error handling validation input sanitization edge cases", ModelID: "openpaths/stealth/ox-alpha", ReasoningEffort: "medium"},
 			{Description: "data analysis csv json structured query analytics pandas numpy", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
-			{Description: "api integration third party sdk client library webhook", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
-			{Description: "authentication authorization login signup oauth jwt session", ModelID: "gpt-5.4-mini", ReasoningEffort: "medium"},
-			{Description: "backend server middleware routing request response http rest", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
-			{Description: "write comprehensive test suite integration test e2e coverage", ModelID: "gpt-5.4-mini", ReasoningEffort: "medium"},
-			{Description: "error handling validation input sanitization edge cases", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
 			{Description: "forecast noisy seasonal time series with assumptions and uncertainty", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
 			{Description: "analyze spreadsheet formulas joins pivots and inconsistent rows", ModelID: "gpt-5.4-mini", ReasoningEffort: "medium"},
 
@@ -513,20 +513,38 @@ func defaultRoutingTables() map[string][]AutoEntry {
 		},
 
 		"code-task": {
-			// Easy coding — small models
+			// ===== EVERYDAY CODING — openpaths/stealth/ox-alpha (free stealth, reasoning mandatory) =====
+			// Carries the bulk (~70%) of auto-code traffic. Never route here with
+			// effort "none": upstream rejects disabled reasoning with a 400.
+			{Description: "debug fix bug error exception crash investigate stack trace reproduce failing case regression", ModelID: "openpaths/stealth/ox-alpha", ReasoningEffort: "high"},
+			{Description: "implement feature add function method class component endpoint api route handler business logic", ModelID: "openpaths/stealth/ox-alpha", ReasoningEffort: "medium"},
+			{Description: "write unit test integration test test case mock stub coverage assertion table driven", ModelID: "openpaths/stealth/ox-alpha", ReasoningEffort: "medium"},
+			{Description: "code review analyze quality security vulnerability check audit patch suggestion diff feedback", ModelID: "openpaths/stealth/ox-alpha", ReasoningEffort: "high"},
+			{Description: "refactor cleanup restructure module rename variable extract helper simplify dead code", ModelID: "openpaths/stealth/ox-alpha", ReasoningEffort: "medium"},
+			{Description: "explain how this code works walkthrough summarize what this function does onboarding", ModelID: "openpaths/stealth/ox-alpha", ReasoningEffort: "low"},
+			{Description: "sql query migration schema design model orm prisma database index", ModelID: "openpaths/stealth/ox-alpha", ReasoningEffort: "low"},
+			{Description: "frontend component react vue svelte tailwind css layout styling responsive fix", ModelID: "openpaths/stealth/ox-alpha", ReasoningEffort: "medium"},
+			{Description: "python node typescript golang shell script automation cli tool utility snippet", ModelID: "openpaths/stealth/ox-alpha", ReasoningEffort: "low"},
+			{Description: "api integration third party sdk client library webhook payload request response http rest", ModelID: "openpaths/stealth/ox-alpha", ReasoningEffort: "low"},
+			{Description: "error handling validation input sanitization edge cases defensive checks retry backoff", ModelID: "openpaths/stealth/ox-alpha", ReasoningEffort: "medium"},
+			{Description: "dockerfile docker compose kubernetes manifest helm chart ci cd pipeline github actions workflow", ModelID: "openpaths/stealth/ox-alpha", ReasoningEffort: "low"},
+			{Description: "documentation readme changelog docstring jsdoc typedoc godoc code comments", ModelID: "openpaths/stealth/ox-alpha", ReasoningEffort: "low"},
+			{Description: "authentication authorization login signup oauth jwt session middleware flow", ModelID: "openpaths/stealth/ox-alpha", ReasoningEffort: "medium"},
+			// Trivial mechanical edits stay on the cheap fast tier.
 			{Description: "resolve this git diff merge conflict cherry pick rebase", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
 			{Description: "remove this text delete unused import rename variable lint fix typo", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
 			{Description: "git commit push pull branch checkout status diff log", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
-			{Description: "write simple test unit test assert mock stub", ModelID: "gpt-5.4-nano", ReasoningEffort: "low"},
 			{Description: "shell command bash script terminal automation", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
-			// Medium coding
-			{Description: "debug fix bug error exception crash investigate stack trace", ModelID: "gpt-5.4-mini", ReasoningEffort: "medium"},
-			{Description: "implement feature endpoint api route handler refactor module", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
-			{Description: "code review security vulnerability quality audit", ModelID: "gpt-5.4-mini", ReasoningEffort: "medium"},
 			// 3D / Three.js / frontend visual coding — Gemini
 			{Description: "threejs webgl 3d scene mesh shader animation canvas react three fiber", ModelID: "gemini-3.5-flash", ReasoningEffort: "medium"},
 			{Description: "frontend ui ux layout component react vue svelte tailwind css", ModelID: "gemini-3.5-flash", ReasoningEffort: "medium"},
 			{Description: "game design threejs physics simulation clock gears cogs mechanism", ModelID: "gemini-3.5-flash", ReasoningEffort: "high"},
+			// High-end VFX / GPU graphics — frontier only
+			{Description: "glsl hlsl shader authoring fragment vertex compute raymarching render pipeline post processing effect particle system vfx simulation gpu graphics", ModelID: "gpt-5.5", ReasoningEffort: "high"},
+			// Stock trading / HFT / quant — frontier only
+			{Description: "stock trading system backtesting engine order book market data feed quant strategy risk model hft low latency execution tick data", ModelID: "gpt-5.5", ReasoningEffort: "high"},
+			// AI / LLM development — frontier only
+			{Description: "llm ai development fine tuning training run inference optimization kv cache quantization tokenizer rag pipeline embedding search cuda kernel eval harness", ModelID: "gpt-5.5", ReasoningEffort: "high"},
 			// Hard coding — GPT-5.5 / Codex
 			{Description: "architect system design distributed microservice scale infrastructure", ModelID: "gpt-5.5", ReasoningEffort: "medium"},
 			{Description: "refactor large codebase migrate rewrite legacy modernize", ModelID: "gpt-5.5", ReasoningEffort: "medium"},
@@ -536,10 +554,16 @@ func defaultRoutingTables() map[string][]AutoEntry {
 
 		"reasoning-task": {
 			{Description: "say yes answer yes only one word trivial acknowledgement", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
-			{Description: "explain a concept simply compare two options briefly", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
-			{Description: "forecast a line extrapolate a time series next values out of distribution", ModelID: "gpt-5.4-mini", ReasoningEffort: "low"},
-			{Description: "plan a refactor migration test strategy across several files", ModelID: "gpt-5.4-mini", ReasoningEffort: "medium"},
-			{Description: "analyze tradeoffs architecture performance bottlenecks failure modes", ModelID: "gpt-5.4-mini", ReasoningEffort: "medium"},
+			// ===== MID-COMPLEXITY THINKING — openpaths/stealth/ox-alpha =====
+			// Free stealth route with mandatory reasoning; effort is pinned to
+			// xhigh because there is no cost reason to think shallower.
+			{Description: "explain a concept simply compare two options briefly", ModelID: "openpaths/stealth/ox-alpha", ReasoningEffort: "xhigh"},
+			{Description: "forecast a line extrapolate a time series next values out of distribution", ModelID: "openpaths/stealth/ox-alpha", ReasoningEffort: "xhigh"},
+			{Description: "plan a refactor migration test strategy across several files", ModelID: "openpaths/stealth/ox-alpha", ReasoningEffort: "xhigh"},
+			{Description: "analyze tradeoffs architecture performance bottlenecks failure modes", ModelID: "openpaths/stealth/ox-alpha", ReasoningEffort: "xhigh"},
+			{Description: "work through a multi step debugging plan form hypotheses rank likely root causes", ModelID: "openpaths/stealth/ox-alpha", ReasoningEffort: "xhigh"},
+			{Description: "deep code review reason about subtle bugs concurrency regressions before advising", ModelID: "openpaths/stealth/ox-alpha", ReasoningEffort: "xhigh"},
+			{Description: "design an algorithm weigh complexity correctness and maintainability before writing code", ModelID: "openpaths/stealth/ox-alpha", ReasoningEffort: "xhigh"},
 			{Description: "prove a theorem derive formula hard math olympiad logic puzzle", ModelID: "gemini-3.5-flash", ReasoningEffort: "high"},
 			{Description: "design distributed system protocol consensus adversarial failures", ModelID: "gemini-3.5-flash", ReasoningEffort: "high"},
 			{Description: "formal verification cryptography research deep scientific reasoning", ModelID: "gemini-3.5-flash", ReasoningEffort: "high"},

@@ -14,6 +14,76 @@ export interface BlogPost {
 
 export const posts: BlogPost[] = [
   {
+    slug: 'ox-alpha-coding-workhorse',
+    title: 'ox-alpha Is Quietly Carrying Most of Our Coding Traffic',
+    excerpt: 'A free stealth model now answers roughly 70% of auto-code requests on OpenPaths — everyday implementation, debugging, tests, and reviews — while frontier models stay reserved for VFX shaders, trading systems, and LLM infrastructure.',
+    date: '2026-08-23',
+    author: 'OpenPaths Team',
+    readTime: '4 min',
+    tags: ['ox-alpha', 'auto-code', 'routing', 'stealth models', 'savings'],
+    content: `> The short version: OpenPaths auto-code now routes about **70% of coding
+> traffic** to \`ox-alpha\` (\`openpaths/stealth/ox-alpha\`), a free stealth
+> model on OpenRouter that has quietly gotten very good at everyday software
+> engineering. It is available for only a few more days — point your agents at
+> it while it lasts.
+
+## A free model doing real engineering work
+
+Stealth previews are usually novelties. This one is a genuinely strong coder.
+Over the last stretch of production traffic on [OpenPaths](/), the embedding
+router behind \`auto-code\` kept landing ordinary development prompts on
+\`ox-alpha\` and users kept staying there: feature implementation, bug fixing,
+test writing, refactors, code review, API integration, SQL, Dockerfiles,
+auth flows — the long tail of day-to-day programming that makes up most real
+coding traffic.
+
+Because the model is billed at **$0 in / $0 out**, that share of traffic is
+effectively free. The same requests pointed at a frontier tier would cost
+$5–$30 per million output tokens.
+
+## What still escalates to frontier models
+
+The router keeps the expensive models where they earn their price. Prompts
+matching these domains route past \`ox-alpha\` to GPT-5.5 or Gemini at high
+reasoning effort:
+
+- **High-end VFX / GPU graphics** — GLSL/HLSL shader authoring, raymarching,
+  render pipelines, particle systems
+- **Trading systems** — backtesting engines, order books, market data feeds,
+  low-latency execution
+- **AI/LLM development** — fine-tuning runs, KV-cache and inference
+  optimization, quantization, CUDA kernels, RAG pipelines
+
+Plus the usual hard tier: distributed architecture, compilers, complex
+algorithms, agentic multi-file patches.
+
+## Auto-think works with it too
+
+The reasoning route (\`auto-think\`, \`autothink\`, \`auto-hard-task\`) also
+routes to \`ox-alpha\` for mid-complexity thinking — migration planning,
+tradeoff analysis, multi-step debugging plans. One quirk made this easy: the
+upstream **requires reasoning** (disabling it returns a 400), so we pin every
+auto-think request to the maximum effort level. On a paid model that would be
+reckless; on a free one there is no reason to think shallower.
+
+## How to use it
+
+Nothing to configure if you already use the auto routes:
+
+| You call | What happens |
+|---|---|
+| \`auto-code\` / \`auto-medium-task\` | ~70% lands on ox-alpha, hard domains escalate |
+| \`auto-think\` / \`autothink\` | mid-tier thinking on ox-alpha at max effort |
+| \`ox-alpha\` directly | pinned to the free stealth route |
+
+If the stealth endpoint disappears when the preview ends, the fallback chain
+absorbs it automatically — DeepSeek Flash first for the free path, then Codex,
+Gemini, and Claude for the paid tiers.
+
+Stealth windows close without notice. If you have batch coding work queued,
+this is a good week to run it through \`auto-code\`.`,
+  },
+  {
     slug: 'deepseek-peak-off-peak-pricing-map',
     title: 'DeepSeek Is Half Price Off-Peak: A World Clock for When to Run It',
     excerpt: 'DeepSeek charges half price outside its peak window, and the whole Beijing-time weekend is now off-peak. This live map shows the cheap window on every timezone.',

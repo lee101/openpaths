@@ -208,7 +208,9 @@ models:
 
   # Free OpenRouter stealth route. Keep DeepSeek Flash as the first fallback
   # because the upstream stealth model can disappear or temporarily reject
-  # requests without notice.
+  # requests without notice. Upstream reasoning is mandatory: effort "none"
+  # returns 400, so the autorouter never routes here with thinking disabled
+  # and direct calls default to xhigh (free model, no cost to thinking).
   - id: "openpaths/stealth/ox-alpha"
     provider: openrouter
     provider_model_id: "stealth/ox-alpha"
@@ -220,6 +222,7 @@ models:
     supports_streaming: true
     supports_tools: true
     supports_vision: false
+    default_reasoning_effort: "xhigh"
     fallback_models:
       - "deepseek-v4-flash"
 
@@ -271,6 +274,9 @@ models:
     supports_tools: true
     supports_vision: true
     fallback_models:
+      # Free stealth route absorbs failures before paid fallbacks; it carries
+      # the everyday share of auto-code traffic via the autorouter.
+      - "openpaths/stealth/ox-alpha"
       - "gpt-5-codex"
       - "gpt-5.4-mini"
       - "gemini-3.5-flash"
@@ -290,6 +296,9 @@ models:
     supports_tools: true
     supports_vision: true
     fallback_models:
+      # Free stealth with mandatory reasoning absorbs failures before paid
+      # frontier fallbacks.
+      - "openpaths/stealth/ox-alpha"
       - "gemini-3.5-flash"
       - "gpt-5.5"
       - "gpt-5-codex"

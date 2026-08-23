@@ -27,7 +27,7 @@ func (f *fakeEmbedder) Embed(_ context.Context, req *model.EmbeddingRequest) (*m
 		vec = []float64{1, 0, 0, 0, 0}
 	case containsAny(text, "pick chart type", "select chart type", "visualization type"):
 		vec = []float64{1, 0, 0, 0, 0}
-	case containsAny(text, "implement feature", "new endpoint", "debug fix bug", "integration test", "simple python function", "reverse string", "helper utility"):
+	case containsAny(text, "implement feature", "new endpoint", "debug fix bug", "crashes with", "stack trace", "exception crash", "integration test", "simple python function", "reverse string", "helper utility"):
 		vec = []float64{0, 1, 0, 0, 0}
 	case containsAny(text, "plotly graph config", "chart traces", "dataframe transform", "xlsx unstructured"):
 		vec = []float64{0, 1, 0, 0, 0}
@@ -43,6 +43,12 @@ func (f *fakeEmbedder) Embed(_ context.Context, req *model.EmbeddingRequest) (*m
 		vec = []float64{0, 0, 1, 0, 0}
 	case containsAny(text, "3d mesh simplification algorithm", "3d simulation", "cogs", "gears", "clock mechanism", "prove a theorem", "distributed system protocol", "formal verification", "hard math olympiad"):
 		vec = []float64{0, 0, 0, 0, 1}
+	case containsAny(text, "glsl", "hlsl", "fragment shader", "vertex shader", "compute shader", "raymarching", "render pipeline", "post processing effect", "particle system", "vfx"):
+		vec = []float64{0, 0, 0.85, 0.85, 0}
+	case containsAny(text, "stock trading", "backtesting engine", "order book", "market data feed", "hft", "quant strategy", "tick data"):
+		vec = []float64{0.8, 0, 0, 0, 0.55}
+	case containsAny(text, "fine tuning", "llm ai development", "inference optimization", "kv cache", "quantization", "tokenizer", "rag pipeline", "cuda kernel", "eval harness"):
+		vec = []float64{0, 0.7, 0, 0.7, 0.4}
 	}
 
 	return &model.EmbeddingResponse{
@@ -612,6 +618,143 @@ func TestIsAutoReasoningEffort(t *testing.T) {
 	for _, c := range cases {
 		if got := IsAutoReasoningEffort(c.effort); got != c.want {
 			t.Errorf("IsAutoReasoningEffort(%q) = %v, want %v", c.effort, got, c.want)
+		}
+	}
+}
+
+func TestAutoRouter_CodeTaskRoutesEverydayCodingToOxAlpha(t *testing.T) {
+	ar := NewAutoRouter(&fakeEmbedder{})
+	if err := ar.Init(context.Background()); err != nil {
+		t.Fatalf("Init() error = %v", err)
+	}
+
+	got, err := ar.ResolveAuto(context.Background(), "code-task", "Debug and fix this bug: the endpoint crashes with a nil exception on empty input.")
+	if err != nil {
+		t.Fatalf("ResolveAuto() error = %v", err)
+	}
+	if got.ModelID != "openpaths/stealth/ox-alpha" {
+		t.Fatalf("ModelID = %q, want openpaths/stealth/ox-alpha", got.ModelID)
+	}
+	if got.ReasoningEffort != "high" {
+		t.Fatalf("ReasoningEffort = %q, want high", got.ReasoningEffort)
+	}
+}
+
+func TestAutoRouter_CodeTaskRoutesEverydayTestsToOxAlpha(t *testing.T) {
+	ar := NewAutoRouter(&fakeEmbedder{})
+	if err := ar.Init(context.Background()); err != nil {
+		t.Fatalf("Init() error = %v", err)
+	}
+
+	got, err := ar.ResolveAuto(context.Background(), "code-task", "Write integration tests for the checkout handler with mocks.")
+	if err != nil {
+		t.Fatalf("ResolveAuto() error = %v", err)
+	}
+	if got.ModelID != "openpaths/stealth/ox-alpha" {
+		t.Fatalf("ModelID = %q, want openpaths/stealth/ox-alpha", got.ModelID)
+	}
+}
+
+func TestAutoRouter_CodeTaskRoutesShaderVFXToGPT55High(t *testing.T) {
+	ar := NewAutoRouter(&fakeEmbedder{})
+	if err := ar.Init(context.Background()); err != nil {
+		t.Fatalf("Init() error = %v", err)
+	}
+
+	got, err := ar.ResolveAuto(context.Background(), "code-task", "Write a GLSL fragment shader doing raymarching for a volumetric cloud effect.")
+	if err != nil {
+		t.Fatalf("ResolveAuto() error = %v", err)
+	}
+	if got.ModelID != "gpt-5.5" {
+		t.Fatalf("ModelID = %q, want gpt-5.5", got.ModelID)
+	}
+	if got.ReasoningEffort != "high" {
+		t.Fatalf("ReasoningEffort = %q, want high", got.ReasoningEffort)
+	}
+}
+
+func TestAutoRouter_CodeTaskRoutesTradingSystemToGPT55High(t *testing.T) {
+	ar := NewAutoRouter(&fakeEmbedder{})
+	if err := ar.Init(context.Background()); err != nil {
+		t.Fatalf("Init() error = %v", err)
+	}
+
+	got, err := ar.ResolveAuto(context.Background(), "code-task", "Build a backtesting engine for a quant strategy over tick data with an order book simulator.")
+	if err != nil {
+		t.Fatalf("ResolveAuto() error = %v", err)
+	}
+	if got.ModelID != "gpt-5.5" {
+		t.Fatalf("ModelID = %q, want gpt-5.5", got.ModelID)
+	}
+	if got.ReasoningEffort != "high" {
+		t.Fatalf("ReasoningEffort = %q, want high", got.ReasoningEffort)
+	}
+}
+
+func TestAutoRouter_CodeTaskRoutesLLMDevToGPT55High(t *testing.T) {
+	ar := NewAutoRouter(&fakeEmbedder{})
+	if err := ar.Init(context.Background()); err != nil {
+		t.Fatalf("Init() error = %v", err)
+	}
+
+	got, err := ar.ResolveAuto(context.Background(), "code-task", "Add paged KV cache support and quantization to our LLM inference server.")
+	if err != nil {
+		t.Fatalf("ResolveAuto() error = %v", err)
+	}
+	if got.ModelID != "gpt-5.5" {
+		t.Fatalf("ModelID = %q, want gpt-5.5", got.ModelID)
+	}
+	if got.ReasoningEffort != "high" {
+		t.Fatalf("ReasoningEffort = %q, want high", got.ReasoningEffort)
+	}
+}
+
+func TestAutoRouter_ReasoningTaskRoutesPlanningToOxAlphaXHigh(t *testing.T) {
+	ar := NewAutoRouter(&fakeEmbedder{})
+	if err := ar.Init(context.Background()); err != nil {
+		t.Fatalf("Init() error = %v", err)
+	}
+
+	got, err := ar.ResolveAuto(context.Background(), "reasoning-task", "Plan a refactor migration test strategy across these service files.")
+	if err != nil {
+		t.Fatalf("ResolveAuto() error = %v", err)
+	}
+	if got.ModelID != "openpaths/stealth/ox-alpha" {
+		t.Fatalf("ModelID = %q, want openpaths/stealth/ox-alpha", got.ModelID)
+	}
+	if got.ReasoningEffort != "xhigh" {
+		t.Fatalf("ReasoningEffort = %q, want xhigh", got.ReasoningEffort)
+	}
+}
+
+func TestDefaultRoutingTables_ReasoningTaskPinsOxAlphaToMaxThinking(t *testing.T) {
+	for _, e := range defaultRoutingTables()["reasoning-task"] {
+		if e.ModelID != "openpaths/stealth/ox-alpha" {
+			continue
+		}
+		if e.ReasoningEffort != "xhigh" {
+			t.Fatalf("reasoning-task ox-alpha entry %q effort = %q, want xhigh (model is free)", e.Description, e.ReasoningEffort)
+		}
+	}
+}
+
+func TestDefaultRoutingTables_CodeTaskNeverSendsOxAlphaWithoutThinking(t *testing.T) {
+	for _, e := range defaultRoutingTables()["code-task"] {
+		if e.ModelID == "openpaths/stealth/ox-alpha" && e.ReasoningEffort == "none" {
+			t.Fatalf("code-task ox-alpha entry %q disables reasoning but upstream requires it (400)", e.Description)
+		}
+	}
+}
+
+func TestDefaultRoutingTables_CodeTaskOxAlphaIsLargestCohort(t *testing.T) {
+	counts := map[string]int{}
+	for _, e := range defaultRoutingTables()["code-task"] {
+		counts[e.ModelID]++
+	}
+	ox := counts["openpaths/stealth/ox-alpha"]
+	for model, n := range counts {
+		if model != "openpaths/stealth/ox-alpha" && n >= ox {
+			t.Fatalf("code-task cohort %q (%d) rivals ox-alpha (%d); everyday coding must stay the majority share", model, n, ox)
 		}
 	}
 }
