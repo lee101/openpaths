@@ -73,11 +73,17 @@ func (r *Reconciler) ReconcileUser(ctx context.Context, userID string) (int, err
 		if sess.PaymentStatus != "paid" {
 			continue
 		}
+		if sess.Status != "" && sess.Status != "complete" {
+			continue
+		}
 		if sess.AmountTotal <= 0 {
 			continue
 		}
-		// Defense in depth: only credit sessions whose metadata claims this user.
-		if metaUser := sess.Metadata["user_id"]; metaUser != "" && metaUser != userID {
+		// Defense in depth: Stripe must identify both this customer and this user.
+		if sess.Customer != *user.StripeCustomerID {
+			continue
+		}
+		if sess.Metadata["user_id"] != userID {
 			continue
 		}
 		ok, err := r.depositQ.CreditFromStripeSession(

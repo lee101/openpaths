@@ -365,6 +365,12 @@ func (p *AnthropicProvider) HealthCheck(ctx context.Context) error {
 }
 
 func translateRequest(req *model.ChatCompletionRequest) *anthropicRequest {
+	// System messages move to the top-level "system" field below, so a
+	// system-only conversation would leave "messages" empty and Anthropic
+	// rejects that ("messages: Input should be a valid list"). Promoting the
+	// last system message to a user turn keeps the request servable.
+	model.PromoteSystemToUser(req)
+
 	anthReq := &anthropicRequest{
 		Model:     req.Model,
 		MaxTokens: 4096,

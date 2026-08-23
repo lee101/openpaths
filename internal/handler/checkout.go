@@ -176,10 +176,27 @@ func (h *CheckoutHandler) handleCheckoutCompleted(ctx *fasthttp.RequestCtx, raw 
 		log.Printf("webhook: session %s not paid (status=%s)", session.ID, session.PaymentStatus)
 		return
 	}
+	if session.Status != "" && session.Status != "complete" {
+		log.Printf("webhook: session %s not complete (status=%s)", session.ID, session.Status)
+		return
+	}
+	if session.Metadata["type"] != "credits_purchase" {
+		log.Printf("webhook: session %s is not a credits purchase", session.ID)
+		return
+	}
 
 	userID := session.Metadata["user_id"]
 	if userID == "" {
 		log.Printf("webhook: no user_id in metadata for session %s", session.ID)
+		return
+	}
+	user, err := h.userQ.GetByID(ctx, userID)
+	if err != nil {
+		log.Printf("webhook: failed to load user %s for session %s: %v", userID, session.ID, err)
+		return
+	}
+	if user.StripeCustomerID == nil || *user.StripeCustomerID == "" || session.Customer != *user.StripeCustomerID {
+		log.Printf("webhook: session %s customer does not match user %s", session.ID, userID)
 		return
 	}
 

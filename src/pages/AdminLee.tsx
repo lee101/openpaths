@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, ArrowDownToLine, Database, RefreshCw, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, ArrowDownToLine, ArrowUpDown, ChevronDown, ChevronUp, Database, RefreshCw, ShieldCheck } from 'lucide-react';
+import { Link, useParams } from 'react-router-dom';
 import { getStoredAPIKey } from '../lib/session';
 
 const API_BASE = '';
@@ -80,6 +81,7 @@ export function AdminLee() {
   const [error, setError] = useState('');
   const [maxPlan, setMaxPlan] = useState<MaxPlanStatus | null>(null);
   const [maxPlanMsg, setMaxPlanMsg] = useState('');
+  const [sort, setSort] = useState<{ key: keyof AdminSpendUser; direction: 'asc' | 'desc' }>({ key: 'api_spend_cents', direction: 'desc' });
 
   const loadMaxPlan = async () => {
     try {
@@ -138,6 +140,25 @@ export function AdminLee() {
     if (!totals) return 0;
     return totals.api_spend_cents - totals.provider_base_cost_cents;
   }, [totals]);
+
+  const sortedUsers = useMemo(() => {
+    return [...users].sort((a, b) => {
+      const av = a[sort.key];
+      const bv = b[sort.key];
+      const left = av == null ? '' : av;
+      const right = bv == null ? '' : bv;
+      const result = typeof left === 'number' && typeof right === 'number'
+        ? left - right
+        : String(left).localeCompare(String(right));
+      return sort.direction === 'asc' ? result : -result;
+    });
+  }, [sort, users]);
+
+  const sortBy = (key: keyof AdminSpendUser) => {
+    setSort(current => current.key === key
+      ? { key, direction: current.direction === 'asc' ? 'desc' : 'asc' }
+      : { key, direction: 'desc' });
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-12">
@@ -226,14 +247,14 @@ export function AdminLee() {
           <table className="w-full min-w-[1080px] text-left">
             <thead className="bg-white/[0.07] text-xs font-mono uppercase tracking-[0.16em] text-white/45">
               <tr>
-                <th className="px-4 py-3">User</th>
-                <th className="px-4 py-3">Stripe net</th>
-                <th className="px-4 py-3">Stripe gross</th>
-                <th className="px-4 py-3">API spend</th>
-                <th className="px-4 py-3">Provider base</th>
-                <th className="px-4 py-3">Requests</th>
-                <th className="px-4 py-3">Balance</th>
-                <th className="px-4 py-3">Last API use</th>
+                <SortableHeader label="User" sortKey="name" sort={sort} onSort={sortBy} />
+                <SortableHeader label="Stripe net" sortKey="stripe_net_cents" sort={sort} onSort={sortBy} />
+                <SortableHeader label="Stripe gross" sortKey="stripe_gross_cents" sort={sort} onSort={sortBy} />
+                <SortableHeader label="API spend" sortKey="api_spend_cents" sort={sort} onSort={sortBy} />
+                <SortableHeader label="Provider base" sortKey="provider_base_cost_cents" sort={sort} onSort={sortBy} />
+                <SortableHeader label="Requests" sortKey="api_requests" sort={sort} onSort={sortBy} />
+                <SortableHeader label="Balance" sortKey="balance_cents" sort={sort} onSort={sortBy} />
+                <SortableHeader label="Last API use" sortKey="last_request_at" sort={sort} onSort={sortBy} />
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10">
@@ -251,10 +272,12 @@ export function AdminLee() {
                   </td>
                 </tr>
               )}
-              {users.map(user => (
-                <tr key={user.user_id} className="text-sm text-white/80">
+              {sortedUsers.map(user => (
+                <tr key={user.user_id} className="text-sm text-white/80 hover:bg-white/[0.03]">
                   <td className="px-4 py-4">
-                    <div className="font-medium text-white">{user.name || 'Unnamed user'}</div>
+                    <Link to={`/admin/users/${user.user_id}/usage`} className="font-medium text-white hover:text-emerald-300 hover:underline">
+                      {user.name || 'Unnamed user'}
+                    </Link>
                     <div className="font-mono text-xs text-white/45">{user.email}</div>
                     <div className="mt-1 flex gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-white/50">
                       {user.is_admin && <span className="text-emerald-300">Admin</span>}
@@ -281,6 +304,167 @@ export function AdminLee() {
         </div>
       </div>
     </div>
+  );
+}
+
+function SortableHeader({
+  label,
+  sortKey,
+  sort,
+  onSort,
+}: {
+  label: string;
+  sortKey: keyof AdminSpendUser;
+  sort: { key: keyof AdminSpendUser; direction: 'asc' | 'desc' };
+  onSort: (key: keyof AdminSpendUser) => void;
+}) {
+  const active = sort.key === sortKey;
+  return (
+    <th className="px-4 py-3">
+      <button onClick={() => onSort(sortKey)} className="inline-flex items-center gap-1.5 hover:text-white transition-colors">
+        {label}
+        {active ? (sort.direction === 'asc' ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />) : <ArrowUpDown className="h-3.5 w-3.5 opacity-40" />}
+      </button>
+    </th>
+  );
+}
+
+type AdminUsageEvent = {
+  id: string;
+  model: string;
+  provider: string;
+  tokens_in: number;
+  tokens_out: number;
+  cost_cents: number;
+  status_code: number;
+  error?: string;
+  api_key_name?: string;
+  app_url?: string;
+  app_title?: string;
+  created_at: string;
+};
+
+type AdminUsageModel = {
+  model: string;
+  provider: string;
+  total_requests: number;
+  total_tokens_in: number;
+  total_tokens_out: number;
+  total_cost_cents: number;
+};
+
+type AdminUsageApp = {
+  app_id?: string;
+  app_url?: string;
+  app_title?: string;
+  total_requests: number;
+  total_tokens_in: number;
+  total_tokens_out: number;
+  total_cost_cents: number;
+  models?: AdminUsageModel[];
+};
+
+type AdminActivityDay = { date: string; total_requests: number; total_cost_cents: number };
+
+export function AdminUserUsage() {
+  const { userId } = useParams<{ userId: string }>();
+  const [period, setPeriod] = useState<'24h' | '7d' | '30d' | '90d'>('30d');
+  const [data, setData] = useState<any>(null);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!userId) return;
+    setLoading(true);
+    adminApi(`/admin/users/${encodeURIComponent(userId)}/usage?period=${period}&limit=100`)
+      .then(async res => {
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body.error?.message || 'Unable to load user usage');
+        setData(body);
+        setError('');
+      })
+      .catch(err => setError(err.message || 'Network error'))
+      .finally(() => setLoading(false));
+  }, [period, userId]);
+
+  const models: AdminUsageModel[] = Array.isArray(data?.models) ? data.models : [];
+  const apps: AdminUsageApp[] = Array.isArray(data?.apps) ? data.apps : [];
+  const events: AdminUsageEvent[] = Array.isArray(data?.events) ? data.events : [];
+  const activity: AdminActivityDay[] = Array.isArray(data?.activity) ? data.activity : [];
+  const totalRequests = models.reduce((sum, item) => sum + item.total_requests, 0);
+  const totalTokens = models.reduce((sum, item) => sum + item.total_tokens_in + item.total_tokens_out, 0);
+  const totalCost = models.reduce((sum, item) => sum + item.total_cost_cents, 0);
+
+  return (
+    <div className="max-w-7xl mx-auto px-6 py-12">
+      <Link to="/admin" className="mb-8 inline-flex items-center gap-2 font-mono text-sm text-white/50 hover:text-white">
+        ← Back to Adminlee
+      </Link>
+      <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="mb-2 font-mono text-xs uppercase tracking-[0.22em] text-emerald-300">User activity</p>
+          <h1 className="text-4xl font-semibold tracking-tight">{data?.user?.name || data?.user?.email || 'Usage detail'}</h1>
+          <p className="mt-2 font-mono text-sm text-white/45">{data?.user?.email || userId}</p>
+        </div>
+        <div className="flex gap-2 font-mono text-sm">
+          {(['24h', '7d', '30d', '90d'] as const).map(value => (
+            <button key={value} onClick={() => setPeriod(value)} className={`rounded-lg px-3 py-1.5 ${period === value ? 'bg-white text-black font-bold' : 'bg-white/5 text-white/60 hover:bg-white/10'}`}>
+              {value}
+            </button>
+          ))}
+        </div>
+      </div>
+      {error && <div className="mb-6 rounded-lg border border-red-400/20 bg-red-500/10 p-4 text-red-200">{error}</div>}
+      {loading ? <p className="font-mono text-sm text-white/40">Loading usage…</p> : (
+        <>
+          <div className="mb-8 grid gap-4 md:grid-cols-3">
+            <Metric label="Requests" value={formatNumber(totalRequests)} icon={<Database className="h-5 w-5" />} />
+            <Metric label="Tokens" value={formatNumber(totalTokens)} icon={<Database className="h-5 w-5" />} />
+            <Metric label="API spend" value={formatUsageUnits(totalCost)} icon={<ShieldCheck className="h-5 w-5" />} />
+          </div>
+          <DailyActivitySummary data={activity} />
+          <UsageTable title="By model" models={models} />
+          <div className="mt-8 grid gap-8 lg:grid-cols-2">
+            <AppUsageTable apps={apps} />
+            <RecentUsageTable events={events} />
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function DailyActivitySummary({ data }: { data: AdminActivityDay[] }) {
+  const recent = data.slice(-14).reverse();
+  const max = Math.max(1, ...recent.map(day => day.total_requests));
+  return (
+    <section className="mb-8 rounded-lg border border-white/10 p-5">
+      <h2 className="font-semibold">Daily activity</h2>
+      <p className="mt-1 font-mono text-xs text-white/40">Recent request volume over the last year</p>
+      {recent.length === 0 ? <p className="mt-6 font-mono text-sm text-white/40">No activity recorded.</p> : <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-7">{recent.map(day => <div key={day.date} className="rounded border border-white/10 bg-white/[0.03] p-3"><div className="font-mono text-[11px] text-white/45">{day.date}</div><div className="mt-2 h-1.5 rounded bg-white/10"><div className="h-full rounded bg-emerald-300/80" style={{ width: `${Math.max(5, (day.total_requests / max) * 100)}%` }} /></div><div className="mt-2 font-mono text-xs text-white/70">{formatNumber(day.total_requests)} req</div><div className="font-mono text-[11px] text-emerald-300">{formatUsageUnits(day.total_cost_cents)}</div></div>)}</div>}
+    </section>
+  );
+}
+
+function UsageTable({ title, models }: { title: string; models: AdminUsageModel[] }) {
+  return (
+    <section className="overflow-hidden rounded-lg border border-white/10">
+      <div className="border-b border-white/10 bg-white/[0.03] px-5 py-4"><h2 className="font-semibold">{title}</h2></div>
+      <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="bg-white/[0.04] font-mono text-xs uppercase tracking-[0.14em] text-white/45"><tr><th className="px-5 py-3">Model</th><th className="px-5 py-3">Provider</th><th className="px-5 py-3 text-right">Requests</th><th className="px-5 py-3 text-right">Tokens</th><th className="px-5 py-3 text-right">Spend</th></tr></thead><tbody className="divide-y divide-white/10">{models.map(item => <tr key={`${item.model}-${item.provider}`}><td className="px-5 py-3 font-mono text-white">{item.model}</td><td className="px-5 py-3 text-white/50">{item.provider}</td><td className="px-5 py-3 text-right font-mono">{formatNumber(item.total_requests)}</td><td className="px-5 py-3 text-right font-mono text-white/60">{formatNumber(item.total_tokens_in + item.total_tokens_out)}</td><td className="px-5 py-3 text-right font-mono text-emerald-300">{formatUsageUnits(item.total_cost_cents)}</td></tr>)}</tbody></table></div>
+      {models.length === 0 && <p className="px-5 py-8 font-mono text-sm text-white/40">No model usage in this period.</p>}
+    </section>
+  );
+}
+
+function AppUsageTable({ apps }: { apps: AdminUsageApp[] }) {
+  return (
+    <section className="overflow-hidden rounded-lg border border-white/10"><div className="border-b border-white/10 bg-white/[0.03] px-5 py-4"><h2 className="font-semibold">By app</h2><p className="mt-1 font-mono text-xs text-white/40">Caller attribution from Referer and X-Title</p></div><div className="divide-y divide-white/10">{apps.map((app, index) => <details key={`${app.app_id}-${app.app_url}-${index}`} className="group px-5 py-4"><summary className="cursor-pointer list-none"><div className="flex items-center justify-between gap-4"><div><div className="text-white">{app.app_title || app.app_url || 'Unnamed app'}</div><div className="mt-1 truncate font-mono text-xs text-white/40">{app.app_url || 'No URL supplied'}</div></div><div className="shrink-0 text-right font-mono text-xs"><div className="text-white/70">{formatNumber(app.total_requests)} req</div><div className="text-emerald-300">{formatUsageUnits(app.total_cost_cents)}</div></div></div></summary>{app.models?.length ? <div className="mt-3 space-y-2 border-l border-white/10 pl-3">{app.models.map(model => <div key={`${model.model}-${model.provider}`} className="flex justify-between gap-3 font-mono text-xs"><span className="text-white/60">{model.model} <span className="text-white/30">({model.provider})</span></span><span className="text-white/50">{formatNumber(model.total_tokens_in + model.total_tokens_out)} tok · {formatUsageUnits(model.total_cost_cents)}</span></div>)}</div> : null}</details>)}</div>{apps.length === 0 && <p className="px-5 py-8 font-mono text-sm text-white/40">No app attribution in this period.</p>}</section>
+  );
+}
+
+function RecentUsageTable({ events }: { events: AdminUsageEvent[] }) {
+  return (
+    <section className="overflow-hidden rounded-lg border border-white/10"><div className="border-b border-white/10 bg-white/[0.03] px-5 py-4"><h2 className="font-semibold">Recent activity</h2><p className="mt-1 font-mono text-xs text-white/40">Latest 100 request records; prompts are not shown</p></div><div className="max-h-[560px] overflow-auto"><table className="w-full text-left text-xs"><thead className="sticky top-0 bg-[#0b0b0b] font-mono uppercase tracking-[0.12em] text-white/40"><tr><th className="px-4 py-3">Time</th><th className="px-4 py-3">Model</th><th className="px-4 py-3">App</th><th className="px-4 py-3 text-right">Tokens</th><th className="px-4 py-3 text-right">Spend</th></tr></thead><tbody className="divide-y divide-white/10">{events.map(event => <tr key={event.id}><td className="whitespace-nowrap px-4 py-3 font-mono text-white/45">{formatDate(event.created_at)}</td><td className="px-4 py-3"><div className="font-mono text-white/80">{event.model}</div><div className="text-white/35">{event.provider}</div></td><td className="max-w-[180px] truncate px-4 py-3 text-white/50" title={event.app_url || event.app_title}>{event.app_title || event.app_url || '—'}</td><td className="px-4 py-3 text-right font-mono text-white/60">{formatNumber(event.tokens_in + event.tokens_out)}</td><td className="px-4 py-3 text-right font-mono text-emerald-300">{formatUsageUnits(event.cost_cents)}</td></tr>)}</tbody></table></div>{events.length === 0 && <p className="px-5 py-8 font-mono text-sm text-white/40">No activity in this period.</p>}</section>
   );
 }
 

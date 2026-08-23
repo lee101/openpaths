@@ -10,27 +10,11 @@
 import { test, expect } from '@playwright/test';
 
 const BASE = process.env.TARGET_URL || 'http://localhost:8090';
-test.skip(process.env.RUN_PAID_MODEL_E2E !== '1', 'set RUN_PAID_MODEL_E2E=1 to spend credits on live model checks');
-
-function uniqueEmail() {
-  return `e2e-gpt56-${Date.now()}-${Math.random().toString(36).slice(2)}@test.openpaths.io`;
-}
+const paidApiKey = process.env.PAID_MODEL_API_KEY || '';
+test.skip(process.env.RUN_PAID_MODEL_E2E !== '1' || !paidApiKey, 'set RUN_PAID_MODEL_E2E=1 and PAID_MODEL_API_KEY to run live model checks');
 
 async function getApiKey(request: any): Promise<string> {
-  const res = await request.post(`${BASE}/auth/register`, {
-    data: { email: uniqueEmail(), password: 'testpass1234', name: 'GPT56 Test' },
-  });
-  expect(res.status()).toBe(201);
-  const body = await res.json();
-  const apiKey = body.api_key;
-
-  const creditRes = await request.post(`${BASE}/account/credits/add`, {
-    headers: { Authorization: `Bearer ${apiKey}` },
-    data: { amount_cents: 10000, description: 'e2e test credits' },
-  });
-  expect(creditRes.status()).toBe(200);
-
-  return apiKey;
+  return paidApiKey;
 }
 
 async function chatCompletion(request: any, apiKey: string, model: string, prompt: string) {

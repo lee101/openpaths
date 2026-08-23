@@ -20,7 +20,7 @@ import { WorksWith } from './pages/WorksWith';
 import { ProviderDocs } from './pages/ProviderDocs';
 import { Pricing } from './pages/Pricing';
 import { ModelPage } from './pages/ModelPage';
-import { AdminLee } from './pages/AdminLee';
+import { AdminLee, AdminUserUsage } from './pages/AdminLee';
 import { Stats } from './pages/Stats';
 import { Search } from './pages/Search';
 import { ImageTo3D } from './pages/ImageTo3D';
@@ -101,6 +101,8 @@ export default function App() {
           <Route path="usage/prompts" element={<UsagePrompts />} />
           <Route path="usage/images" element={<UsageImages />} />
           <Route path="admin" element={<AdminLee />} />
+          <Route path="adminlee" element={<AdminLee />} />
+          <Route path="admin/users/:userId/usage" element={<AdminUserUsage />} />
           <Route path="stats" element={<Stats />} />
           <Route path="apps" element={<Suspense fallback={<RouteLoading />}><Apps /></Suspense>} />
           <Route path="apps/" element={<Suspense fallback={<RouteLoading />}><Apps /></Suspense>} />

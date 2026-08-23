@@ -79,6 +79,47 @@ type ProductSpend struct {
 	TotalCostCents int64  `json:"total_cost_cents"`
 }
 
+// AppSpend is usage attributed to an application supplied by the caller via
+// HTTP-Referer/X-Title (the same convention used by OpenRouter).
+type AppSpend struct {
+	AppID          string          `json:"app_id,omitempty"`
+	AppURL         string          `json:"app_url,omitempty"`
+	AppTitle       string          `json:"app_title,omitempty"`
+	TotalRequests  int64           `json:"total_requests"`
+	TotalTokensIn  int64           `json:"total_tokens_in"`
+	TotalTokensOut int64           `json:"total_tokens_out"`
+	TotalCostCents int64           `json:"total_cost_cents"`
+	Models         []AppModelSpend `json:"models,omitempty"`
+}
+
+type AppModelSpend struct {
+	Model          string `json:"model"`
+	Provider       string `json:"provider"`
+	TotalRequests  int64  `json:"total_requests"`
+	TotalTokensIn  int64  `json:"total_tokens_in"`
+	TotalTokensOut int64  `json:"total_tokens_out"`
+	TotalCostCents int64  `json:"total_cost_cents"`
+}
+
+// UsageEvent is a privacy-preserving request-level activity entry. Prompts
+// and response bodies are intentionally not included.
+type UsageEvent struct {
+	ID         string    `json:"id"`
+	Model      string    `json:"model"`
+	Provider   string    `json:"provider"`
+	TokensIn   int64     `json:"tokens_in"`
+	TokensOut  int64     `json:"tokens_out"`
+	CostCents  int64     `json:"cost_cents"`
+	StatusCode int       `json:"status_code"`
+	Error      *string   `json:"error,omitempty"`
+	APIKeyID   string    `json:"api_key_id,omitempty"`
+	APIKeyName string    `json:"api_key_name,omitempty"`
+	AppID      string    `json:"app_id,omitempty"`
+	AppURL     string    `json:"app_url,omitempty"`
+	AppTitle   string    `json:"app_title,omitempty"`
+	CreatedAt  time.Time `json:"created_at"`
+}
+
 // DailyActivityPoint is one day's usage, used for the contribution heatmap.
 type DailyActivityPoint struct {
 	Date           string `json:"date"` // YYYY-MM-DD

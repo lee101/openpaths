@@ -8,11 +8,75 @@ import (
 )
 
 type AdminHandler struct {
-	userQ *queries.UserQueries
+	userQ  *queries.UserQueries
+	statsQ *queries.StatsQueries
 }
 
-func NewAdminHandler(userQ *queries.UserQueries) *AdminHandler {
-	return &AdminHandler{userQ: userQ}
+func NewAdminHandler(userQ *queries.UserQueries, statsQ ...*queries.StatsQueries) *AdminHandler {
+	h := &AdminHandler{userQ: userQ}
+	if len(statsQ) > 0 {
+		h.statsQ = statsQ[0]
+	}
+	return h
+}
+
+// HandleUserUsage handles GET /admin/users/{user_id}/usage. It mirrors the
+// account activity data, but is protected by the admin gate so support and
+// billing investigations can be done without impersonating a user.
+func (h *AdminHandler) HandleUserUsage(ctx *fasthttp.RequestCtx) {
+	if !h.requireAdmin(ctx) {
+		return
+	}
+	if h.statsQ == nil {
+		writeError(ctx, 500, "server_error", "Usage stats are not configured")
+		return
+	}
+	userID, _ := ctx.UserValue("user_id").(string)
+	if userID == "" {
+		writeError(ctx, 400, "invalid_request", "user_id is required")
+		return
+	}
+	period := string(ctx.QueryArgs().Peek("period"))
+	if period == "" {
+		period = "30d"
+	}
+	limit := ctx.QueryArgs().GetUintOrZero("limit")
+	if limit == 0 {
+		limit = 100
+	}
+	user, err := h.userQ.GetByID(ctx, userID)
+	if err != nil {
+		writeError(ctx, 404, "not_found", "User not found")
+		return
+	}
+	models, err := h.statsQ.GetUserUsage(ctx, userID, period)
+	if err != nil {
+		writeError(ctx, 500, "server_error", "Failed to get user model usage")
+		return
+	}
+	apps, err := h.statsQ.GetUserSpendByApp(ctx, userID, period)
+	if err != nil {
+		writeError(ctx, 500, "server_error", "Failed to get user app usage")
+		return
+	}
+	activity, err := h.statsQ.GetUserDailyActivity(ctx, userID, 365)
+	if err != nil {
+		writeError(ctx, 500, "server_error", "Failed to get user activity")
+		return
+	}
+	events, err := h.statsQ.GetUserRecentUsage(ctx, userID, period, int(limit))
+	if err != nil {
+		writeError(ctx, 500, "server_error", "Failed to get user recent usage")
+		return
+	}
+	writeJSON(ctx, 200, map[string]any{
+		"period":   period,
+		"user":     map[string]any{"id": user.ID, "email": user.Email, "name": user.Name, "disabled": user.Disabled, "is_admin": user.IsAdmin},
+		"models":   models,
+		"apps":     apps,
+		"activity": activity,
+		"events":   events,
+	})
 }
 
 func (h *AdminHandler) requireAdmin(ctx *fasthttp.RequestCtx) bool {

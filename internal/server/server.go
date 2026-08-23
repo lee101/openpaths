@@ -104,7 +104,7 @@ func New(deps *Dependencies) *Server {
 		authH.SetOnRegister(deps.OnRegister)
 	}
 	accountH := handler.NewAccountHandler(deps.APIKeyQ, deps.CreditQ, deps.Billing, deps.StripeReconciler)
-	creditsH := handler.NewCreditsHandler(deps.Billing, deps.UserQ)
+	creditsH := handler.NewCreditsHandler()
 	statsH := handler.NewStatsHandler(deps.StatsQ, deps.AppQ, deps.ModelProbeQ)
 	artH := handler.NewArtHandler(deps.ArtIndex, deps.ArtImageQ)
 	promptsH := handler.NewPromptsHandler(deps.PromptIndex)
@@ -112,7 +112,7 @@ func New(deps *Dependencies) *Server {
 	agentsH := handler.NewAgentsHandler(deps.AgentQ, deps.AgentEngine)
 	agentsH.SetStorage(deps.Storage)
 	acctStatsH := handler.NewAccountStatsHandler(deps.StatsQ)
-	adminH := handler.NewAdminHandler(deps.UserQ)
+	adminH := handler.NewAdminHandler(deps.UserQ, deps.StatsQ)
 
 	apiKeyChain := middleware.Chain(
 		middleware.Recovery(),
@@ -354,6 +354,9 @@ func New(deps *Dependencies) *Server {
 	r.POST("/account/orgs/{slug}/join", accountChain(orgH.HandleOrgJoin))
 	r.GET("/account/orgs/{slug}/members", accountChain(orgH.HandleOrgMembers))
 	r.DELETE("/account/orgs/{slug}/members/{user_id}", accountChain(orgH.HandleOrgMembers))
+	// Keep legacy credit-minting paths fail-closed. Credit issuance is driven by
+	// verified Stripe webhooks/reconciliation, never by request-body amounts.
+	r.POST("/account/credits", accountChain(creditsH.HandleAddCredits))
 	r.POST("/account/credits/add", accountChain(creditsH.HandleAddCredits))
 
 	if deps.ProviderKeyQ != nil {
@@ -457,10 +460,14 @@ func New(deps *Dependencies) *Server {
 	r.GET("/account/stats/by-api-key", accountChain(acctStatsH.HandleUserSpendByAPIKey))
 	r.GET("/account/stats/by-provider", accountChain(acctStatsH.HandleUserSpendByProvider))
 	r.GET("/account/stats/by-product", accountChain(acctStatsH.HandleUserSpendByProduct))
+	r.GET("/account/stats/by-model", accountChain(acctStatsH.HandleUserSpendByModel))
+	r.GET("/account/stats/by-app", accountChain(acctStatsH.HandleUserSpendByApp))
 	r.GET("/account/stats/activity", accountChain(acctStatsH.HandleUserActivity))
+	r.GET("/account/stats/recent", accountChain(acctStatsH.HandleUserRecentUsage))
 	r.GET("/account/stats/by-api-key/{key_id}/models", accountChain(acctStatsH.HandleUserAPIKeyDrilldown))
 	r.GET("/account/stats/by-provider/{provider}/models", accountChain(acctStatsH.HandleUserProviderDrilldown))
 	r.GET("/admin/users/spend", accountChain(adminH.RequireAdmin(adminH.HandleUserSpend)))
+	r.GET("/admin/users/{user_id}/usage", accountChain(adminH.RequireAdmin(adminH.HandleUserUsage)))
 	r.GET("/admin/openai-max-plan", accountChain(adminH.RequireAdmin(adminH.HandleOpenAIMaxPlanStatus)))
 	r.POST("/admin/openai-max-plan/refresh", accountChain(adminH.RequireAdmin(adminH.HandleOpenAIMaxPlanRefresh)))
 

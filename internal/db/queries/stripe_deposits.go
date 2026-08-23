@@ -49,14 +49,20 @@ func (q *StripeDepositQueries) CreditFromStripeSession(
 		piArg = paymentIntentID
 	}
 
-	var gotSession string
+	var gotSession, gotUserID string
 	err = tx.QueryRow(ctx, `
 		INSERT INTO stripe_deposits (session_id, user_id, payment_intent_id, amount_total_cents, source)
 		VALUES ($1, $2, $3, $4, $5)
 		ON CONFLICT (session_id) DO NOTHING
-		RETURNING session_id
-	`, sessionID, userID, piArg, amountTotalCents, source).Scan(&gotSession)
+		RETURNING session_id, user_id
+	`, sessionID, userID, piArg, amountTotalCents, source).Scan(&gotSession, &gotUserID)
 	if errors.Is(err, pgx.ErrNoRows) {
+		if err := tx.QueryRow(ctx, `SELECT user_id FROM stripe_deposits WHERE session_id = $1`, sessionID).Scan(&gotUserID); err != nil {
+			return false, fmt.Errorf("lookup existing stripe deposit: %w", err)
+		}
+		if gotUserID != userID {
+			return false, fmt.Errorf("stripe session %s belongs to another user", sessionID)
+		}
 		return false, tx.Commit(ctx)
 	}
 	if err != nil {

@@ -110,6 +110,55 @@ func (h *AccountStatsHandler) HandleUserSpendByProduct(ctx *fasthttp.RequestCtx)
 	})
 }
 
+// HandleUserSpendByModel handles GET /account/stats/by-model?period=30d.
+func (h *AccountStatsHandler) HandleUserSpendByModel(ctx *fasthttp.RequestCtx) {
+	userID, _ := ctx.UserValue(middleware.CtxKeyUserID).(string)
+	period := string(ctx.QueryArgs().Peek("period"))
+	if period == "" {
+		period = "30d"
+	}
+	models, err := h.statsQ.GetUserUsage(ctx, userID, period)
+	if err != nil {
+		writeError(ctx, 500, "server_error", "Failed to get model spend")
+		return
+	}
+	writeJSON(ctx, 200, map[string]any{"period": period, "models": models})
+}
+
+// HandleUserSpendByApp handles GET /account/stats/by-app?period=30d.
+func (h *AccountStatsHandler) HandleUserSpendByApp(ctx *fasthttp.RequestCtx) {
+	userID, _ := ctx.UserValue(middleware.CtxKeyUserID).(string)
+	period := string(ctx.QueryArgs().Peek("period"))
+	if period == "" {
+		period = "30d"
+	}
+	apps, err := h.statsQ.GetUserSpendByApp(ctx, userID, period)
+	if err != nil {
+		writeError(ctx, 500, "server_error", "Failed to get app spend")
+		return
+	}
+	writeJSON(ctx, 200, map[string]any{"period": period, "apps": apps})
+}
+
+// HandleUserRecentUsage handles GET /account/stats/recent?period=30d&limit=50.
+func (h *AccountStatsHandler) HandleUserRecentUsage(ctx *fasthttp.RequestCtx) {
+	userID, _ := ctx.UserValue(middleware.CtxKeyUserID).(string)
+	period := string(ctx.QueryArgs().Peek("period"))
+	if period == "" {
+		period = "30d"
+	}
+	limit := ctx.QueryArgs().GetUintOrZero("limit")
+	if limit == 0 {
+		limit = 50
+	}
+	events, err := h.statsQ.GetUserRecentUsage(ctx, userID, period, int(limit))
+	if err != nil {
+		writeError(ctx, 500, "server_error", "Failed to get recent usage")
+		return
+	}
+	writeJSON(ctx, 200, map[string]any{"period": period, "events": events})
+}
+
 // HandleUserActivity handles GET /account/stats/activity?days=365
 // It powers the GitHub-style contribution heatmap.
 func (h *AccountStatsHandler) HandleUserActivity(ctx *fasthttp.RequestCtx) {

@@ -23,11 +23,14 @@ func AppAttribution(appQ *queries.AppQueries) Middleware {
 			title := firstHeader(ctx, "X-OpenRouter-Title", "X-Title")
 			categories := parseCategories(firstHeader(ctx, "X-OpenRouter-Categories"))
 
-			if appURL != "" {
+			// Keep title-only callers visible in private account/admin analytics as
+			// well. A URL is still required to create a public app record, but
+			// OpenRouter-compatible clients commonly provide X-Title on its own.
+			if appURL != "" || title != "" {
 				ctx.SetUserValue(CtxKeyAppURL, appURL)
 				ctx.SetUserValue(CtxKeyAppTitle, title)
 				ctx.SetUserValue(CtxKeyAppCategories, categories)
-				if appQ != nil {
+				if appQ != nil && appURL != "" {
 					appID, err := appQ.UpsertAttribution(ctx, appURL, title, categories)
 					if err != nil {
 						log.Printf("app-attribution: upsert %q: %v", appURL, err)
