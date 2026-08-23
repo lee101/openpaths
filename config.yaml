@@ -1566,7 +1566,7 @@ models:
 
   - id: "grok-4.5"
     provider: xai
-    provider_model_id: "grok-4.5"
+    provider_model_id: "grok-4.6"
     input_price_per_1m: 2.00
     input_cache_hit_price_per_1m: 0.30
     output_price_per_1m: 6.00
