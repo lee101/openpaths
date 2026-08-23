@@ -24,6 +24,11 @@ type ScheduledTokenPricing struct {
 	OffPeakInputPricePer1M      float64          `yaml:"off_peak_input_price_per_1m" json:"off_peak_input_price_per_1m"`
 	OffPeakInputCacheHitPer1M   float64          `yaml:"off_peak_input_cache_hit_price_per_1m" json:"off_peak_input_cache_hit_price_per_1m"`
 	OffPeakOutputPricePer1M     float64          `yaml:"off_peak_output_price_per_1m" json:"off_peak_output_price_per_1m"`
+	// WeekendOffPeakEffectiveAt, when set and reached, makes the model off-peak
+	// for the entire Beijing-time (UTC+8) weekend (Saturdays and Sundays),
+	// overriding the peak windows. DeepSeek announced this rule effective
+	// 00:00 Beijing time on Sunday 2026-08-23 (2026-08-22T16:00:00Z).
+	WeekendOffPeakEffectiveAt string `yaml:"weekend_off_peak_effective_at,omitempty" json:"weekend_off_peak_effective_at,omitempty"`
 }
 
 // TemporaryProviderRoute overrides a model's normal upstream until ExpiresAt.
@@ -105,6 +110,18 @@ func (m *ModelConfig) TokenRatesAt(at time.Time) (float64, float64, float64) {
 	effectiveAt, err := time.Parse(time.RFC3339, schedule.EffectiveAt)
 	if err != nil || at.UTC().Before(effectiveAt) {
 		return inputRate, cacheRate, outputRate
+	}
+
+	// Weekend off-peak rule (DeepSeek): once active, Saturdays and Sundays in
+	// Beijing time (UTC+8) are off-peak all day, overriding the peak windows.
+	if schedule.WeekendOffPeakEffectiveAt != "" {
+		weekendAt, cerr := time.Parse(time.RFC3339, schedule.WeekendOffPeakEffectiveAt)
+		if cerr == nil && !at.UTC().Before(weekendAt) {
+			beijing := at.UTC().Add(8 * time.Hour)
+			if beijing.Weekday() == time.Saturday || beijing.Weekday() == time.Sunday {
+				return schedule.OffPeakInputPricePer1M, schedule.OffPeakInputCacheHitPer1M, schedule.OffPeakOutputPricePer1M
+			}
+		}
 	}
 
 	minute := at.UTC().Hour()*60 + at.UTC().Minute()

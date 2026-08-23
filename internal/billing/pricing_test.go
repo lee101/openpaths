@@ -45,6 +45,50 @@ func TestScheduledTokenPricingBoundaries(t *testing.T) {
 	}
 }
 
+func TestScheduledTokenPricingWeekendOffPeak(t *testing.T) {
+	cfg := model.ModelConfig{
+		ID: "weekend", InputPricePer1M: .14, InputCacheHitPricePer1M: .0028, OutputPricePer1M: .28,
+		ScheduledTokenPricing: &model.ScheduledTokenPricing{
+			EffectiveAt:               "2026-08-16T16:00:00Z",
+			WeekendOffPeakEffectiveAt: "2026-08-22T16:00:00Z",
+			PeakWindowsUTC:            []model.UTCPriceWindow{{Start: "01:00", End: "04:00"}, {Start: "06:00", End: "10:00"}},
+			PeakInputPricePer1M:       .44, PeakInputCacheHitPricePer1M: .014, PeakOutputPricePer1M: 1.32,
+			OffPeakInputPricePer1M: .22, OffPeakInputCacheHitPer1M: .007, OffPeakOutputPricePer1M: .66,
+		},
+	}
+	pt := NewPricingTable([]model.ModelConfig{cfg})
+	tests := []struct {
+		name string
+		at   string
+		want [3]float64
+	}{
+		// Beijing Saturday 2026-08-22 starts before the weekend rule, so the
+		// old peak windows still apply even at a peak UTC hour.
+		{"weekend rule inactive on Beijing Saturday 06:00-10:00 UTC", "2026-08-22T07:00:00Z", [3]float64{.44, .014, 1.32}},
+		// Beijing Sunday 2026-08-23 is the effective day: all day is off-peak,
+		// overriding the 06:00-10:00 UTC peak window.
+		{"weekend rule active on Beijing Sunday peak hour", "2026-08-23T07:00:00Z", [3]float64{.22, .007, .66}},
+		// The next Beijing Saturday (2026-08-29) is also entirely off-peak.
+		{"weekend rule active on Beijing Saturday peak hour", "2026-08-29T07:00:00Z", [3]float64{.22, .007, .66}},
+		// Beijing weekday after the rule still pays peak rates in the peak window.
+		{"weekend rule active but Beijing Monday peak hour", "2026-08-24T07:00:00Z", [3]float64{.44, .014, 1.32}},
+		{"weekend rule active but Beijing Monday off-peak hour", "2026-08-24T17:00:00Z", [3]float64{.22, .007, .66}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			at, err := time.Parse(time.RFC3339, tt.at)
+			if err != nil {
+				t.Fatal(err)
+			}
+			pt.now = func() time.Time { return at }
+			input, cache, output := pt.tokenRates(pt.models["weekend"])
+			if got := [3]float64{input, cache, output}; got != tt.want {
+				t.Fatalf("rates = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func newTestPricingTable() *PricingTable {
 	models := []model.ModelConfig{
 		{ID: "gpt-4o", InputPricePer1M: 2.50, OutputPricePer1M: 10.00},
