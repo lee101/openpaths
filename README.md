@@ -4,17 +4,58 @@
 
 ## Quick Start
 
+### Developer setup
+
+Requirements: Go 1.25.3, Node.js 22+, npm, PostgreSQL, and [gitleaks](https://github.com/gitleaks/gitleaks#installation).
+
 ```bash
-# 1. Set up postgres
+# Clone and enter the repository
+git clone https://github.com/lee101/openpaths.git
+cd openpaths
+
+# Install JavaScript dependencies and local secrets protection
+npm ci
+make install-hooks
+
+# Configure local environment
+cp .env.example .env
+# Edit .env; at minimum set a random JWT_SECRET and DATABASE_URL.
+```
+
+Run the Go service and frontend in separate terminals:
+
+```bash
+make build
+GOMAXPROCS=3 ./bin/openpaths
+
+# Separate terminal
+npm run dev
+```
+
+Before opening a pull request, run the same useful checks locally:
+
+```bash
+make test-go       # Go unit/integration tests
+make test-frontend # TypeScript, production build, stable asset checks
+make secrets       # Scan the working tree with gitleaks
+npm run test:e2e   # Browser tests against the built frontend
+```
+
+The pre-push hook scans the commits in each push. Never commit `.env` files or real provider credentials. If a credential is detected, revoke/rotate it and remove it from the complete Git history; deleting it from the latest file is not sufficient. `SKIP_GITLEAKS=1 git push` is reserved for emergencies and does not bypass the GitHub Actions scan.
+
+### Local database
+
+```bash
+# Create a local database (adjust the user/password for your machine)
 sudo -u postgres psql -c "CREATE USER openpaths WITH PASSWORD 'openpaths';"
 sudo -u postgres psql -c "CREATE DATABASE openpaths OWNER openpaths;"
 
-# 2. Copy and edit .env
+# Configure the application
 cp .env.example .env
-# Edit .env with your API keys and JWT_SECRET
+# Set DATABASE_URL to postgres://openpaths:openpaths@localhost:5432/openpaths?sslmode=disable
 
-# 3. Build and run
-go build -o bin/openpaths ./cmd/openpaths/
+# Build and run
+make build
 GOMAXPROCS=3 ./bin/openpaths
 ```
 
