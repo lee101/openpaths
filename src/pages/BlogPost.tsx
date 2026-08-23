@@ -4,6 +4,7 @@ import { motion } from 'motion/react';
 import { ArrowLeft, Calendar, Clock, User } from 'lucide-react';
 import { posts } from '../data/blog';
 import { CodeBlock } from '../components/CodeBlock';
+import { DeepSeekPricingMap } from '../components/DeepSeekPricingMap';
 import { Seo } from '../components/Seo';
 
 function renderMarkdown(content: string): React.ReactNode[] {
@@ -132,6 +133,12 @@ function renderMarkdown(content: string): React.ReactNode[] {
 
     // Empty line
     if (line.trim() === '') {
+      continue;
+    }
+
+    // Inline interactive visualizer directive.
+    if (line.trim() === '[[DEEPSEEK_PRICING_MAP]]') {
+      elements.push(<DeepSeekPricingMap key={key++} />);
       continue;
     }
 

@@ -14,6 +14,49 @@ export interface BlogPost {
 
 export const posts: BlogPost[] = [
   {
+    slug: 'deepseek-peak-off-peak-pricing-map',
+    title: 'DeepSeek Is Half Price Off-Peak: A World Clock for When to Run It',
+    excerpt: 'DeepSeek charges half price outside its peak window, and the whole Beijing-time weekend is now off-peak. This live map shows the cheap window on every timezone.',
+    date: '2026-08-23',
+    author: 'OpenPaths Team',
+    readTime: '5 min',
+    tags: ['deepseek', 'pricing', 'off-peak', 'savings', 'map'],
+    content: `> The short version: DeepSeek is exactly half price outside its peak window,
+> and since the 23 August 2026 change the whole Beijing-time weekend is off-peak
+> as well. Here is a live world clock that turns the window into a map.
+
+[[DEEPSEEK_PRICING_MAP]]
+
+## When is DeepSeek half price?
+
+DeepSeek bills in a fixed UTC window. Peak hours are **01:00–04:00** and **06:00–10:00 UTC**; every other hour is off-peak at half price. Off-peak is exactly half of peak — for \`deepseek-v4-flash\` that is \\\`$0.44 → $0.22\\\` input and \\\`$1.32 → $0.66\\\` output per million tokens.
+
+The window means the cheap hours land at a different wall-clock time depending on where you are.
+
+| Timezone | Peak hours (full price) | Off-peak (half price) |
+|---|---|---|
+| Auckland (UTC+12) | 1–4 pm, 6–10 pm | everything else |
+| Beijing (UTC+8) | 9 am–12 pm, 2–6 pm | everything else |
+| London (UTC+1) | 2–5 am, 7–11 am | everything else |
+| New York (UTC-4) | 9 pm–12 am, 2–6 am | everything else |
+| San Francisco (UTC-7) | 6–9 pm, 11 pm–3 am | everything else |
+
+## The weekend rule
+
+From **00:00 Beijing time on Sunday 23 August 2026**, weekends (Saturdays and Sundays in Beijing time, UTC+8) are off-peak **all day**. Because Beijing is 4 hours behind Auckland right now, that effectively gives New Zealand the weekend discount from **Saturday 4:00 am to Monday 4:00 am** local time.
+
+That is a real price cut for weekend batch runs. A job that would cost $1.32 per million output tokens on a weekday morning costs $0.66 on a Saturday — for the same model, same latency.
+
+## How to use it
+
+- **Batch the cheap work** — embeddings, indexing, overnight evals, and non-urgent agent runs into your local off-peak hours.
+- **Keep interactive chat in the hot path** — half price is nice, but a midnight latency spike is not worth it for a conversation.
+- **The map above shades the peak window on each region's local clock** and marks the night side, so you can eyeball exactly when your corner of the world flips to half price.
+
+DeepSeek keeps the code-models route on OpenPaths at these published rates, so the off-peak pricing flows straight through to whatever is billed on the router.
+`,
+  },
+  {
     slug: 'qwen-uncensored-blackhat-boundary-test',
     title: 'An Unedited Story from the OpenPaths Qwen Uncensored Route',
     excerpt: 'We tested the creative safety boundary of the hosted Qwen3.8-27B Uncensored route with a fictional black-hat story prompt.',

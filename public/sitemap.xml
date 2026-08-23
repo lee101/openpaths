@@ -2331,6 +2331,11 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/blog/deepseek-peak-off-peak-pricing-map</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/blog/qwen-uncensored-blackhat-boundary-test</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
