@@ -1752,6 +1752,7 @@ models:
       off_peak_input_price_per_1m: 0.22
       off_peak_input_cache_hit_price_per_1m: 0.007
       off_peak_output_price_per_1m: 0.66
+      weekend_off_peak_effective_at: "2026-08-22T16:00:00Z"
     aliases: ["deepseek-flash", "deepseek-v4"]
     context_window: 1000000
     max_output_tokens: 384000
@@ -1782,6 +1783,7 @@ models:
       off_peak_input_price_per_1m: 0.66
       off_peak_input_cache_hit_price_per_1m: 0.022
       off_peak_output_price_per_1m: 1.98
+      weekend_off_peak_effective_at: "2026-08-22T16:00:00Z"
     aliases: ["deepseek-pro", "deepseek-v4-reasoning"]
     context_window: 1000000
     max_output_tokens: 384000
