@@ -1641,6 +1641,46 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/models/fal-ai%2Fkling-video%2Fv2.6%2Fpro%2Ftext-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/fal-ai%2Fkling-video%2Fv2.6%2Fpro%2Fimage-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/fal-ai%2Fveo3.1</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/fal-ai%2Fveo3.1%2Ffast</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/seedance-2.5-text-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/seedance-2.5-image-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/seedance-2.5-reference-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/seedance-2.0-4k-text-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/models/fal-ai%2Fkling-video%2Fv2.5-turbo%2Fpro%2Ftext-to-video</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
@@ -1907,16 +1947,6 @@
   </url>
   <url>
     <loc>https://openpaths.io/models/fal-ai%2Fkling-video%2Fv2.5-turbo%2Fstandard%2Fimage-to-video</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://openpaths.io/models/fal-ai%2Fkling-video%2Fv2.6%2Fpro%2Fimage-to-video</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://openpaths.io/models/fal-ai%2Fkling-video%2Fv2.6%2Fpro%2Ftext-to-video</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
