@@ -2336,6 +2336,26 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/models/flux-video-upscale</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/blog/best-llm-api-2026-compared</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/blog/best-image-generation-api-2026</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/blog/best-video-generation-api-2026</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/blog/ox-alpha-coding-workhorse</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>

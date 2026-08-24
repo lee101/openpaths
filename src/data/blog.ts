@@ -14,6 +14,316 @@ export interface BlogPost {
 
 export const posts: BlogPost[] = [
   {
+    slug: 'best-llm-api-2026-compared',
+    title: 'The Best LLM APIs in 2026, Compared With Real Benchmark Data',
+    excerpt: 'Six ways to call an LLM in 2026 — OpenAI, Anthropic, Google, DeepSeek, OpenRouter, and OpenPaths — compared using measured benchmark runs and published price cards instead of marketing pages.',
+    date: '2026-08-24',
+    author: 'OpenPaths Team',
+    readTime: '9 min',
+    tags: ['llm', 'api', 'comparison', 'benchmark'],
+    content: `Every "best LLM API" listicle ranks models by vibes. This one ranks providers by what actually happens when you send tokens through them: measured scores from our own multi-model benchmark runs, real generated artifacts you can inspect, and price cards you can reproduce on your own bill. We run [OpenPaths](/), an OpenAI-compatible router, so we have an obvious bias — but we ship it as one of six options here, with its limitations stated plainly, because credibility is worth more than a sale.
+
+The short answer up front: there is no single best API. There is a best API *for your traffic shape*, and the gap between picking well and picking badly was **30x cost at equal accuracy** in our own routing benchmark.
+
+## The options at a glance
+
+| Provider | Best feature | Entry price (input, per 1M tokens) | Billing |
+|---|---|---|---|
+| OpenAI API | Broadest ecosystem and tooling | $0.20 (GPT-5.6 Luna) | Pay-per-token |
+| Anthropic API | Long-form code and agent quality | $2.00 tier (Sonnet class); Opus $5.00 | Pay-per-token |
+| Google AI (Gemini) | Price-to-capability in the mid tier | $1.25 (Gemini 2.5 Pro class) | Pay-per-token + free tier |
+| DeepSeek direct | Cheapest serious frontier-adjacent model | $0.14 (V4 Flash, off-peak half price) | Pay-per-token |
+| OpenRouter | One account, hundreds of models | Passes through provider pricing | Prepaid credits |
+| OpenPaths | One key, auto-routing across all of the above | $0.14 and up | Prepaid credits, pay-per-token |
+
+Prices are published rates as of August 2026; output tokens cost more everywhere, typically 3–5x input.
+
+## OpenAI API
+
+- **Best for:** teams that want one vendor, mature SDKs, and the widest ecosystem of tooling.
+- **Strength:** the current lineup spans an ultra-cheap fast tier (GPT-5.6 Luna at $0.20/$1.20 per million in/out) up to frontier reasoning at $5+ input. Structured outputs, batching, and cached-input discounts are all production-grade.
+- **Cost:** pay-per-token, no subscription.
+- **Limitations:** you only get OpenAI models. Our benchmarks below show GPT-5.5 losing to cheaper models on specific job shapes, and a single-vendor setup gives you no way to exploit that.
+
+## Anthropic API
+
+- **Best for:** long coding sessions, agentic loops, and writing where coherence over thousands of tokens matters.
+- **Strength:** Claude topped our creative-coding scorecard (details below) and remains the model our own engineers reach for on hard refactors. Direct pricing is $5.00/$25.00 per million tokens on the Opus tier as of August 2026, with mid tiers below that.
+- **Cost:** pay-per-token; premium relative to mid-tier rivals at the frontier.
+- **Limitations:** the price. On jobs where Claude scores 4.4 and a $0.14 DeepSeek Flash scores close behind, paying 35x per token needs justification.
+
+## Google AI (Gemini)
+
+- **Best for:** high visual and compositional quality at mid-tier prices.
+- **Strength:** Gemini 3.5 Flash scored 4.5/5 on visual composition in our scorecard — the best visual score in the run — at a fraction of frontier pricing. Gemini 2.5 Pro-class models sit around $1.25 input per million tokens.
+- **Cost:** pay-per-token, with a genuine free tier for prototyping.
+- **Limitations:** ambitious compositions need strict format discipline; the same model scored 3.7 on instruction-following in our run. It benefits from tight prompting.
+
+## DeepSeek direct
+
+- **Best for:** batch work, classification, extraction, and any pipeline where cost dominates.
+- **Strength:** V4 Flash lists at $0.14 input per million tokens, and off-peak hours are half price — a scheduling discount nobody else offers at this level.
+- **Cost:** the floor of the serious market.
+- **Limitations:** peak-hour latency can wobble, and it is one model family. You still need a second provider for vision-heavy or frontier-reasoning jobs.
+
+## OpenRouter
+
+- **Best for:** experimentation — trying many models through one account without vendor signups.
+- **Strength:** hundreds of models, one integration, pass-through pricing with no per-token markup on standard routes.
+- **Cost:** prepaid credits; BYOK routes carry a small percentage fee.
+- **Limitations:** it is a catalog, not a decision. You still pick the model per request, and reliability varies by upstream provider. No routing intelligence.
+
+## OpenPaths
+
+- **Best for:** developers who want the whole market behind one OpenAI-compatible key and let measurement decide which model serves each request.
+- **Strength:** one key covers OpenAI, Anthropic, Google, DeepSeek, Mistral, Groq, xAI, and more. Models route by embedding similarity to task type, with circuit-breaker fallbacks when a provider degrades. Prepaid credits from $5 (Stripe or crypto), pay-per-token, no subscription. Latency probes are public at [/stats](/stats) and every model price is listed at [/models](/models).
+- **Cost:** provider-level prices plus routing; e.g. GPT-5.5 at $5.00 input, DeepSeek Flash at $0.14.
+- **Limitations:** you depend on our routing choices unless you pin models yourself, and the catalog, while broad, is curated rather than exhaustive.
+
+## What the benchmarks actually showed
+
+### Creative coding scorecard
+
+We ran five models on the same animated-SVG creative-coding tasks and scored code quality, visual result, motion, and instruction discipline on 1–5. Full methodology and raw outputs are in [our creative lab writeup](/blog/llm-creative-lab-animated-svg-benchmark):
+
+| Model | Code | Visual | Motion | Discipline |
+|---|---|---|---|---|
+| Claude Opus 4.8 | 4.4 | 4.8 | 4.7 | 4.5 |
+| GPT-5.5 direct | 4.7 | 4.1 | 4.2 | 4.8 |
+| GPT-5.5 (xhigh thinking) | 4.1 | 3.8 | 3.5 | 3.0 |
+| Gemini 3.5 Flash | 4.0 | 4.5 | 4.0 | 3.7 |
+| Qwen3 Coder | 4.3 | 3.5 | 3.4 | 4.1 |
+
+![Claude Opus 4.8 animated SVG: pelican riding a bicycle](/static/blog/pelican-svg/opus48.svg)
+
+That is Opus 4.8's one-shot output — spinning wheels, a cranking pelican, scrolling road. Here is the same prompt through GPT-5.5 with thinking disabled, which produced the cleanest single-pass file in the entire run:
+
+![GPT-5.5 animated SVG: pelican riding a bicycle](/static/blog/pelican-svg/gpt55-none.svg)
+
+Two lessons for API buyers. First, more thinking budget made GPT-5.5 *worse* here (discipline collapsed from 4.8 to 3.0) — reasoning spend is not free quality. Second, the ranking flips by criterion: GPT wins code, Claude wins visuals, Gemini wins ambition-per-dollar. A single-vendor contract freezes you into one row of this table.
+
+### Routing benchmark: cost gap at equal accuracy
+
+We also ran a 27-task coding benchmark comparing hand-picked models against automatic routing ([learning-to-route](https://huggingface.co/openpaths/learning-to-route)):
+
+- Hand-picking GPT-5.5: 77.8% accuracy at an average **$2.55** per run.
+- Hand-picking GPT-5.4-nano: 77.8% accuracy at **$0.03**. Identical score, 85x cheaper.
+- Best single model: GPT-5.4-mini, 85.2% at $0.43.
+- Embedding-based cascade routing: **100%** at $0.11 average — about 4% of frontier-model cost.
+
+If your benchmark harness cannot tell a $2.55 run from a $0.03 run, neither should your production router.
+
+## How to choose
+
+Pick **OpenAI** if you want one mature vendor and accept paying frontier prices for mid-frontier results sometimes. Pick **Anthropic** for hard agentic coding where its scorecard lead pays for itself. Pick **Gemini** when visual quality per dollar matters. Pick **DeepSeek** for cheap volume. Pick **OpenRouter** to shop. Pick **OpenPaths** to stop shopping and let measured routing make the choice per request — including the same image and video models covered in [our image API comparison](/blog/best-image-generation-api-2026) and [video API guide](/blog/best-video-generation-api-2026).
+
+## FAQ
+
+### What is the cheapest LLM API per million tokens?
+
+DeepSeek V4 Flash at $0.14 input per million tokens is the floor among serious models as of August 2026, dropping to half that during off-peak hours. Free tiers exist (GLM-4.6-Flash, NVIDIA's free DeepSeek route) for non-production volumes.
+
+### Is a router API slower than calling a provider directly?
+
+A router adds one hop, but embedding-based routing is a lookup, and circuit breakers often make effective latency *lower* than direct calls because degraded providers get skipped automatically. Live probes are at [/stats](/stats).
+
+### Do I need separate accounts for OpenAI, Anthropic, and Google models?
+
+Not with an aggregator. OpenRouter and OpenPaths both give you one account and one key; OpenPaths additionally routes automatically and publishes per-token prices at [/models](/models).
+
+### Are expensive models always more accurate?
+
+No. In our 27-task benchmark, GPT-5.5 at $2.55 per run scored exactly the same as GPT-5.4-nano at $0.03. Match the model to the task, not the invoice to the ego.`,
+  },
+  {
+    slug: 'best-image-generation-api-2026',
+    title: 'The Best Image Generation APIs in 2026, Tested Side by Side',
+    excerpt: 'One prompt, seven image APIs, real outputs you can inspect. FLUX, Z-Image, RA1, Grok Imagine, and GPT Image 2 compared on price per image, adherence, and where each falls down.',
+    date: '2026-08-24',
+    author: 'OpenPaths Team',
+    readTime: '8 min',
+    tags: ['image generation', 'api', 'comparison', 'benchmark'],
+    content: `Most "best image API" articles compare marketing screenshots. This one compares seven generations of the **same prompt** through APIs we serve in production, with the actual outputs embedded below so you can judge for yourself, plus the exact price per image each model bills. All of these run behind [OpenPaths](/) with one key; the interactive version of this gallery lives on our [Image Evals page](/image-evals).
+
+The prompt family, held constant across every model:
+
+\`\`\`text
+A fox astronaut sitting on a mossy log in a misty pine forest,
+wearing a glass bubble helmet, golden hour light, shallow depth of field
+\`\`\`
+
+Same prompt, wildly different results — which is the entire point of this article.
+
+## Results at a glance
+
+| Model | Price per image | Strength | Limitation |
+|---|---|---|---|
+| FLUX Schnell | $0.003 | Fastest and cheapest hosted FLUX | Coarser detail than dev/pro |
+| Z-Image Turbo | $0.007 | Crisp subject, absurd value | Smaller resolution ceiling |
+| FLUX.2 Klein | $0.02 | Coherent cheap daily driver | Soft fine texture |
+| Grok Imagine | $0.02 | Richest scene-building | Subject less dominant |
+| FLUX Dev | $0.025 | Excellent quality per dollar | Reads slightly 3D-render |
+| RA1 | $0.04 | Never refuses, characterful | Softer up close, smaller native size |
+| FLUX Pro | $0.04 | Most photographic output | Priciest FLUX tier |
+| DALL-E 3 | $0.04 | Strong prompt following, widely integrated | Older aesthetic generation |
+| Nano Banana 2 | $0.14 | Top-tier editing and consistency | Premium price |
+| GPT Image 2 | $0.211 | Best instruction adherence in our tests | 30x the price of Z-Image |
+
+## The outputs, side by side
+
+![GPT Image 2 generation: fox astronaut in forest](/static/blog/image-eval/gpt-image-2.webp)
+
+**GPT Image 2** had the best prompt adherence of the group: clean helmet bubble, convincing rim light, believable fur, depth-of-field respected without dissolving the background. It is also by far the most expensive at roughly 21 cents per image. If correctness and text rendering matter more than budget, this is the pick; if you generate in bulk, do the multiplication before committing.
+
+![FLUX Pro generation: fox astronaut in forest](/static/blog/image-eval/flux-pro.webp)
+
+**FLUX Pro** produced the most photographic frame: profile composition, creamy bokeh, naturalistic fur, a helmet that reads as vacuum-formed glass. Of everything tested it is the one most likely to pass as a real photo. At four cents it costs a fraction of GPT Image 2 while winning on aesthetics.
+
+![FLUX Dev generation: fox astronaut in forest](/static/blog/image-eval/flux-dev.webp)
+
+**FLUX Dev**, the open-weights checkpoint, skews slightly toward "cute 3D render" — it read the bubble helmet as over-ear headphones in this run. Warm light, lovely bokeh, and at 2.5 cents it is excellent quality-per-dollar for everyday generation. Being open-weight, it is also the one you can self-host if volume justifies GPUs.
+
+![Z-Image Turbo generation: fox astronaut in forest](/static/blog/image-eval/zimage.webp)
+
+**Z-Image Turbo** is the value champion: under a cent per image, yet crisp centered subject, clean glass helmet, symmetric face, tasteful fog. For bulk generation — thumbnails, dataset augmentation, A/B creatives — cost dominates and nothing else here comes close.
+
+![Klein generation: fox astronaut in forest](/static/blog/image-eval/klein.webp)
+
+**FLUX.2 Klein** is the small efficient sibling: pleasant composition and color, though the helmet shrinks to a detail and fine texture goes soft. A good fast-and-cheap default when Z-Image's tighter framing is too rigid.
+
+![RA1 generation: fox astronaut in forest](/static/blog/image-eval/ra1.webp)
+
+**RA1** leans illustrative rather than photographic — warm, characterful, foggy golden-hour forest — and renders at a smaller native resolution, so it is softer up close. Its distinguishing property is reliability: RA1 never refuses, which is why OpenPaths auto-routes to it when another provider blocks a prompt. Every pipeline that must *always come back with something usable* wants a model like this in the chain.
+
+![Grok Imagine generation: fox astronaut in forest](/static/blog/image-eval/grok-imagine-image.webp)
+
+**Grok Imagine** went widest on scene: layered trees, volumetric light shafts, ground clutter, with the subject nicely integrated rather than dominant. When the environment should do as much storytelling as the character, it is strong and well-priced at two cents.
+
+## FLUX family: which tier do you actually need?
+
+The FLUX lineup is a controlled experiment in paying for quality. Schnell at $0.003 handles drafts; Klein at $0.02 handles production volume; Dev at $0.025 adds the open-weights escape hatch; Pro at $0.04 buys the photographic look. In our evals the jump from Klein to Pro was visible; the jump from Schnell to Klein mostly was not at thumbnail sizes. Start low, escalate only when a human eye complains.
+
+## How we test
+
+Same prompt, same aspect ratio, one generation per model, no cherry-picking retries, outputs published unedited at [/image-evals](/image-evals) alongside blind-vote Elo rankings from the Artificial Analysis arena. Prices are the per-image rates billed on OpenPaths as of August 2026; direct-provider pricing is similar but changes often, so treat the ordering as stable and the cents as approximate.
+
+## FAQ
+
+### What is the cheapest image generation API?
+
+FLUX Schnell at $0.003 per image is the cheapest hosted option we serve, with Z-Image Turbo at $0.007 right behind it and noticeably crisper subjects. Both undercut DALL-E 3's roughly $0.04 standard rate by more than 10x.
+
+### Which image API follows prompts best?
+
+In our same-prompt evals, GPT Image 2 followed compositional and lighting instructions most faithfully. It costs $0.211 per image — roughly 30x over FLUX Dev for adherence, which only makes sense when instructions are load-bearing (text in images, brand constraints, layout specs).
+
+### Can I use one API key for multiple image models?
+
+Yes. Aggregators expose many models behind one endpoint. With OpenPaths one OpenAI-compatible key reaches every model in the table above, and \`auto-image\` picks one per prompt based on what the request needs.
+
+### Is there a free image generation API?
+
+Free tiers rotate; we keep genuinely free routes in the catalog when they meet a quality bar, and the [Image Evals page](/image-evals) shows current rankings. For paid work, Z-Image at $0.007 makes free-tier rate limits irrelevant — 1,000 images costs $7.
+
+### Where can I compare outputs myself?
+
+At [/image-evals](/image-evals) — same-prompt galleries, live leaderboards, and per-model prices, updated as we add models. For the moving-picture counterpart, see our [video generation API guide](/blog/best-video-generation-api-2026), and for the text side, the [LLM API comparison](/blog/best-llm-api-2026-compared).`,
+  },
+  {
+    slug: 'best-video-generation-api-2026',
+    title: 'The Best Video Generation APIs in 2026 for Developers',
+    excerpt: 'LTX, Wan, Hailuo, Seedance, Sora 2, and OpenPaths auto-routing compared on developer-relevant terms: real price cards, cost-per-second math, and honest guidance on when each wins.',
+    date: '2026-08-24',
+    author: 'OpenPaths Team',
+    readTime: '8 min',
+    tags: ['video generation', 'api', 'comparison', 'pricing'],
+    content: `Text-to-video APIs finally crossed the threshold where a developer can build on them without flinching at the bill. But pricing models diverge wildly — some charge per clip, some per second — and marketing pages bury the number that matters: **what does a finished shot cost?** This guide compares the APIs we serve on [OpenPaths](/) using their actual price cards, converts everything to cost-per-second, and says plainly where each one wins. Example output first, so you know what the cheap end of the market looks like:
+
+![Cinematic ocean cliff at sunset, generated video](/static/blog/video-tips/coast.webm)
+
+That clip came through our own pipeline — the kind of shot that used to require stock footage licensing, generated for cents.
+
+## Price card, converted to developer terms
+
+All rates as of August 2026, billed per generated video or per second as noted:
+
+| Model | Pricing unit | Rate | ~5-second clip |
+|---|---|---|---|
+| LTX Video | per video | $0.05 | $0.05 |
+| LTX-2 | per video | $0.072 | $0.072 |
+| Auto-video (OpenPaths) | per video | $0.10 | $0.10 |
+| MiniMax Hailuo h3 | per second | $0.13 | $0.65 |
+| Wan v2.7 | per second | $0.15 | $0.75 |
+| Seedance 2.0 | per second | $0.266–0.334 | $1.33–1.67 |
+| Sora 2 | per video | $0.80 | $0.80 |
+| RA2V | per video | $1.00 | $1.00 |
+| Sora 2 Pro | per video | $5.60 | $5.60 |
+
+The first thing to notice: the spread is **112x** from cheapest to priciest for a five-second shot. The second: per-video and per-second billing reward different behaviors — per-video pricing favors short clips, per-second pricing is honest about duration but punishes ten-second ambitions.
+
+## LTX: the budget workhorse
+
+- **Best for:** high-volume generation where most attempts get discarded.
+- **Strength:** LTX Video at $0.05 and LTX-2 at $0.072 per clip are the cheapest real entries in the market. When your pipeline generates twenty candidates and keeps one — the normal shape of creative automation — a seven-cent discard cost changes the economics entirely. Quality sits below the per-second models on complex motion, but for establishing shots, loops, and stylized motion it clears the bar.
+- **Limitation:** shorter maximum durations and weaker physics on fast action.
+
+## MiniMax Hailuo: the mid-market default
+
+- **Best for:** social-length content where motion quality matters but budget caps out under a dollar per shot.
+- **Strength:** Hailuo h3 at $0.13 per second produces fluid, physically plausible movement — which is why OpenPaths' \`auto-video\` route lands there ($0.10 flat per video; the router picks the provider per request). At five seconds you are around $0.65 direct, or a dime through auto-routing when the request matches.
+- **Limitation:** per-second billing means long shots creep past flat-priced rivals.
+
+## Wan v2.7: strong control per second
+
+- **Best for:** image-to-video and shots needing start-frame fidelity.
+- **Strength:** Wan at $0.15 per second holds onto reference frames well, which matters when animating a specific product photo or illustration rather than dreaming up a scene. Release cadence has been fast; check current version notes before committing.
+- **Limitation:** the same per-second math as Hailuo — great at five seconds, pricey at fifteen.
+
+## Seedance 2.0: the premium per-second tier
+
+- **Best for:** hero shots where motion coherence justifies a dollar fifty per clip.
+- **Strength:** Seedance 2.0 runs $0.266–0.334 per second depending on tier. It earns that on multi-shot coherence and camera moves that cheaper models mangle. If a human would notice bad physics, this is the tier to test against.
+- **Limitation:** the most expensive way to produce ordinary b-roll.
+
+## Sora 2: flat-priced spectacle with an asterisk
+
+- **Best for:** one-off impressive clips at predictable cost.
+- **Strength:** Sora 2 at $0.80 per video (Pro at $5.60) delivers recognizable scene understanding and the strongest brand recognition in the market.
+- **Limitation:** availability has been turbulent — industry trackers reported in 2026 that OpenAI wound down the consumer Sora app and slated the API for shutdown on September 24, 2026, so verify current status directly before building on it. Also, flat $0.80 is cheap for a ten-second cinematic shot and expensive for a three-second loop; match the pricing shape to your clip length.
+
+## OpenPaths auto-video: pay for outcomes, not model names
+
+- **Best for:** products where video is a feature, not the product.
+- **Strength:** \`auto-video\` costs $0.10 flat per video and routes each request to the best-matching served provider — currently landing on MiniMax Hailuo 2.3 — with circuit-breaker fallback if that provider degrades. One OpenAI-compatible key, prepaid credits from $5 (Stripe or crypto), pay-per-generation, no subscription, every rate published at [/models](/models).
+- **Limitation:** routing targets the best general match; if you specifically need Seedance-tier physics or Sora branding, pin the model explicitly instead.
+
+## Cost-per-second math for planners
+
+Budgeting rule of thumb from the table: the budget tier (LTX/auto) lands at **$0.01–0.02 per second** for typical 5–8 second clips; mid tier (Hailuo/Wan) at **$0.13–0.15 per second** regardless of length; premium (Seedance/Sora Pro) at **$0.27–0.56 per second**. A 100-clip batch therefore ranges from about $7 to $560 depending purely on tier choice — and since most pipelines discard most generations, drafting at budget tier and regenerating keepers at premium tier typically cuts total spend by half or more. Pair the video side with the cheap still models in [our image API comparison](/blog/best-image-generation-api-2026), and route scripting through whatever wins in the [LLM API comparison](/blog/best-llm-api-2026-compared).
+
+## FAQ
+
+### Is there an API for Sora?
+
+Yes, for now: Sora 2 is served through OpenPaths at $0.80/video (Pro $5.60), and OpenAI opened a Sora API in 2026 — but trackers reported an API shutdown scheduled for September 24, 2026. Treat Sora as opportunistic, not foundational, until OpenAI clarifies the roadmap.
+
+### What is the cheapest video generation API?
+
+LTX Video at $0.05 per clip is the cheapest serious option we serve; LTX-2 at $0.072 and OpenPaths auto-video at $0.10 round out the budget tier. That is roughly a penny per second of finished footage.
+
+### How much does a 10-second AI video cost?
+
+Anywhere from about $0.07 (LTX-2, flat rate) to $3.34 (Seedance top tier at $0.334 per second). Per-video pricing stops scaling past ~8 seconds, so long-form clips favor per-second models despite their higher headline rates.
+
+### Do I need a subscription for video generation APIs?
+
+No. Every option in the table is pay-per-use. OpenPaths uses prepaid credits starting at $5 with no subscription; buy credits once and draw them down per generation.
+
+### Which video model has the best quality-to-price ratio?
+
+For most developer use cases, the auto-video route at $0.10 flat — near-Hailuo motion quality at LTX-adjacent pricing, because routing skips the cost of guessing wrong. Test it against pinned Hailuo h3 on your own prompts; both share upstream DNA.`,
+  },
+  {
     slug: 'ox-alpha-coding-workhorse',
     title: 'ox-alpha Is Quietly Carrying Most of Our Coding Traffic',
     excerpt: 'A free stealth model now answers roughly 70% of auto-code requests on OpenPaths — everyday implementation, debugging, tests, and reviews — while frontier models stay reserved for VFX shaders, trading systems, and LLM infrastructure.',

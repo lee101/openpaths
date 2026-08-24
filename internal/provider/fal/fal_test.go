@@ -960,3 +960,67 @@ func TestGenerate3D_TrellisRetextureSendsMeshAndResolutionCost(t *testing.T) {
 		t.Fatalf("resolution = %#v", gotSubmit["resolution"])
 	}
 }
+
+func TestGenerateVideo_FluxUpscaleSendsSingularVideoURLAndStripsGenerationFields(t *testing.T) {
+	var gotSubmit map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/blackforestlabs/flux-video-upscale":
+			if err := json.NewDecoder(r.Body).Decode(&gotSubmit); err != nil {
+				t.Fatalf("decode submit: %v", err)
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{"request_id": "fu_1"})
+		case "/blackforestlabs/flux-video-upscale/requests/fu_1/status":
+			_ = json.NewEncoder(w).Encode(map[string]any{"status": "COMPLETED"})
+		case "/blackforestlabs/flux-video-upscale/requests/fu_1":
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"video": map[string]any{"url": "https://example.com/upscaled.mp4"},
+			})
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	p := New("test-key")
+	p.baseURL = server.URL
+	p.client = server.Client()
+	factor := 2.5
+	creativity := 1
+
+	resp, err := p.GenerateVideo(context.Background(), &model.VideoGenerationRequest{
+		Model:           "blackforestlabs/flux-video-upscale",
+		Prompt:          "sharpen fine texture detail",
+		Resolution:      "1080p",
+		Duration:        "10",
+		AspectRatio:     "16:9",
+		FramesPerSecond: 24,
+		Seed:            new(int),
+		GenerateAudio:   new(bool),
+		ImageURLs:       []string{"https://example.com/ref.png"},
+		VideoURLs:       []string{"https://example.com/in.mp4"},
+		UpscaleFactor:   &factor,
+		Creativity:      &creativity,
+		SafetyTolerance: 3,
+	})
+	if err != nil {
+		t.Fatalf("GenerateVideo() error = %v", err)
+	}
+	if resp.VideoURL != "https://example.com/upscaled.mp4" {
+		t.Fatalf("VideoURL = %q", resp.VideoURL)
+	}
+	if gotSubmit["video_url"] != "https://example.com/in.mp4" {
+		t.Fatalf("video_url = %#v", gotSubmit["video_url"])
+	}
+	if gotSubmit["upscale_factor"] != float64(2.5) || gotSubmit["creativity"] != float64(1) {
+		t.Fatalf("upscale args = %#v", gotSubmit)
+	}
+	if gotSubmit["safety_tolerance"] != float64(3) {
+		t.Fatalf("safety_tolerance = %#v", gotSubmit["safety_tolerance"])
+	}
+	for _, key := range []string{"resolution", "duration", "aspect_ratio", "fps", "generate_audio", "seed", "image_urls", "video_urls"} {
+		if _, ok := gotSubmit[key]; ok {
+			t.Fatalf("%s should not be sent for flux-video-upscale: %#v", key, gotSubmit)
+		}
+	}
+}

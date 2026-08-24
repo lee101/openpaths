@@ -64,6 +64,8 @@ type VideoGenerationRequest struct {
 	GuidanceScale         *float64           `json:"guidance_scale,omitempty"`
 	EnableSafetyChecker   *bool              `json:"enable_safety_checker,omitempty"`
 	SafetyTolerance       int                `json:"safety_tolerance,omitempty"`
+	UpscaleFactor         *float64           `json:"upscale_factor,omitempty"`
+	Creativity            *int               `json:"creativity,omitempty"`
 	PreviousInteractionID string             `json:"previous_interaction_id,omitempty"`
 	GenerationConfig      json.RawMessage    `json:"generation_config,omitempty"`
 	ResponseModalities    []string           `json:"response_modalities,omitempty"`

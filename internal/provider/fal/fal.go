@@ -1014,6 +1014,52 @@ func (p *FalProvider) GenerateVideo(ctx context.Context, req *model.VideoGenerat
 		}
 	}
 
+	// FLUX video upscale takes a singular source video_url plus upscale
+	// controls; generation-only fields are rejected by the endpoint schema.
+	if strings.Contains(req.Model, "flux-video-upscale") {
+		delete(falReq, "resolution")
+		delete(falReq, "fps")
+		delete(falReq, "duration")
+		delete(falReq, "aspect_ratio")
+		delete(falReq, "generate_audio")
+		delete(falReq, "bitrate_mode")
+		delete(falReq, "seed")
+		delete(falReq, "end_user_id")
+		delete(falReq, "image_url")
+		delete(falReq, "end_image_url")
+		delete(falReq, "image_urls")
+		delete(falReq, "video_urls")
+		delete(falReq, "audio_urls")
+		delete(falReq, "enable_safety_checker")
+		if req.Prompt == "" {
+			delete(falReq, "prompt")
+		}
+		switch {
+		case req.VideoURL != "":
+			falReq["video_url"] = req.VideoURL
+		case req.Video != nil && req.Video.URL != "":
+			falReq["video_url"] = req.Video.URL
+		case len(req.VideoURLs) > 0:
+			falReq["video_url"] = req.VideoURLs[0]
+		default:
+			for _, item := range req.Content {
+				if item.Type == "video_url" && item.VideoURL != nil && item.VideoURL.URL != "" {
+					falReq["video_url"] = item.VideoURL.URL
+					break
+				}
+			}
+		}
+		if req.UpscaleFactor != nil {
+			falReq["upscale_factor"] = *req.UpscaleFactor
+		}
+		if req.Creativity != nil {
+			falReq["creativity"] = *req.Creativity
+		}
+		if req.SafetyTolerance > 0 {
+			falReq["safety_tolerance"] = req.SafetyTolerance
+		}
+	}
+
 	body, err := json.Marshal(falReq)
 	if err != nil {
 		return nil, fmt.Errorf("marshal: %w", err)

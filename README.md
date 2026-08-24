@@ -59,6 +59,26 @@ make build
 GOMAXPROCS=3 ./bin/openpaths
 ```
 
+### Local HTTPS dev server
+
+Serves plain HTTP; TLS on `https://openpaths.local:9243` is terminated by socat.
+
+```bash
+# one-time: hosts entry + self-signed cert
+grep -q openpaths.local /etc/hosts || echo "127.0.0.1 openpaths.local" | sudo tee -a /etc/hosts
+mkdir -p tmp/dev-cert && openssl req -x509 -newkey rsa:2048 \
+  -keyout tmp/dev-cert/key.pem -out tmp/dev-cert/cert.pem -days 825 -nodes \
+  -subj "/CN=openpaths.local" -addext "subjectAltName=DNS:openpaths.local"
+
+# kill anything on either port and rerun
+fuser -k 8092/tcp 9243/tcp; sleep 1; make build &&
+  PORT=8092 ./bin/openpaths &>/tmp/openpaths-dev.log &
+  socat OPENSSL-LISTEN:9243,fork,reuseaddr,cert=tmp/dev-cert/cert.pem,key=tmp/dev-cert/key.pem,verify=0 TCP4:127.0.0.1:8092 &>/tmp/openpaths-tls.log &
+
+# verify
+curl -sk https://openpaths.local:9243/ -o /dev/null
+```
+
 ## GPU Build (CUDA + gobed)
 
 ```bash

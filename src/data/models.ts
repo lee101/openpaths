@@ -4310,6 +4310,20 @@ const catalogModels: Model[] = [
     pricingType: 'second',
     ogImage: '/og/og-sync-lipsync.png'
   },
+  {
+    id: 'flux-video-upscale',
+    name: 'FLUX Video Upscale',
+    provider: 'Fal',
+    description: 'FLUX 3 powered video super-resolution via fal: upscale footage to 1080p, 2K, or 4K with a source-faithful precise mode or a creative detail-enhancement mode.',
+    contextLength: 'N/A',
+    priceInput: 0.14,
+    priceOutput: 0,
+    tags: ['video generation', 'video-to-video', 'vision'],
+    aliases: ['video-upscale', 'bfl-video-upscale'],
+    released: '2026-08-24',
+    popularity: 60,
+    pricingType: 'second'
+  },
 ];
 
 export function isPromotionActive(model: Model, now = Date.now()) {

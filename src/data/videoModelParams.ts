@@ -117,6 +117,19 @@ const FAMILIES: Array<{ test: RegExp; spec: Partial<VideoParamSpec> }> = [
     },
   },
   {
+    test: /^flux-video-upscale$/i,
+    spec: {
+      inputModes: ['video-to-video'],
+      resolutions: ['auto'],
+      durations: ['auto'],
+      aspectRatios: ['auto'],
+      generateAudio: false,
+      negativePrompt: false,
+      seed: false,
+      outputFormats: ['mp4'],
+    },
+  },
+  {
     test: /hunyuan/i,
     spec: {
       guidanceScale: { min: 1, max: 10, step: 0.5, placeholder: '6' },

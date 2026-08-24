@@ -605,6 +605,10 @@ models:
     provider: fal
     provider_model_id: "bytedance/seedance-2.0/text-to-video"
     price_per_second: 0.33374
+    # Fal bills by resolution tier: 720p $0.3034/s, 1080p $0.682/s, 4K $1.5552/s.
+    price_per_second_by_resolution:
+      1080p: 0.682
+      4k: 1.5552
     input_price_per_1m: 15.40
     aliases: ["seedance", "seedance-2", "seedance-text-video"]
     supports_streaming: false
@@ -616,6 +620,10 @@ models:
     provider_model_id: "bytedance/seedance-2.0/image-to-video"
     price_per_second: 0.33264
     input_price_per_1m: 15.40
+    # Same fal resolution tiers as the text-to-video route.
+    price_per_second_by_resolution:
+      1080p: 0.682
+      4k: 1.5552
     aliases: ["seedance-image-to-video", "seedance-i2v", "seedance-2-i2v"]
     supports_streaming: false
     supports_tools: false
@@ -638,6 +646,10 @@ models:
     price_per_second: 0.33264
     price_per_second_with_video_input: 0.19954
     input_price_per_1m: 15.40
+    # Same fal resolution tiers; video-input seconds bill at the 0.6x rate below.
+    price_per_second_by_resolution:
+      1080p: 0.682
+      4k: 1.5552
     aliases: ["seedance-reference", "seedance-ref"]
     supports_streaming: false
     supports_tools: false
@@ -712,6 +724,178 @@ models:
     supports_streaming: false
     supports_tools: false
     supports_vision: false
+
+  # --- Kling 3.0 via Fal (Video Generation, native audio) ---
+  # Fal charges $0.112/s audio-off, $0.168/s audio-on for Pro and $0.084/$0.126
+  # for Standard; we bill the audio-on rate so audio is never loss-making.
+  - id: "fal-ai/kling-video/v3/pro/text-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/kling-video/v3/pro/text-to-video"
+    price_per_second: 0.168
+    aliases: ["kling-3.0-pro", "kling-v3-pro", "kling-3-pro"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "fal-ai/kling-video/v3/pro/image-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/kling-video/v3/pro/image-to-video"
+    price_per_second: 0.168
+    aliases: ["kling-3.0-pro-image", "kling-v3-pro-image"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "fal-ai/kling-video/v3/standard/text-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/kling-video/v3/standard/text-to-video"
+    price_per_second: 0.126
+    aliases: ["kling", "kling-3", "kling-3.0", "kling-v3"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "fal-ai/kling-video/v3/standard/image-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/kling-video/v3/standard/image-to-video"
+    price_per_second: 0.126
+    aliases: ["kling-3-image", "kling-3.0-image", "kling-i2v"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  # --- Kling 2.6 via Fal (Pro tier; $0.07/s off, $0.14/s on) ---
+  - id: "fal-ai/kling-video/v2.6/pro/text-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/kling-video/v2.6/pro/text-to-video"
+    price_per_second: 0.14
+    aliases: ["kling-2.6", "kling-v2.6", "kling-26"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "fal-ai/kling-video/v2.6/pro/image-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/kling-video/v2.6/pro/image-to-video"
+    price_per_second: 0.14
+    aliases: ["kling-2.6-image", "kling-v2.6-image"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  # --- Google Veo 3.1 via Fal (native audio) ---
+  # Standard bills $0.20/s audio-off / $0.40/s audio-on (4K $0.40/$0.60); Fast
+  # bills $0.10/$0.15. We bill the audio-on rate at 720p/1080p.
+  - id: "fal-ai/veo3.1"
+    provider: fal
+    provider_model_id: "fal-ai/veo3.1"
+    price_per_second: 0.40
+    aliases: ["veo", "veo-3.1", "veo3.1", "google-veo"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "fal-ai/veo3.1/image-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/veo3.1/image-to-video"
+    price_per_second: 0.40
+    aliases: ["veo-image", "veo-3.1-image", "veo-i2v"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "fal-ai/veo3.1/reference-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/veo3.1/reference-to-video"
+    price_per_second: 0.40
+    aliases: ["veo-reference", "veo-3.1-reference"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "fal-ai/veo3.1/first-last-frame-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/veo3.1/first-last-frame-to-video"
+    price_per_second: 0.40
+    aliases: ["veo-first-last-frame", "veo-3.1-flf"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "fal-ai/veo3.1/fast"
+    provider: fal
+    provider_model_id: "fal-ai/veo3.1/fast"
+    price_per_second: 0.15
+    aliases: ["veo-fast", "veo-3.1-fast", "veo3.1-fast"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "fal-ai/veo3.1/fast/image-to-video"
+    provider: fal
+    provider_model_id: "fal-ai/veo3.1/fast/image-to-video"
+    price_per_second: 0.15
+    aliases: ["veo-fast-image", "veo-3.1-fast-image"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  # --- Seedance 2.5 via Fal (480p $0.2205/s, 720p $0.473/s, ~$1.14/s at 1080p;
+  # video inputs bill input+output seconds at a 0.6x multiplier) ---
+  - id: "seedance-2.5-text-to-video"
+    provider: fal
+    provider_model_id: "bytedance/seedance-2.5/text-to-video"
+    price_per_second: 0.473
+    price_per_second_by_resolution:
+      480p: 0.2205
+    aliases: ["seedance-2.5", "seedance-25"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "seedance-2.5-image-to-video"
+    provider: fal
+    provider_model_id: "bytedance/seedance-2.5/image-to-video"
+    price_per_second: 0.473
+    price_per_second_by_resolution:
+      480p: 0.2205
+    aliases: ["seedance-2.5-image", "seedance-25-image"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "seedance-2.5-reference-to-video"
+    provider: fal
+    provider_model_id: "bytedance/seedance-2.5/reference-to-video"
+    price_per_second: 0.473
+    price_per_second_with_video_input: 0.2838
+    price_per_second_by_resolution:
+      480p: 0.2205
+    aliases: ["seedance-2.5-reference", "seedance-25-reference"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  # --- Seedance 4K via Fal (Seedance 2.0 pinned to native 4K output;
+  # fal token rate $0.008/1k tokens = $1.5552/s at 3840x2160x24fps) ---
+  - id: "seedance-2.0-4k-text-to-video"
+    provider: fal
+    provider_model_id: "bytedance/seedance-2.0/text-to-video"
+    price_per_second: 1.5552
+    aliases: ["seedance-4k", "seedance-2-4k"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  # --- Black Forest Labs FLUX Video Upscale via Fal (video-to-video super-resolution) ---
+  - id: "flux-video-upscale"
+    provider: fal
+    provider_model_id: "blackforestlabs/flux-video-upscale"
+    price_per_second: 0.14
+    aliases: ["video-upscale", "flux-video-upscale", "bfl-video-upscale"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
 
   - id: "ltx-video"
     provider: netwrck
