@@ -5,6 +5,7 @@ import { CodeBlock } from '../components/CodeBlock';
 import { normalizeUploadedAssetUrl } from '../lib/uploadUrls';
 
 const DEFAULT_PROMPT = 'The camera slowly pulls back to reveal a glowing city skyline at dusk.';
+const EXAMPLE_SOURCE_URL = 'https://openpathsstatic.openpaths.io/static/uploads/playground/fal-video/kling-v3-pro-text-to-video.mp4';
 const MODELS = [
   { id: 'grok-imagine-video', label: 'Grok Imagine Video', pricePerSecond: 0.08 },
 ];
@@ -53,7 +54,7 @@ async function pollJob(apiKey: string, jobId: string, mode: VideoMode) {
 export function VideoExtension() {
   const [apiKey, setApiKey] = useState(getStoredAPIKey);
   const [prompt, setPrompt] = useState(DEFAULT_PROMPT);
-  const [videoUrl, setVideoUrl] = useState('');
+  const [videoUrl, setVideoUrl] = useState(EXAMPLE_SOURCE_URL);
   const [mode, setMode] = useState<VideoMode>('extension');
   const [model, setModel] = useState('grok-imagine-video');
   const [duration, setDuration] = useState('6');
@@ -245,8 +246,13 @@ console.log(data.result?.video_url ?? data.video_url ?? data.id);`,
                       <a href={resultUrl} target="_blank" rel="noopener noreferrer" className="flex flex-1 items-center justify-center gap-2 border-l border-white/20 px-3 py-2 hover:text-white"><ExternalLink className="h-3.5 w-3.5" /> Open</a>
                     </div>
                   </div>
+                ) : loading ? (
+                  <p className="text-sm font-mono text-white/45">{`${actionLabel}ing video...`}</p>
                 ) : (
-                  <p className="text-sm font-mono text-white/45">{loading ? `${actionLabel}ing video...` : `Your ${mode === 'edit' ? 'edited' : 'extended'} video will appear here.`}</p>
+                  <div className="w-full max-w-lg">
+                    <video src={EXAMPLE_SOURCE_URL} controls muted className="w-full rounded border border-white/20 bg-black" />
+                    <p className="mt-3 text-center text-xs font-mono text-white/50">Example source clip preloaded — hit Extend to continue it, or paste your own MP4 URL.</p>
+                  </div>
                 )}
               </div>
             </section>

@@ -473,8 +473,30 @@ console.log(data.choices[0].message.content);`, [endpoint, keyLabel, payload]);
                     </div>
                   )}
                   {!loading && !error && !response && (
-                    <div className="flex min-h-[200px] items-center justify-center text-center font-mono text-sm text-white/45">
-                      The fused answer will appear here.
+                    <div className="min-h-[200px] space-y-3">
+                      <div className="rounded border border-white/15 bg-black/40 p-3">
+                        <div className="mb-1.5 text-[10px] font-mono uppercase tracking-[0.14em] text-white/45">Example request</div>
+                        <pre className="overflow-x-auto text-xs leading-5 text-white/70">{`POST /v1/chat/completions
+{
+  "model": "claude-opus-latest",
+  "messages": [{ "role": "user", "content": "<your prompt>" }],
+  "fusion": {
+    "type": "openpaths",
+    "analysis_models": ["gpt-5.5", "gemini-3-pro", "deepseek-v4-pro"],
+    "prompt": "<how the judge should fuse>"
+  }
+}`}</pre>
+                      </div>
+                      <div className="rounded border border-white/15 bg-black/40 p-3">
+                        <div className="mb-1.5 text-[10px] font-mono uppercase tracking-[0.14em] text-white/45">Example response</div>
+                        <pre className="overflow-x-auto text-xs leading-5 text-white/70">{`{
+  "choices": [{
+    "message": { "role": "assistant",
+      "content": "<one fused answer keeping the strongest claims>" }
+  }]
+}`}</pre>
+                      </div>
+                      <p className="text-center font-mono text-sm text-white/45">The fused answer will appear here.</p>
                     </div>
                   )}
                   {response && (

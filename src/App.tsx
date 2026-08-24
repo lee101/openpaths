@@ -45,6 +45,11 @@ import { PromptDetail } from './pages/PromptDetail';
 import { Agents } from './pages/Agents';
 import { AgentDetail } from './pages/AgentDetail';
 import { OrgJoin } from './pages/OrgJoin';
+import { Byok } from './pages/Byok';
+import { Calculator } from './pages/Calculator';
+import { Status } from './pages/Status';
+import { Teams } from './pages/Teams';
+import { UseCasesIndex, UseCaseDetail } from './pages/UseCases';
 
 const Apps = lazy(() => import('./pages/Apps').then(module => ({ default: module.Apps })));
 const AppDetail = lazy(() => import('./pages/AppDetail').then(module => ({ default: module.AppDetail })));
@@ -104,6 +109,12 @@ export default function App() {
           <Route path="adminlee" element={<AdminLee />} />
           <Route path="admin/users/:userId/usage" element={<AdminUserUsage />} />
           <Route path="stats" element={<Stats />} />
+          <Route path="status" element={<Status />} />
+          <Route path="byok" element={<Byok />} />
+          <Route path="calculator" element={<Calculator />} />
+          <Route path="teams" element={<Teams />} />
+          <Route path="use-cases" element={<UseCasesIndex />} />
+          <Route path="use-cases/:slug" element={<UseCaseDetail />} />
           <Route path="apps" element={<Suspense fallback={<RouteLoading />}><Apps /></Suspense>} />
           <Route path="apps/" element={<Suspense fallback={<RouteLoading />}><Apps /></Suspense>} />
           <Route path="apps/:slug" element={<Suspense fallback={<RouteLoading />}><AppDetail /></Suspense>} />

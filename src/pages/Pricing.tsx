@@ -257,10 +257,13 @@ export function Pricing() {
               body="OpenPaths also includes models where we are the operator or have direct first-party economics. That is where a larger share of platform margin is expected to come from."
             />
             <DetailCard
-              title="Bring your own key"
-              body="If you need direct vendor billing for certain providers, OpenPaths also supports BYOK flows so you can keep routing features without forcing all spend through a reseller layer."
+              title="Bring your own key — $0"
+              body="Add your Anthropic, OpenAI, Google, DeepSeek, Groq, xAI, or 11 other provider keys and requests served through them bypass your OpenPaths balance entirely. You pay the provider directly; routing, fallbacks, and observability stay. See BYOK details."
             />
           </div>
+          <p className="mt-6 text-sm text-white/55">
+            Full provider list and setup steps: <Link to="/byok" className="text-sky-300 hover:underline">openpaths.io/byok</Link>. Estimate your monthly spend with the <Link to="/calculator" className="text-sky-300 hover:underline">cost calculator</Link>.
+          </p>
         </section>
 
         <section className="relative mx-auto max-w-7xl px-6 pb-8">

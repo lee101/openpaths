@@ -132,6 +132,17 @@ func (h *ChatHandler) HandleChatCompletion(ctx *fasthttp.RequestCtx) {
 	var lastErr error
 	cacheBypass := req.Stream || requestNoCache(ctx) || responsecache.RequestCacheBypass(body) || h.cache == nil
 	ctx.Response.Header.Set("X-OpenPaths-Cache", "miss")
+	setRouteHeader := func(cand router.RouteCandidate, byok bool) {
+		header := fmt.Sprintf("model=%s; provider=%s; strategy=%s; byok=%t",
+			cand.ModelCfg.ID, cand.Provider.Name(), routeStrategyLabel(req.RoutingStrategy), byok)
+		if cand.ModelCfg.ID != originalModel {
+			header += fmt.Sprintf("; requested=%s", originalModel)
+		}
+		if req.TaskTier != "" {
+			header += fmt.Sprintf("; tier=%s", req.TaskTier)
+		}
+		ctx.Response.Header.Set("X-OpenPaths-Route", header)
+	}
 
 	for i, cand := range candidates {
 		req.Model = cand.ModelCfg.ProviderModelID
@@ -152,6 +163,7 @@ func (h *ChatHandler) HandleChatCompletion(ctx *fasthttp.RequestCtx) {
 				log.Printf("chat response cache key: %v", err)
 			} else if data, ok := h.cache.Get(key); ok {
 				ctx.Response.Header.Set("X-OpenPaths-Cache", "hit")
+				setRouteHeader(cand, false)
 				ctx.SetStatusCode(200)
 				ctx.SetContentType("application/json")
 				ctx.SetBody(data)
@@ -172,6 +184,7 @@ func (h *ChatHandler) HandleChatCompletion(ctx *fasthttp.RequestCtx) {
 		for j := 0; j < len(attempts); j++ {
 			attempt := attempts[j]
 			start := time.Now()
+			setRouteHeader(cand, attempt.byok)
 			var handled bool
 			var attemptErr error
 			if req.Stream {
@@ -617,6 +630,14 @@ func (h *ChatHandler) enforcePrepaid(ctx *fasthttp.RequestCtx, req *model.ChatCo
 		return true
 	}
 	return false
+}
+
+func routeStrategyLabel(strategy string) string {
+	s := strings.ToLower(strings.TrimSpace(strategy))
+	if s == "" {
+		return "price"
+	}
+	return s
 }
 
 // maxOutputTokens returns the worst-case output token count the request can

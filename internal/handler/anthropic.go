@@ -175,7 +175,14 @@ func (h *AnthropicHandler) HandleMessages(ctx *fasthttp.RequestCtx) {
 	for i, cand := range candidates {
 		chatReq.Model = cand.ModelCfg.ProviderModelID
 		start := time.Now()
-
+		routeHeader := fmt.Sprintf("model=%s; provider=%s; strategy=%s; byok=false", cand.ModelCfg.ID, cand.Provider.Name(), routeStrategyLabel(chatReq.RoutingStrategy))
+		if cand.ModelCfg.ID != originalModel {
+			routeHeader += fmt.Sprintf("; requested=%s", originalModel)
+		}
+		if chatReq.TaskTier != "" {
+			routeHeader += fmt.Sprintf("; tier=%s", chatReq.TaskTier)
+		}
+		ctx.Response.Header.Set("X-OpenPaths-Route", routeHeader)
 		if req.Stream {
 			if h.tryAnthStream(ctx, chatReq, cand.ModelCfg, cand.Provider, userID, apiKeyID, originalModel, start) {
 				h.router.MarkModelHealthy(cand.Provider.Name(), cand.ModelCfg.ID)

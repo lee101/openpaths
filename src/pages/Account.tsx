@@ -50,6 +50,7 @@ import {
 } from '@stripe/react-stripe-js';
 import { TopUpModal, getStripe } from '../components/TopUpModal';
 import { GuardrailsPanel } from '../components/GuardrailsPanel';
+import { ProviderKeysPanel } from '../components/ProviderKeysPanel';
 import { AUTH_EVENT, clearApiKey, setApiKey as storeApiKey } from '../lib/api';
 
 const API_BASE = '';
@@ -1769,6 +1770,8 @@ export function Account() {
               onCompleteBrowser={() => void completeOpenAIBrowserAuth()}
               onCopy={copyKey}
             />
+
+            <ProviderKeysPanel keys={providerKeys} onChanged={() => void fetchProviderKeys()} />
 
             {newKeyResult && (
               <div className="border border-green-500/30 bg-green-500/5 rounded-xl p-4 mb-6" data-testid="new-key-banner">

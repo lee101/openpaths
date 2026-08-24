@@ -67,8 +67,10 @@ const primaryNavLinks = [
   { label: 'Models', to: '/models', match: (path: string) => path === '/models' },
   { label: 'Evals', to: '/evals', match: (path: string) => path === '/evals' || path === '/image-evals' },
   { label: 'Pricing', to: '/pricing', match: (path: string) => path === '/pricing' },
+  { label: 'BYOK', to: '/byok', match: (path: string) => path === '/byok' },
   { label: 'Providers', to: '/providers', match: (path: string) => path.startsWith('/providers') },
   { label: 'Stats', to: '/stats', match: (path: string) => path === '/stats' },
+  { label: 'Status', to: '/status', match: (path: string) => path === '/status' },
   { label: 'Apps', to: '/apps/', match: (path: string) => path === '/apps' || path.startsWith('/apps/') },
   { label: 'Docs', to: '/docs', match: (path: string) => path === '/docs' },
   { label: 'Integrations', to: '/integrations', match: (path: string) => path === '/integrations' },
@@ -84,6 +86,7 @@ const primaryNavLinks = [
   { label: 'Art', to: '/art', match: (path: string) => path === '/art' },
   { label: 'Blog', to: '/blog', match: (path: string) => path.startsWith('/blog') },
   { label: 'Alternatives', to: '/alternatives', match: (path: string) => path.startsWith('/alternatives') },
+  { label: 'Use cases', to: '/use-cases', match: (path: string) => path.startsWith('/use-cases') },
 ];
 
 function accountInitials() {

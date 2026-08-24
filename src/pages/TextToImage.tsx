@@ -4,6 +4,7 @@ import { Seo } from '../components/Seo';
 import { CodeBlock } from '../components/CodeBlock';
 
 const DEFAULT_PROMPT = 'A beige ceramic coffee mug on a wooden table, soft natural window light, editorial product photo';
+const EXAMPLE_OUTPUT_URL = 'https://openpathsstatic.openpaths.io/static/uploads/text-to-image/mug-example.jpg';
 
 const IMAGE_MODELS = [
   { id: 'openpaths/auto-image', label: 'Auto Image (routed)', price: 0.211 },
@@ -233,8 +234,16 @@ console.log(data.data[0].url);`,
                       );
                     })}
                   </div>
+                ) : loading ? (
+                  <p className="text-sm font-mono text-white/45">Generating image...</p>
                 ) : (
-                  <p className="text-sm font-mono text-white/45">{loading ? 'Generating image...' : 'Your generated image will appear here.'}</p>
+                  <div className="w-full max-w-md overflow-hidden rounded border border-white/20 bg-black">
+                    <img src={EXAMPLE_OUTPUT_URL} alt="Example generated image" className="h-auto w-full" />
+                    <div className="flex items-center justify-between gap-3 border-t border-white/20 px-3 py-2 text-xs font-mono text-white/50">
+                      <span>Example — hit Generate on the default prompt</span>
+                      <a href={EXAMPLE_OUTPUT_URL} download="openpaths-example.png" className="flex items-center gap-2 hover:text-white"><Download className="h-3.5 w-3.5" /> Download</a>
+                    </div>
+                  </div>
                 )}
               </div>
             </section>

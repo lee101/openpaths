@@ -13,7 +13,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/openpaths/openpaths/internal/auth"
 	"github.com/openpaths/openpaths/internal/db/queries"
 	"github.com/openpaths/openpaths/internal/model"
 )
@@ -91,77 +90,18 @@ func NewModelProber(probeQ *queries.ModelProbeQueries, apiKeyQ *queries.APIKeyQu
 }
 
 // ensureProbeKey guarantees the prober has a valid op- API key. When none is
-// supplied via env, it gets-or-creates a dedicated service user, ensures that
-// user holds enough credit to pass BalanceCheck, and mints a fresh key.
+// supplied via env, it provisions a dedicated service user via EnsureServiceKey.
 func (p *ModelProber) ensureProbeKey(ctx context.Context) error {
 	if p.apiKey != "" {
 		return nil
 	}
-	if p.apiKeyQ == nil || p.userQ == nil {
-		return fmt.Errorf("no probe API key configured and key/user queries unavailable")
-	}
-
-	user, err := p.userQ.GetByEmail(ctx, probeUserEmail)
+	raw, _, err := EnsureServiceKey(ctx, ServiceKeyDeps{APIKeyQ: p.apiKeyQ, UserQ: p.userQ, CreditQ: p.creditQ},
+		probeUserEmail, probeUserName, probeKeyName, probeRateLimitRPM, probeMinBalanceCents, probeTopupCents)
 	if err != nil {
-		pwHash, herr := auth.HashPassword(randomProbeSecret())
-		if herr != nil {
-			return fmt.Errorf("hash probe password: %w", herr)
-		}
-		user, err = p.userQ.Create(ctx, probeUserEmail, pwHash, probeUserName)
-		if err != nil {
-			return fmt.Errorf("create probe user: %w", err)
-		}
-	}
-
-	// Ensure the probe user has credit so requests reach the server's
-	// configured provider keys instead of being rejected by BalanceCheck.
-	if p.creditQ != nil {
-		if ierr := p.creditQ.InitBalance(ctx, user.ID); ierr != nil {
-			log.Printf("model-probe: init balance: %v", ierr)
-		}
-		if bal, berr := p.creditQ.GetBalance(ctx, user.ID); berr == nil && bal < probeMinBalanceCents {
-			if derr := p.creditQ.Deposit(ctx, user.ID, probeTopupCents, "model probe credit grant"); derr != nil {
-				log.Printf("model-probe: credit grant: %v", derr)
-			}
-		}
-	}
-
-	// Revoke any stale probe keys from previous boots so live keys don't pile up.
-	if existing, lerr := p.apiKeyQ.ListByUser(ctx, user.ID); lerr == nil {
-		for _, k := range existing {
-			if k.Name == probeKeyName && !k.Revoked {
-				if rerr := p.apiKeyQ.Revoke(ctx, k.ID, user.ID); rerr != nil {
-					log.Printf("model-probe: revoke stale key: %v", rerr)
-				}
-			}
-		}
-	}
-
-	raw, hash, prefix, err := auth.GenerateAPIKey()
-	if err != nil {
-		return fmt.Errorf("generate probe key: %w", err)
-	}
-	key, err := p.apiKeyQ.Create(ctx, user.ID, hash, prefix, probeKeyName)
-	if err != nil {
-		return fmt.Errorf("store probe key: %w", err)
-	}
-	// Probes fan out across every chat model; lift the default 60 rpm cap so the
-	// run isn't throttled into 429s.
-	if rerr := p.apiKeyQ.SetRateLimit(ctx, key.ID, probeRateLimitRPM); rerr != nil {
-		log.Printf("model-probe: set rate limit: %v", rerr)
+		return err
 	}
 	p.apiKey = raw
 	return nil
-}
-
-func randomProbeSecret() string {
-	// Reuse the API-key generator purely as a source of crypto-random bytes for
-	// the service-account password (it can never be used to log in interactively).
-	raw, _, _, err := auth.GenerateAPIKey()
-	if err != nil {
-		return "model-probe-no-login"
-	}
-	return raw
 }
 
 func (p *ModelProber) Start() {

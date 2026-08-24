@@ -226,6 +226,28 @@ export function Docs() {
             />
           </div>
 
+          <div className="rounded-xl border border-white/20 bg-black/40 p-4 mb-5">
+            <div className="text-xs font-mono text-white/55 mb-2">Routing transparency</div>
+            <p className="text-sm text-white/60 mb-3">
+              Every chat response (streaming and non-streaming, OpenAI and Anthropic formats) carries an `X-OpenPaths-Route` header stating the route that actually answered: resolved model, provider lane, ordering strategy (`price` default | `config` | `fastest`), and whether your own provider key served it. When an auto alias resolves to a backend model, `requested=` shows the alias you sent.
+            </p>
+            <CodeBlock
+              language="bash"
+              code={`X-OpenPaths-Route: model=deepseek-v4; provider=nvidia; strategy=price; byok=false; requested=openpaths/auto-code\nX-OpenPaths-Cache: miss\nX-OpenPaths-Reasoning-Effort: medium   # present only when effort was adapted`}
+              preClassName="rounded-lg border border-white/20 bg-black/60 p-3 text-xs leading-5"
+            />
+          </div>
+
+          <div className="rounded-xl border border-white/20 bg-black/40 p-4 mb-5">
+            <div className="text-xs font-mono text-white/55 mb-2">Bring your own key (BYOK)</div>
+            <p className="text-sm text-white/60 mb-3">
+              Save a provider API key under Account → API Keys → Provider keys, and requests routed through it bypass your OpenPaths balance entirely — cost is recorded as $0 and you pay the provider directly. Fallbacks still apply when your key fails. Supported: OpenAI, Anthropic, Google AI, Mistral, Groq, xAI, DeepSeek, Together, OpenRouter, Inference.net, MiniMax, Netwrck, Z.AI (incl. GLM Coding Plan), Sakana, Tinker, fal.ai, Black Forest Labs. Keys are returned only as masked previews.
+            </p>
+            <p className="text-sm text-white/55">
+              Full details: <Link to="/byok" className="text-sky-300 hover:underline">openpaths.io/byok</Link>.
+            </p>
+          </div>
+
           <div className="space-y-3">
             {ENDPOINTS.map(endpoint => (
               <div key={endpoint.path} className="rounded-xl border border-white/20 p-4">

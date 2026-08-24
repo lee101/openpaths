@@ -14,6 +14,1081 @@ export interface BlogPost {
 
 export const posts: BlogPost[] = [
   {
+    slug: 'best-ai-api-for-coding-agents',
+    title: 'The Best AI API for Coding Agents in 2026',
+    excerpt: 'What makes the best AI API for coding agents in 2026: reliable tool calling, long context, low time-to-first-token, cost per agent-hour, and automatic failover — plus how routed APIs beat any single vendor.',
+    date: '2026-08-24',
+    author: 'OpenPaths Team',
+    readTime: '7 min',
+    tags: ['coding agents', 'llm api', 'model routing', 'auto-code', 'openai-compatible'],
+    content: `A coding agent is not a chatbot. It burns tokens in loops: plan, call a tool, read the result, patch, run tests, repeat. That workload punishes APIs differently than chat does, which changes what the best AI API for coding agents means in 2026.
+
+## What coding agents need from an API
+
+Five things matter:
+
+1. **Reliable tool calling.** One malformed function call derails a 50-step loop; 139 catalog models declare \`supports_tools: true\`, and declared support is not consistent support.
+2. **Long context.** Repo maps, file contents, test output — what matters is quality when the window is full.
+3. **Low latency to first token.** Agent loops serialize on the model; idle seconds per step compound across 50 steps.
+4. **Cost per agent-hour.** A single task can move millions of tokens — at GPT-5.5's $5.00 per 1M input, an afternoon of runs is real money.
+5. **Automatic failover.** A single-vendor agent stops dead when its one upstream wobbles.
+
+## Why single-vendor caps your ceiling
+
+One vendor means inheriting their outage calendar and locking in one model's skill profile. Our creative-coding scorecard shows the split: Claude Opus 4.8 scores 4.8/5 on visual output where GPT-5.5 direct manages 4.1, while GPT-5.5 wins code correctness (4.7 vs 4.4) and discipline (4.8 vs 4.5). No vendor leads everywhere; an agent that can't switch mid-task leaves accuracy and money on the table.
+
+## Routing beats hand-picking
+
+Our learning-to-route benchmark ran 27 real coding tasks ([whitepaper](https://huggingface.co/openpaths/learning-to-route)):
+
+- Hand-picked GPT-5.5: 77.8% at $2.55/run
+- GPT-5.4-nano: same 77.8% at $0.03 (85x cheaper)
+- Best single model (GPT-5.4-mini): 85.2% at $0.43
+- Cascade routing: **100% at $0.11 average**, about 4% of frontier cost
+
+Routing beat every hand-picked model on both axes at once. Details in our [learning-to-route whitepaper breakdown](/blog/learning-to-route-whitepaper).
+
+## Direct vs routed prices
+
+Published rates, August 2026:
+
+| Provider / route | Input per 1M | Notes |
+|---|---|---|
+| OpenAI GPT-5.5 | $5.00 | Output typically 3–5x input cost everywhere |
+| OpenAI GPT-5.6 Luna | $0.20 | Ultra-cheap fast tier |
+| Anthropic Opus tier | $5.00 / $25.00 out | Premium quality, premium bill |
+| Anthropic Sonnet class | ~$2.00 | Solid mid-tier workhorse |
+| Gemini 2.5 Pro class | ~$1.25 | Genuine free tier for prototyping |
+| DeepSeek V4 Flash | $0.14 | Half price off-peak; peak latency can wobble |
+| OpenPaths \`auto-code\` | from $0 | ox-alpha carries ~70% of traffic free |
+| OpenPaths cascade routing | $0.11 avg/run | 100% accuracy, 27-task benchmark |
+
+## The free workhorse: ox-alpha
+
+\`openpaths/stealth/ox-alpha\` is a free stealth preview ($0 in / $0 out) answering about 70% of production auto-code traffic: features, refactors, tests, bug fixes. Hard domains escalate past it automatically — GLSL/HLSL shaders, trading systems, AI/LLM infra like CUDA kernels and quantization, distributed architecture, compilers, large multi-file patches. When the preview ends, fallbacks chain DeepSeek Flash → Codex → Gemini → Claude. More in [ox-alpha: the free coding workhorse](/blog/ox-alpha-coding-workhorse).
+
+## Two lines to switch
+
+Change \`base_url\` to \`https://openpaths.io/v1\`, swap in \`OPENPATHS_API_KEY\`. Anthropic-native \`/v1/messages\` works too — see [migrating OpenAI and Anthropic agent SDKs to OpenPaths](/blog/migrate-openai-anthropic-agent-sdks-to-openpaths). Credits start at $5; pay-per-token, no subscription.
+
+## Research on the same key
+
+Agents also need repo-adjacent research: which paper introduced a method, does a dataset exist, where is reference code. Papers search runs off the same key: \`POST /v1/search\` with \`provider: "papers"\` and \`format: "markdown"\` returns compact results over papers, methods, datasets, and GitHub code at $0.001 per search.
+
+## How to choose
+
+Start with \`auto-code\` for coding-heavy workloads — free ox-alpha bulk, escalation only where needed. Use \`auto-medium-task\` for mixed agent work: triage, summaries, moderate reasoning. Pin \`auto-think\` for hard reasoning steps. Mechanics in [how OpenPaths auto models work](/blog/how-auto-models-work); model-by-model comparison in [the best model for coding](/blog/best-model-for-coding). Latency probes are public at [/stats](/stats), every price at [/models](/models).
+
+## The best AI API for coding agents is a routing layer
+
+Not a model, it is a routing layer: tool calling across 342 models from 57 providers, automatic failover, and per-task economics that beat hand-picking by an order of magnitude — 100% at $0.11 versus 77.8% at $2.55. Two lines of code to try it.
+
+## FAQ
+
+### What matters most when choosing an API for coding agents?
+
+Reliable tool calling, coherent long context, low latency to first token, true cost per agent-hour, and automatic failover. Token price alone misleads — a cheap model that fumbles tool calls costs more in retries.
+
+### Is a routed API cheaper than going direct?
+
+Cascade routing hit 100% at $0.11 per run; hand-picked GPT-5.5 managed 77.8% at $2.55, and GPT-5.4-nano matched that accuracy at $0.03. Direct suits one known-good model; routing wins when task difficulty varies.
+
+### What is ox-alpha and why is it free?
+
+A stealth-preview model (\`openpaths/stealth/ox-alpha\`) at $0 in / $0 out, carrying about 70% of auto-code traffic. Hard domains escalate automatically; after the preview, a fallback chain takes over.
+
+### Do I need to rewrite my agent?
+
+No. Both \`/v1/chat/completions\` and \`/v1/messages\` are served; OpenAI and Anthropic SDK agents migrate by changing base URL and key, and LangChain, Vercel AI SDK, PydanticAI, and Mastra work unchanged.
+
+### Can my agent do research through the same API?
+
+Yes. Papers search accepts \`POST /v1/search\` with \`provider: "papers"\`, returns markdown results over papers, methods, datasets, and GitHub code at $0.001 per search, billed to the same credits.`,
+  },
+  {
+    slug: 'llm-router-for-ai-agents',
+    title: 'LLM Router for AI Agents: Route Every Agent Step to the Right Model',
+    excerpt: 'An LLM router for AI agents sends each step of a run — tool-arg extraction, implementation, planning, image generation, research — to the model that handles it best, instead of pinning one model that is always wrong somewhere.',
+    date: '2026-08-24',
+    author: 'OpenPaths Team',
+    readTime: '6 min',
+    tags: ['llm router', 'ai agents', 'model routing', 'cost optimization', 'openai compatible'],
+    content: `A single agent run is not one workload. It extracts tool arguments, drafts implementation code, weighs tradeoffs in planning, maybe generates an image or searches papers. Pinning the loop to one frontier model means paying reasoning-grade prices for calls that amount to "extract two strings from this JSON." Pinning it to a cheap model means your hardest step fails at exactly the wrong moment. An LLM router for AI agents fixes this by making the routing decision per step, inside the same API call.
+
+## Why one pinned model is always wrong
+
+We measured this on our [learning-to-route](https://huggingface.co/openpaths/learning-to-route) benchmark: 27 coding tasks spanning trivial to genuinely hard. Hand-picking GPT-5.5 for everything scored 77.8% accuracy at $2.55 per run. GPT-5.4-nano scored the identical 77.8% at $0.03 — 85x cheaper — because the expensive model was mostly wasted on this mix. The best single model was GPT-5.4-mini at 85.2% and $0.43. Embedding-based cascade routing beat them all: 100% accuracy at $0.11 average, roughly 4% of frontier cost.
+
+The lesson generalizes to agent loops: no single model wins every step, so stop asking it to.
+
+## Three routing patterns, explained plainly
+
+**Embedding-similarity task classification.** Every request is embedded and compared against embeddings of known task types — easy extraction, medium implementation, hard reasoning, code. The closest match picks the tier. This powers OpenPaths' auto routes (\`auto-easy-task\`, \`auto-medium-task\`, \`auto-hard-task\`, \`auto-think\`, \`auto-code\`): a similarity lookup with a routing table behind it, no classifier to train.
+
+**Cost-tiered cascade.** Within a route, cheap models try first. On low-confidence output or errors, the request escalates up the tier instead of failing. That is where the $0.11 average comes from — most steps never leave the bottom tier, but the ones needing muscle get it.
+
+**Circuit breakers with health probes.** Models wobble: provider outages, peak-hour latency drift. The router continuously probes model health; when a model degrades, its breaker opens and traffic reroutes to healthy fallbacks. Your agent loop never sees the retry.
+
+## Mapping agent steps to routes
+
+| Agent step | Route | Why |
+|---|---|---|
+| Tool-arg extraction, formatting | \`auto-easy-task\` | Trivial calls; nano-class quality is enough |
+| Implementation, multi-file edits | \`auto-code\` / \`auto-medium-task\` | Coding-specialized beats general frontier |
+| Planning, tradeoffs, review | \`auto-think\` | Reasoning effort pinned high where it pays |
+| Image generation | \`ra1\` ($0.04/image) or Z-Image Turbo | Flagship art vs. fast anime-style |
+| Video generation | \`kfold-video\` | Cinematic clips with duration/steps/audio controls |
+| Research lookup | \`POST /v1/search\` with \`provider: "papers"\` | Papers, methods, datasets, GitHub code at $0.001/search |
+
+In practice you rarely hand-assign these: point your client at the auto routes and override only for media steps where you care about output style.
+
+## One key, no SDK juggling
+
+Text routes, images, video, and paper search all live under one base path and one \`OPENPATHS_API_KEY\`. Your loop makes every call against a single OpenAI-shaped client:
+
+\`\`\`python
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://openpaths.io/v1",
+    api_key=os.environ["OPENPATHS_API_KEY"],
+)
+\`\`\`
+
+Implementation steps go through \`client.chat.completions.create(model="auto-code", ...)\`; images hit \`/v1/images/generations\`; video hits \`/v1/videos/generations\`; research hits \`/v1/search\`. Compare that with wiring a separate SDK and credential per modality — four clients, four failure modes inside one agent run. Migrating an existing loop is two lines (base URL plus key); see our [SDK integrations](/blog/openpaths-sdk-integrations) and how the [OpenAI-compatible endpoint](/blog/use-openpaths-openai-compatible-router-anywhere) works anywhere the protocol is spoken, including Anthropic-native \`/v1/messages\`.
+
+## How this compares to rolling your own
+
+[OpenRouter](/blog/multi-provider-llm-api) gives you a catalog and prepaid credits but no routing intelligence. LiteLLM ships router and fallback primitives you self-host and operate. Portkey focuses on observability and guardrails. OpenPaths ships the classifier, cascades, and circuit breakers as routes you call — see [how auto models work](/blog/how-auto-models-work) and how [compound models](/blog/building-compound-models) compose cheaper specialists into one endpoint.
+
+## Bottom line
+
+Agents fail when you treat every step as equally hard. Route easy steps cheap, hard steps smart, media steps to purpose-built generators, research one search call away — all behind one key. On our benchmark that combination scored 100% at about 4% of frontier cost. There is no single right model for an agent run; only the right model per step.
+
+## FAQ
+
+### Does routing add latency my agent will notice?
+
+Classification is an embedding lookup, not another LLM call — milliseconds. Circuit breakers remove latency spikes by steering away from degraded providers before your request lands there. Easy tasks finish faster instead of queuing behind frontier inference.
+
+### Can I force a specific model for a specific step?
+
+Yes. Auto routes are defaults, not locks. Pass any concrete model from the [catalog](/models) and it goes there directly — useful for media steps like \`kfold-video\`, or A/B testing a pinned frontier model against routed results.
+
+### What happens when the routed model fails mid-run?
+
+Model-level fallbacks fire before the error reaches your loop. Each model has a circuit breaker with health probes; an open breaker sends the request down the escalation chain — cheap tier first, then stronger models.
+
+### Do image and video calls use the same API key as chat?
+
+Yes. One \`OPENPATHS_API_KEY\` covers text, embeddings, image generation, video generation, and paper search. Billing is prepaid credits from $5, pay-per-token (or per image, per search), no subscription.
+
+### Which agent frameworks does this work with?
+
+Anything speaking the OpenAI protocol: OpenAI Agents SDK, Anthropic Agent SDK, LangChain, Vercel AI SDK, PydanticAI, Mastra, LiveKit, Hermes Agent, OpenClaw, and plain HTTP. Change the base URL and set the key.`,
+  },
+  {
+    slug: 'cheapest-gpt-api-alternative',
+    title: 'The Cheapest GPT API Alternative: Same Models, Smaller Bills',
+    excerpt: 'Looking for the cheapest GPT API alternative? OpenPaths cuts your GPT bill with tier drops, smart routing, and off-peak scheduling — same models, smaller invoices.',
+    date: '2026-08-24',
+    author: 'OpenPaths Team',
+    readTime: '6 min',
+    tags: ['gpt', 'pricing', 'routing', 'cost-optimization'],
+    content: `If you are shopping for the cheapest GPT API alternative, the honest answer is that you often do not need to switch models at all — you need to stop paying frontier prices for work a smaller model handles fine. We run OpenPaths, an OpenAI-compatible router over 342 models from 57 providers, and our benchmarks show the same task can cost anywhere from $2.55 per run to $0.03 depending on one decision. Here are five cost levers, ranked by effort.
+
+## Lever 1: Drop a tier for easy traffic
+
+Most production traffic is not hard. Classifiers, rewrites, extraction, short summaries — these do not need a flagship. The easiest swap right now is GPT-5.6 Luna at $0.20 input / $1.20 output per 1M tokens, against roughly $5.00 input for GPT-5.5 class models.
+
+We proved the ceiling of this lever in our [learning-to-route benchmark](/blog/learning-to-route-whitepaper): across a 27-task coding suite, hand-picked GPT-5.5 scored 77.8% accuracy at $2.55 per run. GPT-5.4-nano scored an identical 77.8% at $0.03 — same accuracy, 85x cheaper.
+
+## Lever 2: Route instead of pinning
+
+Tier-dropping makes you guess which requests are easy. Routing removes the guess: point easy work at \`auto-easy-task\` and classifiers, rewrites, and extraction go to the cheapest capable model automatically, while \`auto-medium-task\`, \`auto-hard-task\`, and \`auto-code\` handle the rest with circuit-breaker fallbacks.
+
+Same whitepaper's payoff number: embedding-based cascade routing hit 100% accuracy at an average of $0.11 per run — about 4% of frontier cost, and better than pinning any single model including the best we tested (GPT-5.4-mini at 85.2%).
+
+## Lever 3: Shift flexible work off-peak
+
+Some providers discount by time of day. DeepSeek V4 Flash lists at $0.14 input per 1M tokens, and off-peak hours are half price. Batch jobs, nightly evaluations, embedding backfills — all move off-peak unnoticed. Our [DeepSeek peak/off-peak pricing map](/blog/deepseek-peak-off-peak-pricing-map) shows which hours qualify and where peak latency wobbles.
+
+## Lever 4: Use the free lanes while they last
+
+There is a genuinely free lane right now: \`ox-alpha\` (\`openpaths/stealth/ox-alpha\`) costs $0 in and $0 out, and it already carries about 70% of our own \`auto-code\` production traffic. It will not stay free forever, but until then every request it absorbs costs nothing. See our notes on [free AI models](/blog/free-ai-models) and why ox-alpha became our [coding workhorse](/blog/ox-alpha-coding-workhorse).
+
+One caveat: its upstream requires reasoning enabled, so it always runs at max effort — great for code, wasteful for cheap chat volume.
+
+## Lever 5: Keep frontier only where it wins
+
+Cheap tiers fail predictably on GLSL/HLSL shaders, trading systems, CUDA kernels and LLM infra, distributed architecture, compilers, and agentic multi-file patches — those escalate past the free lane for good reason. The discipline is paying $5.00-per-1M prices only for the slice that needs them. Our creative-coding scorecards show the pattern: GPT-5.5 direct leads on code quality (4.7) and discipline (4.8), which is exactly where you keep spending.
+
+## Lever-vs-saving summary
+
+| Lever | Effort | What moves | Measured saving |
+|---|---|---|---|
+| Drop a tier for easy traffic | Low | Pinned GPT-5.5 run to GPT-5.4-nano | $2.55 to $0.03 per run (85x less) |
+| Route instead of pinning | Low | Hand-picked model to cascade router | $2.55 to $0.11 avg (~96% cut, higher accuracy) |
+| Off-peak scheduling | Low | DeepSeek V4 Flash daytime batch | $0.14 to half price per 1M input |
+| Free lanes while they last | None | ~70% of auto-code onto ox-alpha | $0 in / $0 out on that share |
+| Keep frontier where it wins | Judgment | Frontier spend concentrated on hard tasks | Pay $5.00/1M only where it scores |
+
+## Bottom line
+
+Start at the top of the table: tier-dropping and routing take minutes and cover most of the savings; scheduling and free lanes stack on top; then audit what still hits frontier models and confirm each domain earns it.
+
+The cheapest GPT API alternative is not a different vendor with a bigger discount — it is a router that stops sending easy work to expensive models. You keep the same GPT models where they matter and pay pennies everywhere else.
+
+Switching takes two lines:
+
+\`\`\`bash
+export OPENAI_BASE_URL="https://openpaths.io/v1"
+export OPENAI_API_KEY="$OPENPATHS_API_KEY"
+\`\`\`
+
+Full setup details in [switch to OpenPaths in 2 lines](/blog/switch-to-openpaths-in-2-lines). Every price is public at [/models](/models), live latency probes at [/stats](/stats).
+
+## FAQ
+
+### Is a cheaper alternative really as accurate as GPT?
+
+On our 27-task coding benchmark, GPT-5.4-nano matched hand-picked GPT-5.5 exactly — 77.8% vs 77.8% — while costing 85x less. Accuracy depends on your task mix, which is why routing by difficulty beats blanket downgrades.
+
+### Do I have to change my code or SDK?
+
+No. OpenPaths is OpenAI-compatible at \`/v1\` and also supports Anthropic-native \`/v1/messages\`. Existing OpenAI SDKs, Agents SDK, LangChain, Vercel AI SDK, and PydanticAI integrations work after changing base URL and key.
+
+### What does routing cost compared to picking a small model myself?
+
+Routing averaged $0.11 per run versus $0.43 for the best single self-picked model — with higher accuracy (100% vs 85.2%). It wins when traffic mixes easy and hard tasks.
+
+### What happens when the free ox-alpha preview ends?
+
+Requests fall back down a chain — DeepSeek Flash, Codex, Gemini, Claude — so traffic keeps flowing at paid-but-low rates instead of failing. Budget for that day rather than depending on $0 forever.
+`,
+  },
+  {
+    slug: 'claude-api-fallback',
+    title: 'Claude API Fallback: Automatic Backup Routes When Anthropic Degrades',
+    excerpt: 'Claude API fallback planning matters because the model your long coding sessions depend on most is also the one that 429s at peak. Here\'s how router-level circuit breakers beat hand-rolled retries.',
+    date: '2026-08-24',
+    author: 'OpenPaths Team',
+    readTime: '6 min',
+    tags: ['claude', 'fallback', 'anthropic', 'routing'],
+    content: `Claude has a habit of being the model you don't want to swap out mid-project. On our animated-SVG scorecard, Opus 4.8 scored 4.8 on visual quality with 4.4 on code and 4.5 on instruction discipline - the best eye in the lineup, and consistent enough to hold a long coding session together. That consistency is exactly why a Claude API fallback plan matters: the more your workflow depends on Claude, the more a 429 at 2pm costs you. This post covers how Claude fails, what hand-rolled fallback looks like, and how OpenPaths makes it a config change instead of an engineering project.
+
+## Why Claude traffic deserves protection
+
+Long sessions are where Claude earns its premium: coherent across hundreds of turns, structurally disciplined, front-end work needing the least touch-up of anything we tested. If you're paying Opus-tier rates ($5.00 input / $25.00 output per 1M tokens), you're paying for that reliability - so when Anthropic degrades, silently rerouting to whatever's cheapest is not always right either. A good fallback preserves the *behavior class*: strong reasoning, strong instruction-following, not just any warm body with an API.
+
+## How Claude actually fails
+
+Three failure modes show up in practice:
+
+- **429 rate limits at peak.** Org-level token buckets exhaust during team hours, especially on shared keys. Retrying immediately usually makes it worse.
+- **529 overloaded errors.** Anthropic's capacity signal. It means the model is there but saturated; backoff helps, but during sustained peaks you want another route entirely.
+- **Regional outages.** Full availability loss in your region while status pages stay green elsewhere. No retry policy fixes this; only a second provider does.
+
+## The DIY fallback pattern
+
+If you're calling Anthropic directly, the minimum viable version looks like this:
+
+\`\`\`python
+FALLBACKS = ["claude-opus-4.8", "gpt-5.5", "gemini-2.5-pro"]
+
+def complete(messages):
+    for i, model in enumerate(FALLBACKS):
+        try:
+            return call_provider(model, messages)
+        except APIError as e:
+            if e.status not in (429, 529) and e.status < 500:
+                raise          # prompt problem, not provider problem
+            if e.status == 429:
+                time.sleep(2 ** i)   # back off before next attempt
+    raise RuntimeError("all providers down")
+\`\`\`
+
+The subtle part isn't the retry loop - it's state. Fall back mid-stream and you must dedupe partial output so the client never sees half a Claude answer stapled to a GPT answer. Add per-provider timeouts, jittered backoff, and session pinning so one conversation doesn't ping-pong between models with different habits. Doable, but now you own a mini control plane.
+
+## Router-level circuit breakers do this for you
+
+OpenPaths handles the same failure modes with model-level circuit breakers: repeated 429/529/5xx failures trip a route, traffic shifts down your chain, and background probes rejoin the primary once Anthropic recovers. No code changes, no stream stitching, no dedupe. Because OpenPaths speaks native Anthropic \`/v1/messages\` *and* \`/v1/chat/completions\`, your existing Anthropic SDK calls keep working unchanged - same wire format, different base URL. See [how auto models work](/blog/how-auto-models-work) under load, plus our write-up on the [Anthropic API alternative with Claude and multi-model fallbacks](/blog/anthropic-api-alternative-with-claude-and-multi-model-fallbacks).
+
+A sensible ladder for Claude-primary workloads:
+
+| Position | Model | Input $/1M | Role |
+|---|---|---|---|
+| Primary | Claude Opus tier | $5.00 | Best long-session coherence |
+| Fallback 1 | GPT-5.5 | $5.00 | Strongest reasoning peer |
+| Fallback 2 | Gemini 2.5 Pro class | ~$1.25 | Cheap capable middle |
+| Last resort | DeepSeek V4 Flash | $0.14 | Keeps jobs moving |
+
+GPT-5.5 is the natural first hop: on our scorecard it out-coded Opus (4.7 vs 4.4) with better discipline, trading some visual polish. DeepSeek Flash won't match Claude's taste, but at $0.14/1M - half price off-peak - it keeps batch jobs alive during an outage. And with BYOK, existing Anthropic keys keep billing Claude usage while OpenPaths manages routing.
+
+## Bottom line
+
+Claude is worth protecting precisely because it's good; the scorecard above is why teams anchor on it. But anchoring without a Claude API fallback makes your most expensive dependency your least redundant. Point your existing Anthropic client at OpenPaths, pick a ladder like the one above, and let circuit breakers absorb the 429s and 529s. For the OpenAI-side mirror see our [OpenAI API fallback](/blog/openai-api-fallback) guide; for full 2026 pricing across all four tiers, see [the best LLM APIs of 2026 compared](/blog/best-llm-api-2026-compared).
+
+## FAQ
+
+### Does changing the base URL break the Anthropic SDK?
+
+No. OpenPaths implements native \`/v1/messages\`, so \`anthropic\` libraries work by swapping base_url and key - two lines, as covered in our [Anthropic provider guide](/blog/provider-anthropic). Chat-completions callers can point \`/v1/chat/completions\` at the same account.
+
+### When should fallback trigger?
+
+On 429, 529, and 5xx-class errors - provider-side problems. Prompt errors (400s) fail fast instead; rerouting a malformed request just moves the bug.
+
+### Will fallback models produce identical output?
+
+No, and pretending otherwise hurts quality. GPT-5.5 is the closest behavioral peer for coding; DeepSeek Flash is a cost-preserving last resort. Pin sensitive sessions to the primary and let background jobs float.
+
+### Can I still pay Anthropic directly?
+
+Yes - bring your own key and Claude usage bills against your Anthropic account while OpenPaths handles failover and non-Claude routes.
+
+### What does the fallback cost?
+
+Nothing extra beyond token prices. Every rate is listed on the models page and live latency is public on the stats page.`,
+  },
+  {
+    slug: 'openai-api-fallback',
+    title: 'OpenAI API Fallback: Keep GPT Traffic Flowing Through Outages',
+    excerpt: 'A single OpenAI API key is a silent single point of failure. Here is how an OpenAI API fallback chain keeps GPT traffic flowing when a provider or endpoint goes unhealthy.',
+    date: '2026-08-24',
+    author: 'OpenPaths Team',
+    readTime: '6 min',
+    tags: ['openai', 'fallback', 'reliability', 'routing', 'gpt'],
+    content: `Every GPT app built directly against one endpoint has the same failure mode: it works perfectly right up until it doesn't. A degraded upstream, a regional incident, an unhealthy image endpoint at 2am — and your product returns errors while you sleep. An OpenAI API fallback turns that silent single point of failure into an automatic reroute. We run this in production ourselves, so this post is less theory and more incident report from our own stack.
+
+## The single-provider problem
+
+If your app calls one model through one path, availability equals that path's availability. Retries only help with transient blips; when an upstream stays unhealthy for minutes or hours, retry loops burn latency and money while every request fails. The fix is not more retries — it is a second route for the same capability plus something that decides when to take it.
+
+That decision layer is a circuit breaker per model and per host: probe health, trip on repeated failures, redirect traffic, quietly test the primary until it recovers.
+
+## Our own example: GPT Image 2
+
+We serve [GPT Image 2](/blog/gpt-image-2-on-openpaths) through two independent paths: direct from OpenAI, and Fal-hosted. If the direct GPT Image 2 path goes unhealthy, our model-level circuit breaker fails over to the Fal-hosted variant automatically. Same model, same API surface, same prompts — users never see the outage. That is the property we want for every model we expose, not a special case hand-wired for images.
+
+## The chat ladder
+
+For chat and code traffic, fallback is a ladder rather than a mirror. When the free \`openpaths/stealth/ox-alpha\` lane disappears, \`auto-code\` walks this chain:
+
+1. **GPT-5.5** — frontier quality, strongest on hard reasoning.
+2. **Codex / Gemini** — capable second tier; Gemini 2.5 Pro class sits around $1.25 input per 1M tokens.
+3. **Claude** — the [Claude fallback rung](/blog/claude-api-fallback), strong where discipline matters.
+4. **DeepSeek Flash** — $0.14 input per 1M tokens, half price off-peak; a cheap floor that keeps requests succeeding.
+
+An outage on any rung degrades you one step, not to zero. If your goal is cost-first rather than resilience-first, see our guide to the [cheapest GPT API alternative](/blog/cheapest-gpt-api-alternative).
+
+## Watch degradation yourself
+
+Health probes are public at [/stats](/stats) — per-model latency and availability, updated continuously. During a real incident you can watch the breaker trip and failover happen from the outside. Every price across all 342 models and 57 providers is listed at [/models](/models), so you can price each rung of your ladder before you need it.
+
+## DIY vs declarative
+
+The naive version looks like:
+
+\`\`\`python
+def complete(messages):
+    for model in ["gpt-5.5", "gemini-2.5-pro", "claude-opus"]:
+        try:
+            return call(model, messages)
+        except ProviderError:
+            continue
+    raise AllProvidersDown
+\`\`\`
+
+This works for a demo and falls apart in production. Real fallbacks need failure counting over time (not per-request), half-open probes to detect recovery without stampeding a sick upstream, per-model timeouts, and state that survives restarts. That is a distributed-systems side quest, not a feature.
+
+The declarative version moves the ladder into routing config instead of your code. On OpenPaths, routes like \`auto-medium-task\` and \`auto-code\` already carry model-level circuit-breaker fallbacks — selection by embedding similarity to task type, with automatic reroute when a model goes unhealthy. Your application code calls one endpoint and never learns about the outage. For the full multi-provider picture, see [OpenAI API alternative for multi-provider AI apps](/blog/openai-api-alternative-for-multi-provider-ai-apps) and how to use our [OpenAI-compatible router anywhere](/blog/use-openpaths-openai-compatible-router-anywhere) — switching is two lines: base URL plus key.
+
+| Approach | Sustained outages | Recovery detection | Ops burden |
+|---|---|---|---|
+| Single provider + retries | No | N/A | None |
+| DIY try/except chain | Partially | Manual | High |
+| Declarative routing (OpenPaths) | Yes | Automatic, per-model | Two-line switch |
+
+## Bottom line
+
+Mirror critical models across paths, put a circuit breaker in front, and publish health data so failures are observable. For the broader catalog story beyond OpenAI specifically, see the [multi-provider LLM API overview](/blog/multi-provider-llm-api) or the general [OpenAI provider deep dive](/blog/provider-openai); balancing across healthy endpoints is covered in [LLM load balancing](/blog/llm-load-balancing).
+
+## FAQ
+
+### What is an OpenAI API fallback?
+
+A secondary route for GPT traffic that takes over automatically when the primary endpoint fails health checks. It can be the same model hosted elsewhere (GPT Image 2 direct vs Fal-hosted) or a different model entirely (GPT-5.5 falling back to Claude, then DeepSeek Flash).
+
+### Does fallback mean lower-quality responses?
+
+Only if your ladder skips quality tiers carelessly. Fall back within the same capability class first (same model, different host), then step down tiers. During an outage, a slightly different answer beats no answer.
+
+### How fast does failover happen?
+
+The breaker trips after repeated failures rather than a single error, then redirects new traffic immediately and probes the primary until it recovers. Watch per-model health at [/stats](/stats) during a real event.
+
+### Can I keep using my existing OpenAI SDK code?
+
+Yes. OpenPaths exposes an OpenAI-compatible \`/v1\` API, so switching means changing the base URL and key — two lines. Fallbacks then live in the router, not your code.
+
+### Is fallback the same as load balancing?
+
+No. Load balancing spreads traffic across healthy endpoints all the time; fallback activates only when something is unhealthy. Production systems usually want both.`,
+  },
+  {
+    slug: 'multi-provider-llm-api',
+    title: 'Multi-Provider LLM API: One Key, One Balance, Every Major Model',
+    excerpt: 'A multi-provider LLM API gives you every major model behind one key and one balance — here is what that actually buys you in production.',
+    date: '2026-08-24',
+    author: 'OpenPaths Team',
+    readTime: '6 min',
+    tags: ['multi-provider', 'routing', 'api', 'openai-compatible'],
+    content: `A multi-provider LLM API is a single API surface that fronts models from many providers at once: one key, one prepaid balance, one request format — and which provider serves your request becomes a routing decision instead of a contract. OpenPaths is exactly that: an OpenAI-compatible router at openpaths.io with \`OPENPATHS_API_KEY\`, serving 342 models from 57 providers behind one endpoint. Switching existing code over is changing the base URL and key: two lines.
+
+That definition sounds like convenience. In practice it changes four things about how you ship AI features.
+
+## Reason 1: best quality-per-task through routing
+
+No single model wins every task, and paying frontier rates for easy tasks is how teams overspend. A multi-provider API lets the router pick per request instead of you hardcoding a model per feature.
+
+We measured this on our 27-task coding benchmark: hand-picked GPT-5.5 got 77.8% accuracy at $2.55 per run; embedding-based cascade routing hit 100% at $0.11 average — roughly 4% of frontier cost. The method is in the [learning-to-route whitepaper](/blog/learning-to-route-whitepaper) and powers \`auto-easy-task\` through \`auto-hard-task\`, \`auto-think\`, and \`auto-code\`, each with model-level circuit-breaker fallbacks.
+
+## Reason 2: redundancy
+
+Single-provider apps inherit single-provider incidents: rate limits, capacity dips, outages — all your pager. Behind a multi-provider API, a failing route trips a circuit breaker and traffic moves to the next model automatically. We publish latency probes at [/stats](/stats), so redundancy is observable, not promised.
+
+## Reason 3: one budget
+
+Five providers means five dashboards, five invoices, five sets of minimum top-ups, and no single view of spend. Prepaid credits start at $5 (Stripe or crypto), pay-per-token, no subscription — fund one balance and every model draws from it. Every price is published at [/models](/models) — from DeepSeek V4 Flash at $0.14 input per 1M tokens (half price off-peak) to free ox-alpha in stealth preview.
+
+## Reason 4: no lock-in
+
+The quiet cost of a single provider: leaving later means rewriting prompts against a different API shape, re-testing tool calling, migrating billing. With one routed key, trying a competitor model is a model-name change; leaving is the same two lines it took to arrive. That symmetry keeps leverage with you.
+
+## Beyond chat: one key for the whole modal stack
+
+Chat is table stakes. The same \`OPENPATHS_API_KEY\` also covers:
+
+- **Embeddings** — Text-Generator.io plus a local embedding model.
+- **Images** — first-party Netwrck RA1 ($0.04/image, policy-flexible when other providers refuse) and ZImage anime art ($0.007/image); CuteDSL's Z-Image Turbo via \`cutedsl-image\` at $0.04/image, 512x512 up to 1360x768.
+- **Video** — Netwrck \`ra2v\` and ManifoldGen's \`kfold-video\` cinematic generator with aspect ratio, duration, steps, and audio controls.
+- **Music/TTS**, **image-to-3D**, and **research search** — papers/methods/datasets/GitHub code via \`POST /v1/search\` with \`provider: "papers"\` at $0.001 per search (\`format: "markdown"\` for agent-friendly results).
+
+We operate Netwrck, CuteDSL, ManifoldGen, and Papers ourselves, so those routes get tighter pricing and deterministic capacity — your image or video job is not queued behind another company's burst traffic. See [our Netwrck provider post](/blog/provider-netwrck) for how that lane works end to end.
+
+## Stitching N SDKs vs one routed key
+
+| | DIY multi-SDK stack | One routed key |
+|---|---|---|
+| Integration | One SDK + prompt quirks per provider | One OpenAI-compatible client |
+| Billing | N invoices, N balances | One prepaid balance from $5 |
+| Failover | Hand-rolled retry/fallback code | Circuit-breaker fallbacks in routes |
+| Cost control | Per-provider caps you build | Auto-routing down the price curve |
+| New model | New integration project | Change the model name |
+| Migration risk | Rewrites on every switch | Two-line base URL + key swap |
+
+Already write OpenAI-shaped code? Nothing else changes — see [how to point any OpenAI-compatible tool at OpenPaths](/blog/use-openpaths-openai-compatible-router-anywhere). Frameworks covered include OpenAI Agents SDK, Anthropic Agent SDK, LangChain, Vercel AI SDK, PydanticAI, Mastra, Langfuse, LiveKit, Hermes Agent, and OpenClaw — details in [our SDK integrations guide](/blog/openpaths-sdk-integrations).
+
+## Bottom line
+
+Routing gets better quality per dollar than hand-picking (100% vs 77.8% on our benchmark at ~4% of the cost), redundancy stops being your code, one budget replaces five, and exit stays as cheap as entry. Building agents? Read [why LLM routers fit agent architectures](/blog/llm-router-for-ai-agents). For the current landscape, start with [the state of AI models, March 2026](/blog/state-of-ai-models-march-2026).
+
+## FAQ
+
+### What exactly is a multi-provider LLM API?
+
+An API that exposes many providers' models through one endpoint, key, and billing balance. OpenPaths implements it as an OpenAI-compatible \`/v1\` router — 342 models, 57 providers — so existing clients work by swapping the base URL and key.
+
+### Do I have to use automatic routing?
+
+No. Pin any model by name for deterministic behavior. The \`auto-*\` routes are there when the router can trade down for an easy task or escalate a hard one — you choose per call.
+
+### Does one key really cover images, video, and embeddings?
+
+Yes. Embeddings, image generation (Netwrck RA1/ZImage, CuteDSL Z-Image Turbo), video (\`ra2v\`, \`kfold-video\`), music/TTS, research search, and image-to-3D all run through the same \`OPENPATHS_API_KEY\` and balance.
+
+### How does pricing work compared to going direct?
+
+Prepaid credits from $5, pay-per-token, no subscription. Prices per model are listed at [/models](/models), and first-party lanes like Netwrck and CuteDSL price tighter because we operate them ourselves.
+
+### Can I migrate an existing integration without rewriting code?
+
+Yes — change the base URL to openpaths.io and set \`OPENPATHS_API_KEY\`. Anthropic-native clients work too: \`/v1/messages\` is supported alongside \`/v1/chat/completions\`.
+`,
+  },
+  {
+    slug: 'llm-load-balancing',
+    title: 'LLM Load Balancing Across Providers: Weights, Health Probes, Circuit Breakers',
+    excerpt: 'LLM load balancing spreads your traffic across providers before anything breaks; failover reacts after something already failed. How weighted pools, continuous latency probes, and circuit breakers work in practice.',
+    date: '2026-08-24',
+    author: 'OpenPaths Team',
+    readTime: '7 min',
+    tags: ['load balancing', 'routing', 'reliability', 'llm api', 'multi-provider'],
+    content: `Most teams discover load balancing the hard way: one provider slows to a crawl at peak and every agent stalls with it. LLM load balancing spreads traffic across providers *before* anything fails. Failover reacts after something already failed. They are not the same thing.
+
+## Load balancing vs failover
+
+Failover is reactive. A request hits a dead endpoint and a fallback chain routes it elsewhere — but the user already ate the latency of the failed attempt.
+
+Load balancing is proactive. The router decides where each request goes while everything is healthy, steering load away from pools that are getting slow before they tip over. Failover is the airbag; load balancing is the suspension. We cover the reactive side in [Claude API fallback patterns](/blog/claude-api-fallback); this post is about staying off the degraded path.
+
+## Weighted pools
+
+Simplest useful policy: weight each provider and split traffic proportionally.
+
+\`\`\`yaml
+pool:
+  - provider: netwrck
+    weight: 60
+  - provider: deepseek-flash
+    weight: 30
+  - provider: gpt-luna
+    weight: 10
+\`\`\`
+
+Weights encode intent: capacity, cost tolerance, quotas. Round-robin ignores all of that — it sends request N+1 to the next lane even when that lane is twice as slow right now. Fine for two identical endpoints; wasteful for providers with different quotas. Capacity-aware weighting treats weight as throughput instead of preference: a provider that can absorb ten times the requests per minute gets roughly ten times the share, adjusted for observed errors.
+
+## Least-latency pick from continuous probes
+
+Latency is not static, so measure continuously: probe every provider on an interval, track p50/p95 latency and error rates over a sliding window, and route each request to the pool currently fastest on your score.
+
+We run these probes in public: see [our live latency stats](/stats). The key detail is that probes must run even when nothing looks wrong. A health check you trigger only after an error tells you the provider was broken thirty seconds ago, not whether it is safe now.
+
+## Circuit breakers with half-open probes
+
+Probes feed the balancer; circuit breakers protect individual requests. When a provider's error rate crosses a threshold, the breaker opens and traffic stops instead of burning retries. The part most implementations get wrong is recovery: never flip back to full traffic on a timer — that dumps a stampede onto a provider that may still be sick. Use a half-open state: let a few probe requests through. Success closes the breaker gradually; failure keeps it open — no oscillation where recovering providers get crushed by returning traffic and trip again.
+
+Our auto models stack all three layers — embedding-based task selection sits on top of model-level circuit-breaker fallbacks ([how auto models work](/blog/how-auto-models-work)). Composing pipelines where each hop balances independently is covered in [building compound models](/blog/building-compound-models).
+
+## The wrinkle nobody warns you about: diurnal wobble
+
+Classic load balancing assumes failures are incidents: discrete, rare, obvious. LLM providers wobble diurnally instead. Capacity does not fail at 2pm; it just gets slower as usage climbs in some time zone, then recovers.
+
+DeepSeek is the clearest example we publish: peak-hour latency wobbles noticeably while off-peak hours run at half price. That makes load balancing time-based — shift batch jobs into the cheap off-peak window, keep interactive traffic on stable lanes during peaks, and let weights drift on a schedule instead of only reacting to incidents. We mapped the windows in [the DeepSeek peak vs off-peak pricing map](/blog/deepseek-peak-off-peak-pricing-map). A balancer with only incident-shaped logic handles outages fine and still bleeds latency every afternoon.
+
+## What an AI model router adds on top
+
+All of the above is generic infrastructure — nginx does most of it. An AI model router adds what those tools lack: knowing which *models* behind which providers fit the request. Load balancing picks a healthy lane; routing also picks the right vehicle. Our cascade work showed the gap: hand-picked GPT-5.5 scored 77.8% on our 27-task coding benchmark at $2.55/run, while embedding-based routing scored 100% at $0.11 average.
+
+There is also a first-party advantage. Netwrck and CuteDSL are lanes we operate ourselves, their capacity is predictable in a way third-party APIs never are: we control the hardware side, so assigned weights hold and probe curves stay flat. That makes aggressive balancing elsewhere safer — the fallback under a wobbling pool is known-good.
+
+## Bottom line
+
+Weighted pools for intent, least-latency selection from continuous probes for reality, breakers with half-open recovery for incidents, scheduled weights for diurnal pricing. Failover catches what slips through. OpenPaths gives you all of it behind an OpenAI-compatible endpoint — switching means changing \`base_url\` and \`OPENPATHS_API_KEY\`.
+
+## FAQ
+
+### Is round-robin good enough for LLM traffic?
+
+Only between near-identical endpoints. Providers differ in rate limits, latency, and diurnal behavior, so round-robin keeps feeding measurably worse lanes. Weighted, capacity-aware splitting dominates it.
+
+### How often should health probes run?
+
+Frequently enough that the sliding window reflects the last few minutes, not the last hour — short intervals with long windows hide a wobble that started five minutes ago.
+
+### Do circuit breakers replace retries?
+
+No. Retries handle one failed request; breakers stop sending new requests where more failures are coming. Use both, with the breaker deciding where the retry lands.
+
+### Can I balance across providers with different prices?
+
+Yes — make latency-per-dollar part of the score instead of raw latency. Off-peak DeepSeek Flash at $0.14 input per 1M tokens is often right even when it is not fastest.
+`,
+  },
+  {
+    slug: 'best-model-for-coding',
+    title: 'The Best Model for Coding in 2026, Measured Not Marketed',
+    excerpt: 'The best model for coding depends on the shape of the job: we scored five models on the same animated-SVG tasks and routed 27 real coding tasks to see who actually wins at what.',
+    date: '2026-08-24',
+    author: 'OpenPaths Team',
+    readTime: '7 min',
+    tags: ['coding', 'model-comparison', 'routing', 'benchmarks', 'llm'],
+    content: `Ask which is the best model for coding and you will get a brand answer. We got a measurement instead. We ran the same animated-SVG creative tasks through five models and scored them on four axes, then ran a 27-task coding benchmark comparing hand-picked frontiers against embedding-based routing. The result is not a single winner but a map of where each model wins, where it collapses, and when the right answer is to stop picking a model at all.
+
+## The scorecard
+
+Same prompts, same animated-SVG briefs, scored 1 to 5:
+
+| Model | Code | Visual | Motion | Discipline |
+|---|---|---|---|---|
+| Claude Opus 4.8 | 4.4 | 4.8 | 4.7 | 4.5 |
+| GPT-5.5 direct | 4.7 | 4.1 | 4.2 | 4.8 |
+| GPT-5.5 (xhigh thinking) | 4.1 | 3.8 | 3.5 | 3.0 |
+| Gemini 3.5 Flash | 4.0 | 4.5 | 4.0 | 3.7 |
+| Qwen3 Coder | 4.3 | 3.5 | 3.4 | 4.1 |
+
+Full task-level breakdowns are in [our Opus 4.8 vs GPT-5.5 xhigh head-to-head](/blog/pelican-bicycle-opus-4-8-vs-gpt-5-5-xhigh) and the broader [animated-SVG model comparison](/blog/pelican-bicycle-animated-svg-model-comparison). Three flips break the marketing story:
+
+**GPT-5.5 direct wins raw code and discipline.** Top Code score at 4.7, top Discipline at 4.8. If your job is producing exactly what the spec says and nothing more, direct GPT-5.5 is the strongest coder on this board.
+
+**Opus 4.8 wins visuals.** Its 4.8 Visual score beats everything else, with Motion close behind at 4.7. For anything where the output has to look right — UI, creative canvas work, generative art — it is the pick.
+
+**More thinking made GPT worse.** With xhigh reasoning enabled, GPT-5.5 dropped across the board: Code fell from 4.7 to 4.1, and Discipline collapsed to 3.0. More inference-time thinking produced over-engineered, less faithful output. Thinking budgets are a dial, not an upgrade; the default beat the maximum.
+
+## Routing beats picking
+
+Instead of one model for everything, how far does routing get you? From our [learning-to-route whitepaper](/blog/learning-to-route-whitepaper), across the 27-task coding benchmark:
+
+| Strategy | Accuracy | Cost per run |
+|---|---|---|
+| Hand-picked GPT-5.5 | 77.8% | $2.55 |
+| GPT-5.4-nano | 77.8% | $0.03 |
+| Best single model: GPT-5.4-mini | 85.2% | $0.43 |
+| Embedding-based cascade | 100% | $0.11 |
+
+Two takeaways. First, expert intuition about the best single model was wrong — the hand-picked frontier matched a nano model at 85x the cost. Second, the cascade hit every task at about 4% of frontier pricing. That is the core argument of [choosing the right LLM](/blog/choosing-the-right-llm): the best model for coding is often a route, not a name.
+
+## The free model carrying production traffic
+
+There is also \`openpaths/stealth/ox-alpha\`, our free stealth preview answering roughly 70% of production \`auto-code\` traffic — good enough that most coding requests never escalate past it. One quirk: upstream requires reasoning enabled — disabling it returns a 400 — so \`auto-think\` pins max effort for it.
+
+It does not take everything. These domains skip straight up the fallback chain: GLSL/HLSL VFX shaders, trading systems, AI/LLM infrastructure such as CUDA kernels, quantization, and RAG pipelines, distributed architecture, compilers, and agentic multi-file patches. We profiled it in [ox-alpha: the coding workhorse](/blog/ox-alpha-coding-workhorse).
+
+## A practical matrix
+
+| Task | Reach for |
+|---|---|
+| Quick fixes, small scripts | \`auto-code\` (usually lands on ox-alpha, free) |
+| Feature work | \`auto-code\`, or GPT-5.4-mini direct if you want to pin one model |
+| Refactors and multi-file changes | GPT-5.5 direct, or \`auto-hard-task\` |
+| Shaders, VFX, anything visual | Claude Opus 4.8 |
+| Trading systems | Frontier direct only — no free-tier routing |
+| AI infra (CUDA, RAG, compilers) | Frontier direct — escalate past ox-alpha |
+
+If you are wiring agents rather than picking models by hand, see [the best AI API for coding agents](/blog/best-ai-api-for-coding-agents) — OpenPaths exposes all of this through one OpenAI-compatible base URL, so switching is two lines.
+
+## Bottom line
+
+The best model for coding in 2026 is conditional. Raw spec-following code: GPT-5.5 direct. Visual output: Opus 4.8. Cheap bulk: a small model or the cascade. Everything routine: let \`auto-code\` decide, starting from a free model and escalating only where the domain demands it.
+
+## FAQ
+
+### Is GPT-5.5 with maximum thinking better for coding?
+
+Not always. On our scorecard, xhigh thinking dropped GPT-5.5 from 4.7 to 4.1 on Code and from 4.8 to 3.0 on Discipline. Default settings outperformed the maximum reasoning budget.
+
+### Which model makes the fewest mistakes?
+
+GPT-5.5 direct scored highest on Discipline at 4.8, with Opus 4.8 at 4.5. Discipline measures staying inside the spec — no invented features, no scope creep.
+
+### Can a cheap model really match a frontier one?
+
+Often yes. In our learning-to-route benchmark, GPT-5.4-nano matched hand-picked GPT-5.5 exactly at 77.8% accuracy while costing $0.03 versus $2.55 per run. The embedding cascade reached 100% at $0.11.
+
+### What is ox-alpha and why is it free?
+
+A stealth-preview model on OpenPaths that costs nothing and currently handles about 70% of production \`auto-code\` traffic. It requires reasoning to stay enabled, and hard domains like shaders, trading, and CUDA-level AI infra escalate automatically.
+
+### How do I route instead of hardcoding a model?
+
+Point your client at OpenPaths' OpenAI-compatible endpoint and request \`auto-code\`. Selection runs by embedding similarity to the task type, with circuit-breaker fallbacks per model — no code changes when the ranking improves.`,
+  },
+  {
+    slug: 'best-model-for-tool-calling',
+    title: 'The Best Model for Tool Calling in 2026: What Agents Actually Need',
+    excerpt: 'There is no single best model for tool calling — there are four qualities that matter, and the right choice changes step by step through an agent loop.',
+    date: '2026-08-24',
+    author: 'OpenPaths Team',
+    readTime: '7 min',
+    tags: ['tool-calling', 'agents', 'model-routing', 'llm-api'],
+    content: `Every team building an agent eventually asks us the same question: which is the best model for tool calling in 2026? It is the right instinct pointed at the wrong target. We route production traffic across a catalog of 342 models from 57 providers ([state of the catalog](/blog/state-of-ai-models-march-2026)), and 139 of them declare \`supports_tools: true\`. Declaring support is easy. Carrying a 30-step agent loop without dropping arguments, hallucinating enum values, or burning your latency budget is rare.
+
+## What actually separates good tool callers
+
+Tool-use benchmarks are thin, so judge candidates on four qualitative factors instead.
+
+**Schema adherence under long system prompts.** Real agents ship thousands of tokens of instructions before the first tool definition. Weak callers drift: they omit required parameters, invent enum values, or wrap JSON in prose. Structured outputs fix this at the API level — across the current GPT lineup they are production-grade, meaning responses conform to your declared schema rather than resembling it.
+
+**Parallel call batching.** Strong callers issue independent operations in one turn: read three files, fetch two URLs. Weak callers serialize everything, multiplying round trips. On retrieval-heavy tasks this alone can halve wall-clock time.
+
+**Graceful recovery after a failed call.** Tools fail — timeouts, rejected payloads, permission errors. A good caller reads the error, corrects the arguments, retries once, then changes approach. A bad one repeats the identical call until your loop guard kills the run.
+
+**Latency budget across a 30-step loop.** A model that answers in 3 seconds finishes a loop in 90 seconds; a 20-second thinker takes ten minutes for the same work. Cost compounds identically. Slow-and-brilliant wins single-shot benchmarks and loses agents.
+
+## A proxy for instruction-following under constraints
+
+We have not published a dedicated tool-calling benchmark, so here is the closest verified signal we have: the Discipline column from our animated-SVG creative coding scorecard, where models were scored 1–5 on holding arbitrary constraints through complex output:
+
+| Model | Code | Visual | Motion | Discipline |
+|---|---|---|---|---|
+| Claude Opus 4.8 | 4.4 | 4.8 | 4.7 | 4.5 |
+| GPT-5.5 direct | 4.7 | 4.1 | 4.2 | 4.8 |
+| GPT-5.5 (xhigh thinking) | 4.1 | 3.8 | 3.5 | 3.0 |
+| Gemini 3.5 Flash | 4.0 | 4.5 | 4.0 | 3.7 |
+| Qwen3 Coder | 4.3 | 3.5 | 3.4 | 4.1 |
+
+It is not a tool-calling score, but instruction-following under constraints is exactly the muscle that keeps function calls on-spec late in a long conversation. Two details worth noting: GPT-5.5 direct leads at 4.8, and the same model with xhigh thinking drops to 3.0 — more reasoning tokens made constraint adherence worse, which matches what we see in agent loops generally.
+
+## Stop picking one. Route per step.
+
+Given all this, our recommendation is not a model name. Pinning a single best tool caller means paying frontier latency on trivial steps and getting locked out when that provider degrades. Instead, let routing decide per call: point your agent at \`auto-medium-task\` (or \`auto-easy-task\` for mechanical steps) and OpenPaths selects by embedding similarity to task type, with circuit-breaker fallbacks when a route fails mid-run. We cover the mechanics in [how auto models work](/blog/how-auto-models-work) and the architecture in [our LLM router for AI agents](/blog/llm-router-for-ai-agents).
+
+Migration is two lines if you already run the OpenAI or Anthropic SDKs — see [migrating agent SDKs to OpenPaths](/blog/migrate-openai-anthropic-agent-sdks-to-openpaths) — and frameworks like Hermes Agent and OpenClaw work natively ([integration notes](/blog/openpaths-agent-integrations-hermes-openclaw)).
+
+## Tool calling is only as good as your tools
+
+One factor teams underrate: the tool itself. Give the model compact output and even a modest caller succeeds; give it 50 KB of HTML and no model survives your context window. Here is a real callable tool on OpenPaths — research search against the Papers index:
+
+\`\`\`bash
+curl https://openpaths.io/v1/search \
+  -H "Authorization: Bearer $OPENPATHS_API_KEY" \
+  -d provider=papers \
+  -d format=markdown \
+  -d query="process reward models for LLM reasoning"
+\`\`\`
+
+At $0.001 per search, it returns results over papers, methods, datasets, and GitHub code as compact markdown built specifically for agent context windows — tokens go to reasoning about results, not parsing them.
+
+## Bottom line
+
+The question dissolves once you look at what agents actually do: hundreds of heterogeneous steps where the optimal caller differs each time. Demand structured outputs, parallel batching, error recovery, and sane latency; verify discipline under constraints; then let \`auto-medium-task\` pick per step with fallbacks wired.
+
+## FAQ
+
+### Do all models that claim tool support actually call tools well?
+
+No. Of our 342-model catalog, 139 declare \`supports_tools: true\`, but declaration says nothing about schema adherence deep into a conversation or recovery after errors. Test with your real schemas and a deliberately long system prompt before committing.
+
+### Should I use one model for every step of my agent?
+
+We recommend against it. Planning, retrieval, and formatting have different latency and capability budgets. Task-type routing like \`auto-medium-task\` matches each step to a suitable model automatically and falls back when a provider fails.
+
+### Is more reasoning always better for tool calls?
+
+Our scorecard suggests the opposite: GPT-5.5 scored 4.8 on Discipline direct but 3.0 with xhigh thinking enabled. Extra deliberation helps hard planning steps and hurts routine calls where speed and constraint-following dominate.
+
+### What does a typical agent tool call cost?
+
+Tool calls are billed as ordinary tokens plus any tool-specific fee. Search-style tools start at $0.001 per search via the Papers provider; model-side costs follow standard per-token rates listed at [/models](/models), with live latency probes at [/stats](/stats).
+`,
+  },
+  {
+    alternativePath: '/alternatives/litellm',
+    slug: 'litellm-alternative',
+    title: 'LiteLLM Alternative: Managed Model Routing Without Self-Hosting a Proxy',
+    excerpt: 'Looking for a LiteLLM alternative? LiteLLM is a solid open-source proxy you self-host; OpenPaths gives you the same OpenAI-compatible surface as a managed service with automatic routing, fallbacks, and no gateway to operate.',
+    date: '2026-08-24',
+    author: 'OpenPaths Team',
+    readTime: '5 min',
+    tags: ['litellm', 'llm-router', 'self-hosting', 'model-routing', 'openai-compatible'],
+    content: `If you are evaluating a LiteLLM alternative, start with respect for what LiteLLM is: a genuinely good open-source LLM gateway that unifies provider APIs behind an OpenAI-shaped interface, with real router and fallback concepts and active community maintenance. If your team wants full control of that proxy — your repo, your deploys, your database — it is reasonable.\.
+
+But self-hosting a proxy is not free, and most teams underestimate what it looks like six months in. Here is what you inherit, how OpenPaths compares as a managed option, and when self-hosted is still the right call.
+
+## What you take on when you self-host
+
+- **Deploys and upgrades.** Every new provider API or model launch eventually means bumping the proxy version and rolling out config changes on your schedule.
+- **Persistence.** Budgets, spend tracking, and logs need durable storage — a database to provision, back up, and monitor. 
+- **Model choice per request.** Someone still decides which model handles which task and revisits those rules as pricing and quality shift.
+- **On-call.** When the gateway is down at 2 a.m., that is your pager.
+
+None of this is a flaw in LiteLLM. It is the cost of the control it gives you.
+
+## Side by side
+
+| | LiteLLM (self-hosted) | OpenPaths (managed) |
+|---|---|---|
+| Hosting | You deploy and operate it | Managed at [OpenPaths](/), nothing to run |
+| Interface | OpenAI-shaped proxy | OpenAI-compatible \`/v1\`, plus native \`/v1/messages\` |
+| Model choice | You write routing rules per task | \`auto-easy-task\` through \`auto-think\` and \`auto-code\` pick via embedding similarity |
+| Fallbacks | Configured and tested by you | Built-in circuit-breaker fallbacks, maintained by us |
+| Media generation | Bring your own providers | Netwrck RA1 images $0.04/image, ManifoldGen \`kfold-video\`, CuteDSL endpoints |
+| Research search | Not part of the gateway | Papers search via \`POST /v1/search\`, $0.001/search |
+| Credits | Per-provider keys you consolidate yourself | One prepaid pool from $5, pay-per-token across all models |
+| Observability | Whatever you build on your own logs/db | Public [/stats](/stats) latency probes; every price at [/models](/models) |
+
+## Why managed routing changes the problem
+
+The hard part of running a gateway is not calling providers uniformly — LiteLLM solved that. It is knowing which model should answer each request and keeping that mapping correct as models change. OpenPaths routes by embedding similarity to task type instead of hand-written rules, and our learning-to-route benchmark shows why: embedding-based cascade routing hit 100% accuracy on a 27-task coding suite at $0.11 average per run, versus 77.8% for hand-picked GPT-5.5 at $2.55 per run. Routing intelligence is a product surface, not a config file you babysit.
+
+For how this compares against aggregator-style alternatives rather than self-hosted gateways, see [OpenPaths vs OpenRouter](/blog/openpaths-vs-openrouter) and [Together AI alternative for production model routing](/blog/together-ai-alternative-for-production-model-routing). Commercial gateway-adjacent option: [Portkey alternative](/blog/portkey-alternative).
+
+## Running both side by side
+
+Because both speak the OpenAI shape, comparing them is two lines:
+
+\`\`\`bash
+export OPENAI_BASE_URL="https://openpaths.io/v1"
+export OPENPATHS_API_KEY="sk-your-key"
+\`\`\`
+
+Full details in [use OpenPaths' OpenAI-compatible router anywhere](/blog/use-openpaths-openai-compatible-router-anywhere) and the step-by-step guide [switch to OpenPaths in 2 lines](/blog/switch-to-openpaths-in-2-lines). Keep LiteLLM in front of some traffic while you validate — one credit pool spans GPT-5.5 at $5.00 input per 1M down to DeepSeek V4 Flash at $0.14 input per 1M, so experiments cost cents.
+
+## When LiteLLM is still the right call
+
+- **Air-gapped or strict self-host compliance.** Self-hosting in your VPC is the right tool when no third party may see inference traffic.
+- **Deep open-source customization.** Forking the gateway for custom auth or bespoke middleware beats any managed API.
+- **Existing platform investment.** Teams already operating it well gain less from switching than teams starting from zero.
+
+## Bottom line
+
+LiteLLM is the strongest open-source option if you want to own the gateway. OpenPaths exists for teams who want what the gateway provides — uniform API access, smart routing, fallbacks, media generation, research search, observability — without owning the deploys, the database, or the pager. Two lines get you a live comparison; prepaid credits from $5 mean trying it costs less than the meeting to discuss trying it.
+
+## FAQ
+
+### Is LiteLLM really free if I self-host it?
+
+The software is open-source, but infrastructure, the budgets/logs database, and on-call time all add up. Total cost usually exceeds a managed fee for small teams.
+
+### What does OpenPaths handle that a self-hosted proxy does not?
+
+Routing decisions and fallbacks are maintained for you instead of configured by you, plus first-party media generation (Netwrck RA1 images, ManifoldGen kfold-video), research search via Papers, and one prepaid credit pool replacing per-provider billing consolidation.
+
+### Can I keep my existing code when switching from LiteLLM?
+
+Yes. OpenPaths exposes OpenAI-compatible \`/v1\` plus Anthropic-native \`/v1/messages\`; changing base URL and key moves code over unchanged.
+
+### How do the auto routes decide between models?
+
+Requests match embedding similarity to task type, then route with model-level circuit-breaker fallbacks — 100% accuracy at ~4% of frontier cost on our 27-task benchmark.
+
+### Do I have to abandon LiteLLM entirely?
+
+No. Both present an OpenAI-shaped interface, so split traffic by client or environment while evaluating and keep both as long as you like.
+`,
+  },
+  {
+    alternativePath: '/alternatives/portkey',
+    slug: 'portkey-alternative',
+    title: 'Portkey Alternative: Routing First, With Media Search and Auto Modes Built In',
+    excerpt: 'Looking for a Portkey alternative? OpenPaths puts measured model routing at the center instead of guardrails around a single provider, and adds image, video, forecasting, and research search under one API key.',
+    date: '2026-08-24',
+    author: 'OpenPaths Team',
+    readTime: '5 min',
+    tags: ['ai-gateway', 'llm-routing', 'portkey-alternative', 'multi-provider'],
+    content: `If you are evaluating a Portkey alternative, start honestly: Portkey does what it advertises. It is a solid commercial AI gateway — observability for LLM calls, guardrails in front of them, caching to cut repeat spend.
+
+OpenPaths starts one step earlier. Gateway-style tooling assumes you wire up one or two models and wrap infrastructure around them. Our question is upstream: which model should serve this specific request? Measurement picks the model per request rather than you hardcoding the answer. The gateway features still exist, but routing is the product, not the wrapper.
+
+## What routing-first actually buys you
+
+Our learning-to-route benchmark (27 coding tasks) makes the case:
+
+- Hand-picked GPT-5.5: 77.8% accuracy at $2.55 per run.
+- GPT-5.4-nano: identical 77.8% at $0.03 — 85x cheaper.
+- Best single model, GPT-5.4-mini: 85.2% at $0.43.
+- Embedding-based cascade routing: **100% at $0.11 average**, roughly 4% of frontier cost.
+
+No amount of observability tuning closes the gap between lines one and four. A fixed model choice leaves accuracy or money on the table for most requests; a measured cascade captures both. The method is published in the [learning-to-route whitepaper](https://huggingface.co/openpaths/learning-to-route) and powers production routes today: \`auto-easy-task\`, \`auto-medium-task\`, \`auto-hard-task\`, \`auto-think\`, and \`auto-code\`. Selection uses embedding similarity to task type with circuit-breaker fallbacks, so a flaky upstream degrades to the next option instead of erroring your request.
+
+## Transparent where gateways are opaque
+
+Most commercial gateways publish a status page when something breaks. OpenPaths runs public latency probes at [/stats](/stats) all the time, so you see per-model latency before committing traffic. Every price sits at [/models](/models) — 342 models across 57 providers, each with its rate card visible.
+
+Switching costs stay near zero: everything speaks the OpenAI-compatible protocol at \`/v1\` plus Anthropic-native \`/v1/messages\`, so migrating is a base_url and key change — two lines. Integrations cover OpenAI Agents SDK, Anthropic Agent SDK, LangChain, Vercel AI SDK, PydanticAI, Mastra, Langfuse, LiveKit, Hermes Agent, and OpenClaw. We cover the migration path in [OpenPaths vs OpenRouter](/blog/openpaths-vs-openrouter).
+
+## Breadth past text
+
+This is where the comparison stops being close. A text-era gateway handles text; production apps also generate images and video, forecast time series, search research literature, and embed documents. All of it lives behind one \`OPENPATHS_API_KEY\`:
+
+| Capability | Example | Price |
+|---|---|---|
+| Flagship images | Netwrck RA1 | $0.04/image |
+| Anime art | ZImage | $0.007/image |
+| Fast images | CuteDSL Z-Image Turbo | $0.04/image |
+| Cinematic video | ManifoldGen \`kfold-video\` (H3) | at [/models](/models) |
+| Image-to-video | \`ra2v\` via Netwrck | at [/models](/models) |
+| Forecasting | \`chronos2\` | $0.20/forecast |
+| Research search | Papers (\`format: "markdown"\`) | $0.001/search |
+| Embeddings | Text-Generator.io plus local model | pay-per-token |
+
+Netwrck is our first-party partner for art and video — policy-flexible enough to serve as our image-gen fallback when other providers refuse, with endpoints at \`/v1/images/generations\` and \`/v1/videos/generations\`. We profile it in [our Netwrck provider guide](/blog/provider-netwrck). For deeper media dives, see [the best image generation APIs of 2026](/blog/best-image-generation-api-2026) and [the best video generation APIs of 2026](/blog/best-video-generation-api-2026).
+
+The Papers endpoint deserves a callout for agent builders: \`POST /v1/search\` with \`provider: "papers"\` returns compact markdown over papers, methods, datasets, and GitHub code at $1 per 1,000 searches. Pure gateways expose nothing like it.
+
+## How the platforms compare
+
+| Dimension | Portkey | OpenPaths |
+|---|---|---|
+| Core posture | Gateway around your chosen models | Router that picks per request |
+| Auto modes | Not the focus | Five task-type routes plus fallbacks |
+| Latency transparency | Status pages on incident | Public probes always on at [/stats](/stats) |
+| Images / video | Out of scope | RA1 $0.04, ZImage $0.007, Z-Image Turbo $0.04; \`kfold-video\`, \`ra2v\` |
+| Forecasting / search | Out of scope | \`chronos2\` $0.20/forecast; Papers $0.001/search |
+| Pricing | Commercial plans | Credits from $5, pay-per-token, no subscription |
+| Catalog | Your configured providers | 342 models, 57 providers, 139 tool-capable |
+
+Fair trade-offs: if you need deep tracing dashboards around an already-settled single-vendor stack, Portkey's focus is legitimate. If you self-host and want source access, [our LiteLLM comparison](/blog/litellm-alternative) covers that end of the spectrum. OpenPaths occupies the middle most teams want: managed, measurable routing with media and search breadth included.
+
+## Bottom line
+
+Pick Portkey if your stack is settled and you want observability, guardrails, and caching wrapped around it. Pick OpenPaths if you would rather have measurement make the model decision per request — spanning frontier text, $0.04 flagship images, cinematic video, forecasts, and research search behind one key. The switch is two lines; [/stats](/stats) will show within minutes whether routing beats your current fixed choice.
+
+## FAQ
+
+### Is OpenPaths a drop-in replacement for Portkey?
+
+It replaces more than it swaps. Both sit between your app and providers over standard protocols, so the base_url-and-key change works for existing OpenAI-shaped code. The difference: instead of configuring one model plus guardrails, point requests at the auto routes and let measured selection handle the rest.
+
+### Does OpenPaths include Portkey-style observability?
+
+You get the transparency that matters for routing: public latency probes at [/stats](/stats) covering every provider continuously, and every price published at [/models](/models). Latency and cost data should be always-on, not surfaced only when something breaks.
+
+### Can one API key really cover images, video, forecasting, and search?
+
+Yes. One \`OPENPATHS_API_KEY\` reaches Netwrck RA1 ($0.04/image), ZImage ($0.007/image), CuteDSL Z-Image Turbo, ManifoldGen \`kfold-video\`, \`ra2v\` image-to-video, \`chronos2\` forecasting ($0.20/forecast), Papers research search ($0.001/search), embeddings, and the full text catalog.
+
+### How does auto-routing compare to picking my own model?
+
+On our 27-task coding benchmark, the best hand-picked single model reached 85.2% accuracy at $0.43 per run while cascade routing reached 100% at $0.11 average. Fixed choices leave quality or budget on the table depending on which way you guess wrong; the router corrects per request.
+
+### What does OpenPaths cost compared to a commercial gateway plan?
+
+No subscription tiers. Credits start at $5 via Stripe or crypto, and you pay per token or per generation at rates listed at [/models](/models). Heavy users benefit twice: published pricing plus automatic routing toward cheaper models that still complete the task.`,
+  },
+  {
+    slug: 'no-cost-byok-18-providers',
+    title: 'No-Cost BYOK: Use Your Own Anthropic, OpenAI, and 16 Other Provider Keys',
+    excerpt: 'OpenPaths now manages keys for 18 providers. Requests served through your own key bypass your OpenPaths balance entirely — you pay your provider directly and we charge nothing on those tokens.',
+    date: '2026-08-24',
+    author: 'OpenPaths Team',
+    readTime: '6 min',
+    tags: ['byok', 'pricing', 'anthropic', 'openai', 'gateway'],
+    content: `Switching gateways usually means one of two fears: losing your provider rates, or paying a markup on top of them. Both fears have a name — BYOK — and both have had weak answers in most gateways: BYOK behind enterprise plans, or BYOK with a "platform fee" per request.
+
+Ours is simpler. Add your own provider key on OpenPaths and requests served through that key **bypass your OpenPaths balance entirely**. The billing engine records cost zero. You pay Anthropic directly at Anthropic's prices, OpenAI directly at OpenAI's prices. We take nothing on those tokens.
+
+## What you keep when you bring your own key
+
+A raw provider key by itself does not give you routing. On OpenPaths it still does:
+
+| Capability | With a BYOK key | Why it matters |
+|---|---|---|
+| One OpenAI-compatible API | Yes | Same \`/v1/chat/completions\` request shape across all 18 providers |
+| Automatic fallbacks | Yes | If your key hits a rate limit or 5xx, the request falls through to OpenPaths' own provider lanes |
+| Anthropic-native endpoint | Yes | \`POST /v1/messages\` works for Claude Code and Anthropic SDKs |
+| Observability | Yes | Latency, TTFT, and throughput still recorded in [public stats](/stats) |
+| Platform fee on BYOK tokens | $0 | Cost bypasses your OpenPaths balance; no markup, no per-request fee |
+
+## The providers
+
+All eighteen key slots live in **Account → API Keys → Provider keys (BYOK)**:
+
+* **OpenAI** — platform.openai.com
+* **Anthropic** — console.anthropic.com
+* **Google AI** — aistudio.google.com
+* **Mistral**, **Groq**, **xAI**, **DeepSeek** — direct API consoles
+* **Together AI**, **Inference.net**, **OpenRouter** — aggregator lanes under your own billing
+* **MiniMax**, **Netwrck**, **Z.AI** (GLM Coding Plan keys supported), **Sakana AI**
+* **fal.ai**, **Black Forest Labs** — image generation
+* **Thinking Machines Tinker** — Inkling routes
+* **OpenAI Max plan** — OAuth sign-in rather than a key, in its own panel
+
+Each row shows a masked preview of the stored key and can be replaced or deleted at any time.
+
+## Claude Code on your own Anthropic key
+
+The Anthropic-native endpoint means Claude Code and the Anthropic Agent SDK work unchanged:
+
+    ANTHROPIC_BASE_URL = https://openpaths.io
+    ANTHROPIC_AUTH_TOKEN = your-openpaths-key
+    ANTHROPIC_MODEL = openpaths/auto-code
+
+With an Anthropic key saved in Provider keys, Claude traffic rides your Anthropic billing at $0 through us — and if that key fails mid-session, requests fall through to our lanes instead of dying with your terminal.
+
+## Honest security posture
+
+Keys are stored server-side and never returned in full by the API — list responses carry masked previews only, and deletion is immediate. We do not claim hardware-backed encryption at rest, and we think gateway vendors who market BYOK should say exactly that much.
+
+## When to use BYOK vs credits
+
+Use credits when you want one bill, committed-volume pricing, and zero provider accounts to manage. Use BYOK when you already have annual commitments or negotiated rates with a provider and want routing plus fallbacks around them. Most teams do both at once — which is exactly why a BYOK route failing falls through to a credit-funded lane instead of erroring.`,
+  },
+  {
+    slug: 'why-this-model-routing-transparency',
+    title: '"Why This Model?" — Routing Transparency via X-OpenPaths-Route',
+    excerpt: 'Auto-routing is only trustworthy when it shows its work. Every chat response now carries an X-OpenPaths-Route header stating the resolved model, provider, ordering strategy, and whether your own key served it.',
+    date: '2026-08-24',
+    author: 'OpenPaths Team',
+    readTime: '5 min',
+    tags: ['routing', 'observability', 'api', 'transparency'],
+    content: `The standard objection to auto-routing is not accuracy. It is auditability. A router that picks models silently asks you to debug quality regressions with guesswork: was it the model, the prompt, or the fact that Tuesday's requests went somewhere else?
+
+So we made the routing decision inspectable on every response. No dashboard detour, no support ticket — one HTTP header.
+
+## The header
+
+\`\`\`
+X-OpenPaths-Route: model=deepseek-v4; provider=nvidia; strategy=price; byok=false; requested=openpaths/auto-code
+\`\`\`
+
+Five fields, each answering part of "why this model?":
+
+| Field | Meaning |
+|---|---|
+| \`model\` | The backend model ID that actually served the request |
+| \`provider\` | Which provider lane handled it |
+| \`strategy\` | How the fallback chain was ordered: \`price\` (default), \`config\`, or \`fastest\` |
+| \`byok\` | Whether your own provider key served this request ($0 through us) |
+| \`requested\` | Present only when you asked for an auto alias — shows what you asked for vs what answered |
+
+When guardrails or model-access rules narrow the candidate chain, the surviving route is what appears here. When a first-choice provider fails and fallback fires, the header reflects the route that actually answered, not the one that was tried first.
+
+## Reading it in practice
+
+Pin down what \`openpaths/auto\` resolved to during a test run:
+
+    curl -i https://openpaths.io/v1/chat/completions \\
+      -H "Authorization: Bearer $OPENPATHS_API_KEY" \\
+      -H "Content-Type: application/json" \\
+      -d '{"model":"openpaths/auto","messages":[{"role":"user","content":"hi"}]}'
+
+The same header ships on streaming responses and on the Anthropic-native \`POST /v1/messages\` endpoint, so Claude Code sessions get the same audit trail. Two adjacent headers complete the picture: \`X-OpenPaths-Cache\` says whether the answer came from the response cache, and \`X-OpenPaths-Reasoning-Effort\` appears whenever a reasoning effort was adapted to fit the chosen model's capabilities.
+
+Log the header next to your prompt IDs and every quality regression becomes a query instead of a memory: model, provider, strategy, cache state, effort — attached to the exact responses that misbehaved.
+
+## What transparency does not claim
+
+The header reports the routing decision, not a grade. It will not tell you the selected model was optimal, and \`strategy=price\` means exactly "candidates ordered by blended token price," nothing smarter. Where selection is heuristic — task-tier classification from the prompt — \`requested=\` shows the alias that triggered it so you can reproduce the decision. If a number or field would be marketing, it is not in the header.
+
+Full parameter documentation lives in the [API docs](/docs); the routing design notes are in the [auto-router whitepaper](/blog/learning-to-route-whitepaper).`,
+  },
+  {
+    slug: 'llm-gateway-observability-real-stats',
+    title: 'What a Production LLM Gateway Owes You: Observability From Real Traffic',
+    excerpt: 'Latency, TTFT, and throughput per model, measured from production usage_logs and live probes — public at /stats, powering /status, and honest about what it does not measure.',
+    date: '2026-08-24',
+    author: 'OpenPaths Team',
+    readTime: '7 min',
+    tags: ['observability', 'reliability', 'production', 'stats'],
+    content: `Ask gateway vendors for latency numbers and you get marketing benchmarks: single-region, empty-account, best-of-three runs. Ask them for time-to-first-token under agent workloads and the room goes quiet. Yet TTFT is the number your users feel and the one that decides whether an agent loop takes 8 seconds or 80.
+
+We took a boring position: measure the real thing, from real traffic, and publish it.
+
+## What we record
+
+Every completion through OpenPaths writes to usage_logs: token counts, end-to-end latency, time-to-first-token, and output throughput, tagged with model, provider, and calling app. That table feeds three public surfaces:
+
+| Surface | Endpoint | Question it answers |
+|---|---|---|
+| [Stats dashboard](/stats) | \`/stats/breakdown\`, \`/stats/models/timeseries\` | What do latency and TTFT look like per model over real mixed traffic? |
+| Live model probes | \`/stats/model-probes\` | Is each model actually completing requests right now? |
+| [Status page](/status) | derived from probes | Is anything degraded before my pagers notice? |
+
+Probes are periodic "say hi" completions against each model in the catalog — cheap, constant-shape requests whose latency series doubles as a health signal. The status page renders them fresh-or-stale per model with failure reasons, refreshed every minute. No synthetic uptime percentages, because nobody can define them consistently; just recent probe outcomes you can check yourself.
+
+## What TTFT data changes about model choice
+
+Once you can sort the catalog by measured TTFT instead of vibes, routing debates settle fast:
+
+* Flash-class models win end-to-end latency mostly at small outputs; at long generations, throughput dominates and the gap narrows.
+* Reasoning models trade TTFT for quality in a way that is invisible in any per-token price table — you only see the tax once it is charted.
+* Provider choice for the *same weights* moves latency more than model choice sometimes. DeepSeek V4 via NVIDIA NIM and via the direct API are different experiences; the breakdown view shows both.
+
+This is the dataset \`routing_strategy: "fastest"\` and the \`openpaths/auto-fast\` alias act on. When you let the router optimize latency, it is optimizing these measurements — not a vendor's benchmark suite.
+
+## For your own account
+
+The same recorder powers per-key usage views in Account: spend by model, latency by model, app attribution for traffic from your tools. The [usage search](/usage/prompts) indexes recorded responses so "which prompts produced garbage yesterday" is searchable text, not log grepping.
+
+## Limits, stated plainly
+
+Latency percentiles are computed over completed requests only; a timeout is a probe failure, not a slow sample. Probe cadence is minutes, not seconds — status reflects recent history, not sub-minute blips. And stats measure our gateway hop, not your client's network. We would rather under-claim with numbers than over-claim without them.
+
+If you are evaluating gateways on anything other than price, ask every vendor for their TTFT distribution under load. If they cannot show one, they are selling you a logo wall.`,
+  },
+  {
     slug: 'best-llm-api-2026-compared',
     title: 'The Best LLM APIs in 2026, Compared With Real Benchmark Data',
     excerpt: 'Six ways to call an LLM in 2026 — OpenAI, Anthropic, Google, DeepSeek, OpenRouter, and OpenPaths — compared using measured benchmark runs and published price cards instead of marketing pages.',

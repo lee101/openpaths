@@ -41,6 +41,16 @@ const entries: SitemapEntry[] = [
   { path: '/compare', changefreq: 'weekly', priority: '0.8' },
   { path: '/blog', changefreq: 'weekly', priority: '0.8' },
   { path: '/alternatives', changefreq: 'weekly', priority: '0.8' },
+  { path: '/byok', changefreq: 'weekly', priority: '0.9' },
+  { path: '/calculator', changefreq: 'monthly', priority: '0.7' },
+  { path: '/status', changefreq: 'daily', priority: '0.5' },
+  { path: '/teams', changefreq: 'weekly', priority: '0.8' },
+  { path: '/use-cases', changefreq: 'weekly', priority: '0.8' },
+  ...['coding-agents', 'customer-support-automation', 'content-pipelines', 'data-extraction', 'education-tutoring', 'creative-media'].map(slug => ({
+    path: `/use-cases/${slug}`,
+    changefreq: 'weekly' as const,
+    priority: '0.7',
+  })),
   // Prompt library directory (index + category/type sections). Individual prompt
   // pages are also emitted by the server-side sitemap and discoverable via links.
   { path: '/prompts', changefreq: 'weekly', priority: '0.8' },

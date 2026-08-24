@@ -275,7 +275,7 @@ console.log(data.rigged_character_glb.url);`,
               <div className="flex items-center justify-between border-b border-white/20 px-4 py-3">
                 <div>
                   <h2 className="font-mono text-sm font-bold uppercase tracking-wider text-white/70">Rigged result</h2>
-                  <p className="mt-1 text-xs font-mono text-white/50">{riggedUrl ? 'Rigged character' : 'Default soldier mesh'}</p>
+                  <p className="mt-1 text-xs font-mono text-white/50">{riggedUrl ? 'Rigged character' : 'Example — pre-rigged soldier mesh'}</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   {riggedGlb && (

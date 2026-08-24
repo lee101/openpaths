@@ -2600,7 +2600,7 @@ const catalogModels: Model[] = [
     contextLength: 'N/A',
     priceInput: 1.5552,
     priceOutput: 0,
-    tags: ['video generation', '4k'],
+    tags: ['video generation', 'text-to-video'],
     released: '2026-04-01',
     popularity: 66,
     pricingType: 'second'

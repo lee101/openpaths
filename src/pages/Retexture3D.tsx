@@ -8,7 +8,7 @@ import { prepareUploadFile } from '../lib/imageUpload';
 import { normalizeUploadedAssetUrl } from '../lib/uploadUrls';
 
 const DEFAULT_MESH_URL = 'https://threejs.org/examples/models/gltf/Soldier.glb';
-const DEFAULT_IMAGE_URL = 'https://openpathsstatic.openpaths.io/static/uploads/image-to-3d/sword-reference.jpg';
+const DEFAULT_IMAGE_URL = 'https://openpathsstatic.openpaths.io/static/uploads/retexture-3d/armor-reference.jpg';
 
 type RetextureResult = {
   model_glb?: { url?: string };
@@ -198,7 +198,6 @@ console.log(data.model_glb.url);`,
           <div className="grid gap-6 lg:grid-cols-[420px_minmax(0,1fr)]">
             <section className="rounded-lg border border-white/20 bg-white/[0.05] p-5">
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="font-mono text-sm font-bold uppercase tracking-wider text-white/70">Retexture a mesh</h2>
                 <button type="button" onClick={() => { setMeshUrl(DEFAULT_MESH_URL); setImageUrl(DEFAULT_IMAGE_URL); setResult(null); setOutputUrl(''); }} className="text-xs font-mono text-white/55 hover:text-white">
                   defaults
                 </button>
@@ -255,7 +254,7 @@ console.log(data.model_glb.url);`,
               <div className="flex items-center justify-between border-b border-white/20 px-4 py-3">
                 <div>
                   <h2 className="font-mono text-sm font-bold uppercase tracking-wider text-white/70">Retextured result</h2>
-                  <p className="mt-1 text-xs font-mono text-white/50">{outputUrl ? 'Retextured mesh' : 'Default input mesh'}</p>
+                  <p className="mt-1 text-xs font-mono text-white/50">{outputUrl ? 'Retextured mesh' : 'Example — input soldier mesh + armor reference'}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   {result?.model_glb?.url && (

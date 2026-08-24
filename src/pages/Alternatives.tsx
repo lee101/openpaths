@@ -41,8 +41,8 @@ export function Alternatives() {
   return (
     <>
       <Seo
-        title="OpenPaths Alternatives | OpenRouter, OpenAI, Anthropic, Together AI"
-        description="Compare OpenPaths against OpenRouter, OpenAI API, Anthropic API, Together AI, and other AI model routing alternatives."
+        title="OpenPaths Alternatives | OpenRouter, OpenAI, Anthropic, Together AI, LiteLLM, Portkey"
+        description="Compare OpenPaths against OpenRouter, OpenAI API, Anthropic API, Together AI, LiteLLM, Portkey, and other AI model routing alternatives."
         path="/alternatives"
       />
 
