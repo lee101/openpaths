@@ -50,6 +50,14 @@ const VIDEO_MODELS: VideoPrice[] = [
     notes: '2K video with native stereo audio; text, first/last-frame, and multimodal reference modes. First five reference images included; additional images are $0.08 each.',
   },
   {
+    id: 'minimax-h3-max',
+    name: 'MiniMax H3 Max',
+    provider: 'Fal',
+    unitPrice: 0.08,
+    unitLabel: '/ second',
+    notes: 'Fal post-trained text-to-video and image-to-video with native audio; $0.05/s at 480p and $0.08/s at 768p.',
+  },
+  {
     id: 'auto-video',
     name: 'Auto Video',
     provider: 'OpenPaths',

@@ -679,6 +679,57 @@ func TestGenerateVideo_MiniMaxH3SelectsImageAndReferenceEndpoints(t *testing.T) 
 	}
 }
 
+func TestGenerateVideo_MiniMaxH3MaxSelectsTextAndImageEndpoints(t *testing.T) {
+	paths := make([]string, 0, 2)
+	bodies := make([]map[string]any, 0, 2)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatal(err)
+		}
+		paths = append(paths, r.URL.Path)
+		bodies = append(bodies, body)
+		_ = json.NewEncoder(w).Encode(map[string]any{"video": map[string]any{"url": "https://example.com/h3-max.mp4"}})
+	}))
+	defer server.Close()
+	p := New("test-key")
+	p.baseURL, p.client = server.URL, server.Client()
+
+	audio := true
+	_, err := p.GenerateVideo(context.Background(), &model.VideoGenerationRequest{
+		Model: "minimax/h3-max/text-to-video", Prompt: "cinematic garden", Duration: "5",
+		Resolution: "480p", AspectRatio: "16:9", PromptExpansionMode: "balanced",
+		GenerateAudio: &audio,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = p.GenerateVideo(context.Background(), &model.VideoGenerationRequest{
+		Model: "minimax/h3-max/text-to-video", Prompt: "animate this portrait", ImageURL: "https://example.com/start.jpg",
+		EndImageURL: "https://example.com/end.jpg", Duration: "10", Resolution: "768P",
+		AspectRatio: "9:16", PromptExpansionMode: "quality",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if paths[0] != "/minimax/h3-max/text-to-video" || bodies[0]["duration"] != float64(5) || bodies[0]["resolution"] != "480P" || bodies[0]["prompt_expansion_mode"] != "balanced" {
+		t.Fatalf("text request = %s %#v", paths[0], bodies[0])
+	}
+	if _, ok := bodies[0]["generate_audio"]; ok {
+		t.Fatalf("H3 Max must not receive generate_audio: %#v", bodies[0])
+	}
+	if paths[1] != "/minimax/h3-max/image-to-video" || bodies[1]["image_url"] != "https://example.com/start.jpg" || bodies[1]["end_image_url"] != "https://example.com/end.jpg" {
+		t.Fatalf("image request = %s %#v", paths[1], bodies[1])
+	}
+	if bodies[1]["duration"] != float64(10) || bodies[1]["resolution"] != "768P" || bodies[1]["prompt_expansion_mode"] != "quality" {
+		t.Fatalf("image controls = %#v", bodies[1])
+	}
+	if _, ok := bodies[1]["aspect_ratio"]; ok {
+		t.Fatalf("image request must follow input aspect: %#v", bodies[1])
+	}
+}
+
 func TestRigMesh_SubmitsModelURLAndParsesRiggedAssets(t *testing.T) {
 	var gotSubmit map[string]any
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

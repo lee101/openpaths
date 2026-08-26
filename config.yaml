@@ -679,6 +679,22 @@ models:
     supports_tools: false
     supports_vision: true
 
+  # --- MiniMax H3 Max via Fal (text/image-to-video) ---
+  # Public pricing uses the post-promotion rates: $0.05/s at 480p and
+  # $0.08/s at 768p. The adapter selects the image endpoint when image input
+  # is present, while callers use this single stable model ID.
+  - id: "minimax-h3-max"
+    provider: fal
+    provider_model_id: "minimax/h3-max/text-to-video"
+    price_per_second: 0.08
+    price_per_second_by_resolution:
+      480p: 0.05
+      768p: 0.08
+    aliases: ["h3-max", "minimax-h3-max-text-to-video", "minimax-h3-max-image-to-video"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
   # --- Alibaba Happy Horse via Fal (Video Generation) ---
   - id: "alibaba/happy-horse/image-to-video"
     provider: fal

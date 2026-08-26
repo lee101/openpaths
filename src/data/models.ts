@@ -2237,6 +2237,20 @@ const catalogModels: Model[] = [
     pricingType: 'second'
   },
   {
+    id: 'minimax-h3-max',
+    name: 'MiniMax H3 Max',
+    provider: 'Fal',
+    description: 'Fal post-trained H3 Max for prompt-adherent, aesthetic text-to-video and image-to-video generation with native audio. Supports 5–15 second output at 480P or 768P.',
+    contextLength: 'N/A',
+    priceInput: 0.08,
+    priceOutput: 0,
+    tags: ['video generation', 'text-to-video', 'image-to-video', 'audio'],
+    aliases: ['h3-max', 'minimax-h3-max-text-to-video', 'minimax-h3-max-image-to-video'],
+    released: '2026-08-26',
+    popularity: 75,
+    pricingType: 'second'
+  },
+  {
     id: 'hailuo-2.3',
     name: 'Hailuo 2.3',
     provider: 'MiniMax',

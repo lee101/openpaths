@@ -53,6 +53,7 @@ type VideoGenerationRequest struct {
 	Resolution            string             `json:"resolution,omitempty"`
 	Duration              VideoDuration      `json:"duration,omitempty"`
 	AspectRatio           string             `json:"aspect_ratio,omitempty"`
+	PromptExpansionMode   string             `json:"prompt_expansion_mode,omitempty"`
 	Ratio                 string             `json:"ratio,omitempty"`
 	OutputFormat          string             `json:"output_format,omitempty"`
 	GenerateAudio         *bool              `json:"generate_audio,omitempty"`
