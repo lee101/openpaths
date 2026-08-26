@@ -1670,6 +1670,24 @@ const catalogModels: Model[] = [
 
   // --- GLM / Z.AI ---
   {
+    id: 'glm-5.3-flash',
+    name: 'GLM-5.3 Flash',
+    provider: 'Z.AI',
+    description: 'Native multimodal GLM frontier model for coding, agentic work, and visual understanding with a 1M-token context window. Direct Z.AI route with always-on reasoning.',
+    contextLength: '1M',
+    priceInput: 0.075,
+    priceOutput: 0.25,
+    tags: ['general', 'vision', 'reasoning', 'agentic', 'programming', 'open-source', 'fast'],
+    aliases: ['zai/glm-5.3-flash', 'glm53-flash', 'glm-5.3-flash-latest'],
+    released: '2026-08-26',
+    popularity: 21,
+    promotion: {
+      endsAt: '2026-09-09T16:00:00Z',
+      standardPriceInput: 0.15,
+      standardPriceOutput: 0.50,
+    }
+  },
+  {
     id: 'glm-5.3',
     name: 'GLM-5.3',
     provider: 'Z.AI',

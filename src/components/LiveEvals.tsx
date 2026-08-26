@@ -132,7 +132,7 @@ export function LiveEvalsSection() {
   );
 }
 
-function AutoVsBestCard({ scope, label, entry, hero }: { scope: string; label: string; entry?: EvalSnapshot['auto_vs_best'][string]; hero?: boolean }) {
+function AutoVsBestCard({ scope, label, entry, hero }: { key?: React.Key; scope: string; label: string; entry?: EvalSnapshot['auto_vs_best'][string]; hero?: boolean }) {
   const autoScore = entry?.auto_score;
   const bestScore = entry?.best_score;
   const delta = autoScore != null && bestScore != null ? autoScore - bestScore : null;

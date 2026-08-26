@@ -2752,6 +2752,28 @@ models:
       - "960x1728"
 
   # --- Z.AI (GLM direct) ---
+  # GLM-5.3-Flash is currently 50% off through 2026-09-09 16:00 UTC.
+  # Keep the list rates in the scheduled transition so billing changes
+  # automatically when the launch promotion ends.
+  - id: "glm-5.3-flash"
+    provider: zai
+    provider_model_id: "glm-5.3-flash"
+    input_price_per_1m: 0.075
+    input_cache_hit_price_per_1m: 0.015
+    output_price_per_1m: 0.25
+    scheduled_token_pricing:
+      effective_at: "2026-09-09T16:00:00Z"
+      off_peak_input_price_per_1m: 0.15
+      off_peak_input_cache_hit_price_per_1m: 0.03
+      off_peak_output_price_per_1m: 0.50
+    aliases: ["zai/glm-5.3-flash", "glm53-flash", "glm-5.3-flash-latest"]
+    context_window: 1048576
+    max_output_tokens: 131072
+    default_reasoning_effort: "max"
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
   - id: "zai/glm-5"
     provider: zai
     provider_model_id: "glm-5"

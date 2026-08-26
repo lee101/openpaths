@@ -165,7 +165,7 @@ export const providers: Provider[] = [
     slug: 'zai',
     name: 'Z.AI',
     url: 'https://z.ai',
-    description: 'GLM-5, GLM-4.7, GLM-4.6v vision, and GLM Image generation models.',
+    description: 'GLM-5.3-Flash native multimodal, GLM-5, GLM-4.7, GLM-4.6v vision, and GLM Image generation models.',
     featured: false,
     logo: '/logos/zai.svg'
   },

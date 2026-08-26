@@ -1391,6 +1391,11 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/models/glm-5.3-flash</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/models/glm-5.3</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>

@@ -330,10 +330,14 @@ const EXAMPLES: Record<string, ProviderExample> = {
     videoModel: 'hailuo-2.3',
   },
   zai: {
-    description: 'GLM-5.2, GLM-5.1, GLM-5, GLM-4.7, GLM-4.6v vision, and GLM Image generation. BYOK GLM Coding Plan keys are routed to z.ai’s coding endpoint (api.z.ai/api/coding/paas/v4) and circuit-break down the GLM series (5.2 → 5.1 → 5) on failure.',
+    description: 'GLM-5.3-Flash native multimodal, GLM-5.1, GLM-5, GLM-4.7, GLM-4.6v vision, and GLM Image generation. BYOK GLM Coding Plan keys are routed to z.ai’s coding endpoint (api.z.ai/api/coding/paas/v4).',
     endpoint: '/v1',
-    chatModel: 'glm-5.2',
+    chatModel: 'glm-5.3-flash',
     imageModel: 'glm-image',
+    notes: [
+      '`glm-5.3-flash` accepts text and native multimodal content, supports tools and streaming, and has a 1M-token context window.',
+      'The direct platform route uses Z.AI’s general API endpoint; use a standard Z_API_KEY for platform traffic. Coding Plan keys remain available for user BYOK coding-tool traffic.',
+    ],
   },
   fireworks: {
     description: 'Fast inference for GPT-OSS 120B, GLM-5 and Whisper v3 Large.',
