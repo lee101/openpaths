@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Box, Boxes, Clapperboard, GitMerge, ImageIcon, Layers, Palette, PersonStanding, Sparkles, WandSparkles } from 'lucide-react';
+import { ArrowRight, Box, Boxes, Clapperboard, Drama, GitMerge, ImageIcon, Layers, Music, Palette, PersonStanding, Scissors, Sparkles, WandSparkles } from 'lucide-react';
 import { Seo } from '../components/Seo';
 
 const TOOLS = [
@@ -21,12 +21,52 @@ const TOOLS = [
     price: '~$0.30 / edit',
   },
   {
+    to: '/text-to-video',
+    icon: Clapperboard,
+    name: 'Text to Video',
+    tagline: 'Wan 3.0 · native audio',
+    description: 'Describe a shot and get up to 30 seconds of cinematic video with native audio. Smart duration or pin exact seconds, per-resolution pricing.',
+    price: '$0.05 – $0.20 / sec',
+  },
+  {
+    to: '/image-to-video',
+    icon: Clapperboard,
+    name: 'Image to Video',
+    tagline: 'Wan 3.0 · first + last frame',
+    description: 'Animate any still with native audio, optionally driving it to an end frame. Smart duration or pin exact seconds.',
+    price: '$0.05 – $0.20 / sec',
+  },
+  {
     to: '/video-extension',
     icon: Clapperboard,
     name: 'Video Extension',
     tagline: 'Grok Imagine Video',
     description: 'Upload or paste an MP4, describe what happens next, and extend it through the Grok Imagine video API.',
     price: '~$0.08 / sec',
+  },
+  {
+    to: '/character-animator',
+    icon: Drama,
+    name: 'Character Animator',
+    tagline: 'Wan-Animate · first-party',
+    description: 'Animate a reference character with a driving performance video. Standard, fast, and x-fast latency lanes.',
+    price: '$0.15 – $0.60 / sec',
+  },
+  {
+    to: '/music-generator',
+    icon: Music,
+    name: 'Music Generator',
+    tagline: 'MiniMax-Music3 · first-party',
+    description: 'Full songs with vocals from a prompt and optional lyrics. Pin 30–300 seconds.',
+    price: 'from $0.35 / track',
+  },
+  {
+    to: '/remove-video-background',
+    icon: Scissors,
+    name: 'Background Remover',
+    tagline: 'Transparent video · first-party',
+    description: 'Key any clip to alpha-transparent WebM, optionally compositing a solid backdrop color.',
+    price: '~$0.005 / sec',
   },
   {
     to: '/image-to-3d',

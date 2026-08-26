@@ -59,6 +59,8 @@ type Dependencies struct {
 	StatsQ           *queries.StatsQueries
 	AppQ             *queries.AppQueries
 	ModelProbeQ      *queries.ModelProbeQueries
+	EvalQ            *queries.EvalQueries
+	EvalRunner       handler.EvalSweeper
 	Transcribers     []provider.TranscriptionProvider
 	Embedders        []provider.EmbeddingProvider
 	AutoEmotion      *audio.AutoEmotion
@@ -104,8 +106,9 @@ func New(deps *Dependencies) *Server {
 		authH.SetOnRegister(deps.OnRegister)
 	}
 	accountH := handler.NewAccountHandler(deps.APIKeyQ, deps.CreditQ, deps.Billing, deps.StripeReconciler)
-	creditsH := handler.NewCreditsHandler()
 	statsH := handler.NewStatsHandler(deps.StatsQ, deps.AppQ, deps.ModelProbeQ)
+	evalsH := handler.NewEvalsHandler(deps.EvalQ, deps.EvalRunner)
+	creditsH := handler.NewCreditsHandler()
 	artH := handler.NewArtHandler(deps.ArtIndex, deps.ArtImageQ)
 	promptsH := handler.NewPromptsHandler(deps.PromptIndex)
 	skillsH := handler.NewSkillsHandler(deps.SkillIndex, deps.SkillQ)
@@ -273,7 +276,20 @@ func New(deps *Dependencies) *Server {
 	// MCP server: exposes all models over the Model Context Protocol. Runs under
 	// auth+byok WITHOUT the upfront balance gate so initialize/tools/list always
 	// succeed; paid tools bill via the underlying handler (charge-after-serve).
+	var transcriptionH *handler.TranscriptionHandler
+	if len(deps.Transcribers) > 0 {
+		transcriptionH = handler.NewTranscriptionHandler(deps.Router, deps.Billing, deps.Transcribers, deps.Recorder)
+		r.POST("/v1/audio/transcriptions", apiKeyChain(transcriptionH.HandleTranscription))
+		r.POST("/v1/stt", apiKeyChain(transcriptionH.HandleTranscription))
+		log.Printf("Transcription endpoint enabled (%d providers)", len(deps.Transcribers))
+	}
+
 	mcpH := handler.NewMCPHandler(deps.Router, chatH, modelsH, imageH, embeddingH, searchH)
+	mcpH.SetVideoHandler(videoH)
+	mcpH.SetMusicHandler(musicH)
+	mcpH.SetSpeechHandler(speechH)
+	mcpH.SetTranscriptionHandler(transcriptionH)
+	mcpH.SetTextTo3DHandler(textTo3DH)
 	mcpChain := middleware.Chain(
 		middleware.Recovery(),
 		middleware.Logging(),
@@ -284,14 +300,7 @@ func New(deps *Dependencies) *Server {
 	)
 	r.POST("/mcp", mcpChain(mcpH.HandleMCP))
 	r.POST("/v1/mcp", mcpChain(mcpH.HandleMCP))
-	log.Printf("MCP server enabled at /mcp (chat, list_models, generate_image, embed, web_search)")
-
-	if len(deps.Transcribers) > 0 {
-		transcriptionH := handler.NewTranscriptionHandler(deps.Router, deps.Billing, deps.Transcribers, deps.Recorder)
-		r.POST("/v1/audio/transcriptions", apiKeyChain(transcriptionH.HandleTranscription))
-		r.POST("/v1/stt", apiKeyChain(transcriptionH.HandleTranscription))
-		log.Printf("Transcription endpoint enabled (%d providers)", len(deps.Transcribers))
-	}
+	log.Printf("MCP server enabled at /mcp (chat, list_models, generate_image, generate_video, check_job, generate_music, text_to_speech, transcribe_audio, generate_3d, embed, web_search)")
 
 	if deps.Storage != nil {
 		uploadH := handler.NewUploadHandler(deps.Storage)
@@ -409,6 +418,11 @@ func New(deps *Dependencies) *Server {
 	r.GET("/stats/timeseries", publicChain(statsH.HandleTimeSeries))
 	r.GET("/stats/models/timeseries", publicChain(statsH.HandleModelDailyUsage))
 	r.GET("/stats/apps/{slug}", publicChain(statsH.HandleAppDetailStats))
+
+	// Live evals: public snapshot, admin-triggered sweeps.
+	r.GET("/v1/evals/results", publicChain(evalsH.HandleResults))
+	r.GET("/v1/evals/status", publicChain(evalsH.HandleStatus))
+	r.POST("/v1/evals/run", accountChain(adminH.RequireAdmin(evalsH.HandleRun)))
 	r.GET("/stats/apps", publicChain(statsH.HandleAppStats))
 	r.GET("/og/apps/{slug}.svg", publicChain(statsH.HandleAppOGImage))
 	r.GET("/art/search", publicChain(artH.HandleSearch))

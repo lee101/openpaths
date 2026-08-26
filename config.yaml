@@ -34,6 +34,11 @@ providers:
     api_key: "${NETWRCK_API_KEY}"
     enabled: true
 
+  - name: manifoldgen
+    base_url: "https://manifoldgen.com"
+    api_key: "${MANIFOLDGEN_API_KEY}"
+    enabled: true
+
   - name: cutedsl
     base_url: "https://cutedsl.cc"
     api_key: "${CUTEDSL_API_KEY}"
@@ -122,6 +127,11 @@ providers:
   - name: fal
     base_url: ""
     api_key: "${FAL_API_KEY}"
+    enabled: true
+
+  - name: ebank
+    base_url: "https://ebank.nz"
+    api_key: "${EBANK_API_KEY}"
     enabled: true
 
   - name: exa
@@ -216,7 +226,7 @@ models:
     provider_model_id: "stealth/ox-alpha"
     input_price_per_1m: 0
     output_price_per_1m: 0
-    aliases: ["stealth/ox-alpha", "ox-alpha", "openpaths-ox-alpha"]
+    aliases: ["stealth/ox-alpha", "ox-alpha", "openpaths-ox-alpha", "openpaths/ox-alpha"]
     context_window: 1000000
     max_output_tokens: 32768
     supports_streaming: true
@@ -725,6 +735,32 @@ models:
     supports_tools: false
     supports_vision: false
 
+  # --- Alibaba Wan 3.0 via Fal (per-second by resolution tier:
+  # 480p $0.05/s, 720p $0.10/s, 1080p is the endpoint default at $0.20/s) ---
+  - id: "wan-3.0-text-to-video"
+    provider: fal
+    provider_model_id: "alibaba/wan-3.0/text-to-video"
+    price_per_second: 0.20
+    price_per_second_by_resolution:
+      480p: 0.05
+      720p: 0.10
+    aliases: ["wan-3", "wan-30", "wan-3.0"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "wan-3.0-image-to-video"
+    provider: fal
+    provider_model_id: "alibaba/wan-3.0/image-to-video"
+    price_per_second: 0.20
+    price_per_second_by_resolution:
+      480p: 0.05
+      720p: 0.10
+    aliases: ["wan-3-image", "wan-30-image", "wan-3.0-i2v"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
   # --- Kling 3.0 via Fal (Video Generation, native audio) ---
   # Fal charges $0.112/s audio-off, $0.168/s audio-on for Pro and $0.084/$0.126
   # for Standard; we bill the audio-on rate so audio is never loss-making.
@@ -923,6 +959,132 @@ models:
     supports_streaming: false
     supports_tools: false
     supports_vision: false
+
+  # --- ManifoldGen (first-party GPU lanes via manifoldgen.com) ---
+  # K-Fold/H3 cinematic video with native audio; settled upstream on measured
+  # GPU time, billed here at the standard-lane per-second rate.
+  - id: "kfold-video"
+    provider: manifoldgen
+    provider_model_id: "kfold-video"
+    price_per_second: 0.15
+    aliases: ["kfold", "manifoldgen-video", "manifoldgen-kfold"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  # Wan-Animate-2 character animation: motion transfer from a driving video
+  # onto a reference character image. fast/xfast are exact 2x/4x lanes.
+  - id: "wan-animate"
+    provider: manifoldgen
+    provider_model_id: "wan-animate"
+    price_per_second: 0.15
+    aliases: ["character-animation", "wan-animator", "manifoldgen-wan-animate"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "wan-animate-fast"
+    provider: manifoldgen
+    provider_model_id: "wan-animate-fast"
+    price_per_second: 0.30
+    aliases: ["wan-animate-tier-fast"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "wan-animate-xfast"
+    provider: manifoldgen
+    provider_model_id: "wan-animate-xfast"
+    price_per_second: 0.60
+    aliases: ["wan-animate-tier-xfast"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  # H3-control video restyle over a driving clip (pose/depth/canny/hed/mlsd/
+  # inpaint); five-second 720p ceiling is about $0.48 upstream.
+  - id: "h3-control-video"
+    provider: manifoldgen
+    provider_model_id: "h3-control"
+    price_per_second: 0.10
+    aliases: ["h3-control", "video-restyle", "pose-control-video", "manifoldgen-restyle"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  # Transparent WebM background removal at the public per-second rate.
+  - id: "remove-video-background"
+    provider: manifoldgen
+    provider_model_id: "remove-video-background"
+    price_per_second: 0.0051
+    aliases: ["video-bg-removal", "transparent-video", "video-matte", "manifoldgen-matte"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  # MiniMax-Music3 full songs with vocals ($0.25 base + $0.15/output minute,
+  # $0.35 minimum — billed flat at the minimum).
+  - id: "mg-music"
+    provider: manifoldgen
+    provider_model_id: "mg-music"
+    price_per_image: 0.35
+    aliases: ["manifoldgen-music", "minimax-music3", "music3"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  # H3 text-to-SFX lane, ~5s effects.
+  - id: "mg-sfx"
+    provider: manifoldgen
+    provider_model_id: "mg-sfx"
+    price_per_image: 0.50
+    aliases: ["manifoldgen-sfx", "h3-sfx"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  # ManifoldGen TTS ($0.005 per 100 characters).
+  - id: "mg-tts"
+    provider: manifoldgen
+    provider_model_id: "mg-tts"
+    price_per_1m_characters: 50
+    aliases: ["manifoldgen-tts"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  # H3 diffusion stills and source-image edits with reference images.
+  - id: "h3-image"
+    provider: manifoldgen
+    provider_model_id: "h3-image"
+    price_per_image: 0.30
+    aliases: ["manifoldgen-image", "manifold-image"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "h3-image-edit"
+    provider: manifoldgen
+    provider_model_id: "h3-image-edit"
+    price_per_image: 0.35
+    aliases: ["manifoldgen-image-edit", "h3-edit"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  # Video dramatizer agent: one source clip plus a creative brief becomes a
+  # finished multi-shot edit. Billed at $0.10/s of planned edit time; a
+  # nominal six-shot, five-second-per-shot run lands near $3 upstream.
+  # Duration is required from the caller as the planned total edit seconds
+  # (8..100).
+  - id: "video-dramatize"
+    provider: manifoldgen
+    provider_model_id: "video-dramatize"
+    price_per_second: 0.10
+    aliases: ["video-dramatizer", "manifoldgen-dramatize", "dramatize"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
 
   # --- OpenAI ---
   - id: "gpt-5-chat-latest"

@@ -22,16 +22,16 @@ import (
 const (
 	// Every sweep is a billed generation across ~8 frontier models x 15 cases,
 	// so the default cadence is daily. Override with OPENPATHS_EVALS_INTERVAL.
-	evalsInterval      = 24 * time.Hour
-	evalsBootDelay     = 2 * time.Minute
-	evalsConcurrency   = 3          // models in flight; cases run sequentially within a model
-	evalsRequestTO     = 4 * time.Minute
-	evalsUserEmail     = "live-evals@openpaths.local"
-	evalsUserName      = "Live Evals"
-	evalsKeyName       = "live-evals"
-	evalsRateLimitRPM  = 6000
-	evalsMinBalance    = 500  // top up below $5
-	evalsTopup         = 5000 // grant $50 of eval credit
+	evalsInterval     = 24 * time.Hour
+	evalsBootDelay    = 2 * time.Minute
+	evalsConcurrency  = 3 // models in flight; cases run sequentially within a model
+	evalsRequestTO    = 4 * time.Minute
+	evalsUserEmail    = "live-evals@openpaths.local"
+	evalsUserName     = "Live Evals"
+	evalsKeyName      = "live-evals"
+	evalsRateLimitRPM = 6000
+	evalsMinBalance   = 500  // top up below $5
+	evalsTopup        = 5000 // grant $50 of eval credit
 )
 
 // evalModels are the competitors rendered on /evals plus openpaths/auto. Ids
@@ -138,6 +138,19 @@ func (r *EvalRunner) Stop() {
 	}
 }
 
+// Running reports whether a sweep is currently in flight.
+func (r *EvalRunner) Running() bool {
+	if r == nil {
+		return false
+	}
+	return r.running.Load()
+}
+
+
+// Done exposes the stop channel so CLI callers can block until shutdown.
+func (r *EvalRunner) Done() <-chan struct{} {
+	return r.stop
+}
 // RunAsync triggers one sweep if none is running. Returns false when a sweep is
 // already in flight.
 func (r *EvalRunner) RunAsync() bool {

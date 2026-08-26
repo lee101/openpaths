@@ -5,6 +5,7 @@ type MusicGenerationRequest struct {
 	Prompt       string        `json:"prompt,omitempty"`
 	Lyrics       string        `json:"lyrics"`
 	Stream       bool          `json:"stream,omitempty"`
+	Duration     int           `json:"duration,omitempty"`
 	OutputFormat string        `json:"output_format,omitempty"`
 	AudioSetting *AudioSetting `json:"audio_setting,omitempty"`
 }

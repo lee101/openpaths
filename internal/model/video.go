@@ -56,6 +56,7 @@ type VideoGenerationRequest struct {
 	Ratio                 string             `json:"ratio,omitempty"`
 	OutputFormat          string             `json:"output_format,omitempty"`
 	GenerateAudio         *bool              `json:"generate_audio,omitempty"`
+	EnableThinking        *bool              `json:"enable_thinking,omitempty"`
 	BitrateMode           string             `json:"bitrate_mode,omitempty"`
 	EndUserID             string             `json:"end_user_id,omitempty"`
 	NegativePrompt        string             `json:"negative_prompt,omitempty"`
@@ -72,6 +73,10 @@ type VideoGenerationRequest struct {
 	ResponseFormat        json.RawMessage    `json:"response_format,omitempty"`
 	Store                 *bool              `json:"store,omitempty"`
 	Stream                *bool              `json:"stream,omitempty"`
+	ControlType           string             `json:"control_type,omitempty"`
+	ControlScale          *float64           `json:"control_scale,omitempty"`
+	MaskVideoURL          string             `json:"mask_video_url,omitempty"`
+	BackgroundColor       string             `json:"background_color,omitempty"`
 }
 
 // VideoContentItem is the multimodal content shape accepted by video models

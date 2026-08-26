@@ -1,9 +1,16 @@
 package handler
 
 import (
+	"bytes"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
+	"mime/multipart"
+	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/valyala/fasthttp"
 
@@ -29,11 +36,23 @@ type MCPHandler struct {
 	image     *ImageHandler
 	embedding *EmbeddingHandler
 	search    *SearchHandler
+	video     *VideoHandler
+	music     *MusicHandler
+	speech    *SpeechHandler
+	stt       *TranscriptionHandler
+	textTo3D  *TextTo3DHandler
 }
 
 func NewMCPHandler(r *router.Router, chat *ChatHandler, models *ModelsHandler, image *ImageHandler, embedding *EmbeddingHandler, search *SearchHandler) *MCPHandler {
 	return &MCPHandler{router: r, chat: chat, models: models, image: image, embedding: embedding, search: search}
 }
+
+// Optional modality handlers; tools degrade gracefully when unset.
+func (h *MCPHandler) SetVideoHandler(v *VideoHandler)                 { h.video = v }
+func (h *MCPHandler) SetMusicHandler(m *MusicHandler)                 { h.music = m }
+func (h *MCPHandler) SetSpeechHandler(s *SpeechHandler)               { h.speech = s }
+func (h *MCPHandler) SetTranscriptionHandler(t *TranscriptionHandler) { h.stt = t }
+func (h *MCPHandler) SetTextTo3DHandler(t *TextTo3DHandler)           { h.textTo3D = t }
 
 type rpcRequest struct {
 	JSONRPC string          `json:"jsonrpc"`
@@ -126,7 +145,7 @@ func (h *MCPHandler) route(ctx *fasthttp.RequestCtx, req *rpcRequest) (any, *rpc
 				"name":    mcpServerName,
 				"version": mcpServerVersion,
 			},
-			"instructions": "OpenPaths MCP server. Call `list_models` to discover models, then `chat` with any model id. Image, embedding and web_search tools are also available.",
+			"instructions": "OpenPaths MCP server exposing every OpenPaths model across all providers. Call `list_models` (supports `filter` substring and `modality` filters) to discover models; each entry's `modality` selects the tool: chat→`chat`, image→`generate_image`, video→`generate_video`, music→`generate_music`, speech→`text_to_speech`, transcription→`transcribe_audio`, 3d→`generate_3d`, embedding→`embed`. Video and 3D generations may return a job_id while rendering — poll it with `check_job`. Web search via `web_search`.",
 		}, nil
 	case "ping":
 		return map[string]any{}, nil
@@ -178,11 +197,12 @@ var mcpTools = []map[string]any{
 	},
 	{
 		"name":        "list_models",
-		"description": "List available OpenPaths models with owner and context window. Optional case-insensitive substring filter.",
+		"description": "List all available OpenPaths models across every provider with modality, pricing summary, context window and capabilities. Filter by substring and/or modality.",
 		"inputSchema": map[string]any{
 			"type": "object",
 			"properties": map[string]any{
-				"filter": map[string]any{"type": "string", "description": "Substring to match against model id or owner."},
+				"filter":   map[string]any{"type": "string", "description": "Case-insensitive substring matched against model id or owner/provider."},
+				"modality": map[string]any{"type": "string", "enum": []string{"chat", "image", "video", "music", "speech", "transcription", "3d", "embedding", "forecasting"}, "description": "Only return models of this modality."},
 			},
 		},
 	},
@@ -192,7 +212,7 @@ var mcpTools = []map[string]any{
 		"inputSchema": map[string]any{
 			"type": "object",
 			"properties": map[string]any{
-				"model":  map[string]any{"type": "string", "description": "Image model id, e.g. gpt-image-1, flux-schnell."},
+				"model":  map[string]any{"type": "string", "description": "Image model id, e.g. h3-image, gpt-image-1, flux-schnell."},
 				"prompt": map[string]any{"type": "string"},
 				"size":   map[string]any{"type": "string", "description": "e.g. 1024x1024."},
 				"n":      map[string]any{"type": "integer", "description": "Number of images (default 1)."},
@@ -224,6 +244,94 @@ var mcpTools = []map[string]any{
 			"required": []string{"query"},
 		},
 	},
+	{
+		"name":        "generate_video",
+		"description": "Generate a video from a text prompt (optionally with input image/video URLs). Returns the video URL, or a job_id to poll via check_job while rendering.",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"model":           map[string]any{"type": "string", "description": "Video model id, e.g. kfold-video (ManifoldGen H3 cinematic with native audio), wan-animate / -fast / -xfast (character animation; requires both image_url and video_url), h3-control-video (restyle via control_type), remove-video-background (transparent WebM), video-dramatize (multi-shot dramatizer; duration is planned total edit seconds 8-100), sora-2, fal-ai/veo3.1."},
+				"prompt":          map[string]any{"type": "string"},
+				"image_url":       map[string]any{"type": "string", "description": "Optional first-frame / input image URL for image-to-video."},
+				"end_image_url":   map[string]any{"type": "string", "description": "Optional last-frame image URL."},
+				"video_url":       map[string]any{"type": "string", "description": "Optional input video URL for video-to-video / extension."},
+				"duration":        map[string]any{"type": "string", "description": "Seconds as string, e.g. \"5\" or \"10\"."},
+				"resolution":      map[string]any{"type": "string"},
+				"aspect_ratio":    map[string]any{"type": "string"},
+				"negative_prompt": map[string]any{"type": "string"},
+				"seed":            map[string]any{"type": "integer"},
+			},
+			"required": []string{"model", "prompt"},
+		},
+	},
+	{
+		"name":        "check_job",
+		"description": "Poll an async generation job (video or 3D) started by generate_video/generate_3d. Returns the job status and result when complete.",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"kind":   map[string]any{"type": "string", "enum": []string{"video", "model3d", "text3d"}, "description": "Default video."},
+				"job_id": map[string]any{"type": "string"},
+			},
+			"required": []string{"job_id"},
+		},
+	},
+	{
+		"name":        "generate_music",
+		"description": "Generate instrumental music or a song from a prompt and optional lyrics. Returns an audio URL or base64 data URI.",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"model":    map[string]any{"type": "string", "description": "e.g. mg-music (ManifoldGen MiniMax-Music3 full songs; optional duration seconds 30-300) or music-2.5. Use mg-sfx for short ~5s sound effects."},
+				"prompt":   map[string]any{"type": "string", "description": "Style/genre description."},
+				"lyrics":   map[string]any{"type": "string", "description": "Optional lyrics ([verse]/[chorus] sections supported)."},
+				"duration": map[string]any{"type": "integer", "description": "Song length in seconds (mg-music only, 30-300)."},
+			},
+			"required": []string{"model"},
+		},
+	},
+	{
+		"name":        "text_to_speech",
+		"description": "Synthesize speech from text. Returns an audio URL or base64 data URI.",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"model":    map[string]any{"type": "string", "description": "e.g. mg-tts, xai-tts, pocket-tts, gemini-3.1-flash-tts-preview."},
+				"input":    map[string]any{"type": "string", "description": "Text to speak."},
+				"voice":    map[string]any{"type": "string"},
+				"language": map[string]any{"type": "string"},
+				"speed":    map[string]any{"type": "number"},
+			},
+			"required": []string{"model", "input"},
+		},
+	},
+	{
+		"name":        "transcribe_audio",
+		"description": "Transcribe audio to text (Whisper-family and other STT models). Pass the audio file base64-encoded.",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"audio_base64": map[string]any{"type": "string", "description": "Base64-encoded audio file bytes."},
+				"filename":     map[string]any{"type": "string", "description": "File name with extension, e.g. clip.mp3. Default audio.mp3."},
+				"model":        map[string]any{"type": "string", "description": "e.g. whisper-large-v3-turbo, gpt-4o-transcribe. Default server default."},
+				"language":     map[string]any{"type": "string"},
+				"prompt":       map[string]any{"type": "string", "description": "Optional spelling hint transcript."},
+			},
+			"required": []string{"audio_base64"},
+		},
+	},
+	{
+		"name":        "generate_3d",
+		"description": "Generate a textured 3D model (GLB) from a text prompt or image URL. Returns the GLB asset, or a job_id to poll via check_job.",
+		"inputSchema": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"prompt":       map[string]any{"type": "string", "description": "Text description (or pass image_url instead)."},
+				"image_url":    map[string]any{"type": "string", "description": "Public http(s) image URL for image-to-3D."},
+				"texture_size": map[string]any{"type": "integer"},
+			},
+		},
+	},
 }
 
 type toolCallParams struct {
@@ -248,6 +356,18 @@ func (h *MCPHandler) callTool(ctx *fasthttp.RequestCtx, params json.RawMessage) 
 		return h.toolListModels(args)
 	case "generate_image":
 		return h.toolGenerateImage(ctx, args)
+	case "generate_video":
+		return h.toolGenerateVideo(ctx, args)
+	case "check_job":
+		return h.toolCheckJob(ctx, args)
+	case "generate_music":
+		return h.toolGenerateMusic(ctx, args)
+	case "text_to_speech":
+		return h.toolSpeak(ctx, args)
+	case "transcribe_audio":
+		return h.toolTranscribe(ctx, args)
+	case "generate_3d":
+		return h.toolGenerate3D(ctx, args)
 	case "embed":
 		return h.toolEmbed(ctx, args)
 	case "web_search":
@@ -305,23 +425,48 @@ func (h *MCPHandler) toolChat(ctx *fasthttp.RequestCtx, args json.RawMessage) (a
 
 func (h *MCPHandler) toolListModels(args json.RawMessage) (any, *rpcError) {
 	var a struct {
-		Filter string `json:"filter"`
+		Filter   string `json:"filter"`
+		Modality string `json:"modality"`
 	}
 	_ = json.Unmarshal(args, &a)
 	filter := strings.ToLower(strings.TrimSpace(a.Filter))
+	modality := strings.ToLower(strings.TrimSpace(a.Modality))
 
-	infos := h.router.ListModels()
-	out := make([]map[string]any, 0, len(infos))
-	for _, m := range infos {
-		if filter != "" && !strings.Contains(strings.ToLower(m.ID), filter) && !strings.Contains(strings.ToLower(m.OwnedBy), filter) {
+	cfgs := h.router.ListModelConfigs()
+	out := make([]map[string]any, 0, len(cfgs))
+	for _, cfg := range cfgs {
+		m := classifyModality(cfg.ID, cfg)
+		if modality != "" && m != modality {
 			continue
 		}
-		out = append(out, map[string]any{
-			"id":             m.ID,
-			"owned_by":       m.OwnedBy,
-			"context_window": m.ContextWindow,
-		})
+		if filter != "" && !strings.Contains(strings.ToLower(cfg.ID), filter) && !strings.Contains(strings.ToLower(cfg.Provider), filter) {
+			continue
+		}
+		entry := map[string]any{
+			"id":             cfg.ID,
+			"owned_by":       cfg.Provider,
+			"modality":       m,
+			"context_window": cfg.ContextWindow,
+		}
+		if cfg.MaxOutputTokens > 0 {
+			entry["max_output_tokens"] = cfg.MaxOutputTokens
+		}
+		if len(cfg.Aliases) > 0 {
+			entry["aliases"] = cfg.Aliases
+		}
+		if len(cfg.SupportedSizes) > 0 {
+			entry["supported_sizes"] = cfg.SupportedSizes
+		}
+		if p := compactPricing(cfg); len(p) > 0 {
+			entry["pricing"] = p
+		}
+		if cfg.Deprecated {
+			entry["deprecated"] = true
+			entry["deprecated_note"] = cfg.DeprecatedNote
+		}
+		out = append(out, entry)
 	}
+	sort.Slice(out, func(i, j int) bool { return out[i]["id"].(string) < out[j]["id"].(string) })
 	data, _ := json.MarshalIndent(map[string]any{"count": len(out), "models": out}, "", "  ")
 	return toolText(string(data)), nil
 }
@@ -403,6 +548,249 @@ func (h *MCPHandler) toolWebSearch(ctx *fasthttp.RequestCtx, args json.RawMessag
 	return toolText(string(body)), nil
 }
 
+func (h *MCPHandler) toolGenerateVideo(ctx *fasthttp.RequestCtx, args json.RawMessage) (any, *rpcError) {
+	if h.video == nil {
+		return toolError("video generation is not enabled on this server"), nil
+	}
+	var a struct {
+		Model          string `json:"model"`
+		Prompt         string `json:"prompt"`
+		ImageURL       string `json:"image_url"`
+		EndImageURL    string `json:"end_image_url"`
+		VideoURL       string `json:"video_url"`
+		Duration       string `json:"duration"`
+		Resolution     string `json:"resolution"`
+		AspectRatio    string `json:"aspect_ratio"`
+		NegativePrompt string `json:"negative_prompt"`
+		Seed           *int   `json:"seed"`
+	}
+	if err := json.Unmarshal(args, &a); err != nil {
+		return nil, &rpcError{Code: -32602, Message: "Invalid arguments: " + err.Error()}
+	}
+	if a.Model == "" || a.Prompt == "" {
+		return toolError("model and prompt are required"), nil
+	}
+	reqBody := model.VideoGenerationRequest{
+		Model:          a.Model,
+		Prompt:         a.Prompt,
+		ImageURL:       a.ImageURL,
+		EndImageURL:    a.EndImageURL,
+		VideoURL:       a.VideoURL,
+		Duration:       model.VideoDuration(a.Duration),
+		Resolution:     a.Resolution,
+		AspectRatio:    a.AspectRatio,
+		NegativePrompt: a.NegativePrompt,
+		Seed:           a.Seed,
+	}
+	status, body := h.dispatch(ctx, h.video.HandleVideoGeneration, "/v1/videos/generations", reqBody)
+	switch {
+	case status == 200:
+		var resp model.VideoGenerationResponse
+		if err := json.Unmarshal(body, &resp); err == nil && resp.VideoURL != "" {
+			return toolText(resp.VideoURL), nil
+		}
+		return toolText(string(body)), nil
+	case status == 202:
+		return toolText(pendingJobText(body, "video")), nil
+	default:
+		return toolError(upstreamMessage(body)), nil
+	}
+}
+
+func (h *MCPHandler) toolCheckJob(ctx *fasthttp.RequestCtx, args json.RawMessage) (any, *rpcError) {
+	var a struct {
+		Kind  string `json:"kind"`
+		JobID string `json:"job_id"`
+	}
+	if err := json.Unmarshal(args, &a); err != nil {
+		return nil, &rpcError{Code: -32602, Message: "Invalid arguments: " + err.Error()}
+	}
+	if a.JobID == "" {
+		return toolError("job_id is required"), nil
+	}
+	var handler fasthttp.RequestHandler
+	var uri string
+	switch strings.ToLower(strings.TrimSpace(a.Kind)) {
+	case "", "video":
+		if h.video == nil {
+			return toolError("video jobs are not enabled on this server"), nil
+		}
+		handler, uri = h.video.HandleVideoGenerationJob, "/v1/videos/generations/"+a.JobID
+	case "text3d":
+		if h.textTo3D == nil {
+			return toolError("3D jobs are not enabled on this server"), nil
+		}
+		handler, uri = h.textTo3D.HandleTextTo3DGenerationJob, "/v1/3d/text-generations/"+a.JobID
+	case "model3d":
+		return toolError("kind=model3d is not supported; use kind=text3d or start via generate_3d"), nil
+	default:
+		return toolError("unknown kind: " + a.Kind), nil
+	}
+	status, body := h.dispatchRaw(ctx, handler, "GET", uri, "", nil)
+	if status != 200 {
+		return toolError(upstreamMessage(body)), nil
+	}
+	return toolText(string(body)), nil
+}
+
+func (h *MCPHandler) toolGenerateMusic(ctx *fasthttp.RequestCtx, args json.RawMessage) (any, *rpcError) {
+	if h.music == nil {
+		return toolError("music generation is not enabled on this server"), nil
+	}
+	var a struct {
+		Model    string `json:"model"`
+		Prompt   string `json:"prompt"`
+		Lyrics   string `json:"lyrics"`
+		Duration int    `json:"duration"`
+	}
+	if err := json.Unmarshal(args, &a); err != nil {
+		return nil, &rpcError{Code: -32602, Message: "Invalid arguments: " + err.Error()}
+	}
+	if a.Model == "" || (a.Lyrics == "" && a.Prompt == "") {
+		return toolError("model and prompt or lyrics are required"), nil
+	}
+	reqBody := model.MusicGenerationRequest{Model: a.Model, Prompt: a.Prompt, Lyrics: a.Lyrics, Duration: a.Duration, OutputFormat: "url"}
+	status, body := h.dispatch(ctx, h.music.HandleMusicGeneration, "/v1/music/generations", reqBody)
+	if status != 200 {
+		return toolError(upstreamMessage(body)), nil
+	}
+	var resp model.MusicGenerationResponse
+	if err := json.Unmarshal(body, &resp); err == nil && resp.Data != nil && resp.Data.Audio != "" {
+		if audio := audioDataURI(resp.Data.Audio); audio != "" {
+			return toolText(audio), nil
+		}
+	}
+	return toolText(string(body)), nil
+}
+
+func (h *MCPHandler) toolSpeak(ctx *fasthttp.RequestCtx, args json.RawMessage) (any, *rpcError) {
+	if h.speech == nil {
+		return toolError("text-to-speech is not enabled on this server"), nil
+	}
+	var a struct {
+		Model    string  `json:"model"`
+		Input    string  `json:"input"`
+		Voice    string  `json:"voice"`
+		Language string  `json:"language"`
+		Speed    float64 `json:"speed"`
+	}
+	if err := json.Unmarshal(args, &a); err != nil {
+		return nil, &rpcError{Code: -32602, Message: "Invalid arguments: " + err.Error()}
+	}
+	if a.Model == "" || a.Input == "" {
+		return toolError("model and input are required"), nil
+	}
+	reqBody := model.SpeechRequest{Model: a.Model, Input: a.Input, Voice: a.Voice, Language: a.Language, Speed: a.Speed}
+	status, body := h.dispatch(ctx, h.speech.HandleSpeechGeneration, "/v1/audio/speech", reqBody)
+	if status != 200 {
+		return toolError(upstreamMessage(body)), nil
+	}
+	var resp model.SpeechResponse
+	if err := json.Unmarshal(body, &resp); err == nil {
+		if resp.AudioURL != "" {
+			return toolText(resp.AudioURL), nil
+		}
+		if resp.Audio != "" {
+			format := resp.Format
+			if format == "" {
+				format = "mp3"
+			}
+			return toolText("data:audio/" + format + ";base64," + resp.Audio), nil
+		}
+	}
+	return toolText(string(body)), nil
+}
+
+func (h *MCPHandler) toolTranscribe(ctx *fasthttp.RequestCtx, args json.RawMessage) (any, *rpcError) {
+	if h.stt == nil {
+		return toolError("transcription is not enabled on this server"), nil
+	}
+	var a struct {
+		AudioBase64 string `json:"audio_base64"`
+		Filename    string `json:"filename"`
+		Model       string `json:"model"`
+		Language    string `json:"language"`
+		Prompt      string `json:"prompt"`
+	}
+	if err := json.Unmarshal(args, &a); err != nil {
+		return nil, &rpcError{Code: -32602, Message: "Invalid arguments: " + err.Error()}
+	}
+	audio, err := base64.StdEncoding.DecodeString(a.AudioBase64)
+	if err != nil {
+		audio, err = base64.RawStdEncoding.DecodeString(a.AudioBase64)
+	}
+	if err != nil || len(audio) == 0 {
+		return toolError("audio_base64 must be valid base64-encoded audio"), nil
+	}
+	filename := a.Filename
+	if filename == "" {
+		filename = "audio.mp3"
+	}
+
+	var buf bytes.Buffer
+	mw := multipart.NewWriter(&buf)
+	fw, ferr := mw.CreateFormFile("file", filename)
+	if ferr != nil {
+		return toolError("failed to encode audio upload"), nil
+	}
+	if _, ferr := fw.Write(audio); ferr != nil {
+		return toolError("failed to encode audio upload"), nil
+	}
+	for k, v := range map[string]string{"model": a.Model, "language": a.Language, "prompt": a.Prompt} {
+		if v != "" {
+			mw.WriteField(k, v)
+		}
+	}
+	mw.Close()
+
+	uri := "/v1/audio/transcriptions"
+	if a.Model == "" {
+		uri = "/v1/stt" // handler applies its default STT model on this path
+	}
+	status, body := h.dispatchRaw(ctx, h.stt.HandleTranscription, "POST", uri, mw.FormDataContentType(), buf.Bytes())
+	if status != 200 {
+		return toolError(upstreamMessage(body)), nil
+	}
+	var tr struct {
+		Text string `json:"text"`
+	}
+	if err := json.Unmarshal(body, &tr); err == nil && tr.Text != "" {
+		return toolText(tr.Text), nil
+	}
+	return toolText(string(body)), nil
+}
+
+func (h *MCPHandler) toolGenerate3D(ctx *fasthttp.RequestCtx, args json.RawMessage) (any, *rpcError) {
+	if h.textTo3D == nil {
+		return toolError("3D generation is not enabled on this server"), nil
+	}
+	var a struct {
+		Prompt      string `json:"prompt"`
+		ImageURL    string `json:"image_url"`
+		TextureSize int    `json:"texture_size"`
+	}
+	if err := json.Unmarshal(args, &a); err != nil {
+		return nil, &rpcError{Code: -32602, Message: "Invalid arguments: " + err.Error()}
+	}
+	if a.Prompt == "" && a.ImageURL == "" {
+		return toolError("prompt or image_url is required"), nil
+	}
+	reqBody := model.TextTo3DGenerationRequest{Prompt: a.Prompt, ImageURL: a.ImageURL, TextureSize: a.TextureSize}
+	status, body := h.dispatch(ctx, h.textTo3D.HandleTextTo3DGeneration, "/v1/3d/text-generations", reqBody)
+	switch {
+	case status == 200:
+		var resp model.TextTo3DGenerationResponse
+		if err := json.Unmarshal(body, &resp); err == nil && resp.ModelGLB.URL != "" {
+			return toolText(resp.ModelGLB.URL), nil
+		}
+		return toolText(string(body)), nil
+	case status == 202:
+		return toolText(pendingJobText(body, "text3d")), nil
+	default:
+		return toolError(upstreamMessage(body)), nil
+	}
+}
+
 // ---- internal dispatch ----
 
 // dispatch invokes an existing bare handler against a fresh sub-context that
@@ -413,11 +801,16 @@ func (h *MCPHandler) dispatch(parent *fasthttp.RequestCtx, handler fasthttp.Requ
 	if err != nil {
 		return 500, []byte(`{"error":{"message":"failed to encode request"}}`)
 	}
+	return h.dispatchRaw(parent, handler, "POST", uri, "application/json", body)
+}
 
+func (h *MCPHandler) dispatchRaw(parent *fasthttp.RequestCtx, handler fasthttp.RequestHandler, method, uri, contentType string, body []byte) (int, []byte) {
 	var req fasthttp.Request
-	req.Header.SetMethod("POST")
+	req.Header.SetMethod(method)
 	req.SetRequestURI(uri)
-	req.Header.SetContentType("application/json")
+	if contentType != "" {
+		req.Header.SetContentType(contentType)
+	}
 	req.SetBody(body)
 
 	var sub fasthttp.RequestCtx
@@ -475,4 +868,97 @@ func upstreamMessage(body []byte) string {
 		return e.Error.Message
 	}
 	return string(body)
+}
+
+// classifyModality maps a model config to the MCP tool domain that serves it.
+// Order matters: id markers beat pricing hints so e.g. pocket-tts (billed per
+// minute like STT) still classifies as speech.
+func classifyModality(id string, cfg *model.ModelConfig) string {
+	idl := strings.ToLower(id)
+	switch {
+	case strings.Contains(idl, "embed"):
+		return "embedding"
+	case strings.Contains(idl, "whisper"), strings.Contains(idl, "stt"),
+		strings.Contains(idl, "transcribe"), strings.Contains(idl, "transcription"):
+		return "transcription"
+	case strings.Contains(idl, "tts"), cfg.PricePer1MCharacters > 0:
+		return "speech"
+	case strings.Contains(idl, "music"), strings.Contains(idl, "sfx"):
+		return "music"
+	case strings.Contains(idl, "to-3d"), strings.Contains(idl, "3d"):
+		return "3d"
+	case cfg.PricePerVideo > 0, cfg.PricePerSecond > 0, cfg.PricePerSecondWithVideoInput > 0,
+		len(cfg.PricePerSecondByResolution) > 0,
+		strings.Contains(idl, "video"), strings.Contains(idl, "sora"), strings.Contains(idl, "veo"):
+		return "video"
+	case cfg.PricePerImage > 0, len(cfg.PricePerImageByResolution) > 0,
+		cfg.PricePerMegapixel > 0, cfg.PriceFirstMegapixel > 0, cfg.PriceExtraMegapixel > 0,
+		strings.Contains(idl, "image"):
+		return "image"
+	case strings.Contains(idl, "chronos"), strings.Contains(idl, "forecast"):
+		return "forecasting"
+	default:
+		return "chat"
+	}
+}
+
+// compactPricing returns only the non-zero rates so list_models stays compact
+// across 250+ models.
+func compactPricing(cfg *model.ModelConfig) map[string]any {
+	inputRate, cacheRate, outputRate := cfg.TokenRatesAt(time.Now())
+	p := make(map[string]any)
+	add := func(key string, v float64) {
+		if v > 0 {
+			p[key] = v
+		}
+	}
+	add("input_per_1m_tokens", inputRate)
+	add("input_cache_hit_per_1m_tokens", cacheRate)
+	add("output_per_1m_tokens", outputRate)
+	add("per_1m_characters", cfg.PricePer1MCharacters)
+	add("per_request", cfg.PricePerRequest)
+	add("per_image", cfg.PricePerImage)
+	add("per_megapixel", cfg.PricePerMegapixel)
+	add("per_input_image", cfg.PricePerInputImage)
+	add("per_video", cfg.PricePerVideo)
+	add("per_second", cfg.PricePerSecond)
+	add("per_minute", cfg.PricePerMinute)
+	add("per_hour", cfg.PricePerHour)
+	if len(cfg.PricePerImageByResolution) > 0 {
+		p["per_image_by_resolution"] = cfg.PricePerImageByResolution
+	}
+	if len(cfg.PricePerSecondByResolution) > 0 {
+		p["per_second_by_resolution"] = cfg.PricePerSecondByResolution
+	}
+	return p
+}
+
+// audioDataURI converts a provider audio payload (hex bytes, base64 or plain
+// URL) into a single referenceable value for MCP text content.
+func audioDataURI(payload string) string {
+	if strings.HasPrefix(payload, "http://") || strings.HasPrefix(payload, "https://") {
+		return payload
+	}
+	if raw, err := hex.DecodeString(payload); err == nil && len(raw) > 16 {
+		format := "mpeg"
+		if len(raw) > 4 && string(raw[:4]) == "RIFF" {
+			format = "wav"
+		}
+		return "data:audio/" + format + ";base64," + base64.StdEncoding.EncodeToString(raw)
+	}
+	if _, err := base64.StdEncoding.DecodeString(payload); err == nil && len(payload) > 32 {
+		return "data:audio/mpeg;base64," + payload
+	}
+	return ""
+}
+
+func pendingJobText(body []byte, kind string) string {
+	var job struct {
+		ID     string `json:"id"`
+		Status string `json:"status"`
+	}
+	if err := json.Unmarshal(body, &job); err != nil || job.ID == "" {
+		return string(body)
+	}
+	return fmt.Sprintf("Job %s is %s. Poll it with the check_job tool using kind=%q and job_id=%q.", job.ID, job.Status, kind, job.ID)
 }

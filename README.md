@@ -146,6 +146,9 @@ Provider key creation scripts live in `rotation/`. They create a new supported p
 - `POST /v1/search` -- Search API for Exa and Papers providers
 - `POST /auth/register` -- Register user
 - `POST /auth/login` -- Login
+- `GET /v1/evals/results` -- Live eval snapshot: `openpaths/auto` vs frontier models across coding, agentic, and creative SVG suites with TTFT, throughput, and cost. Rendered at `/evals`
+- `GET /v1/evals/status` -- Whether an eval sweep is currently running
+- `POST /v1/evals/run` -- Admin-only. Triggers one eval sweep (`cmd/run-evals` runs the same sweep from the CLI; cadence via `OPENPATHS_EVALS_INTERVAL`, disable with `OPENPATHS_EVALS_DISABLED=1`)
 - `GET /health` -- Health check
 
 ## Chat Parameters

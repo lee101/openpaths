@@ -43,6 +43,7 @@ import (
 	"github.com/openpaths/openpaths/internal/provider/google"
 	"github.com/openpaths/openpaths/internal/provider/groq"
 	"github.com/openpaths/openpaths/internal/provider/localwhisper"
+	"github.com/openpaths/openpaths/internal/provider/manifoldgen"
 	"github.com/openpaths/openpaths/internal/provider/minimax"
 	"github.com/openpaths/openpaths/internal/provider/mistral"
 	"github.com/openpaths/openpaths/internal/provider/netwrck"
@@ -207,6 +208,8 @@ func main() {
 			p = minimax.New(provCfg.APIKey)
 		case "netwrck":
 			p = netwrck.New(provCfg.APIKey, provCfg.BaseURL)
+		case "manifoldgen":
+			p = manifoldgen.New(provCfg.APIKey, provCfg.BaseURL)
 		case "cutedsl":
 			p = cutedsl.New(provCfg.APIKey, provCfg.BaseURL)
 		case "nous":
@@ -368,6 +371,11 @@ func main() {
 	modelProber.Start()
 	defer modelProber.Stop()
 
+	evalQ := queries.NewEvalQueries(database.Pool)
+	evalRunner := cron.NewEvalRunner(evalQ, apiKeyQ, userQ, creditQ, cfg.Models)
+	evalRunner.Start()
+	defer evalRunner.Stop()
+
 	var artIndex *artindex.Service
 	if localEmbedder != nil && os.Getenv("OPENPATHS_ART_INDEX_DISABLED") != "1" {
 		artIndex = artindex.New(os.Getenv("OPENPATHS_ZIMAGE_ART_INDEX_URL"), localEmbedder)
@@ -461,9 +469,8 @@ func main() {
 		ModelProbeQ:      modelProbeQ,
 		Transcribers:     transcribers,
 		Embedders:        embedders,
-		AutoEmotion:      autoEmotion,
-		CryptoSvc:        cryptoSvc,
-		Storage:          store,
+		EvalQ:            evalQ,
+		EvalRunner:       evalRunner,
 		StripeSvc:        stripe,
 		Discovery:        disc,
 		ModelMetaQ:       modelMetaQ,

@@ -29,19 +29,41 @@ interface ProviderExample {
 
 const EXAMPLES: Record<string, ProviderExample> = {
   manifoldgen: {
-    description: 'ManifoldGen is the first-party K-Fold video generator: a creator-focused ManifoldGen API for cinematic H3 video generation, with text-to-video and real gallery outputs.',
+    description: 'ManifoldGen is our first-party generative-media GPU studio: K-Fold/H3 cinematic video, Wan-Animate character animation, H3-control restyle, transparent-video background removal, MiniMax-Music3 songs, H3 SFX, H3 images and edits, TTS, and the multi-shot video dramatizer — all routed through one OpenPaths key.',
     endpoint: '/v1',
+    imageModel: 'h3-image',
     videoModel: 'kfold-video',
+    speechModel: 'mg-tts',
     provides: [
       {
         title: 'K-Fold video generation',
-        description: 'Generate cinematic clips through the ManifoldGen API. The K-Fold route is backed by ManifoldGen H3 video generation and supports prompt, aspect ratio, duration, steps, audio, and output format controls.',
+        description: 'Cinematic H3 clips with native audio via kfold-video: prompt, aspect ratio, duration, steps, first/last-frame keyframes, loop, and mp4/webm output controls.',
+      },
+      {
+        title: 'Wan-Animate character animation',
+        description: 'wan-animate transfers motion from a driving performance video onto a reference character image. Pass both image_url and video_url; duration 1–8s. wan-animate-fast and -xfast are exact latency tiers at 2x/4x price.',
+      },
+      {
+        title: 'H3-control restyle & background removal',
+        description: 'h3-control-video restyles a driving clip with pose/depth/canny/hed/mlsd/inpaint conditioning (control_type). remove-video-background keys any clip to alpha-transparent WebM.',
+      },
+      {
+        title: 'Music, SFX & speech',
+        description: 'mg-music renders MiniMax-Music3 full songs with vocals (prompt + optional lyrics, duration 30–300s) at POST /v1/music/generations. mg-sfx generates short sound effects from a prompt. mg-tts covers text-to-speech.',
+      },
+      {
+        title: 'H3 images & edits',
+        description: 'h3-image generates diffusion stills; h3-image-edit edits a source image with up to eight reference images through the standard /v1/images routes.',
+      },
+      {
+        title: 'Video dramatizer',
+        description: 'video-dramatize is an agent that turns one source clip plus a brief into a finished multi-shot vertical edit. Pass prompt, video_url, and duration as planned total edit seconds (8–100); runs are async jobs.',
       },
     ],
     notes: [
-      'Use kfold-video with /v1/videos/generations through OpenPaths.',
+      'Heavy lanes answer 202 with a job id — poll GET /v1/videos/generations/{job_id} or use the check_job MCP tool while rendering.',
       'ManifoldGen gallery examples on the homepage are real K-Fold/H3 outputs hosted by ManifoldGen.',
-      'For the provider-native creator workflow, visit manifoldgen.com.',
+      'For the provider-native creator workflow (Studio, gallery, $MANIFOLD pricing), visit manifoldgen.com.',
     ],
   },
   openai: {

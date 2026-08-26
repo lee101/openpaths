@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Database, ExternalLink } from 'lucide-react';
 import { Seo } from '../components/Seo';
 import { ArtificialAnalysisBenchmarkSection } from '../components/ArtificialAnalysisCharts';
+import { LiveEvalsSection } from '../components/LiveEvals';
 import {
-  EVALUATION_DEFINITIONS,
   artificialAnalysisModels,
+  EVALUATION_DEFINITIONS,
   artificialAnalysisSnapshot,
   displayScore,
   formatDollars,
@@ -24,7 +25,7 @@ export function Evals() {
     <>
       <Seo
         title="AI Model Evals, Pricing, and Speed | OpenPaths"
-        description="Artificial Analysis benchmark snapshot for comparing frontier AI model intelligence, coding, agentic performance, speed, and token pricing."
+        description="Live OpenPaths benchmarks: openpaths/auto head-to-head against GPT-5.x, Claude Opus, Gemini, DeepSeek, Grok, and GLM across coding, agentic tool use, creative SVG, speed, and cost-per-quality — plus an Artificial Analysis snapshot."
         path="/evals"
       />
       <div className="mx-auto max-w-7xl px-6 py-12">
@@ -53,6 +54,8 @@ export function Evals() {
             </a>
           </div>
         </section>
+
+        <LiveEvalsSection />
 
         <ArtificialAnalysisBenchmarkSection />
 

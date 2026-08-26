@@ -1014,6 +1014,33 @@ func (p *FalProvider) GenerateVideo(ctx context.Context, req *model.VideoGenerat
 		}
 	}
 
+	// Wan 3.0 takes an integer duration, an `audio` toggle instead of
+	// generate_audio, "adaptive" as its auto aspect-ratio sentinel, and an
+	// optional enable_thinking flag; the endpoint rejects the generic fields.
+	if strings.Contains(req.Model, "wan-3.0") {
+		delete(falReq, "generate_audio")
+		if req.GenerateAudio != nil {
+			falReq["audio"] = *req.GenerateAudio
+		}
+		switch d := strings.ToLower(strings.TrimSpace(string(req.Duration))); {
+		case d == "" || d == "auto":
+			falReq["duration"] = nil // smart duration: let the model pick from the prompt
+		default:
+			falReq["duration"] = intOrDefaultString(d, 5)
+		}
+		if falReq["aspect_ratio"] == "auto" {
+			falReq["aspect_ratio"] = "adaptive"
+		}
+		if req.EnableThinking != nil {
+			falReq["enable_thinking"] = *req.EnableThinking
+		}
+		// Wan 3.0 image-to-video names its frame inputs start/end_image_url.
+		if v, ok := falReq["image_url"]; ok {
+			falReq["start_image_url"] = v
+			delete(falReq, "image_url")
+		}
+	}
+
 	// FLUX video upscale takes a singular source video_url plus upscale
 	// controls; generation-only fields are rejected by the endpoint schema.
 	if strings.Contains(req.Model, "flux-video-upscale") {
@@ -1246,6 +1273,9 @@ func (p *FalProvider) falQueueRequestBases(modelID, requestID string) []string {
 	bases := []string{queueBase + "/" + strings.TrimLeft(modelID, "/") + "/requests/" + requestID}
 	if strings.Contains(modelID, "bytedance/seedance-2.0") {
 		bases = append(bases, queueBase+"/bytedance/seedance-2.0/requests/"+requestID)
+	}
+	if strings.Contains(modelID, "alibaba/wan-3.0/") {
+		bases = append(bases, queueBase+"/alibaba/wan-3.0/requests/"+requestID)
 	}
 	if strings.Contains(modelID, "alibaba/happy-horse/") {
 		bases = append(bases, queueBase+"/alibaba/happy-horse/requests/"+requestID)

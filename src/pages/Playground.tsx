@@ -237,6 +237,8 @@ const FALLBACK_MODELS: CatalogModel[] = [
   { id: 'seedance-2.0-fast-reference-to-video', label: 'Seedance 2.0 Fast Reference to Video', provider: 'Fal', pricing: { per_second: 0.26609, per_second_with_video_input: 0.15972 } },
   { id: 'seedance-2.0-reference-to-video', label: 'Seedance 2.0 Reference to Video', provider: 'Fal', pricing: { per_second: 0.33264, per_second_with_video_input: 0.19954 } },
   { id: 'alibaba/happy-horse/image-to-video', label: 'Happy Horse Image to Video', provider: 'Alibaba', pricing: { per_second: 0.28 } },
+  { id: 'wan-3.0-text-to-video', label: 'Wan 3.0 Text to Video', provider: 'Alibaba', pricing: { per_second: 0.2 } },
+  { id: 'wan-3.0-image-to-video', label: 'Wan 3.0 Image to Video', provider: 'Alibaba', pricing: { per_second: 0.2 } },
 ];
 
 const QUICK_PROMPTS: PromptExample[] = [

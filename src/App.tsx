@@ -30,6 +30,11 @@ import { Retexture3D } from './pages/Retexture3D';
 import { TextToImage } from './pages/TextToImage';
 import { ImageEdit } from './pages/ImageEdit';
 import { VideoExtension } from './pages/VideoExtension';
+import { ImageToVideo } from './pages/ImageToVideo';
+import { TextToVideo } from './pages/TextToVideo';
+import { CharacterAnimator } from './pages/CharacterAnimator';
+import { MusicGenerator } from './pages/MusicGenerator';
+import { RemoveVideoBackground } from './pages/RemoveVideoBackground';
 import { Tools } from './pages/Tools';
 import { Alternatives } from './pages/Alternatives';
 import { Evals } from './pages/Evals';
@@ -84,12 +89,17 @@ export default function App() {
           <Route path="compound" element={<Compound />} />
           <Route path="tools" element={<Tools />} />
           <Route path="image-to-3d" element={<ImageTo3D />} />
+          <Route path="text-to-video" element={<TextToVideo />} />
+          <Route path="image-to-video" element={<ImageToVideo />} />
           <Route path="text-to-3d" element={<TextTo3D />} />
           <Route path="rig-3d" element={<Rig3D />} />
           <Route path="retexture-3d" element={<Retexture3D />} />
           <Route path="text-to-image" element={<TextToImage />} />
           <Route path="image-edit" element={<ImageEdit />} />
           <Route path="video-extension" element={<VideoExtension />} />
+          <Route path="character-animator" element={<CharacterAnimator />} />
+          <Route path="music-generator" element={<MusicGenerator />} />
+          <Route path="remove-video-background" element={<RemoveVideoBackground />} />
           <Route path="search" element={<Search />} />
           <Route path="art" element={<ZImageArt />} />
           <Route path="art/i/:slug" element={<ArtDetail />} />
