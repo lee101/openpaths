@@ -70,16 +70,16 @@ func (h *SpeechHandler) HandleSpeechGeneration(ctx *fasthttp.RequestCtx) {
 	}
 	if req.AutoEmotion {
 		if h.emotions == nil {
-			writeError(ctx, 400, "invalid_request", "auto_emotion is not available on this server")
-			return
+			log.Printf("speech: auto_emotion requested but not configured on this server; continuing without expressive tags")
+		} else {
+			marked, err := h.emotions.Markup(ctx, req.Input)
+			if err != nil {
+				writeError(ctx, 500, "auto_emotion_error", err.Error())
+				return
+			}
+			req.Input = marked
+			req.Text = marked
 		}
-		marked, err := h.emotions.Markup(ctx, req.Input)
-		if err != nil {
-			writeError(ctx, 500, "auto_emotion_error", err.Error())
-			return
-		}
-		req.Input = marked
-		req.Text = marked
 	}
 
 	if prepaidGate(ctx, h.billing, req.Model, 0) {
