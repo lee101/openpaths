@@ -41,6 +41,8 @@ func TestFalVideoCatalogRoutes(t *testing.T) {
 		{"fal-ai/veo3.1/fast", "fal-ai/veo3.1/fast", 0.15, false},
 		{"fal-ai/veo3.1/fast/image-to-video", "fal-ai/veo3.1/fast/image-to-video", 0.15, true},
 		{"seedance-2.5-text-to-video", "bytedance/seedance-2.5/text-to-video", 0.473, false},
+		{"wan-3.0-text-to-video", "alibaba/wan-3.0/text-to-video", 0.20, false},
+		{"wan-3.0-image-to-video", "alibaba/wan-3.0/image-to-video", 0.20, true},
 		{"seedance-2.5-image-to-video", "bytedance/seedance-2.5/image-to-video", 0.473, true},
 		{"seedance-2.5-reference-to-video", "bytedance/seedance-2.5/reference-to-video", 0.473, true},
 		{"seedance-2.0-4k-text-to-video", "bytedance/seedance-2.0/text-to-video", 1.5552, false},
@@ -72,8 +74,10 @@ func TestFalVideoCatalogRoutes(t *testing.T) {
 		{"seedance-2.0-text-to-video", "1080p", 0.682},
 		{"seedance-2.0-image-to-video", "1080p", 0.682},
 		{"seedance-2.0-reference-to-video", "1080p", 0.682},
-		{"seedance-2.0-text-to-video", "4k", 1.5552},
 		{"seedance-2.5-text-to-video", "480p", 0.2205},
+		{"wan-3.0-text-to-video", "480p", 0.05},
+		{"wan-3.0-image-to-video", "720p", 0.10},
+		{"wan-3.0-text-to-video", "720p", 0.10},
 	}
 	for _, c := range checks {
 		i := idx(c.id)

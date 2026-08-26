@@ -253,7 +253,12 @@ func (h *VideoHandler) waitDurableVideoJob(jobID string, timeout time.Duration) 
 func (h *VideoHandler) runDurableVideoJob(jobID string, req model.VideoGenerationRequest, userID, apiKeyID string, app requestApp) {
 	atomic.AddInt64(&activeVideoJobs, 1)
 	defer atomic.AddInt64(&activeVideoJobs, -1)
-	bg, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	// video-dramatize rides the upstream dramatizer agent SLA (~30-60 min).
+	budget := 15 * time.Minute
+	if req.Model == "video-dramatize" {
+		budget = 60 * time.Minute
+	}
+	bg, cancel := context.WithTimeout(context.Background(), budget)
 	defer cancel()
 	_ = h.jobQ.MarkRunning(bg, jobID)
 	result := h.executeVideoGeneration(bg, req, userID, apiKeyID, app)
@@ -271,10 +276,15 @@ func (h *VideoHandler) runDurableVideoJob(jobID string, req model.VideoGeneratio
 
 func (h *VideoHandler) runVideoJob(jobID string, req model.VideoGenerationRequest, userID, apiKeyID string, app requestApp) {
 	atomic.AddInt64(&activeVideoJobs, 1)
+	// video-dramatize rides the upstream dramatizer agent SLA (~30-60 min).
+	budget := 15 * time.Minute
+	if req.Model == "video-dramatize" {
+		budget = 60 * time.Minute
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), budget)
+	defer cancel()
 	defer atomic.AddInt64(&activeVideoJobs, -1)
 	h.jobs.markRunning(jobID)
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
-	defer cancel()
 	h.jobs.complete(jobID, h.executeVideoGeneration(ctx, req, userID, apiKeyID, app))
 }
 

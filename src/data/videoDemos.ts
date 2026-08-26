@@ -64,6 +64,23 @@ export const VIDEO_DEMOS: Record<string, VideoDemo> = {
     aspectRatio: '16:9',
     generateAudio: false,
   },
+  'wan-3.0-text-to-video': {
+    prompt: 'A cinematic drone shot gliding over a winding mountain road at sunrise, mist drifting between pine ridges, warm light spilling across the valley, smooth continuous motion, no readable text.',
+    outputUrl: 'https://openpathsstatic.openpaths.io/static/uploads/playground/wan-3.0/wan-3.0-text-to-video-demo.mp4',
+    resolution: '1080p',
+    duration: '5',
+    aspectRatio: '16:9',
+    generateAudio: true,
+  },
+  'wan-3.0-image-to-video': {
+    prompt: 'Slow cinematic push-in as the perfume bottle rotates once on the pedestal, soft studio highlights sweeping across the glass, gentle particles drifting behind, no added text.',
+    outputUrl: 'https://openpathsstatic.openpaths.io/static/uploads/playground/wan-3.0/wan-3.0-image-to-video-demo.mp4',
+    resolution: '1080p',
+    duration: '5',
+    aspectRatio: '16:9',
+    generateAudio: true,
+    imageUrl: 'https://openpathsstatic.openpaths.io/static/uploads/playground/hidream-edit/perfume.jpg',
+  },
   'seedance-2.0-image-to-video': {
     prompt: 'Animate the supplied OpenPaths logo as a premium product mark: subtle camera push-in, soft light sweep across the surface, tiny particles moving around it, clean dark studio background, elegant motion, no added text.',
     outputUrl: 'https://openpathsstatic.openpaths.io/static/uploads/playground/seedance/seedance-image-to-video.mp4',

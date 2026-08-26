@@ -50,6 +50,19 @@ const BASE: VideoParamSpec = {
 // Family overrides keyed by a detector. First match wins (order matters).
 const FAMILIES: Array<{ test: RegExp; spec: Partial<VideoParamSpec> }> = [
   {
+    // Wan 3.0: resolution tiers 480p-1080p, smart or fixed 2-30s duration,
+    // native audio. No negative prompt / guidance / steps in its schema.
+    test: /^wan-3\.0/i,
+    spec: {
+      resolutions: ['480p', '720p', '1080p'],
+      durations: ['auto', ...Array.from({ length: 29 }, (_, index) => String(index + 2))],
+      aspectRatios: ['auto', '16:9', '4:3', '1:1', '3:4', '9:16'],
+      negativePrompt: false,
+      seed: true,
+      outputFormats: undefined,
+    },
+  },
+  {
     test: /^flux-3-video-draft$/i,
     spec: {
       resolutions: ['HD'],

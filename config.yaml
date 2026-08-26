@@ -129,6 +129,11 @@ providers:
     api_key: "${FAL_API_KEY}"
     enabled: true
 
+  - name: ebank
+    base_url: "https://ebank.nz"
+    api_key: "${EBANK_API_KEY}"
+    enabled: true
+
   - name: exa
     base_url: "https://api.exa.ai"
     api_key: "${EXA_API_KEY}"
@@ -1063,6 +1068,20 @@ models:
     provider_model_id: "h3-image-edit"
     price_per_image: 0.35
     aliases: ["manifoldgen-image-edit", "h3-edit"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  # Video dramatizer agent: one source clip plus a creative brief becomes a
+  # finished multi-shot edit. Billed at $0.10/s of planned edit time; a
+  # nominal six-shot, five-second-per-shot run lands near $3 upstream.
+  # Duration is required from the caller as the planned total edit seconds
+  # (8..100).
+  - id: "video-dramatize"
+    provider: manifoldgen
+    provider_model_id: "video-dramatize"
+    price_per_second: 0.10
+    aliases: ["video-dramatizer", "manifoldgen-dramatize", "dramatize"]
     supports_streaming: false
     supports_tools: false
     supports_vision: true

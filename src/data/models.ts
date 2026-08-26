@@ -2697,6 +2697,32 @@ const catalogModels: Model[] = [
     pricingType: 'second'
   },
   {
+    id: 'wan-3.0-text-to-video',
+    name: 'Wan 3.0 Text to Video',
+    provider: 'Alibaba',
+    description: 'Wan 3.0 text-to-video: enhanced motion smoothness and scene fidelity, native audio, optional reasoning pass, up to 30s.',
+    contextLength: 'N/A',
+    priceInput: 0.2,
+    priceOutput: 0,
+    tags: ['video generation', 'audio'],
+    released: '2026-08-24',
+    popularity: 72,
+    pricingType: 'second'
+  },
+  {
+    id: 'wan-3.0-image-to-video',
+    name: 'Wan 3.0 Image to Video',
+    provider: 'Alibaba',
+    description: 'Wan 3.0 image-to-video: animate a still (optionally to an end frame) with enhanced motion smoothness, native audio, up to 30s.',
+    contextLength: 'N/A',
+    priceInput: 0.2,
+    priceOutput: 0,
+    tags: ['video generation', 'vision', 'audio'],
+    released: '2026-08-24',
+    popularity: 72,
+    pricingType: 'second'
+  },
+  {
     id: 'fal-ai/wan/v2.7/text-to-video',
     name: 'Wan 2.7 Text to Video',
     provider: 'Wan',

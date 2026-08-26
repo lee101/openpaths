@@ -17,7 +17,6 @@ type ServiceKeyDeps struct {
 	CreditQ *queries.CreditQueries
 }
 
-
 // EnsureServiceKey guarantees a valid op- API key for a dedicated service user.
 // When the user does not exist it is created with an unusable random password;
 // credit is granted so requests pass BalanceCheck; stale keys from previous

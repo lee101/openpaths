@@ -446,4 +446,34 @@ test.describe('Public Spaces', () => {
     await expect(generatedCode).toContainText('"image_size": "landscape_16_9"');
     await expect(generatedCode).toContainText('"enable_safety_checker": false');
   });
+
+  test('text-to-video space exposes Wan 3.0 controls, pricing, snippets, and demo output', async ({ page }) => {
+    await page.goto('/text-to-video');
+
+    await expect(page.getByRole('heading', { name: /^Text to Video$/i })).toBeVisible();
+    await expect(page.getByText('$0.05 / s · 480p')).toBeVisible();
+    await expect(page.getByText('$0.20 / s · 1080p')).toBeVisible();
+
+    await expect(page.locator('textarea').first()).toHaveValue(/drone shot gliding|red panda|Describe/i);
+    await expect(page.getByRole('button', { name: /Generate video \(~\$\d+\.\d{2}\)/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'python' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'JS' })).toBeVisible();
+    await expect(page.locator('button').filter({ hasText: /^curl$/ }).last()).toBeVisible();
+    await expect(page.locator('video').last()).toHaveAttribute('src', /wan-3\.0-text-to-video-demo\.mp4/);
+  });
+
+  test('image-to-video space exposes Wan 3.0 frame controls, upload, pricing, and snippets', async ({ page }) => {
+    await page.goto('/image-to-video');
+
+    await expect(page.getByRole('heading', { name: /^Image to Video$/i })).toBeVisible();
+    await expect(page.getByText('Upload, paste, or drop a reference image')).toBeVisible();
+    await expect(page.locator('input[type="file"]').first()).toHaveAttribute('accept', 'image/*');
+    await expect(page.getByText('End frame URL (optional)')).toBeVisible();
+    await expect(page.getByText('$0.05 / s · 480p')).toBeVisible();
+    await expect(page.getByRole('button', { name: /Generate video \(~\$\d+\.\d{2}\)/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'python' })).toBeVisible();
+    await page.locator('button').filter({ hasText: /^curl$/ }).last().click();
+    await expect(page.locator('pre')).toContainText('/v1/videos/generations');
+    await expect(page.locator('pre')).toContainText('wan-3.0-image-to-video');
+  });
 });

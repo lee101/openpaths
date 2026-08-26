@@ -13,8 +13,14 @@ type Tool = {
 
 const TOOLS: Tool[] = [
   { name: 'chat', desc: 'Chat completion against any model (LLMs from OpenAI, Anthropic, Google, xAI, …).', args: 'model, prompt | messages, system?, max_tokens?, temperature?, reasoning_effort?' },
-  { name: 'list_models', desc: 'List available models with owner and context window.', args: 'filter?' },
+  { name: 'list_models', desc: 'List every model across all providers with modality, pricing summary and context window.', args: 'filter?, modality?' },
   { name: 'generate_image', desc: 'Generate an image from a prompt, returns image URL(s).', args: 'model, prompt, size?, n?' },
+  { name: 'generate_video', desc: 'Generate a video via first-party ManifoldGen models (kfold-video, wan-animate, video-dramatize, …) or third-party lanes. Returns the video URL or a job_id to poll.', args: 'model, prompt, image_url?, video_url?, duration?, aspect_ratio?' },
+  { name: 'check_job', desc: 'Poll an async video or 3D job until it completes.', args: 'kind (video | text3d), job_id' },
+  { name: 'generate_music', desc: 'Generate full songs (mg-music) or short sound effects (mg-sfx) from a prompt and optional lyrics. Returns audio URL or data URI.', args: 'model, prompt?, lyrics?, duration?' },
+  { name: 'text_to_speech', desc: 'Synthesize speech from text. Returns audio URL or base64 data URI.', args: 'model, input, voice?, language?, speed?' },
+  { name: 'transcribe_audio', desc: 'Transcribe base64-encoded audio to text (Whisper family and more).', args: 'audio_base64, filename?, model?, language?, prompt?' },
+  { name: 'generate_3d', desc: 'Generate a textured GLB model from a prompt or image URL. Returns the asset URL or a job_id to poll.', args: 'prompt | image_url, texture_size?' },
   { name: 'embed', desc: 'Create embedding vectors for text.', args: 'model, input' },
   { name: 'web_search', desc: 'Search the web and return ranked results.', args: 'query, numResults?' },
 ];
@@ -92,7 +98,8 @@ export function Mcp() {
           </div>
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">MCP Server</h1>
           <p className="text-white/60 max-w-3xl font-light leading-relaxed">
-            Every OpenPaths model — chat, image, embeddings and web search — exposed over the{' '}
+            Every OpenPaths model — chat, image, video, music, speech, transcription, 3D,
+            embeddings and web search — exposed over the{' '}
             <span className="text-white">Model Context Protocol</span>. Point any MCP client at one
             URL, authenticate with your secret key, and your agents get the whole catalog with
             automatic routing, fallback and billing.
@@ -182,7 +189,7 @@ export function Mcp() {
         </div>
 
         <div className="border border-white/20 bg-white/[0.05] rounded-xl p-5 text-sm text-white/50 font-light">
-          Pay-as-you-go billing applies per call to paid tools (chat, image, embed, web_search), using
+            Pay-as-you-go billing applies per call to paid tools, using
           the same credits as the API. <Link to="/pricing" className="underline hover:text-white/70">See pricing</Link>.
           BYOK provider keys are honored automatically when configured in your{' '}
           <Link to="/account" className="underline hover:text-white/70">account</Link>.

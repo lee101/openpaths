@@ -21,7 +21,7 @@ export const providers: Provider[] = [
     slug: 'manifoldgen',
     name: 'ManifoldGen',
     url: 'https://manifoldgen.com',
-    description: 'First-party K-Fold video generation through the ManifoldGen API, with real H3 video examples and a creator-focused workflow for cinematic motion.',
+    description: 'First-party generative media studio: K-Fold H3 cinematic video, Wan-Animate character animation, H3-control video restyle, transparent background removal, MiniMax-Music3 songs, SFX, H3 images and edits, and TTS.',
     featured: true,
     logo: 'https://manifoldgenstatic.manifoldgen.com/static/brand/logo-64.webp'
   },

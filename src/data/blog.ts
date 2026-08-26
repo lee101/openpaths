@@ -14,6 +14,109 @@ export interface BlogPost {
 
 export const posts: BlogPost[] = [
   {
+    slug: 'wan-3-text-to-video-and-image-to-video-api',
+    title: 'Wan 3.0 Text-to-Video and Image-to-Video Through One API',
+    excerpt: 'Wan 3.0 renders up-to-30-second clips with native audio for $0.05–$0.20 per second depending on resolution. How its text-to-video and image-to-video endpoints work through OpenPaths: inputs, smart duration, end frames, and copy-paste code.',
+    date: '2026-08-24',
+    author: 'OpenPaths Team',
+    readTime: '6 min',
+    tags: ['video generation', 'wan', 'image-to-video', 'text-to-video', 'fal'],
+    content: `Wan 3.0 is Alibaba's latest video generation model family, built around three things that matter for production clips: motion smoothness, scene fidelity over long takes, and native audio. Both directions — text-to-video and image-to-video — are now live on OpenPaths, billable per second through the same \`op-\` key you already use for chat, image, and speech.
+
+## What Wan 3.0 actually offers
+
+- **Up to 30 seconds per take.** Pin an exact length between 2s and 30s, or leave duration on *smart* and let the model pick a length that fits the prompt.
+- **Native audio.** Generated sound comes out of the same pass — no separate lipsync or foley step.
+- **Optional reasoning pass.** An \`enable_thinking\` flag lets the model plan complex shots before rendering.
+- **Three resolution tiers.** 480p, 720p, or 1080p, priced separately so you never pay 1080p rates for drafts.
+- **First and last frame control** on the image-to-video endpoint: give it a still (optionally two) plus a motion hint.
+
+## Pricing
+
+Fal charges per second of output, by resolution tier. We pass the tiers straight through:
+
+| Resolution | Price per second | 5s clip |
+|---|---|---|
+| 480p | $0.05 | $0.25 |
+| 720p | $0.10 | $0.50 |
+| 1080p | $0.20 | $1.00 |
+
+A typical workflow bills far less than the headline: draft in 480p until composition is right, then re-render winners at 1080p. A maximum 30-second take at the highest tier is $6.00 — compare Seedance 2.5 at $0.473/s ($14.19 for the same take) or Veo 3.1 at $0.40/s ($12.00).
+
+## Try it without writing code
+
+Two new spaces run the endpoints directly in the browser:
+
+- [/text-to-video](/text-to-video) — prompt, resolution, aspect ratio, duration, audio, seed, reasoning toggle, live cost estimate.
+- [/image-to-video](/image-to-video) — upload or paste a start frame, add an optional end frame, describe the motion.
+
+Every control maps 1:1 to an API field, and each page shows the exact request body as Python, JavaScript, or cURL.
+
+## Call it from code
+
+One endpoint handles both models. Text-to-video:
+
+\`\`\`bash
+curl "https://openpaths.io/v1/videos/generations" \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer op-..." \\
+  -d '{
+    "model": "wan-3.0-text-to-video",
+    "prompt": "A red panda walking through a bamboo forest at sunrise",
+    "resolution": "720p",
+    "duration": "5",
+    "aspect_ratio": "16:9",
+    "generate_audio": true
+  }'
+\`\`\`
+
+Image-to-video swaps the model ID and adds a start frame (an optional end frame turns it into a first→last interpolation):
+
+\`\`\`json
+{
+  "model": "wan-3.0-image-to-video",
+  "prompt": "Slow cinematic push-in, mist drifting between the ridges",
+  "image_url": "https://example.com/first.jpg",
+  "end_image_url": "https://example.com/last.jpg"
+}
+\`\`\`
+
+Requests return a job id; poll \`GET /v1/videos/generations/{id}\` until \`status\` is \`completed\` and read \`video_url\`. The response includes the actual rendered duration and the seed used, so any clip is reproducible.
+
+## Input notes worth knowing
+
+1. **Smart duration sends null upstream**, not a guessed number — the model decides from your prompt, and you pay for what it picks.
+2. **Aspect ratio \`adaptive\`** lets the model choose orientation; pin \`16:9\`, \`4:3\`, \`1:1\`, \`3:4\`, or \`9:16\` when the placement is fixed.
+3. **The reasoning pass costs nothing extra** but trades latency for prompt adherence on complex choreography — off by default.
+4. **Audio is on by default**; set \`generate_audio: false\` for silent b-roll.
+
+## Where Wan 3.0 fits in the catalog
+
+Wan 3.0 slots under Seedance 2.5 and Kling 3.0 on quality-of-motion, well above last generation's Wan 2.7, at a fraction of the per-second price. For cheap iteration loops there is no cheaper per-second rate on the [models page](/models) right now. Full parameter reference lives on the model pages: [Wan 3.0 Text to Video](/models/wan-3.0-text-to-video) and [Wan 3.0 Image to Video](/models/wan-3.0-image-to-video).
+
+## FAQ
+
+### How much does a Wan 3.0 video cost?
+
+$0.05/s at 480p, $0.10/s at 720p, $0.20/s at 1080p. A 5-second 720p clip is $0.50; the maximum 30-second 1080p take is $6.00.
+
+### What is smart duration?
+
+Leave duration as "auto" and Wan 3.0 chooses a length between 2 and 30 seconds based on the prompt and reference media. You are billed for the seconds it actually renders.
+
+### Does Wan 3.0 generate audio?
+
+Yes — speech-free ambient audio and sound effects come natively in the same render pass, controlled by one boolean.
+
+### Can I animate a photo?
+
+That is the image-to-video endpoint: supply \`start_image_url\` (upload, paste a URL, or drop a file in the space page), optionally \`end_image_url\`, and a short motion prompt.
+
+### Which SDK works?
+
+Any OpenAI-compatible client — point it at \`https://openpaths.io/v1\`. The video jobs API is plain REST, so curl and fetch work equally well.`,
+  },
+  {
     slug: 'best-ai-api-for-coding-agents',
     title: 'The Best AI API for Coding Agents in 2026',
     excerpt: 'What makes the best AI API for coding agents in 2026: reliable tool calling, long context, low time-to-first-token, cost per agent-hour, and automatic failover — plus how routed APIs beat any single vendor.',

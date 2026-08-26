@@ -41,6 +41,7 @@ func evalToolSet() []model.Tool {
 		}},
 	}
 }
+
 type evalCase struct {
 	ID       string
 	Suite    model.EvalSuite
@@ -205,8 +206,8 @@ func evalCases() []evalCase {
 					return 0
 				}
 				checks := []bool{
-				doc.has("rect", func(e svgElement) bool { return strings.Contains(e.attr("fill"), "blue") }),
-				doc.has("circle", func(e svgElement) bool { return strings.Contains(e.attr("fill"), "red") }),
+					doc.has("rect", func(e svgElement) bool { return strings.Contains(e.attr("fill"), "blue") }),
+					doc.has("circle", func(e svgElement) bool { return strings.Contains(e.attr("fill"), "red") }),
 					strings.TrimSpace(doc.rootAttr("viewBox")) == "0 0 200 200",
 				}
 				return fraction(checks)
@@ -239,7 +240,7 @@ func evalCases() []evalCase {
 				}
 				n := len(heights)
 				big, mid, small := heights[n-1], heights[n-2], heights[n-3]
-				ratioMid := mid / big   // expect ~0.5625 (45/80)
+				ratioMid := mid / big     // expect ~0.5625 (45/80)
 				ratioSmall := small / big // expect 0.25 (20/80)
 				checks := []bool{
 					within(ratioMid, 45.0/80.0, 0.15),
@@ -325,7 +326,7 @@ func normalizedAnswer(accepted []string) func(string, []model.ToolCall) float64 
 			got = normalizeForMatch(fmt.Sprint(obj["answer"]))
 		}
 		for _, want := range accepted {
-			if got == want || strings.HasSuffix(got, want) || strings.HasSuffix(want, got) {
+			if got == want || strings.Contains(got, want) {
 				return 1
 			}
 		}
@@ -342,25 +343,19 @@ func gradeRegex(content string, _ []model.ToolCall) float64 {
 	if pattern == "" {
 		return 0
 	}
-	re, err := regexp.Compile(pattern)
+	reFull, err := regexp.Compile("^(?:" + pattern + ")$")
 	if err != nil {
 		return 0
 	}
-	matchAll := func(list []string) bool {
-		for _, s := range list {
-			full := "^(?:" + pattern + ")$"
-			reFull, ferr := regexp.Compile(full)
-			if ferr != nil || !reFull.MatchString(s) {
-				return false
-			}
+	for _, s := range []string{"cat", "car", "cab"} {
+		if !reFull.MatchString(s) {
+			return 0
 		}
-		return true
 	}
-	if !matchAll([]string{"cat", "car", "cab"}) {
-		return 0
-	}
-	if re.MatchString("cap") || re.MatchString("ca") || re.MatchString("cart") || re.MatchString("dog") {
-		return 0
+	for _, s := range []string{"cap", "ca", "cart", "dog", "cats"} {
+		if reFull.MatchString(s) {
+			return 0
+		}
 	}
 	return 1
 }
