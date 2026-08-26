@@ -1616,6 +1616,11 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/models/minimax-h3-max-image-to-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/models/hailuo-2.3</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>

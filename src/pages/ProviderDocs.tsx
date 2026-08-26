@@ -245,7 +245,7 @@ const EXAMPLES: Record<string, ProviderExample> = {
       '`seedance-2.0-fast-text-to-video` accepts prompt, resolution, duration, aspect_ratio, generate_audio, seed, and end_user_id.',
       '`seedance-2.0-image-to-video` accepts image_url plus optional end_image_url for start/end frame control.',
       '`seedance-2.0-reference-to-video` and `seedance-2.0-fast-reference-to-video` also accept image_urls, video_urls, and audio_urls. Reference them in prompts as @Image1, @Video1, and @Audio1.',
-      '`minimax-h3-max` accepts text-to-video and image-to-video requests for 5–15 second clips at 480P or 768P, with native audio and prompt expansion defaulting to balanced.',
+      '`minimax-h3-max` accepts text-to-video and image-to-video requests for 5–15 second clips at 480P or 768P, with native audio and prompt expansion defaulting to balanced. Use `minimax-h3-max-image-to-video` for the dedicated fal image-to-video route.',
       'OpenPaths exposes these through `/v1/videos/generations`; you do not call Fal directly or send a Fal key.',
     ],
   },

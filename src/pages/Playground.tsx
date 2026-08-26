@@ -232,6 +232,7 @@ const FALLBACK_MODELS: CatalogModel[] = [
   { id: 'gemini-omni-flash-preview', label: 'Gemini Omni Flash Preview', provider: 'Google', pricing: { per_second: 0.10136 } },
   { id: 'minimax-h3', label: 'MiniMax H3', provider: 'MiniMax', pricing: { per_second: 0.13 } },
   { id: 'minimax-h3-max', label: 'MiniMax H3 Max', provider: 'Fal', pricing: { per_second: 0.08 } },
+  { id: 'minimax-h3-max-image-to-video', label: 'MiniMax H3 Max Image to Video', provider: 'Fal', pricing: { per_second: 0.08 } },
   { id: 'seedance-2.0-fast-text-to-video', label: 'Seedance 2.0 Fast Text to Video', provider: 'Fal', pricing: { per_second: 0.26609 } },
   { id: 'seedance-2.0-text-to-video', label: 'Seedance 2.0 Text to Video', provider: 'Fal', pricing: { per_second: 0.33374 } },
   { id: 'seedance-2.0-image-to-video', label: 'Seedance 2.0 Image to Video', provider: 'Fal', pricing: { per_second: 0.33264 } },

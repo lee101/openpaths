@@ -58,6 +58,14 @@ const VIDEO_MODELS: VideoPrice[] = [
     notes: 'Fal post-trained text-to-video and image-to-video with native audio; $0.05/s at 480p and $0.08/s at 768p.',
   },
   {
+    id: 'minimax-h3-max-image-to-video',
+    name: 'MiniMax H3 Max Image to Video',
+    provider: 'Fal',
+    unitPrice: 0.08,
+    unitLabel: '/ second',
+    notes: 'Dedicated image-to-video endpoint with optional first/last frames; $0.05/s at 480p and $0.08/s at 768p.',
+  },
+  {
     id: 'auto-video',
     name: 'Auto Video',
     provider: 'OpenPaths',

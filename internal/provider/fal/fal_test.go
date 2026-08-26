@@ -705,7 +705,7 @@ func TestGenerateVideo_MiniMaxH3MaxSelectsTextAndImageEndpoints(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, err = p.GenerateVideo(context.Background(), &model.VideoGenerationRequest{
-		Model: "minimax/h3-max/text-to-video", Prompt: "animate this portrait", ImageURL: "https://example.com/start.jpg",
+		Model: "minimax/h3-max/image-to-video", Prompt: "animate this portrait", ImageURL: "https://example.com/start.jpg",
 		EndImageURL: "https://example.com/end.jpg", Duration: "10", Resolution: "768P",
 		AspectRatio: "9:16", PromptExpansionMode: "quality",
 	})

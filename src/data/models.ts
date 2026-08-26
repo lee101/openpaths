@@ -2245,7 +2245,21 @@ const catalogModels: Model[] = [
     priceInput: 0.08,
     priceOutput: 0,
     tags: ['video generation', 'text-to-video', 'image-to-video', 'audio'],
-    aliases: ['h3-max', 'minimax-h3-max-text-to-video', 'minimax-h3-max-image-to-video'],
+    aliases: ['h3-max', 'minimax-h3-max-text-to-video'],
+    released: '2026-08-26',
+    popularity: 75,
+    pricingType: 'second'
+  },
+  {
+    id: 'minimax-h3-max-image-to-video',
+    name: 'MiniMax H3 Max Image to Video',
+    provider: 'Fal',
+    description: 'Dedicated H3 Max image-to-video generation from a first frame, with optional last frame, native audio, prompt expansion, and 5–15 second output at 480P or 768P.',
+    contextLength: 'N/A',
+    priceInput: 0.08,
+    priceOutput: 0,
+    tags: ['video generation', 'image-to-video', 'audio', 'vision'],
+    aliases: ['minimax/h3-max/image-to-video', 'h3-max-image-to-video'],
     released: '2026-08-26',
     popularity: 75,
     pricingType: 'second'

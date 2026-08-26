@@ -114,6 +114,18 @@ const FAMILIES: Array<{ test: RegExp; spec: Partial<VideoParamSpec> }> = [
     },
   },
   {
+    test: /^minimax-h3-max-image-to-video$/i,
+    spec: {
+      resolutions: ['480P', '768P'],
+      durations: ['5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15'],
+      aspectRatios: ['16:9'],
+      generateAudio: false,
+      negativePrompt: false,
+      seed: true,
+      outputFormats: ['mp4', 'webm'],
+    },
+  },
+  {
     test: /gemini-omni/i,
     spec: {
       resolutions: ['720p'],
