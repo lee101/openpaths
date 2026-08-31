@@ -180,8 +180,8 @@ models:
   - id: "openpaths/auto"
     provider: google
     provider_model_id: "gemini-3.7-flash"
-    input_price_per_1m: 0.375
-    output_price_per_1m: 1.875
+    input_price_per_1m: 0.75
+    output_price_per_1m: 3.75
     aliases: ["auto", "auto-chat", "auto-text", "openpaths-auto"]
     context_window: 1000000
     max_output_tokens: 64000
@@ -189,15 +189,16 @@ models:
     supports_tools: true
     supports_vision: true
     fallback_models:
-      - "gpt-5.5"
+      - "gpt-5.6-terra"
+      - "glm-5.3"
+      - "gpt-5.6-sol"
       - "deepseek-v4-pro"
       - "gpt-5-chat-latest"
       - "deepseek-v4-flash"
       - "deepseek-chat"
       - "claude-sonnet-5"
       - "grok-4.6"
-      - "gemini-2.5-pro"
-      - "or/gpt-5.5"
+      - "or/gpt-5.6-terra"
 
   # Cheap default for ordinary chat; hard coding/math/science prompts can
   # escalate through the fallback chain without making every chat expensive.
@@ -242,7 +243,7 @@ models:
     input_price_per_1m: 0.20
     output_price_per_1m: 1.20
     aliases: ["auto-cheap", "auto-easy-task", "auto-easy", "openpaths-auto-cheap"]
-    context_window: 400000
+    context_window: 1050000
     max_output_tokens: 128000
     supports_streaming: true
     supports_tools: true
@@ -252,7 +253,7 @@ models:
       - "deepseek-v4-flash"
       - "gpt-4o-mini"
       - "claude-haiku-4-5-20251001"
-      - "or/gpt-5.4-nano"
+      - "or/gpt-5.6-luna"
 
   - id: "openpaths/auto-fast"
     provider: deepseek
@@ -267,16 +268,16 @@ models:
     supports_vision: true
     fallback_models:
       - "nvidia/deepseek-v4-pro"
-      - "gemini-2.5-flash"
+      - "gemini-3.7-flash"
       - "gemini-3.1-flash-lite"
-      - "gpt-5.4-nano"
+      - "gpt-5.6-luna"
       - "claude-haiku-4-5-20251001"
 
   - id: "openpaths/auto-code"
     provider: openai
-    provider_model_id: "gpt-5.5"
-    input_price_per_1m: 5.00
-    output_price_per_1m: 30.00
+    provider_model_id: "gpt-5.6-terra"
+    input_price_per_1m: 2.00
+    output_price_per_1m: 12.00
     aliases: ["auto-code", "auto-medium-task", "auto-medium", "openpaths-auto-code"]
     context_window: 1050000
     max_output_tokens: 128000
@@ -287,20 +288,22 @@ models:
       # Free stealth route absorbs failures before paid fallbacks; it carries
       # the everyday share of auto-code traffic via the autorouter.
       - "openpaths/stealth/ox-alpha"
+      - "gpt-5.6-sol"
       - "gpt-5-codex"
-      - "gpt-5.4-mini"
-      - "gemini-3.5-flash"
+      - "gemini-3.7-flash"
+      - "glm-5.3"
+      - "gpt-5.6-luna"
       - "claude-sonnet-5"
       - "deepseek-v4-flash"
-      - "or/gpt-5.5"
+      - "or/gpt-5.6-terra"
 
   - id: "openpaths/auto-reasoning"
     provider: openai
-    provider_model_id: "gpt-5.4-mini"
-    input_price_per_1m: 0.75
-    output_price_per_1m: 4.50
+    provider_model_id: "gpt-5.6-terra"
+    input_price_per_1m: 2.00
+    output_price_per_1m: 12.00
     aliases: ["auto-reasoning", "auto-think", "auto-think-task", "autothink", "auto-hard-task", "auto-hard", "auto-opus", "openpaths-auto-reasoning"]
-    context_window: 400000
+    context_window: 1050000
     max_output_tokens: 128000
     supports_streaming: true
     supports_tools: true
@@ -309,19 +312,19 @@ models:
       # Free stealth with mandatory reasoning absorbs failures before paid
       # frontier fallbacks.
       - "openpaths/stealth/ox-alpha"
-      - "gemini-3.5-flash"
-      - "gpt-5.5"
+      - "gemini-3.7-flash"
+      - "gpt-5.6-sol"
+      - "glm-5.3"
       - "gpt-5-codex"
       - "deepseek-v4-pro"
-      - "o3"
       - "claude-sonnet-5"
-      - "or/gpt-5.5"
+      - "or/gpt-5.6-terra"
 
   - id: "openpaths/auto-vision"
     provider: google
-    provider_model_id: "gemini-2.5-flash"
-    input_price_per_1m: 0.30
-    output_price_per_1m: 2.50
+    provider_model_id: "gemini-3.7-flash"
+    input_price_per_1m: 0.75
+    output_price_per_1m: 3.75
     aliases: ["auto-vision", "openpaths-auto-vision"]
     context_window: 1000000
     max_output_tokens: 65536
@@ -329,9 +332,9 @@ models:
     supports_tools: true
     supports_vision: true
     fallback_models:
-      - "gemini-3.5-flash"
+      - "gemini-3.7-flash"
       - "gemini-3.1-flash-lite"
-      - "gpt-5.4-mini"
+      - "gpt-5.6-luna"
       - "glm-4.6v-flash"
       - "pixtral-large-latest"
 
@@ -1130,8 +1133,8 @@ models:
   - id: "gpt-5.6-sol"
     provider: openai
     provider_model_id: "gpt-5.6-sol"
-    input_price_per_1m: 5.00
-    output_price_per_1m: 30.00
+    input_price_per_1m: 4.00
+    output_price_per_1m: 20.00
     aliases: ["gpt5.6-sol", "gpt56-sol", "sol"]
     context_window: 1050000
     max_output_tokens: 128000
@@ -1139,8 +1142,8 @@ models:
     supports_tools: true
     supports_vision: true
     fallback_models:
-      - "gpt-5.5"
       - "gpt-5.6-terra"
+      - "gemini-3.7-flash"
       - "or/gpt-5.6-sol"
 
   - id: "gpt-5.6-terra"
@@ -1178,8 +1181,8 @@ models:
   - id: "gpt-5.6"
     provider: openai
     provider_model_id: "gpt-5.6-terra"
-    input_price_per_1m: 5.00
-    output_price_per_1m: 30.00
+    input_price_per_1m: 2.00
+    output_price_per_1m: 12.00
     aliases: ["gpt56"]
     context_window: 1050000
     max_output_tokens: 128000
@@ -1903,8 +1906,8 @@ models:
   - id: "gemini-3.1-flash-tts-preview"
     provider: google
     provider_model_id: "gemini-3.1-flash-tts-preview"
-    input_price_per_1m: 1.00
-    output_price_per_1m: 20.00
+    input_price_per_1m: 1.20
+    output_price_per_1m: 24.00
     aliases: ["gemini-flash-tts", "google-tts", "gemini-tts"]
     supports_streaming: false
     supports_tools: false
@@ -2801,6 +2804,20 @@ models:
     supports_streaming: true
     supports_tools: true
     supports_vision: true
+
+  - id: "glm-5.3"
+    provider: zai
+    provider_model_id: "glm-5.3"
+    input_price_per_1m: 1.40
+    input_cache_hit_price_per_1m: 0.26
+    output_price_per_1m: 4.40
+    aliases: ["zai/glm-5.3", "glm53", "glm-5.3-latest"]
+    context_window: 1048576
+    max_output_tokens: 131072
+    default_reasoning_effort: "max"
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
 
   - id: "zai/glm-5"
     provider: zai

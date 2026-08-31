@@ -181,7 +181,7 @@ func TestDefaultRoutingTables_EasyTaskIncludesRequestedProviders(t *testing.T) {
 		"gpt-5.4-nano",
 		"deepseek-v4-flash",
 		"gemini-3.1-flash-lite",
-		"gemini-2.5-flash",
+		"gemini-3.7-flash",
 	} {
 		if !got[want] {
 			t.Fatalf("easy-task routing table missing %q", want)
@@ -247,8 +247,8 @@ func TestAutoRouter_ThinkTaskRoutesHardPromptToHighThinking(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ResolveAuto() error = %v", err)
 	}
-	if got.ModelID != "gemini-3.5-flash" {
-		t.Fatalf("ModelID = %q, want %q", got.ModelID, "gemini-3.5-flash")
+	if got.ModelID != "gemini-3.7-flash" {
+		t.Fatalf("ModelID = %q, want %q", got.ModelID, "gemini-3.7-flash")
 	}
 	if got.ReasoningEffort != "high" {
 		t.Fatalf("ReasoningEffort = %q, want %q", got.ReasoningEffort, "high")
@@ -280,8 +280,8 @@ func TestAutoRouter_ThinkTaskRoutes3DSimulationToHighThinking(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ResolveAuto() error = %v", err)
 	}
-	if got.ModelID != "gemini-3.5-flash" {
-		t.Fatalf("ModelID = %q, want %q", got.ModelID, "gemini-3.5-flash")
+	if got.ModelID != "gemini-3.7-flash" {
+		t.Fatalf("ModelID = %q, want %q", got.ModelID, "gemini-3.7-flash")
 	}
 	if got.ReasoningEffort != "high" {
 		t.Fatalf("ReasoningEffort = %q, want %q", got.ReasoningEffort, "high")
@@ -304,6 +304,27 @@ func TestDefaultRoutingTables_ThinkTaskIncludesAllReasoningLevels(t *testing.T) 
 
 type stubEmbedder struct {
 	vectors map[string][]float64
+}
+
+func TestSelectAutoEntry_UsesWeightedNeighborConsensusForAmbiguousPrompt(t *testing.T) {
+	query := []float64{1, 0}
+	entries := []AutoEntry{
+		{ModelID: "gpt-5.6-sol", ReasoningEffort: "high", Embedding: []float64{0.9553, 0.2955}},
+		{ModelID: "gpt-5.6-luna", ReasoningEffort: "low", Embedding: []float64{0.9394, 0.3429}},
+		{ModelID: "gpt-5.6-luna", ReasoningEffort: "low", Embedding: []float64{0.9359, 0.3523}},
+		{ModelID: "gpt-5.6-luna", ReasoningEffort: "low", Embedding: []float64{0.9323, 0.3616}},
+	}
+
+	got, bestSim, confidence, policy := selectAutoEntry(entries, query, 4)
+	if got.ModelID != "gpt-5.6-luna" {
+		t.Fatalf("weighted consensus model = %q, want gpt-5.6-luna", got.ModelID)
+	}
+	if policy != "weighted-knn" {
+		t.Fatalf("policy = %q, want weighted-knn", policy)
+	}
+	if bestSim <= 0.95 || confidence <= 0.5 {
+		t.Fatalf("bestSim/confidence = %.4f/%.4f, want a close but decisive neighborhood", bestSim, confidence)
+	}
 }
 
 func (s *stubEmbedder) Name() string { return "stub" }
@@ -360,7 +381,7 @@ func TestMaybeResolveAuto_UsesNamedTierWhenModalityIsEmpty(t *testing.T) {
 func TestMaybeResolveAutoWithTier_HardTierOverridesNonAutoModel(t *testing.T) {
 	r := newTestRouter([]model.ModelConfig{
 		{ID: "gpt-4o", Provider: "openai"},
-		{ID: "gemini-3.5-flash", Provider: "google"},
+		{ID: "gemini-3.7-flash", Provider: "google"},
 	}, "openai", "google", "anthropic")
 
 	r.SetAutoRouter(&AutoRouter{
@@ -371,7 +392,7 @@ func TestMaybeResolveAutoWithTier_HardTierOverridesNonAutoModel(t *testing.T) {
 		},
 		tables: map[string][]AutoEntry{
 			"reasoning-task": {
-				{ModelID: "gemini-3.5-flash", ReasoningEffort: "medium", Embedding: []float64{1, 0}},
+				{ModelID: "gemini-3.7-flash", ReasoningEffort: "medium", Embedding: []float64{1, 0}},
 			},
 		},
 		ready: true,
@@ -379,8 +400,8 @@ func TestMaybeResolveAutoWithTier_HardTierOverridesNonAutoModel(t *testing.T) {
 
 	// Caller didn't use an auto-* model name — task_tier alone should promote.
 	got := r.MaybeResolveAutoWithTier(context.Background(), "gpt-4o", "", "hard", "build me a sankey flow diagram")
-	if got.ModelID != "gemini-3.5-flash" {
-		t.Fatalf("task_tier=hard should route to gemini-3.5-flash, got %q", got.ModelID)
+	if got.ModelID != "gemini-3.7-flash" {
+		t.Fatalf("task_tier=hard should route to gemini-3.7-flash, got %q", got.ModelID)
 	}
 	if got.ReasoningEffort != "medium" {
 		t.Fatalf("reasoning effort = %q, want medium", got.ReasoningEffort)
@@ -408,7 +429,7 @@ func TestMaybeResolveAutoWithTier_EmptyTierFallsBackToModelNameBehaviour(t *test
 func TestMaybeResolveAutoReasoning_KeepsDirectModelReasoningOnly(t *testing.T) {
 	r := newTestRouter([]model.ModelConfig{
 		{ID: "nvidia/deepseek-v4-pro", Provider: "nvidia"},
-		{ID: "gemini-3.5-flash", Provider: "google"},
+		{ID: "gemini-3.7-flash", Provider: "google"},
 	}, "nvidia", "google")
 
 	r.SetAutoRouter(&AutoRouter{
@@ -419,7 +440,7 @@ func TestMaybeResolveAutoReasoning_KeepsDirectModelReasoningOnly(t *testing.T) {
 		},
 		tables: map[string][]AutoEntry{
 			"reasoning-task": {
-				{ModelID: "gemini-3.5-flash", ReasoningEffort: "high", Embedding: []float64{1, 0}},
+				{ModelID: "gemini-3.7-flash", ReasoningEffort: "high", Embedding: []float64{1, 0}},
 			},
 		},
 		ready: true,
@@ -466,7 +487,7 @@ func TestTaskTierToModality(t *testing.T) {
 	}
 }
 
-func TestAutoRouter_HardTaskRoutesSankeyToGPT55(t *testing.T) {
+func TestAutoRouter_HardTaskRoutesSankeyToGPT56Sol(t *testing.T) {
 	ar := NewAutoRouter(&fakeEmbedder{})
 	if err := ar.Init(context.Background()); err != nil {
 		t.Fatalf("Init() error = %v", err)
@@ -476,25 +497,25 @@ func TestAutoRouter_HardTaskRoutesSankeyToGPT55(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ResolveAuto() error = %v", err)
 	}
-	if got.ModelID != "gemini-3.5-flash" {
-		t.Fatalf("ModelID = %q, want gemini-3.5-flash", got.ModelID)
+	if got.ModelID != "gemini-3.7-flash" {
+		t.Fatalf("ModelID = %q, want gemini-3.7-flash", got.ModelID)
 	}
 }
 
-func TestDefaultRoutingTables_HardTaskIncludesGPT55(t *testing.T) {
+func TestDefaultRoutingTables_HardTaskIncludesGPT56Sol(t *testing.T) {
 	entries := defaultRoutingTables()["hard-task"]
 	if len(entries) == 0 {
 		t.Fatal("hard-task routing table is empty")
 	}
-	var hasGPT55 bool
+	var hasGPT56Sol bool
 	for _, e := range entries {
-		if e.ModelID == "gemini-3.5-flash" {
-			hasGPT55 = true
+		if e.ModelID == "gemini-3.7-flash" {
+			hasGPT56Sol = true
 			break
 		}
 	}
-	if !hasGPT55 {
-		t.Fatal("hard-task routing table must include gemini-3.5-flash")
+	if !hasGPT56Sol {
+		t.Fatal("hard-task routing table must include gemini-3.7-flash")
 	}
 }
 
@@ -575,8 +596,8 @@ func TestIsAutoModel_LegacyAliasesResolve(t *testing.T) {
 		}
 	}
 
-	if _, ok := IsAutoModel("gpt-5.5"); ok {
-		t.Error("IsAutoModel(\"gpt-5.5\") ok = true, want false for a direct model")
+	if _, ok := IsAutoModel("gpt-5.6-sol"); ok {
+		t.Error("IsAutoModel(\"gpt-5.6-sol\") ok = true, want false for a direct model")
 	}
 }
 
@@ -589,10 +610,10 @@ func TestIsAutoThinkModel(t *testing.T) {
 		{"autothink", true},
 		{"auto-hard-task", true},
 		{"openpaths/auto-reasoning", true},
-		{"auto", false},       // text modality, not reasoning
-		{"auto-image", false}, // image modality
-		{"auto-fast", false},  // fast modality
-		{"gpt-5.5", false},    // not an auto model at all
+		{"auto", false},        // text modality, not reasoning
+		{"auto-image", false},  // image modality
+		{"auto-fast", false},   // fast modality
+		{"gpt-5.6-sol", false}, // not an auto model at all
 	}
 	for _, c := range cases {
 		if got := IsAutoThinkModel(c.model); got != c.want {
@@ -655,7 +676,7 @@ func TestAutoRouter_CodeTaskRoutesEverydayTestsToOxAlpha(t *testing.T) {
 	}
 }
 
-func TestAutoRouter_CodeTaskRoutesShaderVFXToGPT55High(t *testing.T) {
+func TestAutoRouter_CodeTaskRoutesShaderVFXToGPT56SolHigh(t *testing.T) {
 	ar := NewAutoRouter(&fakeEmbedder{})
 	if err := ar.Init(context.Background()); err != nil {
 		t.Fatalf("Init() error = %v", err)
@@ -665,15 +686,15 @@ func TestAutoRouter_CodeTaskRoutesShaderVFXToGPT55High(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ResolveAuto() error = %v", err)
 	}
-	if got.ModelID != "gpt-5.5" {
-		t.Fatalf("ModelID = %q, want gpt-5.5", got.ModelID)
+	if got.ModelID != "gpt-5.6-sol" {
+		t.Fatalf("ModelID = %q, want gpt-5.6-sol", got.ModelID)
 	}
 	if got.ReasoningEffort != "high" {
 		t.Fatalf("ReasoningEffort = %q, want high", got.ReasoningEffort)
 	}
 }
 
-func TestAutoRouter_CodeTaskRoutesTradingSystemToGPT55High(t *testing.T) {
+func TestAutoRouter_CodeTaskRoutesTradingSystemToGPT56SolHigh(t *testing.T) {
 	ar := NewAutoRouter(&fakeEmbedder{})
 	if err := ar.Init(context.Background()); err != nil {
 		t.Fatalf("Init() error = %v", err)
@@ -683,15 +704,15 @@ func TestAutoRouter_CodeTaskRoutesTradingSystemToGPT55High(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ResolveAuto() error = %v", err)
 	}
-	if got.ModelID != "gpt-5.5" {
-		t.Fatalf("ModelID = %q, want gpt-5.5", got.ModelID)
+	if got.ModelID != "gpt-5.6-sol" {
+		t.Fatalf("ModelID = %q, want gpt-5.6-sol", got.ModelID)
 	}
 	if got.ReasoningEffort != "high" {
 		t.Fatalf("ReasoningEffort = %q, want high", got.ReasoningEffort)
 	}
 }
 
-func TestAutoRouter_CodeTaskRoutesLLMDevToGPT55High(t *testing.T) {
+func TestAutoRouter_CodeTaskRoutesLLMDevToGPT56SolHigh(t *testing.T) {
 	ar := NewAutoRouter(&fakeEmbedder{})
 	if err := ar.Init(context.Background()); err != nil {
 		t.Fatalf("Init() error = %v", err)
@@ -701,8 +722,8 @@ func TestAutoRouter_CodeTaskRoutesLLMDevToGPT55High(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ResolveAuto() error = %v", err)
 	}
-	if got.ModelID != "gpt-5.5" {
-		t.Fatalf("ModelID = %q, want gpt-5.5", got.ModelID)
+	if got.ModelID != "gpt-5.6-sol" {
+		t.Fatalf("ModelID = %q, want gpt-5.6-sol", got.ModelID)
 	}
 	if got.ReasoningEffort != "high" {
 		t.Fatalf("ReasoningEffort = %q, want high", got.ReasoningEffort)

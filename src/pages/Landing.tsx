@@ -8,14 +8,13 @@ import { videoGallery } from '../data/videoGallery';
 import { models } from '../data/models';
 import { getProviderLogo, providersByName } from '../data/providers';
 import { Seo } from '../components/Seo';
+import { ArtificialAnalysisBenchmarkSection } from '../components/ArtificialAnalysisCharts';
 
 export function Landing() {
   const [activeTab, setActiveTab] = useState<'python' | 'curl'>('python');
-  const [visibleArtCount, setVisibleArtCount] = useState(4);
-  const [visibleVideoCount, setVisibleVideoCount] = useState(3);
   const apiKey = localStorage.getItem('op_api_key') || 'op_...';
-  const galleryGrid = artGallery.slice(0, visibleArtCount);
-  const videoGrid = videoGallery.slice(0, visibleVideoCount);
+  const galleryGrid = artGallery;
+  const videoGrid = videoGallery;
 
   return (
     <>
@@ -78,17 +77,47 @@ export function Landing() {
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 font-mono text-sm">
-          <AutoVariantCard modelId="openpaths/auto" title="Auto" purpose="Default — chat, agents, mixed workloads" backends="Gemini 3.5 Flash, GPT-5.5, Claude, DeepSeek" />
-          <AutoVariantCard modelId="openpaths/auto-code" title="Auto Code" purpose="Coding agents, bug fixes, refactors" backends="GPT-5.5, Codex, Gemini 3.5 (3D/UI), Nano for easy diffs" />
-          <AutoVariantCard modelId="openpaths/auto-fast" title="Auto Fast" purpose="Low-latency chat" backends="DeepSeek V4 Flash, Gemini 2.5 Flash" />
-          <AutoVariantCard modelId="openpaths/auto-cheap" title="Auto Cheap" purpose="Lowest acceptable cost" backends="GPT-5.4 Nano, Gemini Flash Lite" />
-          <AutoVariantCard modelId="openpaths/auto-reasoning" title="Auto Reasoning" purpose="Planning, math, hard problems" backends="Auto thinking depth + GPT-5.5, Claude, Gemini" />
-          <AutoVariantCard modelId="openpaths/auto-vision" title="Auto Vision" purpose="Image understanding" backends="Gemini Flash; Lite for thumbnails" />
+          <AutoVariantCard modelId="openpaths/auto" title="Auto" purpose="Default — chat, agents, mixed workloads" backends="Gemini 3.7 Flash, GPT-5.6, GLM-5.3, Claude, DeepSeek" />
+          <AutoVariantCard modelId="openpaths/auto-code" title="Auto Code" purpose="Coding agents, bug fixes, refactors" backends="GPT-5.6 Sol, Gemini 3.7 (3D/UI), GLM-5.3, Luna for easy diffs" />
+          <AutoVariantCard modelId="openpaths/auto-fast" title="Auto Fast" purpose="Low-latency chat" backends="DeepSeek V4 Flash, Gemini 3.7 Flash" />
+          <AutoVariantCard modelId="openpaths/auto-cheap" title="Auto Cheap" purpose="Lowest acceptable cost" backends="GPT-5.6 Luna, Gemini Flash Lite" />
+          <AutoVariantCard modelId="openpaths/auto-reasoning" title="Auto Reasoning" purpose="Planning, math, hard problems" backends="Auto thinking depth + GPT-5.6, Gemini 3.7, GLM-5.3" />
+          <AutoVariantCard modelId="openpaths/auto-vision" title="Auto Vision" purpose="Image understanding" backends="Gemini 3.7 Flash; Lite for thumbnails" />
           <AutoVariantCard modelId="openpaths/auto-image" title="Auto Image" purpose="Image generation" backends="GPT Image 2 → RA1 fallback" className="md:col-span-2 lg:col-span-1" />
         </div>
         <p className="mt-8 text-center text-white/55 font-mono text-xs">
           Take the hassle out of model upgrades — every variant tracks the frontier for you. Legacy IDs still work: <code className="text-white/60">auto</code>, <code className="text-white/60">auto-easy-task</code>, <code className="text-white/60">auto-think</code>, <code className="text-white/60">auto-image</code>
         </p>
+      </section>
+
+      {/* Frontier evidence */}
+      <section id="frontier-evals" className="border-y border-white/20 bg-white/[0.025] px-6 py-20">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-8 grid gap-4 lg:grid-cols-[1.25fr_0.75fr] lg:items-end">
+            <div>
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/[0.06] px-3 py-1 font-mono text-xs text-cyan-200">
+                <Activity className="h-3.5 w-3.5" /> Frontier evidence · refreshed Aug 31, 2026
+              </div>
+              <h2 className="text-3xl font-bold tracking-tight md:text-5xl">Route from measurements, not model lore.</h2>
+            </div>
+            <p className="font-mono text-sm leading-relaxed text-white/55">
+              External capability, speed, and price data sits beside our own task-level routing benchmark. The route can start cheap, then escalate only when the work earns it.
+            </p>
+          </div>
+          <div className="grid gap-px overflow-hidden rounded-lg border border-white/15 bg-white/15 sm:grid-cols-3">
+            <FrontierMetric value="100%" label="Verify + escalate pass rate" detail="27-task local coding suite" />
+            <FrontierMetric value="$0.11" label="Cascade total" detail="vs. $2.55 pinned frontier" />
+            <FrontierMetric value="30×" label="Lower cost per solved task" detail="Learning to Route result" />
+          </div>
+          <ArtificialAnalysisBenchmarkSection compact />
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-4 font-mono text-xs text-white/45">
+            <span>External scores are independent snapshots; local cascade results include exact tasks, costs, and verifier outcomes.</span>
+            <div className="flex gap-4">
+              <Link to="/evals" className="text-white/70 hover:text-white">All evals <ArrowRight className="ml-1 inline h-3.5 w-3.5" /></Link>
+              <Link to="/blog/learning-to-route-whitepaper" className="text-white/70 hover:text-white">Method <ArrowRight className="ml-1 inline h-3.5 w-3.5" /></Link>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* Code Snippet */}
@@ -147,15 +176,18 @@ export function Landing() {
       </section>
 
       {/* Art Playground */}
-      <section id="art-playground" className="relative overflow-hidden border-y border-white/20 bg-[radial-gradient(circle_at_top_left,_rgba(245,158,11,0.14),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(45,212,191,0.12),_transparent_34%),linear-gradient(180deg,_rgba(255,255,255,0.04),_rgba(255,255,255,0.02))] px-4 py-16 md:px-8 md:py-20">
+      <section id="art-playground" className="relative overflow-hidden border-y border-white/20 bg-[radial-gradient(circle_at_top_left,_rgba(245,158,11,0.14),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(45,212,191,0.12),_transparent_34%),linear-gradient(180deg,_rgba(255,255,255,0.04),_rgba(255,255,255,0.02))] px-3 py-16 md:px-5 md:py-20 2xl:px-8">
           <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(120deg,transparent_0%,rgba(255,255,255,0.04)_45%,transparent_65%)] opacity-60" />
-          <div className="relative mx-auto max-w-[1800px]">
+          <div className="relative mx-auto max-w-[2200px]">
             <div className="grid gap-8">
               <div>
                 <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                   <div className="max-w-3xl">
+                    <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/30 px-3 py-1 font-mono text-xs text-white/55">
+                      <Sparkles className="h-3.5 w-3.5" /> Live Art Playground · AI Image Gallery
+                    </div>
                     <h2 className="text-3xl md:text-5xl font-bold tracking-tight leading-[0.95] mb-4">
-                      Image, video, 3d generation with all the best providers.
+                      High-definition image, video, and 3D generation across frontier providers.
                     </h2>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-3 lg:justify-end">
@@ -174,7 +206,7 @@ export function Landing() {
                   </div>
                 </div>
 
-                <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
+                <div className="mt-8 grid grid-flow-dense gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                   {galleryGrid.map((item, index) => (
                     <motion.article
                       key={item.slug}
@@ -182,9 +214,9 @@ export function Landing() {
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true, amount: 0.15 }}
                       transition={{ duration: 0.35, delay: index * 0.04 }}
-                      className="overflow-hidden rounded-[24px] border border-white/20 bg-black/45 group"
+                      className={`group overflow-hidden rounded-[24px] border border-white/20 bg-black/45 ${item.layout === 'wide' ? 'sm:col-span-2' : ''}`}
                     >
-                      <div className="relative aspect-square overflow-hidden">
+                      <div className={`relative overflow-hidden ${item.layout === 'wide' ? 'aspect-[2/1]' : 'aspect-square'}`}>
                         <Link to={galleryModelPath(item.providerModelId, item.prompt)} className="absolute inset-0 z-0">
                           <img
                             src={item.imageUrl}
@@ -209,7 +241,9 @@ export function Landing() {
                         </div>
                         <div className="absolute bottom-0 left-0 right-0 p-4">
                           <div className="text-xs uppercase tracking-[0.22em] text-white/50 mb-2">{item.model}</div>
-                          <Link to={galleryModelPath(item.providerModelId, item.prompt)} className="relative z-10 text-xl font-bold tracking-tight hover:underline underline-offset-4">{item.title}</Link>
+                          <h3 className="relative z-10 text-xl font-bold tracking-tight">
+                            <Link to={galleryModelPath(item.providerModelId, item.prompt)} className="hover:underline underline-offset-4">{item.title}</Link>
+                          </h3>
                           <PromptText text={item.prompt} className="mt-2 text-sm text-white/65" />
                           <Link to={`/art?q=${encodeURIComponent(item.prompt)}`} className="relative z-10 mt-3 inline-flex text-[11px] font-mono uppercase tracking-[0.14em] text-white/45 hover:text-white">Find similar art <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link>
                         </div>
@@ -217,17 +251,6 @@ export function Landing() {
                     </motion.article>
                   ))}
                 </div>
-                {visibleArtCount < artGallery.length && (
-                  <div className="mt-5 flex justify-center">
-                    <button
-                      type="button"
-                      onClick={() => setVisibleArtCount((count) => Math.min(count + 4, artGallery.length))}
-                      className="border border-white/20 bg-black/30 px-5 py-3 font-mono text-xs uppercase tracking-[0.16em] text-white/70 transition-colors hover:bg-white hover:text-black"
-                    >
-                      Load more art
-                    </button>
-                  </div>
-                )}
 
                 <div className="mt-12">
                   <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
@@ -235,13 +258,13 @@ export function Landing() {
                       <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/30 px-3 py-1 text-xs font-mono text-white/55">
                         <Video className="h-3.5 w-3.5" /> AI Video Gallery
                       </div>
-                      <h3 className="text-2xl font-bold tracking-tight md:text-3xl">Fresh video generation across the best latest AIs.</h3>
+                      <h3 className="text-2xl font-bold tracking-tight md:text-3xl">A wider, higher-definition range from K-Fold H3 and the newest video models.</h3>
                     </div>
                     <Link to="/models?q=video%20generation" className="inline-flex items-center gap-2 text-sm font-mono text-white/55 hover:text-white">
                       Browse video models <ArrowRight className="h-4 w-4" />
                     </Link>
                   </div>
-                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                     {videoGrid.map((item, index) => (
                       <motion.article
                         key={item.slug}
@@ -253,7 +276,7 @@ export function Landing() {
                       >
                         <div className="relative aspect-video bg-black">
                           <Link to={galleryModelPath(item.model, item.prompt)} className="block h-full w-full">
-                            <video src={item.videoUrl} poster={item.posterUrl} className="h-full w-full object-cover" muted loop playsInline controls preload="metadata" />
+                            <video src={item.videoUrl} poster={item.posterUrl} className="h-full w-full object-cover" muted loop playsInline controls preload={index < 4 ? 'metadata' : 'none'} />
                           </Link>
                           <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-2 rounded-full border border-white/15 bg-black/60 px-2.5 py-1.5 backdrop-blur">
                             <img src={getProviderLogo(item.provider)} alt={`${item.provider} logo`} className={`h-4 w-4 rounded-sm object-contain ${item.provider === 'Black Forest Labs' ? 'bg-white p-px' : ''}`} />
@@ -261,25 +284,16 @@ export function Landing() {
                           </div>
                         </div>
                         <div className="p-4">
-                          <div className="mb-2 text-[11px] uppercase tracking-[0.22em] text-white/50">{item.resolution} · {item.duration}s · WebM</div>
-                          <Link to={galleryModelPath(item.model, item.prompt)} className="text-lg font-bold tracking-tight hover:underline underline-offset-4">{item.title}</Link>
+                          <div className="mb-2 text-[11px] uppercase tracking-[0.22em] text-white/50">{item.resolution} · {item.duration}s · {item.format || 'WebM'}</div>
+                          <h4 className="text-lg font-bold tracking-tight">
+                            <Link to={galleryModelPath(item.model, item.prompt)} className="hover:underline underline-offset-4">{item.title}</Link>
+                          </h4>
                           <PromptText text={item.prompt} className="mt-2 text-sm text-white/60" />
                           <Link to={`/art?q=${encodeURIComponent(item.prompt)}`} className="mt-3 inline-flex text-[11px] font-mono uppercase tracking-[0.14em] text-white/45 hover:text-white">Find similar art <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link>
                         </div>
                       </motion.article>
                     ))}
                   </div>
-                  {visibleVideoCount < videoGallery.length && (
-                    <div className="mt-5 flex justify-center">
-                      <button
-                        type="button"
-                        onClick={() => setVisibleVideoCount((count) => Math.min(count + 3, videoGallery.length))}
-                        className="border border-white/20 bg-black/30 px-5 py-3 font-mono text-xs uppercase tracking-[0.16em] text-white/70 transition-colors hover:bg-white hover:text-black"
-                      >
-                        Load more videos
-                      </button>
-                    </div>
-                  )}
                 </div>
               </div>
 
@@ -494,6 +508,16 @@ function AutoVariantCard({
       <code className="text-xs text-emerald-400/90 block mb-3">{modelId}</code>
       <p className="text-white/70 text-xs leading-relaxed mb-2">{purpose}</p>
       <p className="text-white/55 text-[11px] leading-relaxed">{backends}</p>
+    </div>
+  );
+}
+
+function FrontierMetric({ value, label, detail }: { value: string; label: string; detail: string }) {
+  return (
+    <div className="bg-black/75 p-5">
+      <div className="font-mono text-3xl font-bold tracking-tight text-white">{value}</div>
+      <div className="mt-2 text-sm font-semibold text-white/80">{label}</div>
+      <div className="mt-1 font-mono text-[11px] text-white/45">{detail}</div>
     </div>
   );
 }

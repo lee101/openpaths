@@ -33,11 +33,11 @@ func TestAutoTierConfig_PrimaryModels(t *testing.T) {
 		models[m.ID] = m.ProviderModelID
 	}
 
-	if got := models["openpaths/auto-code"]; got != "gpt-5.5" {
-		t.Fatalf("openpaths/auto-code provider_model_id = %q, want %q", got, "gpt-5.5")
+	if got := models["openpaths/auto-code"]; got != "gpt-5.6-terra" {
+		t.Fatalf("openpaths/auto-code provider_model_id = %q, want %q", got, "gpt-5.6-terra")
 	}
-	if got := models["openpaths/auto-reasoning"]; got != "gpt-5.4-mini" {
-		t.Fatalf("openpaths/auto-reasoning provider_model_id = %q, want %q", got, "gpt-5.4-mini")
+	if got := models["openpaths/auto-reasoning"]; got != "gpt-5.6-terra" {
+		t.Fatalf("openpaths/auto-reasoning provider_model_id = %q, want %q", got, "gpt-5.6-terra")
 	}
 	if got := models["openpaths/auto-cheap"]; got != "gpt-5.6-luna" {
 		t.Fatalf("openpaths/auto-cheap provider_model_id = %q, want %q", got, "gpt-5.6-luna")
@@ -47,6 +47,9 @@ func TestAutoTierConfig_PrimaryModels(t *testing.T) {
 	}
 	if got := models["openpaths/auto"]; got != "gemini-3.7-flash" {
 		t.Fatalf("openpaths/auto provider_model_id = %q, want %q", got, "gemini-3.7-flash")
+	}
+	if got := models["openpaths/auto-vision"]; got != "gemini-3.7-flash" {
+		t.Fatalf("openpaths/auto-vision provider_model_id = %q, want %q", got, "gemini-3.7-flash")
 	}
 	if got := models["openpaths/auto-image"]; got != "gpt-image-2" {
 		t.Fatalf("openpaths/auto-image provider_model_id = %q, want %q", got, "gpt-image-2")
