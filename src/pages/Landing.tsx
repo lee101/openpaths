@@ -207,13 +207,9 @@ export function Landing() {
                 </div>
 
                 <div className="mt-8 grid grid-flow-dense gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-                  {galleryGrid.map((item, index) => (
-                    <motion.article
+                  {galleryGrid.map((item) => (
+                    <article
                       key={item.slug}
-                      initial={{ opacity: 0, y: 18 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true, amount: 0.15 }}
-                      transition={{ duration: 0.35, delay: index * 0.04 }}
                       className={`group overflow-hidden rounded-[24px] border border-white/20 bg-black/45 ${item.layout === 'wide' ? 'sm:col-span-2' : ''}`}
                     >
                       <div className={`relative overflow-hidden ${item.layout === 'wide' ? 'aspect-[2/1]' : 'aspect-square'}`}>
@@ -248,7 +244,7 @@ export function Landing() {
                           <Link to={`/art?q=${encodeURIComponent(item.prompt)}`} className="relative z-10 mt-3 inline-flex text-[11px] font-mono uppercase tracking-[0.14em] text-white/45 hover:text-white">Find similar art <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link>
                         </div>
                       </div>
-                    </motion.article>
+                    </article>
                   ))}
                 </div>
 
@@ -266,12 +262,8 @@ export function Landing() {
                   </div>
                   <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                     {videoGrid.map((item, index) => (
-                      <motion.article
+                      <article
                         key={item.slug}
-                        initial={{ opacity: 0, y: 18 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true, amount: 0.15 }}
-                        transition={{ duration: 0.35, delay: index * 0.05 }}
                         className="overflow-hidden rounded-lg border border-white/20 bg-black/45"
                       >
                         <div className="relative aspect-video bg-black">
@@ -291,7 +283,7 @@ export function Landing() {
                           <PromptText text={item.prompt} className="mt-2 text-sm text-white/60" />
                           <Link to={`/art?q=${encodeURIComponent(item.prompt)}`} className="mt-3 inline-flex text-[11px] font-mono uppercase tracking-[0.14em] text-white/45 hover:text-white">Find similar art <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link>
                         </div>
-                      </motion.article>
+                      </article>
                     ))}
                   </div>
                 </div>
