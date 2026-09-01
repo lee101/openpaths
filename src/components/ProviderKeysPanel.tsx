@@ -81,7 +81,7 @@ export function ProviderKeysPanel({ keys, onChanged }: { keys: any[]; onChanged:
         </div>
         <h2 className="text-xl font-semibold tracking-tight">Bring your own provider keys</h2>
         <p className="text-sm text-white/55 mt-2 max-w-3xl">
-          Requests served through your own key bypass the OpenPaths balance entirely — you pay your
+          Requests served through your own key bypass the OpenPaths balance entirely - you pay your
           provider directly and we charge nothing. Fallback to OpenPaths credits still applies when a
           BYOK route fails.
         </p>
@@ -160,7 +160,7 @@ export function ProviderKeysPanel({ keys, onChanged }: { keys: any[]; onChanged:
 
       <p className="mt-4 text-xs text-white/35 max-w-3xl">
         Keys are stored server-side and only returned as masked previews. The OpenAI Max plan uses
-        sign-in instead of a key — see the panel above. See{' '}
+        sign-in instead of a key - see the panel above. See{' '}
         <a href="/byok" className="text-sky-300 hover:underline">openpaths.io/byok</a> for details.
       </p>
     </section>

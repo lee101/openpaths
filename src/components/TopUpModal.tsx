@@ -5,7 +5,6 @@ import { loadStripe } from '@stripe/stripe-js';
 import { EmbeddedCheckout, EmbeddedCheckoutProvider } from '@stripe/react-stripe-js';
 import { api } from '../lib/api';
 
-const RECOMMENDED_THRESHOLD_USD = 100;
 const RECOMMENDED_TOPUP_USD = 200;
 const QUICK_TOPUP_AMOUNTS = [25, 100, 200, 500];
 
@@ -107,9 +106,6 @@ export function TopUpModal({
               <div>
                 <p className="text-xs font-mono uppercase tracking-[0.2em] text-white/50 mb-2">Prepaid credits</p>
                 <h2 className="text-2xl font-bold tracking-tight">{clientSecret ? 'Complete Stripe payment' : 'Add funds'}</h2>
-                <p className="text-sm text-white/55 mt-2 max-w-xl">
-                  Stripe is the payment source of truth. OpenPaths keeps the spend model prepaid so your credit balance stays predictable.
-                </p>
               </div>
               <button onClick={onClose} className="text-white/55 hover:text-white transition-colors shrink-0" data-testid="stripe-modal-close">
                 <X className="w-5 h-5" />
@@ -118,20 +114,6 @@ export function TopUpModal({
 
             {!clientSecret ? (
               <>
-                <div className="rounded-2xl border border-emerald-400/20 bg-[linear-gradient(135deg,rgba(16,185,129,0.12),rgba(255,255,255,0.02))] p-5 mb-6">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-xs font-mono uppercase tracking-[0.18em] text-emerald-200/70 mb-2">Recommended</p>
-                      <h3 className="text-lg font-semibold text-white">Keep at least {formatUsdWhole(RECOMMENDED_THRESHOLD_USD)} ready</h3>
-                      <p className="text-sm text-white/60 mt-2">Most teams avoid interruptions by keeping a larger prepaid reserve and using auto-topup as backup.</p>
-                    </div>
-                    <div className="rounded-2xl border border-white/20 bg-black/30 px-4 py-3">
-                      <div className="text-xs font-mono text-white/45 mb-1">Top-up now</div>
-                      <div className="text-2xl font-semibold">{formatUsdWhole(RECOMMENDED_TOPUP_USD)}</div>
-                    </div>
-                  </div>
-                </div>
-
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                   {QUICK_TOPUP_AMOUNTS.map(a => (
                     <button

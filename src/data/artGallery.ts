@@ -2,6 +2,9 @@ export interface ArtGalleryItem {
   slug: string;
   provider: string;
   model: string;
+  /** Public OpenPaths model ID used by the on-site generation workspace. */
+  modelId: string;
+  /** Upstream provider ID retained for provenance and indexed art metadata. */
   providerModelId: string;
   title: string;
   prompt: string;
@@ -14,6 +17,7 @@ export const artGallery: ArtGalleryItem[] = [
     slug: 'openai-h3-routing-engine',
     provider: 'OpenAI',
     model: 'GPT Image 2',
+    modelId: 'gpt-image-2',
     providerModelId: 'gpt-image-2',
     title: 'The Routing Engine',
     prompt: 'A premium cinematic still of an intricate clockwork routing engine where translucent film paths carry desert light, a night train, and a crystalline hummingbird through interlocking titanium and glass cogs',
@@ -24,6 +28,7 @@ export const artGallery: ArtGalleryItem[] = [
     slug: 'openai-aurora-routing-observatory',
     provider: 'OpenAI',
     model: 'GPT Image 2',
+    modelId: 'gpt-image-2',
     providerModelId: 'gpt-image-2',
     title: 'Aurora Routing Observatory',
     prompt: 'A monumental glass gyroscope and precision cog observatory in a moonlit frozen valley, with a silver night train circling beneath a green aurora',
@@ -34,6 +39,7 @@ export const artGallery: ArtGalleryItem[] = [
     slug: 'openai-crystal-aperture-hummingbird',
     provider: 'OpenAI',
     model: 'GPT Image 2',
+    modelId: 'gpt-image-2',
     providerModelId: 'gpt-image-2',
     title: 'Crystal Aperture',
     prompt: 'A crystalline hummingbird hovering above a precisely machined lens aperture made of interlocking titanium cogs, releasing elegant ribbons of routed light',
@@ -43,6 +49,7 @@ export const artGallery: ArtGalleryItem[] = [
     slug: 'openai-desert-cog-portal',
     provider: 'OpenAI',
     model: 'GPT Image 2',
+    modelId: 'gpt-image-2',
     providerModelId: 'gpt-image-2',
     title: 'Desert Cog Portal',
     prompt: 'An ancient stone portal in a wind-rippled desert, its inner ring rebuilt as a massive precision cog mechanism that bends cinematic light through the opening',
@@ -53,6 +60,7 @@ export const artGallery: ArtGalleryItem[] = [
     slug: 'fal-klein-archive-chapel',
     provider: 'Fal',
     model: 'FLUX Klein 4B',
+    modelId: 'klein',
     providerModelId: 'fal-ai/flux-2/klein/4b/base',
     title: 'Archive Chapel',
     prompt: 'A brutalist chapel grown from translucent salt crystals on the edge of a frozen black lake, thin dawn light, long shadows, hyper-detailed editorial architecture photography, no people',
@@ -62,6 +70,7 @@ export const artGallery: ArtGalleryItem[] = [
     slug: 'fal-schnell-gravity-orchard',
     provider: 'Fal',
     model: 'FLUX Schnell',
+    modelId: 'flux-schnell',
     providerModelId: 'fal-ai/flux/schnell',
     title: 'Gravity Orchard',
     prompt: 'An orchard where every fruit is a tiny moon with its own orbit, farmers on ladders harvesting by magnetic lantern light, surreal realism, cinematic depth, atmospheric fog',
@@ -71,6 +80,7 @@ export const artGallery: ArtGalleryItem[] = [
     slug: 'fal-dev-paper-nautilus',
     provider: 'Fal',
     model: 'FLUX Dev',
+    modelId: 'flux-dev',
     providerModelId: 'fal-ai/flux/dev',
     title: 'Paper Nautilus',
     prompt: 'A giant nautilus made of folded maps and train tickets swimming through a dry museum atrium, sunbeams, dust particles, whimsical but physically grounded, museum-grade photography',
@@ -80,6 +90,7 @@ export const artGallery: ArtGalleryItem[] = [
     slug: 'fal-pro-monsoon-teahouse',
     provider: 'Fal',
     model: 'FLUX Pro 1.1',
+    modelId: 'flux-pro',
     providerModelId: 'fal-ai/flux-pro/v1.1',
     title: 'Monsoon Teahouse',
     prompt: 'A floating teahouse drifting through a tropical monsoon above a neon city, rain slanting sideways, paper lamps glowing amber, cinematic illustration with rich texture',
@@ -89,6 +100,7 @@ export const artGallery: ArtGalleryItem[] = [
     slug: 'together-sd3-ocean-typewriter',
     provider: 'Together AI',
     model: 'Stable Diffusion 3 Medium',
+    modelId: 'stable-diffusion-3',
     providerModelId: 'stabilityai/stable-diffusion-3-medium',
     title: 'Ocean Typewriter',
     prompt: 'A vintage typewriter resting on the seafloor, each keypress releasing schools of silver fish shaped like punctuation marks, teal water, volumetric light, dreamlike macro photography',
@@ -98,6 +110,7 @@ export const artGallery: ArtGalleryItem[] = [
     slug: 'zai-glm-clockmaker-desert',
     provider: 'Z.AI',
     model: 'GLM Image',
+    modelId: 'glm-image',
     providerModelId: 'glm-image',
     title: 'Clockmaker Desert',
     prompt: 'A desert workshop where watch gears are half-buried like fossils and a lone mechanic tunes time with copper tools, warm dusk palette, tactile realism, intricate details',
@@ -107,6 +120,7 @@ export const artGallery: ArtGalleryItem[] = [
     slug: 'ra1-archive-chapel',
     provider: 'Netwrck',
     model: 'RA1',
+    modelId: 'ra1',
     providerModelId: 'ra1',
     title: 'Archive Chapel',
     prompt: 'A brutalist chapel grown from translucent salt crystals on the edge of a frozen black lake, thin dawn light, long shadows, hyper-detailed editorial architecture photography, no people',
@@ -116,6 +130,7 @@ export const artGallery: ArtGalleryItem[] = [
     slug: 'zimage-lantern-koi-station',
     provider: 'Netwrck',
     model: 'ZImage',
+    modelId: 'zimage',
     providerModelId: 'zimage',
     title: 'Lantern Koi Station',
     prompt: 'Anime illustration of a quiet train platform floating above a koi pond at blue hour, paper lanterns reflected in the water, detailed character silhouette waiting with a satchel, cinematic composition, no text',

@@ -200,7 +200,7 @@ function FilterChip({ active, onClick, label, count }: { active: boolean; onClic
 }
 
 function useScopeHeading(scope: Scope, slug: string, meta: PromptMeta | null) {
-  const base = 'AI prompt library with copy-ready prompts for code, image, video, and music models — search by intent and open any prompt in the OpenPaths playground.';
+  const base = 'AI prompt library with copy-ready prompts for code, image, video, and music models - search by intent and open any prompt in the OpenPaths playground.';
   if (scope === 'category') {
     const c = meta?.categories.find(x => x.slug === slug);
     const name = c?.name || titleize(slug);

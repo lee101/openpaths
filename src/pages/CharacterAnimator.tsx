@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Copy, Download, ExternalLink, Loader2, PersonStanding, Sparkles, Upload } from 'lucide-react';
-import { Seo } from '../components/Seo';
+import { ToolSeo } from '../components/ToolSeo';
 import { CodeBlock } from '../components/CodeBlock';
 import { normalizeUploadedAssetUrl } from '../lib/uploadUrls';
 
@@ -203,11 +203,7 @@ JSON`,
 
   return (
     <>
-      <Seo
-        title="Character Animator — OpenPaths"
-        description="Animate a reference character with a driving performance video through Wan-Animate on ManifoldGen, OpenPaths' first-party GPU studio. Standard, fast, and x-fast latency lanes with per-second pricing."
-        path="/character-animator"
-      />
+      <ToolSeo slug="character-animator" />
       <div className="px-6 py-10">
         <div className="mx-auto max-w-7xl">
           <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -217,7 +213,7 @@ JSON`,
               </div>
               <h1 className="max-w-3xl text-4xl font-bold tracking-tight md:text-6xl">Character Animator</h1>
               <p className="mt-4 max-w-2xl text-base leading-relaxed text-white/55">
-                Hand Wan-Animate a reference character image and a driving performance video — it transfers the motion
+                Hand Wan-Animate a reference character image and a driving performance video - it transfers the motion
                 onto your character. Powered by ManifoldGen, OpenPaths' first-party GPU studio, with standard, fast,
                 and x-fast latency lanes.
               </p>
@@ -294,7 +290,7 @@ JSON`,
                 ) : loading ? (
                   <p className="text-sm font-mono text-white/45">Transferring the performance onto your character...</p>
                 ) : (
-                  <p className="max-w-md text-center text-xs font-mono text-white/50">Add a reference character image and a driving performance video above — Wan-Animate renders the animated character here.</p>
+                  <p className="max-w-md text-center text-xs font-mono text-white/50">Add a reference character image and a driving performance video above - Wan-Animate renders the animated character here.</p>
                 )}
               </div>
             </section>

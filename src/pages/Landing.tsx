@@ -2,13 +2,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { Zap, Code2, ArrowRight, Github, Search, Layers, Activity, Sparkles, ArrowUpRight, Video } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { ArtificialAnalysisBenchmarkSection } from '../components/ArtificialAnalysisCharts';
 import { CodeBlock } from '../components/CodeBlock';
 import { artGallery } from '../data/artGallery';
 import { videoGallery } from '../data/videoGallery';
-import { models } from '../data/models';
 import { getProviderLogo, providersByName } from '../data/providers';
 import { Seo } from '../components/Seo';
-import { ArtificialAnalysisBenchmarkSection } from '../components/ArtificialAnalysisCharts';
+import { modelPath } from '../lib/paths';
 
 export function Landing() {
   const [activeTab, setActiveTab] = useState<'python' | 'curl'>('python');
@@ -40,7 +40,7 @@ export function Landing() {
             <span className="text-white/55">Model Router.</span>
           </h1>
           <p className="text-lg md:text-xl text-white/60 max-w-2xl mx-auto mb-10 font-light leading-relaxed">
-            <span className="text-white font-medium">You don't have to pick a model.</span> Try the <code className="text-white font-mono text-base">openpaths/auto</code> models, auto thinking, and the <code className="text-white font-mono text-base">-latest</code> series to help you stay on the frontier — often better than pinning one provider.
+            <span className="text-white font-medium">You don't have to pick a model.</span> Use <code className="text-white font-mono text-base">openpaths/auto</code>, auto thinking, and the <code className="text-white font-mono text-base">-latest</code> series to stay on the frontier.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link to="/models" className="w-full sm:w-auto bg-white text-black px-8 py-4 font-mono font-bold flex items-center justify-center gap-2 hover:bg-white/90 transition-colors rounded">
@@ -71,50 +71,49 @@ export function Landing() {
             <Sparkles className="w-3.5 h-3.5" />
             OpenPaths Auto
           </div>
-          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">Always on the frontier. Zero manual upgrades.</h2>
+          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">Always on the frontier.</h2>
           <p className="text-white/60 font-mono text-sm leading-relaxed">
-            OpenPaths Auto takes the hassle out of model upgrades — you stay on Claude latest, Gemini latest, and GPT latest automatically, without touching your code. Point everything at <code className="text-white">openpaths/auto</code>, or pick a variant when you want a bias.
+            One model ID that tracks Claude latest, Gemini latest, and GPT latest. Variants below bias for cost, speed, or reasoning.
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 font-mono text-sm">
-          <AutoVariantCard modelId="openpaths/auto" title="Auto" purpose="Default — chat, agents, mixed workloads" backends="Gemini 3.7 Flash, GPT-5.6, GLM-5.3, Claude, DeepSeek" />
+          <AutoVariantCard modelId="openpaths/auto" title="Auto" purpose="Chat, agents, mixed workloads" backends="Gemini 3.7 Flash, GPT-5.6, GLM-5.3, Claude, DeepSeek" />
           <AutoVariantCard modelId="openpaths/auto-code" title="Auto Code" purpose="Coding agents, bug fixes, refactors" backends="GPT-5.6 Sol, Gemini 3.7 (3D/UI), GLM-5.3, Luna for easy diffs" />
           <AutoVariantCard modelId="openpaths/auto-fast" title="Auto Fast" purpose="Low-latency chat" backends="DeepSeek V4 Flash, Gemini 3.7 Flash" />
           <AutoVariantCard modelId="openpaths/auto-cheap" title="Auto Cheap" purpose="Lowest acceptable cost" backends="GPT-5.6 Luna, Gemini Flash Lite" />
           <AutoVariantCard modelId="openpaths/auto-reasoning" title="Auto Reasoning" purpose="Planning, math, hard problems" backends="Auto thinking depth + GPT-5.6, Gemini 3.7, GLM-5.3" />
-          <AutoVariantCard modelId="openpaths/auto-vision" title="Auto Vision" purpose="Image understanding" backends="Gemini 3.7 Flash; Lite for thumbnails" />
+          <AutoVariantCard modelId="openpaths/auto-vision" title="Auto Vision" purpose="Image understanding" backends="Gemini 3.7 Flash; DeepSeek V4 Flash Vision Exp for mid-complexity visual analysis; Lite for thumbnails" />
           <AutoVariantCard modelId="openpaths/auto-image" title="Auto Image" purpose="Image generation" backends="GPT Image 2 → RA1 fallback" className="md:col-span-2 lg:col-span-1" />
         </div>
         <p className="mt-8 text-center text-white/55 font-mono text-xs">
-          Take the hassle out of model upgrades — every variant tracks the frontier for you. Legacy IDs still work: <code className="text-white/60">auto</code>, <code className="text-white/60">auto-easy-task</code>, <code className="text-white/60">auto-think</code>, <code className="text-white/60">auto-image</code>
+          <code className="text-white/60">auto</code>, <code className="text-white/60">auto-easy-task</code>, <code className="text-white/60">auto-think</code>, <code className="text-white/60">auto-image</code>
         </p>
       </section>
 
-      {/* Frontier evidence */}
+      {/* Routing experiments */}
       <section id="frontier-evals" className="border-y border-white/20 bg-white/[0.025] px-6 py-20">
         <div className="mx-auto max-w-7xl">
           <div className="mb-8 grid gap-4 lg:grid-cols-[1.25fr_0.75fr] lg:items-end">
             <div>
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/[0.06] px-3 py-1 font-mono text-xs text-cyan-200">
-                <Activity className="h-3.5 w-3.5" /> Frontier evidence · refreshed Aug 31, 2026
+                <Activity className="h-3.5 w-3.5" /> Routing experiments
               </div>
-              <h2 className="text-3xl font-bold tracking-tight md:text-5xl">Route from measurements, not model lore.</h2>
+              <h2 className="text-3xl font-bold tracking-tight md:text-5xl">Start cheap. Escalate when needed.</h2>
             </div>
             <p className="font-mono text-sm leading-relaxed text-white/55">
-              External capability, speed, and price data sits beside our own task-level routing benchmark. The route can start cheap, then escalate only when the work earns it.
+              We are testing whether task embeddings and verified outcomes can find the lowest-cost model for each kind of work.
             </p>
           </div>
           <div className="grid gap-px overflow-hidden rounded-lg border border-white/15 bg-white/15 sm:grid-cols-3">
-            <FrontierMetric value="100%" label="Verify + escalate pass rate" detail="27-task local coding suite" />
-            <FrontierMetric value="$0.11" label="Cascade total" detail="vs. $2.55 pinned frontier" />
-            <FrontierMetric value="30×" label="Lower cost per solved task" detail="Learning to Route result" />
+            <FrontierMetric value="100%" label="Cascade pass rate" detail="27-task local suite" />
+            <FrontierMetric value="$0.11" label="Mean cascade cost" detail="verified runs" />
+            <FrontierMetric value="30×" label="Lower cost per solve" detail="research baseline" />
           </div>
           <ArtificialAnalysisBenchmarkSection compact />
           <div className="mt-6 flex flex-wrap items-center justify-between gap-4 font-mono text-xs text-white/45">
-            <span>External scores are independent snapshots; local cascade results include exact tasks, costs, and verifier outcomes.</span>
+            <span>Research only: cheap-model sweeps first, larger models only after the routing rule earns the transfer.</span>
             <div className="flex gap-4">
-              <Link to="/evals" className="text-white/70 hover:text-white">All evals <ArrowRight className="ml-1 inline h-3.5 w-3.5" /></Link>
-              <Link to="/blog/learning-to-route-whitepaper" className="text-white/70 hover:text-white">Method <ArrowRight className="ml-1 inline h-3.5 w-3.5" /></Link>
+              <Link to="/blog/learning-to-route-whitepaper" className="text-white/70 hover:text-white">Research <ArrowRight className="ml-1 inline h-3.5 w-3.5" /></Link>
             </div>
           </div>
         </div>
@@ -154,7 +153,7 @@ export function Landing() {
               <CodeBlock
                 language="python"
                 preClassName="p-6"
-                code={`import openai\n\nclient = openai.OpenAI(\n  base_url="https://openpaths.io/v1",\n  api_key="${apiKey}"\n)\n\nresponse = client.chat.completions.create(\n  model="openpaths/auto",\n  messages=[\n    {"role": "user", "content": "Ship the feature — you pick the model."}\n  ],\n  reasoning_effort="auto",  # none | low | medium | high | auto\n)`}
+                code={`import openai\n\nclient = openai.OpenAI(\n  base_url="https://openpaths.io/v1",\n  api_key="${apiKey}"\n)\n\nresponse = client.chat.completions.create(\n  model="openpaths/auto",\n  messages=[\n    {"role": "user", "content": "Ship the feature, you pick the model."}\n  ],\n  reasoning_effort="auto",  # none | low | medium | high | auto\n)`}
               />
             ) : (
               <CodeBlock
@@ -213,7 +212,11 @@ export function Landing() {
                       className={`group overflow-hidden rounded-[24px] border border-white/20 bg-black/45 ${item.layout === 'wide' ? 'sm:col-span-2' : ''}`}
                     >
                       <div className={`relative overflow-hidden ${item.layout === 'wide' ? 'aspect-[2/1]' : 'aspect-square'}`}>
-                        <Link to={galleryModelPath(item.providerModelId, item.prompt)} className="absolute inset-0 z-0">
+                        <Link
+                          to={galleryModelPath(item.modelId, item.prompt)}
+                          className="absolute inset-0 z-10"
+                          aria-label={`Create with ${item.model}: ${item.title}`}
+                        >
                           <img
                             src={item.imageUrl}
                             alt={item.title}
@@ -221,27 +224,27 @@ export function Landing() {
                             loading="lazy"
                           />
                         </Link>
-                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/25 to-transparent" />
-                        <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-3">
+                        <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-black via-black/25 to-transparent" />
+                        <div className="pointer-events-none absolute top-3 left-3 right-3 z-20 flex items-center justify-between gap-3">
                           <div className="flex items-center gap-2 rounded-full border border-white/15 bg-black/55 px-2.5 py-1.5 backdrop-blur">
                             <img src={getProviderLogo(item.provider)} alt={`${item.provider} logo`} className="h-4 w-4 rounded-sm object-contain" />
                             <span className="font-mono text-[11px] text-white/80">{item.provider}</span>
                           </div>
                           <Link
                             to={providerDocsPath(item.provider)}
-                            className="rounded-full border border-white/15 bg-black/55 p-2 text-white/70 hover:text-white hover:bg-black/70 transition-colors"
+                            className="pointer-events-auto rounded-full border border-white/15 bg-black/55 p-2 text-white/70 hover:text-white hover:bg-black/70 transition-colors"
                             aria-label={`${item.provider} docs`}
                           >
                             <ArrowUpRight className="w-3.5 h-3.5" />
                           </Link>
                         </div>
-                        <div className="absolute bottom-0 left-0 right-0 p-4">
+                        <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-20 p-4">
                           <div className="text-xs uppercase tracking-[0.22em] text-white/50 mb-2">{item.model}</div>
                           <h3 className="relative z-10 text-xl font-bold tracking-tight">
-                            <Link to={galleryModelPath(item.providerModelId, item.prompt)} className="hover:underline underline-offset-4">{item.title}</Link>
+                            <Link to={galleryModelPath(item.modelId, item.prompt)} className="pointer-events-auto hover:underline underline-offset-4">{item.title}</Link>
                           </h3>
                           <PromptText text={item.prompt} className="mt-2 text-sm text-white/65" />
-                          <Link to={`/art?q=${encodeURIComponent(item.prompt)}`} className="relative z-10 mt-3 inline-flex text-[11px] font-mono uppercase tracking-[0.14em] text-white/45 hover:text-white">Find similar art <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link>
+                          <Link to={`/art?q=${encodeURIComponent(item.prompt)}`} className="pointer-events-auto relative z-10 mt-3 inline-flex text-[11px] font-mono uppercase tracking-[0.14em] text-white/45 hover:text-white">Find similar art <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link>
                         </div>
                       </div>
                     </article>
@@ -267,7 +270,7 @@ export function Landing() {
                         className="overflow-hidden rounded-lg border border-white/20 bg-black/45"
                       >
                         <div className="relative aspect-video bg-black">
-                          <Link to={galleryModelPath(item.model, item.prompt)} className="block h-full w-full">
+                          <Link to={galleryModelPath(item.modelId, item.prompt)} className="block h-full w-full" aria-label={`Create with ${item.model}: ${item.title}`}>
                             <video src={item.videoUrl} poster={item.posterUrl} className="h-full w-full object-cover" muted loop playsInline controls preload={index < 4 ? 'metadata' : 'none'} />
                           </Link>
                           <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-2 rounded-full border border-white/15 bg-black/60 px-2.5 py-1.5 backdrop-blur">
@@ -278,7 +281,7 @@ export function Landing() {
                         <div className="p-4">
                           <div className="mb-2 text-[11px] uppercase tracking-[0.22em] text-white/50">{item.resolution} · {item.duration}s · {item.format || 'WebM'}</div>
                           <h4 className="text-lg font-bold tracking-tight">
-                            <Link to={galleryModelPath(item.model, item.prompt)} className="hover:underline underline-offset-4">{item.title}</Link>
+                            <Link to={galleryModelPath(item.modelId, item.prompt)} className="hover:underline underline-offset-4">{item.title}</Link>
                           </h4>
                           <PromptText text={item.prompt} className="mt-2 text-sm text-white/60" />
                           <Link to={`/art?q=${encodeURIComponent(item.prompt)}`} className="mt-3 inline-flex text-[11px] font-mono uppercase tracking-[0.14em] text-white/45 hover:text-white">Find similar art <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link>
@@ -297,7 +300,7 @@ export function Landing() {
       <section id="features" className="px-6 py-24 max-w-7xl mx-auto border-t border-white/20">
         <div className="mb-16">
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">Built for scale.</h2>
-          <p className="text-white/60 font-mono text-sm max-w-2xl">We handle the complexity of routing, fallbacks, and payments so you can focus on building your product.</p>
+          <p className="text-white/60 font-mono text-sm max-w-2xl">Routing, fallbacks, and payments handled for you.</p>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-px bg-white/10">
@@ -316,7 +319,7 @@ export function Landing() {
           <FeatureCard
             icon={<Sparkles className="w-6 h-6" />}
             title="OpenPaths Auto"
-            description="Always on Claude latest, Gemini latest, and GPT latest — without re-picking models or editing code. One ID stays on the frontier: openpaths/auto, plus auto-code, auto-fast, auto-cheap, auto-reasoning, auto-vision, auto-image."
+            description="openpaths/auto stays on Claude latest, Gemini latest, and GPT latest. Variants: auto-code, auto-fast, auto-cheap, auto-reasoning, auto-vision, auto-image."
             to="/blog/how-auto-models-work"
           />
           <FeatureCard 
@@ -331,7 +334,7 @@ export function Landing() {
       {/* CTA */}
       <section className="px-6 py-32 border-t border-white/20 text-center bg-white/[0.05]">
         <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-6">Ready to find your path?</h2>
-        <p className="text-white/60 mb-10 max-w-xl mx-auto">Join thousands of developers building the future of AI with open, transparent, and fast model routing.</p>
+        <p className="text-white/60 mb-10 max-w-xl mx-auto">Open source, transparent pricing, one API key for every provider.</p>
         <Link to="/account" className="bg-white text-black px-8 py-4 font-mono font-bold hover:bg-white/90 transition-colors inline-block rounded">
           Create Free Account
         </Link>
@@ -346,10 +349,7 @@ function providerDocsPath(providerName: string): string {
 }
 
 function galleryModelPath(modelId: string, prompt: string): string {
-  const model = models.find(item => item.id === modelId);
-  return model
-    ? `/models/${encodeURIComponent(model.id)}?prompt=${encodeURIComponent(prompt)}`
-    : `/models?q=${encodeURIComponent(modelId)}`;
+  return `${modelPath(modelId)}?prompt=${encodeURIComponent(prompt)}#model-workspace`;
 }
 
 function HeroMeshCanvas() {
@@ -495,12 +495,19 @@ function AutoVariantCard({
   className?: string;
 }) {
   return (
-    <div className={`border border-white/20 rounded-lg p-5 bg-black/40 hover:bg-white/[0.06] transition-colors ${className}`}>
-      <div className="text-white font-bold mb-1">{title}</div>
+    <Link
+      to={modelPath(modelId)}
+      className={`group border border-white/20 rounded-lg p-5 bg-black/40 hover:bg-white/[0.06] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 transition-colors ${className}`}
+      aria-label={`${title} documentation for ${modelId}`}
+    >
+      <div className="flex items-start justify-between gap-3 text-white font-bold mb-1">
+        <span>{title}</span>
+        <ArrowUpRight className="w-4 h-4 shrink-0 text-white/35 group-hover:text-white/70 transition-colors" />
+      </div>
       <code className="text-xs text-emerald-400/90 block mb-3">{modelId}</code>
       <p className="text-white/70 text-xs leading-relaxed mb-2">{purpose}</p>
       <p className="text-white/55 text-[11px] leading-relaxed">{backends}</p>
-    </div>
+    </Link>
   );
 }
 

@@ -25,7 +25,7 @@ type Model3DUploadProps = {
 };
 
 // Model3DUpload lets a user drop/choose a .glb/.gltf, previews it locally
-// (object URL — instant, no wait) AND uploads it to /v1/files/upload so the
+// (object URL - instant, no wait) AND uploads it to /v1/files/upload so the
 // resulting public URL can be passed to providers that fetch the mesh over HTTP
 // (e.g. Fal meshy rigging). Reused by any 3D-to-3D space.
 export function Model3DUpload({ apiKey, onUploaded, minHeight = 320 }: Model3DUploadProps) {

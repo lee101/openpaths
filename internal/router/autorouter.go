@@ -629,6 +629,12 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			{Description: "ocr read text document screenshot invoice receipt label", ModelID: "gemini-3.7-flash", ReasoningEffort: "low"},
 			{Description: "compare two images difference similarity visual qa", ModelID: "gemini-3.7-flash", ReasoningEffort: "medium"},
 			{Description: "chart graph diagram plot interpret data visualization", ModelID: "gemini-3.7-flash", ReasoningEffort: "medium"},
+			// DeepSeek V4 Flash Vision Exp is the cost-effective middle tier for
+			// structured extraction and visual QA that does not need the flagship lane.
+			{Description: "extract receipt invoice menu form fields into structured json with confidence", ModelID: "deepseek-v4-flash-vision-exp", ReasoningEffort: "low"},
+			{Description: "inspect website app screenshot against a brief find layout ux accessibility issues", ModelID: "deepseek-v4-flash-vision-exp", ReasoningEffort: "low"},
+			{Description: "read chart dashboard table trends anomalies and summarize the evidence", ModelID: "deepseek-v4-flash-vision-exp", ReasoningEffort: "medium"},
+			{Description: "compare product photos identify visual differences defects and missing details", ModelID: "deepseek-v4-flash-vision-exp", ReasoningEffort: "medium"},
 			// Low-res / thumbnail — cheap caption path (gitbase-style via flash-lite until dedicated caption API)
 			{Description: "thumbnail icon small low resolution tiny image quick caption", ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none"},
 			{Description: "favicon sprite sheet pixel small preview describe briefly", ModelID: "gemini-3.1-flash-lite", ReasoningEffort: "none"},

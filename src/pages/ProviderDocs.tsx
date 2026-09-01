@@ -29,7 +29,7 @@ interface ProviderExample {
 
 const EXAMPLES: Record<string, ProviderExample> = {
   manifoldgen: {
-    description: 'ManifoldGen is our first-party generative-media GPU studio: K-Fold/H3 cinematic video, Wan-Animate character animation, H3-control restyle, transparent-video background removal, MiniMax-Music3 songs, H3 SFX, H3 images and edits, TTS, and the multi-shot video dramatizer — all routed through one OpenPaths key.',
+    description: 'ManifoldGen is our first-party generative-media GPU studio: K-Fold/H3 cinematic video, Wan-Animate character animation, H3-control restyle, transparent-video background removal, MiniMax-Music3 songs, H3 SFX, H3 images and edits, TTS, and the multi-shot video dramatizer - all routed through one OpenPaths key.',
     endpoint: '/v1',
     imageModel: 'h3-image',
     videoModel: 'kfold-video',
@@ -61,13 +61,13 @@ const EXAMPLES: Record<string, ProviderExample> = {
       },
     ],
     notes: [
-      'Heavy lanes answer 202 with a job id — poll GET /v1/videos/generations/{job_id} or use the check_job MCP tool while rendering.',
+      'Heavy lanes answer 202 with a job id - poll GET /v1/videos/generations/{job_id} or use the check_job MCP tool while rendering.',
       'ManifoldGen gallery examples on the homepage are real K-Fold/H3 outputs hosted by ManifoldGen.',
       'For the provider-native creator workflow (Studio, gallery, $MANIFOLD pricing), visit manifoldgen.com.',
     ],
   },
   openai: {
-    description: 'OpenAI GPT-5, GPT Realtime voice, o3/o4 reasoning, GPT Image 2, Sora 2 video, and transcription — routed through OpenPaths.',
+    description: 'OpenAI GPT-5, GPT Realtime voice, o3/o4 reasoning, GPT Image 2, Sora 2 video, and transcription - routed through OpenPaths.',
     endpoint: '/v1',
     chatModel: 'openai-chat-latest',
     imageModel: 'gpt-image-2',
@@ -84,7 +84,7 @@ const EXAMPLES: Record<string, ProviderExample> = {
       },
     ],
     notes: [
-      'gpt-image-2 returns base64 PNGs by default — decode with base64.b64decode.',
+      'gpt-image-2 returns base64 PNGs by default - decode with base64.b64decode.',
       'sora-2 is async; OpenPaths polls for you and returns a signed content URL.',
       'Use openai-coding-latest alias for gpt-5-codex.',
       '`gpt-realtime-2.1-mini` is the default low-latency voice route; use `gpt-realtime-2.1` when you need the flagship model.',
@@ -96,7 +96,7 @@ const EXAMPLES: Record<string, ProviderExample> = {
     endpoint: '/v1',
     chatModel: 'claude-sonnet-latest',
     notes: [
-      'Anthropic endpoints accept the same Bearer header — no x-api-key needed.',
+      'Anthropic endpoints accept the same Bearer header - no x-api-key needed.',
       'Prefill works: pass a trailing assistant message.',
     ],
   },
@@ -157,12 +157,16 @@ const EXAMPLES: Record<string, ProviderExample> = {
     ],
   },
   deepseek: {
-    description: 'DeepSeek V3 Chat and Reasoner — frontier-level performance, extremely cheap.',
+    description: 'DeepSeek V4 Flash, V4 Flash Vision Exp, V3 Chat, and Reasoner - frontier-level performance at extremely low cost.',
     endpoint: '/v1',
     chatModel: 'deepseek-chat',
+    notes: [
+      '`deepseek-v4-flash-vision-exp` accepts image input for OCR, structured extraction, visual QA, charts, and screenshot analysis.',
+      'Use `openpaths/auto-vision` to route between Gemini, DeepSeek Vision Exp, and thumbnail-oriented Flash Lite handling.',
+    ],
   },
   cursor: {
-    description: 'Cursor Composer 2.5 and Cursor Grok 4.5/4.6 via the Cursor Cloud Agents API — agentic coding and knowledge work exposed as standard OpenAI-style chat completions through OpenPaths.',
+    description: 'Cursor Composer 2.5 and Cursor Grok 4.5/4.6 via the Cursor Cloud Agents API - agentic coding and knowledge work exposed as standard OpenAI-style chat completions through OpenPaths.',
     endpoint: '/v1',
     chatModel: 'composer-2.5',
     provides: [
@@ -182,7 +186,7 @@ const EXAMPLES: Record<string, ProviderExample> = {
     notes: [
       'Use `composer-2.5`, `composer-2.5-fast`, `cursor-grok-4.5`, `cursor-grok-4.5-fast`, `cursor-grok-4.6`, or `cursor-grok-4.6-fast` as the model name.',
       'Cursor Grok supports `low`, `medium`, `high`, and (for 4.6) `xhigh` reasoning effort through the standard `reasoning_effort` field.',
-      'Best for coding agents, refactors, knowledge work, and tool-driven workflows — pass your tools array as usual.',
+      'Best for coding agents, refactors, knowledge work, and tool-driven workflows - pass your tools array as usual.',
     ],
   },
   mistral: {
@@ -375,7 +379,7 @@ const EXAMPLES: Record<string, ProviderExample> = {
     ],
   },
   nous: {
-    description: 'Hermes 4 70B and 405B — open reasoning models with tool use at low cost.',
+    description: 'Hermes 4 70B and 405B - open reasoning models with tool use at low cost.',
     endpoint: '/v1',
     chatModel: 'hermes-4-405b',
   },

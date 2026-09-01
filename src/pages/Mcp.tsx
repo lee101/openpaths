@@ -85,7 +85,7 @@ export function Mcp() {
   return (
     <>
       <Seo
-        title="MCP Server — all models over Model Context Protocol | OpenPaths"
+        title="MCP Server - all models over Model Context Protocol | OpenPaths"
         description="Connect Claude Desktop, Claude Code, Cursor and any MCP client to every OpenPaths model with your secret key. High-performance Streamable HTTP MCP server."
         path="/mcp"
       />
@@ -98,8 +98,8 @@ export function Mcp() {
           </div>
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">MCP Server</h1>
           <p className="text-white/60 max-w-3xl font-light leading-relaxed">
-            Every OpenPaths model — chat, image, video, music, speech, transcription, 3D,
-            embeddings and web search — exposed over the{' '}
+            Every OpenPaths model - chat, image, video, music, speech, transcription, 3D,
+            embeddings and web search - exposed over the{' '}
             <span className="text-white">Model Context Protocol</span>. Point any MCP client at one
             URL, authenticate with your secret key, and your agents get the whole catalog with
             automatic routing, fallback and billing.

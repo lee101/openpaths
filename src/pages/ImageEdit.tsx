@@ -1,16 +1,12 @@
 import React from 'react';
 import { ImageIcon, Sparkles } from 'lucide-react';
-import { Seo } from '../components/Seo';
+import { ToolSeo } from '../components/ToolSeo';
 import { ImageSpacePanel } from '../components/ImageSpacePanel';
 
 export function ImageEdit() {
   return (
     <>
-      <Seo
-        title="AI Image Style Transfer | OpenPaths"
-        description="Upload an image and describe a new visual direction. OpenPaths routes the edit through GPT Image 2 and image-editing fallbacks."
-        path="/image-edit"
-      />
+      <ToolSeo slug="image-edit" />
       <div className="px-6 py-12">
         <div className="mx-auto max-w-6xl">
           <div className="mb-8 max-w-3xl">

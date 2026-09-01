@@ -14,18 +14,17 @@ import {
   topArtificialAnalysisModels,
 } from '../lib/artificialAnalysis';
 
-const TABLE_EVALS = EVALUATION_DEFINITIONS.filter(definition => (
-  ['intelligenceIndex', 'codingIndex', 'agenticIndex', 'gdpvalElo', 'gpqa', 'hle', 'terminalBenchHard', 'lcr'].includes(definition.key)
-));
+const DEFAULT_TABLE_MODEL_COUNT = 24;
+const TABLE_EVALS = EVALUATION_DEFINITIONS;
 
 export function Evals() {
-  const leaders = topArtificialAnalysisModels(10);
+  const leaders = topArtificialAnalysisModels(DEFAULT_TABLE_MODEL_COUNT);
 
   return (
     <>
       <Seo
         title="AI Model Evals, Pricing, and Speed | OpenPaths"
-        description="Live OpenPaths benchmarks: openpaths/auto head-to-head against GPT-5.x, Claude Opus, Gemini, DeepSeek, Grok, and GLM across coding, agentic tool use, creative SVG, speed, and cost-per-quality — plus an Artificial Analysis snapshot."
+        description="Live OpenPaths benchmarks: openpaths/auto head-to-head against GPT-5.x, Claude Opus, Gemini, DeepSeek, Grok, and GLM across coding, agentic tool use, creative SVG, speed, and cost-per-quality - plus an Artificial Analysis snapshot."
         path="/evals"
       />
       <div className="mx-auto max-w-7xl px-6 py-12">
@@ -61,11 +60,11 @@ export function Evals() {
 
         <section className="mt-10 overflow-hidden rounded-lg border border-white/20 bg-white/[0.05]">
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/20 px-4 py-3">
-            <h2 className="font-mono text-sm uppercase tracking-[0.16em] text-white/65">Eval Breakdown</h2>
-            <span className="font-mono text-xs text-white/50">{artificialAnalysisModels.length} crawled models</span>
+            <h2 className="font-mono text-sm uppercase tracking-[0.16em] text-white/65">Eval Breakdown · all metrics</h2>
+            <span className="font-mono text-xs text-white/50">Top {leaders.length} of {artificialAnalysisModels.length} crawled models</span>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[980px] text-left text-sm">
+            <table className="w-full min-w-[2100px] text-left text-sm">
               <thead className="font-mono text-xs uppercase tracking-[0.14em] text-white/50">
                 <tr>
                   <th className="px-4 py-3">Model</th>

@@ -41,7 +41,7 @@ def white_mark_on_black(size: int) -> Image.Image:
 
 
 def save_webp(image: Image.Image, path: Path) -> None:
-    image.save(path, "WEBP", lossless=True, method=6)
+    image.save(path, "WEBP", lossless=False, quality=85, method=6)
 
 
 base = white_mark_on_black(512)

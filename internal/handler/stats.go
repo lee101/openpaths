@@ -56,9 +56,9 @@ func (h *StatsHandler) HandleAppOGImage(ctx *fasthttp.RequestCtx) {
   <defs><pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse"><path d="M60 0H0V60" fill="none" stroke="#0d131c"/></pattern></defs>
   <rect width="1200" height="630" fill="#05070b"/><rect width="1200" height="630" fill="url(#grid)"/>
   <rect width="1200" height="5" fill="#38bdf8"/><rect y="626" width="1200" height="4" fill="#102c3a"/>
-  <g transform="translate(68 54) scale(.072)"><g transform="rotate(180 256 256)" fill="none" stroke="#f6f8fb" stroke-width="34" stroke-linecap="square" stroke-linejoin="round">
-    <path d="M420 256C360 256 316 256 250 256"/><path d="M250 256C210 256 184 235 170 200C156 165 170 135 80 144"/><path d="M250 256C210 256 184 277 170 312C156 347 170 377 80 368"/>
-    <g fill="#f6f8fb" stroke="none"><path d="M13 144l54 24v-48z"/><path d="M13 368l54 24v-48z"/></g>
+  <g transform="translate(68 54) scale(.0969388) translate(-120 -60)"><g transform="rotate(180 256 256)" fill="none" stroke="#f6f8fb" stroke-width="34" stroke-linecap="square" stroke-linejoin="round">
+    <path d="M340 256C315 256 282 256 260 256"/><path d="M260 256C214 256 176 226 162 178C148 132 172 94 70 108"/><path d="M260 256C214 256 176 286 162 334 C148 380 172 418 70 404"/>
+    <g fill="#f6f8fb" stroke="none"><path d="M4 108l78 38V70z"/><path d="M4 404l78 38v-76z"/></g>
   </g></g>
   <text x="116" y="82" fill="#f6f8fb" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" font-weight="700">OPENPATHS</text>
   <text x="232" y="82" fill="#606d7e" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18">/  APPS &amp; AGENTS</text>

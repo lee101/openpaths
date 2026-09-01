@@ -633,7 +633,7 @@ function ResponseSavingCard() {
             <FileText className="w-4 h-4 text-white/50" />
             <div>
               <div className="text-sm text-white">Save text generations</div>
-              <div className="text-xs text-white/55">Chat &amp; messages — prompt, transcript, output</div>
+              <div className="text-xs text-white/55">Chat &amp; messages - prompt, transcript, output</div>
             </div>
           </div>
           <Toggle on={text} onClick={() => loaded && persist(!text, images)} />
@@ -833,7 +833,7 @@ function OpenAIMaxPlanPanel({
             <div>
               <div className="text-xs font-mono uppercase tracking-[0.14em] text-violet-100/55 mb-2">Browser callback fallback</div>
               <p className="text-sm text-white/70">
-                Open the login page. When OpenAI redirects to <code className="font-mono text-white/90">localhost:1455</code>, copy the full URL from the address bar—even if the page cannot connect—and paste it below.
+                Open the login page. When OpenAI redirects to <code className="font-mono text-white/90">localhost:1455</code>, copy the full URL from the address bar-even if the page cannot connect-and paste it below.
               </p>
             </div>
             <div className="flex flex-col gap-3 md:flex-row">
@@ -977,7 +977,7 @@ export function Account() {
         .then(d => {
           setOpenAIAuthNotice(d.unsubscribed
             ? `${d.email} is unsubscribed from OpenPaths emails.`
-            : 'Could not unsubscribe automatically — use the unsubscribe link in a recent email.');
+            : 'Could not unsubscribe automatically - use the unsubscribe link in a recent email.');
         })
         .catch(() => {
           setOpenAIAuthNotice('Log in to unsubscribe, or use the unsubscribe link in a recent email.');
@@ -1874,7 +1874,6 @@ export function Account() {
             <div className="flex items-start justify-between gap-4 mb-8">
               <div>
                 <h1 className="text-3xl font-bold tracking-tight">Billing & Payments</h1>
-                <p className="text-sm text-white/55 mt-2">Stripe is the payment source of truth. Credits remain prepaid on OpenPaths.</p>
               </div>
             </div>
 

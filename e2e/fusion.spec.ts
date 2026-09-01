@@ -17,7 +17,9 @@ const fusedBody = JSON.stringify({
 test.describe('Model Fusion space', () => {
   test('renders from nav with the quality preset and a request preview', async ({ page }) => {
     await page.goto('/');
-    await page.click('nav >> text=Fusion');
+    // Fusion lives behind the nav menu button, not the core top bar.
+    await page.getByRole('button', { name: 'Open menu' }).click();
+    await page.locator('nav a[href="/fusion"]').last().click();
     await expect(page).toHaveURL('/fusion');
 
     await expect(page.getByRole('heading', { name: /Fuse multiple model answers into one stronger result/i })).toBeVisible();

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Box, Copy, Download, ExternalLink, Loader2, Upload, Wand2 } from 'lucide-react';
-import { Seo } from '../components/Seo';
+import { ToolSeo } from '../components/ToolSeo';
 import { CodeBlock } from '../components/CodeBlock';
 import { ModelViewer } from '../components/ModelViewer';
 import { Model3DDrop } from '../components/Model3DDrop';
@@ -316,11 +316,7 @@ console.log(data.model_glb.url);`,
 
   return (
     <>
-      <Seo
-        title="Image to 3D API | OpenPaths"
-        description="Generate textured GLB models from a single image through OpenPaths and Fal Pixal3D."
-        path="/image-to-3d"
-      />
+      <ToolSeo slug="image-to-3d" />
 
       <div className="px-6 py-10">
         <div className="mx-auto max-w-7xl">
@@ -411,9 +407,9 @@ console.log(data.model_glb.url);`,
               <label className="mb-3 block">
                 <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/55">Engine</span>
                 <select value={engine} onChange={e => { setEngine(e.target.value as 'pixal3d' | 'meshy-v6' | 'tripo'); setResult(null); }} className="w-full rounded border border-white/20 bg-black px-3 py-2 text-sm font-mono text-white focus:border-white/50 focus:outline-none">
-                  <option value="pixal3d">Pixal3D — fast, textured ($0.30–$0.42)</option>
-                  <option value="meshy-v6">Meshy v6 — higher quality ($0.80)</option>
-                  <option value="tripo">Tripo p1 — sharp geometry ($0.40–$0.50)</option>
+                  <option value="pixal3d">Pixal3D - fast, textured ($0.30–$0.42)</option>
+                  <option value="meshy-v6">Meshy v6 - higher quality ($0.80)</option>
+                  <option value="tripo">Tripo p1 - sharp geometry ($0.40–$0.50)</option>
                 </select>
               </label>
 
@@ -557,7 +553,7 @@ console.log(data.model_glb.url);`,
             <section className="min-w-0 overflow-hidden rounded-lg border border-white/20 bg-white/[0.05] p-5">
               <h2 className="mb-3 font-mono text-sm font-bold uppercase tracking-wider text-white/70">Preview your own 3D file</h2>
               <p className="mb-4 text-sm leading-relaxed text-white/55">
-                Already have a model? Drop a <code className="text-white/70">.glb</code> or <code className="text-white/70">.gltf</code> to preview it instantly — nothing is uploaded.
+                Already have a model? Drop a <code className="text-white/70">.glb</code> or <code className="text-white/70">.gltf</code> to preview it instantly - nothing is uploaded.
               </p>
               <Model3DDrop minHeight={260} />
               <p className="mt-4 break-words text-xs font-mono text-white/50">Sword default prompt: {DEFAULT_PROMPT}</p>

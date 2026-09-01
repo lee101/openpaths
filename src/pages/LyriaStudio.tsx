@@ -17,7 +17,7 @@ import {
   Waves,
 } from 'lucide-react';
 import { CodeBlock } from '../components/CodeBlock';
-import { Seo } from '../components/Seo';
+import { ToolSeo } from '../components/ToolSeo';
 
 const API_BASE = 'https://openpaths.io/v1';
 const MODELS = [
@@ -88,7 +88,7 @@ function Spectrum({ active }: { active: boolean }) {
 }
 
 function formatBytes(bytes: number) {
-  if (!bytes) return '—';
+  if (!bytes) return '-';
   return bytes > 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.round(bytes / 1024)} KB`;
 }
 
@@ -203,12 +203,7 @@ export function LyriaStudio() {
 
   return (
     <>
-      <Seo
-        title="Lyria 3 Music Studio — AI Song & Instrumental Generator | OpenPaths"
-        description="Generate complete songs, instrumentals, loops, and 30-second clips with Google Lyria 3 Pro and Clip. Direct genre, mood, structure, instruments, vocals, lyrics, and export as Opus."
-        path="/tools/lyria"
-        jsonLd={{ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'OpenPaths Lyria 3 Music Studio', applicationCategory: 'MultimediaApplication', operatingSystem: 'Web' }}
-      />
+      <ToolSeo slug="lyria" />
 
       <div className="min-h-screen bg-[radial-gradient(circle_at_18%_0%,rgba(255,255,255,0.07),transparent_30%)] px-4 py-8 sm:px-6 lg:py-10">
         <div className="mx-auto max-w-[1450px]">

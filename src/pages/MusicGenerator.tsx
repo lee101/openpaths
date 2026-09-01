@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Copy, Download, Loader2, Music, Sparkles } from 'lucide-react';
-import { Seo } from '../components/Seo';
+import { ToolSeo } from '../components/ToolSeo';
 import { CodeBlock } from '../components/CodeBlock';
 
 const MODEL_ID = 'mg-music';
@@ -134,11 +134,7 @@ JSON`,
 
   return (
     <>
-      <Seo
-        title="Music Generator — OpenPaths"
-        description="Generate full songs with vocals from a prompt and optional lyrics through MiniMax-Music3 on ManifoldGen, OpenPaths' first-party GPU studio. Pin any length from 30 to 300 seconds."
-        path="/music-generator"
-      />
+      <ToolSeo slug="music-generator" />
       <div className="px-6 py-10">
         <div className="mx-auto max-w-7xl">
           <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -148,7 +144,7 @@ JSON`,
               </div>
               <h1 className="max-w-3xl text-4xl font-bold tracking-tight md:text-6xl">Music Generator</h1>
               <p className="mt-4 max-w-2xl text-base leading-relaxed text-white/55">
-                Describe a track and get a full song with vocals — add your own lyrics with [Verse]/[Chorus] markers,
+                Describe a track and get a full song with vocals - add your own lyrics with [Verse]/[Chorus] markers,
                 or let the model improvise. Powered by ManifoldGen, OpenPaths' first-party GPU studio.
               </p>
             </div>
@@ -198,7 +194,7 @@ JSON`,
                 ) : loading ? (
                   <p className="text-sm font-mono text-white/45">Composing your track...</p>
                 ) : (
-                  <p className="max-w-md text-center text-xs font-mono text-white/50">Describe a song above — MiniMax-Music3 renders full vocals and instrumentation here.</p>
+                  <p className="max-w-md text-center text-xs font-mono text-white/50">Describe a song above - MiniMax-Music3 renders full vocals and instrumentation here.</p>
                 )}
               </div>
             </section>

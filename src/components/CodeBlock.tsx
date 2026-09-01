@@ -69,7 +69,7 @@ export function CodeBlock({
   hideLabel,
 }: CodeBlockProps) {
   const highlighted = highlightCode(code, language);
-  const resolvedLabel = hideLabel ? '' : label || (highlighted.language ? highlighted.language.toUpperCase() : '');
+  const resolvedLabel = hideLabel ? '' : (label || '');
 
   return (
     <div className={containerClassName}>

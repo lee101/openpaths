@@ -3,6 +3,8 @@ export type VideoGalleryItem = {
   title: string;
   provider: string;
   model: string;
+  /** Public OpenPaths model ID used by the on-site generation workspace. */
+  modelId: string;
   prompt: string;
   videoUrl: string;
   posterUrl?: string;
@@ -19,6 +21,7 @@ export const videoGallery: VideoGalleryItem[] = [
     title: "Glass Hummingbird",
     provider: "ManifoldGen",
     model: "kfold-video",
+    modelId: "kfold-video",
     prompt: "Macro product film in one continuous shot: a translucent glass hummingbird unfolds its wings above a dark reflective table, the camera makes a slow 30-degree arc, cool rim light refracts into spectral highlights, delicate crystalline wing chimes and a low room tone, no cuts, photorealistic.",
     videoUrl: "/static/video-gallery/h3/glass-hummingbird.webm",
     posterUrl: "/static/video-gallery/h3/glass-hummingbird-poster.webp",
@@ -29,9 +32,10 @@ export const videoGallery: VideoGalleryItem[] = [
   },
   {
     slug: "manifoldgen-kfold-h3-native-rain-tram",
-    title: "Rain Tram — Native HD",
+    title: "Rain Tram - Native HD",
     provider: "ManifoldGen",
     model: "kfold-video",
+    modelId: "kfold-video",
     prompt: "Handheld tracking shot follows the tram through heavy rain. Neon reflections streak across wet asphalt while pedestrians with umbrellas cross in the foreground; tires hiss on the wet road, distant thunder rumbles, rain patters against the tram windows.",
     videoUrl: "/static/video-gallery/h3/rain-tram-native.mp4",
     posterUrl: "/static/video-gallery/h3/rain-tram-native-poster.webp",
@@ -45,6 +49,7 @@ export const videoGallery: VideoGalleryItem[] = [
     title: "Desert Portal Transition",
     provider: "ManifoldGen",
     model: "kfold-video",
+    modelId: "kfold-video",
     prompt: "One uninterrupted dolly-in across wind-rippled desert sand as an ancient stone arch awakens; blue energy traces the carvings, cloth and dust obey the wind, deep harmonic drone and granular sand, preserve the arch geometry, no cut.",
     videoUrl: "/static/video-gallery/h3/desert-portal.webm",
     posterUrl: "/static/video-gallery/h3/desert-portal-poster.webp",
@@ -58,6 +63,7 @@ export const videoGallery: VideoGalleryItem[] = [
     title: "Obsidian Lighthouse",
     provider: "ManifoldGen",
     model: "K-Fold Video Generator",
+    modelId: "kfold-video",
     prompt: "An obsidian lighthouse fractures moonlight into spectral fog while black waves climb upward, slow impossible crane shot; sub-bass surf, distant glass harmonics.",
     videoUrl: "https://manifoldgenstatic.manifoldgen.com/gallery/03475ad6-41a/videos/add2e0dd-9f8f-4d6d-b0dc-41a210fecaa3.webm",
     duration: 5,
@@ -69,6 +75,7 @@ export const videoGallery: VideoGalleryItem[] = [
     title: "Cartographer in Motion",
     provider: "ManifoldGen",
     model: "K-Fold Video Generator",
+    modelId: "kfold-video",
     prompt: "A cartographer moves through a luminous paper landscape, ink rivers flowing into new constellations, graceful camera drift, tactile cinematic detail.",
     videoUrl: "https://manifoldgenstatic.manifoldgen.com/gallery/videos/wan_animate_cartographer_standard_5s_20260816.mp4",
     duration: 5,
@@ -80,6 +87,7 @@ export const videoGallery: VideoGalleryItem[] = [
     title: "Temple Chiffon Spin",
     provider: "ManifoldGen",
     model: "K-Fold Video Generator",
+    modelId: "kfold-video",
     prompt: "A dancer in layered chiffon turns through a sunlit temple, fabric tracing wide arcs through warm dust and quiet beams of light.",
     videoUrl: "https://manifoldgenstatic.manifoldgen.com/gallery/videos/temple-chiffon-spin.webm",
     duration: 5,
@@ -88,9 +96,10 @@ export const videoGallery: VideoGalleryItem[] = [
   },
   {
     slug: "flux-3-video-routing-forest-draft",
-    title: "Routing Forest — Draft",
+    title: "Routing Forest - Draft",
     provider: "Black Forest Labs",
     model: "FLUX 3 Video Draft",
+    modelId: "flux-3-video-draft",
     prompt: "A cinematic macro journey through a miniature Black Forest at night where luminous fiber-optic paths weave between moss-covered stones like an intelligent routing network. The camera glides slowly forward at ground level; cool moonlight, warm bioluminescent pulses, light fog, realistic depth of field. Natural forest ambience and subtle electronic tones, no speech, no readable text, no logos.",
     videoUrl: "/static/video-gallery/bfl/flux-3-routing-forest-draft.webm",
     posterUrl: "/static/video-gallery/bfl/flux-3-routing-forest-draft-poster.webp",
@@ -103,6 +112,7 @@ export const videoGallery: VideoGalleryItem[] = [
     title: "Living Routing Terrarium",
     provider: "Black Forest Labs",
     model: "FLUX 3 Video",
+    modelId: "flux-3-video",
     prompt: "A precision glass terrarium sits on a dark studio desk, containing a living miniature forest whose glowing root network reroutes pulses of light around fallen branches in real time. Slow cinematic orbit, physically accurate reflections, rich moss detail, cool blue and warm amber lighting, soft mechanical room tone blended with forest ambience, no speech, no readable text, no logos.",
     videoUrl: "/static/video-gallery/bfl/flux-3-routing-terrarium-full.webm",
     posterUrl: "/static/video-gallery/bfl/flux-3-routing-terrarium-full-poster.webp",
@@ -115,6 +125,7 @@ export const videoGallery: VideoGalleryItem[] = [
     title: "Data Observatory",
     provider: "xAI",
     model: "grok-imagine-video",
+    modelId: "grok-imagine-video",
     prompt: "A cinematic macro shot of a glass observatory filled with glowing data streams orbiting like constellations, slow dolly forward, realistic reflections, premium AI infrastructure mood, no readable text.",
     videoUrl: "https://openpathsstatic.openpaths.io/static/uploads/landing/video-gallery/grok-imagine-video-data-observatory.webm",
     duration: 6,
@@ -126,6 +137,7 @@ export const videoGallery: VideoGalleryItem[] = [
     title: "Routing Garden",
     provider: "xAI",
     model: "grok-imagine-video",
+    modelId: "grok-imagine-video",
     prompt: "A miniature indoor garden where fiber optic vines connect small model cards across black stone, soft rain on glass, gentle camera orbit, elegant product demo lighting, no text or logos.",
     videoUrl: "https://openpathsstatic.openpaths.io/static/uploads/landing/video-gallery/grok-imagine-video-routing-garden.webm",
     duration: 6,
@@ -137,6 +149,7 @@ export const videoGallery: VideoGalleryItem[] = [
     title: "Agent Workshop",
     provider: "xAI",
     model: "grok-imagine-video",
+    modelId: "grok-imagine-video",
     prompt: "A quiet futuristic workshop where autonomous software agents appear as small luminous tools assembling a clean interface in midair, warm practical lights, shallow depth of field, slow push-in, no readable text.",
     videoUrl: "https://openpathsstatic.openpaths.io/static/uploads/landing/video-gallery/grok-imagine-video-agent-workshop.webm",
     duration: 6,

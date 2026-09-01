@@ -68,15 +68,20 @@
   <url>
     <loc>https://openpaths.io/tools/google-tts</loc>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/tools/lyria</loc>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/text-to-image</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/image-edit</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -87,6 +92,26 @@
   </url>
   <url>
     <loc>https://openpaths.io/image-to-video</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/video-extension</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/character-animator</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/music-generator</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/remove-video-background</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -107,21 +132,6 @@
   </url>
   <url>
     <loc>https://openpaths.io/retexture-3d</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://openpaths.io/character-animator</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://openpaths.io/music-generator</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://openpaths.io/remove-video-background</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -846,6 +856,11 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/models/kfold-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/models/cutedsl-image</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -1266,6 +1281,11 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/models/deepseek-v4-flash-vision-exp</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/models/deepseek-v4-pro</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
@@ -1569,6 +1589,11 @@
     <loc>https://openpaths.io/models/or%2Fhunter-alpha</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/gpt-image-2</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/models/flux-pro</loc>
@@ -2479,6 +2504,26 @@
     <loc>https://openpaths.io/models/flux-video-upscale</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/blog/provider-manifoldgen</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/blog/provider-cutedsl</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/blog/provider-papers</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/blog/provider-openpaths</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/wan-3-text-to-video-and-image-to-video-api</loc>

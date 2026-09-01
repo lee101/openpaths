@@ -1,6 +1,6 @@
 {
   "campaign": "new_user_onboarding",
-  "description": "22-email drip campaign for new OpenPaths users over ~95 days — provider spotlights, cost savings, auto-routing, generative media",
+  "description": "22-email drip campaign for new OpenPaths users over ~95 days - provider spotlights, cost savings, auto-routing, generative media",
   "from_email": "lee.penkman@netwrck.com",
   "from_name": "OpenPaths",
   "base_url": "https://openpaths.io",
@@ -8,7 +8,7 @@
     {
       "id": 1,
       "delay_days": 0,
-      "subject": "Welcome to OpenPaths — One API, Every AI Model",
+      "subject": "Welcome to OpenPaths - One API, Every AI Model",
       "template": "01-welcome.html",
       "description": "Welcome email: 70+ models, 15+ providers, open source, OpenRouter-compatible"
     },
@@ -17,49 +17,49 @@
       "delay_days": 1,
       "subject": "Your First API Call in 2 Minutes",
       "template": "02-first-api-call.html",
-      "description": "Quick start with Python, curl, Node.js — same API as OpenAI"
+      "description": "Quick start with Python, curl, Node.js - same API as OpenAI"
     },
     {
       "id": 3,
       "delay_days": 3,
       "subject": "Auto Routing: Stay on the Pareto Frontier of AI Costs",
       "template": "03-auto-models.html",
-      "description": "auto-easy, auto-medium, auto-think — how static embeddings route tasks to the right model"
+      "description": "auto-easy, auto-medium, auto-think - how static embeddings route tasks to the right model"
     },
     {
       "id": 4,
       "delay_days": 7,
       "subject": "Anthropic's Claude: World-Class Reasoning & Long Context",
       "template": "04-anthropic.html",
-      "description": "Claude Fable 5, Opus 4.8, Sonnet 4.6, Haiku 4.5 — agentic coding, long context, extended thinking, pricing"
+      "description": "Claude Fable 5, Opus 4.8, Sonnet 4.6, Haiku 4.5 - agentic coding, long context, extended thinking, pricing"
     },
     {
       "id": 5,
       "delay_days": 10,
       "subject": "OpenAI's gpt-5.6: Sol, Terra & Luna Explained",
       "template": "05-openai.html",
-      "description": "gpt-5.6 family — sol/terra/luna tiers, 1M context, tools, vision, when to use each"
+      "description": "gpt-5.6 family - sol/terra/luna tiers, 1M context, tools, vision, when to use each"
     },
     {
       "id": 6,
       "delay_days": 14,
       "subject": "Google Gemini: 2M Token Context & Multimodal Mastery",
       "template": "06-google.html",
-      "description": "Gemini 3.5 Flash, 2.5 Pro (2M context) — cost efficiency, multimodal, long context"
+      "description": "Gemini 3.5 Flash, 2.5 Pro (2M context) - cost efficiency, multimodal, long context"
     },
     {
       "id": 7,
       "delay_days": 18,
       "subject": "DeepSeek: Open Source Reasoning at a Fraction of the Cost",
       "template": "07-deepseek.html",
-      "description": "DeepSeek V4 Pro (1M ctx reasoning), chat & reasoner at $0.28/M — open weights, 95% cheaper"
+      "description": "DeepSeek V4 Pro (1M ctx reasoning), chat & reasoner at $0.28/M - open weights, 95% cheaper"
     },
     {
       "id": 8,
       "delay_days": 21,
       "subject": "Mistral: Europe's Fastest, Leanest Models",
       "template": "08-mistral.html",
-      "description": "Mistral Large 3, Codestral, Magistral, Devstral — open weights, EU-based, great price/perf"
+      "description": "Mistral Large 3, Codestral, Magistral, Devstral - open weights, EU-based, great price/perf"
     },
     {
       "id": 9,
@@ -73,28 +73,28 @@
       "delay_days": 28,
       "subject": "xAI Grok: Real-Time Web & Twitter's Training Data",
       "template": "10-xai.html",
-      "description": "Grok 4.5 (500K ctx), Grok 4.3 (1M ctx) — live web search, unique training data, Elon's lab"
+      "description": "Grok 4.5 (500K ctx), Grok 4.3 (1M ctx) - live web search, unique training data, Elon's lab"
     },
     {
       "id": 11,
       "delay_days": 33,
       "subject": "Qwen & Alibaba: Multilingual Open Source Powerhouse",
       "template": "11-qwen.html",
-      "description": "Qwen 3.5, Qwen Coder — multilingual, long context, Apache licensed"
+      "description": "Qwen 3.5, Qwen Coder - multilingual, long context, Apache licensed"
     },
     {
       "id": 12,
       "delay_days": 38,
       "subject": "Groq, Together & Fireworks: Inference at Warp Speed",
       "template": "12-inference-providers.html",
-      "description": "Fast inference providers — Groq LPU, Together AI, Fireworks — for low-latency apps"
+      "description": "Fast inference providers - Groq LPU, Together AI, Fireworks - for low-latency apps"
     },
     {
       "id": 13,
       "delay_days": 43,
       "subject": "Coding Models: Which One Wins for Your Stack?",
       "template": "13-coding-models.html",
-      "description": "Claude Fable 5, GPT-5 Codex, Kimi K3, DeepSeek V4 Pro, Codestral, Qwen Coder — picks and pricing"
+      "description": "Claude Fable 5, GPT-5 Codex, Kimi K3, DeepSeek V4 Pro, Codestral, Qwen Coder - picks and pricing"
     },
     {
       "id": 14,
@@ -113,35 +113,35 @@
     {
       "id": 16,
       "delay_days": 58,
-      "subject": "Automatic Fallbacks — Never Get a 503 Again",
+      "subject": "Automatic Fallbacks - Never Get a 503 Again",
       "template": "16-fallbacks.html",
       "description": "How OpenPaths keeps your app running with automatic provider fallbacks"
     },
     {
       "id": 17,
       "delay_days": 63,
-      "subject": "OpenPaths Is Open Source — Here's What That Means for You",
+      "subject": "OpenPaths Is Open Source - Here's What That Means for You",
       "template": "17-open-source.html",
-      "description": "Self-host, audit the routing logic, contribute — the architecture explained"
+      "description": "Self-host, audit the routing logic, contribute - the architecture explained"
     },
     {
       "id": 18,
       "delay_days": 70,
-      "subject": "Vision, Embeddings & Beyond — The Full Model Menu",
+      "subject": "Vision, Embeddings & Beyond - The Full Model Menu",
       "template": "18-full-menu.html",
-      "description": "Vision models, embeddings (ModernBERT), image gen — the full OpenPaths model catalogue"
+      "description": "Vision models, embeddings (ModernBERT), image gen - the full OpenPaths model catalogue"
     },
     {
       "id": 21,
       "delay_days": 75,
       "subject": "Fal: The Fastest Path to FLUX, Kling & Luma",
       "template": "21-fal.html",
-      "description": "Fal provider spotlight — serverless image/video runtime behind FLUX Pro, Kling and Luma Dream Machine"
+      "description": "Fal provider spotlight - serverless image/video runtime behind FLUX Pro, Kling and Luma Dream Machine"
     },
     {
       "id": 22,
       "delay_days": 78,
-      "subject": "Generative Media — Image, Video, Audio, Embeddings via One API",
+      "subject": "Generative Media - Image, Video, Audio, Embeddings via One API",
       "template": "22-generative-media.html",
       "description": "Cross-modality roundup of OpenPaths endpoints and which providers sit behind each"
     },
@@ -150,12 +150,12 @@
       "delay_days": 85,
       "subject": "Credits, Auto Top-Up & Making Your Budget Go Further",
       "template": "19-billing-credits.html",
-      "description": "Credit system, auto top-up, usage dashboard — maximise ROI"
+      "description": "Credit system, auto top-up, usage dashboard - maximise ROI"
     },
     {
       "id": 20,
       "delay_days": 95,
-      "subject": "You're an OpenPaths Pro — Advanced Tips & What's Coming",
+      "subject": "You're an OpenPaths Pro - Advanced Tips & What's Coming",
       "template": "20-power-user.html",
       "description": "Multi-key management, streaming, webhooks, upcoming features"
     },

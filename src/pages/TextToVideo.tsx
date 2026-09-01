@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Copy, Download, ExternalLink, Loader2, Sparkles, Video } from 'lucide-react';
-import { Seo } from '../components/Seo';
+import { ToolSeo } from '../components/ToolSeo';
 import { CodeBlock } from '../components/CodeBlock';
 
 const MODEL_ID = 'wan-3.0-text-to-video';
@@ -191,11 +191,7 @@ JSON`,
 
   return (
     <>
-      <Seo
-        title="Text to Video API — Wan 3.0 | OpenPaths"
-        description="Generate up-to-30s cinematic video with native audio from one prompt through Wan 3.0 on OpenPaths. Per-second pricing by resolution."
-        path="/text-to-video"
-      />
+      <ToolSeo slug="text-to-video" />
       <div className="px-6 py-10">
         <div className="mx-auto max-w-7xl">
           <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">

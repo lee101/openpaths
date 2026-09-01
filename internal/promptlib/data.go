@@ -110,6 +110,7 @@ var models = []Model{
 	// text / code
 	{"openpaths/auto", "OpenPaths Auto", "Automatically routes to the best chat model for the task.", "text", "auto_awesome"},
 	{"openpaths/auto-code", "OpenPaths Auto (Code)", "Auto-routes to the strongest coding model available.", "text", "code"},
+	{"openpaths/auto-vision", "OpenPaths Auto Vision", "Routes image understanding between frontier, mid-complexity, and thumbnail models.", "text", "visibility"},
 	{"gpt-5-codex", "GPT-5 Codex", "OpenAI coding model for autocomplete, refactors, and generation.", "text", "terminal"},
 	{"composer-2.5", "Composer 2.5", "Cursor's fast agentic coding model.", "text", "bolt"},
 	{"cursor-grok-4.6", "Cursor Grok 4.6", "Cursor-hosted Grok model for long-running agents and knowledge work.", "text", "smart_toy"},
@@ -119,6 +120,7 @@ var models = []Model{
 	{"claude-opus-4-8", "Claude Opus 4.8", "Previous-gen Anthropic flagship for writing and reasoning.", "text", "psychology"},
 	{"claude-opus-4-7", "Claude Opus 4.7", "Older Anthropic flagship for writing and reasoning.", "text", "psychology"},
 	{"gemini-2.5-pro", "Gemini 2.5 Pro", "Google's long-context reasoning and writing model.", "text", "stars"},
+	{"deepseek-v4-flash-vision-exp", "DeepSeek V4 Flash Vision Exp", "Experimental DeepSeek image-input model for structured visual analysis.", "text", "visibility"},
 	// image
 	{"zimage", "ZImage", "OpenPaths image model for fast, high-quality generation.", "image", "image"},
 	{"flux-pro", "FLUX Pro", "Crisp, modern image generation with strong prompt adherence.", "image", "auto_awesome"},

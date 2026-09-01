@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Boxes, Copy, Download, ExternalLink, Loader2, Wand2 } from 'lucide-react';
-import { Seo } from '../components/Seo';
+import { ToolSeo } from '../components/ToolSeo';
 import { CodeBlock } from '../components/CodeBlock';
 import { ModelViewer } from '../components/ModelViewer';
 
@@ -193,11 +193,7 @@ console.log(data.model_glb.url);`,
 
   return (
     <>
-      <Seo
-        title="Text to 3D API | OpenPaths"
-        description="Generate textured GLB models straight from a text prompt. OpenPaths auto-generates an image then converts it to 3D with Pixal3D."
-        path="/text-to-3d"
-      />
+      <ToolSeo slug="text-to-3d" />
 
       <div className="px-6 py-10">
         <div className="mx-auto max-w-7xl">
@@ -252,7 +248,7 @@ console.log(data.model_glb.url);`,
                 <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/55">Image model</span>
                 <select value={imageModel} onChange={e => setImageModel(e.target.value)} className="w-full rounded border border-white/20 bg-black px-3 py-2 text-sm font-mono text-white focus:border-white/50 focus:outline-none">
                   {IMAGE_MODELS.map(m => (
-                    <option key={m.id} value={m.id}>{m.label} — ${m.price.toFixed(3)}</option>
+                    <option key={m.id} value={m.id}>{m.label} - ${m.price.toFixed(3)}</option>
                   ))}
                 </select>
               </label>

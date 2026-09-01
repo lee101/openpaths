@@ -5,7 +5,6 @@ import {
   ArrowRight,
   Check,
   ChevronDown,
-  Circle,
   CircuitBoard,
   Code2,
   Copy,
@@ -29,6 +28,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Seo } from '../components/Seo';
+import { CodeBlock } from '../components/CodeBlock';
 
 type RouteMode = 'adaptive' | 'fallback' | 'fusion';
 type Visibility = 'private' | 'link' | 'public';
@@ -138,6 +138,7 @@ export function Compound() {
   const [saved, setSaved] = useState(false);
   const [testState, setTestState] = useState<'idle' | 'running' | 'success'>('idle');
   const [testStep, setTestStep] = useState(0);
+  const [snippetLang, setSnippetLang] = useState<'python' | 'curl' | 'config'>('python');
 
   useEffect(() => {
     document.title = `${config.name} · Compound Designer | OpenPaths`;
@@ -152,6 +153,21 @@ export function Compound() {
   -H "Authorization: Bearer $OPENPATHS_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{"model":"${config.slug}","messages":[{"role":"user","content":"Route this request."}]}'`;
+  const pythonSnippet = `import os
+
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://openpaths.io/v1",
+    api_key=os.environ["OPENPATHS_API_KEY"],
+)
+
+response = client.chat.completions.create(
+    model="${config.slug}",
+    messages=[{"role": "user", "content": "Route this request."}],
+)
+
+print(response.choices[0].message.content)`;
   const jsonSnippet = JSON.stringify({
     model: config.slug,
     routing: config.mode,
@@ -159,6 +175,8 @@ export function Compound() {
     ...(config.mode === 'fusion' ? { judge_model: config.judgeModel } : {}),
     circuit_breaker: { failures: config.failureThreshold, cooldown_seconds: config.cooldown, timeout_seconds: config.timeout },
   }, null, 2);
+
+  const activeSnippet = snippetLang === 'python' ? pythonSnippet : snippetLang === 'curl' ? requestSnippet : jsonSnippet;
 
   const update = <K extends keyof CompoundConfig>(key: K, value: CompoundConfig[K]) => setConfig(current => ({ ...current, [key]: value }));
 
@@ -224,7 +242,7 @@ export function Compound() {
             </div>
             <div className="flex flex-wrap gap-2">
               <button type="button" onClick={() => copy(shareLink, 'share')} className="inline-flex h-10 items-center gap-2 rounded border border-white/15 bg-white/[0.07] px-3 font-mono text-xs font-bold text-white/70 transition-colors hover:border-white/50 hover:text-white"><Share2 className="h-3.5 w-3.5" /> {copied === 'share' ? 'Link copied' : 'Share design'}</button>
-              <button type="button" onClick={saveDraft} className="inline-flex h-10 items-center gap-2 rounded bg-white px-4 font-mono text-xs font-bold text-black transition-colors hover:bg-white/90"><Save className="h-3.5 w-3.5" /> {saved ? 'Saved' : 'Save draft'}</button>
+              <button type="button" onClick={saveDraft} className="inline-flex h-10 items-center gap-2 rounded bg-white px-4 font-mono text-xs font-bold text-black transition-colors hover:bg-white/90"><Save className="h-3.5 w-3.5" /> {saved ? 'Saved' : 'Save'}</button>
             </div>
           </header>
 
@@ -234,7 +252,7 @@ export function Compound() {
             <Stat label="Endpoint health" value={testState === 'success' ? '100%' : 'Ready'} detail={testState === 'success' ? 'last test passed' : 'not deployed yet'} icon={<Activity className="h-4 w-4" />} />
           </div>
 
-          <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_390px]">
+          <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_440px]">
             <main className="min-w-0 space-y-5">
               <section className="rounded-xl border border-white/20 bg-white/[0.05] p-5 sm:p-6">
                 <div className="mb-5 flex items-start justify-between gap-4">
@@ -253,7 +271,7 @@ export function Compound() {
                 <div className="grid gap-3 md:grid-cols-3">
                   {(['adaptive', 'fallback', 'fusion'] as RouteMode[]).map(option => { const item = modeCopy(option); const Icon = item.icon; return <button key={option} type="button" onClick={() => update('mode', option)} className={`rounded-lg border p-4 text-left transition-all ${config.mode === option ? 'border-violet-300/50 bg-violet-300/10 shadow-[0_0_30px_rgba(167,139,250,0.08)]' : 'border-white/20 bg-black hover:border-white/45'}`}><Icon className={`mb-8 h-5 w-5 ${config.mode === option ? 'text-violet-100' : 'text-white/50'}`} /><span className="block text-sm font-semibold text-white">{item.label}</span><span className="mt-1 block text-xs leading-5 text-white/55">{item.detail}</span></button>; })}
                 </div>
-                <div className="mt-5 rounded-lg border border-violet-300/15 bg-violet-300/[0.04] p-4"><div className="flex items-start gap-3"><Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-violet-200" /><div className="min-w-0 flex-1"><p className="text-sm text-violet-50">{mode.label}</p><p className="mt-1 text-xs leading-5 text-white/45">{config.mode === 'adaptive' ? 'The router balances your model pool by health, estimated quality, latency, and the weights below. A bad provider is automatically cooled down.' : config.mode === 'fallback' ? 'Models are tried from top to bottom. A circuit opens after repeated failures, skipping that model until its cooldown expires.' : 'The active models answer in parallel, then your selected judge synthesizes one final response.'}{config.mode === 'fusion' && <span className="mt-3 flex items-center gap-2"><span className="shrink-0 font-mono text-[10px] uppercase tracking-widest text-white/50">Judge</span><span className="relative min-w-0 flex-1"><select value={config.judgeModel} onChange={event => update('judgeModel', event.target.value)} className="h-9 w-full appearance-none rounded border border-white/20 bg-black px-2 pr-7 font-mono text-[11px] text-white/70 outline-none focus:border-white/50">{config.models.map(model => <option key={model.id} value={model.id}>{model.label}</option>)}</select><ChevronDown className="pointer-events-none absolute right-2 top-3 h-3.5 w-3.5 text-white/50" /></span></span>}</p></div></div></div>
+                <div className="mt-5 rounded-lg border border-violet-300/15 bg-violet-300/[0.04] p-4"><div className="flex items-start gap-3"><Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-violet-200" /><div className="min-w-0 flex-1"><p className="text-sm text-violet-50">{mode.label}</p><p className="mt-1 text-xs leading-5 text-white/45">{config.mode === 'adaptive' ? 'Balances the pool by health, quality, latency, and the weights below. Bad providers cool down automatically.' : config.mode === 'fallback' ? 'Models are tried from top to bottom. A circuit opens after repeated failures, skipping that model until its cooldown expires.' : 'The active models answer in parallel, then your selected judge synthesizes one final response.'}{config.mode === 'fusion' && <span className="mt-3 flex items-center gap-2"><span className="shrink-0 font-mono text-[10px] uppercase tracking-widest text-white/50">Judge</span><span className="relative min-w-0 flex-1"><select value={config.judgeModel} onChange={event => update('judgeModel', event.target.value)} className="h-9 w-full appearance-none rounded border border-white/20 bg-black px-2 pr-7 font-mono text-[11px] text-white/70 outline-none focus:border-white/50">{config.models.map(model => <option key={model.id} value={model.id}>{model.label}</option>)}</select><ChevronDown className="pointer-events-none absolute right-2 top-3 h-3.5 w-3.5 text-white/50" /></span></span>}</p></div></div></div>
               </section>
 
               <section className="rounded-xl border border-white/20 bg-white/[0.05] p-5 sm:p-6">
@@ -262,11 +280,10 @@ export function Compound() {
                   {config.models.map((model, index) => <div key={model.id} className="group flex items-center gap-3 rounded-lg border border-white/20 bg-black p-3 transition-colors hover:border-white/40"><div className="hidden text-white/35 sm:block"><GripVertical className="h-4 w-4" /></div><div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded border font-mono text-xs font-bold ${accentClasses(model.accent)}`}>{model.kind === 'auto' ? 'A' : model.kind === 'custom' ? 'C' : model.provider.slice(0, 1)}</div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><span className="truncate text-sm font-medium text-white">{model.label}</span>{index === 0 && <span className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-widest text-white/45">Primary</span>}</div><div className="mt-1 truncate font-mono text-[10px] text-white/45">{model.id} · {model.description}</div></div>{config.mode === 'adaptive' && <label className="hidden items-center gap-2 sm:flex"><span className="font-mono text-[10px] text-white/45">{model.weight}%</span><input aria-label={`${model.label} weight`} type="range" min="0" max="100" value={model.weight} onChange={event => setConfig(current => ({ ...current, models: current.models.map(item => item.id === model.id ? { ...item, weight: Number(event.target.value) } : item) }))} className="w-20 accent-violet-300" /></label>}<div className="flex items-center gap-1 opacity-60 transition-opacity group-hover:opacity-100"><button type="button" title="Move up" onClick={() => moveModel(index, -1)} disabled={index === 0} className="rounded p-1.5 text-white/55 hover:bg-white/10 hover:text-white disabled:opacity-20"><ArrowDown className="h-3.5 w-3.5 rotate-180" /></button><button type="button" title="Move down" onClick={() => moveModel(index, 1)} disabled={index === config.models.length - 1} className="rounded p-1.5 text-white/55 hover:bg-white/10 hover:text-white disabled:opacity-20"><ArrowDown className="h-3.5 w-3.5" /></button><button type="button" title="Remove model" onClick={() => removeModel(model.id)} disabled={config.models.length <= 1} className="rounded p-1.5 text-white/55 hover:bg-red-400/10 hover:text-red-200 disabled:opacity-20"><Trash2 className="h-3.5 w-3.5" /></button></div></div>)}
                 </div>
                 {libraryOpen && <div className="mt-3 grid gap-2 border-t border-white/20 pt-3 sm:grid-cols-2">{MODEL_LIBRARY.filter(model => !activeIds.has(model.id)).map(model => <button type="button" key={model.id} onClick={() => addModel(model)} className="flex items-center gap-3 rounded border border-white/20 bg-black p-3 text-left hover:border-white/45"><span className={`flex h-7 w-7 items-center justify-center rounded border font-mono text-[10px] font-bold ${accentClasses(model.accent)}`}>{model.kind === 'auto' ? 'A' : model.provider.slice(0, 1)}</span><span className="min-w-0"><span className="block truncate text-xs text-white">{model.label}</span><span className="block truncate font-mono text-[10px] text-white/45">{model.id}</span></span><Plus className="ml-auto h-3.5 w-3.5 text-white/50" /></button>)}<div className="sm:col-span-2"><CustomModel onAdd={model => addModel(model)} /></div></div>}
-                <p className="mt-3 flex items-center gap-2 font-mono text-[10px] text-white/45"><ShieldCheck className="h-3.5 w-3.5 text-emerald-300/70" /> Provider health is tracked independently for every model in the pool.</p>
               </section>
 
               <section className="rounded-xl border border-white/20 bg-white/[0.05] p-5 sm:p-6">
-                <div className="mb-5"><div className="mb-1 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-white/45">04 / Reliability rules</div><h2 className="text-xl font-semibold">Decide when to move on</h2><p className="mt-2 text-sm text-white/55">These guardrails apply to every model in the compound.</p></div>
+                <div className="mb-5"><div className="mb-1 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-white/45">04 / Reliability rules</div><h2 className="text-xl font-semibold">Decide when to move on</h2></div>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   <NumberField label="Failures to open" value={config.failureThreshold} min={1} max={10} onChange={value => update('failureThreshold', value)} suffix="errors" />
                   <NumberField label="Cooldown" value={config.cooldown} min={5} max={900} onChange={value => update('cooldown', value)} suffix="seconds" />
@@ -282,12 +299,29 @@ export function Compound() {
             <aside className="min-w-0 space-y-5 xl:sticky xl:top-5 xl:self-start">
               <section className="overflow-hidden rounded-xl border border-violet-300/25 bg-gradient-to-b from-violet-300/[0.12] to-white/[0.025] p-5"><div className="mb-5 flex items-start justify-between"><div><div className="mb-2 flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-violet-100/60"><Zap className="h-3.5 w-3.5" /> Live preview</div><h2 className="text-lg font-semibold text-white">{config.name}</h2></div><div className="rounded border border-emerald-300/25 bg-emerald-300/10 px-2 py-1 font-mono text-[9px] uppercase tracking-widest text-emerald-100">Ready</div></div><p className="mb-5 text-xs leading-5 text-white/45">{config.description}</p><div className="space-y-2 rounded-lg border border-white/20 bg-black/40 p-3"><div className="flex items-center justify-between font-mono text-[10px] text-white/50"><span>ROUTE MODE</span><span className="text-white/70">{mode.label}</span></div><div className="flex items-center justify-between font-mono text-[10px] text-white/50"><span>MODEL POOL</span><span className="text-white/70">{config.models.length} sources</span></div><div className="flex items-center justify-between font-mono text-[10px] text-white/50"><span>HEALTH POLICY</span><span className="text-white/70">{config.failureThreshold} / {config.cooldown}s</span></div></div><div className="mt-4"><span className="mb-2 block font-mono text-[10px] uppercase tracking-[0.14em] text-white/50">Your endpoint</span><button type="button" onClick={() => copy(endpoint, 'endpoint')} className="flex w-full items-center gap-2 rounded border border-white/20 bg-black/60 p-3 text-left hover:border-white/45"><Link2 className="h-3.5 w-3.5 shrink-0 text-violet-200" /><span className="min-w-0 flex-1 truncate font-mono text-[10px] text-white/65">{endpoint}</span>{copied === 'endpoint' ? <Check className="h-3.5 w-3.5 text-emerald-200" /> : <Copy className="h-3.5 w-3.5 shrink-0 text-white/50" />}</button></div></section>
 
-              <section className="rounded-xl border border-white/20 bg-white/[0.05] p-5"><div className="mb-4 flex items-center justify-between"><div><div className="mb-1 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-white/45">Deploy & share</div><h2 className="text-lg font-semibold">Access control</h2></div><Globe2 className="h-4 w-4 text-white/50" /></div><div className="mb-4 grid grid-cols-3 gap-1 rounded border border-white/20 bg-black p-1">{(['private', 'link', 'public'] as Visibility[]).map(option => <button key={option} type="button" onClick={() => update('visibility', option)} className={`flex items-center justify-center gap-1 rounded py-2 font-mono text-[10px] capitalize ${config.visibility === option ? 'bg-white text-black' : 'text-white/55 hover:text-white'}`}>{option === 'private' ? <Lock className="h-3 w-3" /> : option === 'link' ? <Link2 className="h-3 w-3" /> : <Users className="h-3 w-3" />}{option}</button>)}</div><p className="mb-4 text-xs leading-5 text-white/50">{config.visibility === 'private' ? 'Only you can use this endpoint.' : config.visibility === 'link' ? 'Anyone with the share link can inspect and fork this design.' : 'Publish this compound model to the OpenPaths community.'}</p><button type="button" onClick={() => copy(shareLink, 'share2')} className="mb-2 flex h-10 w-full items-center justify-center gap-2 rounded border border-white/15 bg-white/[0.07] font-mono text-xs font-bold text-white/70 hover:border-white/50 hover:text-white"><Share2 className="h-3.5 w-3.5" /> {copied === 'share2' ? 'Share link copied' : 'Copy share link'}</button><button type="button" onClick={saveDraft} className="flex h-10 w-full items-center justify-center gap-2 rounded bg-white font-mono text-xs font-bold text-black hover:bg-white/90"><Save className="h-3.5 w-3.5" /> {saved ? 'Draft saved locally' : 'Save compound model'}</button></section>
+              <section className="rounded-xl border border-white/20 bg-white/[0.05] p-5"><div className="mb-4 flex items-center justify-between"><div><div className="mb-1 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-white/45">Deploy & share</div><h2 className="text-lg font-semibold">Access control</h2></div><Globe2 className="h-4 w-4 text-white/50" /></div><div className="mb-4 grid grid-cols-3 gap-1 rounded border border-white/20 bg-black p-1">{(['private', 'link', 'public'] as Visibility[]).map(option => <button key={option} type="button" onClick={() => update('visibility', option)} className={`flex items-center justify-center gap-1 rounded py-2 font-mono text-[10px] capitalize ${config.visibility === option ? 'bg-white text-black' : 'text-white/55 hover:text-white'}`}>{option === 'private' ? <Lock className="h-3 w-3" /> : option === 'link' ? <Link2 className="h-3 w-3" /> : <Users className="h-3 w-3" />}{option}</button>)}</div><p className="mb-4 text-xs leading-5 text-white/50">{config.visibility === 'private' ? 'Only you can use this endpoint.' : config.visibility === 'link' ? 'Anyone with the share link can inspect and fork this design.' : 'Publish this compound model to the OpenPaths community.'}</p><button type="button" onClick={() => copy(shareLink, 'share2')} className="mb-2 flex h-10 w-full items-center justify-center gap-2 rounded border border-white/15 bg-white/[0.07] font-mono text-xs font-bold text-white/70 hover:border-white/50 hover:text-white"><Share2 className="h-3.5 w-3.5" /> {copied === 'share2' ? 'Share link copied' : 'Copy share link'}</button><button type="button" onClick={saveDraft} className="flex h-10 w-full items-center justify-center gap-2 rounded bg-white font-mono text-xs font-bold text-black hover:bg-white/90"><Save className="h-3.5 w-3.5" /> {saved ? 'Saved' : 'Save compound model'}</button></section>
 
-              <section className="rounded-xl border border-white/20 bg-white/[0.05] p-5"><div className="mb-4 flex items-center justify-between"><div><div className="mb-1 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-white/45">Integration</div><h2 className="text-lg font-semibold">Drop-in API</h2></div><Code2 className="h-4 w-4 text-white/50" /></div><div className="mb-3 flex items-center justify-between"><span className="font-mono text-[10px] uppercase tracking-widest text-white/45">cURL</span><button type="button" onClick={() => copy(requestSnippet, 'curl')} className="font-mono text-[10px] text-white/55 hover:text-white">{copied === 'curl' ? 'Copied' : 'Copy'}</button></div><pre className="max-h-36 overflow-auto rounded border border-white/8 bg-black p-3 font-mono text-[10px] leading-5 text-white/55">{requestSnippet}</pre><details className="mt-3"><summary className="flex cursor-pointer items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-white/50"><ChevronDown className="h-3 w-3" /> Compound config</summary><div className="relative mt-2"><button type="button" onClick={() => copy(jsonSnippet, 'json')} className="absolute right-2 top-2 text-white/50 hover:text-white">{copied === 'json' ? <Check className="h-3.5 w-3.5 text-emerald-200" /> : <Copy className="h-3.5 w-3.5" />}</button><pre className="max-h-48 overflow-auto rounded border border-white/8 bg-black p-3 font-mono text-[10px] leading-5 text-white/50">{jsonSnippet}</pre></div></details><Link to="/docs" className="mt-4 inline-flex items-center gap-1 font-mono text-[10px] text-white/55 hover:text-white">Read endpoint docs <ExternalLink className="h-3 w-3" /></Link></section>
+              <section className="rounded-xl border border-white/20 bg-white/[0.05] p-5">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <h2 className="flex items-center gap-2 text-lg font-semibold"><Code2 className="h-4 w-4 text-white/50" /> API</h2>
+                  <button type="button" onClick={() => copy(activeSnippet, snippetLang)} className="font-mono text-[10px] text-white/55 hover:text-white">{copied === snippetLang ? 'Copied' : 'Copy'}</button>
+                </div>
+                <div className="mb-3 grid grid-cols-3 gap-1 rounded border border-white/20 bg-black p-1">
+                  {(['python', 'curl', 'config'] as const).map(option => (
+                    <button key={option} type="button" onClick={() => setSnippetLang(option)} className={`rounded py-1.5 font-mono text-[10px] ${snippetLang === option ? 'bg-white text-black' : 'text-white/55 hover:text-white'}`}>{option === 'curl' ? 'cURL' : option === 'python' ? 'Python' : 'Config'}</button>
+                  ))}
+                </div>
+                <CodeBlock
+                  code={activeSnippet}
+                  language={snippetLang === 'python' ? 'python' : snippetLang === 'curl' ? 'bash' : 'json'}
+                  containerClassName="overflow-hidden rounded border border-white/10 bg-black"
+                  preClassName="max-h-[420px] p-3 text-[11px] leading-5"
+                />
+                <Link to="/docs" className="mt-4 inline-flex items-center gap-1 font-mono text-[10px] text-white/55 hover:text-white">Read endpoint docs <ExternalLink className="h-3 w-3" /></Link>
+              </section>
             </aside>
           </div>
-          <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-white/20 pt-5"><p className="flex items-center gap-2 font-mono text-[10px] text-white/45"><Circle className="h-2.5 w-2.5 fill-emerald-300 text-emerald-300" /> Changes are local until you save or deploy.</p><Link to="/blog/building-compound-models" className="inline-flex items-center gap-2 font-mono text-xs text-white/45 hover:text-white">Why compound models? Read the launch post <ArrowRight className="h-3.5 w-3.5" /></Link></div>
+          <div className="mt-8 flex flex-wrap items-center justify-end gap-3 border-t border-white/20 pt-5"><Link to="/blog/building-compound-models" className="inline-flex items-center gap-2 font-mono text-xs text-white/45 hover:text-white">Why compound models? Read the launch post <ArrowRight className="h-3.5 w-3.5" /></Link></div>
         </div>
       </div>
     </>

@@ -295,7 +295,7 @@ function FolderEditor({ folder, onClose }: { folder: Folder; onClose: () => void
           <Field label="System prompt (optional)" hint="Sent as system message for chats in this folder">
             <textarea value={systemPrompt} onChange={e => setSystemPrompt(e.target.value)} rows={3} className={inputCls} />
           </Field>
-          <Field label="Dynamic context (optional)" hint="Always prepended — project facts, style, constraints">
+          <Field label="Dynamic context (optional)" hint="Always prepended - project facts, style, constraints">
             <textarea value={dynamicContext} onChange={e => setDynamicContext(e.target.value)} rows={3} className={inputCls} />
           </Field>
         </div>

@@ -124,7 +124,7 @@ export function ZImageArt() {
               </div>
               <h1 className="max-w-4xl text-4xl font-bold tracking-tight md:text-6xl">Search AI art by prompt</h1>
               <p className="mt-4 max-w-3xl text-base leading-relaxed text-white/62">
-                A growing index of generated art — square, portrait, and wide — searchable by visual intent. Open any prompt straight in the image playground.
+                A growing index of generated art - square, portrait, and wide - searchable by visual intent. Open any prompt straight in the image playground.
               </p>
             </div>
             <div className="grid grid-cols-3 gap-3">

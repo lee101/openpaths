@@ -24,6 +24,18 @@ const fixtureItems = [
   },
 ];
 
+const moreRelatedItem = {
+  id: 'more-1',
+  slug: 'city-neon-more-1',
+  title: 'Neon City Portrait',
+  prompt: 'Anime portrait in a neon city with glowing signs and cinematic light',
+  imageUrl: 'https://openpathsstatic.openpaths.io/static/uploads/landing/art-playground/netwrck/zimage-lantern-koi-station.webp',
+  thumbUrl: 'https://openpathsstatic.openpaths.io/static/uploads/landing/art-playground/netwrck/zimage-lantern-koi-station.webp',
+  model: 'zimage',
+  steps: 20,
+  tags: ['city', 'neon', 'portrait'],
+};
+
 test.describe('ZImage Art Search', () => {
   test.beforeEach(async ({ page }) => {
     await page.route('https://openpathsstatic.openpaths.io/static/data/zimage-art/manifest.json', route => route.fulfill({
@@ -44,9 +56,22 @@ test.describe('ZImage Art Search', () => {
     }));
     // The DB-backed endpoints are unavailable in this fixture, so the page falls
     // back to the static manifest index (mocked above).
-    await page.route('/v1/art/search**', route => route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"not ready"}' }));
+    await page.route('/v1/art/search**', route => {
+      const query = new URL(route.request().url()).searchParams.get('q');
+      if (query === 'city' || query === 'neon') {
+        return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ results: [moreRelatedItem] }) });
+      }
+      return route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"not ready"}' });
+    });
     await page.route('/v1/art/list**', route => route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"not ready"}' }));
     await page.route('/v1/art/tags**', route => route.fulfill({ status: 200, contentType: 'application/json', body: '{"tags":[]}' }));
+    await page.route('/v1/art/item**', route => {
+      const slug = new URL(route.request().url()).searchParams.get('slug');
+      if (slug !== fixtureItems[0].slug) {
+        return route.fulfill({ status: 404, contentType: 'application/json', body: '{"error":"not found"}' });
+      }
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: fixtureItems[0], related: [fixtureItems[1]] }) });
+    });
   });
 
   test('loads indexed art and links prompts into the image playground', async ({ page }) => {
@@ -60,5 +85,16 @@ test.describe('ZImage Art Search', () => {
 
     await page.getByRole('link', { name: 'Try prompt' }).first().click();
     await expect(page).toHaveURL(/\/playground\?model=zimage&prompt=/);
+  });
+
+  test('loads more detail-page art from tags on related items', async ({ page }) => {
+    await page.goto(`/art/i/${fixtureItems[0].slug}`);
+
+    await expect(page.getByRole('heading', { name: 'Related art' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Load more related art' })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Load more related art' }).click();
+    await expect(page.getByAltText(moreRelatedItem.prompt)).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Load more related art' })).toHaveCount(0);
   });
 });

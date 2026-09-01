@@ -209,16 +209,16 @@ export function AdminLee() {
             {maxPlan?.enabled ? (
               <div className="text-sm text-white/80">
                 <span className="font-mono text-white">{maxPlan.email}</span>
-                {' — '}
+                {' - '}
                 <span className={maxPlan.healthy_count > 0 ? 'text-emerald-300' : 'text-amber-300'}>
                   {maxPlan.healthy_count}/{maxPlan.credential_count} credential(s) healthy
                 </span>
                 {maxPlan.credential_count === 0 && (
-                  <span className="text-white/50"> — sign in with OpenAI on the Account page, then refresh</span>
+                  <span className="text-white/50"> - sign in with OpenAI on the Account page, then refresh</span>
                 )}
                 {maxPlan.credential_count > 0 && !maxPlan.refreshable && (
                   <div className="mt-1 text-xs text-amber-300">
-                    auth_mode={maxPlan.auth_mode || 'unknown'} — no refresh token, so this is a pasted API key
+                    auth_mode={maxPlan.auth_mode || 'unknown'} - no refresh token, so this is a pasted API key
                     that cannot be rotated. Sign in with OpenAI on the Account page to store a real max-plan
                     credential.
                   </div>
@@ -464,7 +464,7 @@ function AppUsageTable({ apps }: { apps: AdminUsageApp[] }) {
 
 function RecentUsageTable({ events }: { events: AdminUsageEvent[] }) {
   return (
-    <section className="overflow-hidden rounded-lg border border-white/10"><div className="border-b border-white/10 bg-white/[0.03] px-5 py-4"><h2 className="font-semibold">Recent activity</h2><p className="mt-1 font-mono text-xs text-white/40">Latest 100 request records; prompts are not shown</p></div><div className="max-h-[560px] overflow-auto"><table className="w-full text-left text-xs"><thead className="sticky top-0 bg-[#0b0b0b] font-mono uppercase tracking-[0.12em] text-white/40"><tr><th className="px-4 py-3">Time</th><th className="px-4 py-3">Model</th><th className="px-4 py-3">App</th><th className="px-4 py-3 text-right">Tokens</th><th className="px-4 py-3 text-right">Spend</th></tr></thead><tbody className="divide-y divide-white/10">{events.map(event => <tr key={event.id}><td className="whitespace-nowrap px-4 py-3 font-mono text-white/45">{formatDate(event.created_at)}</td><td className="px-4 py-3"><div className="font-mono text-white/80">{event.model}</div><div className="text-white/35">{event.provider}</div></td><td className="max-w-[180px] truncate px-4 py-3 text-white/50" title={event.app_url || event.app_title}>{event.app_title || event.app_url || '—'}</td><td className="px-4 py-3 text-right font-mono text-white/60">{formatNumber(event.tokens_in + event.tokens_out)}</td><td className="px-4 py-3 text-right font-mono text-emerald-300">{formatUsageUnits(event.cost_cents)}</td></tr>)}</tbody></table></div>{events.length === 0 && <p className="px-5 py-8 font-mono text-sm text-white/40">No activity in this period.</p>}</section>
+    <section className="overflow-hidden rounded-lg border border-white/10"><div className="border-b border-white/10 bg-white/[0.03] px-5 py-4"><h2 className="font-semibold">Recent activity</h2><p className="mt-1 font-mono text-xs text-white/40">Latest 100 request records; prompts are not shown</p></div><div className="max-h-[560px] overflow-auto"><table className="w-full text-left text-xs"><thead className="sticky top-0 bg-[#0b0b0b] font-mono uppercase tracking-[0.12em] text-white/40"><tr><th className="px-4 py-3">Time</th><th className="px-4 py-3">Model</th><th className="px-4 py-3">App</th><th className="px-4 py-3 text-right">Tokens</th><th className="px-4 py-3 text-right">Spend</th></tr></thead><tbody className="divide-y divide-white/10">{events.map(event => <tr key={event.id}><td className="whitespace-nowrap px-4 py-3 font-mono text-white/45">{formatDate(event.created_at)}</td><td className="px-4 py-3"><div className="font-mono text-white/80">{event.model}</div><div className="text-white/35">{event.provider}</div></td><td className="max-w-[180px] truncate px-4 py-3 text-white/50" title={event.app_url || event.app_title}>{event.app_title || event.app_url || '-'}</td><td className="px-4 py-3 text-right font-mono text-white/60">{formatNumber(event.tokens_in + event.tokens_out)}</td><td className="px-4 py-3 text-right font-mono text-emerald-300">{formatUsageUnits(event.cost_cents)}</td></tr>)}</tbody></table></div>{events.length === 0 && <p className="px-5 py-8 font-mono text-sm text-white/40">No activity in this period.</p>}</section>
   );
 }
 

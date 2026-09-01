@@ -87,9 +87,9 @@ export const worksWithApps: WorksWithApp[] = [
   },
   {
     slug: 'nanocode', name: 'nanocode', url: 'https://github.com/1rgs/nanocode', repo: 'https://github.com/1rgs/nanocode',
-    description: 'Minimal Claude Code alternative — single Python file, full agentic loop.',
+    description: 'Minimal Claude Code alternative - single Python file, full agentic loop.',
     category: 'Coding agents', oss: true, status: 'compatible',
-    setup: 'Uses the Anthropic Messages API — point it at https://openpaths.io/v1/messages with OPENPATHS_API_KEY.',
+    setup: 'Uses the Anthropic Messages API - point it at https://openpaths.io/v1/messages with OPENPATHS_API_KEY.',
   },
   {
     slug: 'github-copilot', name: 'GitHub Copilot', url: 'https://github.com/features/copilot', repo: undefined,
@@ -174,7 +174,7 @@ export const worksWithApps: WorksWithApp[] = [
     slug: 'nanoclaw', name: 'NanoClaw', url: 'https://github.com/nanocoai/nanoclaw', repo: 'https://github.com/nanocoai/nanoclaw',
     description: 'Lightweight agent runner in isolated containers across messaging channels.',
     category: 'Agents & assistants', oss: true, status: 'compatible',
-    setup: 'Runs on the Claude Agent SDK — set ANTHROPIC_BASE_URL=https://openpaths.io, token=OPENPATHS_API_KEY.',
+    setup: 'Runs on the Claude Agent SDK - set ANTHROPIC_BASE_URL=https://openpaths.io, token=OPENPATHS_API_KEY.',
   },
   {
     slug: 'agent-swarm', name: 'Agent Swarm', url: 'https://github.com/desplega-ai/agent-swarm', repo: 'https://github.com/desplega-ai/agent-swarm',

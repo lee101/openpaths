@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Copy, Download, ExternalLink, Loader2, Scissors, Sparkles, Upload } from 'lucide-react';
-import { Seo } from '../components/Seo';
+import { ToolSeo } from '../components/ToolSeo';
 import { CodeBlock } from '../components/CodeBlock';
 import { normalizeUploadedAssetUrl } from '../lib/uploadUrls';
 
@@ -196,11 +196,7 @@ JSON`,
 
   return (
     <>
-      <Seo
-        title="Remove Video Background — OpenPaths"
-        description="Key any clip to alpha-transparent WebM through ManifoldGen, OpenPaths' first-party GPU studio. Optionally composite a solid backdrop color and keep the original audio."
-        path="/remove-video-background"
-      />
+      <ToolSeo slug="remove-video-background" />
       <div className="px-6 py-10">
         <div className="mx-auto max-w-7xl">
           <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -210,7 +206,7 @@ JSON`,
               </div>
               <h1 className="max-w-3xl text-4xl font-bold tracking-tight md:text-6xl">Background Remover</h1>
               <p className="mt-4 max-w-2xl text-base leading-relaxed text-white/55">
-                Key any clip to alpha-transparent WebM in one pass — optionally compositing a solid backdrop color
+                Key any clip to alpha-transparent WebM in one pass - optionally compositing a solid backdrop color
                 behind the subject. Powered by ManifoldGen, OpenPaths' first-party GPU studio.
               </p>
             </div>
@@ -279,7 +275,7 @@ JSON`,
                 ) : loading ? (
                   <p className="text-sm font-mono text-white/45">Keying your clip...</p>
                 ) : (
-                  <p className="max-w-md text-center text-xs font-mono text-white/50">Drop a clip above — the keyed result renders over a checkerboard so you can verify the alpha channel.</p>
+                  <p className="max-w-md text-center text-xs font-mono text-white/50">Drop a clip above - the keyed result renders over a checkerboard so you can verify the alpha channel.</p>
                 )}
               </div>
             </section>
