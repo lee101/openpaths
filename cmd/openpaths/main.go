@@ -62,6 +62,7 @@ import (
 	"github.com/openpaths/openpaths/internal/skillindex"
 	"github.com/openpaths/openpaths/internal/storage"
 	stripesvc "github.com/openpaths/openpaths/internal/stripe"
+	"github.com/openpaths/openpaths/polling"
 )
 
 func main() {
@@ -432,6 +433,10 @@ func main() {
 		}
 		return suppressed
 	}
+	providerCreditMonitor := polling.NewProviderCreditMonitor(registry, cfg.Models, email.Send)
+	providerCreditMonitor.Start()
+	defer providerCreditMonitor.Stop()
+
 	// Start drip email campaign scheduler.
 	var onRegister func(string, string)
 	if os.Getenv("AWS_SMTP_USERNAME") != "" {
