@@ -51,7 +51,7 @@ func TestGenerateSpeechCallsXAITTS(t *testing.T) {
 	}
 }
 
-func TestReasoningChatOmitsUnsupportedSamplingParameters(t *testing.T) {
+func TestGrokChatOmitsUnsupportedSamplingParameters(t *testing.T) {
 	for _, stream := range []bool{false, true} {
 		t.Run(map[bool]string{false: "completion", true: "stream"}[stream], func(t *testing.T) {
 			var got model.ChatCompletionRequest
@@ -99,7 +99,7 @@ func TestReasoningChatOmitsUnsupportedSamplingParameters(t *testing.T) {
 	}
 }
 
-func TestNonReasoningChatPreservesSupportedSamplingParameters(t *testing.T) {
+func TestNonReasoningChatAlsoOmitsUnsupportedSamplingParameters(t *testing.T) {
 	var got model.ChatCompletionRequest
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := json.NewDecoder(r.Body).Decode(&got); err != nil {
@@ -122,8 +122,8 @@ func TestNonReasoningChatPreservesSupportedSamplingParameters(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ChatCompletion error: %v", err)
 	}
-	if got.PresencePenalty == nil || got.FrequencyPenalty == nil || len(got.Stop) != 1 {
-		t.Fatalf("supported parameters were removed: %#v", got)
+	if got.PresencePenalty != nil || got.FrequencyPenalty != nil || len(got.Stop) != 0 {
+		t.Fatalf("unsupported parameters reached xAI: %#v", got)
 	}
 }
 

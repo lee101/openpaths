@@ -39,10 +39,11 @@ func New(apiKey, baseURL string) *XAIProvider {
 
 func (p *XAIProvider) Name() string { return "xai" }
 
-// sanitizeForXAI removes OpenPaths-only hints and parameters that xAI's
-// reasoning models reject. xAI documents presence_penalty, frequency_penalty,
-// and stop as incompatible with reasoning models; this is true even when a
-// caller sends the penalties at their no-op value of zero.
+// sanitizeForXAI removes OpenPaths-only hints and parameters that xAI's chat
+// models reject. xAI documents presence_penalty, frequency_penalty, and stop
+// as incompatible with reasoning models, and the live API rejects the penalty
+// fields for explicitly non-reasoning Grok variants too. Omit them for the
+// entire Grok chat family, even when a caller sends the no-op value of zero.
 func sanitizeForXAI(req *model.ChatCompletionRequest) {
 	req.Prefill = ""
 	req.TaskTier = ""
@@ -50,7 +51,7 @@ func sanitizeForXAI(req *model.ChatCompletionRequest) {
 	req.Thinking = nil
 	req.ChatTemplateKwargs = nil
 
-	if !isXAIReasoningModel(req.Model) {
+	if !isXAIChatModel(req.Model) {
 		return
 	}
 	req.PresencePenalty = nil
@@ -58,12 +59,9 @@ func sanitizeForXAI(req *model.ChatCompletionRequest) {
 	req.Stop = nil
 }
 
-func isXAIReasoningModel(modelID string) bool {
+func isXAIChatModel(modelID string) bool {
 	modelID = strings.ToLower(strings.TrimSpace(modelID))
-	if !strings.HasPrefix(modelID, "grok-") || strings.Contains(modelID, "non-reasoning") {
-		return false
-	}
-	return true
+	return strings.HasPrefix(modelID, "grok-")
 }
 
 func (p *XAIProvider) GenerateImage(ctx context.Context, req *model.ImageGenerationRequest) (*model.ImageGenerationResponse, error) {

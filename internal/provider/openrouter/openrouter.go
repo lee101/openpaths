@@ -78,7 +78,7 @@ func sanitizeForOpenRouter(req *model.ChatCompletionRequest) {
 		req.PresencePenalty = nil
 		req.FrequencyPenalty = nil
 		req.Stop = nil
-	case strings.Contains(modelID, "grok-") && !strings.Contains(modelID, "non-reasoning"):
+	case strings.Contains(modelID, "grok-"):
 		req.PresencePenalty = nil
 		req.FrequencyPenalty = nil
 		req.Stop = nil

@@ -18,7 +18,7 @@ func TestSanitizeSamplingParametersByUpstreamModel(t *testing.T) {
 	}{
 		{name: "OpenAI reasoning", modelID: "openai/gpt-5.6-sol"},
 		{name: "xAI reasoning", modelID: "x-ai/grok-4.6", wantTemperature: true, wantTopP: true, wantTempValue: 2},
-		{name: "xAI non reasoning", modelID: "x-ai/grok-4.20-non-reasoning", wantTemperature: true, wantTopP: true, wantPenalties: true, wantStop: true, wantTempValue: 2},
+		{name: "xAI non reasoning", modelID: "x-ai/grok-4.20-non-reasoning", wantTemperature: true, wantTopP: true, wantTempValue: 2},
 		{name: "ZAI GLM", modelID: "z-ai/glm-5.3", wantTemperature: true, wantTopP: true, wantStop: true, wantTempValue: 1},
 		{name: "ordinary model", modelID: "meta-llama/llama-3.3-70b", wantTemperature: true, wantTopP: true, wantPenalties: true, wantStop: true, wantTempValue: 2},
 	}
