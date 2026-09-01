@@ -51,7 +51,7 @@ func TestAuditedTokenPrices(t *testing.T) {
 		"gemini-3.5-flash-lite": {0.30, 0, 2.50},
 		// developers.openai.com/api/docs/pricing
 		"gpt-5.5-pro": {30.00, 0, 180.00},
-		// openrouter.ai/api/v1/models
+		// z.ai launch pricing / openrouter.ai/api/v1/models
 		"glm-5.3-flash":    {0.075, 0.015, 0.25},
 		"glm-5.3":          {1.40, 0.26, 4.40},
 		"or/glm-5.3":       {1.40, 0.26, 4.40},
@@ -89,7 +89,7 @@ func TestRetiredOxAliasesResolveToPaidGLM53Flash(t *testing.T) {
 			t.Errorf("compatibility alias %s is missing", id)
 			continue
 		}
-		if m.ID != "glm-5.3-flash" || m.ProviderModelID != "z-ai/glm-5.3-flash" {
+		if m.ID != "glm-5.3-flash" || m.Provider != "zai" || m.ProviderModelID != "glm-5.3-flash" {
 			t.Errorf("%s resolves to %s/%s, want paid GLM-5.3 Flash", id, m.ID, m.ProviderModelID)
 		}
 		if m.InputPricePer1M <= 0 || m.OutputPricePer1M <= 0 {

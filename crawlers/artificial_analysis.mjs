@@ -119,62 +119,62 @@ function normalizeModel(raw) {
       color: creator.color || '#888888',
       logoSmallUrl: creator.logo_small_url || creator.logo || null,
     },
-    releaseDate: raw.release_date || null,
+    releaseDate: raw.release_date || raw.releaseDate || null,
     reasoning: Boolean(raw.reasoning_model || raw.isReasoning),
     deprecated: Boolean(raw.deprecated),
-    frontier: Boolean(raw.frontier_model),
-    openWeights: Boolean(raw.is_open_weights),
-    openSourceCategorization: raw.open_source_categorization || null,
-    contextWindowTokens: raw.context_window_tokens || null,
+    frontier: Boolean(raw.frontier_model || raw.frontier || raw.chartHighlighted),
+    openWeights: Boolean(raw.is_open_weights || raw.isOpenWeights),
+    openSourceCategorization: raw.open_source_categorization || raw.openSourceCategorization || null,
+    contextWindowTokens: raw.context_window_tokens || raw.contextWindowTokens || null,
     prices: {
-      inputPerMTokens: numberOrNull(raw.price_1m_input_tokens),
-      outputPerMTokens: numberOrNull(raw.price_1m_output_tokens),
-      cacheHitPerMTokens: numberOrNull(raw.cache_hit_price),
-      blendedPerMTokens: numberOrNull(raw.price_1m_blended_7_2_1),
-      blendedNoCachePerMTokens: numberOrNull(raw.price_1m_blended_0_1_1),
-      cacheHitDiscountPercent: numberOrNull(raw.cache_hit_discount_percent),
+      inputPerMTokens: numberOrNull(raw.price_1m_input_tokens ?? raw.price1mInputTokens),
+      outputPerMTokens: numberOrNull(raw.price_1m_output_tokens ?? raw.price1mOutputTokens),
+      cacheHitPerMTokens: numberOrNull(raw.cache_hit_price ?? raw.cacheHitPrice),
+      blendedPerMTokens: numberOrNull(raw.price_1m_blended_7_2_1 ?? raw.price1mBlended7To2To1),
+      blendedNoCachePerMTokens: numberOrNull(raw.price_1m_blended_0_1_1 ?? raw.price1mBlended0To1To1),
+      cacheHitDiscountPercent: numberOrNull(raw.cache_hit_discount_percent ?? raw.cacheHitDiscountPercent),
     },
     performance: {
-      outputTokensPerSecond: numberOrNull(raw.timescaleData?.median_output_speed),
-      medianTotalTime: numberOrNull(raw.end_to_end_response_time_metrics?.total_time),
-      timeToFirstAnswerToken: numberOrNull(raw.time_to_first_answer_token_metrics?.total_time),
+      outputTokensPerSecond: numberOrNull(raw.timescaleData?.median_output_speed ?? raw.timescaleData?.medianOutputSpeed),
+      medianTotalTime: numberOrNull(raw.end_to_end_response_time_metrics?.total_time ?? raw.endToEndResponseTime?.total),
+      timeToFirstAnswerToken: numberOrNull(raw.time_to_first_answer_token_metrics?.total_time ?? raw.timeToFirstAnswerToken?.total),
     },
     costs: {
       intelligenceIndexTotal: numberOrNull(raw.intelligence_index_cost?.total_cost),
-      input: numberOrNull(raw.intelligence_index_cost?.input_cost),
-      output: numberOrNull(raw.intelligence_index_cost?.output_cost),
-      reasoning: numberOrNull(raw.intelligence_index_cost?.reasoning_cost),
-      answer: numberOrNull(raw.intelligence_index_cost?.answer_cost),
+      input: numberOrNull(raw.intelligence_index_cost?.input_cost ?? raw.intelligenceIndexCost?.input),
+      output: numberOrNull(raw.intelligence_index_cost?.output_cost ?? raw.intelligenceIndexCost?.output),
+      reasoning: numberOrNull(raw.intelligence_index_cost?.reasoning_cost ?? raw.intelligenceIndexCost?.reasoning),
+      answer: numberOrNull(raw.intelligence_index_cost?.answer_cost ?? raw.intelligenceIndexCost?.answer),
     },
     tokens: {
-      input: numberOrNull(raw.intelligence_index_token_counts?.input_tokens || raw.intelligence_index_token_counts?.input),
-      output: numberOrNull(raw.intelligence_index_token_counts?.output_tokens),
-      reasoning: numberOrNull(raw.intelligence_index_token_counts?.reasoning_tokens || raw.intelligence_index_token_counts?.reasoning),
-      answer: numberOrNull(raw.intelligence_index_token_counts?.answer_tokens || raw.intelligence_index_token_counts?.answer),
+      input: numberOrNull(raw.intelligence_index_token_counts?.input_tokens || raw.intelligence_index_token_counts?.input || raw.canonicalIntelligenceIndexTokenCount?.input),
+      output: numberOrNull(raw.intelligence_index_token_counts?.output_tokens || raw.canonicalIntelligenceIndexTokenCount?.output),
+      reasoning: numberOrNull(raw.intelligence_index_token_counts?.reasoning_tokens || raw.intelligence_index_token_counts?.reasoning || raw.canonicalIntelligenceIndexTokenCount?.reasoning),
+      answer: numberOrNull(raw.intelligence_index_token_counts?.answer_tokens || raw.intelligence_index_token_counts?.answer || raw.canonicalIntelligenceIndexTokenCount?.answer),
       total: numberOrNull(raw.indexTokensTotal),
     },
     evaluations: {
-      intelligenceIndex: numberOrNull(raw.intelligence_index),
-      estimatedIntelligenceIndex: numberOrNull(raw.estimated_intelligence_index),
-      codingIndex: numberOrNull(raw.coding_index),
-      agenticIndex: numberOrNull(raw.agentic_index),
+      intelligenceIndex: numberOrNull(raw.intelligence_index ?? raw.intelligenceIndex),
+      estimatedIntelligenceIndex: numberOrNull(raw.estimated_intelligence_index ?? (raw.intelligenceIndexIsEstimated ? raw.intelligenceIndex : null)),
+      codingIndex: numberOrNull(raw.coding_index ?? raw.codingIndex),
+      agenticIndex: numberOrNull(raw.agentic_index ?? raw.agenticIndex),
       gdpvalElo: numberOrNull(raw.safeGdpval?.elo || raw.gdpval),
-      gdpvalNormalized: numberOrNull(raw.gdpval_normalized),
-      terminalBenchHard: numberOrNull(raw.terminalbench_hard),
+      gdpvalNormalized: numberOrNull(raw.gdpval_normalized ?? raw.gdpvalNormalized),
+      terminalBenchHard: numberOrNull(raw.terminalbench_hard ?? raw.terminalbenchHard),
       tau2: numberOrNull(raw.tau2),
       lcr: numberOrNull(raw.lcr),
       hle: numberOrNull(raw.hle),
       gpqa: numberOrNull(raw.gpqa),
-      liveCodeBench: numberOrNull(raw.livecodebench),
-      sciCode: numberOrNull(raw.scicode),
-      ifBench: numberOrNull(raw.ifbench),
+      liveCodeBench: numberOrNull(raw.livecodebench ?? raw.liveCodeBench),
+      sciCode: numberOrNull(raw.scicode ?? raw.sciCode),
+      ifBench: numberOrNull(raw.ifbench ?? raw.ifBench),
       aime25: numberOrNull(raw.aime25),
-      critPt: numberOrNull(raw.critpt),
-      mmmuPro: numberOrNull(raw.mmmu_pro),
+      critPt: numberOrNull(raw.critpt ?? raw.critPt),
+      mmmuPro: numberOrNull(raw.mmmu_pro ?? raw.mmmuPro),
       apexAgents: numberOrNull(raw.apex_agents),
       omniscience: numberOrNull(raw.omniscience),
-      omniscienceAccuracy: numberOrNull(raw.omniscience_breakdown?.total?.accuracy),
-      omniscienceHallucinationRate: numberOrNull(raw.omniscience_breakdown?.total?.hallucination_rate),
+      omniscienceAccuracy: numberOrNull(raw.omniscience_breakdown?.total?.accuracy ?? raw.omniscienceBreakdown?.accuracy),
+      omniscienceHallucinationRate: numberOrNull(raw.omniscience_breakdown?.total?.hallucination_rate ?? raw.omniscienceBreakdown?.hallucinationRate),
     },
   };
 }
@@ -208,7 +208,11 @@ async function extractHomeModels() {
 
   const initial = extractAfterMarker(flight, '"initialData":', '{');
   if (!initial?.initialData?.length) {
-    throw new Error('Could not find home initialData models in Artificial Analysis page');
+    // Artificial Analysis occasionally changes the homepage leaderboard shape.
+    // Model pages remain the stable source, so allow explicit slugs to refresh
+    // even while the broad homepage extractor catches up with a schema change.
+    console.warn('Home leaderboard schema changed; continuing with explicit model pages');
+    return [];
   }
   return initial.initialData.map(normalizeModel);
 }
@@ -218,7 +222,15 @@ async function extractModelPageModels(slug) {
   const flight = decodeNextFlight(html);
   await fs.writeFile(path.join(CACHE_DIR, `model-${slug}.rsc.txt`), flight);
   const models = extractAfterMarker(flight, '"selectModelsByDefault":', '[');
-  return Array.isArray(models) ? models.map(normalizeModel) : [];
+  if (Array.isArray(models) && models.length) return models.map(normalizeModel);
+  const pageDataStart = flight.indexOf('"currentModel":');
+  if (pageDataStart < 0) return [];
+  const pageData = flight.slice(pageDataStart);
+  const currentModel = extractAfterMarker(pageData, '"currentModel":', '{');
+  const comparisonModels = extractAfterMarker(pageData, '"models":', '[');
+  return [currentModel, ...(Array.isArray(comparisonModels) ? comparisonModels : [])]
+    .filter(Boolean)
+    .map(normalizeModel);
 }
 
 async function main() {
@@ -233,12 +245,17 @@ async function main() {
     }
   }
 
+  // Keep the client snapshot focused and bundle-friendly. The comparison
+  // payload now contains hundreds of historical variants; the top 80 by the
+  // current Intelligence Index covers the active frontier without shipping a
+  // multi-megabyte archive in every frontend bundle.
+  const merged = mergeModels(gathered).slice(0, 80);
   const snapshot = {
     source: 'Artificial Analysis',
     sourceUrl: BASE_URL,
     crawledAt: new Date().toISOString(),
-    modelCount: mergeModels(gathered).length,
-    models: mergeModels(gathered),
+    modelCount: merged.length,
+    models: merged,
   };
 
   await fs.writeFile(OUTPUT_PATH, renderTypeScript(snapshot));

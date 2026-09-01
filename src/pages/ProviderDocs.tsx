@@ -237,14 +237,15 @@ const EXAMPLES: Record<string, ProviderExample> = {
     ],
   },
   fal: {
-    description: 'FLUX image generation, Smart Resize image recomposition, and ByteDance Seedance 2.0 text-to-video/reference-to-video through OpenPaths.',
+    description: 'FLUX image generation, Smart Resize image recomposition, MiniMax H3 Max text/image-to-video, and ByteDance Seedance 2.0 text-to-video/reference-to-video through OpenPaths.',
     endpoint: '/v1',
     imageModel: 'flux-pro',
-    videoModel: 'seedance-2.0-fast-text-to-video',
+    videoModel: 'minimax-h3-max',
     notes: [
       '`seedance-2.0-fast-text-to-video` accepts prompt, resolution, duration, aspect_ratio, generate_audio, seed, and end_user_id.',
       '`seedance-2.0-image-to-video` accepts image_url plus optional end_image_url for start/end frame control.',
       '`seedance-2.0-reference-to-video` and `seedance-2.0-fast-reference-to-video` also accept image_urls, video_urls, and audio_urls. Reference them in prompts as @Image1, @Video1, and @Audio1.',
+      '`minimax-h3-max` accepts text-to-video and image-to-video requests for 5–15 second clips at 480P or 768P, with native audio and prompt expansion defaulting to balanced. Use `minimax-h3-max-image-to-video` for the dedicated fal image-to-video route.',
       'OpenPaths exposes these through `/v1/videos/generations`; you do not call Fal directly or send a Fal key.',
     ],
   },
@@ -330,10 +331,14 @@ const EXAMPLES: Record<string, ProviderExample> = {
     videoModel: 'hailuo-2.3',
   },
   zai: {
-    description: 'GLM-5.2, GLM-5.1, GLM-5, GLM-4.7, GLM-4.6v vision, and GLM Image generation. BYOK GLM Coding Plan keys are routed to z.ai’s coding endpoint (api.z.ai/api/coding/paas/v4) and circuit-break down the GLM series (5.2 → 5.1 → 5) on failure.',
+    description: 'GLM-5.3-Flash native multimodal, GLM-5.1, GLM-5, GLM-4.7, GLM-4.6v vision, and GLM Image generation. BYOK GLM Coding Plan keys are routed to z.ai’s coding endpoint (api.z.ai/api/coding/paas/v4).',
     endpoint: '/v1',
-    chatModel: 'glm-5.2',
+    chatModel: 'glm-5.3-flash',
     imageModel: 'glm-image',
+    notes: [
+      '`glm-5.3-flash` accepts text and native multimodal content, supports tools and streaming, and has a 1M-token context window.',
+      'The direct platform route uses Z.AI’s general API endpoint; use a standard Z_API_KEY for platform traffic. Coding Plan keys remain available for user BYOK coding-tool traffic.',
+    ],
   },
   fireworks: {
     description: 'Fast inference for GPT-OSS 120B, GLM-5 and Whisper v3 Large.',

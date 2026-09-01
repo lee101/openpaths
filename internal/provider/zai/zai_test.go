@@ -219,3 +219,40 @@ func TestSanitizeForZAIPromotesSystemOnly(t *testing.T) {
 		t.Errorf("content mutated: %v", req.Messages[0].Content)
 	}
 }
+
+func TestSanitizeForZAIConfiguresGLM53FlashThinking(t *testing.T) {
+	req := &model.ChatCompletionRequest{Model: "glm-5.3-flash"}
+	sanitizeForZAI(req)
+	if req.Thinking == nil || req.Thinking.Type != "enabled" {
+		t.Fatalf("thinking = %+v, want enabled", req.Thinking)
+	}
+	if req.Thinking.ClearThinking == nil || *req.Thinking.ClearThinking {
+		t.Fatalf("clear_thinking = %v, want false", req.Thinking.ClearThinking)
+	}
+}
+
+func TestChatCompletionStreamEnablesToolStreaming(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body model.ChatCompletionRequest
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("decode request: %v", err)
+		}
+		if !body.Stream || !body.ToolStream {
+			t.Errorf("stream flags = stream:%t tool_stream:%t, want true/true", body.Stream, body.ToolStream)
+		}
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.Write([]byte("data: [DONE]\n\n"))
+	}))
+	defer ts.Close()
+
+	p := New("test-key", ts.URL)
+	ch, err := p.ChatCompletionStream(context.Background(), &model.ChatCompletionRequest{
+		Model: "glm-5.3-flash",
+		Tools: []model.Tool{{Type: "function", Function: &model.ToolFunction{Name: "ping"}}},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	for range ch {
+	}
+}

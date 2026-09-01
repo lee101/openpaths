@@ -180,8 +180,8 @@ models:
   - id: "openpaths/auto"
     provider: google
     provider_model_id: "gemini-3.7-flash"
-    input_price_per_1m: 0.375
-    output_price_per_1m: 1.875
+    input_price_per_1m: 0.75
+    output_price_per_1m: 3.75
     aliases: ["auto", "auto-chat", "auto-text", "openpaths-auto"]
     context_window: 1000000
     max_output_tokens: 64000
@@ -189,15 +189,16 @@ models:
     supports_tools: true
     supports_vision: true
     fallback_models:
-      - "gpt-5.5"
+      - "gpt-5.6-terra"
+      - "glm-5.3"
+      - "gpt-5.6-sol"
       - "deepseek-v4-pro"
       - "gpt-5-chat-latest"
       - "deepseek-v4-flash"
       - "deepseek-chat"
       - "claude-sonnet-5"
       - "grok-4.6"
-      - "gemini-2.5-pro"
-      - "or/gpt-5.5"
+      - "or/gpt-5.6-terra"
 
   # Cheap default for ordinary chat; hard coding/math/science prompts can
   # escalate through the fallback chain without making every chat expensive.
@@ -216,34 +217,13 @@ models:
       - "openpaths/auto-fast"
       - "deepseek-v4-flash"
 
-  # Ox Alpha was revealed as GLM-5.3 Flash and its free preview ended. Keep all
-  # former Ox ids as compatibility aliases, but route and bill the live paid
-  # OpenRouter model. GLM-5.3 Flash always reasons; normalization maps caller
-  # effort onto its supported low/high/max tiers.
-  - id: "glm-5.3-flash"
-    provider: openrouter
-    provider_model_id: "z-ai/glm-5.3-flash"
-    input_price_per_1m: 0.075
-    input_cache_hit_price_per_1m: 0.015
-    output_price_per_1m: 0.25
-    aliases: ["openpaths/glm-5.3-flash", "z-ai/glm-5.3-flash", "glm53-flash", "openpaths/stealth/ox-alpha", "stealth/ox-alpha", "ox-alpha", "openpaths-ox-alpha", "openpaths/ox-alpha"]
-    context_window: 1310720
-    max_output_tokens: 131072
-    supports_streaming: true
-    supports_tools: true
-    supports_vision: true
-    default_reasoning_effort: "max"
-    fallback_models:
-      - "glm-5.3"
-      - "deepseek-v4-flash"
-
   - id: "openpaths/auto-cheap"
     provider: openai
     provider_model_id: "gpt-5.6-luna"
     input_price_per_1m: 0.20
     output_price_per_1m: 1.20
     aliases: ["auto-cheap", "auto-easy-task", "auto-easy", "openpaths-auto-cheap"]
-    context_window: 400000
+    context_window: 1050000
     max_output_tokens: 128000
     supports_streaming: true
     supports_tools: true
@@ -253,7 +233,7 @@ models:
       - "deepseek-v4-flash"
       - "gpt-4o-mini"
       - "claude-haiku-4-5-20251001"
-      - "or/gpt-5.4-nano"
+      - "or/gpt-5.6-luna"
 
   - id: "openpaths/auto-fast"
     provider: deepseek
@@ -268,16 +248,16 @@ models:
     supports_vision: true
     fallback_models:
       - "nvidia/deepseek-v4-pro"
-      - "gemini-2.5-flash"
+      - "gemini-3.7-flash"
       - "gemini-3.1-flash-lite"
-      - "gpt-5.4-nano"
+      - "gpt-5.6-luna"
       - "claude-haiku-4-5-20251001"
 
   - id: "openpaths/auto-code"
     provider: openai
-    provider_model_id: "gpt-5.5"
-    input_price_per_1m: 5.00
-    output_price_per_1m: 30.00
+    provider_model_id: "gpt-5.6-terra"
+    input_price_per_1m: 2.00
+    output_price_per_1m: 12.00
     aliases: ["auto-code", "auto-medium-task", "auto-medium", "openpaths-auto-code"]
     context_window: 1050000
     max_output_tokens: 128000
@@ -285,42 +265,44 @@ models:
     supports_tools: true
     supports_vision: true
     fallback_models:
-      # GLM-5.3 Flash carries the everyday auto-code share at its paid rate.
+      # Direct GLM-5.3 Flash carries the everyday auto-code share at its paid rate.
       - "glm-5.3-flash"
+      - "gpt-5.6-sol"
       - "gpt-5-codex"
-      - "gpt-5.4-mini"
-      - "gemini-3.5-flash"
+      - "gemini-3.7-flash"
+      - "glm-5.3"
+      - "gpt-5.6-luna"
       - "claude-sonnet-5"
       - "deepseek-v4-flash"
-      - "or/gpt-5.5"
+      - "or/gpt-5.6-terra"
 
   - id: "openpaths/auto-reasoning"
     provider: openai
-    provider_model_id: "gpt-5.4-mini"
-    input_price_per_1m: 0.75
-    output_price_per_1m: 4.50
+    provider_model_id: "gpt-5.6-terra"
+    input_price_per_1m: 2.00
+    output_price_per_1m: 12.00
     aliases: ["auto-reasoning", "auto-think", "auto-think-task", "autothink", "auto-hard-task", "auto-hard", "auto-opus", "openpaths-auto-reasoning"]
-    context_window: 400000
+    context_window: 1050000
     max_output_tokens: 128000
     supports_streaming: true
     supports_tools: true
     supports_vision: true
     fallback_models:
-      # GLM-5.3 Flash supplies the paid mid-complexity reasoning tier.
+      # Direct GLM-5.3 Flash supplies the paid mid-complexity reasoning tier.
       - "glm-5.3-flash"
-      - "gemini-3.5-flash"
-      - "gpt-5.5"
+      - "gemini-3.7-flash"
+      - "gpt-5.6-sol"
+      - "glm-5.3"
       - "gpt-5-codex"
       - "deepseek-v4-pro"
-      - "o3"
       - "claude-sonnet-5"
-      - "or/gpt-5.5"
+      - "or/gpt-5.6-terra"
 
   - id: "openpaths/auto-vision"
     provider: google
-    provider_model_id: "gemini-2.5-flash"
-    input_price_per_1m: 0.30
-    output_price_per_1m: 2.50
+    provider_model_id: "gemini-3.7-flash"
+    input_price_per_1m: 0.75
+    output_price_per_1m: 3.75
     aliases: ["auto-vision", "openpaths-auto-vision"]
     context_window: 1000000
     max_output_tokens: 65536
@@ -328,9 +310,9 @@ models:
     supports_tools: true
     supports_vision: true
     fallback_models:
-      - "gemini-3.5-flash"
+      - "gemini-3.7-flash"
       - "gemini-3.1-flash-lite"
-      - "gpt-5.4-mini"
+      - "gpt-5.6-luna"
       - "glm-4.6v-flash"
       - "pixtral-large-latest"
 
@@ -674,6 +656,34 @@ models:
     price_per_input_image: 0.08
     free_input_image_count: 5
     aliases: ["h3", "hailuo-h3", "hailuo-03", "minimax-hailuo-03"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  # --- MiniMax H3 Max via Fal (text/image-to-video) ---
+  # Public pricing uses the post-promotion rates: $0.05/s at 480p and
+  # $0.08/s at 768p. The adapter selects the image endpoint when image input
+  # is present, while callers use this single stable model ID.
+  - id: "minimax-h3-max"
+    provider: fal
+    provider_model_id: "minimax/h3-max/text-to-video"
+    price_per_second: 0.08
+    price_per_second_by_resolution:
+      480p: 0.05
+      768p: 0.08
+    aliases: ["h3-max", "minimax-h3-max-text-to-video"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "minimax-h3-max-image-to-video"
+    provider: fal
+    provider_model_id: "minimax/h3-max/image-to-video"
+    price_per_second: 0.08
+    price_per_second_by_resolution:
+      480p: 0.05
+      768p: 0.08
+    aliases: ["minimax/h3-max/image-to-video", "h3-max-image-to-video"]
     supports_streaming: false
     supports_tools: false
     supports_vision: true
@@ -1101,8 +1111,8 @@ models:
   - id: "gpt-5.6-sol"
     provider: openai
     provider_model_id: "gpt-5.6-sol"
-    input_price_per_1m: 5.00
-    output_price_per_1m: 30.00
+    input_price_per_1m: 4.00
+    output_price_per_1m: 20.00
     aliases: ["gpt5.6-sol", "gpt56-sol", "sol"]
     context_window: 1050000
     max_output_tokens: 128000
@@ -1110,8 +1120,8 @@ models:
     supports_tools: true
     supports_vision: true
     fallback_models:
-      - "gpt-5.5"
       - "gpt-5.6-terra"
+      - "gemini-3.7-flash"
       - "or/gpt-5.6-sol"
 
   - id: "gpt-5.6-terra"
@@ -1149,8 +1159,8 @@ models:
   - id: "gpt-5.6"
     provider: openai
     provider_model_id: "gpt-5.6-terra"
-    input_price_per_1m: 5.00
-    output_price_per_1m: 30.00
+    input_price_per_1m: 2.00
+    output_price_per_1m: 12.00
     aliases: ["gpt56"]
     context_window: 1050000
     max_output_tokens: 128000
@@ -2753,6 +2763,42 @@ models:
       - "960x1728"
 
   # --- Z.AI (GLM direct) ---
+  # GLM-5.3-Flash is currently 50% off through 2026-09-09 16:00 UTC.
+  # Keep the list rates in the scheduled transition so billing changes
+  # automatically when the launch promotion ends.
+  - id: "glm-5.3-flash"
+    provider: zai
+    provider_model_id: "glm-5.3-flash"
+    input_price_per_1m: 0.075
+    input_cache_hit_price_per_1m: 0.015
+    output_price_per_1m: 0.25
+    scheduled_token_pricing:
+      effective_at: "2026-09-09T16:00:00Z"
+      off_peak_input_price_per_1m: 0.15
+      off_peak_input_cache_hit_price_per_1m: 0.03
+      off_peak_output_price_per_1m: 0.50
+    aliases: ["zai/glm-5.3-flash", "glm53-flash", "glm-5.3-flash-latest", "openpaths/glm-5.3-flash", "openpaths/stealth/ox-alpha", "stealth/ox-alpha", "ox-alpha", "openpaths-ox-alpha", "openpaths/ox-alpha"]
+    context_window: 1048576
+    max_output_tokens: 131072
+    default_reasoning_effort: "max"
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "glm-5.3"
+    provider: zai
+    provider_model_id: "glm-5.3"
+    input_price_per_1m: 1.40
+    input_cache_hit_price_per_1m: 0.26
+    output_price_per_1m: 4.40
+    aliases: ["zai/glm-5.3", "glm53", "glm-5.3-latest"]
+    context_window: 1048576
+    max_output_tokens: 131072
+    default_reasoning_effort: "max"
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
   - id: "zai/glm-5"
     provider: zai
     provider_model_id: "glm-5"

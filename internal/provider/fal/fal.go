@@ -970,7 +970,9 @@ func (p *FalProvider) GenerateVideo(ctx context.Context, req *model.VideoGenerat
 	}
 
 	modelID := req.Model
-	if strings.HasPrefix(modelID, "minimax/h3/") {
+	if strings.HasPrefix(modelID, "minimax/h3-max/") {
+		modelID = applyMiniMaxH3MaxVideoRequest(req, falReq)
+	} else if strings.HasPrefix(modelID, "minimax/h3/") {
 		modelID = applyMiniMaxH3VideoRequest(req, falReq)
 	}
 
@@ -1129,6 +1131,77 @@ func (p *FalProvider) GenerateVideo(ctx context.Context, req *model.VideoGenerat
 		return nil, err
 	}
 	return parseFalVideoResult(resultBody)
+}
+
+// applyMiniMaxH3MaxVideoRequest selects the native Fal H3 Max endpoint from
+// the input shape. H3 Max exposes separate text-to-video and image-to-video
+// endpoints, with a shared schema for the generation controls.
+func applyMiniMaxH3MaxVideoRequest(req *model.VideoGenerationRequest, falReq map[string]any) string {
+	delete(falReq, "fps")
+	delete(falReq, "generate_audio") // H3 Max generates native audio.
+	delete(falReq, "bitrate_mode")
+	delete(falReq, "end_user_id")
+	delete(falReq, "image_urls")
+	delete(falReq, "video_urls")
+	delete(falReq, "audio_urls")
+
+	duration := strings.ToLower(strings.TrimSpace(string(req.Duration)))
+	if duration == "" || duration == "auto" {
+		falReq["duration"] = 5
+	} else {
+		falReq["duration"] = intOrDefaultString(duration, 5)
+	}
+
+	if resolution, ok := miniMaxH3MaxResolution(req.Resolution); ok {
+		falReq["resolution"] = resolution
+	} else {
+		delete(falReq, "resolution")
+	}
+
+	expansionMode := strings.ToLower(strings.TrimSpace(req.PromptExpansionMode))
+	switch expansionMode {
+	case "disabled", "balanced", "quality":
+	default:
+		expansionMode = "balanced"
+	}
+	falReq["prompt_expansion_mode"] = expansionMode
+
+	imageURL := strings.TrimSpace(req.ImageURL)
+	if imageURL == "" && len(req.ImageURLs) > 0 {
+		imageURL = strings.TrimSpace(req.ImageURLs[0])
+	}
+	if imageURL == "" {
+		for _, item := range req.Content {
+			if item.Type == "image_url" && item.ImageURL != nil && strings.TrimSpace(item.ImageURL.URL) != "" {
+				imageURL = strings.TrimSpace(item.ImageURL.URL)
+				break
+			}
+		}
+	}
+
+	if imageURL != "" {
+		falReq["image_url"] = imageURL
+		delete(falReq, "aspect_ratio") // The input image controls the aspect ratio.
+		if strings.TrimSpace(req.EndImageURL) != "" {
+			falReq["end_image_url"] = strings.TrimSpace(req.EndImageURL)
+		}
+		return "minimax/h3-max/image-to-video"
+	}
+
+	delete(falReq, "image_url")
+	delete(falReq, "end_image_url")
+	return "minimax/h3-max/text-to-video"
+}
+
+func miniMaxH3MaxResolution(value string) (string, bool) {
+	switch strings.ToUpper(strings.TrimSpace(value)) {
+	case "480P":
+		return "480P", true
+	case "768P":
+		return "768P", true
+	default:
+		return "", false
+	}
 }
 
 // applyMiniMaxH3VideoRequest selects the native Fal H3 endpoint from the input

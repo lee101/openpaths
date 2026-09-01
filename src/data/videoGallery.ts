@@ -10,9 +10,49 @@ export type VideoGalleryItem = {
   duration: number;
   resolution: '480p' | '720p' | 'HD' | 'FHD';
   aspectRatio: '16:9' | '9:16' | '1:1' | '4:3' | '3:4';
+  format?: 'WebM' | 'MP4';
 };
 
 export const videoGallery: VideoGalleryItem[] = [
+  {
+    slug: "manifoldgen-kfold-h3-glass-hummingbird",
+    title: "Glass Hummingbird",
+    provider: "ManifoldGen",
+    model: "kfold-video",
+    prompt: "Macro product film in one continuous shot: a translucent glass hummingbird unfolds its wings above a dark reflective table, the camera makes a slow 30-degree arc, cool rim light refracts into spectral highlights, delicate crystalline wing chimes and a low room tone, no cuts, photorealistic.",
+    videoUrl: "/static/video-gallery/h3/glass-hummingbird.webm",
+    posterUrl: "/static/video-gallery/h3/glass-hummingbird-poster.webp",
+    duration: 5.2,
+    resolution: "HD",
+    aspectRatio: "16:9",
+    format: "WebM",
+  },
+  {
+    slug: "manifoldgen-kfold-h3-native-rain-tram",
+    title: "Rain Tram — Native HD",
+    provider: "ManifoldGen",
+    model: "kfold-video",
+    prompt: "Handheld tracking shot follows the tram through heavy rain. Neon reflections streak across wet asphalt while pedestrians with umbrellas cross in the foreground; tires hiss on the wet road, distant thunder rumbles, rain patters against the tram windows.",
+    videoUrl: "/static/video-gallery/h3/rain-tram-native.mp4",
+    posterUrl: "/static/video-gallery/h3/rain-tram-native-poster.webp",
+    duration: 3.75,
+    resolution: "HD",
+    aspectRatio: "16:9",
+    format: "MP4",
+  },
+  {
+    slug: "manifoldgen-kfold-h3-desert-portal",
+    title: "Desert Portal Transition",
+    provider: "ManifoldGen",
+    model: "kfold-video",
+    prompt: "One uninterrupted dolly-in across wind-rippled desert sand as an ancient stone arch awakens; blue energy traces the carvings, cloth and dust obey the wind, deep harmonic drone and granular sand, preserve the arch geometry, no cut.",
+    videoUrl: "/static/video-gallery/h3/desert-portal.webm",
+    posterUrl: "/static/video-gallery/h3/desert-portal-poster.webp",
+    duration: 5.2,
+    resolution: "HD",
+    aspectRatio: "16:9",
+    format: "WebM",
+  },
   {
     slug: "manifoldgen-kfold-lighthouse",
     title: "Obsidian Lighthouse",

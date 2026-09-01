@@ -131,6 +131,7 @@ echo ""
 
 # --- Z.AI ---
 echo "=== Z.AI ==="
+test_chat "GLM-5.3-Flash" "glm-5.3-flash"
 test_chat "GLM-4.6v Flash" "glm-4.6v-flash"
 echo ""
 

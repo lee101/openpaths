@@ -33,12 +33,12 @@ test.describe('Model Fusion space', () => {
     // Reveal the request preview and confirm it targets the OpenPaths endpoint
     // with the openpaths fusion payload.
     await page.getByRole('button', { name: /Show request/i }).click();
-    const pre = page.locator('pre');
+    const pre = page.locator('pre').filter({ hasText: 'const response = await fetch' });
     await expect(pre).toContainText('/v1/chat/completions');
     await expect(pre).toContainText('"type": "openpaths"');
     await expect(pre).toContainText('"analysis_models"');
     // Quality panel resolves to native OpenPaths model ids.
-    await expect(pre).toContainText('gpt-5.5');
+    await expect(pre).toContainText('gpt-5.6-sol');
     await expect(pre).toContainText('gemini-latest');
     await expect(pre).toContainText('deepseek-v4-flash');
   });
@@ -50,7 +50,7 @@ test.describe('Model Fusion space', () => {
     await expect(page.getByText('OpenRouter API key')).toBeVisible();
     await page.getByRole('button', { name: /Show request/i }).click();
 
-    const pre = page.locator('pre');
+    const pre = page.locator('pre').filter({ hasText: 'const response = await fetch' });
     await expect(pre).toContainText('https://openrouter.ai/api/v1/chat/completions');
     await expect(pre).toContainText('openrouter:fusion');
     // OpenRouter uses native provider-prefixed ids, not OpenPaths aliases.
@@ -64,7 +64,7 @@ test.describe('Model Fusion space', () => {
 
     await expect(page.getByText('3/8 panel models')).toBeVisible();
     await page.getByRole('button', { name: /Show request/i }).click();
-    const pre = page.locator('pre');
+    const pre = page.locator('pre').filter({ hasText: 'const response = await fetch' });
     await expect(pre).toContainText('gemini-3.7-flash');
     await expect(pre).toContainText('deepseek-v4-flash');
     await expect(pre).toContainText('kimi-k2.5');
@@ -84,22 +84,22 @@ test.describe('Model Fusion space', () => {
     await expect(page.getByText(/Fused answer: experts disagree/i)).toBeVisible();
 
     // The browser sent the OpenPaths fusion payload with native panel ids. With
-    // "Fuse with: auto" the judge is the first panel model (gpt-5.5).
+    // "Fuse with: auto" the judge is the first panel model (GPT-5.6 Sol).
     expect(requestBody).toMatchObject({
-      model: 'gpt-5.5',
+      model: 'gpt-5.6-sol',
       fusion: {
         type: 'openpaths',
-        model: 'gpt-5.5',
-        analysis_models: ['gpt-5.5', 'gemini-latest', 'deepseek-v4-flash'],
+        model: 'gpt-5.6-sol',
+        analysis_models: ['gpt-5.6-sol', 'gemini-latest', 'deepseek-v4-flash'],
       },
     });
   });
 
   test('adds the same model multiple times as separate panel variants', async ({ page }) => {
     await page.goto('/fusion');
-    // Default quality preset selects 3 models; add GLM-5.2 three times on top via
+    // Default quality preset selects 3 models; add GLM-5.3 three times on top via
     // its row "+" button (addModelCopy appends a copy each click).
-    const addGlm = page.getByRole('button', { name: 'Add another GLM-5.2' });
+    const addGlm = page.getByRole('button', { name: 'Add another GLM-5.3' });
     await addGlm.click();
     await addGlm.click();
     await addGlm.click();
@@ -109,11 +109,11 @@ test.describe('Model Fusion space', () => {
     await expect(page.getByText('6/8 panel models')).toBeVisible();
 
     await page.getByRole('button', { name: /Show request/i }).click();
-    const pre = page.locator('pre');
+    const pre = page.locator('pre').filter({ hasText: 'const response = await fetch' });
     await expect(pre).toContainText('"analysis_models"');
-    // glm-5.2 appears three times in the panel.
+    // glm-5.3 appears three times in the panel.
     const text = await pre.innerText();
-    const occurrences = text.split('"glm-5.2"').length - 1;
+    const occurrences = text.split('"glm-5.3"').length - 1;
     expect(occurrences).toBeGreaterThanOrEqual(3);
   });
 

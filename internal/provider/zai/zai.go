@@ -117,10 +117,20 @@ func sanitizeForZAI(req *model.ChatCompletionRequest) {
 	req.Prefill = ""
 	req.TaskTier = ""
 	req.RoutingStrategy = ""
-	req.Thinking = nil
 	// Every model on this surface is a GLM, so the user-turn reshaping always
 	// applies here.
 	model.PromoteSystemToUser(req)
+
+	// GLM-5.3-Flash only supports enabled thinking. Keep prior reasoning blocks
+	// available for long-running tool conversations, as recommended by Z.AI.
+	if strings.HasPrefix(strings.ToLower(req.Model), "glm-5.3-flash") {
+		if req.Thinking == nil {
+			clearThinking := false
+			req.Thinking = &model.ThinkingConfig{Type: "enabled", ClearThinking: &clearThinking}
+		} else {
+			req.Thinking.Type = "enabled"
+		}
+	}
 }
 
 func (p *ZAIProvider) ChatCompletion(ctx context.Context, req *model.ChatCompletionRequest) (*model.ChatCompletionResponse, error) {
@@ -160,6 +170,9 @@ func (p *ZAIProvider) ChatCompletion(ctx context.Context, req *model.ChatComplet
 
 func (p *ZAIProvider) ChatCompletionStream(ctx context.Context, req *model.ChatCompletionRequest) (<-chan provider.StreamEvent, error) {
 	req.Stream = true
+	if len(req.Tools) > 0 {
+		req.ToolStream = true
+	}
 	sanitizeForZAI(req)
 
 	body, err := json.Marshal(req)

@@ -19,6 +19,7 @@ type ChatCompletionRequest struct {
 	ResponseFormat      *ResponseFormat `json:"response_format,omitempty"`
 	Tools               []Tool          `json:"tools,omitempty"`
 	ToolChoice          any             `json:"tool_choice,omitempty"`
+	ToolStream          bool            `json:"tool_stream,omitempty"`
 	ReasoningEffort     string          `json:"reasoning_effort,omitempty"`
 	Thinking            *ThinkingConfig `json:"thinking,omitempty"`
 	ChatTemplateKwargs  map[string]any  `json:"chat_template_kwargs,omitempty"`
@@ -135,8 +136,9 @@ type JsonSchema struct {
 }
 
 type ThinkingConfig struct {
-	Type         string `json:"type,omitempty"`
-	BudgetTokens *int   `json:"budget_tokens,omitempty"`
+	Type          string `json:"type,omitempty"`
+	BudgetTokens  *int   `json:"budget_tokens,omitempty"`
+	ClearThinking *bool  `json:"clear_thinking,omitempty"`
 }
 
 type StreamOptions struct {

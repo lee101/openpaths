@@ -6,9 +6,49 @@ export interface ArtGalleryItem {
   title: string;
   prompt: string;
   imageUrl: string;
+  layout?: 'square' | 'wide';
 }
 
 export const artGallery: ArtGalleryItem[] = [
+  {
+    slug: 'openai-h3-routing-engine',
+    provider: 'OpenAI',
+    model: 'GPT Image 2',
+    providerModelId: 'gpt-image-2',
+    title: 'The Routing Engine',
+    prompt: 'A premium cinematic still of an intricate clockwork routing engine where translucent film paths carry desert light, a night train, and a crystalline hummingbird through interlocking titanium and glass cogs',
+    imageUrl: '/static/landing/art-playground/openai/h3-routing-engine.webp',
+    layout: 'wide',
+  },
+  {
+    slug: 'openai-aurora-routing-observatory',
+    provider: 'OpenAI',
+    model: 'GPT Image 2',
+    providerModelId: 'gpt-image-2',
+    title: 'Aurora Routing Observatory',
+    prompt: 'A monumental glass gyroscope and precision cog observatory in a moonlit frozen valley, with a silver night train circling beneath a green aurora',
+    imageUrl: '/static/landing/art-playground/openai/aurora-routing-observatory.webp',
+    layout: 'wide',
+  },
+  {
+    slug: 'openai-crystal-aperture-hummingbird',
+    provider: 'OpenAI',
+    model: 'GPT Image 2',
+    providerModelId: 'gpt-image-2',
+    title: 'Crystal Aperture',
+    prompt: 'A crystalline hummingbird hovering above a precisely machined lens aperture made of interlocking titanium cogs, releasing elegant ribbons of routed light',
+    imageUrl: '/static/landing/art-playground/openai/crystal-aperture-hummingbird.webp',
+  },
+  {
+    slug: 'openai-desert-cog-portal',
+    provider: 'OpenAI',
+    model: 'GPT Image 2',
+    providerModelId: 'gpt-image-2',
+    title: 'Desert Cog Portal',
+    prompt: 'An ancient stone portal in a wind-rippled desert, its inner ring rebuilt as a massive precision cog mechanism that bends cinematic light through the opening',
+    imageUrl: '/static/landing/art-playground/openai/desert-cog-portal.webp',
+    layout: 'wide',
+  },
   {
     slug: 'fal-klein-archive-chapel',
     provider: 'Fal',
