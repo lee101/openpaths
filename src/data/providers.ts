@@ -95,7 +95,9 @@ export const providers: Provider[] = [
     url: 'https://x.ai',
     description: 'Grok text models plus Voice Agent, Text to Speech, and Speech to Text APIs for realtime and batch audio.',
     featured: false,
-    logo: '/logos/xai.svg'
+    logo: '/logos/xai.webp',
+    logoSmall: '/logos/xai-64.webp',
+    logoSrcSet: '/logos/xai-64.webp 64w, /logos/xai.webp 128w'
   },
   {
     slug: 'deepseek',

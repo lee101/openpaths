@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/valyala/fasthttp"
@@ -52,7 +53,11 @@ func (h *MusicHandler) HandleMusicGeneration(ctx *fasthttp.RequestCtx) {
 	}
 
 	if req.OutputFormat == "" {
-		req.OutputFormat = "url"
+		if strings.Contains(strings.ToLower(req.Model), "lyria") {
+			req.OutputFormat = "opus"
+		} else {
+			req.OutputFormat = "url"
+		}
 	}
 
 	originalModel := req.Model

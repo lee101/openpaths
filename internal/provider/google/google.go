@@ -5,11 +5,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -76,18 +78,24 @@ func (p *GoogleProvider) GenerateMusic(ctx context.Context, req *model.MusicGene
 		ResponseModalities: []string{"AUDIO"},
 	}
 
-	audio, mimeType, err := collectAudioFromGenerateContentStream(ctx, client, req.Model, prompt, config)
+	audio, mimeType, _, _, err := collectAudioFromGenerateContentStream(ctx, client, req.Model, prompt, config)
 	if err != nil {
 		return nil, err
 	}
 	if len(audio) == 0 {
 		return nil, &provider.ProviderError{Provider: "google", StatusCode: 502, Message: "no audio returned", Retryable: true}
 	}
+	audio, mimeType, format, err := encodeLyriaOutput(ctx, audio, mimeType, req.OutputFormat)
+	if err != nil {
+		return nil, &provider.ProviderError{Provider: "google", StatusCode: 502, Message: err.Error(), Retryable: false, Err: err}
+	}
 
 	return &model.MusicGenerationResponse{
 		Data: &model.MusicData{
-			Status: 2,
-			Audio:  base64.StdEncoding.EncodeToString(audio),
+			Status:   2,
+			Audio:    base64.StdEncoding.EncodeToString(audio),
+			Format:   format,
+			MimeType: mimeType,
 		},
 		ExtraInfo: &model.MusicExtraInfo{
 			Size: len(audio),
@@ -100,6 +108,55 @@ func (p *GoogleProvider) GenerateMusic(ctx context.Context, req *model.MusicGene
 			StatusMsg:  "success",
 		},
 	}, nil
+}
+
+func encodeLyriaOutput(ctx context.Context, audio []byte, mimeType, requested string) ([]byte, string, string, error) {
+	requested = strings.ToLower(strings.TrimSpace(requested))
+	if requested == "" || requested == "url" {
+		return audio, mimeType, audioFormatFromMime(mimeType), nil
+	}
+	if requested == "mp3" && (strings.Contains(strings.ToLower(mimeType), "mpeg") || strings.Contains(strings.ToLower(mimeType), "mp3")) {
+		return audio, "audio/mpeg", "mp3", nil
+	}
+
+	var args []string
+	var outputMIME string
+	switch requested {
+	case "opus", "ogg":
+		args = []string{"-c:a", "libopus", "-b:a", "192k", "-vbr", "on", "-application", "audio", "-f", "opus"}
+		outputMIME = "audio/ogg;codecs=opus"
+		requested = "opus"
+	case "wav":
+		args = []string{"-c:a", "pcm_s16le", "-f", "wav"}
+		outputMIME = "audio/wav"
+	case "mp3":
+		args = []string{"-c:a", "libmp3lame", "-b:a", "256k", "-f", "mp3"}
+		outputMIME = "audio/mpeg"
+	default:
+		return nil, "", "", fmt.Errorf("unsupported Lyria output format %q (use opus, mp3, or wav)", requested)
+	}
+
+	ffctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	defer cancel()
+	commandArgs := append([]string{"-hide_banner", "-loglevel", "error", "-i", "pipe:0"}, args...)
+	commandArgs = append(commandArgs, "pipe:1")
+	cmd := exec.CommandContext(ffctx, "ffmpeg", commandArgs...)
+	cmd.Stdin = bytes.NewReader(audio)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		message := strings.TrimSpace(stderr.String())
+		if len(message) > 300 {
+			message = message[len(message)-300:]
+		}
+		return nil, "", "", fmt.Errorf("encode Lyria audio as %s: %w: %s", requested, err, message)
+	}
+	if stdout.Len() == 0 {
+		return nil, "", "", fmt.Errorf("encode Lyria audio as %s: ffmpeg produced no output", requested)
+	}
+	return stdout.Bytes(), outputMIME, requested, nil
 }
 
 func (p *GoogleProvider) GenerateSpeech(ctx context.Context, req *model.SpeechRequest) (*model.SpeechResponse, error) {
@@ -135,19 +192,55 @@ func (p *GoogleProvider) GenerateSpeech(ctx context.Context, req *model.SpeechRe
 		config.Temperature = &temp
 	}
 
-	audio, mimeType, err := collectAudioFromGenerateContentStream(ctx, client, req.Model, text, config)
+	audio, mimeType, inputTokens, outputTokens, err := collectAudioFromGenerateContentStream(ctx, client, req.Model, text, config)
 	if err != nil {
 		return nil, err
 	}
 	if len(audio) == 0 {
 		return nil, &provider.ProviderError{Provider: "google", StatusCode: 502, Message: "no audio returned", Retryable: true}
 	}
+	audio, mimeType = browserReadySpeechAudio(audio, mimeType)
 
 	return &model.SpeechResponse{
-		Audio:      base64.StdEncoding.EncodeToString(audio),
-		Format:     audioFormatFromMime(mimeType),
-		Characters: len(text),
+		Audio:        base64.StdEncoding.EncodeToString(audio),
+		Format:       audioFormatFromMime(mimeType),
+		Characters:   len(text),
+		InputTokens:  inputTokens,
+		OutputTokens: outputTokens,
 	}, nil
+}
+
+// Gemini TTS returns headerless 24 kHz, 16-bit mono PCM. Browsers cannot play
+// those bytes directly, so expose a real WAV from OpenPaths' speech endpoint.
+func browserReadySpeechAudio(audio []byte, mimeType string) ([]byte, string) {
+	lower := strings.ToLower(mimeType)
+	if !strings.Contains(lower, "pcm") && !strings.Contains(lower, "l16") {
+		return audio, mimeType
+	}
+
+	const (
+		sampleRate    = uint32(24000)
+		channels      = uint16(1)
+		bitsPerSample = uint16(16)
+	)
+	byteRate := sampleRate * uint32(channels) * uint32(bitsPerSample/8)
+	blockAlign := channels * (bitsPerSample / 8)
+	wav := make([]byte, 44+len(audio))
+	copy(wav[0:4], "RIFF")
+	binary.LittleEndian.PutUint32(wav[4:8], uint32(len(wav)-8))
+	copy(wav[8:12], "WAVE")
+	copy(wav[12:16], "fmt ")
+	binary.LittleEndian.PutUint32(wav[16:20], 16)
+	binary.LittleEndian.PutUint16(wav[20:22], 1)
+	binary.LittleEndian.PutUint16(wav[22:24], channels)
+	binary.LittleEndian.PutUint32(wav[24:28], sampleRate)
+	binary.LittleEndian.PutUint32(wav[28:32], byteRate)
+	binary.LittleEndian.PutUint16(wav[32:34], blockAlign)
+	binary.LittleEndian.PutUint16(wav[34:36], bitsPerSample)
+	copy(wav[36:40], "data")
+	binary.LittleEndian.PutUint32(wav[40:44], uint32(len(audio)))
+	copy(wav[44:], audio)
+	return wav, "audio/wav"
 }
 
 func buildGeminiSpeechConfig(req *model.SpeechRequest) *genai.SpeechConfig {
@@ -270,13 +363,19 @@ func audioFormatFromMime(mimeType string) string {
 	}
 }
 
-func collectAudioFromGenerateContentStream(ctx context.Context, client *genai.Client, modelName, prompt string, config *genai.GenerateContentConfig) ([]byte, string, error) {
+func collectAudioFromGenerateContentStream(ctx context.Context, client *genai.Client, modelName, prompt string, config *genai.GenerateContentConfig) ([]byte, string, int, int, error) {
 	var audio []byte
 	var mimeType string
+	var inputTokens int
+	var outputTokens int
 
 	for chunk, err := range client.Models.GenerateContentStream(ctx, modelName, genai.Text(prompt), config) {
 		if err != nil {
-			return nil, "", googleProviderError(err)
+			return nil, "", 0, 0, googleProviderError(err)
+		}
+		if chunk.UsageMetadata != nil {
+			inputTokens = int(chunk.UsageMetadata.PromptTokenCount)
+			outputTokens = int(chunk.UsageMetadata.CandidatesTokenCount)
 		}
 		for _, cand := range chunk.Candidates {
 			if cand == nil || cand.Content == nil {
@@ -294,7 +393,7 @@ func collectAudioFromGenerateContentStream(ctx context.Context, client *genai.Cl
 		}
 	}
 
-	return audio, mimeType, nil
+	return audio, mimeType, inputTokens, outputTokens, nil
 }
 
 func googleProviderError(err error) error {

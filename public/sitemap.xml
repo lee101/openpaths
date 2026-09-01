@@ -66,6 +66,16 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/tools/google-tts</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/tools/lyria</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/text-to-image</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -1387,6 +1397,11 @@
   </url>
   <url>
     <loc>https://openpaths.io/models/kimi-k2.5</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/glm-5.3-flash</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>

@@ -912,7 +912,7 @@ export function Account() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [apiKeys, setApiKeys] = useState<any[]>([]);
   const [selectedKeyIds, setSelectedKeyIds] = useState<string[]>([]);
-  const selectingKeysRef = useRef(false);
+  const [keyError, setKeyError] = useState('');
   const [providerKeys, setProviderKeys] = useState<any[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [hasPaymentMethod, setHasPaymentMethod] = useState(false);
@@ -1211,49 +1211,62 @@ export function Account() {
   };
 
   const createKey = async () => {
-    const res = await api('/account/keys', { method: 'POST', body: JSON.stringify({ name: newKeyName || 'Default' }) });
-    const data = await res.json();
-    if (res.ok) {
+    setKeyError('');
+    try {
+      const res = await api('/account/keys', { method: 'POST', body: JSON.stringify({ name: newKeyName || 'Default' }) });
+      const data = await res.json();
+      if (!res.ok) {
+        setKeyError(data.error?.message || 'Failed to create API key');
+        return;
+      }
       setNewKeyResult(data.key);
       setNewKeyVisible(false);
+      // Save the API credential for Playground/tools, but keep the dashboard on
+      // its JWT session so this key can be revoked without signing the user out.
       storeApiKey(data.key);
-      setApiKey(data.key);
       setNewKeyName('');
-      void fetchKeys();
+      await fetchKeys();
+    } catch {
+      setKeyError('Failed to create API key');
     }
   };
 
   const revokeKey = async (id: string) => {
-    await api(`/account/keys/${id}`, { method: 'DELETE' });
-    setSelectedKeyIds(ids => ids.filter(keyId => keyId !== id));
-    void fetchKeys();
+    setKeyError('');
+    try {
+      const res = await api(`/account/keys/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) {
+        setKeyError(data.error?.message || 'Failed to delete API key');
+        return;
+      }
+      setSelectedKeyIds(ids => ids.filter(keyId => keyId !== id));
+      await fetchKeys();
+    } catch {
+      setKeyError('Failed to delete API key');
+    }
   };
 
   const toggleKeySelection = (id: string) => {
     setSelectedKeyIds(ids => ids.includes(id) ? ids.filter(keyId => keyId !== id) : [...ids, id]);
   };
-  const beginKeySelection = (id: string) => {
-    selectingKeysRef.current = true;
-    setSelectedKeyIds([id]);
-  };
-  const extendKeySelection = (id: string) => {
-    if (selectingKeysRef.current) setSelectedKeyIds(ids => ids.includes(id) ? ids : [...ids, id]);
-  };
   const bulkRevokeKeys = async () => {
     const ids = selectedKeyIds;
     if (!ids.length) return;
-    const res = await api('/account/keys', { method: 'DELETE', body: JSON.stringify({ ids }) });
-    if (res.ok) {
+    setKeyError('');
+    try {
+      const res = await api('/account/keys', { method: 'DELETE', body: JSON.stringify({ ids }) });
+      const data = await res.json();
+      if (!res.ok) {
+        setKeyError(data.error?.message || 'Failed to delete selected API keys');
+        return;
+      }
       setSelectedKeyIds([]);
-      void fetchKeys();
+      await fetchKeys();
+    } catch {
+      setKeyError('Failed to delete selected API keys');
     }
   };
-
-  useEffect(() => {
-    const stopSelecting = () => { selectingKeysRef.current = false; };
-    window.addEventListener('mouseup', stopSelecting);
-    return () => window.removeEventListener('mouseup', stopSelecting);
-  }, []);
 
   const startOpenAIDeviceAuth = async () => {
     setOpenAIDeviceLoading(true);
@@ -1818,23 +1831,27 @@ export function Account() {
               </button>
             </div>
 
+            {keyError && <p role="alert" className="mb-4 text-sm font-mono text-red-300">{keyError}</p>}
+
             {apiKeys.length === 0 ? (
               <p className="text-white/55 font-mono text-sm">No API keys yet. Create one to get started.</p>
             ) : (
               <div className="space-y-3">
                 {apiKeys.map((k: any) => (
-                  <div key={k.id} onMouseDown={() => beginKeySelection(k.id)} onMouseEnter={() => extendKeySelection(k.id)} className={`border bg-white/[0.05] rounded-xl p-4 flex items-center justify-between select-none cursor-pointer ${selectedKeyIds.includes(k.id) ? 'border-red-400/60 bg-red-500/10' : 'border-white/20'}`} data-testid="api-key-card">
-                    <div>
-                      <input type="checkbox" checked={selectedKeyIds.includes(k.id)} onChange={() => toggleKeySelection(k.id)} onClick={e => e.stopPropagation()} aria-label={`Select ${k.name}`} className="mr-3 accent-red-400" />
-                      <div className="font-bold text-sm">{k.name}</div>
-                      <code className="font-mono text-xs text-white/55">{k.key_prefix}...</code>
+                  <div key={k.id} onClick={() => toggleKeySelection(k.id)} className={`border bg-white/[0.05] rounded-xl p-4 flex items-center justify-between select-none cursor-pointer ${selectedKeyIds.includes(k.id) ? 'border-red-400/60 bg-red-500/10' : 'border-white/20'}`} data-testid="api-key-card">
+                    <div className="flex items-start">
+                      <input type="checkbox" checked={selectedKeyIds.includes(k.id)} onChange={() => toggleKeySelection(k.id)} onClick={e => e.stopPropagation()} aria-label={`Select ${k.name}`} className="mr-3 mt-1 accent-red-400" />
+                      <div>
+                        <div className="font-bold text-sm">{k.name}</div>
+                        <code className="font-mono text-xs text-white/55">{k.key_prefix}...</code>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="px-2 py-1 bg-green-500/10 text-green-400 text-[10px] font-mono rounded border border-green-500/20" data-testid="key-status">
                         Active
                       </span>
-                      <button onClick={() => revokeKey(k.id)} className="text-xs font-mono text-red-400/60 hover:text-red-400 px-2 py-1">
-                        Revoke
+                      <button type="button" aria-label={`Delete ${k.name} API key`} onClick={e => { e.stopPropagation(); void revokeKey(k.id); }} className="text-xs font-mono text-red-400/60 hover:text-red-400 px-2 py-1">
+                        Delete
                       </button>
                     </div>
                   </div>

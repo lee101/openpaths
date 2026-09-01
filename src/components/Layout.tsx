@@ -81,7 +81,7 @@ const primaryNavLinks = [
   { label: 'Artifacts', to: '/artifacts', match: (path: string) => path.startsWith('/artifacts') },
   { label: 'Compound', to: '/compound', match: (path: string) => path === '/compound' },
   { label: 'Prompts', to: '/prompts', match: (path: string) => path.startsWith('/prompts') },
-  { label: 'Tools', to: '/tools', match: (path: string) => path === '/tools' || path === '/image-to-3d' || path === '/text-to-3d' || path === '/rig-3d' || path === '/retexture-3d' || path === '/text-to-image' || path === '/video-extension' },
+  { label: 'Tools', to: '/tools', match: (path: string) => path === '/tools' || path.startsWith('/tools/') || path === '/image-to-3d' || path === '/text-to-3d' || path === '/rig-3d' || path === '/retexture-3d' || path === '/text-to-image' || path === '/video-extension' },
   { label: 'Search', to: '/search', match: (path: string) => path === '/search' },
   { label: 'Art', to: '/art', match: (path: string) => path === '/art' },
   { label: 'Blog', to: '/blog', match: (path: string) => path.startsWith('/blog') },

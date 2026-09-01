@@ -7,7 +7,6 @@ import (
 
 	"github.com/openpaths/openpaths/internal/auth"
 	"github.com/openpaths/openpaths/internal/db/queries"
-	"github.com/openpaths/openpaths/internal/model"
 )
 
 // OnRegisterFunc is called after a successful user registration with (userID, email).
@@ -94,9 +93,22 @@ func (h *AuthHandler) HandleRegister(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	setSessionCookie(ctx, rawKey)
+	if h.jwt == nil {
+		writeError(ctx, 500, "server_error", "JWT not configured")
+		return
+	}
+	token, err := h.jwt.Generate(user.ID, user.Email)
+	if err != nil {
+		writeError(ctx, 500, "server_error", "Failed to generate session token")
+		return
+	}
+
+	// The dashboard session must not be tied to a revocable API key. Return the
+	// new API key once for client use, but authenticate the browser with a JWT so
+	// deleting that key does not sign the user out.
+	setSessionCookie(ctx, token)
 	writeJSON(ctx, 201, authResponse{
-		Token:  rawKey,
+		Token:  token,
 		APIKey: rawKey,
 		User: map[string]any{
 			"id":       user.ID,
@@ -140,48 +152,21 @@ func (h *AuthHandler) HandleLogin(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	keys, err := h.apiKeyQ.ListByUser(ctx, user.ID)
-	if err != nil {
-		writeError(ctx, 500, "server_error", "Failed to list API keys")
+	if h.jwt == nil {
+		writeError(ctx, 500, "server_error", "JWT not configured")
 		return
 	}
-	if activeAPIKeyCount(keys) > 0 {
-		if h.jwt == nil {
-			writeError(ctx, 500, "server_error", "JWT not configured")
-			return
-		}
-		token, err := h.jwt.Generate(user.ID, user.Email)
-		if err != nil {
-			writeError(ctx, 500, "server_error", "Failed to generate session token")
-			return
-		}
-		setSessionCookie(ctx, token)
-		writeJSON(ctx, 200, authResponse{
-			Token: token,
-			User: map[string]any{
-				"id":       user.ID,
-				"email":    user.Email,
-				"name":     user.Name,
-				"is_admin": user.IsAdmin,
-			},
-		})
+	token, err := h.jwt.Generate(user.ID, user.Email)
+	if err != nil {
+		writeError(ctx, 500, "server_error", "Failed to generate session token")
 		return
 	}
 
-	rawKey, keyHash, keyPrefix, err := auth.GenerateAPIKey()
-	if err != nil {
-		writeError(ctx, 500, "server_error", "Failed to generate session key")
-		return
-	}
-	if _, err := h.apiKeyQ.Create(ctx, user.ID, keyHash, keyPrefix, "Default"); err != nil {
-		writeError(ctx, 500, "server_error", "Failed to create session key")
-		return
-	}
-
-	setSessionCookie(ctx, rawKey)
+	// Logging in is a dashboard operation and must never mutate API keys. Users
+	// who intentionally revoked every key can create a replacement explicitly.
+	setSessionCookie(ctx, token)
 	writeJSON(ctx, 200, authResponse{
-		Token:  rawKey,
-		APIKey: rawKey,
+		Token: token,
 		User: map[string]any{
 			"id":       user.ID,
 			"email":    user.Email,
@@ -189,16 +174,6 @@ func (h *AuthHandler) HandleLogin(ctx *fasthttp.RequestCtx) {
 			"is_admin": user.IsAdmin,
 		},
 	})
-}
-
-func activeAPIKeyCount(keys []model.APIKey) int {
-	n := 0
-	for _, k := range keys {
-		if !k.Revoked {
-			n++
-		}
-	}
-	return n
 }
 
 // HandleLogout clears the session cookie.

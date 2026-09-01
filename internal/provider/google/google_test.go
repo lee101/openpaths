@@ -2,13 +2,61 @@ package google
 
 import (
 	"context"
+	"encoding/binary"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os/exec"
 	"testing"
 
 	"github.com/openpaths/openpaths/internal/model"
 )
+
+func TestBrowserReadySpeechAudioWrapsPCMAsWAV(t *testing.T) {
+	pcm := []byte{0x00, 0x00, 0xff, 0x7f}
+	got, mimeType := browserReadySpeechAudio(pcm, "audio/L16;codec=pcm;rate=24000")
+	if mimeType != "audio/wav" {
+		t.Fatalf("mime type = %q, want audio/wav", mimeType)
+	}
+	if string(got[:4]) != "RIFF" || string(got[8:12]) != "WAVE" {
+		t.Fatalf("missing WAV header: %q / %q", got[:4], got[8:12])
+	}
+	if rate := binary.LittleEndian.Uint32(got[24:28]); rate != 24000 {
+		t.Fatalf("sample rate = %d, want 24000", rate)
+	}
+	if size := binary.LittleEndian.Uint32(got[40:44]); size != uint32(len(pcm)) {
+		t.Fatalf("data size = %d, want %d", size, len(pcm))
+	}
+	if string(got[44:]) != string(pcm) {
+		t.Fatal("PCM payload changed")
+	}
+}
+
+func TestBrowserReadySpeechAudioLeavesEncodedAudioAlone(t *testing.T) {
+	mp3 := []byte("encoded")
+	got, mimeType := browserReadySpeechAudio(mp3, "audio/mpeg")
+	if mimeType != "audio/mpeg" || string(got) != string(mp3) {
+		t.Fatalf("encoded audio changed: mime=%q data=%q", mimeType, got)
+	}
+}
+
+func TestEncodeLyriaOutputAsOpus(t *testing.T) {
+	if _, err := exec.LookPath("ffmpeg"); err != nil {
+		t.Skip("ffmpeg is not installed")
+	}
+	pcm := make([]byte, 2400)
+	wav, _ := browserReadySpeechAudio(pcm, "audio/pcm")
+	got, mimeType, format, err := encodeLyriaOutput(context.Background(), wav, "audio/wav", "opus")
+	if err != nil {
+		t.Fatalf("encodeLyriaOutput() error = %v", err)
+	}
+	if mimeType != "audio/ogg;codecs=opus" || format != "opus" {
+		t.Fatalf("mime=%q format=%q, want Opus", mimeType, format)
+	}
+	if len(got) < 4 || string(got[:4]) != "OggS" {
+		t.Fatalf("missing Ogg container header: %q", got[:min(4, len(got))])
+	}
+}
 
 func TestTranslateRequest_PrefillAppendsModelTurn(t *testing.T) {
 	req := &model.ChatCompletionRequest{

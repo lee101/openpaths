@@ -36,6 +36,8 @@ import { CharacterAnimator } from './pages/CharacterAnimator';
 import { MusicGenerator } from './pages/MusicGenerator';
 import { RemoveVideoBackground } from './pages/RemoveVideoBackground';
 import { Tools } from './pages/Tools';
+import { GoogleTTS } from './pages/GoogleTTS';
+import { LyriaStudio } from './pages/LyriaStudio';
 import { Alternatives } from './pages/Alternatives';
 import { Evals } from './pages/Evals';
 import { ImageEvals } from './pages/ImageEvals';
@@ -88,6 +90,8 @@ export default function App() {
           <Route path="fusion" element={<Fusion />} />
           <Route path="compound" element={<Compound />} />
           <Route path="tools" element={<Tools />} />
+          <Route path="tools/google-tts" element={<GoogleTTS />} />
+          <Route path="tools/lyria" element={<LyriaStudio />} />
           <Route path="image-to-3d" element={<ImageTo3D />} />
           <Route path="text-to-video" element={<TextToVideo />} />
           <Route path="image-to-video" element={<ImageToVideo />} />

@@ -24,6 +24,8 @@ func TestCompatibleReasoningEffort(t *testing.T) {
 		{"glm-5.3", "xhigh", "max"},
 		{"glm-5.3", "max", "max"},
 		{"glm-5.3", "", ""},
+		{"glm-5.3-flash", "none", "low"},
+		{"z-ai/glm-5.3-flash", "xhigh", "max"},
 		// The same model reached through a namespaced provider route.
 		{"z-ai/glm-5.3", "none", "low"},
 		{"accounts/fireworks/models/glm-5.3", "medium", "high"},

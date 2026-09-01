@@ -27,6 +27,8 @@ const entries: SitemapEntry[] = [
   { path: '/fusion', changefreq: 'monthly', priority: '0.6' },
   { path: '/compound', changefreq: 'monthly', priority: '0.8' },
   { path: '/tools', changefreq: 'weekly', priority: '0.8' },
+  { path: '/tools/google-tts', changefreq: 'monthly', priority: '0.8' },
+  { path: '/tools/lyria', changefreq: 'monthly', priority: '0.8' },
   { path: '/text-to-image', changefreq: 'monthly', priority: '0.7' },
   { path: '/text-to-video', changefreq: 'monthly', priority: '0.7' },
   { path: '/image-to-video', changefreq: 'monthly', priority: '0.7' },

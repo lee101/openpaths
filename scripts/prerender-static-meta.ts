@@ -21,6 +21,16 @@ const indexHtml = readFileSync(join(DIST_DIR, 'index.html'), 'utf8');
 
 const routes: StaticMeta[] = [
   {
+    path: '/tools/google-tts',
+    title: 'Gemini Flash TTS Studio — Multi-speaker AI Voice | OpenPaths',
+    description: 'Generate steerable single- and multi-speaker speech with Gemini 3.1 Flash TTS. Direct voice, style, pace, accent, scene, and emotion, then play, download, or copy the API code.',
+  },
+  {
+    path: '/tools/lyria',
+    title: 'Lyria 3 Music Studio — AI Song & Instrumental Generator | OpenPaths',
+    description: 'Generate complete songs, instrumentals, loops, and 30-second clips with Google Lyria 3 Pro and Clip. Direct genre, mood, structure, instruments, vocals, lyrics, and export as Opus.',
+  },
+  {
     path: '/artifacts',
     title: 'Artifacts Gallery | OpenPaths',
     description: 'Build, host, and publish interactive AI artifacts. An IDE on the web where any OpenPaths model writes, edits, and ships self-contained web apps to a public gallery.',

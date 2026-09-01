@@ -52,6 +52,9 @@ func TestAuditedTokenPrices(t *testing.T) {
 		// developers.openai.com/api/docs/pricing
 		"gpt-5.5-pro": {30.00, 0, 180.00},
 		// openrouter.ai/api/v1/models
+		"glm-5.3-flash":    {0.075, 0.015, 0.25},
+		"glm-5.3":          {1.40, 0.26, 4.40},
+		"or/glm-5.3":       {1.40, 0.26, 4.40},
 		"or/gpt-5.6-sol":   {5.00, 0.50, 30.00},
 		"or/gpt-5.6-terra": {1.00, 0.10, 6.00},
 		"or/gpt-5.6-luna":  {0.10, 0.01, 0.60},
@@ -69,6 +72,28 @@ func TestAuditedTokenPrices(t *testing.T) {
 		}
 		if w.cache > 0 && m.InputCacheHitPricePer1M != w.cache {
 			t.Errorf("%s cache-hit = %v, want %v", id, m.InputCacheHitPricePer1M, w.cache)
+		}
+	}
+}
+
+func TestRetiredOxAliasesResolveToPaidGLM53Flash(t *testing.T) {
+	byName := loadAuditConfig(t)
+	for _, id := range []string{
+		"openpaths/stealth/ox-alpha",
+		"stealth/ox-alpha",
+		"openpaths/ox-alpha",
+		"ox-alpha",
+	} {
+		m := byName[id]
+		if m == nil {
+			t.Errorf("compatibility alias %s is missing", id)
+			continue
+		}
+		if m.ID != "glm-5.3-flash" || m.ProviderModelID != "z-ai/glm-5.3-flash" {
+			t.Errorf("%s resolves to %s/%s, want paid GLM-5.3 Flash", id, m.ID, m.ProviderModelID)
+		}
+		if m.InputPricePer1M <= 0 || m.OutputPricePer1M <= 0 {
+			t.Errorf("%s still has free pricing %v/%v", id, m.InputPricePer1M, m.OutputPricePer1M)
 		}
 	}
 }

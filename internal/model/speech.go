@@ -19,9 +19,11 @@ type SpeechSpeakerVoice struct {
 }
 
 type SpeechResponse struct {
-	Audio      string `json:"audio,omitempty"`
-	AudioURL   string `json:"audio_url,omitempty"`
-	Format     string `json:"format"`
-	DurationMs int    `json:"duration_ms,omitempty"`
-	Characters int    `json:"characters,omitempty"`
+	Audio        string `json:"audio,omitempty"`
+	AudioURL     string `json:"audio_url,omitempty"`
+	Format       string `json:"format"`
+	DurationMs   int    `json:"duration_ms,omitempty"`
+	Characters   int    `json:"characters,omitempty"`
+	InputTokens  int    `json:"input_tokens,omitempty"`
+	OutputTokens int    `json:"output_tokens,omitempty"`
 }

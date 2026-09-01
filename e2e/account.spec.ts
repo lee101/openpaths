@@ -26,19 +26,38 @@ function mockAccountAPIs(
     amount_usd: 200,
     has_payment_method: paymentMethods.length > 0,
   };
+  let apiKeys = [
+    { id: 'k1', name: 'Default', key_prefix: 'sk-op-abc12345' },
+  ];
+  let nextKeyID = 2;
   page.route('**/account/balance', (route: any) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(balance) })
   );
   page.route('**/account/transactions*', (route: any) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ transactions }) })
   );
+  page.route('**/account/keys/*', (route: any) => {
+    const id = route.request().url().split('/').pop();
+    if (route.request().method() !== 'DELETE') {
+      return route.fulfill({ status: 405, contentType: 'application/json', body: JSON.stringify({ error: { message: 'Method not allowed' } }) });
+    }
+    apiKeys = apiKeys.filter(key => key.id !== id);
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ message: 'API key revoked' }) });
+  });
   page.route('**/account/keys', (route: any) => {
     if (route.request().method() === 'GET') {
-      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ keys: [
-        { id: 'k1', name: 'Default', key_prefix: 'op-abc12345' },
-      ] }) });
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ keys: apiKeys }) });
     }
-    return route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ key: 'op-newkey123456', id: 'k2', name: 'New', prefix: 'op-newkey1' }) });
+    if (route.request().method() === 'DELETE') {
+      const ids = route.request().postDataJSON()?.ids ?? [];
+      apiKeys = apiKeys.filter(key => !ids.includes(key.id));
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ message: 'API keys revoked', count: ids.length }) });
+    }
+    const id = `k${nextKeyID++}`;
+    const name = route.request().postDataJSON()?.name || 'Default';
+    const created = { id, name, key_prefix: `sk-op-newkey${id}` };
+    apiKeys = [created, ...apiKeys];
+    return route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ key: `sk-op-newkey-${id}`, ...created, prefix: created.key_prefix }) });
   });
   page.route('**/account/stripe/config', (route: any) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ publishable_key: 'pk_test_123' }) })
@@ -375,6 +394,37 @@ test.describe('Account Page', () => {
       await expect(page.locator('h1:has-text("API Keys")')).toBeVisible();
       await expect(page.getByTestId('api-key-card')).toBeVisible();
       await expect(page.getByTestId('key-status')).toContainText('Active');
+    });
+
+    test('API keys can be selected and bulk deleted without creating a key', async ({ page }) => {
+      const methods: string[] = [];
+      page.on('request', request => {
+        if (new URL(request.url()).pathname === '/account/keys') methods.push(request.method());
+      });
+
+      await page.getByTestId('tab-keys').click();
+      const checkbox = page.getByRole('checkbox', { name: 'Select Default' });
+      await checkbox.check();
+      await expect(checkbox).toBeChecked();
+      await expect(page.getByRole('button', { name: 'Delete 1 selected' })).toBeVisible();
+
+      await page.getByRole('button', { name: 'Delete 1 selected' }).click();
+      await expect(page.getByTestId('api-key-card')).toHaveCount(0);
+      expect(methods).toContain('DELETE');
+      expect(methods).not.toContain('POST');
+    });
+
+    test('deleting one API key removes it and does not submit key creation', async ({ page }) => {
+      const methods: string[] = [];
+      page.on('request', request => {
+        if (new URL(request.url()).pathname.startsWith('/account/keys')) methods.push(request.method());
+      });
+
+      await page.getByTestId('tab-keys').click();
+      await page.getByRole('button', { name: 'Delete Default API key' }).click();
+      await expect(page.getByTestId('api-key-card')).toHaveCount(0);
+      expect(methods).toContain('DELETE');
+      expect(methods).not.toContain('POST');
     });
 
     test('OpenAI Max plan sign-in is hoisted above API key management', async ({ page }) => {

@@ -1065,8 +1065,8 @@ const catalogModels: Model[] = [
     provider: 'Google',
     description: 'Low-latency Gemini speech generation with natural outputs, steerable prompts, expressive audio tags, and multi-speaker voice control.',
     contextLength: 'Jan 2025 cutoff',
-    priceInput: 1,
-    priceOutput: 20,
+    priceInput: 1.2,
+    priceOutput: 24,
     tags: ['audio', 'fast'],
     released: '2026-04-16',
     popularity: 7
@@ -1669,6 +1669,18 @@ const catalogModels: Model[] = [
   },
 
   // --- GLM / Z.AI ---
+  {
+    id: 'glm-5.3-flash',
+    name: 'GLM-5.3 Flash',
+    provider: 'Z.AI via OpenRouter',
+    description: 'Paid successor to the Ox Alpha preview, with native multimodal input, mandatory reasoning, and efficient long-horizon coding.',
+    contextLength: '1.3M',
+    priceInput: 0.075,
+    priceOutput: 0.25,
+    tags: ['programming', 'reasoning', 'vision', 'fast', 'open-source'],
+    released: '2026-08-26',
+    popularity: 24
+  },
   {
     id: 'glm-5.3',
     name: 'GLM-5.3',

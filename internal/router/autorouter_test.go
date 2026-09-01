@@ -622,7 +622,7 @@ func TestIsAutoReasoningEffort(t *testing.T) {
 	}
 }
 
-func TestAutoRouter_CodeTaskRoutesEverydayCodingToOxAlpha(t *testing.T) {
+func TestAutoRouter_CodeTaskRoutesEverydayCodingToGLM53Flash(t *testing.T) {
 	ar := NewAutoRouter(&fakeEmbedder{})
 	if err := ar.Init(context.Background()); err != nil {
 		t.Fatalf("Init() error = %v", err)
@@ -632,15 +632,15 @@ func TestAutoRouter_CodeTaskRoutesEverydayCodingToOxAlpha(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ResolveAuto() error = %v", err)
 	}
-	if got.ModelID != "openpaths/stealth/ox-alpha" {
-		t.Fatalf("ModelID = %q, want openpaths/stealth/ox-alpha", got.ModelID)
+	if got.ModelID != "glm-5.3-flash" {
+		t.Fatalf("ModelID = %q, want glm-5.3-flash", got.ModelID)
 	}
 	if got.ReasoningEffort != "high" {
 		t.Fatalf("ReasoningEffort = %q, want high", got.ReasoningEffort)
 	}
 }
 
-func TestAutoRouter_CodeTaskRoutesEverydayTestsToOxAlpha(t *testing.T) {
+func TestAutoRouter_CodeTaskRoutesEverydayTestsToGLM53Flash(t *testing.T) {
 	ar := NewAutoRouter(&fakeEmbedder{})
 	if err := ar.Init(context.Background()); err != nil {
 		t.Fatalf("Init() error = %v", err)
@@ -650,8 +650,8 @@ func TestAutoRouter_CodeTaskRoutesEverydayTestsToOxAlpha(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ResolveAuto() error = %v", err)
 	}
-	if got.ModelID != "openpaths/stealth/ox-alpha" {
-		t.Fatalf("ModelID = %q, want openpaths/stealth/ox-alpha", got.ModelID)
+	if got.ModelID != "glm-5.3-flash" {
+		t.Fatalf("ModelID = %q, want glm-5.3-flash", got.ModelID)
 	}
 }
 
@@ -709,7 +709,7 @@ func TestAutoRouter_CodeTaskRoutesLLMDevToGPT55High(t *testing.T) {
 	}
 }
 
-func TestAutoRouter_ReasoningTaskRoutesPlanningToOxAlphaXHigh(t *testing.T) {
+func TestAutoRouter_ReasoningTaskRoutesPlanningToGLM53FlashHigh(t *testing.T) {
 	ar := NewAutoRouter(&fakeEmbedder{})
 	if err := ar.Init(context.Background()); err != nil {
 		t.Fatalf("Init() error = %v", err)
@@ -719,42 +719,42 @@ func TestAutoRouter_ReasoningTaskRoutesPlanningToOxAlphaXHigh(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ResolveAuto() error = %v", err)
 	}
-	if got.ModelID != "openpaths/stealth/ox-alpha" {
-		t.Fatalf("ModelID = %q, want openpaths/stealth/ox-alpha", got.ModelID)
+	if got.ModelID != "glm-5.3-flash" {
+		t.Fatalf("ModelID = %q, want glm-5.3-flash", got.ModelID)
 	}
-	if got.ReasoningEffort != "xhigh" {
-		t.Fatalf("ReasoningEffort = %q, want xhigh", got.ReasoningEffort)
+	if got.ReasoningEffort != "high" {
+		t.Fatalf("ReasoningEffort = %q, want high", got.ReasoningEffort)
 	}
 }
 
-func TestDefaultRoutingTables_ReasoningTaskPinsOxAlphaToMaxThinking(t *testing.T) {
+func TestDefaultRoutingTables_ReasoningTaskKeepsPaidGLMAtHigh(t *testing.T) {
 	for _, e := range defaultRoutingTables()["reasoning-task"] {
-		if e.ModelID != "openpaths/stealth/ox-alpha" {
+		if e.ModelID != "glm-5.3-flash" {
 			continue
 		}
-		if e.ReasoningEffort != "xhigh" {
-			t.Fatalf("reasoning-task ox-alpha entry %q effort = %q, want xhigh (model is free)", e.Description, e.ReasoningEffort)
+		if e.ReasoningEffort != "high" {
+			t.Fatalf("reasoning-task GLM-5.3 Flash entry %q effort = %q, want high", e.Description, e.ReasoningEffort)
 		}
 	}
 }
 
-func TestDefaultRoutingTables_CodeTaskNeverSendsOxAlphaWithoutThinking(t *testing.T) {
+func TestDefaultRoutingTables_CodeTaskNeverDisablesGLM53FlashReasoning(t *testing.T) {
 	for _, e := range defaultRoutingTables()["code-task"] {
-		if e.ModelID == "openpaths/stealth/ox-alpha" && e.ReasoningEffort == "none" {
-			t.Fatalf("code-task ox-alpha entry %q disables reasoning but upstream requires it (400)", e.Description)
+		if e.ModelID == "glm-5.3-flash" && e.ReasoningEffort == "none" {
+			t.Fatalf("code-task GLM-5.3 Flash entry %q disables mandatory reasoning", e.Description)
 		}
 	}
 }
 
-func TestDefaultRoutingTables_CodeTaskOxAlphaIsLargestCohort(t *testing.T) {
+func TestDefaultRoutingTables_CodeTaskGLM53FlashIsLargestCohort(t *testing.T) {
 	counts := map[string]int{}
 	for _, e := range defaultRoutingTables()["code-task"] {
 		counts[e.ModelID]++
 	}
-	ox := counts["openpaths/stealth/ox-alpha"]
+	flash := counts["glm-5.3-flash"]
 	for model, n := range counts {
-		if model != "openpaths/stealth/ox-alpha" && n >= ox {
-			t.Fatalf("code-task cohort %q (%d) rivals ox-alpha (%d); everyday coding must stay the majority share", model, n, ox)
+		if model != "glm-5.3-flash" && n >= flash {
+			t.Fatalf("code-task cohort %q (%d) rivals GLM-5.3 Flash (%d); everyday coding must stay the majority share", model, n, flash)
 		}
 	}
 }

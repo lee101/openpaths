@@ -137,7 +137,11 @@ func (h *SpeechHandler) HandleSpeechGeneration(ctx *fasthttp.RequestCtx) {
 
 		h.router.MarkModelHealthy(cand.Provider.Name(), cand.ModelCfg.ID)
 		characters := utf8.RuneCountInString(req.Input)
-		inputTokens := estimateSpeechInputTokens(req.Input)
+		inputTokens := resp.InputTokens
+		if inputTokens == 0 {
+			inputTokens = estimateSpeechInputTokens(req.Input)
+		}
+		outputTokens := resp.OutputTokens
 		var cost int64
 		if cand.ModelCfg.PricePer1MCharacters > 0 {
 			cost, _ = h.billing.DeductCharacters(ctx, userID, cand.ModelCfg.ID, characters, "")
@@ -145,10 +149,10 @@ func (h *SpeechHandler) HandleSpeechGeneration(ctx *fasthttp.RequestCtx) {
 			if inputTokens == 0 {
 				inputTokens = 1
 			}
-			cost, _ = h.billing.Deduct(ctx, userID, cand.ModelCfg.ID, inputTokens, 0, "", "")
+			cost, _ = h.billing.Deduct(ctx, userID, cand.ModelCfg.ID, inputTokens, outputTokens, "", "")
 		}
 		h.recorder.RecordSuccessWithApp(userID, apiKeyID, originalModel, cand.Provider.Name(),
-			inputTokens, 0, int(latency.Milliseconds()), 0, cost, false, app.ID, app.URL, app.Title, app.Categories)
+			inputTokens, outputTokens, int(latency.Milliseconds()), 0, cost, false, app.ID, app.URL, app.Title, app.Categories)
 
 		writeJSON(ctx, 200, resp)
 		return

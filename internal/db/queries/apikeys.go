@@ -71,7 +71,7 @@ func (q *APIKeyQueries) ValidateKey(ctx context.Context, keyHash string) (*model
 func (q *APIKeyQueries) ListByUser(ctx context.Context, userID string) ([]model.APIKey, error) {
 	rows, err := q.pool.Query(ctx,
 		`SELECT id, user_id, key_prefix, name, created_at, last_used_at, revoked, rate_limit_rpm
-		 FROM api_keys WHERE user_id = $1 ORDER BY created_at DESC`,
+		 FROM api_keys WHERE user_id = $1 AND NOT revoked ORDER BY created_at DESC`,
 		userID,
 	)
 	if err != nil {
@@ -106,7 +106,7 @@ func (q *APIKeyQueries) GetFirstByUser(ctx context.Context, userID string) (*mod
 
 func (q *APIKeyQueries) Revoke(ctx context.Context, id, userID string) error {
 	tag, err := q.pool.Exec(ctx,
-		"UPDATE api_keys SET revoked = TRUE WHERE id = $1 AND user_id = $2",
+		"UPDATE api_keys SET revoked = TRUE WHERE id = $1 AND user_id = $2 AND NOT revoked",
 		id, userID,
 	)
 	if err != nil {
@@ -120,10 +120,12 @@ func (q *APIKeyQueries) Revoke(ctx context.Context, id, userID string) error {
 
 func (q *APIKeyQueries) RevokeMany(ctx context.Context, ids []string, userID string) error {
 	tx, err := q.pool.Begin(ctx)
-	if err != nil { return fmt.Errorf("begin revoke api keys: %w", err) }
+	if err != nil {
+		return fmt.Errorf("begin revoke api keys: %w", err)
+	}
 	defer tx.Rollback(ctx)
 	for _, id := range ids {
-		if _, err := tx.Exec(ctx, "UPDATE api_keys SET revoked = TRUE WHERE id = $1 AND user_id = $2", id, userID); err != nil {
+		if _, err := tx.Exec(ctx, "UPDATE api_keys SET revoked = TRUE WHERE id = $1 AND user_id = $2 AND NOT revoked", id, userID); err != nil {
 			return fmt.Errorf("revoke api keys: %w", err)
 		}
 	}

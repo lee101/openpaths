@@ -20,8 +20,9 @@ test.describe('Real server auth', () => {
     });
     expect(res.status()).toBe(201);
     const body = await res.json();
-    expect(body.api_key).toMatch(/^op-/);
-    expect(body.token).toBe(body.api_key);
+    expect(body.api_key).toMatch(/^sk-op-/);
+    expect(body.token).toMatch(/^eyJ/);
+    expect(body.token).not.toBe(body.api_key);
     expect(body.user.email).toBe(email);
   });
 
@@ -177,7 +178,7 @@ test.describe('Real server auth', () => {
     await expect(page.locator('h2:has-text("Account")')).toBeVisible({ timeout: 10000 });
 
     const storedKey = await page.evaluate(() => localStorage.getItem('op_api_key'));
-    expect(storedKey).toMatch(/^op-/);
+    expect(storedKey).toMatch(/^sk-op-/);
   });
 
   test('login via UI flow stores session token and shows dashboard', async ({ page }) => {
@@ -198,7 +199,7 @@ test.describe('Real server auth', () => {
     await expect(page.getByTestId('new-key-banner')).toHaveCount(0);
 
     const storedKey = await page.evaluate(() => localStorage.getItem('op_api_key'));
-    expect(storedKey).toMatch(/^eyJ/);
+    expect(storedKey).toBeNull();
   });
 
   test('wrong password via UI shows error without redirect', async ({ page }) => {

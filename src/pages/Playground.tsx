@@ -177,7 +177,7 @@ const FALLBACK_MODELS: CatalogModel[] = [
   { id: 'gemini-3.1-flash-lite', label: 'Gemini 3.1 Flash Lite', provider: 'Google', pricing: { input_per_1m_tokens: 0.25, output_per_1m_tokens: 1.50 } },
   { id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', provider: 'Google' },
   { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', provider: 'Google' },
-  { id: 'gemini-3.1-flash-tts-preview', label: 'Gemini 3.1 Flash TTS Preview', provider: 'Google', pricing: { input_per_1m_tokens: 1.00, output_per_1m_tokens: 20.00 } },
+  { id: 'gemini-3.1-flash-tts-preview', label: 'Gemini 3.1 Flash TTS Preview', provider: 'Google', pricing: { input_per_1m_tokens: 1.20, output_per_1m_tokens: 24.00 } },
   { id: 'lyria-3-pro-preview', label: 'Lyria 3 Pro Preview', provider: 'Google', pricing: { per_request: 0.08 } },
   { id: 'lyria-3-clip-preview', label: 'Lyria 3 Clip Preview', provider: 'Google', pricing: { per_request: 0.04 } },
   { id: 'gpt-5.5', label: 'GPT-5.5', provider: 'OpenAI' },

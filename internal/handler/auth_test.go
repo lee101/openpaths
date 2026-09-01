@@ -1,18 +1,24 @@
 package handler
 
 import (
+	"encoding/json"
 	"testing"
-
-	"github.com/openpaths/openpaths/internal/model"
 )
 
-func TestActiveAPIKeyCount(t *testing.T) {
-	keys := []model.APIKey{
-		{Revoked: false},
-		{Revoked: true},
-		{Revoked: false},
+func TestDashboardLoginResponseOmitsAPIKey(t *testing.T) {
+	body, err := json.Marshal(authResponse{Token: "jwt-session", User: map[string]string{"id": "user-1"}})
+	if err != nil {
+		t.Fatal(err)
 	}
-	if got := activeAPIKeyCount(keys); got != 2 {
-		t.Fatalf("activeAPIKeyCount() = %d, want 2", got)
+
+	var response map[string]any
+	if err := json.Unmarshal(body, &response); err != nil {
+		t.Fatal(err)
+	}
+	if response["token"] != "jwt-session" {
+		t.Fatalf("token = %v, want jwt-session", response["token"])
+	}
+	if _, ok := response["api_key"]; ok {
+		t.Fatal("dashboard login response must not contain or create an API key")
 	}
 }

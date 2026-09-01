@@ -31,7 +31,7 @@ type ProviderDef = {
 const PROVIDERS: ProviderDef[] = [
   { id: 'gemini', label: 'Gemini Flash', kind: 'answer', logo: '/logos/google.svg', blurb: 'Google Flash with live Google Search grounding', defaultModel: 'gemini-3.7-flash', costUSD: 0.004 },
   { id: 'openai', label: 'OpenAI', kind: 'answer', logo: '/logos/openai.svg', blurb: 'GPT with the web_search tool', defaultModel: 'gpt-4o', costUSD: 0.01 },
-  { id: 'grok', label: 'Grok', kind: 'answer', logo: '/logos/xai.svg', blurb: 'xAI Grok live search', defaultModel: 'grok-latest', costUSD: 0.01 },
+  { id: 'grok', label: 'Grok', kind: 'answer', logo: '/logos/xai-64.webp', blurb: 'xAI Grok live search', defaultModel: 'grok-latest', costUSD: 0.01 },
   { id: 'exa', label: 'Exa', kind: 'results', logo: '/logos/exa.svg', blurb: 'Neural web search with full contents', docs: '/exa/docs', costUSD: 0.0077 },
   { id: 'papers', label: 'Papers', kind: 'results', logo: '/logos/papers.webp', blurb: 'Research papers, methods, datasets & code', docs: '/papers/docs', costUSD: 0.001 },
 ];

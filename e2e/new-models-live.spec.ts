@@ -16,6 +16,8 @@ const shouldRun = process.env.RUN_PAID_MODEL_E2E === '1' && !!targetURL && !!pai
 const defaultModels = [
   // glm-5.3 always thinks: 'none' below is normalized server-side to 'low',
   // which keeps the reply to ~3 completion tokens and 0 reasoning tokens.
+  'glm-5.3-flash',
+  'ox-alpha',
   'glm-5.3',
   'or/glm-5.3',
   'qwen-latest',

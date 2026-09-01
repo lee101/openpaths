@@ -11,7 +11,7 @@ installFrontendErrorReporting();
 if (
   typeof window !== 'undefined' &&
   !localStorage.getItem('op_api_key') &&
-  window.userData?.secret?.startsWith('op_')
+  (window.userData?.secret?.startsWith('sk-op-') || window.userData?.secret?.startsWith('op_'))
 ) {
   localStorage.setItem('op_api_key', window.userData.secret);
 }

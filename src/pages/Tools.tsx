@@ -1,9 +1,25 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Box, Boxes, Clapperboard, Drama, GitMerge, ImageIcon, Layers, Music, Palette, PersonStanding, Scissors, Sparkles, WandSparkles } from 'lucide-react';
+import { ArrowRight, AudioLines, Box, Boxes, Clapperboard, Drama, GitMerge, ImageIcon, Layers, Music, Palette, PersonStanding, Scissors, Sparkles, WandSparkles } from 'lucide-react';
 import { Seo } from '../components/Seo';
 
 const TOOLS = [
+  {
+    to: '/tools/google-tts',
+    icon: AudioLines,
+    name: 'Gemini Flash TTS',
+    tagline: '30 voices · multi-speaker',
+    description: 'Direct expressive narration and two-person scenes with control over voice, style, pace, accent, context, and emotion.',
+    price: 'Gemini token pricing',
+  },
+  {
+    to: '/tools/lyria',
+    icon: Music,
+    name: 'Lyria 3 Music Studio',
+    tagline: 'Pro songs · 30s clips · Opus',
+    description: 'Compose full songs, scores, and loops with precise control over genre, mood, arrangement, vocals, lyrics, and structure.',
+    price: '$0.04 clip · $0.08 pro',
+  },
   {
     to: '/text-to-image',
     icon: ImageIcon,

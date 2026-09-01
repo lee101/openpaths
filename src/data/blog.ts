@@ -163,12 +163,12 @@ Published rates, August 2026:
 | Anthropic Sonnet class | ~$2.00 | Solid mid-tier workhorse |
 | Gemini 2.5 Pro class | ~$1.25 | Genuine free tier for prototyping |
 | DeepSeek V4 Flash | $0.14 | Half price off-peak; peak latency can wobble |
-| OpenPaths \`auto-code\` | from $0 | ox-alpha carries ~70% of traffic free |
+| OpenPaths \`auto-code\` | routed | GLM-5.3 Flash carries the everyday paid tier |
 | OpenPaths cascade routing | $0.11 avg/run | 100% accuracy, 27-task benchmark |
 
-## The free workhorse: ox-alpha
+## The paid successor: GLM-5.3 Flash
 
-\`openpaths/stealth/ox-alpha\` is a free stealth preview ($0 in / $0 out) answering about 70% of production auto-code traffic: features, refactors, tests, bug fixes. Hard domains escalate past it automatically — GLSL/HLSL shaders, trading systems, AI/LLM infra like CUDA kernels and quantization, distributed architecture, compilers, large multi-file patches. When the preview ends, fallbacks chain DeepSeek Flash → Codex → Gemini → Claude. More in [ox-alpha: the free coding workhorse](/blog/ox-alpha-coding-workhorse).
+Ox Alpha was revealed as GLM-5.3 Flash and the free preview has ended. \`glm-5.3-flash\` now answers the everyday auto-code tier at its published paid token rate; the old \`openpaths/stealth/ox-alpha\` and \`ox-alpha\` IDs remain aliases for compatibility. Hard domains still escalate automatically.
 
 ## Two lines to switch
 
@@ -180,7 +180,7 @@ Agents also need repo-adjacent research: which paper introduced a method, does a
 
 ## How to choose
 
-Start with \`auto-code\` for coding-heavy workloads — free ox-alpha bulk, escalation only where needed. Use \`auto-medium-task\` for mixed agent work: triage, summaries, moderate reasoning. Pin \`auto-think\` for hard reasoning steps. Mechanics in [how OpenPaths auto models work](/blog/how-auto-models-work); model-by-model comparison in [the best model for coding](/blog/best-model-for-coding). Latency probes are public at [/stats](/stats), every price at [/models](/models).
+Start with \`auto-code\` for coding-heavy workloads — paid GLM-5.3 Flash for everyday work, escalation only where needed. Use \`auto-medium-task\` for mixed agent work: triage, summaries, moderate reasoning. Pin \`auto-think\` for hard reasoning steps. Mechanics in [how OpenPaths auto models work](/blog/how-auto-models-work); model-by-model comparison in [the best model for coding](/blog/best-model-for-coding). Latency probes are public at [/stats](/stats), every price at [/models](/models).
 
 ## The best AI API for coding agents is a routing layer
 
@@ -196,9 +196,9 @@ Reliable tool calling, coherent long context, low latency to first token, true c
 
 Cascade routing hit 100% at $0.11 per run; hand-picked GPT-5.5 managed 77.8% at $2.55, and GPT-5.4-nano matched that accuracy at $0.03. Direct suits one known-good model; routing wins when task difficulty varies.
 
-### What is ox-alpha and why is it free?
+### What happened to ox-alpha?
 
-A stealth-preview model (\`openpaths/stealth/ox-alpha\`) at $0 in / $0 out, carrying about 70% of auto-code traffic. Hard domains escalate automatically; after the preview, a fallback chain takes over.
+Ox Alpha was the free preview name for GLM-5.3 Flash. The old IDs now resolve to the live paid \`glm-5.3-flash\` route, so existing code keeps working but usage is no longer free.
 
 ### Do I need to rewrite my agent?
 
@@ -316,11 +316,11 @@ Same whitepaper's payoff number: embedding-based cascade routing hit 100% accura
 
 Some providers discount by time of day. DeepSeek V4 Flash lists at $0.14 input per 1M tokens, and off-peak hours are half price. Batch jobs, nightly evaluations, embedding backfills — all move off-peak unnoticed. Our [DeepSeek peak/off-peak pricing map](/blog/deepseek-peak-off-peak-pricing-map) shows which hours qualify and where peak latency wobbles.
 
-## Lever 4: Use the free lanes while they last
+## Lever 4: Reprice preview routes when they graduate
 
-There is a genuinely free lane right now: \`ox-alpha\` (\`openpaths/stealth/ox-alpha\`) costs $0 in and $0 out, and it already carries about 70% of our own \`auto-code\` production traffic. It will not stay free forever, but until then every request it absorbs costs nothing. See our notes on [free AI models](/blog/free-ai-models) and why ox-alpha became our [coding workhorse](/blog/ox-alpha-coding-workhorse).
+Ox Alpha demonstrated why preview pricing must not become a permanent budget assumption. It was revealed as GLM-5.3 Flash and now uses the model's paid rate. OpenPaths kept the old aliases working while changing their billing and upstream route together.
 
-One caveat: its upstream requires reasoning enabled, so it always runs at max effort — great for code, wasteful for cheap chat volume.
+Its upstream requires reasoning enabled, so the router now uses high rather than automatically spending the paid max-reasoning tier.
 
 ## Lever 5: Keep frontier only where it wins
 
@@ -333,7 +333,7 @@ Cheap tiers fail predictably on GLSL/HLSL shaders, trading systems, CUDA kernels
 | Drop a tier for easy traffic | Low | Pinned GPT-5.5 run to GPT-5.4-nano | $2.55 to $0.03 per run (85x less) |
 | Route instead of pinning | Low | Hand-picked model to cascade router | $2.55 to $0.11 avg (~96% cut, higher accuracy) |
 | Off-peak scheduling | Low | DeepSeek V4 Flash daytime batch | $0.14 to half price per 1M input |
-| Free lanes while they last | None | ~70% of auto-code onto ox-alpha | $0 in / $0 out on that share |
+| Audit graduated previews | Low | Ox aliases onto paid GLM-5.3 Flash | Avoid unbilled paid upstream usage |
 | Keep frontier where it wins | Judgment | Frontier spend concentrated on hard tasks | Pay $5.00/1M only where it scores |
 
 ## Bottom line
@@ -365,9 +365,9 @@ No. OpenPaths is OpenAI-compatible at \`/v1\` and also supports Anthropic-native
 
 Routing averaged $0.11 per run versus $0.43 for the best single self-picked model — with higher accuracy (100% vs 85.2%). It wins when traffic mixes easy and hard tasks.
 
-### What happens when the free ox-alpha preview ends?
+### What happened when the free ox-alpha preview ended?
 
-Requests fall back down a chain — DeepSeek Flash, Codex, Gemini, Claude — so traffic keeps flowing at paid-but-low rates instead of failing. Budget for that day rather than depending on $0 forever.
+The Ox aliases were moved onto paid GLM-5.3 Flash instead of being allowed to fail or silently consume an unbilled paid upstream. Existing model IDs still work, now at the published GLM rate.
 `,
   },
   {
@@ -476,7 +476,7 @@ We serve [GPT Image 2](/blog/gpt-image-2-on-openpaths) through two independent p
 
 ## The chat ladder
 
-For chat and code traffic, fallback is a ladder rather than a mirror. When the free \`openpaths/stealth/ox-alpha\` lane disappears, \`auto-code\` walks this chain:
+For chat and code traffic, fallback is a ladder rather than a mirror. The former \`openpaths/stealth/ox-alpha\` lane now resolves to paid GLM-5.3 Flash before \`auto-code\` walks the rest of its chain:
 
 1. **GPT-5.5** — frontier quality, strongest on hard reasoning.
 2. **Codex / Gemini** — capable second tier; Gemini 2.5 Pro class sits around $1.25 input per 1M tokens.
@@ -563,7 +563,7 @@ Single-provider apps inherit single-provider incidents: rate limits, capacity di
 
 ## Reason 3: one budget
 
-Five providers means five dashboards, five invoices, five sets of minimum top-ups, and no single view of spend. Prepaid credits start at $5 (Stripe or crypto), pay-per-token, no subscription — fund one balance and every model draws from it. Every price is published at [/models](/models) — from DeepSeek V4 Flash at $0.14 input per 1M tokens (half price off-peak) to free ox-alpha in stealth preview.
+Five providers means five dashboards, five invoices, five sets of minimum top-ups, and no single view of spend. Prepaid credits start at $5 (Stripe or crypto), pay-per-token, no subscription — fund one balance and every model draws from it. Every price is published at [/models](/models), including paid GLM-5.3 Flash and its retired Ox aliases.
 
 ## Reason 4: no lock-in
 
@@ -742,9 +742,9 @@ Instead of one model for everything, how far does routing get you? From our [lea
 
 Two takeaways. First, expert intuition about the best single model was wrong — the hand-picked frontier matched a nano model at 85x the cost. Second, the cascade hit every task at about 4% of frontier pricing. That is the core argument of [choosing the right LLM](/blog/choosing-the-right-llm): the best model for coding is often a route, not a name.
 
-## The free model carrying production traffic
+## The everyday paid model carrying production traffic
 
-There is also \`openpaths/stealth/ox-alpha\`, our free stealth preview answering roughly 70% of production \`auto-code\` traffic — good enough that most coding requests never escalate past it. One quirk: upstream requires reasoning enabled — disabling it returns a 400 — so \`auto-think\` pins max effort for it.
+The former \`openpaths/stealth/ox-alpha\` preview is now paid \`glm-5.3-flash\`. The old ID remains an alias, and the router keeps mandatory reasoning enabled without pinning every paid request to max effort.
 
 It does not take everything. These domains skip straight up the fallback chain: GLSL/HLSL VFX shaders, trading systems, AI/LLM infrastructure such as CUDA kernels, quantization, and RAG pipelines, distributed architecture, compilers, and agentic multi-file patches. We profiled it in [ox-alpha: the coding workhorse](/blog/ox-alpha-coding-workhorse).
 
@@ -752,12 +752,12 @@ It does not take everything. These domains skip straight up the fallback chain: 
 
 | Task | Reach for |
 |---|---|
-| Quick fixes, small scripts | \`auto-code\` (usually lands on ox-alpha, free) |
+| Quick fixes, small scripts | \`auto-code\` (usually lands on paid GLM-5.3 Flash) |
 | Feature work | \`auto-code\`, or GPT-5.4-mini direct if you want to pin one model |
 | Refactors and multi-file changes | GPT-5.5 direct, or \`auto-hard-task\` |
 | Shaders, VFX, anything visual | Claude Opus 4.8 |
 | Trading systems | Frontier direct only — no free-tier routing |
-| AI infra (CUDA, RAG, compilers) | Frontier direct — escalate past ox-alpha |
+| AI infra (CUDA, RAG, compilers) | Frontier direct — escalate past GLM-5.3 Flash |
 
 If you are wiring agents rather than picking models by hand, see [the best AI API for coding agents](/blog/best-ai-api-for-coding-agents) — OpenPaths exposes all of this through one OpenAI-compatible base URL, so switching is two lines.
 
@@ -779,9 +779,9 @@ GPT-5.5 direct scored highest on Discipline at 4.8, with Opus 4.8 at 4.5. Discip
 
 Often yes. In our learning-to-route benchmark, GPT-5.4-nano matched hand-picked GPT-5.5 exactly at 77.8% accuracy while costing $0.03 versus $2.55 per run. The embedding cascade reached 100% at $0.11.
 
-### What is ox-alpha and why is it free?
+### What happened to ox-alpha?
 
-A stealth-preview model on OpenPaths that costs nothing and currently handles about 70% of production \`auto-code\` traffic. It requires reasoning to stay enabled, and hard domains like shaders, trading, and CUDA-level AI infra escalate automatically.
+Ox Alpha was revealed as GLM-5.3 Flash. Its aliases remain available, but they now route to and bill the paid model; hard domains still escalate automatically.
 
 ### How do I route instead of hardcoding a model?
 
@@ -1503,19 +1503,18 @@ For most developer use cases, the auto-video route at $0.10 flat — near-Hailuo
   },
   {
     slug: 'ox-alpha-coding-workhorse',
-    title: 'ox-alpha Is Quietly Carrying Most of Our Coding Traffic',
-    excerpt: 'A free stealth model now answers roughly 70% of auto-code requests on OpenPaths — everyday implementation, debugging, tests, and reviews — while frontier models stay reserved for VFX shaders, trading systems, and LLM infrastructure.',
+    title: 'Ox Alpha Graduated to Paid GLM-5.3 Flash',
+    excerpt: 'The stealth preview was revealed as GLM-5.3 Flash. Its old model IDs still work on OpenPaths, now routed and billed as the paid GLM model.',
     date: '2026-08-23',
     author: 'OpenPaths Team',
     readTime: '4 min',
     tags: ['ox-alpha', 'auto-code', 'routing', 'stealth models', 'savings'],
-    content: `> The short version: OpenPaths auto-code now routes about **70% of coding
-> traffic** to \`ox-alpha\` (\`openpaths/stealth/ox-alpha\`), a free stealth
-> model on OpenRouter that has quietly gotten very good at everyday software
-> engineering. It is available for only a few more days — point your agents at
-> it while it lasts.
+    content: `> **Update, 26 August 2026:** Ox Alpha was revealed as GLM-5.3 Flash and
+> the free preview ended. \`ox-alpha\` and \`openpaths/stealth/ox-alpha\` remain
+> compatibility aliases, but both now route to \`z-ai/glm-5.3-flash\` and bill
+> its nonzero token prices.
 
-## A free model doing real engineering work
+## From free preview to paid production model
 
 Stealth previews are usually novelties. This one is a genuinely strong coder.
 Over the last stretch of production traffic on [OpenPaths](/), the embedding
@@ -1525,9 +1524,9 @@ test writing, refactors, code review, API integration, SQL, Dockerfiles,
 auth flows — the long tail of day-to-day programming that makes up most real
 coding traffic.
 
-Because the model is billed at **$0 in / $0 out**, that share of traffic is
-effectively free. The same requests pointed at a frontier tier would cost
-$5–$30 per million output tokens.
+That traffic is no longer free. OpenPaths moved the aliases and billing atomically
+so existing clients do not break or accidentally consume paid upstream tokens
+without a corresponding charge.
 
 ## What still escalates to frontier models
 
@@ -1548,11 +1547,9 @@ algorithms, agentic multi-file patches.
 ## Auto-think works with it too
 
 The reasoning route (\`auto-think\`, \`autothink\`, \`auto-hard-task\`) also
-routes to \`ox-alpha\` for mid-complexity thinking — migration planning,
-tradeoff analysis, multi-step debugging plans. One quirk made this easy: the
-upstream **requires reasoning** (disabling it returns a 400), so we pin every
-auto-think request to the maximum effort level. On a paid model that would be
-reckless; on a free one there is no reason to think shallower.
+routes mid-complexity work to GLM-5.3 Flash. The upstream requires reasoning,
+so OpenPaths keeps it enabled but uses high rather than silently selecting the
+paid max tier.
 
 ## How to use it
 
@@ -1560,16 +1557,12 @@ Nothing to configure if you already use the auto routes:
 
 | You call | What happens |
 |---|---|
-| \`auto-code\` / \`auto-medium-task\` | ~70% lands on ox-alpha, hard domains escalate |
-| \`auto-think\` / \`autothink\` | mid-tier thinking on ox-alpha at max effort |
-| \`ox-alpha\` directly | pinned to the free stealth route |
+| \`auto-code\` / \`auto-medium-task\` | everyday work lands on paid GLM-5.3 Flash; hard domains escalate |
+| \`auto-think\` / \`autothink\` | mid-tier GLM-5.3 Flash reasoning at high effort |
+| \`ox-alpha\` directly | compatibility alias for paid \`glm-5.3-flash\` |
 
-If the stealth endpoint disappears when the preview ends, the fallback chain
-absorbs it automatically — DeepSeek Flash first for the free path, then Codex,
-Gemini, and Claude for the paid tiers.
-
-Stealth windows close without notice. If you have batch coding work queued,
-this is a good week to run it through \`auto-code\`.`,
+The fallback chain remains in place for provider failures, while the primary
+route now names the model OpenRouter actually serves.`,
   },
   {
     slug: 'deepseek-peak-off-peak-pricing-map',

@@ -25,8 +25,10 @@ type MusicGenerationResponse struct {
 }
 
 type MusicData struct {
-	Status int    `json:"status"`
-	Audio  string `json:"audio,omitempty"`
+	Status   int    `json:"status"`
+	Audio    string `json:"audio,omitempty"`
+	Format   string `json:"format,omitempty"`
+	MimeType string `json:"mime_type,omitempty"`
 }
 
 type MusicExtraInfo struct {

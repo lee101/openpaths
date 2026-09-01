@@ -76,7 +76,7 @@ test.describe('Full auth UI flow', () => {
 
     // 6. Verify localStorage has the key
     const storedKey = await page.evaluate(() => localStorage.getItem('op_api_key'));
-    expect(storedKey).toMatch(/^op-/);
+    expect(storedKey).toMatch(/^sk-op-/);
 
     // 7. Logout
     await page.getByTestId('logout-btn').click();
