@@ -65,6 +65,39 @@ func sanitizeForOpenRouter(req *model.ChatCompletionRequest) {
 	if model.NeedsUserTurn(req.Model) {
 		model.PromoteSystemToUser(req)
 	}
+
+	modelID := strings.ToLower(strings.TrimSpace(req.Model))
+	slug := modelID
+	if slash := strings.LastIndex(slug, "/"); slash >= 0 {
+		slug = slug[slash+1:]
+	}
+	switch {
+	case isOpenAIReasoningSlug(slug):
+		req.Temperature = nil
+		req.TopP = nil
+		req.PresencePenalty = nil
+		req.FrequencyPenalty = nil
+		req.Stop = nil
+	case strings.Contains(modelID, "grok-") && !strings.Contains(modelID, "non-reasoning"):
+		req.PresencePenalty = nil
+		req.FrequencyPenalty = nil
+		req.Stop = nil
+	case strings.Contains(modelID, "z-ai/glm-"):
+		req.PresencePenalty = nil
+		req.FrequencyPenalty = nil
+		if req.Temperature != nil && *req.Temperature > 1 {
+			maxTemperature := 1.0
+			req.Temperature = &maxTemperature
+		}
+	}
+}
+
+func isOpenAIReasoningSlug(slug string) bool {
+	if strings.HasPrefix(slug, "gpt-5-chat") {
+		return false
+	}
+	return strings.HasPrefix(slug, "gpt-5") || strings.HasPrefix(slug, "o1") ||
+		strings.HasPrefix(slug, "o3") || strings.HasPrefix(slug, "o4")
 }
 
 func (p *OpenRouterProvider) ChatCompletion(ctx context.Context, req *model.ChatCompletionRequest) (*model.ChatCompletionResponse, error) {

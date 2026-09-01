@@ -268,14 +268,7 @@ func (p *ModelProber) probeOne(ctx context.Context, cfg model.ModelConfig) model
 		ProbedAt: now,
 	}
 
-	body, _ := json.Marshal(map[string]any{
-		"model": cfg.ID,
-		"messages": []map[string]string{
-			{"role": "user", "content": probePrompt},
-		},
-		"max_tokens": probeMaxTokens,
-		"stop":       []string{"\n\n"},
-	})
+	body, _ := json.Marshal(probePayload(cfg.ID))
 
 	timeout := probeFastTimeout
 	if strings.HasPrefix(cfg.Provider, "cursor") || strings.Contains(cfg.ID, "composer") {
@@ -356,6 +349,25 @@ func (p *ModelProber) probeOne(ctx context.Context, cfg model.ModelConfig) model
 		result.ResponsePreview = truncatePreview(content, 120)
 	}
 	return result
+}
+
+// probePayload deliberately includes the common OpenAI-compatible sampling
+// defaults, including no-op penalties, plus stop. This makes the catalogue
+// sweep a compatibility canary for provider/model normalization rather than a
+// bare liveness request that misses strict-parameter regressions.
+func probePayload(modelID string) map[string]any {
+	return map[string]any{
+		"model": modelID,
+		"messages": []map[string]string{
+			{"role": "user", "content": probePrompt},
+		},
+		"temperature":       0.7,
+		"top_p":             1.0,
+		"presence_penalty":  0.0,
+		"frequency_penalty": 0.0,
+		"max_tokens":        probeMaxTokens,
+		"stop":              []string{"\n\n"},
+	}
 }
 
 func probeSucceeded(choiceCount int, content string, completionTokens int) bool {

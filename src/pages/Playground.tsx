@@ -1860,10 +1860,10 @@ ${text}`;
         ],
         stream: true,
         temperature,
-        top_p: topP,
-        presence_penalty: presencePenalty,
-        frequency_penalty: frequencyPenalty,
         max_tokens: maxTokens,
+        ...(topP !== 1 ? { top_p: topP } : {}),
+        ...(presencePenalty !== 0 ? { presence_penalty: presencePenalty } : {}),
+        ...(frequencyPenalty !== 0 ? { frequency_penalty: frequencyPenalty } : {}),
         ...(reasoningEffortRef.current ? { reasoning_effort: reasoningEffortRef.current } : {}),
       };
 
@@ -2007,10 +2007,10 @@ ${text}`;
       model,
       messages: apiMessages,
       temperature,
-      top_p: topP,
-      presence_penalty: presencePenalty,
-      frequency_penalty: frequencyPenalty,
       max_tokens: maxTokens,
+      ...(topP !== 1 ? { top_p: topP } : {}),
+      ...(presencePenalty !== 0 ? { presence_penalty: presencePenalty } : {}),
+      ...(frequencyPenalty !== 0 ? { frequency_penalty: frequencyPenalty } : {}),
       ...(reasoningEffort ? { reasoning_effort: reasoningEffort } : {}),
     };
     const imagePayload = {

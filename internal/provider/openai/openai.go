@@ -145,6 +145,7 @@ func normalizeSamplingParams(req *model.ChatCompletionRequest) {
 	req.TopP = nil
 	req.PresencePenalty = nil
 	req.FrequencyPenalty = nil
+	req.Stop = nil
 }
 
 // isRetryableStatus reports whether an upstream failure should let the router

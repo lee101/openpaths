@@ -90,6 +90,35 @@ test.describe('Playground Page', () => {
     expect(JSON.stringify(userMessage.content)).toContain('https://openpathsstatic.openpaths.io/static/uploads/e2e-notes.txt');
   });
 
+  test('default chat request omits no-op sampling controls', async ({ page }) => {
+    let chatBody: any = null;
+    await page.route('**/v1/chat/completions', async (route) => {
+      chatBody = route.request().postDataJSON();
+      await route.fulfill({
+        status: 200,
+        contentType: 'text/event-stream',
+        body: 'data: {"choices":[{"delta":{"content":"hi"}}]}\n\ndata: [DONE]\n\n',
+      });
+    });
+    await page.evaluate(() => {
+      localStorage.setItem('op_api_key', 'op-default-settings-test-key');
+      localStorage.removeItem('op_playground_top_p');
+      localStorage.removeItem('op_playground_presence_penalty');
+      localStorage.removeItem('op_playground_frequency_penalty');
+    });
+    await page.goto('/playground?model=grok-4.6');
+    await page.locator('textarea[placeholder*="Send a message"]').fill('say hi nothing else');
+    await page.getByTestId('chat-send').click();
+    await expect(page.getByText('hi').last()).toBeVisible();
+
+    expect(chatBody.model).toBe('grok-4.6');
+    expect(chatBody.temperature).toBe(0.7);
+    expect(chatBody.max_tokens).toBe(4096);
+    expect(chatBody).not.toHaveProperty('top_p');
+    expect(chatBody).not.toHaveProperty('presence_penalty');
+    expect(chatBody).not.toHaveProperty('frequency_penalty');
+  });
+
   test('model selector dropdown opens and shows providers', async ({ page }) => {
     // click first model selector
     const firstSelector = page.locator('button:has-text("Auto")').first();

@@ -131,9 +131,10 @@ func TestNormalizeSamplingParams(t *testing.T) {
 		TopP:             &topP,
 		PresencePenalty:  &pen,
 		FrequencyPenalty: &pen,
+		Stop:             []string{"done"},
 	}
 	normalizeSamplingParams(req)
-	if req.Temperature != nil || req.TopP != nil || req.PresencePenalty != nil || req.FrequencyPenalty != nil {
+	if req.Temperature != nil || req.TopP != nil || req.PresencePenalty != nil || req.FrequencyPenalty != nil || len(req.Stop) != 0 {
 		t.Errorf("reasoning model sampling params not stripped: %#v", req)
 	}
 

@@ -1,11 +1,29 @@
 package cron
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
 	"github.com/openpaths/openpaths/internal/model"
 )
+
+func TestProbePayloadExercisesPlaygroundCompatibilityControls(t *testing.T) {
+	payload := probePayload("grok-4.6")
+	want := map[string]any{
+		"temperature": 0.7, "top_p": 1.0, "presence_penalty": 0.0,
+		"frequency_penalty": 0.0, "max_tokens": probeMaxTokens,
+		"stop": []string{"\n\n"},
+	}
+	if payload["model"] != "grok-4.6" {
+		t.Fatalf("model = %v", payload["model"])
+	}
+	for key, value := range want {
+		if !reflect.DeepEqual(payload[key], value) {
+			t.Errorf("%s = %#v, want %#v", key, payload[key], value)
+		}
+	}
+}
 
 func TestIsChatProbeModel(t *testing.T) {
 	if !IsChatProbeModel(model.ModelConfig{

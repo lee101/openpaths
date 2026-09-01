@@ -221,13 +221,35 @@ func TestSanitizeForZAIPromotesSystemOnly(t *testing.T) {
 }
 
 func TestSanitizeForZAIConfiguresGLM53FlashThinking(t *testing.T) {
-	req := &model.ChatCompletionRequest{Model: "glm-5.3-flash"}
+	temperature := 2.0
+	penalty := 0.0
+	req := &model.ChatCompletionRequest{
+		Model:            "glm-5.3-flash",
+		Temperature:      &temperature,
+		PresencePenalty:  &penalty,
+		FrequencyPenalty: &penalty,
+		ReasoningEffort:  "max",
+	}
 	sanitizeForZAI(req)
 	if req.Thinking == nil || req.Thinking.Type != "enabled" {
 		t.Fatalf("thinking = %+v, want enabled", req.Thinking)
 	}
 	if req.Thinking.ClearThinking == nil || *req.Thinking.ClearThinking {
 		t.Fatalf("clear_thinking = %v, want false", req.Thinking.ClearThinking)
+	}
+	if req.ReasoningEffort != "" || req.PresencePenalty != nil || req.FrequencyPenalty != nil {
+		t.Fatalf("unsupported OpenAI fields remain: %#v", req)
+	}
+	if req.Temperature == nil || *req.Temperature != 1 {
+		t.Fatalf("temperature = %v, want clamped to 1", req.Temperature)
+	}
+}
+
+func TestSanitizeForZAIMapsDisabledThinking(t *testing.T) {
+	req := &model.ChatCompletionRequest{Model: "glm-4.6", ReasoningEffort: "none"}
+	sanitizeForZAI(req)
+	if req.ReasoningEffort != "" || req.Thinking == nil || req.Thinking.Type != "disabled" {
+		t.Fatalf("request = %#v, want disabled native thinking", req)
 	}
 }
 

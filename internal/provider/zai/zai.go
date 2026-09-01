@@ -117,6 +117,26 @@ func sanitizeForZAI(req *model.ChatCompletionRequest) {
 	req.Prefill = ""
 	req.TaskTier = ""
 	req.RoutingStrategy = ""
+	req.ChatTemplateKwargs = nil
+	// These OpenAI compatibility fields are not part of Z.AI's chat schema.
+	// Omit them even at zero, since strict model revisions reject unknown fields.
+	req.PresencePenalty = nil
+	req.FrequencyPenalty = nil
+	if req.Temperature != nil && *req.Temperature > 1 {
+		maxTemperature := 1.0
+		req.Temperature = &maxTemperature
+	}
+
+	// Z.AI controls reasoning through `thinking`, not `reasoning_effort`.
+	// Preserve the caller's on/off intent and never forward the foreign field.
+	if req.Thinking == nil && req.ReasoningEffort != "" {
+		thinkingType := "enabled"
+		if req.ReasoningEffort == "none" {
+			thinkingType = "disabled"
+		}
+		req.Thinking = &model.ThinkingConfig{Type: thinkingType}
+	}
+	req.ReasoningEffort = ""
 	// Every model on this surface is a GLM, so the user-turn reshaping always
 	// applies here.
 	model.PromoteSystemToUser(req)
@@ -124,18 +144,20 @@ func sanitizeForZAI(req *model.ChatCompletionRequest) {
 	// GLM-5.3-Flash only supports enabled thinking. Keep prior reasoning blocks
 	// available for long-running tool conversations, as recommended by Z.AI.
 	if strings.HasPrefix(strings.ToLower(req.Model), "glm-5.3-flash") {
+		clearThinking := false
 		if req.Thinking == nil {
-			clearThinking := false
 			req.Thinking = &model.ThinkingConfig{Type: "enabled", ClearThinking: &clearThinking}
 		} else {
 			req.Thinking.Type = "enabled"
+			req.Thinking.ClearThinking = &clearThinking
 		}
 	}
 }
 
 func (p *ZAIProvider) ChatCompletion(ctx context.Context, req *model.ChatCompletionRequest) (*model.ChatCompletionResponse, error) {
-	sanitizeForZAI(req)
-	body, err := json.Marshal(req)
+	outReq := cloneChatRequest(req)
+	sanitizeForZAI(&outReq)
+	body, err := json.Marshal(&outReq)
 	if err != nil {
 		return nil, fmt.Errorf("marshal request: %w", err)
 	}
@@ -169,13 +191,14 @@ func (p *ZAIProvider) ChatCompletion(ctx context.Context, req *model.ChatComplet
 }
 
 func (p *ZAIProvider) ChatCompletionStream(ctx context.Context, req *model.ChatCompletionRequest) (<-chan provider.StreamEvent, error) {
-	req.Stream = true
-	if len(req.Tools) > 0 {
-		req.ToolStream = true
+	outReq := cloneChatRequest(req)
+	outReq.Stream = true
+	if len(outReq.Tools) > 0 {
+		outReq.ToolStream = true
 	}
-	sanitizeForZAI(req)
+	sanitizeForZAI(&outReq)
 
-	body, err := json.Marshal(req)
+	body, err := json.Marshal(&outReq)
 	if err != nil {
 		return nil, fmt.Errorf("marshal request: %w", err)
 	}
@@ -236,6 +259,21 @@ func (p *ZAIProvider) ChatCompletionStream(ctx context.Context, req *model.ChatC
 	}()
 
 	return ch, nil
+}
+
+func cloneChatRequest(req *model.ChatCompletionRequest) model.ChatCompletionRequest {
+	out := *req
+	if req.Thinking != nil {
+		thinking := *req.Thinking
+		out.Thinking = &thinking
+	}
+	if req.ChatTemplateKwargs != nil {
+		out.ChatTemplateKwargs = make(map[string]any, len(req.ChatTemplateKwargs))
+		for key, value := range req.ChatTemplateKwargs {
+			out.ChatTemplateKwargs[key] = value
+		}
+	}
+	return out
 }
 
 func (p *ZAIProvider) GenerateImage(ctx context.Context, req *model.ImageGenerationRequest) (*model.ImageGenerationResponse, error) {

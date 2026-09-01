@@ -30,7 +30,7 @@ func New(apiKey, baseURL string) *XAIProvider {
 	}
 	baseURL = strings.TrimRight(baseURL, "/")
 	return &XAIProvider{
-		OpenAIProvider: openai.New(apiKey, baseURL),
+		OpenAIProvider: openai.NewCompatible("xai", apiKey, baseURL, sanitizeForXAI),
 		apiKey:         apiKey,
 		baseURL:        baseURL,
 		client:         &http.Client{Timeout: 2 * time.Minute},
@@ -38,6 +38,33 @@ func New(apiKey, baseURL string) *XAIProvider {
 }
 
 func (p *XAIProvider) Name() string { return "xai" }
+
+// sanitizeForXAI removes OpenPaths-only hints and parameters that xAI's
+// reasoning models reject. xAI documents presence_penalty, frequency_penalty,
+// and stop as incompatible with reasoning models; this is true even when a
+// caller sends the penalties at their no-op value of zero.
+func sanitizeForXAI(req *model.ChatCompletionRequest) {
+	req.Prefill = ""
+	req.TaskTier = ""
+	req.RoutingStrategy = ""
+	req.Thinking = nil
+	req.ChatTemplateKwargs = nil
+
+	if !isXAIReasoningModel(req.Model) {
+		return
+	}
+	req.PresencePenalty = nil
+	req.FrequencyPenalty = nil
+	req.Stop = nil
+}
+
+func isXAIReasoningModel(modelID string) bool {
+	modelID = strings.ToLower(strings.TrimSpace(modelID))
+	if !strings.HasPrefix(modelID, "grok-") || strings.Contains(modelID, "non-reasoning") {
+		return false
+	}
+	return true
+}
 
 func (p *XAIProvider) GenerateImage(ctx context.Context, req *model.ImageGenerationRequest) (*model.ImageGenerationResponse, error) {
 	payload := map[string]any{

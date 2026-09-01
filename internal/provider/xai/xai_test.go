@@ -51,6 +51,82 @@ func TestGenerateSpeechCallsXAITTS(t *testing.T) {
 	}
 }
 
+func TestReasoningChatOmitsUnsupportedSamplingParameters(t *testing.T) {
+	for _, stream := range []bool{false, true} {
+		t.Run(map[bool]string{false: "completion", true: "stream"}[stream], func(t *testing.T) {
+			var got model.ChatCompletionRequest
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if err := json.NewDecoder(r.Body).Decode(&got); err != nil {
+					t.Fatalf("decode request: %v", err)
+				}
+				w.Header().Set("Content-Type", "text/event-stream")
+				if stream {
+					_, _ = w.Write([]byte("data: [DONE]\n\n"))
+					return
+				}
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(`{"id":"ok","choices":[]}`))
+			}))
+			defer srv.Close()
+
+			value := 0.0
+			req := &model.ChatCompletionRequest{
+				Model:            "grok-4.6",
+				Messages:         []model.ChatMessage{{Role: "user", Content: "say hi nothing else"}},
+				PresencePenalty:  &value,
+				FrequencyPenalty: &value,
+				Stop:             []string{"stop"},
+			}
+			p := New("test-key", srv.URL)
+			if stream {
+				ch, err := p.ChatCompletionStream(context.Background(), req)
+				if err != nil {
+					t.Fatalf("ChatCompletionStream error: %v", err)
+				}
+				for range ch {
+				}
+			} else if _, err := p.ChatCompletion(context.Background(), req); err != nil {
+				t.Fatalf("ChatCompletion error: %v", err)
+			}
+
+			if got.PresencePenalty != nil || got.FrequencyPenalty != nil || len(got.Stop) != 0 {
+				t.Fatalf("unsupported parameters reached xAI: %#v", got)
+			}
+			if req.PresencePenalty == nil || req.FrequencyPenalty == nil || len(req.Stop) == 0 {
+				t.Fatal("provider mutated the caller's request")
+			}
+		})
+	}
+}
+
+func TestNonReasoningChatPreservesSupportedSamplingParameters(t *testing.T) {
+	var got model.ChatCompletionRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&got); err != nil {
+			t.Fatalf("decode request: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"id":"ok","choices":[]}`))
+	}))
+	defer srv.Close()
+
+	value := 0.4
+	p := New("test-key", srv.URL)
+	_, err := p.ChatCompletion(context.Background(), &model.ChatCompletionRequest{
+		Model:            "grok-4.20-0309-non-reasoning",
+		Messages:         []model.ChatMessage{{Role: "user", Content: "hi"}},
+		PresencePenalty:  &value,
+		FrequencyPenalty: &value,
+		Stop:             []string{"stop"},
+	})
+	if err != nil {
+		t.Fatalf("ChatCompletion error: %v", err)
+	}
+	if got.PresencePenalty == nil || got.FrequencyPenalty == nil || len(got.Stop) != 1 {
+		t.Fatalf("supported parameters were removed: %#v", got)
+	}
+}
+
 func TestGenerateImageCallsXAIImageGeneration(t *testing.T) {
 	var got map[string]any
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
