@@ -247,7 +247,7 @@ export function ArtifactEditor({ isEdit }: { isEdit?: boolean }) {
 
   return (
     <>
-      <Seo title={`${title} — Artifact Editor | OpenPaths`} description="Build and edit a web artifact with an AI agent." path="/artifacts/new" />
+      <Seo title={`${title} - Artifact Editor | OpenPaths`} description="Build and edit a web artifact with an AI agent." path="/artifacts/new" />
       <div className="mx-auto max-w-[1600px] px-4 py-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <button onClick={() => navigate('/artifacts')} className="inline-flex items-center gap-1.5 font-mono text-xs text-white/50 hover:text-white">

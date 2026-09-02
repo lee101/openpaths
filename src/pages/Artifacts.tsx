@@ -67,7 +67,7 @@ export function Artifacts() {
             </div>
             <h1 className="text-4xl md:text-5xl font-semibold tracking-tight">Artifacts</h1>
             <p className="mt-4 text-white/60 text-lg max-w-2xl font-light">
-              An IDE on the web. Prompt any model on OpenPaths to write, edit, and ship self-contained apps —
+              An IDE on the web. Prompt any model on OpenPaths to write, edit, and ship self-contained apps -
               preview live, then publish to the gallery or keep them private.
             </p>
           </div>
@@ -116,7 +116,7 @@ export function Artifacts() {
             <div className="rounded-lg border border-dashed border-white/20 py-24 text-center">
               <Boxes className="mx-auto mb-4 h-8 w-8 text-white/35" />
               <p className="text-white/50 font-mono text-sm">
-                {tab === 'mine' ? 'No artifacts yet — create your first one.' : 'No public artifacts found.'}
+                {tab === 'mine' ? 'No artifacts yet - create your first one.' : 'No public artifacts found.'}
               </p>
             </div>
           )

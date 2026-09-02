@@ -59,7 +59,7 @@ test.describe('Public Spaces', () => {
     await expect(page.getByText('Model: pixal3d-image-to-3d')).toBeVisible();
   });
 
-  test('tools hub lists first-party tools and links to each page', async ({ page }) => {
+  test('tools hub lists tools and links to each page', async ({ page }) => {
     await page.goto('/tools');
 
     await expect(page.getByRole('heading', { name: /OpenPaths Tools/i })).toBeVisible();
@@ -67,9 +67,38 @@ test.describe('Public Spaces', () => {
     await expect(page.locator('a[href="/image-to-3d"]').first()).toBeVisible();
     await expect(page.locator('a[href="/text-to-3d"]').first()).toBeVisible();
 
+    const toolImages = page.getByTestId('tools-grid').locator('img');
+    await expect(toolImages).toHaveCount(16);
+    await expect.poll(() => toolImages.evaluateAll(images =>
+      images.every(image => (image as HTMLImageElement).complete && (image as HTMLImageElement).naturalWidth > 0),
+    )).toBe(true);
+
     await page.locator('a[href="/text-to-3d"]').first().click();
     await expect(page).toHaveURL('/text-to-3d');
     await expect(page.getByRole('heading', { name: /^Text to 3D$/i })).toBeVisible();
+  });
+
+  test('tools hub search filters the grid and clears again', async ({ page }) => {
+    await page.goto('/tools');
+
+    const search = page.getByTestId('tools-search');
+    const count = page.getByTestId('tools-count');
+    // Scope to the grid: the footer links to these same routes.
+    const grid = page.getByTestId('tools-grid');
+    await expect(count).toContainText('16 of 16 tools');
+
+    await search.fill('3d');
+    await expect(grid.locator('a[href="/image-to-3d"]')).toBeVisible();
+    await expect(grid.locator('a[href="/text-to-image"]')).toHaveCount(0);
+
+    // Keyword match, not just the visible name.
+    await search.fill('voice');
+    await expect(grid.locator('a[href="/tools/google-tts"]')).toBeVisible();
+
+    await search.fill('zzzz');
+    await expect(page.getByText(/No tools match/)).toBeVisible();
+    await page.getByRole('button', { name: 'Clear search' }).click();
+    await expect(count).toContainText('16 of 16 tools');
   });
 
   test('text-to-3d space exposes prompt controls, viewer, and snippets', async ({ page }) => {
@@ -189,12 +218,12 @@ test.describe('Public Spaces', () => {
     await expect(page.getByText('Image API example')).toBeVisible();
     await expect(page.getByAltText(/FLUX 2 Pro Outpaint input/i)).toHaveAttribute('src', /flux-outpaint\/input\.png/);
     await expect(page.getByAltText(/FLUX 2 Pro Outpaint output/i)).toHaveAttribute('src', /flux-outpaint\/output\.jpg/);
-    await expect(page.getByText('/images/generations')).toBeVisible();
+    await expect(page.getByText('/images/edits')).toBeVisible();
     await expect(page.getByText('"model": "fal-ai/flux-2-pro/outpaint"')).toBeVisible();
     await expect(page.getByText('"expand_bottom": 200')).toBeVisible();
 
     await page.getByRole('button', { name: 'JavaScript' }).click();
-    await expect(page.getByText('client.post("/images/generations"')).toBeVisible();
+    await expect(page.getByText('client.post("/images/edits"')).toBeVisible();
   });
 
   test('hidream edit model space renders reference edit demo and image API snippets', async ({ page }) => {
@@ -204,7 +233,7 @@ test.describe('Public Spaces', () => {
     await expect(page.getByText('Image API example')).toBeVisible();
     await expect(page.getByAltText(/HiDream O1 Image Edit input/i)).toHaveAttribute('src', /hidream-edit\/perfume\.jpg/);
     await expect(page.getByAltText(/HiDream O1 Image Edit output/i)).toHaveAttribute('src', /hidream-edit\/lipstick\.png/);
-    await expect(page.getByText('/images/generations')).toBeVisible();
+    await expect(page.getByText('/images/edits')).toBeVisible();
     await expect(page.getByText('"model": "fal-ai/hidream-o1-image/edit"')).toBeVisible();
     await expect(page.getByText('"image_size": "landscape_16_9"')).toBeVisible();
     await expect(page.getByText('"enable_safety_checker": false')).toBeVisible();
@@ -216,6 +245,16 @@ test.describe('Public Spaces', () => {
 
     await page.goto('/models?q=image%20to%20image');
     await expect(page.getByRole('link', { name: /FLUX 2 Pro Outpaint/i })).toBeVisible();
+  });
+
+  test('GPT Image 2 is searchable and opens its image workspace', async ({ page }) => {
+    await page.goto('/models?q=gpt-image-2');
+    await expect(page.getByRole('link', { name: 'GPT Image 2', exact: true })).toBeVisible();
+
+    await page.getByRole('link', { name: 'GPT Image 2', exact: true }).click();
+    await expect(page).toHaveURL('/models/gpt-image-2');
+    await expect(page.getByTestId('mp-image-panel')).toBeVisible();
+    await expect(page.getByTestId('mp-image-panel').locator('pre')).toContainText('"model": "gpt-image-2"');
   });
 
   test('video playground opens from model query params and generates copyable video code', async ({ page }) => {

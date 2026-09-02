@@ -185,7 +185,7 @@ export function Pricing() {
               Pricing built to stay as close to <span className="text-white/45">0 markup</span> as possible.
             </h1>
             <p className="mt-6 max-w-3xl text-lg leading-relaxed text-white/65 md:text-xl">
-              OpenPaths is designed to be a routing layer, not a heavy-tax marketplace. We keep pass-through pricing as tight as practical and make a meaningful share of revenue when requests land on AI services we operate ourselves, including Netwrck image and video models plus our local embedding model and Text-Generator.io embeddings.
+              A routing layer, not a heavy-tax marketplace. Pass-through pricing stays as tight as practical, and we earn on the AI services we run ourselves: Netwrck image and video, our local embedding model, and Text-Generator.io embeddings.
             </p>
             <div className="mt-10 flex flex-col gap-3 sm:flex-row">
               <Link
@@ -259,7 +259,7 @@ export function Pricing() {
             <div className="mb-3 font-mono text-xs uppercase tracking-[0.24em] text-white/45">How OpenPaths makes money</div>
             <h2 className="text-3xl font-bold tracking-tight md:text-4xl">Closer to provider pricing by design.</h2>
             <p className="mt-4 text-base leading-relaxed text-white/65 md:text-lg">
-              Many AI gateways add a noticeable markup across every single model. We want the default experience to be cleaner than that. OpenPaths can keep pricing tight because some of the inventory is first-party: when you use services like Netwrck, our local embedding model, or Text-Generator.io through OpenPaths, we are not paying another gateway on top.
+              Most gateways add a markup on every model. We can keep pricing tight because some of the inventory is first-party: on Netwrck, our local embedding model, and Text-Generator.io there is no other gateway taking a cut.
             </p>
           </div>
 
@@ -273,7 +273,7 @@ export function Pricing() {
               body="OpenPaths also includes models where we are the operator or have direct first-party economics. That is where a larger share of platform margin is expected to come from."
             />
             <DetailCard
-              title="Bring your own key — $0"
+              title="Bring your own key - $0"
               body="Add your Anthropic, OpenAI, Google, DeepSeek, Groq, xAI, or 11 other provider keys and requests served through them bypass your OpenPaths balance entirely. You pay the provider directly; routing, fallbacks, and observability stay. See BYOK details."
             />
           </div>
@@ -287,7 +287,7 @@ export function Pricing() {
             <div className="mb-3 font-mono text-xs uppercase tracking-[0.24em] text-white/45">Representative pricing</div>
             <h2 className="text-3xl font-bold tracking-tight md:text-4xl">Examples by workload type</h2>
             <p className="mt-4 text-base leading-relaxed text-white/65 md:text-lg">
-              These tables show representative catalog pricing for common models on OpenPaths. Exact prices can shift as providers update their own rates, but the structure stays simple: token-priced text models, mixed request-priced and token-priced embeddings, and request-priced image and video models.
+              Representative catalog pricing for common models. Exact rates shift as providers update theirs, but the structure holds: text priced per token, embeddings per token or per request, image and video per request.
             </p>
           </div>
 

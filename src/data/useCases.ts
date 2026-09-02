@@ -48,7 +48,7 @@ export const useCases: UseCase[] = [
       'One key reaches Claude, OpenAI, Moonshot, Qwen, and more through an OpenAI-compatible POST /v1/chat/completions.',
       'openpaths/auto-code routes each request to a coding-capable model without manual selection.',
       'Automatic fallback chains retry on another provider when one fails, so long agent sessions survive outages.',
-      'Bring your own provider keys and requests bypass your OpenPaths balance entirely — cost is recorded as $0.',
+      'Bring your own provider keys and requests bypass your OpenPaths balance entirely - cost is recorded as $0.',
       'Public stats at /stats show real per-model latency, TTFT, and throughput before you commit.',
     ],
     routes: [
@@ -96,7 +96,7 @@ export const useCases: UseCase[] = [
     why: [
       'One key covers Google, DeepSeek, Meta, Mistral, xAI, and others through a single OpenAI-compatible chat endpoint.',
       'openpaths/auto-fast routes high-volume conversations to quick responses without pinning a vendor.',
-      'routing_strategy supports price (default), config, or fastest — tune spend versus latency per workload.',
+      'routing_strategy supports price (default), config, or fastest - tune spend versus latency per workload.',
       'Automatic fallbacks keep bots responding when a provider degrades.',
       'BYOK lets you run volume on your existing provider contracts while OpenPaths records $0 against your balance.',
     ],
@@ -121,7 +121,7 @@ export const useCases: UseCase[] = [
       {
         question: 'Which models work well for support volume?',
         answer:
-          'Teams typically pair a fast small model like llama-3.1-8b-instant for triage with a stronger model like gemini-3.5-flash for escalations — all on the same key.',
+          'Teams typically pair a fast small model like llama-3.1-8b-instant for triage with a stronger model like gemini-3.5-flash for escalations - all on the same key.',
       },
       {
         question: 'Is there a dashboard for model performance?',
@@ -138,7 +138,7 @@ export const useCases: UseCase[] = [
       'Build writing and content pipelines on one API key across GPT, Claude, Grok, and open models. Auto-routing by price or speed, provider fallbacks, BYOK support.',
     hero: 'Draft, edit, and localize with any frontier model from one endpoint.',
     pains: [
-      'Pipelines mix drafting, editing, and translation — no single model excels at all stages.',
+      'Pipelines mix drafting, editing, and translation - no single model excels at all stages.',
       'Provider lock-in makes A/B testing writers slow and expensive.',
       'A single-provider outage halts scheduled publishing runs.',
     ],

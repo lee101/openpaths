@@ -186,7 +186,7 @@ Diff:
 		Prompt: `Add docstrings to every public function and class below.
 
 Rules:
-- Match the project's docstring style (Google/NumPy/JSDoc — infer from context).
+- Match the project's docstring style (Google/NumPy/JSDoc - infer from context).
 - Document params, returns, raises, and side effects.
 - Do not change any code.
 
@@ -399,11 +399,86 @@ Passage:
 
 Output:
 - Decisions made.
-- Action items as: owner — action — due date (infer if implied, mark [TBD] otherwise).
+- Action items as: owner - action - due date (infer if implied, mark [TBD] otherwise).
 - Follow-ups and parking-lot items.
 
 Notes:
 ` + "```\n[paste notes]\n```",
+	},
+	{
+		Slug:      "image-to-accessible-alt-text",
+		Title:     "Image to Accessible Alt Text",
+		Summary:   "Write useful, concise alt text from an uploaded image without inventing details.",
+		ModelSlug: "openpaths/auto-vision", CategSlug: "productivity-writing", Modality: "text",
+		Tags:      []string{"vision", "alt text", "accessibility", "image description"},
+		IsFree:    true, Featured: true, Popularity: 90,
+		Prompt: `Describe the uploaded image as accessible alt text.
+
+Rules:
+- Lead with the subject and action, then include important context, text, colors, and relationships.
+- Be concrete and concise: 1-2 sentences unless the image needs more detail.
+- Transcribe visible text only when it is relevant to understanding the image.
+- Do not guess identities, diagnoses, emotions, or facts that are not visible.
+
+Return only the alt text.`,
+	},
+	{
+		Slug:      "screenshot-ux-audit",
+		Title:     "Screenshot UX Audit",
+		Summary:   "Turn a product screenshot into a prioritized visual and accessibility review.",
+		ModelSlug: "deepseek-v4-flash-vision-exp", CategSlug: "productivity-writing", Modality: "text",
+		Tags:      []string{"vision", "screenshot", "ux", "accessibility", "visual QA"},
+		Featured: true, Popularity: 88,
+		Prompt: `Audit the uploaded product screenshot against this brief: [paste brief].
+
+Return:
+1. What the interface appears to do.
+2. Visual hierarchy and layout issues, with approximate screen regions.
+3. Accessibility risks: contrast, text size, focus cues, labels, and touch targets.
+4. The five highest-impact fixes, ordered by impact.
+
+Separate observations from recommendations. If something is unreadable or ambiguous, say so instead of guessing.`,
+	},
+	{
+		Slug:      "receipt-to-structured-json",
+		Title:     "Receipt to Structured JSON",
+		Summary:   "Extract fields from a receipt, invoice, or form with uncertainty called out explicitly.",
+		ModelSlug: "deepseek-v4-flash-vision-exp", CategSlug: "productivity-writing", Modality: "text",
+		Tags:      []string{"vision", "ocr", "receipt", "invoice", "json", "extraction"},
+		Featured: true, Popularity: 86,
+		Prompt: `Read the uploaded receipt, invoice, or form and return only valid JSON with this shape:
+
+{
+  "document_type": "receipt | invoice | form | unknown",
+  "merchant": null,
+  "document_number": null,
+  "date": null,
+  "currency": null,
+  "subtotal": null,
+  "tax": null,
+  "total": null,
+  "line_items": [{"description": null, "quantity": null, "unit_price": null, "amount": null}],
+  "uncertain_fields": []
+}
+
+Use null for missing or unreadable values. Preserve the document's spelling and number formatting in uncertain_fields; never invent a value.`,
+	},
+	{
+		Slug:      "chart-to-decision-brief",
+		Title:     "Chart to Decision Brief",
+		Summary:   "Read a chart or dashboard and turn visible evidence into a cautious decision brief.",
+		ModelSlug: "openpaths/auto-vision", CategSlug: "productivity-writing", Modality: "text",
+		Tags:      []string{"vision", "chart", "dashboard", "data analysis", "decision"},
+		Popularity: 82,
+		Prompt: `Analyze the uploaded chart or dashboard.
+
+Output:
+- Chart type, title, axes, units, legend, and visible date range.
+- Three evidence-based observations with the values or regions that support them.
+- Trends, outliers, comparisons, and any misleading scale or missing context.
+- Two cautious implications for [decision or audience].
+
+Do not estimate values that cannot be read. Distinguish what is visible from what would require the underlying data.`,
 	},
 
 	// ---------------------- Marketing & Business ----------------------

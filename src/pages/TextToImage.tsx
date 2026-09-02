@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Copy, Download, ImageIcon, Loader2, Wand2 } from 'lucide-react';
-import { Seo } from '../components/Seo';
+import { ToolSeo } from '../components/ToolSeo';
 import { CodeBlock } from '../components/CodeBlock';
 
 const DEFAULT_PROMPT = 'A beige ceramic coffee mug on a wooden table, soft natural window light, editorial product photo';
@@ -137,11 +137,7 @@ console.log(data.data[0].url);`,
 
   return (
     <>
-      <Seo
-        title="Text to Image API | OpenPaths"
-        description="Generate images from text with the OpenPaths auto image endpoint — routes to GPT Image 2, RA1, Flux, and more with near-zero markup."
-        path="/text-to-image"
-      />
+      <ToolSeo slug="text-to-image" />
 
       <div className="px-6 py-10">
         <div className="mx-auto max-w-7xl">
@@ -240,7 +236,7 @@ console.log(data.data[0].url);`,
                   <div className="w-full max-w-md overflow-hidden rounded border border-white/20 bg-black">
                     <img src={EXAMPLE_OUTPUT_URL} alt="Example generated image" className="h-auto w-full" />
                     <div className="flex items-center justify-between gap-3 border-t border-white/20 px-3 py-2 text-xs font-mono text-white/50">
-                      <span>Example — hit Generate on the default prompt</span>
+                      <span>Example - hit Generate on the default prompt</span>
                       <a href={EXAMPLE_OUTPUT_URL} download="openpaths-example.png" className="flex items-center gap-2 hover:text-white"><Download className="h-3.5 w-3.5" /> Download</a>
                     </div>
                   </div>

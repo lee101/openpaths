@@ -3,7 +3,9 @@ import { test, expect } from '@playwright/test';
 test.describe('Search Playground', () => {
   test('renders from nav with Gemini default and a code example', async ({ page }) => {
     await page.goto('/');
-    await page.click('nav >> text=Search');
+    // Search lives behind the nav menu button, not the core top bar.
+    await page.getByRole('button', { name: 'Open menu' }).click();
+    await page.locator('nav a[href="/search"]').last().click();
     await expect(page).toHaveURL('/search');
     await expect(page.locator('h1')).toContainText('Search the web with AI');
     // Provider tabs are present and Gemini is the default engine.

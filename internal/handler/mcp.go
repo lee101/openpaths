@@ -145,7 +145,7 @@ func (h *MCPHandler) route(ctx *fasthttp.RequestCtx, req *rpcRequest) (any, *rpc
 				"name":    mcpServerName,
 				"version": mcpServerVersion,
 			},
-			"instructions": "OpenPaths MCP server exposing every OpenPaths model across all providers. Call `list_models` (supports `filter` substring and `modality` filters) to discover models; each entry's `modality` selects the tool: chat→`chat`, image→`generate_image`, video→`generate_video`, music→`generate_music`, speech→`text_to_speech`, transcription→`transcribe_audio`, 3d→`generate_3d`, embedding→`embed`. Video and 3D generations may return a job_id while rendering — poll it with `check_job`. Web search via `web_search`.",
+			"instructions": "OpenPaths MCP server exposing every OpenPaths model across all providers. Call `list_models` (supports `filter` substring and `modality` filters) to discover models; each entry's `modality` selects the tool: chat→`chat`, image→`generate_image`, video→`generate_video`, music→`generate_music`, speech→`text_to_speech`, transcription→`transcribe_audio`, 3d→`generate_3d`, embedding→`embed`. Video and 3D generations may return a job_id while rendering - poll it with `check_job`. Web search via `web_search`.",
 		}, nil
 	case "ping":
 		return map[string]any{}, nil

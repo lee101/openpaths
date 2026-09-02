@@ -64,7 +64,7 @@ function LeaderboardTable({ rows, limit }: { rows: ImageLeaderboardModel[]; limi
                       {hosted.openpathsId}
                     </Link>
                   ) : (
-                    <span className="font-mono text-xs text-white/40">—</span>
+                    <span className="font-mono text-xs text-white/40">-</span>
                   )}
                 </td>
               </tr>
@@ -83,8 +83,8 @@ export function ImageEvals() {
   return (
     <>
       <Seo
-        title="Image Generator Evals — Arena Elo, Price & Example Images | OpenPaths"
-        description="Artificial Analysis Text-to-Image and Image Editing Arena Elo leaderboards, plus a real example image from every generator OpenPaths hosts — RA1, GPT Image 2, FLUX, and more."
+        title="Image Generator Evals - Arena Elo, Price & Example Images | OpenPaths"
+        description="Artificial Analysis Text-to-Image and Image Editing Arena Elo leaderboards, plus a real example image from every generator OpenPaths hosts - RA1, GPT Image 2, FLUX, and more."
         path="/image-evals"
       />
       <div className="mx-auto max-w-7xl px-6 py-12">
@@ -98,7 +98,7 @@ export function ImageEvals() {
               <h1 className="max-w-4xl text-4xl font-semibold tracking-tight md:text-6xl">Image generator quality map</h1>
               <p className="mt-5 max-w-3xl text-lg leading-relaxed text-white/60">
                 The Artificial Analysis Text-to-Image and Image Editing Arena Elo leaderboards, snapshotted locally and
-                normalized for OpenPaths — plus a real example image from every generator we host, all from the same prompt.
+                normalized for OpenPaths - plus a real example image from every generator we host, all from the same prompt.
               </p>
             </div>
             <a
@@ -113,7 +113,7 @@ export function ImageEvals() {
           <p className="mt-3 font-mono text-xs text-white/50">Crawled {crawledOn()} · {leaders.length} of {artificialAnalysisImageSnapshot.textToImage.length} ranked models shown</p>
         </section>
 
-        {/* Example gallery — one real generation per OpenPaths generator */}
+        {/* Example gallery - one real generation per OpenPaths generator */}
         <section className="mb-12">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <h2 className="inline-flex items-center gap-2 font-mono text-sm uppercase tracking-[0.16em] text-white/65">

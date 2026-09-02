@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom';
 import { Send, Plus, X, Settings, ChevronDown, Loader2, Trash2, Square, Copy, Check, Zap, RotateCcw, Code2, Share2, Wallet, Eye, Wrench, Volume2, Bookmark, BookmarkCheck, GitFork, Pencil, Paperclip, FileText, Film, File as FileIcon, Download, Upload, PanelLeft, Brain, MessageSquarePlus } from 'lucide-react';
 import { CodeBlock as HighlightedCodeBlock } from '../components/CodeBlock';
+import { ToolSeo } from '../components/ToolSeo';
 import { VIDEO_DEMOS, type VideoDemo } from '../data/videoDemos';
 import { getVideoParamSpec, EMPTY_ADVANCED, type VideoAdvancedValues, type VideoInputMode } from '../data/videoModelParams';
 import { buildVideoPayload, type VideoBaseValues } from '../lib/videoPayload';
@@ -13,7 +14,7 @@ import { ChatSidebar } from '../components/ChatSidebar';
 import { saveConversation, getConversation, getFolder, effectiveSystemPrompt, deriveTitle } from '../lib/conversations';
 import type { Conversation } from '../lib/conversations';
 import { AuthModal } from '../components/AuthModal';
-import { onAuthChange } from '../lib/api';
+import { onAuthChange, requestCreditTopUp } from '../lib/api';
 
 interface Message {
   role: 'system' | 'user' | 'assistant';
@@ -85,6 +86,12 @@ interface ModelPane {
   costUsd: number | null;
 }
 
+async function throwAPIResponseError(response: Response): Promise<never> {
+  const errorText = await response.text();
+  if (response.status === 402) requestCreditTopUp();
+  throw new Error(`${response.status}: ${errorText.slice(0, 200)}`);
+}
+
 type CodeLanguage = 'python' | 'js' | 'go' | 'curl';
 type PromptExample = string | { label: string; prompt: string };
 type ReferenceUploadTarget = 'image-inputs' | 'image' | 'end-image' | 'images' | 'video' | 'audio';
@@ -104,8 +111,7 @@ async function pollVideoJob(baseUrl: string, apiKey: string, jobId: string, sign
       signal,
     });
     if (!resp.ok) {
-      const errText = await resp.text();
-      throw new Error(`${resp.status}: ${errText.slice(0, 200)}`);
+      await throwAPIResponseError(resp);
     }
     const data = await resp.json();
     if (data?.status === 'completed' && data?.result?.video_url) return data.result;
@@ -203,6 +209,7 @@ const FALLBACK_MODELS: CatalogModel[] = [
   { id: 'grok-imagine-image', label: 'Grok Imagine Image', provider: 'xAI', pricing: { per_image: 0.02 } },
   { id: 'grok-imagine-image-quality', label: 'Grok Imagine Image Quality', provider: 'xAI', pricing: { per_image: 0.07 } },
   { id: 'deepseek-v4-flash', label: 'DeepSeek V4 Flash', provider: 'DeepSeek', pricing: { input_per_1m_tokens: 0.14, input_cache_hit_per_1m_tokens: 0.0028, output_per_1m_tokens: 0.28 } },
+  { id: 'deepseek-v4-flash-vision-exp', label: 'DeepSeek V4 Flash Vision Exp', provider: 'DeepSeek', pricing: { input_per_1m_tokens: 0.14, input_cache_hit_per_1m_tokens: 0.0028, output_per_1m_tokens: 0.28 }, capabilities: { vision: true, streaming: true, tools: true } },
   { id: 'deepseek-v4-pro', label: 'DeepSeek V4 Pro', provider: 'DeepSeek', pricing: { input_per_1m_tokens: 0.435, input_cache_hit_per_1m_tokens: 0.003625, output_per_1m_tokens: 0.87 } },
   { id: 'nvidia/deepseek-v4-pro', label: 'DeepSeek V4 Pro Free', provider: 'NVIDIA' },
   { id: 'deepseek-chat', label: 'DeepSeek Chat', provider: 'DeepSeek' },
@@ -1289,7 +1296,7 @@ ${text}`;
     ];
   }, [ttsSpeaker1Voice, ttsSpeaker2Voice]);
 
-  // Fetch model catalog from /v1/models (works with or without API key — endpoint is auth-gated).
+  // Fetch model catalog from /v1/models (works with or without API key - endpoint is auth-gated).
   useEffect(() => {
     if (!apiKey) return;
     let aborted = false;
@@ -1536,8 +1543,7 @@ ${text}`;
         signal: controller.signal,
       });
       if (!resp.ok) {
-        const errText = await resp.text();
-        throw new Error(`${resp.status}: ${errText.slice(0, 200)}`);
+        await throwAPIResponseError(resp);
       }
       const data = await resp.json();
       const first = data?.data?.[0];
@@ -1630,8 +1636,7 @@ ${text}`;
         signal: controller.signal,
       });
       if (!resp.ok) {
-        const errText = await resp.text();
-        throw new Error(`${resp.status}: ${errText.slice(0, 200)}`);
+        await throwAPIResponseError(resp);
       }
       let data = await resp.json();
       if (data?.result?.video_url) {
@@ -1707,8 +1712,7 @@ ${text}`;
         signal: controller.signal,
       });
       if (!resp.ok) {
-        const errText = await resp.text();
-        throw new Error(`${resp.status}: ${errText.slice(0, 200)}`);
+        await throwAPIResponseError(resp);
       }
       const data = await resp.json();
       if (!data?.audio && !data?.audio_url) throw new Error('No audio returned');
@@ -1774,8 +1778,7 @@ ${text}`;
         signal: controller.signal,
       });
       if (!resp.ok) {
-        const errText = await resp.text();
-        throw new Error(`${resp.status}: ${errText.slice(0, 200)}`);
+        await throwAPIResponseError(resp);
       }
       const data = await resp.json();
       const audio = data?.data?.audio;
@@ -1878,8 +1881,7 @@ ${text}`;
       });
 
       if (!resp.ok) {
-        const errText = await resp.text();
-        throw new Error(`${resp.status}: ${errText.slice(0, 200)}`);
+        await throwAPIResponseError(resp);
       }
 
       const reader = resp.body?.getReader();
@@ -2893,6 +2895,7 @@ JSON`;
 
   return (
     <div className="flex h-full min-h-0">
+      <ToolSeo slug="playground" />
       {sidebarOpen && (
         <ChatSidebar activeId={activeConvId} onSelect={loadConversation} onNewChat={newChatInFolder} />
       )}
@@ -3961,7 +3964,7 @@ function EmptyState({ onPrompt, hasApiKey, isImage, isSpeech, isGeminiSpeech, is
           </p>
           {!imageDemo && !videoDemo && (
             <div className="w-full max-w-md flex flex-col items-center gap-3">
-              {/* Examples select — sourced from the prompt library */}
+              {/* Examples select - sourced from the prompt library */}
               <select
                 value=""
                 onChange={e => {
@@ -4019,7 +4022,7 @@ function EmptyState({ onPrompt, hasApiKey, isImage, isSpeech, isGeminiSpeech, is
         <>
           <p className="text-sm font-mono text-white/60 mb-2">Sign in to start comparing models</p>
           <p className="text-xs font-mono text-white/45 mb-6 max-w-sm text-center leading-relaxed">
-            One API key for every major model — GPT, Claude, Gemini, Grok, DeepSeek, Llama, and more.
+            One API key for every major model - GPT, Claude, Gemini, Grok, DeepSeek, Llama, and more.
           </p>
           <div className="flex gap-2">
             <a

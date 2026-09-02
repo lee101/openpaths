@@ -12,7 +12,7 @@ const faqJsonLd = {
       name: 'What are spend controls on OpenPaths?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Spend controls are billing guards: a spend alert threshold plus a cap on top-ups, configurable per person or across an entire organization by owners and admins. They stop surprise invoices before they happen.',
+        text: 'Billing guards: a spend alert threshold plus a cap on top-ups, set per person or org-wide by owners and admins.',
       },
     },
     {
@@ -76,7 +76,7 @@ const audiences = [
   },
   {
     name: 'Enterprises',
-    body: 'Hard caps on top-ups plus org-wide deny rules give finance and security a lever that does not depend on policy documents. Usage search over recorded responses supports audit trails.',
+    body: 'Hard top-up caps plus org-wide deny rules enforce policy in the request path, not in a document. Usage search over recorded responses covers audit trails.',
   },
 ];
 

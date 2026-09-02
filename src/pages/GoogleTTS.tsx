@@ -15,7 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import { CodeBlock } from '../components/CodeBlock';
-import { Seo } from '../components/Seo';
+import { ToolSeo } from '../components/ToolSeo';
 
 const MODEL_ID = 'gemini-3.1-flash-tts-preview';
 const API_BASE = 'https://openpaths.io/v1';
@@ -286,12 +286,7 @@ export function GoogleTTS() {
 
   return (
     <>
-      <Seo
-        title="Gemini Flash TTS Studio — Multi-speaker AI Voice | OpenPaths"
-        description="Generate steerable single- and multi-speaker speech with Gemini 3.1 Flash TTS. Direct voice, style, pace, accent, scene, and emotion, then play, download, or copy the API code."
-        path="/tools/google-tts"
-        jsonLd={{ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'OpenPaths Gemini Flash TTS Studio', applicationCategory: 'MultimediaApplication', operatingSystem: 'Web' }}
-      />
+      <ToolSeo slug="google-tts" />
 
       <div className="min-h-screen bg-[radial-gradient(circle_at_75%_0%,rgba(255,255,255,0.07),transparent_28%)] px-4 py-8 sm:px-6 lg:py-10">
         <div className="mx-auto max-w-[1500px]">

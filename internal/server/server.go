@@ -600,7 +600,16 @@ func New(deps *Dependencies) *Server {
 			{"/playground", "0.7", "monthly"},
 			{"/fusion", "0.6", "monthly"},
 			{"/tools", "0.8", "weekly"},
+			{"/tools/google-tts", "0.7", "monthly"},
+			{"/tools/lyria", "0.7", "monthly"},
 			{"/text-to-image", "0.7", "monthly"},
+			{"/image-edit", "0.7", "monthly"},
+			{"/text-to-video", "0.7", "monthly"},
+			{"/image-to-video", "0.7", "monthly"},
+			{"/video-extension", "0.7", "monthly"},
+			{"/character-animator", "0.7", "monthly"},
+			{"/music-generator", "0.7", "monthly"},
+			{"/remove-video-background", "0.7", "monthly"},
 			{"/image-to-3d", "0.7", "monthly"},
 			{"/text-to-3d", "0.7", "monthly"},
 			{"/rig-3d", "0.7", "monthly"},
@@ -639,6 +648,10 @@ func New(deps *Dependencies) *Server {
 			"provider-netwrck",
 			"provider-text-generator",
 			"provider-fal",
+			"provider-manifoldgen",
+			"provider-cutedsl",
+			"provider-papers",
+			"provider-openpaths",
 		}
 		var b strings.Builder
 		b.WriteString(`<?xml version="1.0" encoding="UTF-8"?>` + "\n")
@@ -756,7 +769,7 @@ func spaHandler(dir string, api fasthttp.RequestHandler, apiKeyQ *queries.APIKey
 			strings.HasPrefix(path, "/og/") ||
 			strings.HasPrefix(path, "/admin/") ||
 			strings.HasPrefix(path, "/uploads/") ||
-			strings.HasPrefix(path, "/openrouter/") ||
+			path == "/openrouter/models" ||
 			strings.HasPrefix(path, "/monitoring/") ||
 			path == "/health" ||
 			path == "/unsubscribe" ||
@@ -952,9 +965,99 @@ func injectPageMeta(doc []byte, meta pageMeta) []byte {
 	return []byte(out)
 }
 
+// toolPageMeta mirrors src/data/tools.ts so crawler-visible meta matches the
+// prerendered HTML and the client-rendered tags, including the per-tool OG card.
+var toolPageMeta = map[string]pageMeta{
+	"/tools": {
+		Title:       "AI Tools - Image, Video, Music, Speech, 3D | OpenPaths",
+		Description: "Hands-on studios for every OpenPaths generation endpoint: text to image, video, music, speech, 3D, model fusion, and the multi-model playground. Each tool is a thin wrapper over the API.",
+		Image:       "https://openpaths.io/og/tools/index.webp",
+	},
+	"/tools/google-tts": {
+		Title:       "Gemini Flash TTS Studio - Multi-speaker AI Voice | OpenPaths",
+		Description: "Generate steerable single- and multi-speaker speech with Gemini 3.1 Flash TTS. Direct voice, style, pace, accent, scene, and emotion, then play, download, or copy the API code.",
+	},
+	"/tools/lyria": {
+		Title:       "Lyria 3 Music Studio - AI Song & Instrumental Generator | OpenPaths",
+		Description: "Generate complete songs, instrumentals, loops, and 30-second clips with Google Lyria 3 Pro and Clip. Direct genre, mood, structure, instruments, vocals, lyrics, and export as Opus.",
+	},
+	"/text-to-image": {
+		Title:       "Text to Image API | OpenPaths",
+		Description: "Generate images from text with the OpenPaths auto image endpoint - routes to GPT Image 2, RA1, Flux, and more with near-zero markup.",
+	},
+	"/image-edit": {
+		Title:       "AI Image Style Transfer | OpenPaths",
+		Description: "Upload an image and describe a new visual direction. OpenPaths routes the edit through GPT Image 2 and image-editing fallbacks.",
+	},
+	"/text-to-video": {
+		Title:       "Text to Video API - Wan 3.0 | OpenPaths",
+		Description: "Generate up-to-30s cinematic video with native audio from one prompt through Wan 3.0 on OpenPaths. Per-second pricing by resolution.",
+	},
+	"/image-to-video": {
+		Title:       "Image to Video API - Wan 3.0 | OpenPaths",
+		Description: "Animate a still into up-to-30s video with native audio through Wan 3.0 on OpenPaths. Optional end frame, per-second pricing by resolution.",
+	},
+	"/video-extension": {
+		Title:       "Video Edit and Extension API | OpenPaths",
+		Description: "Edit or extend an existing MP4 with Grok Imagine Video through OpenPaths. Describe the next beat and continue any clip.",
+	},
+	"/character-animator": {
+		Title:       "Character Animator - Wan-Animate API | OpenPaths",
+		Description: "Animate a reference character with a driving performance video through Wan-Animate on ManifoldGen, OpenPaths' own GPU studio. Standard, fast, and x-fast latency lanes with per-second pricing.",
+	},
+	"/music-generator": {
+		Title:       "AI Music Generator - MiniMax-Music3 API | OpenPaths",
+		Description: "Generate full songs with vocals from a prompt and optional lyrics through MiniMax-Music3 on ManifoldGen, OpenPaths' own GPU studio. Pin any length from 30 to 300 seconds.",
+	},
+	"/remove-video-background": {
+		Title:       "Remove Video Background - Transparent WebM API | OpenPaths",
+		Description: "Key any clip to alpha-transparent WebM through ManifoldGen, OpenPaths' own GPU studio. Optionally composite a solid backdrop color and keep the original audio.",
+	},
+	"/image-to-3d": {
+		Title:       "Image to 3D API | OpenPaths",
+		Description: "Generate textured GLB models from a single image through OpenPaths with Pixal3D, Meshy v6, and Tripo p1.",
+	},
+	"/text-to-3d": {
+		Title:       "Text to 3D API | OpenPaths",
+		Description: "Generate textured GLB models straight from a text prompt. OpenPaths auto-generates an image then converts it to 3D with Pixal3D.",
+	},
+	"/rig-3d": {
+		Title:       "3D Auto-Rigging API | OpenPaths",
+		Description: "Upload a humanoid GLB and get back a rigged character (GLB + FBX) with optional walk/run animation, via OpenPaths and Fal Meshy.",
+	},
+	"/retexture-3d": {
+		Title:       "3D Retexture API | OpenPaths",
+		Description: "Re-texture an existing 3D mesh from a reference image - upload a GLB and a style image, get back a textured GLB, via OpenPaths and Fal Trellis-2.",
+	},
+	"/playground": {
+		Title:       "Playground - Test Any AI Model Side by Side | OpenPaths",
+		Description: "Multi-pane studio for chat, image, video, and audio models. Compare any two models on the same prompt with live cost and latency, then copy the API snippet.",
+	},
+	"/fusion": {
+		Title:       "Model Fusion Beta | OpenPaths",
+		Description: "Run multiple models side by side with OpenRouter fusion, analyze the panel, and fuse the strongest result into one answer.",
+	},
+}
+
+// toolOgSlug maps a tool route to its OG card slug (the route basename, except
+// for the /tools/* studios which are already slugged).
+func toolOgSlug(path string) string {
+	if rest := strings.TrimPrefix(path, "/tools/"); rest != path {
+		return rest
+	}
+	return strings.TrimPrefix(path, "/")
+}
+
 func pageMetaForPath(path string) pageMeta {
 	if path == "" {
 		path = "/"
+	}
+	if meta, ok := toolPageMeta[path]; ok {
+		meta.URL = "https://openpaths.io" + path
+		if meta.Image == "" {
+			meta.Image = "https://openpaths.io/og/tools/" + toolOgSlug(path) + ".webp"
+		}
+		return meta
 	}
 	switch path {
 	case "/pricing":
@@ -987,40 +1090,10 @@ func pageMetaForPath(path string) pageMeta {
 			Description: "Search a huge library of AI-generated art by prompt, style, scene, mood, and aspect ratio (square, portrait, wide). Browse subtags and try any prompt in the OpenPaths playground.",
 			URL:         "https://openpaths.io/art",
 		}
-	case "/tools":
-		return pageMeta{
-			Title:       "Tools | OpenPaths",
-			Description: "First-party OpenPaths tools: text-to-image, image-to-3D, text-to-3D, and the multi-model playground. Each tool has its own API.",
-			URL:         "https://openpaths.io/tools",
-		}
-	case "/text-to-image":
-		return pageMeta{
-			Title:       "Text to Image API | OpenPaths",
-			Description: "Generate images from text with the OpenPaths auto image endpoint — routes to GPT Image 2, RA1, Flux, and more with near-zero markup.",
-			URL:         "https://openpaths.io/text-to-image",
-		}
-	case "/text-to-3d":
-		return pageMeta{
-			Title:       "Text to 3D API | OpenPaths",
-			Description: "Generate textured GLB models straight from a text prompt. OpenPaths auto-generates an image then converts it to 3D with Pixal3D.",
-			URL:         "https://openpaths.io/text-to-3d",
-		}
-	case "/rig-3d":
-		return pageMeta{
-			Title:       "3D Auto-Rigging API | OpenPaths",
-			Description: "Upload a humanoid GLB and get back a rigged character (GLB + FBX) with optional walk/run animation, via OpenPaths and Fal Meshy.",
-			URL:         "https://openpaths.io/rig-3d",
-		}
-	case "/retexture-3d":
-		return pageMeta{
-			Title:       "3D Retexture API | OpenPaths",
-			Description: "Re-texture an existing 3D mesh from a reference image — upload a GLB and a style image, get back a textured GLB, via OpenPaths and Fal Trellis-2.",
-			URL:         "https://openpaths.io/retexture-3d",
-		}
 	case "/alternatives":
 		return pageMeta{
-			Title:       "OpenPaths Alternatives | Compare AI Model Gateways",
-			Description: "Compare OpenPaths with OpenRouter, OpenAI API, Anthropic API, Together AI, and other AI model routing alternatives.",
+			Title:       "OpenRouter Alternative | 0% AI Gateway Markup | OpenPaths",
+			Description: "Compare OpenPaths with OpenRouter, OpenAI, Anthropic, LiteLLM, and more. One API, pooled credits, smart routing, and 0% platform markup.",
 			URL:         "https://openpaths.io/alternatives",
 		}
 	default:

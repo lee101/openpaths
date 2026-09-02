@@ -58,7 +58,6 @@ function renderMarkdown(content: string): React.ReactNode[] {
             <CodeBlock
               code={codeLines.join('\n')}
               language={codeLang}
-              label={codeLang}
               containerClassName="my-6 border border-white/20 rounded-lg overflow-hidden bg-black/40"
               headerClassName="bg-white/[0.06]"
               preClassName="text-sm"
@@ -237,13 +236,41 @@ export function BlogPost() {
   }
 
   const rendered = useMemo(() => renderMarkdown(post.content), [post.content]);
+  const postPath = isAlternative ? location.pathname : `/blog/${post.slug}`;
+  const articleJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: post.title,
+    description: post.excerpt,
+    datePublished: post.date,
+    author: {
+      '@type': 'Organization',
+      name: post.author,
+      url: 'https://openpaths.io/',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'OpenPaths',
+      url: 'https://openpaths.io/',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://openpaths.io/openpaths-road-logo.svg',
+      },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': `https://openpaths.io${postPath}`,
+    },
+  };
 
   return (
     <>
       <Seo
         title={`${post.title} | OpenPaths Blog`}
         description={post.excerpt}
-        path={isAlternative ? location.pathname : `/blog/${post.slug}`}
+        path={postPath}
+        type="article"
+        jsonLd={articleJsonLd}
       />
 
       <motion.div

@@ -256,7 +256,7 @@ export function DeepSeekPricingMap() {
           role="img"
           aria-label="World map of DeepSeek peak and off-peak pricing by timezone"
         >
-          {/* price bands (green/red by local clock) — solid region base */}
+          {/* price bands (green/red by local clock) - solid region base */}
           <g shapeRendering="crispEdges">
             {model.bands.map((b, i) => (
               <rect
@@ -270,7 +270,7 @@ export function DeepSeekPricingMap() {
             ))}
           </g>
 
-          {/* land — translucent silhouette so the price region reads through */}
+          {/* land - translucent silhouette so the price region reads through */}
           <path d={LAND_PATH} fill="#0a1728" fillOpacity={0.55} stroke="#aebfd8" strokeWidth={0.6} />
 
           {/* night side */}
@@ -329,7 +329,7 @@ export function DeepSeekPricingMap() {
             {timeline.map((seg, i) => (
               <div
                 key={i}
-                title={`${seg.label}:00 — ${seg.peak ? 'peak (full price)' : 'off-peak (half price)'}`}
+                title={`${seg.label}:00 - ${seg.peak ? 'peak (full price)' : 'off-peak (half price)'}`}
                 className={'flex-1 ' + (seg.peak ? 'bg-red-500/40' : 'bg-emerald-500/35')}
               />
             ))}

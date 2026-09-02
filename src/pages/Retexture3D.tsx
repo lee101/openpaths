@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Copy, Download, ExternalLink, Loader2, Palette, Upload, Wand2 } from 'lucide-react';
-import { Seo } from '../components/Seo';
+import { ToolSeo } from '../components/ToolSeo';
 import { CodeBlock } from '../components/CodeBlock';
 import { ModelViewer } from '../components/ModelViewer';
 import { Model3DUpload } from '../components/Model3DUpload';
@@ -170,11 +170,7 @@ console.log(data.model_glb.url);`,
 
   return (
     <>
-      <Seo
-        title="3D Retexture API | OpenPaths"
-        description="Re-texture an existing 3D mesh from a reference image — upload a GLB and a style image, get back a textured GLB, via OpenPaths and Fal Trellis-2."
-        path="/retexture-3d"
-      />
+      <ToolSeo slug="retexture-3d" />
 
       <div className="px-6 py-10">
         <div className="mx-auto max-w-7xl">
@@ -185,7 +181,7 @@ console.log(data.model_glb.url);`,
               </div>
               <h1 className="max-w-3xl text-4xl font-bold tracking-tight md:text-6xl">3D Retexture</h1>
               <p className="mt-4 max-w-2xl text-base leading-relaxed text-white/55">
-                Re-skin an existing mesh: upload a 3D model and a reference image, and Trellis-2 paints a fresh texture onto it — preview the result in the browser.
+                Re-skin an existing mesh: upload a 3D model and a reference image, and Trellis-2 paints a fresh texture onto it - preview the result in the browser.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs font-mono text-white/45 sm:grid-cols-3">
@@ -237,8 +233,8 @@ console.log(data.model_glb.url);`,
               <label className="mb-1 block">
                 <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/55">Resolution</span>
                 <select value={resolution} onChange={e => setResolution(Number(e.target.value))} className="w-full rounded border border-white/20 bg-black px-3 py-2 text-sm font-mono text-white focus:border-white/50 focus:outline-none">
-                  <option value={512}>512p — $0.20</option>
-                  <option value={1024}>1024p — $0.24</option>
+                  <option value={512}>512p - $0.20</option>
+                  <option value={1024}>1024p - $0.24</option>
                 </select>
               </label>
 
@@ -254,7 +250,7 @@ console.log(data.model_glb.url);`,
               <div className="flex items-center justify-between border-b border-white/20 px-4 py-3">
                 <div>
                   <h2 className="font-mono text-sm font-bold uppercase tracking-wider text-white/70">Retextured result</h2>
-                  <p className="mt-1 text-xs font-mono text-white/50">{outputUrl ? 'Retextured mesh' : 'Example — input soldier mesh + armor reference'}</p>
+                  <p className="mt-1 text-xs font-mono text-white/50">{outputUrl ? 'Retextured mesh' : 'Example - input soldier mesh + armor reference'}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   {result?.model_glb?.url && (
@@ -273,7 +269,7 @@ console.log(data.model_glb.url);`,
               <div className="grid gap-px bg-white/10 text-xs font-mono text-white/45 sm:grid-cols-3">
                 <div className="bg-black px-4 py-3">Model: {result?.model || 'trellis-2-retexture'}</div>
                 <div className="bg-black px-4 py-3">Resolution: {resolution}</div>
-                <div className="bg-black px-4 py-3">Seed: {result?.seed ?? '—'}</div>
+                <div className="bg-black px-4 py-3">Seed: {result?.seed ?? '-'}</div>
               </div>
             </section>
           </div>

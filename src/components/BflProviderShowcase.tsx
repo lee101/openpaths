@@ -87,7 +87,7 @@ export function BflProviderShowcase({ models }: { models: Model[] }) {
                 <tr className="border-b border-white/8 align-top">
                   <td className="py-4 pr-4 font-semibold">FLUX 3 Video Draft</td>
                   <td className="px-3 py-4"><strong>$0.06</strong> <span className="text-white/55">HD</span></td>
-                  <td className="px-3 py-4 text-white/45">—</td>
+                  <td className="px-3 py-4 text-white/45">-</td>
                   <td className="py-4 pl-3 text-white/55">Rapid exploration</td>
                 </tr>
                 <tr className="align-top">

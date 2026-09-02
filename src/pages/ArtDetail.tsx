@@ -1,9 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, ArrowRight, Check, Copy, Loader2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Copy, Film, ImagePlus, Loader2 } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { Seo } from '../components/Seo';
+import { ArtGenerationStudio, type ArtGenerationMode } from '../components/ArtGenerationStudio';
 import { type ZImageArtItem } from '../data/zimageArt';
-import { artPromptPlaygroundHref, fetchArtItem } from '../lib/zimageArt';
+import { artPromptPlaygroundHref, deriveRelatedArtTags, fetchArtItem, searchZImageArt } from '../lib/zimageArt';
+
+const RELATED_PAGE_SIZE = 12;
+const RELATED_SEARCH_LIMIT = 48;
 
 export function ArtDetail() {
   const { slug = '' } = useParams();
@@ -12,11 +16,23 @@ export function ArtDetail() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [generationMode, setGenerationMode] = useState<ArtGenerationMode>('image');
+  const [relatedSearchTags, setRelatedSearchTags] = useState<string[]>([]);
+  const [moreCandidates, setMoreCandidates] = useState<ZImageArtItem[]>([]);
+  const [moreFetched, setMoreFetched] = useState(false);
+  const [moreLoading, setMoreLoading] = useState(false);
+  const [moreExhausted, setMoreExhausted] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setNotFound(false);
+    setItem(null);
+    setRelated([]);
+    setRelatedSearchTags([]);
+    setMoreCandidates([]);
+    setMoreFetched(false);
+    setMoreExhausted(false);
     fetchArtItem(slug).then(data => {
       if (cancelled) return;
       if (!data) {
@@ -24,6 +40,7 @@ export function ArtDetail() {
       } else {
         setItem(data.item);
         setRelated(data.related);
+        setRelatedSearchTags(deriveRelatedArtTags(data.item, data.related));
       }
       setLoading(false);
     });
@@ -41,6 +58,42 @@ export function ArtDetail() {
     } catch {
       /* clipboard unavailable */
     }
+  };
+
+  const openGenerator = (mode: ArtGenerationMode) => {
+    setGenerationMode(mode);
+    window.requestAnimationFrame(() => {
+      document.getElementById('create-from-art')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
+
+  const loadMoreRelated = async () => {
+    if (!item || moreLoading || moreExhausted) return;
+    setMoreLoading(true);
+
+    let candidates = moreCandidates;
+    if (!moreFetched) {
+      const excluded = new Set([item.id, item.slug, ...related.flatMap(candidate => [candidate.id, candidate.slug])]);
+      const batches = await Promise.all(relatedSearchTags.map(tag => searchZImageArt(tag, RELATED_SEARCH_LIMIT)));
+      const seen = new Set(excluded);
+      candidates = batches.flatMap(batch => batch || []).filter(candidate => {
+        const keys = [candidate.id, candidate.slug].filter(Boolean);
+        if (keys.length === 0 || keys.some(key => seen.has(key))) return false;
+        keys.forEach(key => seen.add(key));
+        return true;
+      });
+      setMoreFetched(true);
+    }
+
+    const next = candidates.slice(0, RELATED_PAGE_SIZE);
+    setMoreCandidates(candidates.slice(next.length));
+    if (next.length === 0) {
+      setMoreExhausted(true);
+    } else {
+      setRelated(current => [...current, ...next]);
+      if (candidates.length <= next.length) setMoreExhausted(true);
+    }
+    setMoreLoading(false);
   };
 
   if (loading) {
@@ -132,9 +185,17 @@ export function ArtDetail() {
                 <p className="text-sm leading-relaxed text-white/72">{item.prompt}</p>
               </div>
 
-              <Link to={artPromptPlaygroundHref(item)} className="inline-flex items-center justify-center gap-2 rounded bg-white px-4 py-3 font-mono text-sm font-bold text-black hover:bg-white/90">
-                Try this prompt in the playground <ArrowRight className="h-4 w-4" />
-              </Link>
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
+                <button type="button" onClick={() => openGenerator('image')} className="inline-flex items-center justify-center gap-2 rounded bg-white px-4 py-3 font-mono text-sm font-bold text-black hover:bg-white/90">
+                  <ImagePlus className="h-4 w-4" /> Generate something similar
+                </button>
+                <button type="button" onClick={() => openGenerator('video')} className="inline-flex items-center justify-center gap-2 rounded border border-white/20 px-4 py-3 font-mono text-sm font-bold text-white/75 hover:border-white/55 hover:text-white">
+                  <Film className="h-4 w-4" /> Animate this image
+                </button>
+                <Link to={artPromptPlaygroundHref(item)} className="inline-flex items-center justify-center gap-2 px-4 py-2 font-mono text-xs text-white/45 hover:text-white sm:col-span-2 lg:col-span-1">
+                  Open full playground <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
 
               {item.tags && item.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2">
@@ -148,6 +209,8 @@ export function ArtDetail() {
             </div>
           </div>
 
+          <ArtGenerationStudio item={item} mode={generationMode} onModeChange={setGenerationMode} />
+
           {related.length > 0 && (
             <section className="mt-12">
               <h2 className="mb-4 text-lg font-semibold tracking-tight">Related art</h2>
@@ -159,6 +222,22 @@ export function ArtDetail() {
                   </Link>
                 ))}
               </div>
+              {relatedSearchTags.length > 0 && !moreExhausted && (
+                <div className="mt-8 flex flex-col items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={loadMoreRelated}
+                    disabled={moreLoading}
+                    className="inline-flex items-center gap-2 rounded border border-white/15 px-6 py-3 font-mono text-sm text-white/75 hover:border-white/55 hover:text-white disabled:opacity-50"
+                  >
+                    {moreLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                    Load more related art
+                  </button>
+                  <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-white/35">
+                    From similar tags: {relatedSearchTags.join(' · ')}
+                  </p>
+                </div>
+              )}
             </section>
           )}
         </div>

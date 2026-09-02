@@ -67,7 +67,7 @@ export function PromptDetail() {
   return (
     <>
       <Seo
-        title={`${prompt.title} — ${prompt.modelName} prompt | OpenPaths`}
+        title={`${prompt.title} - ${prompt.modelName} prompt | OpenPaths`}
         description={prompt.summary}
         path={prompt.url}
       />

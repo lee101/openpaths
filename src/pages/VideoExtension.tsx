@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Copy, Download, ExternalLink, Loader2, Upload, Video, Wand2 } from 'lucide-react';
-import { Seo } from '../components/Seo';
+import { ToolSeo } from '../components/ToolSeo';
 import { CodeBlock } from '../components/CodeBlock';
 import { normalizeUploadedAssetUrl } from '../lib/uploadUrls';
 
@@ -158,11 +158,7 @@ console.log(data.result?.video_url ?? data.video_url ?? data.id);`,
 
   return (
     <>
-      <Seo
-        title="Video Edit and Extension API | OpenPaths"
-        description="Edit or extend an existing MP4 with Grok Imagine Video through OpenPaths."
-        path="/video-extension"
-      />
+      <ToolSeo slug="video-extension" />
       <div className="px-6 py-10">
         <div className="mx-auto max-w-7xl">
           <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -251,7 +247,7 @@ console.log(data.result?.video_url ?? data.video_url ?? data.id);`,
                 ) : (
                   <div className="w-full max-w-lg">
                     <video src={EXAMPLE_SOURCE_URL} controls muted className="w-full rounded border border-white/20 bg-black" />
-                    <p className="mt-3 text-center text-xs font-mono text-white/50">Example source clip preloaded — hit Extend to continue it, or paste your own MP4 URL.</p>
+                    <p className="mt-3 text-center text-xs font-mono text-white/50">Example source clip preloaded - hit Extend to continue it, or paste your own MP4 URL.</p>
                   </div>
                 )}
               </div>

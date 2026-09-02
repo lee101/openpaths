@@ -4,7 +4,7 @@ import { Menu, User, Wallet, X } from 'lucide-react';
 import { AdSenseSlot } from './AdSenseSlot';
 import { AuthModal } from './AuthModal';
 import { TopUpModal } from './TopUpModal';
-import { AUTH_EVENT } from '../lib/api';
+import { AUTH_EVENT, CREDITS_REQUIRED_EVENT } from '../lib/api';
 
 function useIsLoggedIn() {
   const [loggedIn, setLoggedIn] = useState(() => {
@@ -63,7 +63,8 @@ const networkLinks = [
   { label: 'Multiplication Master', href: 'https://multiplicationmaster.com' },
 ];
 
-const primaryNavLinks = [
+// Every destination, rendered in the dropdown menu.
+const allNavLinks = [
   { label: 'Models', to: '/models', match: (path: string) => path === '/models' },
   { label: 'Evals', to: '/evals', match: (path: string) => path === '/evals' || path === '/image-evals' },
   { label: 'Pricing', to: '/pricing', match: (path: string) => path === '/pricing' },
@@ -88,6 +89,14 @@ const primaryNavLinks = [
   { label: 'Alternatives', to: '/alternatives', match: (path: string) => path.startsWith('/alternatives') },
   { label: 'Use cases', to: '/use-cases', match: (path: string) => path.startsWith('/use-cases') },
 ];
+
+// The bar only has room for a handful. The full set stayed inline until it
+// outgrew the width and started colliding with the logo, so the top bar now
+// carries the core destinations and the menu button holds the rest.
+const BAR_LABELS = ['Models', 'Pricing', 'Docs', 'Playground', 'Tools', 'Providers', 'Evals', 'Blog'];
+const primaryNavLinks = BAR_LABELS
+  .map(label => allNavLinks.find(link => link.label === label))
+  .filter((link): link is (typeof allNavLinks)[number] => Boolean(link));
 
 function accountInitials() {
   if (typeof window === 'undefined') return '';
@@ -114,6 +123,12 @@ export function Layout() {
     setMobileMenuOpen(false);
   }, [location.pathname]);
 
+  useEffect(() => {
+    const openTopUp = () => setTopUpOpen(true);
+    window.addEventListener(CREDITS_REQUIRED_EVENT, openTopUp);
+    return () => window.removeEventListener(CREDITS_REQUIRED_EVENT, openTopUp);
+  }, []);
+
   return (
     <div className={`bg-black text-white font-sans selection:bg-white selection:text-black flex flex-col ${isPlayground ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
       <nav className="relative border-b border-white/20 px-4 py-3 sm:px-6 sm:py-4 flex items-center justify-between bg-black/90 backdrop-blur-md z-50 shrink-0">
@@ -121,7 +136,7 @@ export function Layout() {
           <img src="/openpaths-road-logo.svg" alt="OpenPaths" className="h-6 w-6 brightness-0 invert" />
           <span className="font-mono font-bold text-xl tracking-tighter">OpenPaths</span>
         </Link>
-        <div className="hidden min-[1800px]:flex items-center gap-6 text-sm font-mono text-white/60">
+        <div className="hidden xl:flex items-center gap-6 text-sm font-mono text-white/60">
           {primaryNavLinks.map(link => (
             <Link key={link.to} to={link.to} className={`transition-colors ${link.match(location.pathname) ? 'text-white' : 'hover:text-white'}`}>
               {link.label}
@@ -162,7 +177,7 @@ export function Layout() {
           )}
           <button
             type="button"
-            className="inline-flex h-9 w-9 items-center justify-center rounded border border-white/20 bg-white/[0.06] text-white/70 transition-colors hover:border-white/45 hover:text-white min-[1800px]:hidden"
+            className="inline-flex h-9 w-9 items-center justify-center rounded border border-white/20 bg-white/[0.06] text-white/70 transition-colors hover:border-white/45 hover:text-white"
             aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={mobileMenuOpen}
             onClick={() => setMobileMenuOpen(open => !open)}
@@ -171,9 +186,9 @@ export function Layout() {
           </button>
         </div>
         {mobileMenuOpen && (
-          <div className="absolute left-0 right-0 top-full border-b border-white/20 bg-black/95 px-4 py-4 shadow-2xl backdrop-blur-md min-[1800px]:hidden">
-            <div className="grid grid-cols-2 gap-2 font-mono text-sm text-white/60">
-              {primaryNavLinks.map(link => (
+          <div className="absolute left-0 right-0 top-full border-b border-white/20 bg-black/95 px-4 py-4 shadow-2xl backdrop-blur-md">
+            <div className="grid grid-cols-2 gap-2 font-mono text-sm text-white/60 sm:grid-cols-3 lg:grid-cols-4">
+              {allNavLinks.map(link => (
                 <Link
                   key={link.to}
                   to={link.to}

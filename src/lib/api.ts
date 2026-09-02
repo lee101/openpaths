@@ -1,5 +1,6 @@
 export const API_KEY_STORAGE_KEY = 'op_api_key';
 export const AUTH_EVENT = 'op-auth-changed';
+export const CREDITS_REQUIRED_EVENT = 'op-credits-required';
 
 export function getApiKey(): string {
   if (typeof window === 'undefined') return '';
@@ -23,6 +24,11 @@ export function onAuthChange(fn: () => void): () => void {
   if (typeof window === 'undefined') return () => {};
   window.addEventListener(AUTH_EVENT, fn);
   return () => window.removeEventListener(AUTH_EVENT, fn);
+}
+
+export function requestCreditTopUp() {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent(CREDITS_REQUIRED_EVENT));
 }
 
 export async function api(path: string, opts: RequestInit = {}): Promise<Response> {

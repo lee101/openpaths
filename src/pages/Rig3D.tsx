@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Copy, Download, ExternalLink, Loader2, PersonStanding, Wand2 } from 'lucide-react';
-import { Seo } from '../components/Seo';
+import { ToolSeo } from '../components/ToolSeo';
 import { CodeBlock } from '../components/CodeBlock';
 import { ModelViewer } from '../components/ModelViewer';
 import { Model3DUpload } from '../components/Model3DUpload';
@@ -166,11 +166,7 @@ console.log(data.rigged_character_glb.url);`,
 
   return (
     <>
-      <Seo
-        title="3D Auto-Rigging API | OpenPaths"
-        description="Upload a humanoid GLB and get back a rigged character (GLB + FBX) with optional walk/run animation, via OpenPaths and Fal Meshy."
-        path="/rig-3d"
-      />
+      <ToolSeo slug="rig-3d" />
 
       <div className="px-6 py-10">
         <div className="mx-auto max-w-7xl">
@@ -181,7 +177,7 @@ console.log(data.rigged_character_glb.url);`,
               </div>
               <h1 className="max-w-3xl text-4xl font-bold tracking-tight md:text-6xl">3D Auto-Rigging</h1>
               <p className="mt-4 max-w-2xl text-base leading-relaxed text-white/55">
-                Upload a humanoid mesh — get back a fully rigged character (GLB + FBX), ready to animate. Optionally apply a walk/run animation preset.
+                Upload a humanoid mesh - get back a fully rigged character (GLB + FBX), ready to animate. Optionally apply a walk/run animation preset.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs font-mono text-white/45 sm:grid-cols-3">
@@ -275,7 +271,7 @@ console.log(data.rigged_character_glb.url);`,
               <div className="flex items-center justify-between border-b border-white/20 px-4 py-3">
                 <div>
                   <h2 className="font-mono text-sm font-bold uppercase tracking-wider text-white/70">Rigged result</h2>
-                  <p className="mt-1 text-xs font-mono text-white/50">{riggedUrl ? 'Rigged character' : 'Example — pre-rigged soldier mesh'}</p>
+                  <p className="mt-1 text-xs font-mono text-white/50">{riggedUrl ? 'Rigged character' : 'Example - pre-rigged soldier mesh'}</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   {riggedGlb && (
@@ -299,7 +295,7 @@ console.log(data.rigged_character_glb.url);`,
               <div className="grid gap-px bg-white/10 text-xs font-mono text-white/45 sm:grid-cols-3">
                 <div className="bg-black px-4 py-3">Model: {result?.model || 'meshy-rigging'}</div>
                 <div className="bg-black px-4 py-3">Animation: {result?.billing?.animation ? 'yes' : 'no'}</div>
-                <div className="bg-black px-4 py-3 truncate">Task: {result?.rig_task_id || '—'}</div>
+                <div className="bg-black px-4 py-3 truncate">Task: {result?.rig_task_id || '-'}</div>
               </div>
               {result?.basic_animations && (
                 <div className="flex flex-wrap gap-2 border-t border-white/20 px-4 py-3 text-xs font-mono">
@@ -346,7 +342,7 @@ console.log(data.rigged_character_glb.url);`,
             <section className="min-w-0 overflow-hidden rounded-lg border border-white/20 bg-white/[0.05] p-5">
               <h2 className="mb-3 font-mono text-sm font-bold uppercase tracking-wider text-white/70">How it works</h2>
               <ol className="space-y-3 text-sm leading-relaxed text-white/55">
-                <li><span className="font-mono text-white/70">1.</span> Drop a humanoid <code className="text-white/70">.glb</code> — it previews instantly and uploads to a public URL.</li>
+                <li><span className="font-mono text-white/70">1.</span> Drop a humanoid <code className="text-white/70">.glb</code> - it previews instantly and uploads to a public URL.</li>
                 <li><span className="font-mono text-white/70">2.</span> POST to <code className="text-white/70">/v1/3d/rigging</code>. Long jobs return a job id you can poll at <code className="text-white/70">/v1/3d/rigging/&#123;id&#125;</code>.</li>
                 <li><span className="font-mono text-white/70">3.</span> Get back <code className="text-white/70">rigged_character_glb</code> + <code className="text-white/70">rigged_character_fbx</code>, plus walk/run animations, and an optional animation preset.</li>
               </ol>

@@ -106,6 +106,35 @@ export async function fetchArtItem(slug: string): Promise<{ item: ZImageArtItem;
   }
 }
 
+// Rank tags that appear across the existing neighbors so detail pages can
+// continue browsing through the semantic search index without another API shape.
+export function deriveRelatedArtTags(item: ZImageArtItem, related: ZImageArtItem[], limit = 4): string[] {
+  if (limit <= 0) return [];
+
+  const ownTags = new Set((item.tags || []).map(tag => tag.trim().toLowerCase()).filter(Boolean));
+  const counts = new Map<string, { label: string; count: number }>();
+  for (const candidate of related) {
+    const seenOnCandidate = new Set<string>();
+    for (const rawTag of candidate.tags || []) {
+      const label = rawTag.trim();
+      const key = label.toLowerCase();
+      if (!key || seenOnCandidate.has(key)) continue;
+      seenOnCandidate.add(key);
+      const current = counts.get(key);
+      if (current) {
+        current.count += 1;
+      } else {
+        counts.set(key, { label, count: 1 });
+      }
+    }
+  }
+
+  return [...counts.entries()]
+    .sort(([aKey, a], [bKey, b]) => Number(ownTags.has(aKey)) - Number(ownTags.has(bKey)) || b.count - a.count || aKey.localeCompare(bKey))
+    .slice(0, limit)
+    .map(([, value]) => value.label);
+}
+
 export async function fetchArtTags(limit = 60): Promise<ArtTagFacet[]> {
   try {
     const resp = await fetch(`/v1/art/tags?limit=${limit}`, { headers: { Accept: 'application/json' } });

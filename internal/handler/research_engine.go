@@ -299,7 +299,7 @@ func (e *researchEngine) synthesize(ctx context.Context, userID, query string, c
 	}
 	sb.WriteString("\nCITATIONS:\n")
 	for _, c := range citations {
-		fmt.Fprintf(&sb, "[%d] %s — %s\n", c.N, firstNonEmpty(c.Title, c.URL), c.URL)
+		fmt.Fprintf(&sb, "[%d] %s - %s\n", c.N, firstNonEmpty(c.Title, c.URL), c.URL)
 	}
 	out, err := e.chat(ctx, userID, e.synthModel, []model.ChatMessage{
 		{Role: "system", Content: sys},

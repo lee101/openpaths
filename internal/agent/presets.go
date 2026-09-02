@@ -79,7 +79,7 @@ var Presets = []model.AgentPreset{
 	{
 		Key:         "generalist",
 		Name:        "General Assistant",
-		Description: "A blank multi-tool agent — grant it the tools and data sources you want.",
+		Description: "A blank multi-tool agent - grant it the tools and data sources you want.",
 		Model:       "auto",
 		SystemPrompt: "You are a capable assistant. Use the available tools when they help, and answer " +
 			"concisely otherwise.",

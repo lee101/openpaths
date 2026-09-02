@@ -17,7 +17,9 @@ server {
     root /nvme0n1-disk/code/openpaths/dist;
 
     # API and backend routes proxy to Go server
-    location ~ ^/(v1|auth|account|health|stats|crypto|stripe|admin|uploads|openrouter)(/|$) {
+    # Note: /openrouter/models only. The bare `openrouter` prefix would swallow
+    # the /openrouter/docs provider page, which is an SPA route.
+    location ~ ^/(v1|auth|account|health|stats|crypto|stripe|admin|uploads)(/|$)|^/openrouter/models$ {
         proxy_pass http://openpath_backend;
         proxy_http_version 1.1;
 
@@ -81,8 +83,10 @@ server {
         try_files $uri =404;
     }
 
-    # Everything else serves the SPA
+    # Everything else serves the SPA.
+    # Never use $uri/ here: dist contains asset directories (models/, logos/,
+    # og/, static/, ...) that collide with SPA routes and would 403 on autoindex.
     location / {
-        try_files $uri $uri/ /index.html;
+        try_files $uri $uri/index.html /index.html;
     }
 }

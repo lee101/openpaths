@@ -32,12 +32,30 @@ test.describe('Landing Page', () => {
     await expect(page.getByRole('heading', { name: 'The Routing Engine' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Desert Cog Portal' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Glass Hummingbird' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Rain Tram — Native HD' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Rain Tram - Native HD' })).toBeVisible();
     await expect(page.getByRole('button', { name: /load more/i })).toHaveCount(0);
   });
 
-  test('homepage frontier roster and evals stay current', async ({ page }) => {
-    await expect(page.getByText('Route from measurements, not model lore.')).toBeVisible();
+  test('gallery media links open the exact model workspace', async ({ page }) => {
+    const routingEngine = page.getByRole('link', { name: 'Create with GPT Image 2: The Routing Engine' });
+    await expect(routingEngine).toHaveAttribute('href', /\/models\/gpt-image-2\?prompt=.*#model-workspace/);
+    await routingEngine.click({ position: { x: 20, y: 20 } });
+    await expect(page).toHaveURL(/\/models\/gpt-image-2\?prompt=.*#model-workspace/);
+    await expect(page.getByRole('heading', { name: 'GPT Image 2', exact: true })).toBeVisible();
+    await expect(page.getByTestId('mp-image-panel')).toBeVisible();
+    await expect(page.getByTestId('mp-image-panel')).toBeInViewport();
+    await expect(page.getByTestId('mp-image-prompt')).toHaveValue(/clockwork routing engine/);
+
+    await page.goto('/');
+    const fluxDraft = page.getByRole('link', { name: 'Create with FLUX 3 Video Draft: Routing Forest - Draft' });
+    await expect(fluxDraft).toHaveAttribute('href', /\/models\/flux-3-video-draft\?prompt=.*#model-workspace/);
+  });
+
+  test('homepage routing experiment section stays current', async ({ page }) => {
+    await expect(page.getByText('Start cheap. Escalate when needed.')).toBeVisible();
+    await expect(page.getByText('Routing experiments')).toBeVisible();
+    await expect(page.getByText('External capability')).toHaveCount(0);
+    await expect(page.getByText('refreshed Aug 31, 2026')).toHaveCount(0);
     await expect(page.getByText('GPT-5.6 Sol', { exact: false }).first()).toBeVisible();
     await expect(page.getByText('Gemini 3.7 Flash', { exact: false }).first()).toBeVisible();
     await expect(page.getByText('GLM-5.3', { exact: false }).first()).toBeVisible();
@@ -47,7 +65,7 @@ test.describe('Landing Page', () => {
 
   test('Black Forest Labs gallery videos and posters are available', async ({ page, request }) => {
     await expect(page.getByText('AI Video Gallery')).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Routing Forest — Draft' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Routing Forest - Draft' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Living Routing Terrarium' })).toBeVisible();
 
     const draftVideo = await request.get('/static/video-gallery/bfl/flux-3-routing-forest-draft.webm');
@@ -96,6 +114,15 @@ test.describe('Landing Page', () => {
     await page.goto('/');
     await page.getByRole('link', { name: /Solana Payments/ }).click();
     await expect(page).toHaveURL('/pricing');
+  });
+
+  test('auto variant cards link to their model documentation', async ({ page }) => {
+    const autoCards = page.locator('#auto a[href^="/models/"]');
+    await expect(autoCards).toHaveCount(7);
+    await expect(page.locator('#auto a[href="/models/openpaths%2Fauto-vision"]')).toHaveAttribute(
+      'aria-label',
+      'Auto Vision documentation for openpaths/auto-vision',
+    );
   });
 
   test('CTA section at bottom', async ({ page }) => {

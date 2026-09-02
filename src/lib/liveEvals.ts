@@ -1,5 +1,5 @@
 // Types + helpers for the OpenPaths live evals snapshot served by
-// GET /v1/evals/results. Public endpoint — fetched without auth.
+// GET /v1/evals/results. Public endpoint - fetched without auth.
 
 export type SuiteKey = 'coding' | 'agentic' | 'creative';
 
@@ -50,7 +50,7 @@ export type EvalSnapshot = {
   auto_vs_best: Record<string, AutoVsBestEntry>;
 };
 
-// Dracula palette — https://draculatheme.com
+// Dracula palette - https://draculatheme.com
 export const DRACULA = {
   bg: '#282a36',
   currentLine: '#44475a',
@@ -115,7 +115,7 @@ export async function fetchEvalSnapshot(): Promise<EvalSnapshot | null> {
 export const SUITES: { key: SuiteKey; title: string; blurb: string }[] = [
   { key: 'coding', title: 'Coding', blurb: 'Deterministic code reasoning: closures, complexity, bugs, SQL boundaries, modular math, regex construction.' },
   { key: 'agentic', title: 'Agentic', blurb: 'Tool calling accuracy, multi-call orchestration, negative tool discipline, format adherence, and error recovery.' },
-  { key: 'creative', title: 'Creative SVG', blurb: 'Constraint-checked SVG generation: shapes, proportional charts, wordmarks, and scenes — parsed and graded programmatically.' },
+  { key: 'creative', title: 'Creative SVG', blurb: 'Constraint-checked SVG generation: shapes, proportional charts, wordmarks, and scenes - parsed and graded programmatically.' },
 ];
 
 export const CASE_TITLES: Record<string, string> = {

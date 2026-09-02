@@ -102,7 +102,7 @@ export function Status() {
           <h1 className="text-4xl font-semibold tracking-tight md:text-5xl">System status</h1>
           <p className="mt-4 max-w-3xl text-lg leading-relaxed text-white/60">
             Every few minutes we send a real chat completion to each routed model from production and record
-            whether it answered. This page shows those live probes — not synthetic uptime percentages.
+            whether it answered. This page shows those live probes - not synthetic uptime percentages.
           </p>
         </section>
 
@@ -217,7 +217,7 @@ export function Status() {
                           </span>
                         </span>
                       </td>
-                      <td className="px-4 py-3 font-mono">{probe.ok ? `${probe.latency_ms} ms` : '—'}</td>
+                      <td className="px-4 py-3 font-mono">{probe.ok ? `${probe.latency_ms} ms` : '-'}</td>
                       <td className="px-4 py-3 font-mono text-white/55">{relativeTime(probe.probed_at)}</td>
                     </tr>
                   );
@@ -237,7 +237,7 @@ export function Status() {
             </h2>
             <p className="mt-3 text-sm leading-relaxed text-white/60">
               Per-model average latency, time to first token, and throughput measured from real production
-              traffic — not just probes.
+              traffic - not just probes.
             </p>
             <span className="mt-4 inline-flex items-center gap-1 font-mono text-sm text-white group-hover:text-cyan-200">
               Open /stats <ArrowRight className="h-3.5 w-3.5" />

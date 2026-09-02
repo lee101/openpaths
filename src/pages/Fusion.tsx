@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Check, ChevronDown, Copy, GitMerge, Loader2, Plus, Send, Sparkles, Trash2, X } from 'lucide-react';
-import { Seo } from '../components/Seo';
+import { ToolSeo } from '../components/ToolSeo';
 import { CodeBlock } from '../components/CodeBlock';
 
 type FusionPreset = 'quality' | 'budget' | 'custom';
@@ -230,11 +230,7 @@ console.log(data.choices[0].message.content);`, [endpoint, keyLabel, payload]);
 
   return (
     <>
-      <Seo
-        title="Model Fusion Beta | OpenPaths"
-        description="Run multiple models side by side with OpenRouter fusion, analyze the panel, and fuse the strongest result into one answer."
-        path="/fusion"
-      />
+      <ToolSeo slug="fusion" />
 
       <div className="min-h-full bg-black px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto flex max-w-7xl flex-col gap-5">

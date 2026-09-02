@@ -187,13 +187,13 @@ export function Docs() {
           <div className="rounded-xl border border-white/20 bg-black/40 p-4 mb-5">
             <div className="text-xs font-mono text-white/55 mb-2">OpenPaths Auto (embedding-routed)</div>
             <div className="space-y-1 text-sm text-white/70 font-mono mb-4" data-testid="docs-auto-models">
-              <div><code>openpaths/auto</code> — default chat; legacy <code>auto</code></div>
-              <div><code>openpaths/auto-code</code> — agents, refactors, bug fixes</div>
-              <div><code>openpaths/auto-fast</code> — low-latency chat (DeepSeek Flash)</div>
-              <div><code>openpaths/auto-cheap</code> — Nano / Flash Lite classifiers</div>
-              <div><code>openpaths/auto-reasoning</code> — planning, math, auto thinking depth</div>
-              <div><code>openpaths/auto-vision</code> — image understanding</div>
-              <div><code>openpaths/auto-image</code> — GPT Image 2, RA1 fallback</div>
+              <div><code>openpaths/auto</code> - default chat; legacy <code>auto</code></div>
+              <div><code>openpaths/auto-code</code> - agents, refactors, bug fixes</div>
+              <div><code>openpaths/auto-fast</code> - low-latency chat (DeepSeek Flash)</div>
+              <div><code>openpaths/auto-cheap</code> - Nano / Flash Lite classifiers</div>
+              <div><code>openpaths/auto-reasoning</code> - planning, math, auto thinking depth</div>
+              <div><code>openpaths/auto-vision</code> - image understanding</div>
+              <div><code>openpaths/auto-image</code> - GPT Image 2, RA1 fallback</div>
             </div>
             <p className="mb-4 text-sm text-white/55">
               Fallback candidates are price-sorted by default. Send <code>routing_strategy=&quot;config&quot;</code> to preserve catalogue order, or use <code>openpaths/auto-fast</code> for latency-biased routing. The stats page records latency, time to first token, throughput, and spend by provider/model.
@@ -241,7 +241,7 @@ export function Docs() {
           <div className="rounded-xl border border-white/20 bg-black/40 p-4 mb-5">
             <div className="text-xs font-mono text-white/55 mb-2">Bring your own key (BYOK)</div>
             <p className="text-sm text-white/60 mb-3">
-              Save a provider API key under Account → API Keys → Provider keys, and requests routed through it bypass your OpenPaths balance entirely — cost is recorded as $0 and you pay the provider directly. Fallbacks still apply when your key fails. Supported: OpenAI, Anthropic, Google AI, Mistral, Groq, xAI, DeepSeek, Together, OpenRouter, Inference.net, MiniMax, Netwrck, Z.AI (incl. GLM Coding Plan), Sakana, Tinker, fal.ai, Black Forest Labs. Keys are returned only as masked previews.
+              Save a provider API key under Account → API Keys → Provider keys, and requests routed through it bypass your OpenPaths balance entirely - cost is recorded as $0 and you pay the provider directly. Fallbacks still apply when your key fails. Supported: OpenAI, Anthropic, Google AI, Mistral, Groq, xAI, DeepSeek, Together, OpenRouter, Inference.net, MiniMax, Netwrck, Z.AI (incl. GLM Coding Plan), Sakana, Tinker, fal.ai, Black Forest Labs. Keys are returned only as masked previews.
             </p>
             <p className="text-sm text-white/55">
               Full details: <Link to="/byok" className="text-sky-300 hover:underline">openpaths.io/byok</Link>.

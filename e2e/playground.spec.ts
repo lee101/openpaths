@@ -119,6 +119,32 @@ test.describe('Playground Page', () => {
     expect(chatBody).not.toHaveProperty('frequency_penalty');
   });
 
+  test('opens the credits top-up dialog when the API returns 402', async ({ page }) => {
+    await page.route('**/v1/chat/completions', async (route) => {
+      await route.fulfill({
+        status: 402,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          error: {
+            message: 'Insufficient credits. Please add credits to continue.',
+            type: 'billing_error',
+            code: 'insufficient_balance',
+          },
+        }),
+      });
+    });
+    await page.evaluate(() => {
+      localStorage.setItem('op_api_key', 'op-insufficient-balance-test-key');
+    });
+    await page.reload();
+
+    await page.locator('textarea[placeholder*="Send a message"]').fill('Use a paid model');
+    await page.getByTestId('chat-send').click();
+
+    await expect(page.getByTestId('stripe-modal')).toBeVisible();
+    await expect(page.getByText(/402:.*Insufficient credits/)).toBeVisible();
+  });
+
   test('model selector dropdown opens and shows providers', async ({ page }) => {
     // click first model selector
     const firstSelector = page.locator('button:has-text("Auto")').first();

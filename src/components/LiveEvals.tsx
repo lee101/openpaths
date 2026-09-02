@@ -52,9 +52,9 @@ export function LiveEvalsSection() {
           <Zap className="h-3.5 w-3.5" />
           Live evals
         </div>
-        <h2 className="text-xl sm:text-2xl font-semibold text-[#f8f8f2]">OpenPaths Live Evals — first sweep pending</h2>
+        <h2 className="text-xl sm:text-2xl font-semibold text-[#f8f8f2]">OpenPaths Live Evals - first sweep pending</h2>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#b7c0dd]">
-          We benchmark <span className="text-[#f8f8f2]">openpaths/auto</span> head-to-head against GPT-5.x, Claude Opus, Gemini, DeepSeek, Grok, and GLM across coding, agentic tool use, and creative SVG suites — measured live through our own gateway every day, with real TTFT, throughput, and cost.
+          <span className="text-[#f8f8f2]">openpaths/auto</span> benchmarked daily against GPT-5.x, Claude Opus, Gemini, DeepSeek, Grok, and GLM across coding, agentic tool use, and creative SVG suites, live through our own gateway with real TTFT, throughput, and cost.
         </p>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#b7c0dd]">
           Results appear here after the first scheduled sweep (<code className="rounded bg-[#44475a] px-1.5 py-0.5 font-mono text-xs text-[#f1fa8c]">GET /v1/evals/results</code>).
@@ -146,7 +146,7 @@ function AutoVsBestCard({ scope, label, entry, hero }: { key?: React.Key; scope:
     >
       <div className={`font-mono text-[11px] uppercase tracking-[0.18em] ${hero ? 'text-[#bd93f9]' : 'text-[#6272a4]'}`}>{label}</div>
       <div className="mt-2 flex items-baseline gap-2">
-        <span className="text-2xl font-bold tabular-nums text-[#f8f8f2]">{autoScore != null ? `${Math.round(autoScore * 100)}%` : '—'}</span>
+        <span className="text-2xl font-bold tabular-nums text-[#f8f8f2]">{autoScore != null ? `${Math.round(autoScore * 100)}%` : '-'}</span>
         <span className="text-xs text-[#b7c0dd]">Auto</span>
         {delta != null && (
           <span className={`ml-auto rounded-full px-2 py-0.5 text-[11px] font-semibold ${autoWins ? 'bg-[#50fa7b]/15 text-[#50fa7b]' : 'bg-[#ff5555]/15 text-[#ff5555]'}`}>
@@ -157,7 +157,7 @@ function AutoVsBestCard({ scope, label, entry, hero }: { key?: React.Key; scope:
       <div className="mt-1 flex items-center gap-1.5 text-xs text-[#b7c0dd]">
         <ChevronRight className="h-3 w-3 text-[#6272a4]" />
         best single model:{' '}
-        <span className="font-medium text-[#f8f8f2]">{entry?.best_model ? modelLabel(entry.best_model) : '—'}</span>
+        <span className="font-medium text-[#f8f8f2]">{entry?.best_model ? modelLabel(entry.best_model) : '-'}</span>
         <span className="tabular-nums text-[#6272a4]">{bestScore != null ? `· ${Math.round(bestScore * 100)}%` : ''}</span>
       </div>
     </div>
@@ -186,7 +186,7 @@ function ScoreBoard({ snap, tab }: { snap: EvalSnapshot; tab: TabKey }) {
       {activeSuite && <p className="text-sm leading-relaxed text-[#b7c0dd]">{activeSuite.blurb}</p>}
       {tab === 'overview' && (
         <p className="text-sm leading-relaxed text-[#b7c0dd]">
-          Average score across all {snap.cases.length} graded cases. Every case runs on every model — including{' '}
+          Average score across all {snap.cases.length} graded cases. Every case runs on every model - including{' '}
           <span className="font-medium text-[#f8f8f2]">openpaths/auto</span>, routed identically to production traffic.
         </p>
       )}
@@ -242,7 +242,7 @@ function CaseMatrix({ cases, models }: { cases: EvalSnapshot['cases']; models: s
                 {models.map(m => {
                   const r = c.results[m];
                   if (!r) {
-                    return <td key={m} className="px-1"><div className="flex h-9 items-center justify-center rounded bg-[#44475a]/30 text-xs text-[#6272a4]">—</div></td>;
+                    return <td key={m} className="px-1"><div className="flex h-9 items-center justify-center rounded bg-[#44475a]/30 text-xs text-[#6272a4]">-</div></td>;
                   }
                   const bg = r.passed
                     ? 'rgba(80,250,123,0.18)'
@@ -283,11 +283,11 @@ function SpeedBoard({ models }: { models: PerModel[] }) {
   return (
     <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
       <div>
-        <MetricHead label="Median TTFT — lower is better" icon={<Activity className="h-3.5 w-3.5 text-[#8be9fd]" />} />
+        <MetricHead label="Median TTFT - lower is better" icon={<Activity className="h-3.5 w-3.5 text-[#8be9fd]" />} />
         <ChartH value={toChart(ttft, 'median_ttft_ms')} unit="ms" better="low" />
       </div>
       <div>
-        <MetricHead label="Output tokens/sec — higher is better" icon={<Zap className="h-3.5 w-3.5 text-[#f1fa8c]" />} />
+        <MetricHead label="Output tokens/sec - higher is better" icon={<Zap className="h-3.5 w-3.5 text-[#f1fa8c]" />} />
         <ChartH value={toChart(tps, 'avg_tps')} unit=" tok/s" better="high" />
       </div>
     </div>
@@ -344,11 +344,11 @@ function EconomicsBoard({ models }: { models: PerModel[] }) {
       </p>
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
         <div>
-          <MetricHead label="Cost per case — lower is better" icon={<Activity className="h-3.5 w-3.5 text-[#ffb86c]" />} />
+          <MetricHead label="Cost per case - lower is better" icon={<Activity className="h-3.5 w-3.5 text-[#ffb86c]" />} />
           <ChartH value={costRows} unit="$" better="low" />
         </div>
         <div>
-          <MetricHead label="Quality points per $1 (thousands) — higher is better" icon={<Zap className="h-3.5 w-3.5 text-[#50fa7b]" />} />
+          <MetricHead label="Quality points per $1 (thousands) - higher is better" icon={<Zap className="h-3.5 w-3.5 text-[#50fa7b]" />} />
           <ChartH value={qpr} unit="k pts/$" better="high" />
         </div>
       </div>

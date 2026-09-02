@@ -3,7 +3,7 @@ import { useLocation, useNavigationType } from 'react-router-dom';
 
 /**
  * Resets scroll position on route changes. React Router does not do this by
- * default, so navigating via <Link> kept the previous page's scroll offset —
+ * default, so navigating via <Link> kept the previous page's scroll offset -
  * e.g. clicking the footer "Docs" link (scrolled to the bottom of the homepage)
  * landed you at the bottom of the new page. We:
  *   - scroll to the top on a normal PUSH/REPLACE navigation with no hash,

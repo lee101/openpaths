@@ -4,6 +4,7 @@ import { models } from '../src/data/models';
 import { providers } from '../src/data/providers';
 import { artificialAnalysisModels } from '../src/lib/artificialAnalysis';
 import { seedApps } from '../src/data/seedApps';
+import { TOOLS } from '../src/data/tools';
 
 const BASE_URL = 'https://openpaths.io';
 
@@ -27,18 +28,7 @@ const entries: SitemapEntry[] = [
   { path: '/fusion', changefreq: 'monthly', priority: '0.6' },
   { path: '/compound', changefreq: 'monthly', priority: '0.8' },
   { path: '/tools', changefreq: 'weekly', priority: '0.8' },
-  { path: '/tools/google-tts', changefreq: 'monthly', priority: '0.8' },
-  { path: '/tools/lyria', changefreq: 'monthly', priority: '0.8' },
-  { path: '/text-to-image', changefreq: 'monthly', priority: '0.7' },
-  { path: '/text-to-video', changefreq: 'monthly', priority: '0.7' },
-  { path: '/image-to-video', changefreq: 'monthly', priority: '0.7' },
-  { path: '/image-to-3d', changefreq: 'monthly', priority: '0.7' },
-  { path: '/text-to-3d', changefreq: 'monthly', priority: '0.7' },
-  { path: '/rig-3d', changefreq: 'monthly', priority: '0.7' },
-  { path: '/retexture-3d', changefreq: 'monthly', priority: '0.7' },
-  { path: '/character-animator', changefreq: 'monthly', priority: '0.7' },
-  { path: '/music-generator', changefreq: 'monthly', priority: '0.7' },
-  { path: '/remove-video-background', changefreq: 'monthly', priority: '0.7' },
+  ...TOOLS.map(tool => ({ path: tool.path, changefreq: 'monthly' as const, priority: '0.7' })),
   { path: '/art', changefreq: 'daily', priority: '0.7' },
   { path: '/stats', changefreq: 'weekly', priority: '0.6' },
   { path: '/apps/', changefreq: 'daily', priority: '0.7' },

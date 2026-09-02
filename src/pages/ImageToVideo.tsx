@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Copy, Download, ExternalLink, Loader2, Sparkles, Upload, Video } from 'lucide-react';
-import { Seo } from '../components/Seo';
+import { ToolSeo } from '../components/ToolSeo';
 import { CodeBlock } from '../components/CodeBlock';
 import { normalizeUploadedAssetUrl } from '../lib/uploadUrls';
 
@@ -219,11 +219,7 @@ JSON`,
 
   return (
     <>
-      <Seo
-        title="Image to Video API — Wan 3.0 | OpenPaths"
-        description="Animate a still into up-to-30s video with native audio through Wan 3.0 on OpenPaths. Optional end frame, per-second pricing by resolution."
-        path="/image-to-video"
-      />
+      <ToolSeo slug="image-to-video" />
       <div className="px-6 py-10">
         <div className="mx-auto max-w-7xl">
           <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -326,7 +322,7 @@ JSON`,
                 ) : (
                   <div className="w-full max-w-lg">
                     <img src={DEMO_IMAGE_URL} alt="Example start frame" className="w-full rounded border border-white/20 bg-black object-cover" />
-                    <p className="mt-3 text-center text-xs font-mono text-white/50">Drop any still above — Wan 3.0 animates it with native audio. Your render appears here.</p>
+                    <p className="mt-3 text-center text-xs font-mono text-white/50">Drop any still above - Wan 3.0 animates it with native audio. Your render appears here.</p>
                   </div>
                 )}
               </div>

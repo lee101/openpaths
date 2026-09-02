@@ -76,7 +76,7 @@ export function WorksWith() {
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">Works With OpenPaths</h1>
           <p className="text-white/60 max-w-3xl font-light leading-relaxed">
             OpenPaths is a drop-in OpenAI- and Anthropic-compatible model gateway. Any app that
-            speaks OpenRouter speaks OpenPaths — point it at the base URL below with your
+            speaks OpenRouter speaks OpenPaths - point it at the base URL below with your
             OpenPaths key and use <code className="text-white/80">openpaths/auto</code>. We are
             also upstreaming first-class OpenPaths providers into the open-source ones. See the{' '}
             <Link to="/integrations" className="text-white underline underline-offset-4">integration examples</Link>{' '}
@@ -169,10 +169,10 @@ export function WorksWith() {
         ))}
 
         <div className="border border-white/20 bg-white/[0.05] rounded-2xl p-6 text-sm text-white/60">
-          Building one of these — or your own app? Point it at{' '}
+          Building one of these - or your own app? Point it at{' '}
           <code className="text-white/80">{apiBase}</code>, grab a key on the{' '}
           <Link to="/account" className="text-white underline underline-offset-4">account page</Link>, and
-          it just works. Want a first-class OpenPaths provider in your project? Open an issue or PR — we
+          it just works. Want a first-class OpenPaths provider in your project? Open an issue or PR - we
           help with the integration.
         </div>
       </section>

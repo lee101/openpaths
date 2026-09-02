@@ -64,7 +64,7 @@ func (h *UnsubscribeHandler) HandleUnsubscribe(ctx *fasthttp.RequestCtx) {
 }
 
 func unsubPage(title, body string) string {
-	return fmt.Sprintf(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>%s — OpenPaths</title></head>
+	return fmt.Sprintf(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>%s - OpenPaths</title></head>
 <body style="margin:0; background:#0a0a0a; font-family:'Segoe UI',sans-serif; color:#e0e0e0;">
 <div style="max-width:480px; margin:80px auto; padding:40px; background:#111; border:1px solid #222; border-radius:12px; text-align:center;">
 <h1 style="font-size:22px; margin:0 0 12px;">%s</h1>

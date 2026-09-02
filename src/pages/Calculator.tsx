@@ -69,7 +69,7 @@ export function Calculator() {
         name: 'What does BYOK mean for my monthly cost?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'With bring-your-own-key (BYOK), requests run on your own provider key and bypass the OpenPaths balance entirely — the cost recorded on OpenPaths is $0. You pay the provider directly under its own pricing.',
+          text: 'With bring-your-own-key (BYOK), requests run on your own provider key and bypass the OpenPaths balance entirely - the cost recorded on OpenPaths is $0. You pay the provider directly under its own pricing.',
         },
       },
       {
@@ -100,7 +100,7 @@ export function Calculator() {
           <h1 className="text-4xl font-semibold tracking-tight md:text-5xl">Price your monthly token volume.</h1>
           <p className="mt-5 max-w-3xl text-lg leading-relaxed text-white/58">
             Enter what your workload sends and receives each month. The table applies each model's published
-            per-1M-token price from our catalog — nothing estimated, no invented competitor pricing. Compare up to four
+            per-1M-token price from our catalog - nothing estimated, no invented competitor pricing. Compare up to four
             models side by side.
           </p>
         </section>
@@ -211,7 +211,7 @@ export function Calculator() {
                         </td>
                         <td className="px-4 py-4 text-sm leading-relaxed text-white/55">
                           {isAuto ? (
-                            <>Not applicable — auto-routing runs on the OpenPaths balance.</>
+                            <>Not applicable - auto-routing runs on the OpenPaths balance.</>
                           ) : (
                             <>
                               $0 recorded on OpenPaths with{' '}

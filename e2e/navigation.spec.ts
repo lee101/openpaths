@@ -1,5 +1,11 @@
 import { test, expect } from '@playwright/test';
 
+// The top bar carries only the core destinations; everything else lives behind
+// the menu button. Use this for any link that is not in BAR_LABELS.
+async function openNavMenu(page: import('@playwright/test').Page) {
+  await page.getByRole('button', { name: 'Open menu' }).click();
+}
+
 test.describe('Global Navigation', () => {
   test('navbar links render and navigate correctly', async ({ page }) => {
     await page.goto('/');
@@ -7,10 +13,13 @@ test.describe('Global Navigation', () => {
     await expect(nav).toBeVisible();
     await expect(nav.locator('text=OpenPath')).toBeVisible();
     await expect(nav.locator('text=Models')).toBeVisible();
-    await expect(nav.locator('text=Apps')).toBeVisible();
-    await expect(nav.locator('text=Integrations')).toBeVisible();
     await expect(nav.locator('text=Playground')).toBeVisible();
     await expect(nav.getByTestId('nav-get-started').or(nav.getByTestId('nav-dashboard'))).toBeVisible();
+
+    // The rest of the destinations are reachable through the menu.
+    await openNavMenu(page);
+    await expect(nav.locator('a[href="/apps/"]').last()).toBeVisible();
+    await expect(nav.locator('a[href="/integrations"]').last()).toBeVisible();
   });
 
   test('navigate to /models', async ({ page }) => {
@@ -28,7 +37,8 @@ test.describe('Global Navigation', () => {
 
   test('navigate to /integrations', async ({ page }) => {
     await page.goto('/');
-    await page.click('nav >> text=Integrations');
+    await openNavMenu(page);
+    await page.locator('nav a[href="/integrations"]').last().click();
     await expect(page).toHaveURL('/integrations');
     await expect(page.locator('h1')).toContainText('Integrate OpenPaths');
   });
@@ -41,7 +51,8 @@ test.describe('Global Navigation', () => {
     }));
 
     await page.goto('/');
-    await page.click('nav >> text=Apps');
+    await openNavMenu(page);
+    await page.locator('nav a[href="/apps/"]').last().click();
     await expect(page).toHaveURL('/apps/');
     await expect(page.locator('h1')).toContainText('Apps And Agents');
   });

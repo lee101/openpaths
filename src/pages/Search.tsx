@@ -14,7 +14,7 @@ const SEARCH_TYPES = [
 const CATEGORIES = ['', 'company', 'research paper', 'news article', 'github', 'personal site', 'people', 'financial report'] as const;
 const PAPERS_TYPES = ['papers', 'methods', 'datasets', 'github_code'] as const;
 
-// Provider registry. Add a new search provider by appending one entry here —
+// Provider registry. Add a new search provider by appending one entry here -
 // the UI, tabs, curl example and cost estimate all derive from it.
 type ProviderKind = 'answer' | 'results';
 type ProviderDef = {
@@ -244,8 +244,8 @@ export function Search() {
   return (
     <>
       <Seo
-        title="AI Search Playground — Gemini, OpenAI, Grok, Exa & Papers | OpenPaths"
-        description="A Google-style search console powered by Gemini Flash with Google Search grounding, plus OpenAI web search, Grok live search, Exa neural search and Papers research search — one /v1/search API."
+        title="AI Search Playground - Gemini, OpenAI, Grok, Exa & Papers | OpenPaths"
+        description="A Google-style search console powered by Gemini Flash with Google Search grounding, plus OpenAI web search, Grok live search, Exa neural search and Papers research search - one /v1/search API."
         path="/search"
       />
       <div className="min-h-screen bg-black">

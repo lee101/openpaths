@@ -9,7 +9,7 @@ export interface Provider {
   logo?: string;
   logoSmall?: string;
   logoSrcSet?: string;
-  // 'search' providers expose search/tool APIs rather than LLM models —
+  // 'search' providers expose search/tool APIs rather than LLM models -
   // they have no entries in models.ts and must not render a model count.
   kind?: ProviderKind;
 }

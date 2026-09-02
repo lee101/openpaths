@@ -6,6 +6,7 @@ import {
 } from '../src/lib/artificialAnalysis';
 import { seedApps } from '../src/data/seedApps';
 import { appOgImage } from '../src/lib/appStats';
+import { TOOLS, TOOLS_INDEX_SEO, TOOLS_INDEX_SLUG, toolOgImage } from '../src/data/tools';
 
 const BASE_URL = 'https://openpaths.io';
 const DIST_DIR = 'dist';
@@ -21,15 +22,17 @@ const indexHtml = readFileSync(join(DIST_DIR, 'index.html'), 'utf8');
 
 const routes: StaticMeta[] = [
   {
-    path: '/tools/google-tts',
-    title: 'Gemini Flash TTS Studio — Multi-speaker AI Voice | OpenPaths',
-    description: 'Generate steerable single- and multi-speaker speech with Gemini 3.1 Flash TTS. Direct voice, style, pace, accent, scene, and emotion, then play, download, or copy the API code.',
+    path: TOOLS_INDEX_SEO.path,
+    title: TOOLS_INDEX_SEO.seoTitle,
+    description: TOOLS_INDEX_SEO.seoDescription,
+    image: toolOgImage(TOOLS_INDEX_SLUG),
   },
-  {
-    path: '/tools/lyria',
-    title: 'Lyria 3 Music Studio — AI Song & Instrumental Generator | OpenPaths',
-    description: 'Generate complete songs, instrumentals, loops, and 30-second clips with Google Lyria 3 Pro and Clip. Direct genre, mood, structure, instruments, vocals, lyrics, and export as Opus.',
-  },
+  ...TOOLS.map(tool => ({
+    path: tool.path,
+    title: tool.seoTitle,
+    description: tool.seoDescription,
+    image: toolOgImage(tool.slug),
+  })),
   {
     path: '/artifacts',
     title: 'Artifacts Gallery | OpenPaths',
@@ -47,13 +50,18 @@ const routes: StaticMeta[] = [
   },
   {
     path: '/image-evals',
-    title: 'Image Generator Evals — Arena Elo, Price & Example Images | OpenPaths',
-    description: 'Artificial Analysis Text-to-Image and Image Editing Arena Elo leaderboards, plus a real example image from every generator OpenPaths hosts — RA1, GPT Image 2, FLUX, and more.',
+    title: 'Image Generator Evals - Arena Elo, Price & Example Images | OpenPaths',
+    description: 'Artificial Analysis Text-to-Image and Image Editing Arena Elo leaderboards, plus a real example image from every generator OpenPaths hosts - RA1, GPT Image 2, FLUX, and more.',
   },
   {
     path: '/compare',
     title: 'Compare AI Models by Evals, Speed, and Price | OpenPaths',
     description: 'Compare frontier AI models head-to-head using Artificial Analysis evals, pricing, context windows, speed, and benchmark run costs.',
+  },
+  {
+    path: '/alternatives',
+    title: 'OpenRouter Alternative | 0% AI Gateway Markup | OpenPaths',
+    description: 'Compare OpenPaths with OpenRouter, OpenAI, Anthropic, LiteLLM, and more. One API, pooled credits, smart routing, and 0% platform markup.',
   },
   {
     path: '/stats',

@@ -181,7 +181,7 @@ export function Byok() {
               ANTHROPIC_BASE_URL=https://openpaths.io
             </code>{' '}
             and use <code className="font-mono text-xs">POST /v1/messages</code> as-is. Authenticate with
-            your Claude key through BYOK, or fall back to OpenPaths credits — same endpoint either way.
+            your Claude key through BYOK, or fall back to OpenPaths credits - same endpoint either way.
           </p>
         </section>
 
