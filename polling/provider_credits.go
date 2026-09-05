@@ -43,7 +43,7 @@ var targetSpecs = []struct {
 	{Provider: "anthropic", ModelID: "claude-haiku-4-5-20251001"},
 	{Provider: "deepseek", ModelID: "deepseek-chat"},
 	{Provider: "mistral", ModelID: "open-mistral-nemo"},
-	{Provider: "groq", ModelID: "llama-3.1-8b-instant"},
+	{Provider: "groq", ModelID: "groq/gpt-oss-20b"},
 	{Provider: "openrouter", ModelID: "openpaths/chat-latest"},
 	{Provider: "together", ModelID: "together/deepseek-v3.1"},
 	{Provider: "minimax", ModelID: "minimax-m2"},

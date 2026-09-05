@@ -286,6 +286,20 @@ func TestTranslateRequest_DisablesSonnet5ThinkingForNone(t *testing.T) {
 	}
 }
 
+func TestTranslateRequest_UsesLowEffortWhenFableThinkingCannotBeDisabled(t *testing.T) {
+	for _, id := range []string{"claude-fable-5", "claude-fable-5-1"} {
+		req := translateRequest(&model.ChatCompletionRequest{
+			Model: id, Messages: []model.ChatMessage{{Role: "user", Content: "Say hi."}}, ReasoningEffort: "none",
+		})
+		if req.Thinking != nil {
+			t.Fatalf("%s: thinking = %#v, want nil (adaptive thinking is always on)", id, req.Thinking)
+		}
+		if req.OutputConfig == nil || req.OutputConfig.Effort != "low" {
+			t.Fatalf("%s: output_config = %#v, want low", id, req.OutputConfig)
+		}
+	}
+}
+
 func TestTranslateRequest_AutoEnablesAdaptiveThinkingForOpus(t *testing.T) {
 	req := translateRequest(&model.ChatCompletionRequest{
 		Model: "claude-opus-4-8", Messages: []model.ChatMessage{{Role: "user", Content: "Choose the right depth."}}, ReasoningEffort: "auto",

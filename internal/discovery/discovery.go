@@ -52,6 +52,8 @@ func (s *Service) discoverProvider(ctx context.Context, p model.ProviderConfig) 
 		return s.discoverMistral(ctx, p)
 	case "openai":
 		return s.discoverOpenAI(ctx, p)
+	case "meta":
+		return s.discoverOpenAICompat(ctx, p, "meta")
 	case "openrouter":
 		return s.discoverOpenRouter(ctx, p)
 	case "together":
@@ -213,7 +215,7 @@ func (s *Service) discoverOpenAI(ctx context.Context, p model.ProviderConfig) (i
 }
 
 func (s *Service) discoverOpenAICompat(ctx context.Context, p model.ProviderConfig, provName string) (int, error) {
-	url := strings.TrimRight(p.BaseURL, "/") + "/v1/models"
+	url := openAICompatModelsURL(p.BaseURL)
 	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
 	req.Header.Set("Authorization", "Bearer "+p.APIKey)
 
@@ -268,6 +270,14 @@ func (s *Service) discoverOpenAICompat(ctx context.Context, p model.ProviderConf
 		count++
 	}
 	return count, nil
+}
+
+func openAICompatModelsURL(baseURL string) string {
+	baseURL = strings.TrimRight(baseURL, "/")
+	if strings.HasSuffix(baseURL, "/v1") {
+		return baseURL + "/models"
+	}
+	return baseURL + "/v1/models"
 }
 
 // --- OpenRouter (enriched) ---

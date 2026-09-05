@@ -13,6 +13,7 @@ import (
 	"github.com/openpaths/openpaths/internal/provider/fal"
 	"github.com/openpaths/openpaths/internal/provider/google"
 	"github.com/openpaths/openpaths/internal/provider/groq"
+	metaprovider "github.com/openpaths/openpaths/internal/provider/meta"
 	"github.com/openpaths/openpaths/internal/provider/minimax"
 	"github.com/openpaths/openpaths/internal/provider/mistral"
 	"github.com/openpaths/openpaths/internal/provider/netwrck"
@@ -26,6 +27,7 @@ import (
 
 var providerBaseURLs = map[string]string{
 	"openai":           "https://api.openai.com",
+	"meta":             "https://api.meta.ai/v1",
 	"anthropic":        "https://api.anthropic.com",
 	"google":           "https://generativelanguage.googleapis.com",
 	"mistral":          "https://api.mistral.ai",
@@ -54,6 +56,8 @@ func makeUserProvider(providerName, apiKey string) provider.Provider {
 	switch providerName {
 	case "openai":
 		return openai.New(apiKey, baseURL)
+	case "meta":
+		return metaprovider.New(apiKey, baseURL)
 	case "anthropic":
 		return anthropic.New(apiKey, baseURL)
 	case "google":

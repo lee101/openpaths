@@ -39,7 +39,11 @@ var reasoningVocabularies = []reasoningVocabulary{
 		supported: effortSet("none", "low", "medium", "xhigh")},
 	// Qwen 3.8 Max through OpenRouter makes reasoning mandatory.
 	{matches: family("qwen/qwen3.8-max"), supported: effortSet("minimal", "low", "medium", "high", "xhigh", "max")},
-	// Magistral is Mistral's only reasoning family, and it exposes just two
+	// Qwen 3.8 27B on Cerebras defaults to high; none disables it.
+	{matches: bareFamily("qwen-3.8-27b"), supported: effortSet("none", "low", "medium", "high")},
+	// GPT-OSS only accepts low/medium/high; none and the outer tiers remap.
+	{matches: bareFamily("gpt-oss-20b"), supported: effortSet("low", "medium", "high")},
+	{matches: bareFamily("gpt-oss-120b"), supported: effortSet("low", "medium", "high")},
 	// tiers: "supported values: [high, none]".
 	{matches: family("magistral"), supported: effortSet("none", "high")},
 	// Every other Mistral model answers "reasoning_effort is not enabled for

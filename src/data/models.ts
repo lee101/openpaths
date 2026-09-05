@@ -548,17 +548,73 @@ const catalogModels: Model[] = [
     pricingType: 'request'
   },
 
+  // --- Meta ---
+  {
+    id: 'muse-spark-1.3',
+    name: 'Muse Spark 1.3',
+    provider: 'Meta',
+    description: 'Meta’s newest multimodal reasoning model for long-running coding, agentic workflows, tool use, and document, image, video, and audio understanding.',
+    contextLength: '1M',
+    priceInput: 1.25,
+    priceOutput: 4.25,
+    tags: ['programming', 'reasoning', 'general', 'vision', 'agentic'],
+    aliases: ['muse-spark', 'meta-muse-spark', 'meta-chat'],
+    released: '2026-09-02',
+    popularity: 1
+  },
+  {
+    id: 'muse-image-1.0',
+    name: 'Muse Image 1.0',
+    provider: 'Meta',
+    description: 'Meta’s image generation and editing model with strong prompt following, typography, layout, and multi-reference composition.',
+    contextLength: 'N/A',
+    priceInput: 0.01,
+    priceOutput: 0,
+    tags: ['art generation', 'text-to-image', 'image-to-image', 'vision'],
+    aliases: ['muse-image', 'meta-image'],
+    released: '2026-08-26',
+    popularity: 2,
+    pricingType: 'request'
+  },
+  {
+    id: 'muse-voice-transcribe-1.0',
+    name: 'Muse Voice Transcribe 1.0',
+    provider: 'Meta',
+    description: 'Speech-to-text for live and file audio with turn detection, speaker diarization, contextual biasing, code-switching, and turn-level timestamps.',
+    contextLength: 'N/A',
+    priceInput: 0.18,
+    priceOutput: 0,
+    tags: ['audio', 'fast'],
+    aliases: ['muse-voice-transcribe', 'meta-transcribe', 'meta-stt'],
+    released: '2026-09-01',
+    popularity: 2,
+    pricingType: 'hour'
+  },
+
   // --- Anthropic ---
   {
-    id: 'claude-fable-5',
-    name: 'Claude Fable 5',
+    id: 'claude-fable-5-1',
+    name: 'Claude Fable 5.1',
     provider: 'Anthropic',
-    description: 'New Mythos-series flagship Claude model. Frontier reasoning, coding, and long-horizon agentic tasks. Use claude-fable-latest to auto-track the newest Fable.',
+    description: 'Anthropic’s most capable generally available model for ambitious coding, research, document work, and long-horizon agents. Use claude-fable-latest to auto-track the newest Fable.',
     contextLength: '1M',
     priceInput: 10,
     priceOutput: 50,
     tags: ['programming', 'reasoning', 'general', 'vision', 'agentic'],
-    aliases: ['claude-fable-latest', 'claude-fable', 'fable'],
+    aliases: ['claude-fable-latest', 'claude-fable', 'fable', 'fable-5.1', 'fable-5-1', 'claude-fable-5.1'],
+    released: '2026-09-01',
+    popularity: 0
+  },
+  {
+    id: 'claude-fable-5',
+    name: 'Claude Fable 5',
+    provider: 'Anthropic',
+    description: 'Previous-generation Mythos-series Claude model for frontier reasoning, coding, and long-horizon agentic tasks.',
+    contextLength: '1M',
+    priceInput: 10,
+    priceOutput: 50,
+    tags: ['programming', 'reasoning', 'general', 'vision', 'agentic'],
+    aliases: ['fable-5'],
     released: '2026-06-10',
     popularity: 0
   },
@@ -989,51 +1045,54 @@ const catalogModels: Model[] = [
 
   // --- Google Gemini ---
   {
+    id: 'gemini-3.8-flash',
+    name: 'Gemini 3.8 Flash',
+    provider: 'Google',
+    description: 'Google\'s current Flash model for long-horizon coding, agents, and complex multimodal workflows.',
+    contextLength: '1M',
+    priceInput: 0.75,
+    priceOutput: 3.75,
+    tags: ['general', 'vision', 'programming', 'reasoning', 'fast'],
+    aliases: ['gemini-3.8', 'gemini-flash-3.8', 'gemini-flash-latest', 'flash-latest'],
+    released: '2026-09-02',
+    popularity: 5
+  },
+  {
     id: 'gemini-3.7-flash',
     name: 'Gemini 3.7 Flash',
     provider: 'Google',
-    description: 'Google\'s newest Flash model for fast multimodal reasoning, coding, and agentic work.',
+    description: 'Compatibility model ID that now routes to Gemini 3.8 Flash.',
     contextLength: '1M',
-    priceInput: 0.375,
-    priceOutput: 1.875,
+    priceInput: 0.75,
+    priceOutput: 3.75,
     tags: ['general', 'vision', 'programming', 'reasoning', 'fast'],
-    aliases: ['gemini-3.7', 'gemini-flash-3.7', 'gemini-flash-latest', 'flash-latest'],
+    aliases: ['gemini-3.7', 'gemini-flash-3.7'],
     released: '2026-08-13',
-    popularity: 5,
-    promotion: {
-      endsAt: '2026-08-28T00:00:00Z',
-      standardPriceInput: 0.75,
-      standardPriceOutput: 3.75,
-    }
+    popularity: 4
   },
   {
     id: 'gemini-latest',
     name: 'Gemini Latest',
     provider: 'Google',
-    description: 'Tracks the current recommended Gemini frontier model. Today this routes to Gemini 3.7 Flash.',
+    description: 'Tracks the current recommended Gemini frontier model. Today this routes to Gemini 3.8 Flash.',
     contextLength: '1M',
-    priceInput: 0.375,
-    priceOutput: 1.875,
+    priceInput: 0.75,
+    priceOutput: 3.75,
     tags: ['general', 'vision', 'programming', 'reasoning'],
-    aliases: ['gemini-3.7-flash'],
-    released: '2026-08-13',
-    popularity: 4,
-    promotion: {
-      endsAt: '2026-08-28T00:00:00Z',
-      standardPriceInput: 0.75,
-      standardPriceOutput: 3.75,
-    }
+    aliases: ['gemini-3.8-flash'],
+    released: '2026-09-02',
+    popularity: 4
   },
   {
     id: 'gemini-3.5-flash',
     name: 'Gemini 3.5 Flash',
     provider: 'Google',
-    description: 'Google frontier Flash model for sustained agentic and coding tasks. Also available through the gemini-latest alias.',
+    description: 'Compatibility model ID that now routes to Gemini 3.8 Flash.',
     contextLength: '1M',
-    priceInput: 1.5,
-    priceOutput: 9,
+    priceInput: 0.75,
+    priceOutput: 3.75,
     tags: ['general', 'vision', 'programming', 'reasoning'],
-    aliases: ['gemini-latest'],
+    aliases: [],
     released: '2026-05-20',
     popularity: 5
   },
@@ -1632,6 +1691,19 @@ const catalogModels: Model[] = [
     popularity: 4
   },
   {
+    id: 'cerebras/qwen-3.8-27b',
+    name: 'Qwen 3.8 27B',
+    provider: 'Cerebras',
+    description: 'Cerebras wafer-scale Qwen 3.8 27B dense multimodal at ~1500 tokens/sec for agentic coding, tool use, and long-running workflows, with 128K context and configurable reasoning.',
+    contextLength: '128K',
+    priceInput: 0.99,
+    priceOutput: 1.49,
+    tags: ['general', 'reasoning', 'programming', 'agentic', 'vision', 'open-source'],
+    aliases: ['qwen-3.8-27b', 'qwen3.8-27b', 'cerebras-qwen', 'cerebras/qwen'],
+    released: '2026-09-05',
+    popularity: 3
+  },
+  {
     id: 'qwen/qwen3.7-plus',
     name: 'Qwen 3.7 Plus',
     provider: 'Qwen',
@@ -1885,39 +1957,41 @@ const catalogModels: Model[] = [
     popularity: 25
   },
 
-  // --- Groq (Fast Inference) ---
+  // --- Groq (Fast Inference; llama/mixtral retired 2026-08-16, now gpt-oss) ---
   {
-    id: 'llama-3.3-70b-versatile',
-    name: 'Llama 3.3 70B',
+    id: 'groq/gpt-oss-120b',
+    name: 'GPT-OSS 120B',
     provider: 'Groq',
-    description: 'Meta open-source model on Groq for ultra-fast inference.',
-    contextLength: '128K',
-    priceInput: 0.59,
-    priceOutput: 0.79,
+    description: 'Open-source 120B model on Groq LPU inference with 131K context; Groq’s replacement for the retired Llama 3.3 70B.',
+    contextLength: '131K',
+    priceInput: 0.15,
+    priceOutput: 0.6,
     tags: ['general', 'fast', 'open-source'],
-    released: '2024-12-06',
+    aliases: ['groq-gpt-oss-120b'],
+    released: '2025-08-05',
     popularity: 29
   },
   {
-    id: 'llama-3.1-8b-instant',
-    name: 'Llama 3.1 8B',
+    id: 'groq/gpt-oss-20b',
+    name: 'GPT-OSS 20B',
     provider: 'Groq',
-    description: 'Ultra-fast small model for instant responses.',
-    contextLength: '128K',
-    priceInput: 0.05,
-    priceOutput: 0.08,
+    description: 'Small open-source model on Groq LPU inference for instant responses; Groq’s replacement for the retired Llama 3.1 8B.',
+    contextLength: '131K',
+    priceInput: 0.075,
+    priceOutput: 0.3,
     tags: ['fast', 'open-source'],
-    released: '2024-07-23',
+    aliases: ['groq-gpt-oss-20b'],
+    released: '2025-08-05',
     popularity: 32
   },
   {
     id: 'mixtral-8x7b-32768',
     name: 'Mixtral 8x7B',
     provider: 'Groq',
-    description: 'Retired by Groq; this id now serves Llama 3.3 70B on Groq for fast, cheap inference.',
+    description: 'Retired by Groq; this id now serves GPT-OSS 120B on Groq for fast, cheap inference.',
     contextLength: '131K',
-    priceInput: 0.59,
-    priceOutput: 0.79,
+    priceInput: 0.15,
+    priceOutput: 0.6,
     tags: ['fast', 'open-source'],
     released: '2024-01-08',
     popularity: 47

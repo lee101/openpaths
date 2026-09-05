@@ -14,6 +14,75 @@ export interface BlogPost {
 
 export const posts: BlogPost[] = [
   {
+    slug: 'cerebras-qwen-3-8-27b',
+    title: 'Qwen 3.8 27B on Cerebras: ~1500 tok/s on OpenPaths',
+    excerpt: 'Alibaba’s 27B dense multimodal on Cerebras wafer-scale inference is live as cerebras/qwen-3.8-27b: ~1500 tokens/sec, 128K context, $0.99/$1.49 per million tokens, and a one-shot pelican to prove it.',
+    date: '2026-09-05',
+    author: 'OpenPaths Team',
+    readTime: '4 min',
+    tags: ['models', 'cerebras', 'qwen', 'creative-coding'],
+    content: `Qwen 3.8 27B is Alibaba's dense multimodal model for agentic coding, tool use, research, and long-running workflows, and on Cerebras wafer-scale hardware it runs at roughly 1,500 tokens per second. It is live on OpenPaths today as \`cerebras/qwen-3.8-27b\`.
+
+![100 pelican generations, each one faster than the last](/static/blog/pelican-svg/cerebras-pelican-100.webp)
+
+That strip above is the whole point of this model: one hundred generations, each rendered faster than the last, from 110ms a frame down to 18ms. At 1,500 tok/s the model is rarely the bottleneck anymore, so the gateway has to keep up too. More on what we changed below.
+
+## The route
+
+| | |
+|---|---|
+| Model ID | \`cerebras/qwen-3.8-27b\` |
+| Upstream | Cerebras \`qwen-3.8-27b\` |
+| Context | 128K tokens (paid tier) |
+| Max output | 40K tokens |
+| Input / output | $0.99 / $1.49 per million tokens |
+| Modalities | Text + image in, text out |
+| Reasoning | Configurable, defaults to high; \`none\` disables it |
+| Aliases | \`qwen-3.8-27b\`, \`qwen3.8-27b\`, \`cerebras-qwen\` |
+
+## Try it
+
+\`\`\`bash
+curl https://openpaths.io/v1/chat/completions -H "Authorization: Bearer op-..." -H "Content-Type: application/json" -d '{
+  "model": "cerebras/qwen-3.8-27b",
+  "reasoning_effort": "none",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Draw a pelican riding a bicycle as an animated SVG. Return only a complete standalone SVG document."
+    }
+  ],
+  "max_tokens": 32000
+}'
+\`\`\`
+
+Streaming is on by default. At this output rate, stream: a 3K-token SVG lands in about two seconds, so polling a non-streaming request just adds latency you can see.
+
+## The pelican test
+
+Tradition demands it. Same one-shot SVG prompt we pointed at [Opus 4.8 vs GPT-5.5](/blog/pelican-bicycle-opus-4-8-vs-gpt-5-5-xhigh), [Kimi K3](/blog/kimi-k3-moonshot-1m-context), and Inkling-Small, this time through \`cerebras/qwen-3.8-27b\` with reasoning disabled:
+
+![Cerebras Qwen 3.8 27B one-shot SVG: pelican riding a bicycle](/static/blog/pelican-svg/cerebras-qwen-3-8-27b.svg)
+
+One attempt, 2,923 completion tokens, \`finish_reason: stop\` - no truncation, no retry. Wall clock was about 2.3 seconds end to end, roughly 1,250 tok/s observed after TTFT and HTTP overhead, against the ~1,500 tok/s the hardware is rated for. The file is a 6.6KB standalone document: CSS \`spin\`/\`bob\` cycles on the wheels and body, a pedalling leg, 17 paths and a dozen circles. The pelican reads as a pelican - pouch, beak, tucked wing - and the wheels, crank, and body bob share timing instead of drifting.
+
+For a 27B dense model with thinking off, that is the right trade: a coherent, hand-editable artifact in two seconds for a fraction of a cent (2,923 output tokens at $1.49/M is under half a cent).
+
+## Keeping the backend out of the way
+
+A model this fast shifts the bottleneck onto our side, so the streaming path got a tune-up alongside the launch:
+
+- the SSE parser reads the upstream byte stream directly with a 1MB line cap instead of copying every chunk through strings twice, so bursty tool-call deltas can't break the scanner and per-chunk allocation stays flat;
+- the stream channel is 256 events deep, decoupling Cerebras arrival bursts from per-chunk SSE serialization downstream;
+- the chat handler extracts each chunk's delta text once (it used to walk the delta twice) and pre-grows the transcript buffer to 32KB, avoiding repeated reallocation over multi-thousand-token streams.
+
+Net effect: per-chunk work in the gateway is one JSON marshal and one flush, which is what a 1,500 tok/s upstream needs. If you stream \`cerebras/qwen-3.8-27b\` and watch tokens stall, that is a bug - tell us.
+
+## When to pick it
+
+Pick it when latency dominates: agentic loops with tool calls, interactive coding, long research workflows where a 235B-class model answers in minutes and this one answers in seconds. Pick the bigger Qwen routes (\`or/qwen3.8-max\`, \`qwen3.8-2.4t-a95b\`) when the task needs their reasoning depth or context window more than it needs speed. Browse the [model catalog](/models) to compare.`,
+  },
+  {
     slug: 'provider-manifoldgen',
     title: 'ManifoldGen on OpenPaths: First-Party Video, Music, and Creative APIs',
     excerpt: "ManifoldGen is OpenPaths' first-party GPU studio for cinematic video, character animation, music, speech, images, and creative media workflows. See the model IDs, prices, and API shape.",

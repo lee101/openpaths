@@ -5,6 +5,7 @@ import { api } from '../lib/api';
 export const BYOK_PROVIDERS: { id: string; name: string; keyUrl?: string; note?: string }[] = [
   { id: 'openai', name: 'OpenAI', keyUrl: 'https://platform.openai.com/api-keys' },
   { id: 'anthropic', name: 'Anthropic', keyUrl: 'https://console.anthropic.com/settings/keys' },
+  { id: 'meta', name: 'Meta', keyUrl: 'https://ai.meta.com' },
   { id: 'google', name: 'Google AI', keyUrl: 'https://aistudio.google.com/app/apikey' },
   { id: 'mistral', name: 'Mistral', keyUrl: 'https://console.mistral.ai/api-keys' },
   { id: 'groq', name: 'Groq', keyUrl: 'https://console.groq.com/keys' },

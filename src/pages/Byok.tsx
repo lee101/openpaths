@@ -5,6 +5,7 @@ import { Seo } from '../components/Seo';
 const PROVIDERS: Array<{ name: string; id: string; keyUrl?: string; note?: string }> = [
   { name: 'OpenAI', id: 'openai', keyUrl: 'https://platform.openai.com/api-keys' },
   { name: 'Anthropic', id: 'anthropic', keyUrl: 'https://console.anthropic.com/settings/keys' },
+  { name: 'Meta', id: 'meta', keyUrl: 'https://ai.meta.com' },
   { name: 'Google AI Studio', id: 'google', keyUrl: 'https://aistudio.google.com/app/apikey' },
   { name: 'Mistral', id: 'mistral', keyUrl: 'https://console.mistral.ai' },
   { name: 'Groq', id: 'groq', keyUrl: 'https://console.groq.com/keys' },

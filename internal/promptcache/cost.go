@@ -24,6 +24,7 @@ const DefaultModel = "claude-opus-5"
 
 // costTable mirrors the published Anthropic prompt-caching pricing table.
 var costTable = map[string]ModelCost{
+	"claude-fable-5-1":  {BaseInputPer1M: 10, Write5mPer1M: 12.50, Write1hPer1M: 20, CacheHitPer1M: 0.25, OutputPer1M: 50},
 	"claude-fable-5":    {BaseInputPer1M: 10, Write5mPer1M: 12.50, Write1hPer1M: 20, CacheHitPer1M: 1, OutputPer1M: 50},
 	"claude-opus-5":     {BaseInputPer1M: 5, Write5mPer1M: 6.25, Write1hPer1M: 10, CacheHitPer1M: 0.50, OutputPer1M: 25},
 	"claude-opus-4-8":   {BaseInputPer1M: 5, Write5mPer1M: 6.25, Write1hPer1M: 10, CacheHitPer1M: 0.50, OutputPer1M: 25},

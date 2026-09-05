@@ -91,6 +91,18 @@ const EXAMPLES: Record<string, ProviderExample> = {
       'If the direct OpenAI GPT Image 2 path goes unhealthy, OpenPaths can fail over to Fal-hosted GPT Image 2 using the model-level circuit breaker.',
     ],
   },
+  meta: {
+    description: 'Meta Model API: Muse Spark 1.3 multimodal reasoning, Muse Image 1.0 generation and editing, and Muse Voice transcription - routed through one OpenPaths key.',
+    endpoint: '/v1',
+    chatModel: 'muse-spark-1.3',
+    imageModel: 'muse-image-1.0',
+    transcriptionModel: 'muse-voice-transcribe-1.0',
+    notes: [
+      'Muse Spark 1.3 takes 1M context and handles document, image, video, and audio inputs as standard content parts.',
+      'Muse Image 1.0 switches to the edit path automatically when the request carries input images.',
+      'Muse Voice Transcribe 1.0 bills per audio hour and returns turn-level timestamps alongside the transcript.',
+    ],
+  },
   anthropic: {
     description: 'Claude Opus 4.7, Sonnet 4.6, Haiku 4.5. Native /v1/messages and /v1/chat/completions supported.',
     endpoint: '/v1',
@@ -196,9 +208,9 @@ const EXAMPLES: Record<string, ProviderExample> = {
     embeddingModel: 'mistral-embed',
   },
   groq: {
-    description: 'Ultra-fast LPU inference. Llama 3.3, Mixtral, plus Whisper turbo transcription.',
+    description: 'Ultra-fast LPU inference. GPT-OSS 120B/20B, plus Whisper turbo transcription.',
     endpoint: '/v1',
-    chatModel: 'llama-3.3-70b-versatile',
+    chatModel: 'groq/gpt-oss-120b',
     transcriptionModel: 'whisper-large-v3-turbo',
   },
   together: {

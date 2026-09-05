@@ -74,6 +74,14 @@ export const providers: Provider[] = [
     logo: '/logos/openai.svg'
   },
   {
+    slug: 'meta',
+    name: 'Meta',
+    url: 'https://ai.meta.com',
+    description: 'Meta Model API with Muse Spark multimodal reasoning, Muse Image generation and editing, and Muse Voice speech-to-text.',
+    featured: false,
+    logo: '/logos/meta.webp'
+  },
+  {
     slug: 'cursor',
     name: 'Cursor',
     url: 'https://cursor.com',
@@ -151,9 +159,17 @@ export const providers: Provider[] = [
     slug: 'groq',
     name: 'Groq',
     url: 'https://groq.com',
-    description: 'Ultra-fast LPU inference for Llama 3.3, Llama 3.1, Mixtral, and Whisper speech-to-text at 228x real-time.',
+    description: 'Ultra-fast LPU inference for GPT-OSS 120B/20B and Whisper speech-to-text at 228x real-time.',
     featured: false,
     logo: '/logos/groq.svg'
+  },
+  {
+    slug: 'cerebras',
+    name: 'Cerebras',
+    url: 'https://cerebras.ai',
+    description: 'Wafer-scale inference at ~1500 tok/s hosting Qwen 3.8 27B dense multimodal for agentic coding, tool use, and long-running workflows.',
+    featured: false,
+    logo: 'https://icons.duckduckgo.com/ip3/cerebras.ai.ico'
   },
   {
     slug: 'minimax',

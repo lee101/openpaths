@@ -215,7 +215,7 @@ const FALLBACK_MODELS: CatalogModel[] = [
   { id: 'deepseek-chat', label: 'DeepSeek Chat', provider: 'DeepSeek' },
   { id: 'deepseek-reasoner', label: 'DeepSeek Reasoner', provider: 'DeepSeek' },
   { id: 'mistral-large-latest', label: 'Mistral Large', provider: 'Mistral' },
-  { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B', provider: 'Groq' },
+  { id: 'groq/gpt-oss-120b', label: 'GPT-OSS 120B', provider: 'Groq', pricing: { input_per_1m_tokens: 0.15, input_cache_hit_per_1m_tokens: 0.075, output_per_1m_tokens: 0.60 } },
   { id: 'glm-5.2', label: 'GLM-5.2', provider: 'Z.AI', pricing: { input_per_1m_tokens: 1.40, output_per_1m_tokens: 4.40 } },
   { id: 'glm-5', label: 'GLM-5', provider: 'Together' },
   { id: 'qwen3.8-2.4t-a95b', label: 'Qwen 3.8 2.4T A95B', provider: 'Together', pricing: { input_per_1m_tokens: 2.50, input_cache_hit_per_1m_tokens: 0.50, output_per_1m_tokens: 6.25 } },

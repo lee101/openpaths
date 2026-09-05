@@ -17,6 +17,11 @@ import (
 	"github.com/openpaths/openpaths/internal/provider"
 )
 
+var (
+	sseDataPrefix = []byte("data: ")
+	sseDoneMarker = []byte("[DONE]")
+)
+
 type OpenAIProvider struct {
 	apiKey       string
 	baseURL      string
@@ -268,29 +273,30 @@ func (p *OpenAIProvider) ChatCompletionStream(ctx context.Context, req *model.Ch
 		}
 	}
 
-	ch := make(chan provider.StreamEvent, 64)
+	ch := make(chan provider.StreamEvent, 256)
 
 	go func() {
 		defer resp.Body.Close()
 		defer close(ch)
 
 		scanner := bufio.NewScanner(resp.Body)
+		scanner.Buffer(make([]byte, 64*1024), 1024*1024)
 		var lastUsage *model.UsageInfo
 
 		for scanner.Scan() {
-			line := scanner.Text()
-			if !strings.HasPrefix(line, "data: ") {
+			line := scanner.Bytes()
+			if !bytes.HasPrefix(line, sseDataPrefix) {
 				continue
 			}
-			data := strings.TrimPrefix(line, "data: ")
+			data := line[len(sseDataPrefix):]
 
-			if data == "[DONE]" {
+			if bytes.Equal(data, sseDoneMarker) {
 				ch <- provider.StreamEvent{Done: true, Usage: lastUsage}
 				return
 			}
 
 			var chunk model.ChatCompletionChunk
-			if err := json.Unmarshal([]byte(data), &chunk); err != nil {
+			if err := json.Unmarshal(data, &chunk); err != nil {
 				ch <- provider.StreamEvent{Err: fmt.Errorf("unmarshal chunk: %w", err)}
 				return
 			}

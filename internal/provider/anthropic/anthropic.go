@@ -723,6 +723,13 @@ func applyAnthropicReasoning(req *anthropicRequest, effort string) {
 		effort = "max"
 	}
 	if effort == "none" {
+		// Fable's adaptive thinking is always on. Anthropic rejects
+		// thinking: disabled, so use the lowest supported effort as the closest
+		// safe translation of the cross-provider "none" setting.
+		if requiresAdaptiveThinking(req.Model) {
+			req.OutputConfig = &anthropicOutputConfig{Effort: "low"}
+			return
+		}
 		// Sonnet 5 and Opus 5 think by default, so "no reasoning" has to be
 		// requested explicitly. Opus 5 only accepts disabled thinking at effort
 		// high or below, and high is the server-side default, so sending
@@ -761,6 +768,13 @@ func applyAnthropicReasoning(req *anthropicRequest, effort string) {
 		effort = "high"
 	}
 	req.Thinking = reasoningToThinking(effort, req.MaxTokens)
+}
+
+// requiresAdaptiveThinking reports models where adaptive thinking cannot be
+// disabled. They accept output_config.effort but reject thinking: disabled.
+func requiresAdaptiveThinking(modelID string) bool {
+	id := strings.ToLower(strings.TrimSpace(modelID))
+	return strings.HasPrefix(id, "claude-fable-5")
 }
 
 func usesAdaptiveThinking(modelID string) bool {

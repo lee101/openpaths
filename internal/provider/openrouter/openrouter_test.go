@@ -41,3 +41,13 @@ func TestSanitizeSamplingParametersByUpstreamModel(t *testing.T) {
 		})
 	}
 }
+
+func TestSanitizeFableNoneReasoningToLow(t *testing.T) {
+	req := &model.ChatCompletionRequest{
+		Model: "anthropic/claude-fable-5.1", ReasoningEffort: "none",
+	}
+	sanitizeForOpenRouter(req)
+	if req.ReasoningEffort != "low" {
+		t.Fatalf("reasoning_effort = %q, want low", req.ReasoningEffort)
+	}
+}

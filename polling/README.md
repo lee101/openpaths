@@ -42,7 +42,7 @@ Current direct targets:
 | Anthropic | `claude-haiku-4-5-20251001` |
 | DeepSeek | `deepseek-chat` |
 | Mistral | `open-mistral-nemo` |
-| Groq | `llama-3.1-8b-instant` |
+| Groq | `groq/gpt-oss-20b` |
 | OpenRouter | `openpaths/chat-latest` |
 | Together | `together/deepseek-v3.1` |
 | MiniMax | `minimax-m2` |

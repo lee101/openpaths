@@ -110,8 +110,7 @@ export function Landing() {
             <FrontierMetric value="30×" label="Lower cost per solve" detail="research baseline" />
           </div>
           <ArtificialAnalysisBenchmarkSection compact />
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-4 font-mono text-xs text-white/45">
-            <span>Research only: cheap-model sweeps first, larger models only after the routing rule earns the transfer.</span>
+          <div className="mt-6 flex flex-wrap items-center justify-end gap-4 font-mono text-xs text-white/45">
             <div className="flex gap-4">
               <Link to="/blog/learning-to-route-whitepaper" className="text-white/70 hover:text-white">Research <ArrowRight className="ml-1 inline h-3.5 w-3.5" /></Link>
             </div>

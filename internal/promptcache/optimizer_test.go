@@ -22,6 +22,13 @@ func TestCostForFallback(t *testing.T) {
 	}
 }
 
+func TestFable51CacheReadPrice(t *testing.T) {
+	cost := CostFor("claude-fable-5-1")
+	if cost.BaseInputPer1M != 10 || cost.CacheHitPer1M != 0.25 || cost.OutputPer1M != 50 {
+		t.Fatalf("Fable 5.1 cost = %#v, want input/cache/output 10/0.25/50", cost)
+	}
+}
+
 func ns(min float64) int64 { return int64(min * float64(time.Minute)) }
 
 func TestDecideTTL(t *testing.T) {

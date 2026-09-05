@@ -13,7 +13,7 @@ fail() { echo "  FAIL: $1 -> $2"; ((FAIL++)); }
 skip() { echo "  SKIP: $1 -> $2"; ((SKIP++)); }
 
 test_chat() {
-  local label="$1" model="$2" format="${3:-openai}"
+  local label="$1" model="$2" format="${3:-openai}" effort="${4:-}" max_toks="${5:-10}"
   local resp
   if [[ "$format" == "anthropic" ]]; then
     resp=$(curl -s --max-time "$TIMEOUT" "$BASE/v1/messages" \
@@ -23,10 +23,12 @@ test_chat() {
     local content
     content=$(echo "$resp" | python3 -c "import sys,json; print(json.load(sys.stdin)['content'][0]['text'])" 2>/dev/null) || { fail "$label" "parse error: $resp"; return; }
   else
+    local effort_json=""
+    [[ -n "$effort" ]] && effort_json="\"reasoning_effort\":\"$effort\","
     resp=$(curl -s --max-time "$TIMEOUT" "$BASE/v1/chat/completions" \
       -H "Authorization: Bearer $API_KEY" \
       -H "Content-Type: application/json" \
-      -d "{\"model\":\"$model\",\"messages\":[{\"role\":\"user\",\"content\":\"Reply with only the word yes.\"}],\"max_tokens\":10,\"temperature\":0}" 2>&1) || { fail "$label" "curl error"; return; }
+      -d "{\"model\":\"$model\",${effort_json}\"messages\":[{\"role\":\"user\",\"content\":\"Reply with only the word yes.\"}],\"max_tokens\":$max_toks,\"temperature\":0}" 2>&1) || { fail "$label" "curl error"; return; }
     local content
     content=$(echo "$resp" | python3 -c "import sys,json; print(json.load(sys.stdin)['choices'][0]['message']['content'])" 2>/dev/null) || { fail "$label" "parse error: $resp"; return; }
   fi
@@ -116,8 +118,7 @@ echo ""
 
 # --- Groq ---
 echo "=== Groq ==="
-test_chat "Llama 3.1 8B" "llama-3.1-8b-instant"
-echo ""
+test_chat "GPT-OSS 20B (Groq)" "groq/gpt-oss-20b" "openai" "low" 64
 
 # --- Together AI ---
 echo "=== Together AI ==="
@@ -138,6 +139,10 @@ echo ""
 # --- OpenRouter ---
 echo "=== OpenRouter ==="
 test_chat "StepFun Flash" "or/stepfun-flash"
+echo ""
+
+# --- Cerebras ---
+test_chat "Qwen 3.8 27B (Cerebras)" "cerebras/qwen-3.8-27b" "openai" "none"
 echo ""
 
 # --- OpenPaths Auto ---

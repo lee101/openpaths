@@ -104,7 +104,7 @@ export const useCases: UseCase[] = [
       { need: 'Fast conversational replies', model: 'openpaths/auto-fast' },
       { need: 'High-quality complex tickets', model: 'gemini-3.5-flash' },
       { need: 'Low-cost general assistance', model: 'deepseek-chat' },
-      { need: 'Ultra-low-latency triage', model: 'llama-3.1-8b-instant' },
+      { need: 'Ultra-low-latency triage', model: 'groq/gpt-oss-20b' },
     ],
     code: CURL('openpaths/auto-fast', 'Draft a reply to this refund request within policy.'),
     faq: [
@@ -121,7 +121,7 @@ export const useCases: UseCase[] = [
       {
         question: 'Which models work well for support volume?',
         answer:
-          'Teams typically pair a fast small model like llama-3.1-8b-instant for triage with a stronger model like gemini-3.5-flash for escalations - all on the same key.',
+          'Teams typically pair a fast small model like groq/gpt-oss-20b for triage with a stronger model like gemini-3.5-flash for escalations - all on the same key.',
       },
       {
         question: 'Is there a dashboard for model performance?',

@@ -67,6 +67,12 @@ func sanitizeForOpenRouter(req *model.ChatCompletionRequest) {
 	}
 
 	modelID := strings.ToLower(strings.TrimSpace(req.Model))
+	// Fable's adaptive thinking is mandatory. Keep the OpenAI-compatible
+	// cross-provider "none" value useful by translating it to the lowest
+	// supported effort before OpenRouter forwards the request to Anthropic.
+	if strings.Contains(modelID, "claude-fable-5") && strings.EqualFold(strings.TrimSpace(req.ReasoningEffort), "none") {
+		req.ReasoningEffort = "low"
+	}
 	slug := modelID
 	if slash := strings.LastIndex(slug, "/"); slash >= 0 {
 		slug = slug[slash+1:]

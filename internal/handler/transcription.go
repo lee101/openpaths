@@ -26,6 +26,8 @@ var modelToProvider = map[string]string{
 	"whisper-1":              "openai",
 	"gpt-4o-transcribe":      "openai",
 	"gpt-4o-mini-transcribe": "openai",
+	// Meta
+	"muse-voice-transcribe-1.0": "meta",
 	// Fireworks
 	"whisper-v3-large":       "fireworks",
 	"whisper-v3-large-turbo": "fireworks",
@@ -276,6 +278,8 @@ func defaultTranscriptionModel(providerName string) string {
 		return "whisper-large-v3-turbo"
 	case "openai":
 		return "whisper-1"
+	case "meta":
+		return "muse-voice-transcribe-1.0"
 	case "xai":
 		return "xai-stt"
 	case "fireworks":

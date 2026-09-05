@@ -23,6 +23,7 @@ func TestGenerateImageEditUploadsURLInputAsMultipart(t *testing.T) {
 	var form *multipart.Reader
 	var fields = map[string]string{}
 	var imageBytes []byte
+	var imageContentType string
 	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, params, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 		if err != nil {
@@ -42,6 +43,7 @@ func TestGenerateImageEditUploadsURLInputAsMultipart(t *testing.T) {
 			data, _ := io.ReadAll(part)
 			if part.FormName() == "image" {
 				imageBytes = data
+				imageContentType = part.Header.Get("Content-Type")
 			} else {
 				fields[part.FormName()] = string(data)
 			}
@@ -63,6 +65,35 @@ func TestGenerateImageEditUploadsURLInputAsMultipart(t *testing.T) {
 	}
 	if string(imageBytes) != "fake image bytes" || len(result.Data) != 1 || result.Data[0].B64JSON != "abc" {
 		t.Fatalf("image/result = %q / %#v", imageBytes, result)
+	}
+	if imageContentType != "image/png" {
+		t.Fatalf("image content type = %q, want image/png", imageContentType)
+	}
+}
+
+func TestMetaCompatibleProviderUsesImageEditEndpoint(t *testing.T) {
+	originalDownloader := downloadImageInput
+	downloadImageInput = func(context.Context, string) ([]byte, string, string, error) {
+		return []byte("meta image bytes"), "image/png", "source.png", nil
+	}
+	defer func() { downloadImageInput = originalDownloader }()
+
+	var path string
+	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		path = r.URL.Path
+		_ = json.NewEncoder(w).Encode(model.ImageGenerationResponse{Data: []model.ImageData{{B64JSON: "abc"}}})
+	}))
+	defer api.Close()
+
+	p := NewCompatible("meta", "test-key", api.URL, nil)
+	_, err := p.GenerateImage(context.Background(), &model.ImageGenerationRequest{
+		Model: "muse-image-1.0", Prompt: "edit it", ImageURL: "https://example.com/source.png",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if path != "/v1/images/edits" {
+		t.Fatalf("path = %q, want /v1/images/edits", path)
 	}
 }
 

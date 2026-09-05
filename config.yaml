@@ -163,6 +163,10 @@ providers:
     base_url: "https://app.nz/api/cogs/8a021d0d-55dd-4f66-8398-c67ca20c47ff"
     api_key: "${APPNZ_QWEN_API_KEY}"
     enabled: true
+  - name: cerebras
+    base_url: "https://api.cerebras.ai"
+    api_key: "${CEREBRAS_API_KEY}"
+    enabled: true
 
 models:
 
@@ -173,7 +177,7 @@ models:
     input_price_per_1m: 1.25
     input_cache_hit_price_per_1m: 0.15
     output_price_per_1m: 4.25
-    aliases: ["muse-spark", "meta-muse-spark", "meta-chat"]
+    aliases: ["muse-spark", "meta-muse-spark", "meta-chat", "muse-spark-1.3-contributor", "muse-spark-contributor"]
     context_window: 1048576
     max_output_tokens: 131072
     supports_streaming: true
@@ -190,7 +194,6 @@ models:
     supports_vision: false
     supported_sizes:
       - "1024x1024"
-
   # app.nz hosted, scale-to-zero Qwen3.8-27B uncensored GGUF. The public
   # output rate is the optimization target; measured deployment throughput is
   # checked before production promotion.
@@ -205,6 +208,21 @@ models:
     supports_streaming: true
     supports_tools: true
     supports_vision: false
+
+  # Cerebras-hosted Qwen 3.8 27B dense multimodal model. Wafer-scale inference
+  # at ~1500 tok/s; paid tier 128K context, 40K max output. Pricing per
+  # https://www.cerebras.ai/pricing and https://inference-docs.cerebras.ai/models/qwen-3.8-27b.
+  - id: "cerebras/qwen-3.8-27b"
+    provider: cerebras
+    provider_model_id: "qwen-3.8-27b"
+    input_price_per_1m: 0.99
+    output_price_per_1m: 1.49
+    aliases: ["qwen-3.8-27b", "qwen3.8-27b", "cerebras-qwen", "cerebras/qwen"]
+    context_window: 131072
+    max_output_tokens: 40960
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
 
   # --- OpenPaths Auto (hero + variants; embedding-routed) ---
   - id: "openpaths/auto"
@@ -2434,30 +2452,62 @@ models:
     supports_tools: false
     supports_vision: false
 
-  # --- Groq ---
-  - id: "llama-3.3-70b-versatile"
+  # --- Groq (llama-3.1-8b-instant and llama-3.3-70b-versatile were
+  # decommissioned 2026-08-16; Groq now serves gpt-oss. Retired ids keep
+  # working as compatibility routes to the replacements below.)
+  - id: "groq/gpt-oss-120b"
     provider: groq
-    provider_model_id: "llama-3.3-70b-versatile"
-    input_price_per_1m: 0.59
-    output_price_per_1m: 0.79
-    aliases: ["llama-70b"]
-    context_window: 128000
-    max_output_tokens: 32768
+    provider_model_id: "openai/gpt-oss-120b"
+    input_price_per_1m: 0.15
+    input_cache_hit_price_per_1m: 0.075
+    output_price_per_1m: 0.60
+    aliases: ["groq-gpt-oss-120b"]
+    context_window: 131072
+    max_output_tokens: 16384
     supports_streaming: true
     supports_tools: true
     supports_vision: false
 
-  - id: "llama-3.1-8b-instant"
+  - id: "groq/gpt-oss-20b"
     provider: groq
-    provider_model_id: "llama-3.1-8b-instant"
-    input_price_per_1m: 0.05
-    output_price_per_1m: 0.08
-    aliases: ["llama-8b"]
-    context_window: 128000
-    max_output_tokens: 8192
+    provider_model_id: "openai/gpt-oss-20b"
+    input_price_per_1m: 0.075
+    input_cache_hit_price_per_1m: 0.0375
+    output_price_per_1m: 0.30
+    aliases: ["groq-gpt-oss-20b"]
+    context_window: 131072
+    max_output_tokens: 16384
     supports_streaming: true
     supports_tools: true
     supports_vision: false
+
+  - id: "llama-3.3-70b-versatile"
+    provider: groq
+    provider_model_id: "openai/gpt-oss-120b"
+    input_price_per_1m: 0.15
+    output_price_per_1m: 0.60
+    aliases: ["llama-70b"]
+    context_window: 131072
+    max_output_tokens: 16384
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+    deprecated: true
+    deprecated_note: "Groq decommissioned llama-3.3-70b-versatile on 2026-08-16; compatibility route uses Groq gpt-oss-120b."
+
+  - id: "llama-3.1-8b-instant"
+    provider: groq
+    provider_model_id: "openai/gpt-oss-20b"
+    input_price_per_1m: 0.075
+    output_price_per_1m: 0.30
+    aliases: ["llama-8b"]
+    context_window: 131072
+    max_output_tokens: 16384
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+    deprecated: true
+    deprecated_note: "Groq decommissioned llama-3.1-8b-instant on 2026-08-16; compatibility route uses Groq gpt-oss-20b."
 
   # --- OpenRouter (fallback access to any model) ---
   - id: "or/deepseek-v4-flash-floor"
@@ -3525,15 +3575,17 @@ models:
 
   - id: "mixtral-8x7b-32768"
     provider: groq
-    provider_model_id: "mixtral-8x7b-32768"
-    input_price_per_1m: 0.59
-    output_price_per_1m: 0.79
+    provider_model_id: "openai/gpt-oss-120b"
+    input_price_per_1m: 0.15
+    output_price_per_1m: 0.60
     aliases: ["mixtral"]
-    context_window: 32768
-    max_output_tokens: 4096
+    context_window: 131072
+    max_output_tokens: 16384
     supports_streaming: true
     supports_tools: true
     supports_vision: false
+    deprecated: true
+    deprecated_note: "Groq retired mixtral-8x7b-32768; compatibility route uses Groq gpt-oss-120b."
 
   # --- Fireworks AI ---
   - id: "fireworks/gpt-oss-120b"

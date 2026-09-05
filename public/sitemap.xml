@@ -396,6 +396,11 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/providers/meta</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/providers/cursor</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -442,6 +447,11 @@
   </url>
   <url>
     <loc>https://openpaths.io/providers/groq</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/providers/cerebras</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -551,6 +561,11 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/meta/docs</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/cursor/docs</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -597,6 +612,11 @@
   </url>
   <url>
     <loc>https://openpaths.io/groq/docs</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/cerebras/docs</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -971,6 +991,26 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/models/muse-spark-1.3</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/muse-image-1.0</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/muse-voice-transcribe-1.0</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/claude-fable-5-1</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/models/claude-fable-5</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -1142,6 +1182,11 @@
   </url>
   <url>
     <loc>https://openpaths.io/models/gpt-4o-mini</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/gemini-3.8-flash</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1396,6 +1441,11 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/models/cerebras%2Fqwen-3.8-27b</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/models/qwen%2Fqwen3.7-plus</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
@@ -1496,12 +1546,12 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://openpaths.io/models/llama-3.3-70b-versatile</loc>
+    <loc>https://openpaths.io/models/groq%2Fgpt-oss-120b</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://openpaths.io/models/llama-3.1-8b-instant</loc>
+    <loc>https://openpaths.io/models/groq%2Fgpt-oss-20b</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -2504,6 +2554,11 @@
     <loc>https://openpaths.io/models/flux-video-upscale</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/blog/cerebras-qwen-3-8-27b</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/provider-manifoldgen</loc>

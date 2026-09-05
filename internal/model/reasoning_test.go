@@ -67,6 +67,14 @@ func TestCompatibleReasoningEffort(t *testing.T) {
 		// Qwen 3.8 Max via OpenRouter cannot disable reasoning.
 		{"qwen/qwen3.8-max", "none", "minimal"},
 		{"qwen/qwen3.8-max", "max", "max"},
+		// Qwen 3.8 27B on Cerebras defaults high; none disables it.
+		{"qwen-3.8-27b", "none", "none"},
+		{"qwen-3.8-27b", "max", "high"},
+		{"qwen-3.8-27b", "xhigh", "high"},
+		// GPT-OSS rejects none/minimal/max; nearest supported tier wins.
+		{"openai/gpt-oss-20b", "none", "low"},
+		{"openai/gpt-oss-120b", "max", "high"},
+		{"accounts/fireworks/models/gpt-oss-120b", "minimal", "low"},
 	}
 	for _, tt := range tests {
 		if got := CompatibleReasoningEffort(tt.model, tt.requested); got != tt.want {

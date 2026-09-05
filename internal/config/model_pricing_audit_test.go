@@ -44,9 +44,9 @@ func TestAuditedTokenPrices(t *testing.T) {
 		// api.x.ai/v1/language-models
 		"grok-4.5": {2.00, 0.30, 6.00},
 		"grok-4.3": {1.25, 0.20, 2.50},
-		// openrouter.ai/api/v1/models (50%-off promotion through August 27, 2026)
-		"gemini-3.7-flash": {0.375, 0.0375, 1.875},
 		// ai.google.dev/gemini-api/docs/pricing
+		"gemini-3.8-flash":      {0.75, 0.075, 3.75},
+		"gemini-3.7-flash":      {0.75, 0.075, 3.75},
 		"gemini-3.6-flash":      {0.75, 0, 3.75},
 		"gemini-3.5-flash-lite": {0.30, 0, 2.50},
 		// developers.openai.com/api/docs/pricing
@@ -60,6 +60,9 @@ func TestAuditedTokenPrices(t *testing.T) {
 		"or/gpt-5.6-luna":  {0.10, 0.01, 0.60},
 		"or/qwen3.8-max":   {2.00, 0.25, 6.00},
 		"or/gpt-5-codex":   {1.75, 0.175, 14.00},
+		// console.groq.com/docs/pricing (gpt-oss verified Aug 2026)
+		"groq/gpt-oss-120b": {0.15, 0.075, 0.60},
+		"groq/gpt-oss-20b":  {0.075, 0.0375, 0.30},
 	}
 	for id, w := range want {
 		m, ok := byName[id]

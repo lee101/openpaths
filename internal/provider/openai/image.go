@@ -8,6 +8,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"net/textproto"
 	"net/url"
 	"path/filepath"
 	"strings"
@@ -30,7 +31,7 @@ type openaiImageRequest struct {
 
 func (p *OpenAIProvider) GenerateImage(ctx context.Context, req *model.ImageGenerationRequest) (*model.ImageGenerationResponse, error) {
 	inputURLs := imageInputURLs(req)
-	if p.providerName == "openai" && len(inputURLs) > 0 {
+	if (p.providerName == "openai" || p.providerName == "meta") && len(inputURLs) > 0 {
 		return p.editImage(ctx, req, inputURLs)
 	}
 
@@ -78,7 +79,7 @@ func (p *OpenAIProvider) GenerateImage(ctx context.Context, req *model.ImageGene
 	resp, err := p.client.Do(httpReq)
 	if err != nil {
 		return nil, &provider.ProviderError{
-			Provider: "openai", StatusCode: 502, Message: err.Error(), Retryable: true, Err: err,
+			Provider: p.providerName, StatusCode: 502, Message: err.Error(), Retryable: true, Err: err,
 		}
 	}
 	defer resp.Body.Close()
@@ -90,7 +91,7 @@ func (p *OpenAIProvider) GenerateImage(ctx context.Context, req *model.ImageGene
 
 	if resp.StatusCode != 200 {
 		return nil, &provider.ProviderError{
-			Provider:   "openai",
+			Provider:   p.providerName,
 			StatusCode: resp.StatusCode,
 			Message:    string(respBody),
 			Retryable:  resp.StatusCode >= 500 || resp.StatusCode == 429,
@@ -121,14 +122,16 @@ func (p *OpenAIProvider) editImage(ctx context.Context, req *model.ImageGenerati
 		if index > 0 {
 			field = "image[]"
 		}
-		part, err := writer.CreateFormFile(field, filename)
+		headers := make(textproto.MIMEHeader)
+		headers.Set("Content-Disposition", fmt.Sprintf(`form-data; name="%s"; filename="%s"`, field, escapeImageFilename(filename)))
+		headers.Set("Content-Type", contentType)
+		part, err := writer.CreatePart(headers)
 		if err != nil {
 			return nil, fmt.Errorf("create image form part: %w", err)
 		}
 		if _, err := part.Write(data); err != nil {
 			return nil, fmt.Errorf("write image form part: %w", err)
 		}
-		_ = contentType // CreateFormFile sets the filename; OpenAI detects the image bytes.
 	}
 	fields := map[string]string{
 		"model":  req.Model,
@@ -179,6 +182,16 @@ func (p *OpenAIProvider) editImage(ctx context.Context, req *model.ImageGenerati
 		return nil, fmt.Errorf("unmarshal image edit response: %w", err)
 	}
 	return &result, nil
+}
+
+func escapeImageFilename(filename string) string {
+	filename = filepath.Base(filename)
+	filename = strings.ReplaceAll(filename, `\`, "_")
+	filename = strings.ReplaceAll(filename, `"`, "_")
+	if filename == "." || filename == "" {
+		return "input.png"
+	}
+	return filename
 }
 
 func imageInputURLs(req *model.ImageGenerationRequest) []string {

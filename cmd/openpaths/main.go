@@ -44,6 +44,7 @@ import (
 	"github.com/openpaths/openpaths/internal/provider/groq"
 	"github.com/openpaths/openpaths/internal/provider/localwhisper"
 	"github.com/openpaths/openpaths/internal/provider/manifoldgen"
+	metaprovider "github.com/openpaths/openpaths/internal/provider/meta"
 	"github.com/openpaths/openpaths/internal/provider/minimax"
 	"github.com/openpaths/openpaths/internal/provider/mistral"
 	"github.com/openpaths/openpaths/internal/provider/netwrck"
@@ -157,6 +158,10 @@ func main() {
 		case "openai":
 			p = openai.New(provCfg.APIKey, provCfg.BaseURL)
 			transcribers = append(transcribers, openai.NewTranscriber(provCfg.APIKey, provCfg.BaseURL))
+		case "meta":
+			mp := metaprovider.New(provCfg.APIKey, provCfg.BaseURL)
+			p = mp
+			transcribers = append(transcribers, mp)
 		case "anthropic":
 			ap := anthropic.New(provCfg.APIKey, provCfg.BaseURL)
 			ap.SetCacheOptimizer(cacheOptimizer)

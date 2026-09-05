@@ -791,6 +791,7 @@ func (h *ChatHandler) tryStreamingBYOK(
 	ctx.SetBodyStreamWriter(func(w *bufio.Writer) {
 		var usage *model.UsageInfo
 		var outBuf strings.Builder
+		outBuf.Grow(32 << 10)
 		var firstTokenAt time.Time
 
 		for event := range streamCh {
@@ -812,13 +813,15 @@ func (h *ChatHandler) tryStreamingBYOK(
 			}
 
 			event.Chunk.Model = originalModel
-			if wantSave && len(event.Chunk.Choices) > 0 && event.Chunk.Choices[0].Delta != nil {
-				outBuf.WriteString(messageContentText(event.Chunk.Choices[0].Delta.Content))
+			deltaText := ""
+			if len(event.Chunk.Choices) > 0 && event.Chunk.Choices[0].Delta != nil {
+				deltaText = messageContentText(event.Chunk.Choices[0].Delta.Content)
 			}
-			if firstTokenAt.IsZero() && len(event.Chunk.Choices) > 0 && event.Chunk.Choices[0].Delta != nil {
-				if messageContentText(event.Chunk.Choices[0].Delta.Content) != "" {
-					firstTokenAt = time.Now()
-				}
+			if wantSave && deltaText != "" {
+				outBuf.WriteString(deltaText)
+			}
+			if firstTokenAt.IsZero() && deltaText != "" {
+				firstTokenAt = time.Now()
 			}
 			data, _ := json.Marshal(event.Chunk)
 			w.WriteString("data: ")
