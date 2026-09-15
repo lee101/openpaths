@@ -563,6 +563,19 @@ const catalogModels: Model[] = [
     popularity: 1
   },
   {
+    id: 'muse-spark-1.3-contributor',
+    name: 'Muse Spark 1.3 Contributor',
+    provider: 'Meta',
+    description: 'Fast, low-cost contributor-tier variant of Muse Spark 1.3 for high-volume coding assistance, agentic workflows, tool use, and document, image, video, and audio understanding.',
+    contextLength: '1M',
+    priceInput: 0.30,
+    priceOutput: 1.00,
+    tags: ['programming', 'reasoning', 'general', 'vision', 'agentic', 'fast'],
+    aliases: ['muse-spark-contributor', 'meta-muse-spark-contributor', 'meta-contributor'],
+    released: '2026-09-06',
+    popularity: 3
+  },
+  {
     id: 'muse-image-1.0',
     name: 'Muse Image 1.0',
     provider: 'Meta',

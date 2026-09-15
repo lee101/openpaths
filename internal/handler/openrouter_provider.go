@@ -200,6 +200,7 @@ var orModelDisplayNames = map[string]string{
 	"llama-3.3-70b-versatile":      "Meta: Llama 3.3 70B",
 	"llama-3.1-8b-instant":         "Meta: Llama 3.1 8B",
 	"muse-spark-1.3":               "Meta: Muse Spark 1.3",
+	"muse-spark-1.3-contributor":   "Meta: Muse Spark 1.3 Contributor",
 	"muse-image-1.0":               "Meta: Muse Image 1.0",
 	"muse-voice-transcribe-1.0":    "Meta: Muse Voice Transcribe 1.0",
 	"ra1":                          "Netwrck: RA1",

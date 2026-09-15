@@ -13,6 +13,17 @@ func TestMetaModels(t *testing.T) {
 		t.Fatalf("Muse Spark pricing = %v/%v/%v", spark.InputPricePer1M, spark.InputCacheHitPricePer1M, spark.OutputPricePer1M)
 	}
 
+	contrib := models["muse-spark-1.3-contributor"]
+	if contrib == nil || contrib.Provider != "meta" || contrib.ProviderModelID != "muse-spark-1.3-contributor" {
+		t.Fatalf("Muse Spark Contributor route = %+v", contrib)
+	}
+	if contrib.InputPricePer1M != 0.30 || contrib.InputCacheHitPricePer1M != 0.03 || contrib.OutputPricePer1M != 1.00 {
+		t.Fatalf("Muse Spark Contributor pricing = %v/%v/%v", contrib.InputPricePer1M, contrib.InputCacheHitPricePer1M, contrib.OutputPricePer1M)
+	}
+	if got := models["muse-spark-contributor"]; got == nil || got.ID != "muse-spark-1.3-contributor" {
+		t.Fatalf("muse-spark-contributor alias resolves to %v, want muse-spark-1.3-contributor", got)
+	}
+
 	image := models["muse-image-1.0"]
 	if image == nil || image.Provider != "meta" || image.PricePerImage != 0.01 {
 		t.Fatalf("Muse Image config = %+v", image)
