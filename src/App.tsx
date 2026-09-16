@@ -36,6 +36,7 @@ import { CharacterAnimator } from './pages/CharacterAnimator';
 import { MusicGenerator } from './pages/MusicGenerator';
 import { RemoveVideoBackground } from './pages/RemoveVideoBackground';
 import { Tools } from './pages/Tools';
+import { LiveVoice } from './pages/LiveVoice';
 import { GoogleTTS } from './pages/GoogleTTS';
 import { LyriaStudio } from './pages/LyriaStudio';
 import { Alternatives } from './pages/Alternatives';
@@ -90,6 +91,7 @@ export default function App() {
           <Route path="fusion" element={<Fusion />} />
           <Route path="compound" element={<Compound />} />
           <Route path="tools" element={<Tools />} />
+          <Route path="tools/live-voice" element={<LiveVoice />} />
           <Route path="tools/google-tts" element={<GoogleTTS />} />
           <Route path="tools/lyria" element={<LyriaStudio />} />
           <Route path="image-to-3d" element={<ImageTo3D />} />

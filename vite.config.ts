@@ -36,7 +36,7 @@ export default defineConfig(({mode}) => {
         '/account/': 'http://localhost:8090',
         '/admin/': 'http://localhost:8090',
         '/stripe/': 'http://localhost:8090',
-        '/v1/': 'http://localhost:8090',
+        '/v1/': { target: 'http://localhost:8090', ws: true },
         '/crypto/': 'http://localhost:8090',
         '/health': 'http://localhost:8090',
         '/stats/': 'http://localhost:8090',

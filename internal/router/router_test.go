@@ -718,3 +718,16 @@ func TestResolveForRequest_PrefersRoutedModelBeforeTierFallbacks(t *testing.T) {
 		t.Fatalf("third candidate = %q, want gpt-4o", candidates[2].ModelCfg.ID)
 	}
 }
+
+func TestListModelsIncludesRealtimeModalityPricing(t *testing.T) {
+	cfg := model.ModelConfig{ID: "gpt-realtime-2.1-mini", Provider: "openai", InputPricePer1M: .63, OutputPricePer1M: 2.52, AudioInputPricePer1M: 10.5, AudioInputCacheHitPricePer1M: .315, AudioOutputPricePer1M: 21, ImageInputPricePer1M: .84, ImageInputCacheHitPricePer1M: .084}
+	r := newTestRouter([]model.ModelConfig{cfg})
+	list := r.ListModels()
+	detail, ok := r.GetModelInfo(cfg.ID)
+	if !ok || len(list) != 1 {
+		t.Fatal("missing realtime model")
+	}
+	if list[0].Pricing.AudioInputPer1M != detail.Pricing.AudioInputPer1M || list[0].Pricing.AudioOutputPer1M != 21 || list[0].Pricing.AudioInputCacheHitPer1M != .315 || list[0].Pricing.ImageInputPer1M != .84 || list[0].Pricing.ImageInputCacheHitPer1M != .084 {
+		t.Fatalf("modality prices missing from list: %+v", list[0].Pricing)
+	}
+}

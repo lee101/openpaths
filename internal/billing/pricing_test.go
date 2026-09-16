@@ -746,3 +746,17 @@ func TestCalculateCost_LargeTokenCounts(t *testing.T) {
 		t.Errorf("got cost %d, want 350000", cost)
 	}
 }
+
+func TestRealtimeUnpricedCacheUsesNormalRate(t *testing.T) {
+	pt := NewPricingTable([]model.ModelConfig{{ID: "gemini-live", InputPricePer1M: .7875, AudioInputPricePer1M: 3.15, ImageInputPricePer1M: 1.05}})
+	plain := RealtimeUsage{TextInputTokens: 10000, AudioInputTokens: 10000, ImageInputTokens: 10000}
+	cached := plain
+	cached.CachedTextInputTokens = 10000
+	cached.CachedAudioInputTokens = 10000
+	cached.CachedImageInputTokens = 10000
+	want, _ := pt.CalculateRealtimeCost("gemini-live", plain)
+	got, err := pt.CalculateRealtimeCost("gemini-live", cached)
+	if err != nil || got != want || got == 0 {
+		t.Fatalf("cache without discounted rate: got %d want %d err=%v", got, want, err)
+	}
+}

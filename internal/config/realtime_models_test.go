@@ -12,8 +12,9 @@ func TestRealtimeVoiceModels(t *testing.T) {
 		maxOutput                                                    int
 		cached, audioIn, cachedAudio, audioOut, imageIn, cachedImage float64
 	}{
-		{id: "gpt-realtime-2.1", input: 4, output: 24, context: 128000, maxOutput: 32000, cached: .4, audioIn: 32, cachedAudio: .4, audioOut: 64, imageIn: 5, cachedImage: .5},
-		{id: "gpt-realtime-2.1-mini", input: .6, output: 2.4, context: 128000, maxOutput: 32000, cached: .06, audioIn: 10, cachedAudio: .3, audioOut: 20, imageIn: .8, cachedImage: .08},
+		{id: "gpt-realtime-2.1", input: 4.2, output: 25.2, context: 128000, maxOutput: 32000, cached: .42, audioIn: 33.6, cachedAudio: .42, audioOut: 67.2, imageIn: 5.25, cachedImage: .525},
+		{id: "gpt-realtime-2.1-mini", input: .63, output: 2.52, context: 128000, maxOutput: 32000, cached: .063, audioIn: 10.5, cachedAudio: .315, audioOut: 21, imageIn: .84, cachedImage: .084},
+		{id: "gemini-3.8-live-extended-thinking", input: .7875, output: 4.725, context: 131072, maxOutput: 65536, audioIn: 3.15, audioOut: 12.6, imageIn: 1.05},
 	}
 	for _, tc := range cases {
 		model := byName[tc.id]

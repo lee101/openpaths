@@ -14,14 +14,18 @@ import (
 
 	fws "github.com/fasthttp/websocket"
 	gws "github.com/gorilla/websocket"
-	"github.com/valyala/fasthttp"
-
 	"github.com/openpaths/openpaths/internal/billing"
 	"github.com/openpaths/openpaths/internal/metrics"
 	"github.com/openpaths/openpaths/internal/middleware"
 	"github.com/openpaths/openpaths/internal/model"
 	"github.com/openpaths/openpaths/internal/router"
+	"github.com/valyala/fasthttp"
 )
+
+const realtimeMaxMessageBytes = 1 << 20
+const realtimeSetupTimeout = 15 * time.Second
+const realtimeIdleTimeout = 90 * time.Second
+const realtimeWriteTimeout = 10 * time.Second
 
 type RealtimeHandler struct {
 	router    *router.Router
@@ -33,137 +37,244 @@ type RealtimeHandler struct {
 }
 
 func NewRealtimeHandler(r *router.Router, b *billing.Engine, rec *metrics.Recorder, providers []model.ProviderConfig) *RealtimeHandler {
-	return &RealtimeHandler{
-		router: r, billing: b, recorder: rec, providers: providers,
-		upgrader: fws.FastHTTPUpgrader{
-			ReadBufferSize: 8192, WriteBufferSize: 8192,
-			CheckOrigin: func(*fasthttp.RequestCtx) bool { return true },
-		},
-		dialer: &gws.Dialer{HandshakeTimeout: 15 * time.Second},
+	return &RealtimeHandler{router: r, billing: b, recorder: rec, providers: providers,
+		upgrader: fws.FastHTTPUpgrader{ReadBufferSize: 8192, WriteBufferSize: 8192, Subprotocols: middleware.RealtimeSubprotocols(), CheckOrigin: realtimeSameOrigin},
+		dialer:   &gws.Dialer{HandshakeTimeout: 15 * time.Second},
 	}
 }
 
+func realtimeSameOrigin(ctx *fasthttp.RequestCtx) bool {
+	origin := string(ctx.Request.Header.Peek("Origin"))
+	if origin == "" {
+		return true
+	} // Non-browser API clients authenticate by header.
+	u, err := url.Parse(origin)
+	return err == nil && (u.Scheme == "http" || u.Scheme == "https") && strings.EqualFold(u.Host, string(ctx.Host()))
+}
+
+func (h *RealtimeHandler) providerByName(name string) (model.ProviderConfig, bool) {
+	for _, cfg := range h.providers {
+		if cfg.Name == name && cfg.Enabled {
+			return cfg, true
+		}
+	}
+	return model.ProviderConfig{}, false
+}
+
 func (h *RealtimeHandler) HandleRealtime(ctx *fasthttp.RequestCtx) {
-	requestedModel := strings.TrimSpace(string(ctx.QueryArgs().Peek("model")))
-	cfg, ok := h.router.GetModelConfig(requestedModel)
-	if !ok || cfg.Provider != "openai" || !strings.HasPrefix(cfg.ProviderModelID, "gpt-realtime-") {
-		writeJSON(ctx, http.StatusBadRequest, realtimeError("invalid_model", "A supported OpenAI realtime model is required"))
+	cfg, ok := h.router.GetModelConfig(strings.TrimSpace(string(ctx.QueryArgs().Peek("model"))))
+	if !ok || !supportedRealtimeModel(cfg) {
+		writeJSON(ctx, http.StatusBadRequest, realtimeError("invalid_model", "Choose a supported OpenAI or Gemini live model"))
 		return
 	}
-
+	if !realtimeSameOrigin(ctx) {
+		writeJSON(ctx, http.StatusForbidden, realtimeError("origin_rejected", "Cross-origin realtime connections are not allowed"))
+		return
+	}
+	providerCfg, found := h.providerByName(cfg.Provider)
+	if !found {
+		writeJSON(ctx, http.StatusServiceUnavailable, realtimeError("provider_unavailable", "The voice provider is not configured"))
+		return
+	}
 	userID, _ := ctx.UserValue(middleware.CtxKeyUserID).(string)
 	apiKeyID := ""
 	if key, _ := ctx.UserValue(middleware.CtxKeyAPIKey).(*model.APIKey); key != nil {
 		apiKeyID = key.ID
 	}
-	providerCfg, found := h.openAIProvider()
-	if !found {
-		writeJSON(ctx, http.StatusServiceUnavailable, realtimeError("provider_unavailable", "OpenAI realtime is not configured"))
-		return
-	}
-
 	upstreamKey := providerCfg.APIKey
 	byok := false
-	if key := getUserProviderKeys(ctx)["openai"]; key != nil && strings.TrimSpace(key.APIKey) != "" {
+	if key := getUserProviderKeys(ctx)[cfg.Provider]; key != nil && strings.TrimSpace(key.APIKey) != "" {
 		upstreamKey = strings.TrimSpace(key.APIKey)
 		byok = true
 	}
 	if upstreamKey == "" {
-		writeJSON(ctx, http.StatusServiceUnavailable, realtimeError("provider_unavailable", "OpenAI realtime credentials are unavailable"))
+		writeJSON(ctx, http.StatusServiceUnavailable, realtimeError("provider_unavailable", "The voice provider credentials are unavailable"))
 		return
 	}
 	if !byok {
-		estimate, err := h.billing.RealtimeCost(cfg.ID, billing.RealtimeUsage{AudioOutputTokens: cfg.MaxOutputTokens})
+		estimate, err := h.billing.RealtimeCost(cfg.ID, billing.RealtimeUsage{AudioOutputTokens: 1024})
 		if err != nil || h.billing.PreCheckFixed(ctx, userID, estimate) != nil {
-			writeJSON(ctx, http.StatusPaymentRequired, realtimeError("insufficient_balance", "Insufficient balance for a realtime session"))
+			writeJSON(ctx, http.StatusPaymentRequired, realtimeError("insufficient_balance", "Insufficient balance for a voice session"))
 			return
 		}
 	}
-
-	upstreamURL, err := makeRealtimeURL(providerCfg.BaseURL, cfg.ProviderModelID)
+	var upstreamURL string
+	var err error
+	if cfg.Provider == "google" {
+		upstreamURL, err = makeGeminiRealtimeURL(providerCfg.BaseURL)
+	} else {
+		upstreamURL, err = makeRealtimeURL(providerCfg.BaseURL, cfg.ProviderModelID)
+	}
 	if err != nil {
-		writeJSON(ctx, http.StatusServiceUnavailable, realtimeError("provider_unavailable", "OpenAI realtime URL is invalid"))
+		writeJSON(ctx, http.StatusServiceUnavailable, realtimeError("provider_unavailable", "The voice provider URL is invalid"))
 		return
 	}
 	app := requestAppAttribution(ctx)
 	started := time.Now()
 	err = h.upgrader.Upgrade(ctx, func(client *fws.Conn) {
-		h.relay(client, upstreamURL, upstreamKey, userID, apiKeyID, cfg.ID, byok, app, started)
+		h.relay(client, upstreamURL, upstreamKey, userID, apiKeyID, cfg, byok, app, started)
 	})
 	if err != nil {
 		log.Printf("realtime websocket upgrade failed: %v", err)
 	}
 }
 
-func (h *RealtimeHandler) relay(client *fws.Conn, upstreamURL, upstreamKey, userID, apiKeyID, modelID string, byok bool, app requestApp, started time.Time) {
+func supportedRealtimeModel(cfg *model.ModelConfig) bool {
+	return (cfg.Provider == "openai" && strings.HasPrefix(cfg.ProviderModelID, "gpt-realtime-")) ||
+		(cfg.Provider == "google" && cfg.ProviderModelID == "gemini-3.8-live-extended-thinking")
+}
+
+// validateRealtimeClientMessage runs on every frame so a second setup/update
+// cannot silently change the provider model while retaining the original price.
+func validateRealtimeClientMessage(payload []byte, cfg *model.ModelConfig, first bool) error {
+	var event map[string]json.RawMessage
+	if json.Unmarshal(payload, &event) != nil {
+		return errors.New("Voice messages must be JSON objects")
+	}
+	if cfg.Provider == "google" {
+		raw, setup := event["setup"]
+		if first && !setup {
+			return errors.New("The first Gemini message must contain setup")
+		}
+		if setup {
+			if !first {
+				return errors.New("A voice session can only be configured once")
+			}
+			var body struct {
+				Model string                       `json:"model"`
+				Tools []map[string]json.RawMessage `json:"tools"`
+			}
+			if json.Unmarshal(raw, &body) != nil || strings.TrimPrefix(body.Model, "models/") != cfg.ProviderModelID {
+				return errors.New("The setup model must match the selected voice model")
+			}
+			// Built-in search has separate charges not covered by token billing.
+			for _, tool := range body.Tools {
+				for name := range tool {
+					if name != "functionDeclarations" {
+						return errors.New("Only client function declarations are supported in live sessions")
+					}
+				}
+			}
+		}
+	} else {
+		var body struct {
+			Session struct {
+				Model string `json:"model"`
+			} `json:"session"`
+		}
+		if json.Unmarshal(payload, &body) != nil {
+			return errors.New("Invalid voice message")
+		}
+		if body.Session.Model != "" && body.Session.Model != cfg.ProviderModelID {
+			return errors.New("session.update cannot change the selected voice model")
+		}
+	}
+	return nil
+}
+
+// Two independent pumps preserve low audio latency. The upstream pump bills
+// only provider usage events; PCM frames don't wait on a database operation.
+func (h *RealtimeHandler) relay(client *fws.Conn, upstreamURL, upstreamKey, userID, apiKeyID string, cfg *model.ModelConfig, byok bool, app requestApp, started time.Time) {
+	defer client.Close()
 	headers := http.Header{}
-	headers.Set("Authorization", "Bearer "+upstreamKey)
-	headers.Set("OpenAI-Safety-Identifier", safetyIdentifier(userID))
+	if cfg.Provider == "google" {
+		headers.Set("x-goog-api-key", upstreamKey)
+	} else {
+		headers.Set("Authorization", "Bearer "+upstreamKey)
+		headers.Set("OpenAI-Safety-Identifier", safetyIdentifier(userID))
+	}
 	upstream, resp, err := h.dialer.Dial(upstreamURL, headers)
 	if err != nil {
-		message := "Unable to connect to OpenAI realtime"
+		message := "Unable to connect to the voice provider"
 		if resp != nil {
-			message = fmt.Sprintf("OpenAI realtime connection failed with status %d", resp.StatusCode)
+			message = fmt.Sprintf("Voice provider connection failed with status %d", resp.StatusCode)
+			if resp.Body != nil {
+				resp.Body.Close()
+			}
 		}
+		_ = client.SetWriteDeadline(time.Now().Add(realtimeWriteTimeout))
 		_ = client.WriteJSON(realtimeError("upstream_connection_error", message))
-		h.recordRealtimeError(userID, apiKeyID, modelID, app, started, http.StatusBadGateway, message)
+		h.recordRealtimeError(userID, apiKeyID, cfg.ID, cfg.Provider, app, started, http.StatusBadGateway, message)
 		return
 	}
 	defer upstream.Close()
-	defer client.Close()
-
+	client.SetReadLimit(realtimeMaxMessageBytes)
+	upstream.SetReadLimit(realtimeMaxMessageBytes)
+	_ = client.SetReadDeadline(time.Now().Add(realtimeSetupTimeout))
+	_ = upstream.SetReadDeadline(time.Now().Add(realtimeIdleTimeout))
+	client.SetPongHandler(func(string) error { return client.SetReadDeadline(time.Now().Add(realtimeIdleTimeout)) })
+	upstream.SetPongHandler(func(string) error { return upstream.SetReadDeadline(time.Now().Add(realtimeIdleTimeout)) })
 	var clientWriteMu sync.Mutex
-	writeClient := func(messageType int, payload []byte) error {
+	writeClient := func(kind int, payload []byte) error {
 		clientWriteMu.Lock()
 		defer clientWriteMu.Unlock()
-		return client.WriteMessage(messageType, payload)
+		_ = client.SetWriteDeadline(time.Now().Add(realtimeWriteTimeout))
+		return client.WriteMessage(kind, payload)
+	}
+	sendError := func(code, message string) {
+		_ = writeClient(fws.TextMessage, marshalRealtimeJSON(realtimeError(code, message)))
 	}
 	done := make(chan error, 2)
 	go func() {
+		first := true
 		for {
-			messageType, payload, readErr := client.ReadMessage()
-			if readErr != nil {
-				done <- readErr
+			kind, payload, err := client.ReadMessage()
+			if err != nil {
+				done <- err
 				return
 			}
-			if writeErr := upstream.WriteMessage(messageType, payload); writeErr != nil {
-				done <- writeErr
+			if err = validateRealtimeClientMessage(payload, cfg, first); err != nil {
+				sendError("invalid_session", err.Error())
+				done <- err
+				return
+			}
+			first = false
+			_ = client.SetReadDeadline(time.Now().Add(realtimeIdleTimeout))
+			_ = upstream.SetWriteDeadline(time.Now().Add(realtimeWriteTimeout))
+			if err = upstream.WriteMessage(kind, payload); err != nil {
+				done <- err
 				return
 			}
 		}
 	}()
-
 	var totalUsage billing.RealtimeUsage
 	var totalCost int64
-	seenResponses := make(map[string]bool)
 	go func() {
+		seenResponses := make(map[string]bool)
 		for {
-			messageType, payload, readErr := upstream.ReadMessage()
-			if readErr != nil {
-				done <- readErr
+			kind, payload, err := upstream.ReadMessage()
+			if err != nil {
+				done <- err
 				return
 			}
-			if messageType == gws.TextMessage {
-				responseID, usage, completed, parseErr := parseRealtimeUsage(payload)
-				if parseErr != nil {
-					if !byok {
-						_ = writeClient(fws.TextMessage, marshalRealtimeJSON(realtimeError("usage_unavailable", parseErr.Error())))
-						done <- parseErr
-						return
-					}
-					completed = false
+			_ = upstream.SetReadDeadline(time.Now().Add(realtimeIdleTimeout))
+			if kind == gws.TextMessage || kind == gws.BinaryMessage {
+				var usage billing.RealtimeUsage
+				var present bool
+				var responseID string
+				var parseErr error
+				if cfg.Provider == "google" {
+					usage, present = parseGeminiUsage(payload)
+				} else {
+					responseID, usage, present, parseErr = parseRealtimeUsage(payload)
 				}
-				if completed && (responseID == "" || !seenResponses[responseID]) {
+				if parseErr != nil && !byok {
+					sendError("usage_unavailable", parseErr.Error())
+					done <- parseErr
+					return
+				}
+				if present && (responseID == "" || !seenResponses[responseID]) {
 					if responseID != "" {
 						seenResponses[responseID] = true
 					}
-					cost := int64(0)
+					var cost int64
 					if !byok {
-						cost, err = h.billing.DeductRealtime(context.Background(), userID, modelID, usage, "")
+						ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+						cost, err = h.billing.DeductRealtime(ctx, userID, cfg.ID, usage, "")
+						cancel()
 						if err != nil {
-							billingErr := errors.New("realtime billing failed")
-							_ = writeClient(fws.TextMessage, marshalRealtimeJSON(realtimeError("billing_failed", "The realtime session ended because usage could not be billed")))
-							done <- billingErr
+							sendError("billing_failed", "Voice session ended because usage could not be billed")
+							done <- err
 							return
 						}
 					}
@@ -171,37 +282,68 @@ func (h *RealtimeHandler) relay(client *fws.Conn, upstreamURL, upstreamKey, user
 					totalCost += cost
 				}
 			}
-			if writeErr := writeClient(messageType, payload); writeErr != nil {
-				done <- writeErr
+			if err = writeClient(kind, payload); err != nil {
+				done <- err
 				return
 			}
 		}
 	}()
-
-	relayErr := <-done
-	_ = client.Close()
-	_ = upstream.Close()
-	<-done
-	latency := int(time.Since(started).Milliseconds())
-	if totalRealtimeUsageTokens(totalUsage) > 0 && h.recorder != nil {
-		h.recorder.RecordSuccessWithApp(userID, apiKeyID, modelID, "openai", realtimeInputTokens(totalUsage), realtimeOutputTokens(totalUsage), latency, 0, totalCost, true, app.ID, app.URL, app.Title, app.Categories)
-	} else if !gws.IsCloseError(relayErr, gws.CloseNormalClosure, gws.CloseGoingAway) && !fws.IsCloseError(relayErr, fws.CloseNormalClosure, fws.CloseGoingAway) {
-		h.recordRealtimeError(userID, apiKeyID, modelID, app, started, http.StatusBadGateway, relayErr.Error())
-	}
-}
-
-func (h *RealtimeHandler) openAIProvider() (model.ProviderConfig, bool) {
-	for _, cfg := range h.providers {
-		if cfg.Name == "openai" && cfg.Enabled {
-			return cfg, true
+	ticker := time.NewTicker(20 * time.Second)
+	defer ticker.Stop()
+	lifetime := time.NewTimer(30 * time.Minute)
+	defer lifetime.Stop()
+	var relayErr error
+	completedPumps := 0
+loop:
+	for {
+		select {
+		case relayErr = <-done:
+			completedPumps++
+			break loop
+		case <-lifetime.C:
+			sendError("session_expired", "Start a new call to continue after 30 minutes")
+			break loop
+		case <-ticker.C:
+			if !byok {
+				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				err := h.billing.PreCheckFixed(ctx, userID, 1)
+				cancel()
+				if err != nil {
+					sendError("insufficient_balance", "Add credits to continue the voice session")
+					relayErr = err
+					break loop
+				}
+			}
+			deadline := time.Now().Add(realtimeWriteTimeout)
+			if err := client.WriteControl(fws.PingMessage, nil, deadline); err != nil {
+				relayErr = err
+				break loop
+			}
+			if err := upstream.WriteControl(gws.PingMessage, nil, deadline); err != nil {
+				relayErr = err
+				break loop
+			}
 		}
 	}
-	return model.ProviderConfig{}, false
+	// Closing both sockets releases both pumps, even if the upstream failed while
+	// the browser was silent. Wait for accounting before reading the totals.
+	_ = client.WriteControl(fws.CloseMessage, fws.FormatCloseMessage(fws.CloseNormalClosure, "Voice session ended"), time.Now().Add(time.Second))
+	_ = client.Close()
+	_ = upstream.Close()
+	for completedPumps < 2 {
+		<-done
+		completedPumps++
+	}
+	if totalRealtimeUsageTokens(totalUsage) > 0 && h.recorder != nil {
+		h.recorder.RecordSuccessWithApp(userID, apiKeyID, cfg.ID, cfg.Provider, realtimeInputTokens(totalUsage), realtimeOutputTokens(totalUsage), int(time.Since(started).Milliseconds()), 0, totalCost, true, app.ID, app.URL, app.Title, app.Categories)
+	} else if relayErr != nil && !gws.IsCloseError(relayErr, gws.CloseNormalClosure, gws.CloseGoingAway) && !fws.IsCloseError(relayErr, fws.CloseNormalClosure, fws.CloseGoingAway) {
+		h.recordRealtimeError(userID, apiKeyID, cfg.ID, cfg.Provider, app, started, http.StatusBadGateway, "Voice connection ended before usage was reported")
+	}
 }
 
-func (h *RealtimeHandler) recordRealtimeError(userID, apiKeyID, modelID string, app requestApp, started time.Time, status int, message string) {
+func (h *RealtimeHandler) recordRealtimeError(userID, apiKeyID, modelID, provider string, app requestApp, started time.Time, status int, message string) {
 	if h.recorder != nil {
-		h.recorder.RecordErrorWithApp(userID, apiKeyID, modelID, "openai", int(time.Since(started).Milliseconds()), status, message, true, app.ID, app.URL, app.Title, app.Categories)
+		h.recorder.RecordErrorWithApp(userID, apiKeyID, modelID, provider, int(time.Since(started).Milliseconds()), status, message, true, app.ID, app.URL, app.Title, app.Categories)
 	}
 }
 

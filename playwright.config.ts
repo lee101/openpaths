@@ -4,6 +4,7 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
   testDir: './e2e',
   testIgnore: [
+    '**/live-voice-paid.spec.ts',
     '**/auth-real.spec.ts',
     '**/checkout-flow.spec.ts',
     '**/full-flow.spec.ts',

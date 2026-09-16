@@ -142,7 +142,7 @@ func New(deps *Dependencies) *Server {
 	realtimeChain := middleware.Chain(
 		middleware.Recovery(),
 		middleware.Logging(),
-		middleware.APIKeyAuth(deps.APIKeyQ),
+		middleware.RealtimeAuth(deps.APIKeyQ, deps.JWTService),
 		middleware.AppAttribution(deps.AppQ),
 		middleware.BYOKLoader(deps.ProviderKeyQ),
 		middleware.RateLimit(),
@@ -165,7 +165,7 @@ func New(deps *Dependencies) *Server {
 	r.GET("/v1/models/{model_id}", apiKeyChain(modelsH.HandleGetModel))
 	realtimeH := handler.NewRealtimeHandler(deps.Router, deps.Billing, deps.Recorder, deps.Config.Providers)
 	r.GET("/v1/realtime", realtimeChain(realtimeH.HandleRealtime))
-	log.Printf("OpenAI Realtime WebSocket endpoint enabled at /v1/realtime")
+	log.Printf("Realtime WebSocket endpoint enabled at /v1/realtime (openai, gemini native protocol)")
 
 	searchH := handler.NewSearchHandler(
 		handler.ExaSearchProviderConfig(deps.Config.Providers),

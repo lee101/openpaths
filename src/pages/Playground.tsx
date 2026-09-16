@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { Send, Plus, X, Settings, ChevronDown, Loader2, Trash2, Square, Copy, Check, Zap, RotateCcw, Code2, Share2, Wallet, Eye, Wrench, Volume2, Bookmark, BookmarkCheck, GitFork, Pencil, Paperclip, FileText, Film, File as FileIcon, Download, Upload, PanelLeft, Brain, MessageSquarePlus } from 'lucide-react';
 import { CodeBlock as HighlightedCodeBlock } from '../components/CodeBlock';
 import { ToolSeo } from '../components/ToolSeo';
@@ -417,7 +417,7 @@ const PANE_HISTORY_PREFIX = 'op_pg_pane_';
 const AUTO_ARCHIVE_DAYS_KEY = 'op_playground_auto_archive_days';
 // Models excluded from the chat selector. Image models remain available since
 // the playground now routes them to /v1/images/generations automatically.
-const NON_CHAT_PATTERNS = /^(whisper|xai-stt|grok-voice|text-embedding|openpaths-embed|modernbert|mistral-embed|codestral-embed|nemotron-embed|gemini-embedding-001|gemini-embedding-2-preview|gemini-embedding-2|gpt-4o-transcribe|gpt-4o-mini-transcribe|distil-whisper|whisper-v3)/i;
+const NON_CHAT_PATTERNS = /^(gpt-realtime|gemini-3\.8-live|whisper|xai-stt|grok-voice|text-embedding|openpaths-embed|modernbert|mistral-embed|codestral-embed|nemotron-embed|gemini-embedding-001|gemini-embedding-2-preview|gemini-embedding-2|gpt-4o-transcribe|gpt-4o-mini-transcribe|distil-whisper|whisper-v3)/i;
 const IMAGE_MODEL_PATTERNS = /^(openpaths\/auto-image|auto-image|flux|klein|ra1|zimage|glm-image|grok-imagine-image|gpt-image|fal-gpt-image|hidream|dall-e|stable-diffusion|sd3|ideogram|fal-ai\/flux-2-pro\/outpaint)/i;
 const BFL_IMAGE_SIZES = ['1024x1024', '1152x768', '768x1152', '1360x768', '768x1360', '1920x1088', '1088x1920', '2048x880', '2048x2048'];
 const VIDEO_MODEL_PATTERNS = /^(auto-video|flux-3-video|wan|ltx|hailuo|kling|luma|ra2v|sora|seedance)/i;
@@ -1007,6 +1007,13 @@ function MarkdownCodeBlock({ code, lang }: { code: string; lang: string; key?: R
 // --- Main component ---
 
 export function Playground() {
+  const [params] = useSearchParams();
+  const model = params.get('model') || '';
+  if (/^(gpt-realtime|gemini-3.8-live)/.test(model)) return <Navigate replace to={`/tools/live-voice?model=${encodeURIComponent(model)}`} />;
+  return <ChatPlayground />;
+}
+
+function ChatPlayground() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('op_api_key') || '');
   const [systemPrompt, setSystemPrompt] = useState(() => localStorage.getItem('op_playground_system_prompt') || 'You are a helpful assistant.');

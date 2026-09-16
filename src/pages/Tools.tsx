@@ -5,6 +5,7 @@ import { Seo } from '../components/Seo';
 import { BASE_URL, TOOLS, TOOLS_INDEX_SEO, TOOLS_INDEX_SLUG, toolArtImage, toolOgImage } from '../data/tools';
 
 const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  'live-voice': AudioLines,
   'google-tts': AudioLines,
   lyria: Music,
   'text-to-image': ImageIcon,

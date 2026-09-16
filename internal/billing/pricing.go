@@ -122,6 +122,17 @@ func (pt *PricingTable) CalculateRealtimeCost(modelID string, usage RealtimeUsag
 	usage.AudioOutputTokens = max(0, usage.AudioOutputTokens)
 	usage.ImageInputTokens = max(0, usage.ImageInputTokens)
 	usage.CachedImageInputTokens = min(max(0, usage.CachedImageInputTokens), usage.ImageInputTokens)
+	// Providers without a published cache rate (Gemini Live) still charge the
+	// normal input rate; a cache counter must not turn those tokens into free usage.
+	if cfg.InputCacheHitPricePer1M <= 0 {
+		usage.CachedTextInputTokens = 0
+	}
+	if cfg.AudioInputCacheHitPricePer1M <= 0 {
+		usage.CachedAudioInputTokens = 0
+	}
+	if cfg.ImageInputCacheHitPricePer1M <= 0 {
+		usage.CachedImageInputTokens = 0
+	}
 
 	dollarsPerMillion :=
 		float64(usage.TextInputTokens-usage.CachedTextInputTokens)*cfg.InputPricePer1M +

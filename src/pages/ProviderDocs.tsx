@@ -80,7 +80,7 @@ const EXAMPLES: Record<string, ProviderExample> = {
     provides: [
       {
         title: 'GPT Live voice',
-        description: 'Live speech-to-speech through OpenPaths’ authenticated WebSocket relay. GPT Realtime 2.1 Mini uses token pricing: text is $0.60/$2.40 and audio is $10/$20 per 1M input/output tokens.',
+        description: 'Live speech-to-speech through OpenPaths’ authenticated WebSocket relay. GPT Realtime 2.1 Mini uses token pricing: text is $0.63/$2.52 and audio is $10.50/$21.00 (provider price plus 5%) per 1M input/output tokens.',
       },
     ],
     notes: [
@@ -113,11 +113,13 @@ const EXAMPLES: Record<string, ProviderExample> = {
     ],
   },
   google: {
-    description: 'Gemini 3.7 Flash, 2.5 Pro, 2.5 Flash, Flash Lite, plus Gemini embedding models.',
+    description: 'Gemini text, vision, embeddings, and Gemini 3.8 Live Extended Thinking speech-to-speech.',
     endpoint: '/v1',
     chatModel: 'gemini-3.7-flash',
     embeddingModel: 'gemini-embedding-2-preview',
     notes: [
+      'Try speech-to-speech at /tools/live-voice. Gemini audio is $3.15/$12.60 per 1M input/output tokens; text and reasoning are $0.7875/$4.725, including 5% markup.',
+      'Connect to wss://openpaths.io/v1/realtime?model=gemini-3.8-live-extended-thinking using your OpenPaths key and native Gemini Live events. Send 16 kHz PCM input; play 24 kHz PCM output.',
       'Pass image URLs as content parts for vision queries.',
       'OpenPaths exposes Google embedding models through the standard `/v1/embeddings` text-input path.',
       '`gemini-embedding-001` follows Google’s published $0.15 / 1M text-token pricing. OpenPaths currently prices the text path for `gemini-embedding-2-preview` at $0.20 / 1M tokens, while multimodal upstream rates are higher for image/audio/video.',
@@ -853,6 +855,42 @@ print(transcript.text)`,
   -H "Authorization: Bearer ${key}" \\
   -F model=${ex.transcriptionModel} \\
   -F file=@meeting.mp3`,
+    });
+  }
+  if (ex?.chatModel?.startsWith('gemini-')) {
+    out.push({
+      title: 'Live speech to speech',
+      description: 'Gemini 3.8 Live Extended Thinking — native Live events through OpenPaths. Try the browser microphone at /tools/live-voice.',
+      python: `import asyncio, json, os
+import websockets
+
+async def main():
+    async with websockets.connect(
+        "wss://openpaths.io/v1/realtime?model=gemini-3.8-live-extended-thinking",
+        additional_headers={"Authorization": f"Bearer {os.environ['OPENPATHS_API_KEY']}"},
+    ) as ws:
+        await ws.send(json.dumps({"setup": {
+            "model": "models/gemini-3.8-live-extended-thinking",
+            "generationConfig": {
+                "responseModalities": ["AUDIO"],
+                "thinkingConfig": {"thinkingLevel": "LOW"},
+            },
+        }}))
+        async for raw in ws:
+            message = json.loads(raw)
+            if "setupComplete" in message:
+                await ws.send(json.dumps({"clientContent": {
+                    "turns": [{"role": "user", "parts": [{"text": "Say hello"}]}],
+                    "turnComplete": True,
+                }}))
+            # Stream microphone frames concurrently as realtimeInput.audio:
+            # {"data": base64_pcm, "mimeType": "audio/pcm;rate=16000"}
+            # Play serverContent.modelTurn.parts[].inlineData.data at 24 kHz.
+            # Keep listening after turnComplete; interactionStatus marks idle.
+            print(list(message))
+
+asyncio.run(main())`,
+      curl: '# WebSocket endpoint (native Gemini Live protocol)\nwss://openpaths.io/v1/realtime?model=gemini-3.8-live-extended-thinking',
     });
   }
   if (ex?.realtimeModel) {

@@ -27,7 +27,7 @@ export function ModelPage() {
   const provider = providersByName[model.provider];
   const isImage = model.tags.includes('art generation');
   const isVideo = model.tags.includes('video generation');
-  const canChat = isChatModel(model);
+  const canChat = isChatModel(model) || /^(gpt-realtime|gemini-3.8-live)/.test(model.id);
   const imageDemo = IMAGE_DEMOS[model.id];
   const videoDemo = VIDEO_DEMOS[model.id];
   const relatedModels = getRelatedModels(model);
@@ -132,10 +132,10 @@ export function ModelPage() {
         <div className="flex flex-col gap-3 sm:flex-row">
           {canChat && (
             <button
-              onClick={() => navigate(`/playground?model=${encodeURIComponent(model.id)}`)}
+              onClick={() => navigate(`${/^(gpt-realtime|gemini-3.8-live)/.test(model.id) ? '/tools/live-voice' : '/playground'}?model=${encodeURIComponent(model.id)}`)}
               className="inline-flex items-center justify-center gap-2 rounded border border-white bg-white px-5 py-3 font-mono text-sm font-bold text-black hover:bg-white/90 transition-colors"
             >
-              <MessageSquare className="w-4 h-4" /> Chat in playground
+              <MessageSquare className="w-4 h-4" /> {/^(gpt-realtime|gemini-3.8-live)/.test(model.id) ? 'Start voice call' : 'Chat in playground'}
             </button>
           )}
           {isImage && (

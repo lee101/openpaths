@@ -13,14 +13,25 @@ export interface ToolEntry {
 export const BASE_URL = 'https://openpaths.io';
 
 /** Branded 1200x630 social card. */
-export const toolOgImage = (slug: string) => `${BASE_URL}/og/tools/${slug}.webp`;
+export const toolOgImage = (slug: string) => `${BASE_URL}/og/tools/${slug === 'live-voice' ? 'google-tts' : slug}.webp`;
 
 /** Unbranded 3:2 art the card is composited from, used by the /tools grid. */
-export const toolArtImage = (slug: string) => `/og/tools/art/${slug}.webp`;
+export const toolArtImage = (slug: string) => `/og/tools/art/${slug === 'live-voice' ? 'google-tts' : slug}.webp`;
 
 export const TOOLS_INDEX_SLUG = 'index';
 
 export const TOOLS: ToolEntry[] = [
+  {
+    slug: 'live-voice',
+    path: '/tools/live-voice',
+    name: 'Live Voice',
+    tagline: 'Gemini · OpenAI · speech to speech',
+    description: 'Talk naturally with Gemini 3.8 Live Extended Thinking and GPT Realtime, with streaming audio and interruptions.',
+    price: 'Provider price + 5%',
+    keywords: 'live realtime speech to speech voice audio microphone gemini openai gpt conversation',
+    seoTitle: 'Live Voice — Gemini & OpenAI Speech to Speech | OpenPaths',
+    seoDescription: 'Start a live voice conversation with Gemini or OpenAI. Low-latency audio streaming with transparent pricing.',
+  },
   {
     slug: 'google-tts',
     path: '/tools/google-tts',
