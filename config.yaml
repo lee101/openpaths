@@ -93,6 +93,10 @@ providers:
     base_url: "https://api.together.xyz"
     api_key: "${TOGETHER_API_KEY}"
     enabled: true
+  - name: qwen
+    base_url: "https://dashscope-intl.aliyuncs.com/compatible-mode"
+    api_key: "${DASHSCOPE_API_KEY}"
+    enabled: true
 
   - name: thinkingmachines
     base_url: "https://tinker.thinkingmachines.dev/services/tinker-prod/oai/api"
@@ -2208,7 +2212,7 @@ models:
       off_peak_input_cache_hit_price_per_1m: 0.007
       off_peak_output_price_per_1m: 0.66
       weekend_off_peak_effective_at: "2026-08-22T16:00:00Z"
-    aliases: ["deepseek-flash", "deepseek-v4"]
+    aliases: ["deepseek-flash", "deepseek-v4", "stealth/union-alpha", "union-alpha", "or/union-alpha", "openrouter/stealth/union-alpha", "openpaths/stealth/union-alpha", "openpaths/union-alpha", "openpaths-union-alpha"]
     context_window: 1000000
     max_output_tokens: 384000
     supports_streaming: true
@@ -2688,6 +2692,38 @@ models:
     supports_tools: true
     supports_vision: true
 
+  # Qwen3.8-Flash (omni-class multimodal: text+image+video in) direct via
+  # DashScope compatible mode, OpenRouter fallback. Pricing = DashScope
+  # Singapore tab in USD (1.094 CNY in / 3.427 CNY out / 0.117 CNY cache hit),
+  # matching openrouter.ai/api/v1/models ($0.15/$0.47/$0.016 per 1M).
+  # Caps: https://help.aliyun.com/en/model-studio/qwen3-8-flash
+  - id: "qwen/qwen3.8-flash"
+    provider: qwen
+    provider_model_id: "qwen3.8-flash"
+    input_price_per_1m: 0.15
+    input_cache_hit_price_per_1m: 0.016
+    output_price_per_1m: 0.47
+    aliases: ["qwen3.8-flash", "qwen3.8-omni-flash", "qwen-omni-flash", "qwen3.8-omni", "qwen-flash"]
+    context_window: 1000000
+    max_output_tokens: 131072
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models:
+      - "or/qwen3.8-flash"
+
+  - id: "or/qwen3.8-flash"
+    provider: openrouter
+    provider_model_id: "qwen/qwen3.8-flash"
+    input_price_per_1m: 0.15
+    input_cache_hit_price_per_1m: 0.016
+    output_price_per_1m: 0.47
+    context_window: 1000000
+    max_output_tokens: 131072
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
   - id: "or/claude-sonnet"
     provider: openrouter
     provider_model_id: "anthropic/claude-sonnet-5"
@@ -2808,6 +2844,8 @@ models:
     supports_vision: false
 
   # --- OpenRouter Free Models ---
+
+
   - id: "or/stepfun-flash"
     provider: openrouter
     provider_model_id: "stepfun/step-3.5-flash"

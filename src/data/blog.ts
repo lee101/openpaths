@@ -14,6 +14,46 @@ export interface BlogPost {
 
 export const posts: BlogPost[] = [
   {
+    slug: 'union-alpha-unbiased-pareto-ensemble',
+    title: 'Union Alpha was an ensemble: Unbiased Pareto 26.9, and what happens next',
+    excerpt: 'Union Alpha launched as a free stealth preview on September 16, was revealed as Unbiased Pareto 26.9 - a parallel-mixture ensemble gateway - and is no longer free. Old union-alpha ids on OpenPaths now resolve to DeepSeek V4 Flash.',
+    date: '2026-09-19',
+    author: 'OpenPaths Team',
+    readTime: '3 min',
+    tags: ['models', 'openrouter', 'deepseek', 'ensemble'],
+    content: `Union Alpha arrived on OpenRouter as a stealth free preview on September 16, 2026: 262K context, image input, tool use, no price. A day later it was revealed as Pareto 26.9 by Unbiased.AI - not a single set of weights but a parallel-mixture ensemble gateway that fans each request out to multiple models at once and synthesizes one answer.
+
+That architecture is the whole story. It explains why the preview scored near frontier models on coding and agentic benchmarks, and why the free period could not last: every Union Alpha call burns several underlying model calls plus a synthesis pass. The free preview is now over and upstream is paid, so we retired the free route on OpenPaths.
+
+## What changed
+
+| | |
+|---|---|
+| Retired | \`stealth/union-alpha\` free preview (Sep 16-19, 2026) |
+| Revealed as | Unbiased Pareto 26.9 (Pareto 262K), ensemble gateway |
+| Upstream now | Paid via Unbiased (reported $2.50 / $7.50 per million tokens in / out) |
+| On OpenPaths | Old ids resolve to paid \`deepseek-v4-flash\` - no 404s, no free billing |
+
+The retired ids are \`stealth/union-alpha\`, \`union-alpha\`, \`or/union-alpha\`, and \`openrouter/stealth/union-alpha\`. They now serve \`deepseek-v4-flash\` directly: 1M context, tools, streaming, $0.14 / $0.28 per million tokens (off-peak $0.22 / $0.66), at its normal paid rate.
+
+## Try it
+
+\`\`\`bash
+curl https://openpaths.io/v1/chat/completions -H "Authorization: Bearer op-..." -H "Content-Type: application/json" -d '{
+  "model": "deepseek-v4-flash",
+  "messages": [{ "role": "user", "content": "Write a fast CSV parser that follows RFC 4180." }]
+}'
+\`\`\`
+
+Calling with \`"model": "union-alpha"\` still works - it just lands on the same DeepSeek route and bills the same way.
+
+## Why DeepSeek V4 Flash as the fallback
+
+Union Alpha's draw was cheap agentic coding with tool calls and long context. DeepSeek V4 Flash is the closest paid lane on those terms: 1M context, thinking and non-thinking modes, JSON output, tool calls, and the lowest per-token price in the catalog. It is a single model, not an ensemble, so expect one-model answers rather than a synthesized panel - for a real panel, use [model fusion](/fusion).
+
+If Unbiased ships Pareto as a stable paid endpoint we can route to directly, we will carry it under its real name with its real price instead of a stealth id. Until then, the stealth id stays retired. Browse the [model catalog](/models) to compare.`,
+  },
+  {
     slug: 'cerebras-qwen-3-8-27b',
     title: 'Qwen 3.8 27B on Cerebras: ~1500 tok/s on OpenPaths',
     excerpt: 'Alibaba’s 27B dense multimodal on Cerebras wafer-scale inference is live as cerebras/qwen-3.8-27b: ~1500 tokens/sec, 128K context, $0.99/$1.49 per million tokens, and a one-shot pelican to prove it.',

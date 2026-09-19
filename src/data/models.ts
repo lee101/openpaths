@@ -1718,6 +1718,20 @@ const catalogModels: Model[] = [
     popularity: 4
   },
   {
+    id: 'qwen/qwen3.8-flash',
+    name: 'Qwen 3.8 Flash',
+    provider: 'Qwen',
+    description: 'Omni-class Qwen flagship at Flash speed: text, image, and video input with tool use over a 1M token context window, direct via DashScope with OpenRouter fallback.',
+    contextLength: '1M',
+    priceInput: 0.15,
+    priceOutput: 0.47,
+    tags: ['general', 'vision', 'reasoning', 'programming', 'agentic'],
+    aliases: ['qwen3.8-flash', 'qwen3.8-omni-flash', 'qwen-omni-flash', 'qwen3.8-omni', 'qwen-flash'],
+    released: '2026-08-26',
+    popularity: 3
+  },
+
+  {
     id: 'cerebras/qwen-3.8-27b',
     name: 'Qwen 3.8 27B',
     provider: 'Cerebras',
