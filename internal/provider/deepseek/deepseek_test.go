@@ -120,7 +120,7 @@ func TestChatCompletion_DropsReasoningEffort(t *testing.T) {
 	// "none" is what the autorouter sets for fast/cheap tiers; DeepSeek rejects
 	// it as an unknown reasoning_effort variant, so it must never be forwarded.
 	_, err := p.ChatCompletion(context.Background(), &model.ChatCompletionRequest{
-		Model:           "deepseek-v4-flash",
+		Model:           "deepseek-flash",
 		Messages:        []model.ChatMessage{{Role: "user", Content: "Hi"}},
 		ReasoningEffort: "none",
 	})

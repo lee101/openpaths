@@ -33,9 +33,9 @@ func loadAuditConfig(t *testing.T) map[string]*model.ModelConfig {
 func TestAuditedTokenPrices(t *testing.T) {
 	byName := loadAuditConfig(t)
 	want := map[string]struct{ in, cache, out float64 }{
-		// api-docs.deepseek.com/quick_start/pricing
-		"deepseek-v4-pro":   {0.435, 0.003625, 0.87},
-		"deepseek-v4-flash": {0.14, 0.0028, 0.28},
+	// api-docs.deepseek.com/quick_start/pricing (V4.1 Flash tariff, effective 2026-09-10)
+	"deepseek-v4-pro":   {0.435, 0.003625, 0.87},
+	"deepseek-v4-flash": {0.15, 0.003, 0.60},
 		// docs.fireworks.ai/serverless/pricing
 		"fireworks/deepseek-v4-pro": {1.74, 0.145, 3.48},
 		"fireworks/gpt-oss-120b":    {0.15, 0.015, 0.60},

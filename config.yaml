@@ -318,9 +318,9 @@ models:
 
   - id: "openpaths/auto-fast"
     provider: deepseek
-    provider_model_id: "deepseek-v4-flash"
-    input_price_per_1m: 0.14
-    output_price_per_1m: 0.28
+    provider_model_id: "deepseek-flash"
+    input_price_per_1m: 0.15
+    output_price_per_1m: 0.60
     aliases: ["auto-fast", "openpaths-auto-fast"]
     context_window: 1000000
     max_output_tokens: 128000
@@ -2194,25 +2194,29 @@ models:
     supports_vision: true
 
   # --- DeepSeek ---
+  # DeepSeek retired deepseek-v4-flash; per api-docs.deepseek.com the legacy
+  # names are still accepted but served by DeepSeek-V4.1-Flash (model name
+  # "deepseek-flash") and billed at the Flash price: peak $0.30/$0.006/$1.20,
+  # off-peak half that, effective 2026-09-10.
   - id: "deepseek-v4-flash"
     provider: deepseek
-    provider_model_id: "deepseek-v4-flash"
-    input_price_per_1m: 0.14
-    input_cache_hit_price_per_1m: 0.0028
-    output_price_per_1m: 0.28
+    provider_model_id: "deepseek-flash"
+    input_price_per_1m: 0.15
+    input_cache_hit_price_per_1m: 0.003
+    output_price_per_1m: 0.60
     scheduled_token_pricing:
-      effective_at: "2026-08-16T16:00:00Z"
+      effective_at: "2026-09-10T00:00:00Z"
       peak_windows_utc:
         - {start: "01:00", end: "04:00"}
         - {start: "06:00", end: "10:00"}
-      peak_input_price_per_1m: 0.44
-      peak_input_cache_hit_price_per_1m: 0.014
-      peak_output_price_per_1m: 1.32
-      off_peak_input_price_per_1m: 0.22
-      off_peak_input_cache_hit_price_per_1m: 0.007
-      off_peak_output_price_per_1m: 0.66
+      peak_input_price_per_1m: 0.30
+      peak_input_cache_hit_price_per_1m: 0.006
+      peak_output_price_per_1m: 1.20
+      off_peak_input_price_per_1m: 0.15
+      off_peak_input_cache_hit_price_per_1m: 0.003
+      off_peak_output_price_per_1m: 0.60
       weekend_off_peak_effective_at: "2026-08-22T16:00:00Z"
-    aliases: ["deepseek-flash", "deepseek-v4", "stealth/union-alpha", "union-alpha", "or/union-alpha", "openrouter/stealth/union-alpha", "openpaths/stealth/union-alpha", "openpaths/union-alpha", "openpaths-union-alpha"]
+    aliases: ["deepseek-flash", "deepseek-v4", "deepseek-v4.1-flash", "stealth/union-alpha", "union-alpha", "or/union-alpha", "openrouter/stealth/union-alpha", "openpaths/stealth/union-alpha", "openpaths/union-alpha", "openpaths-union-alpha"]
     context_window: 1000000
     max_output_tokens: 384000
     supports_streaming: true
@@ -2225,15 +2229,16 @@ models:
       - "together/deepseek-v3.1"
       - "or/deepseek-chat"
 
-  # DeepSeek V4 Flash Vision Exp: official image-input experimental endpoint.
-  # It uses the same token pricing as V4 Flash until DeepSeek publishes a
+  # DeepSeek V4.1 Flash image-input experimental endpoint (legacy name
+  # deepseek-v4-flash-vision-exp retired upstream; served by V4.1 Flash).
+  # It uses the same token pricing as V4.1 Flash until DeepSeek publishes a
   # separate vision tariff.
   - id: "deepseek-v4-flash-vision-exp"
     provider: deepseek
-    provider_model_id: "deepseek-v4-flash-vision-exp"
-    input_price_per_1m: 0.14
-    input_cache_hit_price_per_1m: 0.0028
-    output_price_per_1m: 0.28
+    provider_model_id: "deepseek-flash"
+    input_price_per_1m: 0.15
+    input_cache_hit_price_per_1m: 0.003
+    output_price_per_1m: 0.60
     context_window: 1000000
     max_output_tokens: 32768
     supports_streaming: true

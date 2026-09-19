@@ -20,8 +20,8 @@ func TestRetiredUnionAlphaAliasesResolveToPaidDeepSeekFlash(t *testing.T) {
 			t.Errorf("compatibility alias %s is missing", id)
 			continue
 		}
-		if m.ID != "deepseek-v4-flash" || m.Provider != "deepseek" || m.ProviderModelID != "deepseek-v4-flash" {
-			t.Errorf("%s resolves to %s/%s, want paid deepseek-v4-flash", id, m.ID, m.ProviderModelID)
+		if m.ID != "deepseek-v4-flash" || m.Provider != "deepseek" || m.ProviderModelID != "deepseek-flash" {
+			t.Errorf("%s resolves to %s/%s, want paid deepseek-flash (V4.1 Flash)", id, m.ID, m.ProviderModelID)
 		}
 		if m.InputPricePer1M <= 0 || m.OutputPricePer1M <= 0 {
 			t.Errorf("%s still has free pricing %v/%v", id, m.InputPricePer1M, m.OutputPricePer1M)

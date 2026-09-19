@@ -27,13 +27,14 @@ func sanitizeForDeepSeek(req *model.ChatCompletionRequest) {
 	req.TaskTier = ""
 	req.RoutingStrategy = ""
 
-	// DeepSeek controls reasoning through the `thinking` field, not the
-	// OpenAI-style `reasoning_effort` parameter. Its API rejects unknown
-	// reasoning_effort values (notably "none", which the autorouter sets for
-	// fast/cheap tiers) with a deserialization error, so translate the effort
-	// hint into `thinking` for v4 models and always drop reasoning_effort
-	// before the request reaches the upstream.
-	if strings.HasPrefix(req.Model, "deepseek-v4-") && req.Thinking == nil {
+  // DeepSeek controls reasoning through the `thinking` field, not the
+  // OpenAI-style `reasoning_effort` parameter. Its API rejects unknown
+  // reasoning_effort values (notably "none", which the autorouter sets for
+  // fast/cheap tiers) with a deserialization error, so translate the effort
+  // hint into `thinking` for v4 models (including the renamed deepseek-flash,
+  // which serves V4.1 Flash) and always drop reasoning_effort before the
+  // request reaches the upstream.
+  if (strings.HasPrefix(req.Model, "deepseek-v4-") || req.Model == "deepseek-flash") && req.Thinking == nil {
 		switch req.ReasoningEffort {
 		case "none":
 			req.Thinking = &model.ThinkingConfig{Type: "disabled"}
