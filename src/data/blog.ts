@@ -14,6 +14,68 @@ export interface BlogPost {
 
 export const posts: BlogPost[] = [
   {
+    slug: 'skills-marketplace-versioned-agent-skills',
+    title: 'Skills marketplace: versioned agent skills anyone can publish',
+    excerpt: 'OpenPaths skills are now a marketplace: 170 seeded skills with setup scripts, prompts, and attached files, semantic search, immutable versions you can pin, and owner-only publishing through the API or the new /skills UI.',
+    date: '2026-09-19',
+    author: 'OpenPaths Team',
+    readTime: '4 min',
+    tags: ['skills', 'marketplace', 'agents'],
+    content: `The skills library on OpenPaths used to be read-only: a seeded corpus behind a search endpoint. As of today it is a marketplace. Anyone with an API key can publish a skill, every skill carries its setup script, setup prompt, skill prompt, and attached files, every update is an immutable version, and readers can pin a version when they need a frozen dependency.
+
+## What a skill is now
+
+A skill is a markdown body plus the machinery around it:
+
+| Field | What it holds |
+|---|---|
+| body | The SKILL.md markdown agents consume |
+| setupScript | Clone / install commands that run first |
+| setupPrompt | The preamble prepended to the body (copy-paste runnable) |
+| skillPrompt | The agent-facing prompt for the skill |
+| files | Attached sidecars: scripts, references, templates, images, PDFs |
+
+The corpus is seeded from the same hermes-agent and codex-infinity trees that feed app-site, plus 9 app-site builtins (jj, mercurial, perforce, and the lang-* toolchains) that were missing here - 170 skills total, with ~540 attached files importable from the source checkouts.
+
+## Versions and pinning
+
+Publishing never overwrites. PUT a change and it lands as a new immutable version (explicit semver or auto patch-bump); the full history stays readable and only the skill's owner - or an admin - can publish or delete.
+
+Pinning is a query parameter, on both lookup and search, so a frozen dependency is one string:
+
+\`\`\`bash
+# exact snapshot, including its files
+curl https://openpaths.io/v1/skills/hermes/docker-management?version=1.2.0
+
+# search, with every hit resolved at the pinned version where it exists
+curl 'https://openpaths.io/v1/skills/search?q=review+cadence&version=1.2.0'
+
+# raw bytes of one attached file, correct content-type
+curl https://openpaths.io/v1/skills/hermes/docker-management/files/scripts/scan.sh?version=1.2.0
+\`\`\`
+
+## Publishing
+
+\`\`\`bash
+curl https://openpaths.io/v1/skills -H "Authorization: Bearer op-..." -H "Content-Type: application/json" -d '{
+  "name": "incident-triage",
+  "description": "Severity labels and first-response runbook for on-call.",
+  "body": "# Incident triage\\n\\n...",
+  "setupScript": "pip install pager-utils",
+  "version": "1.0.0",
+  "files": [{ "path": "runbook.md", "content": "..." }]
+}'
+\`\`\`
+
+Slugs are \`source/name\`; a slug owned by someone else returns 409, and updating or deleting another owner's skill returns 403.
+
+## The UI
+
+Browse it at [/skills](/skills): debounced search with a semantic badge, source and category filters, a detail pane with body / setup / prompts tabs, a versions dropdown with a pinned banner, copy-markdown, and a file browser. PDFs, images, video, audio, and markdown render inline; text files open in a live editor where owners can edit and save a new version without leaving the page. \`POST /v1/skills/reindex\` (admin) rebuilds the semantic index after bulk imports.
+
+If you maintain agent skills in SKILL.md trees, the marketplace is now the place to put them.`,
+  },
+  {
     slug: 'union-alpha-unbiased-pareto-ensemble',
     title: 'Union Alpha was an ensemble: Unbiased Pareto 26.9, and what happens next',
     excerpt: 'Union Alpha launched as a free stealth preview on September 16, was revealed as Unbiased Pareto 26.9 - a parallel-mixture ensemble gateway - and is no longer free. Old union-alpha ids on OpenPaths now resolve to DeepSeek V4 Flash.',

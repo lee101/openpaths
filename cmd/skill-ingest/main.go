@@ -5,6 +5,17 @@
 // ILIKE search serves them immediately.
 //
 //	go run ./cmd/skill-ingest -config config.yaml -execute
+//
+// Optional file attachments (hermes-agent SKILL.md sidecar files) are imported with
+// -files: each hermes-agent skill directory (skills/ and optional-skills/ trees) is
+// matched to its corpus slug via the SKILL.md frontmatter `name:` field
+// (hermes/<name>), and every file except SKILL.md itself is upserted into
+// skill_files as version 1.0.0. Every skill is also backfilled with an immutable
+// 1.0.0 skill_versions row snapshotting its head body when absent, so version
+// pinning always has a base to resolve against.
+//
+//	go run ./cmd/skill-ingest -config config.yaml -execute -files
+//	go run ./cmd/skill-ingest -config config.yaml -execute -files -files-dir /path/to/hermes-agent
 package main
 
 import (
@@ -14,8 +25,13 @@ import (
 	"flag"
 	"log"
 	"os"
+	"path/filepath"
+	"sort"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 
 	"github.com/openpaths/openpaths/internal/config"
@@ -28,10 +44,73 @@ import (
 //go:embed skills_seed.json
 var skillsSeedJSON []byte
 
+// seedVersion is the immutable version every corpus row is snapshotted as.
+// SKILL.md bodies are excluded from skill_files (the body is already seeded);
+// the version row carries the body instead.
+const seedVersion = "1.0.0"
+
+const (
+	// maxTextFileSize caps text attachments kept inline per version.
+	maxTextFileSize = 200 * 1024
+	// maxBinaryFileSize caps binary attachments (images, pdfs) per version.
+	maxBinaryFileSize = 2 * 1024 * 1024
+	// maxFilesPerSkill caps the attachment count per skill version.
+	maxFilesPerSkill = 100
+)
+
+// binaryExts are file extensions stored under the binary cap. Anything else is
+// treated as text (with a UTF-8 sniff fallback in collectSkillFiles).
+var binaryExts = map[string]bool{
+	".png": true, ".jpg": true, ".jpeg": true, ".gif": true, ".webp": true,
+	".ico": true, ".bmp": true, ".tiff": true, ".tif": true,
+	".pdf": true,
+	".mp3": true, ".wav": true, ".ogg": true, ".flac": true, ".m4a": true,
+	".mp4": true, ".mov": true, ".webm": true, ".mkv": true,
+	".zip": true, ".tar": true, ".gz": true, ".bz2": true, ".xz": true, ".zst": true,
+	".woff": true, ".woff2": true, ".ttf": true, ".otf": true, ".eot": true,
+	".pyc": true, ".pyo": true, ".o": true, ".a": true, ".so": true,
+	".exe": true, ".bin": true, ".dat": true, ".sqlite": true, ".db": true,
+}
+
+// mimeByExt maps common attachment extensions to content types served by
+// GET /v1/skills/{slug}/files/{path}. Unknown extensions fall back to
+// application/octet-stream.
+var mimeByExt = map[string]string{
+	".md": "text/markdown", ".markdown": "text/markdown",
+	".txt": "text/plain", ".csv": "text/csv", ".tsv": "text/tab-separated-values",
+	".json": "application/json", ".jsonl": "application/jsonl",
+	".yaml": "application/yaml", ".yml": "application/yaml",
+	".toml": "application/toml", ".ini": "text/plain", ".cfg": "text/plain",
+	".html": "text/html", ".htm": "text/html", ".css": "text/css",
+	".js": "text/javascript", ".mjs": "text/javascript", ".cjs": "text/javascript",
+	".xml": "application/xml", ".svg": "image/svg+xml",
+	".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+	".gif": "image/gif", ".webp": "image/webp", ".ico": "image/x-icon",
+	".bmp": "image/bmp", ".tiff": "image/tiff", ".tif": "image/tiff",
+	".pdf": "application/pdf",
+	".mp3": "audio/mpeg", ".wav": "audio/wav", ".ogg": "audio/ogg",
+	".mp4": "video/mp4", ".mov": "video/quicktime", ".webm": "video/webm",
+	".zip": "application/zip", ".tar": "application/x-tar", ".gz": "application/gzip",
+	".sh": "text/x-shellscript", ".bash": "text/x-shellscript",
+	".py": "text/x-python", ".rb": "text/x-ruby", ".pl": "text/x-perl",
+	".go": "text/x-go", ".rs": "text/x-rust", ".java": "text/x-java-source",
+	".c": "text/x-csrc", ".h": "text/x-chdr", ".cpp": "text/x-c++src",
+	".ts": "text/x-typescript", ".tsx": "text/x-typescript",
+}
+
+func mimeForPath(path string) string {
+	if m, ok := mimeByExt[strings.ToLower(filepath.Ext(path))]; ok {
+		return m
+	}
+	return "application/octet-stream"
+}
+
 func main() {
 	configPath := flag.String("config", "config.yaml", "path to OpenPaths config.yaml")
 	file := flag.String("file", "", "path to skills_seed.json (defaults to the embedded corpus)")
 	execute := flag.Bool("execute", false, "actually upsert; without this flag the script is a dry run")
+	wantFiles := flag.Bool("files", false, "walk hermes-agent skill trees and import attachment files into skill_files as version "+seedVersion)
+	filesDir := flag.String("files-dir", "/vfast/data/code/hermes-agent", "root of the hermes-agent checkout containing skills/ and optional-skills/")
 	flag.Parse()
 
 	raw := skillsSeedJSON
@@ -47,8 +126,26 @@ func main() {
 		log.Fatalf("parse corpus: %v", err)
 	}
 	log.Printf("corpus: %d skills", len(skills))
+	bySlug := make(map[string]*model.Skill, len(skills))
+	for i := range skills {
+		bySlug[skills[i].Slug] = &skills[i]
+	}
+
+	var specs []skillDirSpec
+	if *wantFiles {
+		var err error
+		specs, err = discoverSkillDirs(*filesDir, bySlug)
+		if err != nil {
+			log.Fatalf("discover skill dirs: %v", err)
+		}
+	}
+
 	if !*execute {
 		log.Printf("dry run (pass -execute to write). first slug: %s", firstSlug(skills))
+		log.Printf("dry run: would backfill %s version row for %d skills", seedVersion, len(skills))
+		if *wantFiles {
+			reportFilesDryRun(specs)
+		}
 		return
 	}
 
@@ -80,6 +177,16 @@ func main() {
 		n++
 	}
 	log.Printf("upserted %d skills", n)
+
+	if err := backfillVersions(ctx, database.Pool, skills); err != nil {
+		log.Fatalf("backfill versions: %v", err)
+	}
+
+	if *wantFiles {
+		if err := importSkillFiles(ctx, database.Pool, specs); err != nil {
+			log.Fatalf("import skill files: %v", err)
+		}
+	}
 }
 
 func firstSlug(s []model.Skill) string {
@@ -87,4 +194,269 @@ func firstSlug(s []model.Skill) string {
 		return "(none)"
 	}
 	return s[0].Slug
+}
+
+// backfillVersions ensures every skill has an immutable seedVersion row in
+// skill_versions snapshotting its current head body. Existing rows are left
+// untouched, so the backfill is idempotent and never rewrites history.
+func backfillVersions(ctx context.Context, pool *pgxpool.Pool, skills []model.Skill) error {
+	n := 0
+	for i := range skills {
+		s := &skills[i]
+		tag, err := pool.Exec(ctx,
+			`INSERT INTO skill_versions (skill_id, version, body, setup_script, setup_prompt, skill_prompt)
+			 SELECT id, $2, $3, '', '', '' FROM skills WHERE slug = $1
+			 ON CONFLICT (skill_id, version) DO NOTHING`,
+			s.Slug, seedVersion, s.Body)
+		if err != nil {
+			return err
+		}
+		n += int(tag.RowsAffected())
+	}
+	log.Printf("backfilled %d %s version rows (%d skills already had one)", n, seedVersion, len(skills)-n)
+	return nil
+}
+
+// skillDirSpec pairs a corpus slug with its on-disk hermes-agent skill
+// directory holding the SKILL.md sidecar files.
+type skillDirSpec struct {
+	slug string
+	body string
+	dir  string
+}
+
+// discoverSkillDirs walks the skills/ and optional-skills/ trees under root,
+// finds every directory holding a SKILL.md, and matches it to a corpus slug via
+// the SKILL.md frontmatter `name:` field (hermes/<name>), falling back to the
+// directory basename. Directories with no corpus match are logged and skipped.
+func discoverSkillDirs(root string, bySlug map[string]*model.Skill) ([]skillDirSpec, error) {
+	var specs []skillDirSpec
+	seen := map[string]string{}
+	for _, tree := range []string{"skills", "optional-skills"} {
+		base := filepath.Join(root, tree)
+		if _, err := os.Stat(base); os.IsNotExist(err) {
+			continue
+		}
+		if err := filepath.WalkDir(base, func(path string, d os.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if !d.IsDir() {
+				return nil
+			}
+			if _, err := os.Stat(filepath.Join(path, "SKILL.md")); err != nil {
+				return nil
+			}
+			slug, body := matchSkillSlug(path, bySlug)
+			if slug == "" {
+				log.Printf("files: no corpus skill for %s; skipping", path)
+				return nil
+			}
+			if prev, dup := seen[slug]; dup {
+				log.Printf("files: duplicate dir for %s: %s (already %s); skipping", slug, path, prev)
+				return nil
+			}
+			seen[slug] = path
+			specs = append(specs, skillDirSpec{slug: slug, body: body, dir: path})
+			return nil
+		}); err != nil {
+			return nil, err
+		}
+	}
+	sort.Slice(specs, func(i, j int) bool { return specs[i].slug < specs[j].slug })
+	log.Printf("files: matched %d skill dirs", len(specs))
+	return specs, nil
+}
+
+// skillFrontmatterName extracts the `name:` field from a SKILL.md YAML
+// frontmatter block without pulling in a YAML dependency.
+func skillFrontmatterName(path string) (string, error) {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	text := string(raw)
+	if !strings.HasPrefix(text, "---") {
+		return "", nil
+	}
+	rest := text[3:]
+	if strings.HasPrefix(rest, "\r\n") {
+		rest = rest[2:]
+	} else if strings.HasPrefix(rest, "\n") {
+		rest = rest[1:]
+	} else {
+		return "", nil
+	}
+	end := -1
+	for i, line := range strings.Split(rest, "\n") {
+		if strings.TrimSpace(strings.TrimSuffix(line, "\r")) == "---" {
+			end = i
+			break
+		}
+	}
+	if end < 0 {
+		return "", nil
+	}
+	for _, line := range strings.Split(rest, "\n")[:end] {
+		line = strings.TrimSuffix(line, "\r")
+		if strings.HasPrefix(line, " ") || strings.HasPrefix(line, "\t") {
+			// Indented keys belong to nested maps; only a top-level `name:`
+			// key is authoritative.
+			continue
+		}
+		trimmed := strings.TrimSpace(line)
+		if !strings.HasPrefix(trimmed, "name:") {
+			continue
+		}
+		v := strings.Trim(strings.TrimSpace(strings.TrimPrefix(trimmed, "name:")), `"'`)
+		return strings.TrimSpace(v), nil
+	}
+	return "", nil
+}
+
+// matchSkillSlug resolves a skill directory to its corpus slug and head body.
+// The SKILL.md frontmatter `name:` field is authoritative (directory names do
+// not always equal the slug suffix, e.g. vllm/ -> serving-llms-vllm); the
+// directory basename is the fallback.
+func matchSkillSlug(dir string, bySlug map[string]*model.Skill) (string, string) {
+	if name, err := skillFrontmatterName(filepath.Join(dir, "SKILL.md")); err == nil && name != "" {
+		if s, ok := bySlug["hermes/"+name]; ok {
+			return s.Slug, s.Body
+		}
+	}
+	if s, ok := bySlug["hermes/"+filepath.Base(dir)]; ok {
+		return s.Slug, s.Body
+	}
+	return "", ""
+}
+
+// skillAttachment is one collected sidecar file, path relative to the skill
+// directory with forward slashes.
+type skillAttachment struct {
+	path string
+	mime string
+	size int
+	data []byte
+}
+
+// collectSkillFiles gathers a skill directory's sidecar files. SKILL.md is
+// excluded (its content is already seeded as the skill body) as are
+// DESCRIPTION.md category markers. Files are sorted by path for a stable
+// import; at most maxFilesPerSkill are kept, text files larger than
+// maxTextFileSize and binaries larger than maxBinaryFileSize are skipped with
+// the skip list explaining why.
+func collectSkillFiles(dir string) (files []skillAttachment, skipped []string) {
+	var rels []string
+	_ = filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+		name := d.Name()
+		if d.IsDir() {
+			if path != dir && strings.HasPrefix(name, ".") {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if strings.HasPrefix(name, ".") {
+			return nil
+		}
+		if name == "SKILL.md" || name == "DESCRIPTION.md" {
+			return nil
+		}
+		if !d.Type().IsRegular() {
+			skipped = append(skipped, relPath(dir, path)+" (not a regular file)")
+			return nil
+		}
+		rels = append(rels, relPath(dir, path))
+		return nil
+	})
+	sort.Strings(rels)
+	if len(rels) > maxFilesPerSkill {
+		for _, r := range rels[maxFilesPerSkill:] {
+			skipped = append(skipped, r+" (over 100 files/skill cap)")
+		}
+		rels = rels[:maxFilesPerSkill]
+	}
+	for _, rel := range rels {
+		data, err := os.ReadFile(filepath.Join(dir, filepath.FromSlash(rel)))
+		if err != nil {
+			skipped = append(skipped, rel+" (unreadable: "+err.Error()+")")
+			continue
+		}
+		binary := binaryExts[strings.ToLower(filepath.Ext(rel))] || !utf8.Valid(data)
+		if binary && len(data) > maxBinaryFileSize {
+			skipped = append(skipped, rel+" (binary over 2MB cap)")
+			continue
+		}
+		if !binary && len(data) > maxTextFileSize {
+			skipped = append(skipped, rel+" (text over 200KB cap)")
+			continue
+		}
+		files = append(files, skillAttachment{path: rel, mime: mimeForPath(rel), size: len(data), data: data})
+	}
+	return files, skipped
+}
+
+func relPath(dir, path string) string {
+	rel, err := filepath.Rel(dir, path)
+	if err != nil {
+		return filepath.Base(path)
+	}
+	return filepath.ToSlash(rel)
+}
+
+// reportFilesDryRun previews the file import without touching the database.
+func reportFilesDryRun(specs []skillDirSpec) {
+	totalFiles, totalBytes := 0, 0
+	totalSkipped := 0
+	for _, spec := range specs {
+		files, skipped := collectSkillFiles(spec.dir)
+		for _, f := range files {
+			totalBytes += f.size
+		}
+		totalFiles += len(files)
+		totalSkipped += len(skipped)
+		for _, s := range skipped {
+			log.Printf("files: skip %s/%s", spec.slug, s)
+		}
+	}
+	log.Printf("files: dry run would import %d files (%d bytes) across %d skills, skipping %d",
+		totalFiles, totalBytes, len(specs), totalSkipped)
+}
+
+// importSkillFiles upserts every matched skill directory's sidecar files into
+// skill_files as seedVersion. It first ensures the immutable version row
+// exists (snapshotting the corpus head body), then upserts each file by
+// (skill_id, version, path). Re-running converges: same content rewrites the
+// same bytes, new files are added, nothing is deleted.
+func importSkillFiles(ctx context.Context, pool *pgxpool.Pool, specs []skillDirSpec) error {
+	nFiles, nSkipped := 0, 0
+	for _, spec := range specs {
+		files, skipped := collectSkillFiles(spec.dir)
+		for _, s := range skipped {
+			log.Printf("files: skip %s/%s", spec.slug, s)
+		}
+		nSkipped += len(skipped)
+		if _, err := pool.Exec(ctx,
+			`INSERT INTO skill_versions (skill_id, version, body, setup_script, setup_prompt, skill_prompt)
+			 SELECT id, $2, $3, '', '', '' FROM skills WHERE slug = $1
+			 ON CONFLICT (skill_id, version) DO NOTHING`,
+			spec.slug, seedVersion, spec.body); err != nil {
+			return err
+		}
+		for _, f := range files {
+			if _, err := pool.Exec(ctx,
+				`INSERT INTO skill_files (skill_id, version, path, mime, size, content)
+				 SELECT id, $2, $3, $4, $5, $6 FROM skills WHERE slug = $1
+				 ON CONFLICT (skill_id, version, path) DO UPDATE SET
+					mime = EXCLUDED.mime, size = EXCLUDED.size, content = EXCLUDED.content`,
+				spec.slug, seedVersion, f.path, f.mime, f.size, f.data); err != nil {
+				return err
+			}
+			nFiles++
+		}
+	}
+	log.Printf("files: imported %d files across %d skills, skipped %d", nFiles, len(specs), nSkipped)
+	return nil
 }

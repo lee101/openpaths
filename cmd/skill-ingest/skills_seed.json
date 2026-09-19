@@ -2903,5 +2903,160 @@
       "艾特"
     ],
     "setupPreamble": "## Setup\n\nThis skill is self-contained markdown. Before running it, clone the source repo:\n\n```sh\ngit clone git@github.com:lee101/hermes-agent.git\n```\n"
+  },
+{
+    "slug": "app-site/jj",
+    "name": "jj",
+    "description": "Use Jujutsu (jj) for Git-compatible source control with fast status, diff, split, squash, bookmark, and PR-ready branch workflows.",
+    "body": "# JJ Source Control\n\nUse this skill when a task touches source control and the repository can be handled with Jujutsu (`jj`), especially Git-backed repos. Prefer `jj` for local history operations, status, diffs, split/squash workflows, and PR-ready branch preparation.\n\n## Install\n\nRun this once per machine if `jj` is missing:\n\n~~~sh\nset -eu\nif command -v jj >/dev/null 2>&1; then\n  jj --version\n  exit 0\nfi\n\nJJ_VERSION=\"${JJ_VERSION:-0.39.0}\"\nOS=\"$(uname -s)\"\nARCH=\"$(uname -m)\"\ncase \"$OS:$ARCH\" in\n  Linux:x86_64) target=\"x86_64-unknown-linux-musl\" ;;\n  Linux:aarch64|Linux:arm64) target=\"aarch64-unknown-linux-musl\" ;;\n  Darwin:x86_64) target=\"x86_64-apple-darwin\" ;;\n  Darwin:arm64) target=\"aarch64-apple-darwin\" ;;\n  *) echo \"unsupported platform for automatic jj install: $OS $ARCH\" >&2; exit 1 ;;\nesac\n\ntmp=\"$(mktemp -d)\"\ntrap 'rm -rf \"$tmp\"' EXIT\ncurl -fsSL \"https://github.com/jj-vcs/jj/releases/download/v${JJ_VERSION}/jj-v${JJ_VERSION}-${target}.tar.gz\" | tar xz -C \"$tmp\"\ninstall_dir=\"${HOME}/.local/bin\"\nmkdir -p \"$install_dir\"\ninstall \"$tmp/jj\" \"$install_dir/jj\"\ncase \":$PATH:\" in *\":$install_dir:\"*) ;; *) echo \"add $install_dir to PATH\" >&2 ;; esac\n\"$install_dir/jj\" --version\n~~~\n\n## Agent Prompt\n\nTools available should include `jj` and Git-compatible remotes. Prefer `jj` over `git` where possible.\n\nUse these short commands when available:\n\n| Task | Command |\n| --- | --- |\n| Status | `jj status` |\n| Diff current change | `jj diff` |\n| Show current change | `jj show` |\n| Compact log | `jj log` |\n| Describe current change | `jj describe -m \"message\"` |\n| Commit current change | `jj commit -m \"message\"` |\n| Start next change | `jj new` |\n| Split a change | `jj split` |\n| Squash into parent | `jj squash` |\n| Restore files | `jj restore <path>` |\n| List bookmarks | `jj bookmark list` |\n| Fetch Git remote | `jj git fetch` |\n| Push Git bookmarks | `jj git push` |\n| Colocate in Git repo | `jj git init --colocate` |\n\n## Workflow\n\n1. Run `jj root`. If it fails in a Git repo, run `jj git init --colocate`.\n2. Inspect with `jj status` and `jj diff` before editing and before finalizing.\n3. Keep work in focused changes. Use `jj split` when unrelated edits land together, and `jj squash` when cleanup belongs with the parent.\n4. Use bookmarks for Git branch interoperability. Create or move one with `jj bookmark set <name> -r @` before pushing.\n5. Push with `jj git push --bookmark <name>` when the task needs a PR branch.\n\n## Notes\n\n- Do not use destructive operation undo casually. Check `jj op log` first; use `jj op undo` only when you understand the operation being undone.\n- If a command is unavailable because the local `jj` version is older, fall back to the equivalent explicit command and mention it.\n- In mixed teams, keep commit messages and bookmarks Git-friendly because reviewers may only see the Git projection.",
+    "source": "app-site",
+    "sourceRepo": "https://github.com/app-nz/app-site",
+    "category": "source-control",
+    "tags": [
+      "jj",
+      "jujutsu",
+      "git",
+      "source-control",
+      "vcs"
+    ],
+    "setupPreamble": ""
+  },
+{
+    "slug": "app-site/mercurial",
+    "name": "mercurial",
+    "description": "Use Mercurial (hg) for clone, status, branch, commit, rebase, patch, and bookmark workflows.",
+    "body": "# Mercurial Source Control\n\nUse this skill when the repository uses Mercurial (`hg`) or the task mentions MQ, revsets, phases, bookmarks, named branches, or patch queues.\n\n## Install\n\nRun this once per machine if `hg` is missing:\n\n~~~sh\nset -eu\nif command -v hg >/dev/null 2>&1; then\n  hg --version\n  exit 0\nfi\n\nif command -v apt-get >/dev/null 2>&1; then\n  sudo_cmd=\"\"\n  if [ \"$(id -u)\" -ne 0 ]; then sudo_cmd=\"sudo\"; fi\n  $sudo_cmd apt-get update\n  $sudo_cmd apt-get install -y mercurial\nelif command -v brew >/dev/null 2>&1; then\n  brew install mercurial\nelif command -v python3 >/dev/null 2>&1; then\n  python3 -m pip install --user --upgrade mercurial\nelse\n  echo \"install Mercurial from https://www.mercurial-scm.org/downloads\" >&2\n  exit 1\nfi\n\nhg --version\n~~~\n\n## Workflow\n\n1. Confirm the repo root with `hg root`.\n2. Inspect state with `hg status`, `hg summary`, and `hg diff`.\n3. Pull remote changes with `hg pull` and update deliberately with `hg update`.\n4. Use bookmarks for Git-like branch pointers when the project expects them: `hg bookmark <name>`.\n5. Commit focused work with `hg commit -m \"message\"`.\n6. Use revsets for precise history inspection, for example `hg log -r 'draft()'` and `hg log -r '::. and not public()'`.\n7. Export reviewable patches with `hg export <rev> > change.patch` when the upstream review flow is patch-based.\n\n## Safety\n\n- Do not run `hg strip`, `hg rollback`, or history-rewriting extensions without explicit approval.\n- Check phases before rewriting history. Public changesets should be treated as immutable.\n- In repos using named branches, ask or inspect project docs before creating a new named branch; bookmarks are usually safer for task-local work.",
+    "source": "app-site",
+    "sourceRepo": "https://github.com/app-nz/app-site",
+    "category": "source-control",
+    "tags": [
+      "mercurial",
+      "hg",
+      "source-control",
+      "vcs"
+    ],
+    "setupPreamble": ""
+  },
+{
+    "slug": "app-site/perforce",
+    "name": "perforce",
+    "description": "Use Perforce Helix Core through p4 for sync, edit, reconcile, changelist, submit, and workspace workflows.",
+    "body": "# Perforce Source Control\n\nUse this skill when the repository is a Perforce Helix Core workspace or the task mentions `p4`, changelists, clients/workspaces, depots, streams, shelve, or submit.\n\n## Install\n\nRun this once per machine if `p4` is missing. It prefers the official Perforce apt repository on Debian/Ubuntu and fails clearly elsewhere.\n\n~~~sh\nset -eu\nif command -v p4 >/dev/null 2>&1; then\n  p4 -V | head -20\n  exit 0\nfi\n\nif command -v apt-get >/dev/null 2>&1; then\n  sudo_cmd=\"\"\n  if [ \"$(id -u)\" -ne 0 ]; then sudo_cmd=\"sudo\"; fi\n  $sudo_cmd apt-get update\n  $sudo_cmd apt-get install -y curl ca-certificates gnupg\n  curl -fsSL https://package.perforce.com/perforce.pubkey | $sudo_cmd gpg --dearmor -o /usr/share/keyrings/perforce.gpg\n  . /etc/os-release\n  codename=\"${VERSION_CODENAME:-jammy}\"\n  echo \"deb [signed-by=/usr/share/keyrings/perforce.gpg] https://package.perforce.com/apt/ubuntu ${codename} release\" | $sudo_cmd tee /etc/apt/sources.list.d/perforce.list >/dev/null\n  $sudo_cmd apt-get update\n  $sudo_cmd apt-get install -y helix-cli\nelse\n  echo \"install p4 from https://www.perforce.com/downloads/helix-command-line-client-p4 for this OS\" >&2\n  exit 1\nfi\n\np4 -V | head -20\n~~~\n\n## Required Context\n\nBefore changing files, collect:\n\n- `P4PORT`, `P4USER`, and `P4CLIENT` from the environment or user-provided config.\n- Workspace root with `p4 info`.\n- Opened files with `p4 opened`.\n- Current pending changelists with `p4 changes -s pending -u \"$P4USER\"`.\n\n## Workflow\n\n1. Verify auth and workspace with `p4 info`. If login is required, ask the user to authenticate outside the agent session unless credentials are already configured.\n2. Sync only what is needed: `p4 sync <path>/...`, not the whole depot unless necessary.\n3. Open existing files before editing: `p4 edit <file>`.\n4. Add new files with `p4 add <file>` and remove files with `p4 delete <file>`.\n5. Reconcile only the relevant tree with `p4 reconcile <path>/...`.\n6. Inspect with `p4 opened` and `p4 diff -du <path>/...`.\n7. Put work in a numbered changelist when useful: `p4 change`, then `p4 reopen -c <cl> <files>`.\n8. Shelve for review with `p4 shelve -c <cl>` unless the user explicitly wants submit.\n\n## Safety\n\n- Never run broad `p4 revert //...` or `p4 clean` without explicit approval.\n- Do not submit directly unless the user asked for submit and tests have passed.\n- Avoid syncing the whole depot in large monorepos; target the smallest path that contains the task.",
+    "source": "app-site",
+    "sourceRepo": "https://github.com/app-nz/app-site",
+    "category": "source-control",
+    "tags": [
+      "perforce",
+      "p4",
+      "helix-core",
+      "source-control",
+      "vcs"
+    ],
+    "setupPreamble": ""
+  },
+{
+    "slug": "app-site/lang-go",
+    "name": "Go",
+    "description": "Go best practices: modules, idiomatic errors, table-driven tests, gofmt/go vet. Ensures the Go toolchain is installed.",
+    "body": "# Go\n\nWrite idiomatic, production Go.\n\n## Workflow\n- Use Go modules: `go mod tidy` after changing imports.\n- Format and vet before finishing: `gofmt -w .` (or `goimports`) and `go vet ./...`.\n- Build and test the whole module: `go build ./...` && `go test ./...`.\n\n## Style\n- Return errors, don't panic in library code; wrap with `fmt.Errorf(\"...: %w\", err)`.\n- Accept interfaces, return concrete types. Keep interfaces small and defined by the consumer.\n- Prefer table-driven tests with `t.Run` subtests; use `t.Parallel()` where safe.\n- No naked globals for state; pass dependencies explicitly.\n- Use `context.Context` as the first arg for anything I/O-bound or cancellable.\n- Avoid premature goroutines; when used, always have a clear cancellation/wait path (`errgroup`, `sync.WaitGroup`).\n\n## Checks to run\n`gofmt -l .` (must be empty), `go vet ./...`, `go test ./...`.",
+    "source": "app-site",
+    "sourceRepo": "https://github.com/lee101/app-site",
+    "category": "language",
+    "tags": [
+      "go",
+      "golang",
+      "language",
+      "best-practices"
+    ],
+    "setupPreamble": "## Setup\n\nEnsure the Go toolchain is installed on the worker before starting (idempotent):\n\n```sh\nset -eu\nif command -v go >/dev/null 2>&1; then go version; exit 0; fi\nGO_VERSION=\"${GO_VERSION:-1.23.4}\"\narch=$(uname -m); case $arch in x86_64) a=amd64;; aarch64|arm64) a=arm64;; *) a=amd64;; esac\ncurl -fsSL \"https://go.dev/dl/go${GO_VERSION}.linux-${a}.tar.gz\" -o /tmp/go.tgz\nrm -rf /usr/local/go && tar -C /usr/local -xzf /tmp/go.tgz\nexport PATH=$PATH:/usr/local/go/bin && go version\n```\n"
+  },
+{
+    "slug": "app-site/lang-python",
+    "name": "Python",
+    "description": "Python best practices: uv/venv, ruff, pytest, type hints. Ensures Python and uv are installed.",
+    "body": "# Python\n\nWrite clean, typed, tested Python.\n\n## Workflow\n- Prefer `uv` for envs and installs: `uv venv && uv pip install -r requirements.txt`. Run tools with `uv run`.\n- Lint and format with ruff: `uv run ruff check --fix .` and `uv run ruff format .`.\n- Test with pytest: `uv run pytest -q`.\n\n## Style\n- Add type hints to public functions; run a type checker if configured (`mypy`/`pyright`).\n- Use f-strings, `pathlib`, context managers; avoid bare `except`.\n- Keep functions small and pure where possible; push side effects to edges.\n- Pin dependencies; don't add a dependency for something in the stdlib.\n\n## Checks to run\n`uv run ruff check .`, `uv run pytest -q`.",
+    "source": "app-site",
+    "sourceRepo": "https://github.com/lee101/app-site",
+    "category": "language",
+    "tags": [
+      "python",
+      "uv",
+      "ruff",
+      "pytest",
+      "language",
+      "best-practices"
+    ],
+    "setupPreamble": "## Setup\n\nEnsure the Python toolchain is installed on the worker before starting (idempotent):\n\n```sh\nset -eu\nif command -v uv >/dev/null 2>&1; then uv --version; else curl -LsSf https://astral.sh/uv/install.sh | sh; export PATH=\"$HOME/.local/bin:$PATH\"; fi\ncommand -v python3 >/dev/null 2>&1 || uv python install 3.12\npython3 --version || true\n```\n"
+  },
+{
+    "slug": "app-site/lang-typescript",
+    "name": "TypeScript",
+    "description": "TypeScript/Node best practices: bun/pnpm, strict tsconfig, vitest, ESLint. Ensures Node and a package manager are installed.",
+    "body": "# TypeScript / Node\n\nWrite strict, well-typed TS.\n\n## Workflow\n- Detect the package manager from the lockfile (bun.lockb -> bun, pnpm-lock.yaml -> pnpm, package-lock.json -> npm). Match it.\n- Install, then typecheck: `tsc --noEmit`. Lint: `eslint .` if configured.\n- Test with the project's runner (vitest/jest): run it after changes.\n\n## Style\n- `strict: true` in tsconfig; avoid `any` — prefer `unknown` + narrowing, generics, and discriminated unions.\n- Prefer `type`/`interface` over implicit shapes; no non-null `!` unless justified.\n- Pure functions, async/await over raw promise chains, no floating promises.\n- Keep modules small; export named, not default, for app code.\n\n## Checks to run\n`tsc --noEmit`, the configured linter, the configured test runner.",
+    "source": "app-site",
+    "sourceRepo": "https://github.com/lee101/app-site",
+    "category": "language",
+    "tags": [
+      "typescript",
+      "node",
+      "bun",
+      "pnpm",
+      "language",
+      "best-practices"
+    ],
+    "setupPreamble": "## Setup\n\nEnsure the TypeScript toolchain is installed on the worker before starting (idempotent):\n\n```sh\nset -eu\nif command -v node >/dev/null 2>&1; then node --version; else curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y nodejs; fi\ncommand -v bun >/dev/null 2>&1 || curl -fsSL https://bun.sh/install | bash || true\ncorepack enable 2>/dev/null || true\n```\n"
+  },
+{
+    "slug": "app-site/lang-rust",
+    "name": "Rust",
+    "description": "Rust best practices: cargo, clippy, rustfmt, idiomatic error handling. Ensures the Rust toolchain is installed.",
+    "body": "# Rust\n\nWrite safe, idiomatic Rust.\n\n## Workflow\n- Build and test: `cargo build` && `cargo test`.\n- Format and lint: `cargo fmt` and `cargo clippy --all-targets -- -D warnings`.\n\n## Style\n- Use `Result<T, E>` with `?`; define error enums or use `anyhow`/`thiserror` as the crate already does.\n- Prefer borrowing over cloning; reach for `clone()` only when ownership requires it.\n- Iterators over manual loops; pattern-match exhaustively; avoid `unwrap()`/`expect()` in non-test code.\n- Keep `unsafe` out unless required and documented with an invariant comment.\n\n## Checks to run\n`cargo fmt --check`, `cargo clippy -- -D warnings`, `cargo test`.",
+    "source": "app-site",
+    "sourceRepo": "https://github.com/lee101/app-site",
+    "category": "language",
+    "tags": [
+      "rust",
+      "cargo",
+      "clippy",
+      "language",
+      "best-practices"
+    ],
+    "setupPreamble": "## Setup\n\nEnsure the Rust toolchain is installed on the worker before starting (idempotent):\n\n```sh\nset -eu\nif command -v cargo >/dev/null 2>&1; then cargo --version; exit 0; fi\ncurl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y\nsource \"$HOME/.cargo/env\" && cargo --version\n```\n"
+  },
+{
+    "slug": "app-site/lang-java",
+    "name": "Java",
+    "description": "Java best practices: Maven/Gradle, JUnit, modern JDK features. Ensures a JDK and build tool are installed.",
+    "body": "# Java\n\nWrite modern, tested Java.\n\n## Workflow\n- Detect the build tool (pom.xml -> Maven, build.gradle -> Gradle) and use the wrapper if present (`./mvnw`, `./gradlew`).\n- Build + test: `./mvnw -q verify` or `./gradlew test`.\n\n## Style\n- Target a modern LTS JDK; use records, sealed types, switch expressions, `var` for locals where it reads well.\n- Prefer immutability and `Optional` over null returns; fail fast with clear exceptions.\n- Use the Streams API judiciously; keep methods short and single-purpose.\n- Write JUnit 5 tests with AssertJ-style assertions if available.\n\n## Checks to run\nThe build tool's `verify`/`test` task; any configured spotless/checkstyle.",
+    "source": "app-site",
+    "sourceRepo": "https://github.com/lee101/app-site",
+    "category": "language",
+    "tags": [
+      "java",
+      "maven",
+      "gradle",
+      "junit",
+      "language",
+      "best-practices"
+    ],
+    "setupPreamble": "## Setup\n\nEnsure the Java toolchain is installed on the worker before starting (idempotent):\n\n```sh\nset -eu\nif command -v javac >/dev/null 2>&1; then javac -version; exit 0; fi\napt-get update && apt-get install -y openjdk-21-jdk maven gradle || apt-get install -y default-jdk maven\njavac -version\n```\n"
+  },
+{
+    "slug": "app-site/lang-cpp",
+    "name": "C / C++",
+    "description": "C/C++ best practices: CMake, sanitizers, clang-format/clang-tidy, modern C++. Ensures a compiler toolchain is installed.",
+    "body": "# C / C++\n\nWrite safe, modern C/C++.\n\n## Workflow\n- Prefer CMake out-of-source builds: `cmake -S . -B build && cmake --build build`.\n- Run tests via `ctest --test-dir build`.\n- Build with warnings on and sanitizers in debug: `-Wall -Wextra -fsanitize=address,undefined`.\n\n## Style\n- Modern C++ (C++17/20): RAII, smart pointers, `std::` containers; avoid raw new/delete and owning raw pointers.\n- Use `const`/`constexpr`, references over pointers where possible, and `std::optional`/`std::variant`.\n- Format with clang-format; lint with clang-tidy if configured.\n\n## Checks to run\nclang-format check, clang-tidy (if configured), `ctest`.",
+    "source": "app-site",
+    "sourceRepo": "https://github.com/lee101/app-site",
+    "category": "language",
+    "tags": [
+      "c",
+      "cpp",
+      "c++",
+      "cmake",
+      "language",
+      "best-practices"
+    ],
+    "setupPreamble": "## Setup\n\nEnsure the C / C++ toolchain is installed on the worker before starting (idempotent):\n\n```sh\nset -eu\nif command -v cc >/dev/null 2>&1 && command -v cmake >/dev/null 2>&1; then cc --version; cmake --version; exit 0; fi\napt-get update && apt-get install -y build-essential cmake clang clang-format clang-tidy\ncc --version && cmake --version\n```\n"
   }
 ]

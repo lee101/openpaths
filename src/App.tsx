@@ -52,6 +52,9 @@ import { Prompts } from './pages/Prompts';
 import { PromptDetail } from './pages/PromptDetail';
 import { Agents } from './pages/Agents';
 import { AgentDetail } from './pages/AgentDetail';
+import { Skills } from './pages/Skills';
+import { SkillDetail } from './pages/SkillDetail';
+import { SkillEdit } from './pages/SkillEdit';
 import { OrgJoin } from './pages/OrgJoin';
 import { Byok } from './pages/Byok';
 import { Calculator } from './pages/Calculator';
@@ -87,6 +90,10 @@ export default function App() {
           <Route path="chat/:slug" element={<Suspense fallback={<RouteLoading />}><SharedChat /></Suspense>} />
           <Route path="agents" element={<Agents />} />
           <Route path="agents/:id" element={<AgentDetail />} />
+          <Route path="skills" element={<Skills />} />
+          <Route path="skills/new" element={<SkillEdit mode="new" />} />
+          <Route path="skills/:slug/edit" element={<SkillEdit mode="edit" />} />
+          <Route path="skills/:slug" element={<SkillDetail />} />
 		  <Route path="orgs/:slug/join" element={<OrgJoin />} />
           <Route path="fusion" element={<Fusion />} />
           <Route path="compound" element={<Compound />} />

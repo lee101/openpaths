@@ -443,11 +443,17 @@ func New(deps *Dependencies) *Server {
 	r.GET("/v1/prompts", publicChain(promptsH.HandleList))
 	r.GET("/v1/prompts/meta", publicChain(promptsH.HandleMeta))
 	r.GET("/v1/prompts/{slug}", publicChain(promptsH.HandleGet))
-	// Searchable agent-skill library (public, read-only, gobed-powered).
+	// Searchable agent-skill library (public reads, owner-scoped marketplace writes).
 	r.GET("/v1/skills", publicChain(skillsH.HandleList))
 	r.GET("/v1/skills/meta", publicChain(skillsH.HandleMeta))
 	r.GET("/v1/skills/search", publicChain(skillsH.HandleSearch))
+	r.POST("/v1/skills", accountChain(skillsH.HandleCreate))
+	r.POST("/v1/skills/reindex", accountChain(adminH.RequireAdmin(skillsH.HandleReindex)))
+	r.GET("/v1/skills/{slug}/files/{filepath:*}", publicChain(skillsH.HandleFileRaw))
+	r.GET("/v1/skills/{slug}/files", publicChain(skillsH.HandleFiles))
 	r.GET("/v1/skills/{slug}", publicChain(skillsH.HandleGet))
+	r.PUT("/v1/skills/{slug}", accountChain(skillsH.HandleUpdate))
+	r.DELETE("/v1/skills/{slug}", accountChain(skillsH.HandleDelete))
 
 	// Agents: user-built tool-use agents with connected data sources.
 	r.GET("/v1/agents/presets", publicChain(agentsH.HandlePresets))
