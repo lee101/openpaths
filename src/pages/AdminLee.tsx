@@ -214,12 +214,12 @@ export function AdminLee() {
                   {maxPlan.healthy_count}/{maxPlan.credential_count} credential(s) healthy
                 </span>
                 {maxPlan.credential_count === 0 && (
-                  <span className="text-white/50"> - sign in with OpenAI on the Account page, then refresh</span>
+                  <span className="text-white/50"> - <a href="/account#openai-max-plan" className="underline text-sky-300 hover:text-sky-200">sign in with OpenAI on the Account page</a>, then refresh</span>
                 )}
                 {maxPlan.credential_count > 0 && !maxPlan.refreshable && (
                   <div className="mt-1 text-xs text-amber-300">
                     auth_mode={maxPlan.auth_mode || 'unknown'} - no refresh token, so this is a pasted API key
-                    that cannot be rotated. Sign in with OpenAI on the Account page to store a real max-plan
+                    that cannot be rotated. <a href="/account#openai-max-plan" className="underline hover:text-amber-200">Sign in with OpenAI on the Account page</a> to store a real max-plan
                     credential.
                   </div>
                 )}
@@ -232,12 +232,20 @@ export function AdminLee() {
             {maxPlanMsg && <div className="mt-1 text-xs text-white/50">{maxPlanMsg}</div>}
           </div>
           {maxPlan?.enabled && (
-            <button
-              onClick={() => void refreshMaxPlan()}
-              className="shrink-0 rounded-md border border-emerald-400/30 bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-200 hover:bg-emerald-500/20"
-            >
-              Refresh now
-            </button>
+            <div className="flex shrink-0 gap-2">
+              <a
+                href="/account#openai-max-plan"
+                className="rounded-md border border-sky-400/30 bg-sky-500/10 px-4 py-2 text-sm font-medium text-sky-200 hover:bg-sky-500/20"
+              >
+                Sign in
+              </a>
+              <button
+                onClick={() => void refreshMaxPlan()}
+                className="shrink-0 rounded-md border border-emerald-400/30 bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-200 hover:bg-emerald-500/20"
+              >
+                Refresh now
+              </button>
+            </div>
           )}
         </div>
       </div>

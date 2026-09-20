@@ -211,6 +211,8 @@ var orModelDisplayNames = map[string]string{
 	"glm-5":                        "ZAI: GLM-5",
 	"qwen3.8-2.4t-a95b":            "Alibaba: Qwen 3.8 2.4T A95B",
 	"qwen3.5-397b":                 "Alibaba: Qwen 3.5 397B",
+	"qwen/qwen3.8-flash":           "Alibaba: Qwen 3.8 Flash",
+	"or/qwen3.8-flash":             "Alibaba: Qwen 3.8 Flash",
 	"kimi-k2.5":                    "Moonshot: Kimi K2.5",
 	"kimi-k3":                      "Moonshot: Kimi K3",
 }

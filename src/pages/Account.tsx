@@ -748,7 +748,7 @@ function OpenAIMaxPlanPanel({
   onCopy: (value: string) => void;
 }) {
   return (
-    <section className="mb-8 border border-sky-300/20 bg-[radial-gradient(circle_at_top_right,rgba(14,165,233,0.14),transparent_42%),rgba(255,255,255,0.02)] rounded-3xl p-6" data-testid="openai-max-plan-panel">
+    <section id="openai-max-plan" className="mb-8 border border-sky-300/20 bg-[radial-gradient(circle_at_top_right,rgba(14,165,233,0.14),transparent_42%),rgba(255,255,255,0.02)] rounded-3xl p-6 scroll-mt-24" data-testid="openai-max-plan-panel">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
           <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-[0.18em] text-sky-100/45 mb-2">

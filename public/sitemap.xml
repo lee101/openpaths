@@ -1456,6 +1456,11 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/models/qwen%2Fqwen3.8-flash</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/models/cerebras%2Fqwen-3.8-27b</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
@@ -2569,6 +2574,11 @@
     <loc>https://openpaths.io/models/flux-video-upscale</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/blog/union-alpha-unbiased-pareto-ensemble</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/cerebras-qwen-3-8-27b</loc>

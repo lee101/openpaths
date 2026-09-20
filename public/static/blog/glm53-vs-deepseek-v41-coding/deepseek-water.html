@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>TSL Water — WebGPU</title>
+<style>
+	:root { color-scheme: dark; }
+	html, body { margin: 0; height: 100%; overflow: hidden; background: #0b1a26; }
+	canvas { display: block; width: 100%; height: 100%; }
+	.hint {
+		position: fixed; left: 14px; bottom: 12px;
+		font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+		color: #a9d3e6; opacity: .72; pointer-events: none; user-select: none;
+		text-shadow: 0 1px 2px rgba(0,0,0,.65); letter-spacing: .02em;
+	}
+</style>
+<script type="importmap">
+{
+	"imports": {
+		"three": "https://unpkg.com/three@0.180.0/build/three.module.js",
+		"three/webgpu": "https://unpkg.com/three@0.180.0/build/three.webgpu.js",
+		"three/tsl": "https://unpkg.com/three@0.180.0/build/three.tsl.js",
+		"three/addons/": "https://unpkg.com/three@0.180.0/examples/jsm/"
+	}
+}
+</script>
+</head>
+<body>
+<div class="hint">drag to orbit · scroll to zoom</div>
+
+<script type="module">
+import * as THREE from 'three/webgpu';
+import {
+	Fn, vec2, vec3, vec4, float, uniform,
+	mix, smoothstep, clamp, pow, dot, normalize, reflect,
+	sin, cos, fract, floor,
+	positionLocal, positionWorld, cameraPosition
+} from 'three/tsl';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ---------------------------------------------------------------- renderer
+const renderer = new THREE.WebGPURenderer( { antialias: true } );
+renderer.setPixelRatio( Math.min( window.devicePixelRatio, 2 ) );
+renderer.setSize( window.innerWidth, window.innerHeight );
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+renderer.domElement.style.display = 'block';
+document.body.appendChild( renderer.domElement );
+await renderer.init();
+
+// ---------------------------------------------------------------- scene / camera
+const scene = new THREE.Scene();
+const HORIZON = new THREE.Color( 0x0e2231 );
+scene.background = HORIZON.clone();
+
+const camera = new THREE.PerspectiveCamera( 55, window.innerWidth / window.innerHeight, 0.1, 600 );
+camera.position.set( 0, 5.5, 19 );
+
+const controls = new OrbitControls( camera, renderer.domElement );
+controls.target.set( 0, 0.4, 0 );
+controls.enableDamping = true;
+controls.dampingFactor = 0.06;
+controls.minDistance = 4;
+controls.maxDistance = 70;
+controls.maxPolarAngle = Math.PI * 0.495;
+
+// ---------------------------------------------------------------- uniforms (time is animated every frame)
+const uTime      = uniform( 0.0 );
+const uSparkle   = uniform( 0.62 );                              // micro-normal perturbation strength
+const uDeep      = uniform( new THREE.Color( 0x04222f ) );       // deep water
+const uShallow   = uniform( new THREE.Color( 0x1c93a8 ) );       // shallow water
+const uCrest     = uniform( new THREE.Color( 0xbfeaf5 ) );       // crest highlight
+const uSky       = uniform( new THREE.Color( 0x8fc8f0 ) );       // reflected sky
+const uHorizon   = uniform( HORIZON.clone() );                   // reflected horizon / fog
+const uSunCol    = uniform( new THREE.Color( 0xfff2cf ) );
+const uSunDir    = uniform( new THREE.Vector3( 0.45, 0.42, 0.79 ).normalize() );
+
+// ---------------------------------------------------------------- wave fields (TSL, JS-unrolled sum of sines)
+function makeWaveFn( list ) {
+
+	return Fn( ( [ xz, t ] ) => {
+
+		const x = xz.x;
+		const z = xz.y;
+
+		let h  = float( 0.0 );   // height
+		let dx = float( 0.0 );   // dHeight / dx
+		let dz = float( 0.0 );   // dHeight / dz
+
+		for ( let i = 0; i < list.length; i ++ ) {
+
+			const w = list[ i ];
+			const k = ( Math.PI * 2.0 ) / w.len;
+
+			const phase = x.mul( k * w.dir[ 0 ] )
+				.add( z.mul( k * w.dir[ 1 ] ) )
+				.add( t.mul( w.speed ) );
+
+			const s = sin( phase );
+			const c = cos( phase );
+
+			h  = h.add( s.mul( w.amp ) );
+			dx = dx.add( c.mul( w.amp * k * w.dir[ 0 ] ) );
+			dz = dz.add( c.mul( w.amp * k * w.dir[ 1 ] ) );
+
+		}
+
+		return vec3( h, dx, dz );
+
+	} );
+
+}
+
+// large swell — displaced in the vertex stage
+const bigWaves = makeWaveFn( [
+	{ amp: 0.300, len: 11.0, speed: 0.85, dir: [ 1.00,  0.32 ] },
+	{ amp: 0.190, len: 6.20, speed: 1.35, dir: [ -0.72, 0.86 ] },
+	{ amp: 0.110, len: 3.40, speed: 2.05, dir: [ 0.62, -0.78 ] },
+	{ amp: 0.055, len: 1.75, speed: 2.90, dir: [ 0.22,  1.00 ] }
+] );
+
+// high frequency ripples — fragment-stage normal perturbation (the sparkle)
+const sparkleWaves = makeWaveFn( [
+	{ amp: 0.018, len: 0.62, speed: 3.10, dir: [ 1.00,  0.55 ] },
+	{ amp: 0.014, len: 0.42, speed: 4.30, dir: [ -0.75, 0.66 ] },
+	{ amp: 0.011, len: 0.27, speed: 5.60, dir: [ 0.40, -1.00 ] }
+] );
+
+// ---------------------------------------------------------------- tiny value noise (patchy sparkle mask)
+const hash21 = Fn( ( [ p ] ) => {
+	return fract( sin( dot( p, vec2( 127.1, 311.7 ) ) ).mul( 43758.5453123 ) );
+} );
+
+const noise2 = Fn( ( [ p ] ) => {
+
+	const i = floor( p );
+	const f = fract( p );
+	const u = f.mul( f ).mul( float( 3.0 ).sub( f.mul( 2.0 ) ) );
+
+	const a = hash21( i );
+	const b = hash21( i.add( vec2( 1.0, 0.0 ) ) );
+	const c = hash21( i.add( vec2( 0.0, 1.0 ) ) );
+	const d = hash21( i.add( vec2( 1.0, 1.0 ) ) );
+
+	return mix( mix( a, b, u.x ), mix( c, d, u.x ), u.y );
+
+} );
+
+// ---------------------------------------------------------------- geometry: flat grid in XZ, height comes from the vertex stage
+const geometry = new THREE.PlaneGeometry( 220, 220, 400, 400 );
+geometry.rotateX( - Math.PI / 2 );
+
+// ---------------------------------------------------------------- material
+const material = new THREE.MeshBasicNodeMaterial();
+
+// --- vertex stage: sum-of-sines displacement ----------------------
+material.positionNode = Fn( () => {
+
+	const w = bigWaves( positionLocal.xz, uTime );
+	return vec3( positionLocal.x, w.x, positionLocal.z );
+
+} )();
+
+// --- fragment stage: gradient + fresnel + moving sparkle ----------
+material.colorNode = Fn( () => {
+
+	const worldPos = positionWorld;
+	const xz = worldPos.xz;               // mesh transform is identity => world XZ == grid XZ
+	const t = uTime;
+
+	// big swell height + analytic normal
+	const w = bigWaves( xz, t );
+	const N = normalize( vec3( w.y.negate(), float( 1.0 ), w.z.negate() ) );
+
+	// micro ripple normal perturbation (moving sparkle field)
+	const sp = sparkleWaves( xz, t );
+	const Np = normalize( N.add( vec3( sp.y.negate(), float( 0.0 ), sp.z.negate() ).mul( uSparkle ) ) );
+
+	const V = normalize( cameraPosition.sub( worldPos ) );
+	const H = normalize( uSunDir.add( V ) );
+
+	// ---- depth based colour gradient (driven by the displaced wave height)
+	const depth = smoothstep( float( - 0.50 ), float( 0.60 ), w.x );
+	const baseColor = mix( uDeep, uShallow, depth );
+
+	// ---- fresnel + reflected sky
+	const R = reflect( V.negate(), N );
+	const sky = mix( uHorizon, uSky, smoothstep( float( 0.0 ), float( 0.62 ), R.y ) );
+	const fres = pow( clamp( float( 1.0 ).sub( dot( N, V ).max( 0.0 ) ), float( 0.0 ), float( 1.0 ) ), float( 5.0 ) );
+	const reflection = sky.mul( fres.mul( 0.90 ).add( 0.07 ) );
+
+	// ---- moving sparkle mask
+	const patch = noise2( xz.mul( 0.45 ).add( vec2( t.mul( 0.050 ), t.mul( - 0.037 ) ) ) );
+	const mask = smoothstep( float( 0.42 ), float( 0.95 ), patch );
+
+	// ---- sun glints (sharp ones come from the perturbed normal => they crawl and twinkle)
+	const ndl = dot( N, uSunDir ).max( 0.0 );
+	const ndh = dot( N, H ).max( 0.0 );
+	const ndhP = dot( Np, H ).max( 0.0 );
+
+	const glint = pow( ndhP, float( 260.0 ) ).mul( mask ).mul( 5.0 )
+		.add( pow( ndhP, float( 40.0 ) ).mul( mask ).mul( 0.12 ) )
+		.add( pow( ndh, float( 180.0 ) ).mul( 0.45 ) );
+
+	// ---- crest highlight
+	const crest = smoothstep( float( 0.38 ), float( 0.62 ), w.x ).mul( 0.25 );
+
+	const lit = baseColor.mul( ndl.mul( 0.45 ).add( 0.55 ) );
+	const color = lit.add( reflection ).add( uCrest.mul( crest ) ).add( uSunCol.mul( glint ) );
+
+	// ---- distance fade into the horizon so the plane edge disappears
+	const dist = cameraPosition.sub( worldPos ).length();
+	const fog = smoothstep( float( 55.0 ), float( 100.0 ), dist );
+
+	return vec4( mix( color, uHorizon, fog ), 1.0 );
+
+} )();
+
+const water = new THREE.Mesh( geometry, material );
+water.frustumCulled = false;
+scene.add( water );
+
+// ---------------------------------------------------------------- resize
+window.addEventListener( 'resize', () => {
+
+	camera.aspect = window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+	renderer.setSize( window.innerWidth, window.innerHeight );
+
+} );
+
+// ---------------------------------------------------------------- animation loop
+const clock = new THREE.Clock();
+
+renderer.setAnimationLoop( () => {
+
+	uTime.value = clock.getElapsedTime();
+
+	controls.update();
+	renderer.render( scene, camera );
+
+} );
+</script>
+</body>
+</html>

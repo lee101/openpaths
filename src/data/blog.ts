@@ -14,6 +14,193 @@ export interface BlogPost {
 
 export const posts: BlogPost[] = [
   {
+    slug: 'glm53-flash-vs-deepseek-v41-flash-coding-comparison',
+    title: 'GLM-5.3 vs GLM-5.3 Flash vs DeepSeek V4.1 Flash: Pelican SVG vs TSL Water',
+    excerpt: 'Same two creative-coding prompts to GLM-5.3, GLM-5.3 Flash, and DeepSeek V4.1 Flash: a pelican SVG and a TSL water shader. Five artifacts hosted with code and live demos - plus one honest flagship failure.',
+    date: '2026-09-20',
+    author: 'OpenPaths Team',
+    readTime: '8 min',
+    tags: ['coding', 'model-comparison', 'glm', 'deepseek', 'creative-coding', 'svg', 'shaders'],
+    content: `Three models, two prompts that punish vagueness. We sent GLM-5.3, GLM-5.3 Flash, and DeepSeek V4.1 Flash the same two creative-coding tasks through the OpenPaths API: draw a pelican riding a bicycle as an animated SVG, and write a standalone Three.js WebGPU TSL water shader. Every artifact below is the real output, hosted and runnable.
+
+The prompts:
+
+\`\`\`text
+Draw a pelican riding a bicycle as an animated SVG. Return only a complete standalone SVG document with SMIL or CSS animation (spinning wheels, pedaling legs, bobbing body). ViewBox 0 0 800 600.
+\`\`\`
+
+\`\`\`text
+Write a complete standalone HTML file using Three.js WebGPU TSL (import from unpkg/jsdelivr three@0.170.0 with importmap "three" and "three/tsl", WebGPURenderer) that renders an animated stylized water surface: a plane with sum-of-sines vertex waves in the vertex stage via TSL positionNode, depth-based color gradient + fresnel + moving normal-perturbation sparkle in the fragment stage, orbit controls, animation loop with time uniform. Full-screen canvas, no build step. Return only the HTML.
+\`\`\`
+
+Both runs used a strict code-only system instruction (first character must be \`<\` / \`<!DOCTYPE html>\`, no markdown, no prose).
+Update: the flagship GLM-5.3 joined late. It ran the same two prompts with the same code-only instruction. Water landed as a complete demo. The pelican never did, and that failure is part of the comparison.
+
+## Scoreboard
+
+| Run | Model | Completion tokens | Artifact size | Approx. cost |
+|-----|-------|-------------------|---------------|--------------|
+| Pelican SVG | glm-5.3-flash | 14,195 | 9.0 KB | ~$0.007 |
+| Pelican SVG | deepseek-v4-flash | 20,062 | 11.2 KB | ~$0.012 |
+| Pelican SVG | glm-5.3 | no content in 8 tries | - | - |
+| TSL water | glm-5.3-flash | 11,780 | 5.8 KB | ~$0.006 |
+| TSL water | deepseek-v4-flash | 29,256 | 8.8 KB | ~$0.018 |
+| TSL water | glm-5.3 | 11,777 | 6.1 KB | ~$0.052 |
+Costs use standard rates (GLM-5.3 Flash $0.15/$0.50 per M tokens in/out; DeepSeek V4.1 Flash off-peak $0.15/$0.60, double at peak; GLM-5.3 flagship $1.40/$4.40). The cheap-model runs cost under two cents each; the flagship water cost about five cents. Token counts include chain-of-thought reasoning before the code, except the flagship water run, which emitted zero reasoning tokens (more on that below).
+## Round 1: pelican on a bicycle
+
+## GLM-5.3 Flash pelican
+
+![GLM-5.3 Flash animated SVG pelican riding a bicycle](/static/blog/glm53-vs-deepseek-v41-coding/glm53-pelican.svg)
+
+GLM's take is the tighter file: 9.0 KB, 181 lines, 14 SMIL animation nodes. Section-commented groups (wheels, frame, crank plus pedals, bobbing pelican), a red frame, six-spoke wheels spinning on a 0.9 s loop, and a beak with pouch. Representative wheel code:
+
+\`\`\`svg
+<g>
+  <animateTransform attributeName="transform" type="rotate" from="0 250 450" to="360 250 450" dur="0.9s" repeatCount="indefinite"/>
+  <circle cx="250" cy="450" r="72" fill="none" stroke="#2b2b2b" stroke-width="9"/>
+  <circle cx="250" cy="450" r="62" fill="none" stroke="#8a8a8a" stroke-width="3"/>
+  <g stroke="#9aa0a6" stroke-width="2.5">
+    <line x1="190" y1="450" x2="310" y2="450"/>
+    <line x1="250" y1="390" x2="250" y2="510"/>
+    ...
+  </g>
+  <circle cx="250" cy="450" r="8" fill="#333333"/>
+</g>
+\`\`\`
+
+Full file: [/static/blog/glm53-vs-deepseek-v41-coding/glm53-pelican.svg](/static/blog/glm53-vs-deepseek-v41-coding/glm53-pelican.svg)
+
+## DeepSeek V4.1 Flash pelican
+
+![DeepSeek V4.1 Flash animated SVG pelican riding a bicycle](/static/blog/glm53-vs-deepseek-v41-coding/deepseek-pelican.svg)
+
+DeepSeek drew the bigger scene: 11.2 KB, 228 lines, 17 animation nodes. Local-origin wheel groups (\`translate(250, 450)\` with centered spokes), eight spokes per wheel on a 1 s loop, sky and ground gradients, and a cloud. Same idea, more decoration:
+
+\`\`\`svg
+<g transform="translate(250, 450)">
+  <circle cx="0" cy="0" r="60" fill="none" stroke="#2B2D42" stroke-width="8" />
+  <circle cx="0" cy="0" r="55" fill="none" stroke="#666666" stroke-width="3" />
+  <g>
+    <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="1s" repeatCount="indefinite" />
+    <line x1="0" y1="-55" x2="0" y2="55" stroke="#999999" stroke-width="2" />
+    <line x1="-55" y1="0" x2="55" y2="0" stroke="#999999" stroke-width="2" />
+    ...
+  </g>
+  <circle cx="0" cy="0" r="10" fill="#2B2D42" />
+  <circle cx="0" cy="0" r="4" fill="#E63946" />
+</g>
+\`\`\`
+
+Full file: [/static/blog/glm53-vs-deepseek-v41-coding/deepseek-pelican.svg](/static/blog/glm53-vs-deepseek-v41-coding/deepseek-pelican.svg)
+
+Both are valid standalone SVGs with spinning wheels, pedaling cranks, and a bobbing bird. GLM is the better starting point for edits (smaller, labeled sections); DeepSeek is the richer illustration out of the box.
+## GLM-5.3 pelican: no artifact
+
+The flagship never returned a pelican. Across 8 attempts (caps from 16K to 32K completion tokens, reasoning effort low, none, and minimal, temperature 0, streaming and non-streaming), every run streamed 14-23K reasoning-only deltas with zero content chunks, then died: upstream provider error at the ~300 s stream wall, or a 524 past ~125 s non-streamed. A direct probe confirmed it: 4,088 reasoning chunks in 100 seconds, not one content token, even with reasoning effort set to none.
+
+This is the same failure mode as GPT-5.5 xhigh in our earlier [animated-SVG comparison](/blog/pelican-bicycle-animated-svg-model-comparison): hidden reasoning consumes the whole budget before final code appears. The difference is that no budget we tried was enough, and the reasoning dial did not turn reasoning off on this prompt. There is no file to host. If your pipeline treats any model as infallible on easy tasks, this is the counterexample.
+
+## Round 2: TSL water shader
+
+Both models produced genuine TSL, not GLSL strings: \`MeshBasicNodeMaterial\` with \`positionNode\` vertex displacement and \`colorNode\` fragment shading, sum-of-sines wave fields, fresnel, orbit controls, and a time-uniform animation loop. Open each demo, then paste the code into the [artifact editor](/artifacts/new) to remix it.
+
+## GLM-5.3 Flash water
+
+[Open the GLM-5.3 Flash water demo](/static/blog/glm53-vs-deepseek-v41-coding/glm53-water.html)
+
+GLM builds a 5-wave table (direction, amplitude, frequency, speed) with analytic derivatives, displaces a 90x90 plane (380x380 segments) along Y, and passes height plus slopes to the fragment stage as varyings for a depth gradient, pow-3 fresnel, and specular sparkle:
+
+\`\`\`js
+const WAVES = [
+  [ 1.00,  0.35, 0.300, 0.60, 0.85],
+  [-0.70,  1.00, 0.220, 0.90, 1.20],
+  [ 1.00, -1.00, 0.120, 1.70, 1.55],
+  [ 2.00,  1.00, 0.060, 3.00, 2.30],
+  [-1.50, -2.20, 0.030, 4.20, 3.10]
+];
+const { h, dx, dz } = waveField(positionLocal.x, positionLocal.z, timeU);
+material.positionNode = vec3(
+  positionLocal.x,
+  positionLocal.y.add(h),
+  positionLocal.z
+);
+\`\`\`
+
+## DeepSeek V4.1 Flash water
+
+[Open the DeepSeek V4.1 Flash water demo](/static/blog/glm53-vs-deepseek-v41-coding/deepseek-water.html)
+
+DeepSeek wraps its nodes in \`Fn\`, splits the field into \`bigWaves\` plus a \`sparkleWaves\` micro-ripple layer, and drives the look from color uniforms over a larger 220x220 grid (400x400 segments): depth gradient, pow-5 fresnel with reflected sky, a noise-driven sparkle mask, and dual-lobe sun glints off the perturbed normal:
+
+\`\`\`js
+material.positionNode = Fn( () => {
+  const w = bigWaves( positionLocal.xz, uTime );
+  return vec3( positionLocal.x, w.x, positionLocal.z );
+} )();
+const depth = smoothstep( float( - 0.50 ), float( 0.60 ), w.x );
+const baseColor = mix( uDeep, uShallow, depth );
+const glint = pow( ndhP, float( 260.0 ) ).mul( mask ).mul( 5.0 )
+  .add( pow( ndhP, float( 40.0 ) ).mul( mask ).mul( 0.12 ) )
+\`\`\`
+## GLM-5.3 water
+
+[Open the GLM-5.3 water demo](/static/blog/glm53-vs-deepseek-v41-coding/glm53-full-water.html)
+
+The flagship's water is the most economical design of the three: a 4-wave table of objects (amplitude, wave numbers, speed, phase) shared between stages, a single \`waveField\` returning height plus analytic slopes, displacement on the vertex stage, then view-space depth gradient, pow-2.2 fresnel, and crest lightening on the fragment stage:
+
+\`\`\`js
+const WAVES = [
+  { amp: 0.42, kx:  0.22, kz:  0.05, speed: 0.90, phase: 0.0 },
+  { amp: 0.26, kx: -0.15, kz:  0.30, speed: 1.30, phase: 1.7 },
+  { amp: 0.15, kx:  0.45, kz: -0.30, speed: 1.80, phase: 3.1 },
+  { amp: 0.07, kx:  0.80, kz:  0.60, speed: 2.40, phase: 4.5 }
+];
+const vField = waveField(positionLocal.x, positionLocal.z);
+material.positionNode = vec3(
+  positionLocal.x,
+  positionLocal.y.add(vField.h),
+  positionLocal.z
+);
+\`\`\`
+
+Notably this run used \`reasoning_effort: none\`, which the route accepted despite the flagship's always-on-reasoning billing: zero reasoning tokens, 11,777 content tokens, \`finish_reason: stop\`. Same setting on the pelican prompt still streamed reasoning-only output, so the dial works per-prompt, not per-model. Its importmap was also the only one that arrived complete (jsDelivr, all four entries including \`three/webgpu\`), so unlike the two flash demos it needed no fix at all beyond the shared version bump.
+
+## Honest fixes
+
+The demos above run with minimal patches, disclosed here so the comparison stays honest:
+
+- All three models pinned three@0.170.0 and imported build/three.tsl.js, which does not exist at that version (verified 404 on unpkg and jsDelivr; it first ships in 0.180.0). All importmaps were repointed to three@0.180.0, no other code touched.
+- GLM-5.3 Flash's importmap was additionally missing the three/webgpu entry. That matters because three.tsl.js itself imports from three/webgpu - without the mapping the module graph fails silently and no canvas ever appears. One line added.
+- The flagship needed nothing else: its importmap arrived complete over jsDelivr with all four entries.
+
+Same hallucinated CDN path in all three outputs. Pin your three.js version and smoke-test the boot path; generated WebGPU demos fail quiet.
+
+## Operational notes
+
+- Reasoning eats the budget. Caps of 6-8K completion tokens returned empty content (all tokens spent on chain-of-thought, \`finish_reason: length\`). Pelican needed 25K caps, water up to 30K. Give reasoning models headroom or they truncate instead of compress.
+- Long non-streamed requests hit gateway 524 timeouts past ~125 s. Streaming SSE solved it.
+- GLM-5.3 Flash's water run used \`reasoning_effort: low\` and finished in 11.8K tokens versus DeepSeek's 29.3K - the low-effort dial worked well for a visual execution task.
+- Flagship quirk: reasoning effort is per-prompt, not per-model. reasoning_effort none gave zero reasoning tokens on the water prompt but still streamed reasoning-only output on the pelican prompt, where no setting reached content before the ~300 s stream wall. thinking-type-disabled hard-400s on this route, and thinking budget caps are ignored.
+## API shape
+
+\`\`\`bash
+curl https://openpaths.io/v1/chat/completions \\
+  -H "Authorization: Bearer op-..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "model": "glm-5.3-flash",
+    "messages": [
+      {"role": "system", "content": "You output only final code. No markdown fences, no prose."},
+      {"role": "user", "content": "Draw a pelican riding a bicycle as an animated SVG. Return only a complete standalone SVG document."}
+    ],
+    "max_tokens": 25000
+  }'
+\`\`\`
+
+Swap in \`deepseek-v4-flash\` for the other half of this post. For routine coding traffic without a model preference, \`auto-code\` routes between these and the rest of the catalog - see [the best model for coding](/blog/best-model-for-coding).`,
+  },
+  {
     slug: 'skills-marketplace-versioned-agent-skills',
     title: 'Skills marketplace: versioned agent skills anyone can publish',
     excerpt: 'OpenPaths skills are now a marketplace: 170 seeded skills with setup scripts, prompts, and attached files, semantic search, immutable versions you can pin, and owner-only publishing through the API or the new /skills UI.',

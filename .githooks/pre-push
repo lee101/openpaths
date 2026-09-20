@@ -1,10 +1,31 @@
 #!/usr/bin/env bash
 set -euo pipefail
 root=$(git rev-parse --show-toplevel)
-command -v gitleaks >/dev/null 2>&1 || { echo 'pre-push: install gitleaks (or set SKIP_GITLEAKS=1 for an emergency bypass)' >&2; [ "${SKIP_GITLEAKS:-}" = 1 ] && exit 0; exit 1; }
+cd "$root"
+remote=${1:-}
+revisions=()
+new_ref=false
 while read -r local_ref local_sha remote_ref remote_sha; do
   [ -n "$local_sha" ] || continue
-  [ "$remote_sha" = "0000000000000000000000000000000000000000" ] && range="$local_sha" || range="$remote_sha..$local_sha"
-  gitleaks git --config "$root/.gitleaks.toml" --redact --no-banner --exit-code 1 --log-opts="$range"
+  # Deleted refs have no outgoing commits (support either Git object format).
+  [[ "$local_sha" =~ ^0+$ ]] && continue
+  revisions+=("$local_sha")
+  if [[ "$remote_sha" =~ ^0+$ ]]; then
+    new_ref=true
+  elif git cat-file -e "$remote_sha^{commit}" 2>/dev/null; then
+    revisions+=("^$remote_sha")
+  fi
 done
 
+[ "${#revisions[@]}" -gt 0 ] || exit 0
+# A new branch only needs commits not already known on its destination remote.
+# If no remote history is available, conservatively scan its full history.
+if "$new_ref" && [ -n "$remote" ]; then
+  while read -r sha; do
+    [ -n "$sha" ] && revisions+=("^$sha")
+  done < <(git for-each-ref --format='%(objectname)' "refs/remotes/$remote/")
+fi
+
+command -v gitleaks >/dev/null 2>&1 || { echo 'pre-push: install gitleaks to scan outgoing commits' >&2; exit 1; }
+echo 'Running Gitleaks on outgoing commits...' >&2
+gitleaks git "$root" --config "$root/.gitleaks.toml" --redact --no-banner --exit-code 1 --log-opts="${revisions[*]}"

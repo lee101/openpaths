@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WebGPU TSL Stylized Water</title>
+<style>
+  html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #0e2b42; }
+  canvas { display: block; width: 100vw; height: 100vh; }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.180.0/build/three.webgpu.js",
+    "three/webgpu": "https://unpkg.com/three@0.180.0/build/three.webgpu.js",
+    "three/tsl": "https://unpkg.com/three@0.180.0/build/three.tsl.js",
+    "three/addons/": "https://unpkg.com/three@0.180.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import {
+  uniform, float, vec3, mix, smoothstep, normalize,
+  positionLocal, positionWorld, cameraPosition, varying, screenUV
+} from 'three/tsl';
+
+// ---------- renderer / scene / camera ----------
+const renderer = new THREE.WebGPURenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+
+// gradient sky backdrop
+scene.backgroundNode = mix(
+  vec3(0.030, 0.090, 0.140),
+  vec3(0.080, 0.250, 0.380),
+  screenUV.y
+);
+
+scene.fog = new THREE.FogExp2(0x0e2b42, 0.028);
+
+const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 400);
+camera.position.set(9, 5.5, 12);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 0.8, 0);
+controls.enableDamping = true;
+controls.dampingFactor = 0.06;
+controls.maxPolarAngle = Math.PI * 0.495;
+controls.minDistance = 4;
+controls.maxDistance = 60;
+controls.update();
+
+// ---------- time uniform ----------
+const timeU = uniform(0);
+
+// ---------- sum-of-sines wave field (TSL) ----------
+// dirX, dirZ, amplitude, frequency, speed
+const WAVES = [
+  [ 1.00,  0.35, 0.300, 0.60, 0.85],
+  [-0.70,  1.00, 0.220, 0.90, 1.20],
+  [ 1.00, -1.00, 0.120, 1.70, 1.55],
+  [ 2.00,  1.00, 0.060, 3.00, 2.30],
+  [-1.50, -2.20, 0.030, 4.20, 3.10]
+];
+
+function waveField(x, z, t) {
+  let h  = float(0);
+  let dx = float(0);
+  let dz = float(0);
+  for (const [ax, az, amp, freq, speed] of WAVES) {
+    const kx = float(ax * freq);
+    const kz = float(az * freq);
+    const phase = x.mul(kx).add(z.mul(kz)).add(t.mul(speed));
+    h  = h.add(phase.sin().mul(amp));
+    dx = dx.add(phase.cos().mul(kx.mul(amp)));
+    dz = dz.add(phase.cos().mul(kz.mul(amp)));
+  }
+  return { h, dx, dz };
+}
+
+// ---------- geometry / material ----------
+const geometry = new THREE.PlaneGeometry(90, 90, 380, 380);
+geometry.rotateX(-Math.PI / 2); // lay flat: local XZ plane, Y up
+
+const material = new THREE.MeshBasicNodeMaterial();
+
+// ---- vertex stage: displace along Y with the sum-of-sines field ----
+const { h, dx, dz } = waveField(positionLocal.x, positionLocal.z, timeU);
+material.positionNode = vec3(
+  positionLocal.x,
+  positionLocal.y.add(h),
+  positionLocal.z
+);
+
+// pass wave data to the fragment stage
+const vH  = varying(h,  'vWaveHeight');
+const vDx = varying(dx, 'vWaveSlopeX');
+const vDz = varying(dz, 'vWaveSlopeZ');
+
+// ---- fragment stage: depth gradient + fresnel + moving sparkle ----
+const V = cameraPosition.sub(positionWorld).normalize();
+const wx = positionWorld.x;
+const wz = positionWorld.z;
+
+// base normal from analytic wave slopes
+let nx = vDx.toVar();
+let nz = vDz.toVar();
+
+// broad moving ripple perturbation
+nx.addAssign(wx.mul( 2.9).sub(wz.mul(1.9)).add(timeU.mul(1.5)).sin().mul(0.100));
+nz.addAssign(wz.mul( 3.3).add(wx.mul(1.5)).sub(timeU.mul(2.0)).sin().mul(0.100));
+
+// fine moving normal perturbation -> sparkle
+nx.addAssign(wx.mul( 7.0).add(wz.mul( 6.0)).add(timeU.mul(2.4)).sin().mul(0.045));
+nz.addAssign(wz.mul( 8.0).sub(wx.mul( 5.0)).sub(timeU.mul(3.1)).sin().mul(0.045));
+nx.addAssign(wx.mul(15.0).sub(wz.mul(12.0)).add(timeU.mul(4.5)).sin().mul(0.020));
+nz.addAssign(wz.mul(14.0).add(wx.mul(11.0)).sub(timeU.mul(3.8)).sin().mul(0.020));
+
+const N = normalize(vec3(nx, float(1.0), nz));
+
+// light / half vector
+const L = normalize(vec3(0.45, 0.65, 0.30));
+const H = normalize(L.add(V));
+
+// fresnel
+const fresnel = N.dot(V).clamp(0.0, 1.0).oneMinus().pow(3.0);
+
+// depth-based color gradient from wave height
+const lowBand  = smoothstep(-0.55, 0.10, vH);
+const highBand = smoothstep( 0.10, 0.65, vH);
+
+const deepColor    = vec3(0.010, 0.070, 0.140);
+const midColor     = vec3(0.030, 0.290, 0.380);
+const shallowColor = vec3(0.240, 0.760, 0.740);
+const skyColor     = vec3(0.540, 0.760, 0.900);
+
+let color = mix(deepColor, midColor, lowBand).toVar();
+color.assign(mix(color, shallowColor, highBand));
+color.assign(mix(color, skyColor, fresnel.mul(0.8)));
+
+// crest glow on the tallest waves
+color.addAssign(smoothstep(0.55, 0.95, vH).mul(vec3(0.35, 0.55, 0.55)).mul(0.5));
+
+// sparkle: sharp specular lobes driven by the moving perturbed normal
+const spec  = N.dot(H).max(0.0).pow( 90.0);
+const glint = N.dot(H).max(0.0).pow(350.0).mul(2.0);
+color.addAssign(spec.mul(vec3(1.0, 0.97, 0.88)).add(glint));
+
+material.colorNode = color;
+
+const water = new THREE.Mesh(geometry, material);
+scene.add(water);
+
+// ---------- resize ----------
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// ---------- animation loop ----------
+const clock = new THREE.Clock();
+
+async function start() {
+  await renderer.init();
+  renderer.setAnimationLoop(() => {
+    timeU.value = clock.getElapsedTime();
+    controls.update();
+    renderer.render(scene, camera);
+  });
+}
+start();
+</script>
+</body>
+</html>

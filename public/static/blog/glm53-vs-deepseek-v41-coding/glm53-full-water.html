@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stylized Water — Three.js WebGPU TSL</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0e2233; }
+  canvas { display: block; width: 100%; height: 100%; }
+  #info {
+    position: fixed; left: 10px; bottom: 8px; color: #7fd4e8;
+    font: 12px/1.4 monospace; opacity: .7; user-select: none; pointer-events: none;
+  }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+    "three/webgpu": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.webgpu.js",
+    "three/tsl": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.tsl.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<div id="info">drag to orbit &middot; scroll to zoom</div>
+<script type="module">
+import * as THREE from 'three';
+import { WebGPURenderer, MeshBasicNodeMaterial } from 'three/webgpu';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import {
+  positionLocal, positionWorld, positionView, cameraPosition,
+  uniform, float, vec3,
+  sin, cos, mix, smoothstep, pow, max, clamp, normalize, dot
+} from 'three/tsl';
+
+/* ---------- renderer / scene / camera ---------- */
+
+const renderer = new WebGPURenderer({ antialias: true });
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setSize(innerWidth, innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+document.body.appendChild(renderer.domElement);
+await renderer.init();
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0e2233);
+
+const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 500);
+camera.position.set(0, 6.5, 20);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 0.4, 0);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 4;
+controls.maxDistance = 70;
+controls.maxPolarAngle = Math.PI * 0.495;
+
+/* ---------- time uniform ---------- */
+
+const uTime = uniform(0);
+
+/* ---------- sum-of-sines wave field (shared vertex / fragment) ---------- */
+
+const WAVES = [
+  { amp: 0.42, kx:  0.22, kz:  0.05, speed: 0.90, phase: 0.0 },
+  { amp: 0.26, kx: -0.15, kz:  0.30, speed: 1.30, phase: 1.7 },
+  { amp: 0.15, kx:  0.45, kz: -0.30, speed: 1.80, phase: 3.1 },
+  { amp: 0.07, kx:  0.80, kz:  0.60, speed: 2.40, phase: 4.5 }
+];
+
+// returns height h and slopes dh/dx, dh/dz evaluated at (px, pz)
+function waveField(px, pz) {
+  let h  = float(0);
+  let sx = float(0);
+  let sz = float(0);
+  for (const w of WAVES) {
+    const phase = px.mul(w.kx).add(pz.mul(w.kz)).add(uTime.mul(w.speed)).add(w.phase);
+    h = h.add(sin(phase).mul(w.amp));
+    const d = cos(phase).mul(w.amp);
+    sx = sx.add(d.mul(w.kx));
+    sz = sz.add(d.mul(w.kz));
+  }
+  return { h, sx, sz };
+}
+
+/* ---------- material ---------- */
+
+const material = new MeshBasicNodeMaterial();
+
+// vertex stage: displace along Y with the sum-of-sines field
+const vField = waveField(positionLocal.x, positionLocal.z);
+material.positionNode = vec3(
+  positionLocal.x,
+  positionLocal.y.add(vField.h),
+  positionLocal.z
+);
+
+// fragment stage
+const px = positionWorld.x;
+const pz = positionWorld.z;
+const f = waveField(px, pz);
+
+// moving high-frequency ripple perturbation -> drives the sparkle glints
+const rippleA = sin(px.mul(7.0).add(uTime.mul(3.1))).mul(cos(pz.mul(5.5).sub(uTime.mul(2.3))));
+const rippleB = sin(pz.mul(8.5).sub(uTime.mul(2.7))).mul(cos(px.mul(6.2).add(uTime.mul(3.7))));
+const rippleC = sin(px.mul(23.0).add(uTime.mul(5.4))).mul(0.5);
+const rippleD = sin(pz.mul(21.0).sub(uTime.mul(4.6))).mul(0.5);
+
+const slopeX = f.sx.add(rippleA.mul(0.09)).add(rippleC.mul(0.03));
+const slopeZ = f.sz.add(rippleB.mul(0.09)).add(rippleD.mul(0.03));
+
+const n = normalize(vec3(slopeX.mul(-1), float(1), slopeZ.mul(-1)));
+
+// fresnel
+const viewDir = normalize(cameraPosition.sub(positionWorld));
+const fresnelRaw = pow(float(1).sub(max(dot(n, viewDir), float(0))), float(2.2));
+const fresnelTerm = fresnelRaw.mul(0.75).add(0.05);
+
+// depth-based color gradient (view-space depth: near -> shallow turquoise, far -> deep blue)
+const depth = positionView.z.mul(-1);
+const depthFactor = smoothstep(float(5.0), float(55.0), depth);
+const shallowCol = vec3(0.13, 0.50, 0.55);
+const deepCol    = vec3(0.015, 0.07, 0.16);
+const waterCol   = mix(shallowCol, deepCol, depthFactor);
+
+// crest lightening / trough darkening from local wave height
+const heightTint = clamp(f.h.mul(0.35).add(float(0.9)), float(0.55), float(1.3));
+const body = waterCol.mul(heightTint);
+
+// sky reflection blended by fresnel
+const skyCol = vec3(0.55, 0.78, 0.95);
+let col = body.add(skyCol.mul(fresnelTerm));
+
+// sun specular + animated glitter from the perturbed normals
+const sunDir  = normalize(vec3(0.35, 0.85, 0.25));
+const halfVec = normalize(sunDir.add(viewDir));
+const spec = pow(max(dot(n, halfVec), float(0)), float(140));
+
+const glitterMask = sin(px.mul(31.0).add(uTime.mul(5.5))).mul(sin(pz.mul(27.0).sub(uTime.mul(4.2))));
+const glitter = pow(max(glitterMask, float(0)), float(8.0));
+
+const sunCol = vec3(1.0, 0.97, 0.88);
+col = col.add(sunCol.mul(spec.mul(float(1.2).add(glitter.mul(2.5)))));
+
+// stylized foam at wave crests
+const foam = smoothstep(float(0.62), float(0.92), f.h.add(rippleA.mul(0.15)));
+col = col.add(vec3(0.85, 0.92, 0.95).mul(foam.mul(0.30)));
+
+material.colorNode = col;
+
+/* ---------- water mesh ---------- */
+
+const geometry = new THREE.PlaneGeometry(80, 80, 256, 256);
+geometry.rotateX(-Math.PI / 2);
+const water = new THREE.Mesh(geometry, material);
+scene.add(water);
+
+/* ---------- animation loop ---------- */
+
+const clock = new THREE.Clock();
+renderer.setAnimationLoop(() => {
+  uTime.value = clock.getElapsedTime();
+  controls.update();
+  renderer.render(scene, camera);
+});
+
+/* ---------- resize ---------- */
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>

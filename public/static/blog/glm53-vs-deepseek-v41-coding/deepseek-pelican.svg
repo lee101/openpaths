@@ -1,0 +1,228 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="100%" height="100%">
+  <defs>
+    <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#87CEEB" />
+      <stop offset="100%" stop-color="#E0F7FA" />
+    </linearGradient>
+    <linearGradient id="groundGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#81C784" />
+      <stop offset="100%" stop-color="#4CAF50" />
+    </linearGradient>
+    <path id="cloud" d="M 200 120 Q 220 90 250 120 Q 280 100 300 130 Q 320 160 280 160 L 200 160 Q 170 160 180 130 Q 180 100 200 120 Z" fill="#ffffff" opacity="0.8" />
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="600" fill="url(#skyGrad)" />
+  <rect y="510" width="800" height="90" fill="url(#groundGrad)" />
+  <line x1="0" y1="510" x2="800" y2="510" stroke="#388E3C" stroke-width="4" />
+
+  <!-- Sun -->
+  <circle cx="100" cy="100" r="50" fill="#FFD166" opacity="0.9" />
+  <circle cx="100" cy="100" r="70" fill="#FFD166" opacity="0.3" />
+
+  <!-- Animated Clouds -->
+  <g>
+    <animateTransform attributeName="transform" type="translate" values="0,0; 150,0; 0,0" dur="40s" repeatCount="indefinite" />
+    <use href="#cloud" x="0" y="0" />
+  </g>
+  <g>
+    <animateTransform attributeName="transform" type="translate" values="0,0; -120,0; 0,0" dur="35s" repeatCount="indefinite" />
+    <use href="#cloud" x="600" y="80" transform="scale(0.7)" />
+  </g>
+
+  <!-- Grass Details -->
+  <path d="M 80 510 Q 85 490 90 510" fill="none" stroke="#2E7D32" stroke-width="3" />
+  <path d="M 100 510 Q 105 495 110 510" fill="none" stroke="#2E7D32" stroke-width="3" />
+  <path d="M 680 510 Q 685 490 690 510" fill="none" stroke="#2E7D32" stroke-width="3" />
+  <path d="M 720 510 Q 725 495 730 510" fill="none" stroke="#2E7D32" stroke-width="3" />
+
+  <!-- Speed Lines -->
+  <g opacity="0.6">
+    <line x1="50" y1="350" x2="150" y2="350" stroke="#ffffff" stroke-width="4" stroke-linecap="round">
+      <animate attributeName="x1" values="50; 20; 50" dur="0.5s" repeatCount="indefinite" />
+      <animate attributeName="x2" values="150; 120; 150" dur="0.5s" repeatCount="indefinite" />
+    </line>
+    <line x1="80" y1="400" x2="200" y2="400" stroke="#ffffff" stroke-width="4" stroke-linecap="round">
+      <animate attributeName="x1" values="80; 50; 80" dur="0.6s" repeatCount="indefinite" />
+      <animate attributeName="x2" values="200; 170; 200" dur="0.6s" repeatCount="indefinite" />
+    </line>
+    <line x1="120" y1="450" x2="180" y2="450" stroke="#ffffff" stroke-width="4" stroke-linecap="round">
+      <animate attributeName="x1" values="120; 90; 120" dur="0.4s" repeatCount="indefinite" />
+      <animate attributeName="x2" values="180; 150; 180" dur="0.4s" repeatCount="indefinite" />
+    </line>
+  </g>
+
+  <!-- Shadow -->
+  <ellipse cx="400" cy="510" rx="180" ry="15" fill="rgba(0,0,0,0.15)" />
+
+  <!-- Left Leg (Back) -->
+  <polyline fill="none" stroke="#D48A52" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+    <animate attributeName="points" dur="1s" repeatCount="indefinite"
+      values="360,320 370,400 400,480;
+              360,320 380,390 370,450;
+              360,320 370,380 400,420;
+              360,320 380,390 430,450;
+              360,320 370,400 400,480"
+      keyTimes="0; 0.25; 0.5; 0.75; 1" />
+  </polyline>
+
+  <!-- Left Crank (Back) -->
+  <g transform="translate(400, 450)">
+    <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="1s" repeatCount="indefinite" additive="sum" />
+    <line x1="0" y1="0" x2="0" y2="30" stroke="#2B2D42" stroke-width="6" stroke-linecap="round" />
+    <rect x="-15" y="25" width="30" height="10" rx="3" fill="#E63946" />
+  </g>
+
+  <!-- Rear Wheel -->
+  <g transform="translate(250, 450)">
+    <circle cx="0" cy="0" r="60" fill="none" stroke="#2B2D42" stroke-width="8" />
+    <circle cx="0" cy="0" r="55" fill="none" stroke="#666666" stroke-width="3" />
+    <g>
+      <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="1s" repeatCount="indefinite" />
+      <line x1="0" y1="-55" x2="0" y2="55" stroke="#999999" stroke-width="2" />
+      <line x1="-55" y1="0" x2="55" y2="0" stroke="#999999" stroke-width="2" />
+      <line x1="-39" y1="-39" x2="39" y2="39" stroke="#999999" stroke-width="2" />
+      <line x1="39" y1="-39" x2="-39" y2="39" stroke="#999999" stroke-width="2" />
+      <line x1="-21" y1="-51" x2="21" y2="51" stroke="#999999" stroke-width="2" />
+      <line x1="21" y1="-51" x2="-21" y2="51" stroke="#999999" stroke-width="2" />
+      <line x1="-51" y1="-21" x2="51" y2="21" stroke="#999999" stroke-width="2" />
+      <line x1="51" y1="-21" x2="-51" y2="21" stroke="#999999" stroke-width="2" />
+    </g>
+    <circle cx="0" cy="0" r="10" fill="#2B2D42" />
+    <circle cx="0" cy="0" r="4" fill="#E63946" />
+  </g>
+
+  <!-- Front Wheel -->
+  <g transform="translate(550, 450)">
+    <circle cx="0" cy="0" r="60" fill="none" stroke="#2B2D42" stroke-width="8" />
+    <circle cx="0" cy="0" r="55" fill="none" stroke="#666666" stroke-width="3" />
+    <g>
+      <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="1s" repeatCount="indefinite" />
+      <line x1="0" y1="-55" x2="0" y2="55" stroke="#999999" stroke-width="2" />
+      <line x1="-55" y1="0" x2="55" y2="0" stroke="#999999" stroke-width="2" />
+      <line x1="-39" y1="-39" x2="39" y2="39" stroke="#999999" stroke-width="2" />
+      <line x1="39" y1="-39" x2="-39" y2="39" stroke="#999999" stroke-width="2" />
+      <line x1="-21" y1="-51" x2="21" y2="51" stroke="#999999" stroke-width="2" />
+      <line x1="21" y1="-51" x2="-21" y2="51" stroke="#999999" stroke-width="2" />
+      <line x1="-51" y1="-21" x2="51" y2="21" stroke="#999999" stroke-width="2" />
+      <line x1="51" y1="-21" x2="-51" y2="21" stroke="#999999" stroke-width="2" />
+    </g>
+    <circle cx="0" cy="0" r="10" fill="#2B2D42" />
+    <circle cx="0" cy="0" r="4" fill="#E63946" />
+  </g>
+
+  <!-- Bike Frame -->
+  <g stroke="#E63946" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Chainstay -->
+    <line x1="250" y1="450" x2="400" y2="450" />
+    <!-- Seat tube -->
+    <line x1="400" y1="450" x2="350" y2="330" />
+    <!-- Top tube -->
+    <line x1="350" y1="330" x2="520" y2="330" />
+    <!-- Down tube -->
+    <line x1="400" y1="450" x2="540" y2="430" />
+    <!-- Head tube -->
+    <line x1="520" y1="330" x2="540" y2="430" />
+    <!-- Fork -->
+    <line x1="540" y1="430" x2="550" y2="450" />
+    <!-- Seat stay -->
+    <line x1="250" y1="450" x2="350" y2="330" />
+  </g>
+
+  <!-- Chain and Chainring -->
+  <path d="M 250 450 L 400 430 L 400 470 L 250 450 Z" fill="none" stroke="#555555" stroke-width="4" />
+  <circle cx="400" cy="450" r="20" fill="none" stroke="#2B2D42" stroke-width="5" />
+  <circle cx="400" cy="450" r="15" fill="#2B2D42" />
+  <circle cx="400" cy="450" r="5" fill="#E63946" />
+
+  <!-- Handlebars and Seat -->
+  <g stroke="#2B2D42" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Seat post -->
+    <line x1="350" y1="330" x2="350" y2="310" />
+    <!-- Seat -->
+    <path d="M 330 310 L 370 310 L 380 305 L 320 305 Z" fill="#2B2D42" stroke="none" />
+    <!-- Handlebar stem -->
+    <line x1="520" y1="330" x2="520" y2="300" />
+    <!-- Handlebar -->
+    <path d="M 500 300 Q 520 300 540 290" fill="none" />
+    <!-- Handlebar grip -->
+    <line x1="535" y1="293" x2="545" y2="288" stroke="#E63946" stroke-width="8" />
+  </g>
+  <!-- Bell -->
+  <circle cx="525" cy="295" r="7" fill="#FFD166" stroke="#D4A373" stroke-width="2" />
+
+  <!-- Pelican Body and Head -->
+  <g id="pelican-body">
+    <animateTransform attributeName="transform" type="translate" values="0,0; 0,-5; 0,0; 0,5; 0,0" dur="0.5s" repeatCount="indefinite" />
+
+    <!-- Left Wing (Behind body) -->
+    <g>
+      <animateTransform attributeName="transform" type="rotate" values="-10 370 250; 10 370 250; -10 370 250" dur="0.5s" repeatCount="indefinite" />
+      <path d="M 370 250 C 340 240, 310 260, 320 290 C 330 310, 360 300, 380 280 Z" fill="#E0E0E0" stroke="#BBBBBB" stroke-width="3" />
+    </g>
+
+    <!-- Left Arm (Resting) -->
+    <g>
+      <path d="M 350 280 Q 320 300 330 330" fill="none" stroke="#CCCCCC" stroke-width="16" stroke-linecap="round" />
+      <path d="M 350 280 Q 320 300 330 330" fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" />
+    </g>
+
+    <!-- Body -->
+    <path d="M 310 260 C 310 220, 360 200, 410 230 C 430 240, 440 260, 430 290 C 420 320, 380 320, 350 310 C 320 300, 310 280, 310 260 Z" fill="#FFFFFF" stroke="#CCCCCC" stroke-width="4" />
+
+    <!-- Neck -->
+    <path d="M 410 240 C 450 220, 480 190, 500 170 C 510 160, 510 140, 500 140 C 480 140, 440 180, 400 220 Z" fill="#FFFFFF" stroke="#CCCCCC" stroke-width="4" />
+
+    <!-- Head -->
+    <circle cx="505" cy="145" r="25" fill="#FFFFFF" stroke="#CCCCCC" stroke-width="4" />
+
+    <!-- Helmet -->
+    <path d="M 485 125 C 485 105, 525 105, 525 125 L 520 135 L 490 135 Z" fill="#E63946" stroke="#B32D37" stroke-width="3" />
+    <path d="M 485 125 L 525 125" stroke="#FFFFFF" stroke-width="2" />
+
+    <!-- Beak -->
+    <path d="M 525 140 Q 560 140 590 155 L 590 165 Q 560 160 525 160 Z" fill="#F4A261" stroke="#E76F51" stroke-width="3" />
+    <!-- Pouch -->
+    <path d="M 525 160 Q 550 190 590 165 Q 570 180 525 160 Z" fill="#FFB703" stroke="#E76F51" stroke-width="3" />
+
+    <!-- Eye -->
+    <circle cx="515" cy="140" r="4" fill="#333333" />
+    <circle cx="516" cy="139" r="1.5" fill="#FFFFFF" />
+
+    <!-- Head Feathers -->
+    <path d="M 500 120 Q 510 100 525 110 Q 515 115 510 125 Z" fill="#FFFFFF" stroke="#CCCCCC" stroke-width="2" />
+
+    <!-- Right Wing (In front of body) -->
+    <g>
+      <animateTransform attributeName="transform" type="rotate" values="-10 370 250; 10 370 250; -10 370 250" dur="0.5s" repeatCount="indefinite" />
+      <path d="M 360 240 C 390 230, 420 250, 420 280 C 420 300, 390 300, 370 290 C 350 280, 350 260, 360 240 Z" fill="#F0F0F0" stroke="#BBBBBB" stroke-width="3" />
+      <path d="M 370 290 Q 380 280 390 285" fill="none" stroke="#BBBBBB" stroke-width="2" />
+      <path d="M 380 280 Q 390 270 400 275" fill="none" stroke="#BBBBBB" stroke-width="2" />
+    </g>
+
+    <!-- Right Arm (Holding Handlebars) -->
+    <g>
+      <path d="M 430 280 Q 480 300 520 310" fill="none" stroke="#CCCCCC" stroke-width="16" stroke-linecap="round" />
+      <path d="M 430 280 Q 480 300 520 310" fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" />
+      <circle cx="520" cy="310" r="8" fill="#FFFFFF" stroke="#CCCCCC" stroke-width="3" />
+    </g>
+  </g>
+
+  <!-- Right Leg (Front) -->
+  <polyline fill="none" stroke="#F4A261" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+    <animate attributeName="points" dur="1s" repeatCount="indefinite"
+      values="380,320 390,380 400,420;
+              380,320 400,390 430,450;
+              380,320 390,410 400,480;
+              380,320 380,390 370,450;
+              380,320 390,380 400,420"
+      keyTimes="0; 0.25; 0.5; 0.75; 1" />
+  </polyline>
+
+  <!-- Right Crank (Front) -->
+  <g transform="translate(400, 450)">
+    <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="1s" repeatCount="indefinite" additive="sum" />
+    <line x1="0" y1="0" x2="0" y2="-30" stroke="#2B2D42" stroke-width="6" stroke-linecap="round" />
+    <rect x="-15" y="-35" width="30" height="10" rx="3" fill="#E63946" />
+  </g>
+</svg>
