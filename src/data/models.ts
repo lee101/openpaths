@@ -552,7 +552,7 @@ const catalogModels: Model[] = [
     provider: 'OpenPaths',
     description: 'Image generation. RA2 by default with GPT Image 2 / RA1 fallback.',
     contextLength: 'N/A',
-    priceInput: 0.211,
+    priceInput: 0.04,
     priceOutput: 0,
     tags: ['art generation', 'text-to-image'],
     aliases: ['auto-image', 'auto-img'],
