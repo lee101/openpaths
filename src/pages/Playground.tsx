@@ -730,6 +730,7 @@ function humanProvider(ownedBy: string): string {
     deepseek: 'DeepSeek', mistral: 'Mistral', groq: 'Groq', together: 'Together',
     fireworks: 'Fireworks', minimax: 'MiniMax', zai: 'Z.AI', nous: 'Nous',
     openrouter: 'OpenRouter', fal: 'fal', netwrck: 'Netwrck', gobed: 'GoBed',
+    runanywhere: 'RunAnywhere',
     openpaths: 'OpenPaths',
   };
   if (map[p]) return map[p];

@@ -1796,6 +1796,19 @@ const catalogModels: Model[] = [
     popularity: 3
   },
   {
+    id: 'runanywhere/qwen3.8-27b',
+    name: 'Qwen 3.8 27B',
+    provider: 'RunAnywhere',
+    description: 'Qwen 3.8 27B through RunAnywhere Wally Cloud: dense multimodal open model with a 262K-token context window, tool calling, and image understanding, billed per million tokens against prepaid credits.',
+    contextLength: '256K',
+    priceInput: 0.2,
+    priceOutput: 2.5,
+    tags: ['general', 'vision', 'reasoning', 'programming', 'agentic', 'open-source'],
+    aliases: ['runa/qwen3.8-27b', 'runanywhere-qwen3.8-27b', 'runa-qwen3.8-27b'],
+    released: '2026-09-22',
+    popularity: 2
+  },
+  {
     id: 'qwen/qwen3.7-plus',
     name: 'Qwen 3.7 Plus',
     provider: 'Qwen',
@@ -1876,6 +1889,19 @@ const catalogModels: Model[] = [
       standardPriceInput: 0.15,
       standardPriceOutput: 0.50,
     }
+  },
+  {
+    id: 'runanywhere/glm-5.3-flash',
+    name: 'GLM-5.3 Flash',
+    provider: 'RunAnywhere',
+    description: 'GLM-5.3-Flash through RunAnywhere Wally Cloud: native multimodal GLM with a 1M-token context window, tools, and always-on reasoning, billed per million tokens against prepaid credits.',
+    contextLength: '1M',
+    priceInput: 0.1,
+    priceOutput: 0.35,
+    tags: ['general', 'vision', 'reasoning', 'agentic', 'programming', 'open-source', 'fast'],
+    aliases: ['runa/glm-5.3-flash', 'runanywhere-glm-5.3-flash', 'runa-glm-5.3-flash'],
+    released: '2026-09-22',
+    popularity: 2
   },
   {
     id: 'glm-5.3',

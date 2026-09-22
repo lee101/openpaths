@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 41 45" role="img" aria-label="RunAnywhere">
+  <title>RunAnywhere</title>
+  <desc>The Wally mark, filled with the RunAnywhere brand gradient hsl(24.7 100% 50%) to hsl(357.3 96% 58%), baked in because a static logo cannot resolve the console's CSS variables.</desc>
+  <defs>
+    <linearGradient gradientUnits="userSpaceOnUse" id="ra-mark-c1" x1="6" y1="6" x2="38.8354" y2="35.7082">
+      <stop stop-color="#FF6900"></stop>
+      <stop offset="1" stop-color="#FB2D36"></stop>
+    </linearGradient>
+  </defs>
+  <path d="M35.8571 39L30.0156 35.549C27.2722 37.5125 23.9801 38.5686 20.6029 38.5686H11.6253C11.6268 38.56 11.9774 36.628 12.3825 35.4412C12.7844 34.2639 13.6795 32.5314 13.6806 32.5294H23.5248C27.1095 32.5294 30.0156 29.6323 30.0156 26.0588V16.6765C30.0156 16.6765 31.57 14.8691 32.7201 13.8725C33.8592 12.8855 35.8484 11.6134 35.8571 11.6078V39Z" fill="url(#ra-mark-c1)"></path>
+  <path d="M11.8416 9.45101C14.5849 7.48752 17.877 6.4314 21.2542 6.43139H30.2319C30.2304 6.4397 29.8797 8.372 29.4746 9.55889C29.0725 10.7369 28.1766 12.4706 28.1766 12.4706H18.3323C14.7476 12.4706 11.8416 15.3677 11.8416 18.9412V28.3235C11.8416 28.3235 10.2871 30.1309 9.13708 31.1275C7.99791 32.1146 6.0086 33.3867 6 33.3922V6L11.8416 9.45101Z" fill="url(#ra-mark-c1)"></path>
+</svg>

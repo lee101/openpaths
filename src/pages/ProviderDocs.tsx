@@ -362,6 +362,16 @@ const EXAMPLES: Record<string, ProviderExample> = {
       'The direct platform route uses Z.AI’s general API endpoint; use a standard Z_API_KEY for platform traffic. Coding Plan keys remain available for user BYOK coding-tool traffic.',
     ],
   },
+  runanywhere: {
+    description: 'Wally Cloud (RunAnywhere) hosted inference: GLM-5.3-Flash and Qwen 3.8 27B on RunAnywhere hardware through the standard OpenAI-compatible API, billed per million tokens against prepaid credits.',
+    endpoint: '/v1',
+    chatModel: 'runanywhere/glm-5.3-flash',
+    notes: [
+      '`runanywhere/glm-5.3-flash` is the lowest-priced GLM-5.3-Flash route on OpenPaths: 1M-token context, native multimodal input, tools, and always-on reasoning.',
+      '`runanywhere/qwen3.8-27b` serves the dense 27B multimodal model with a 262K-token context window and tool calling.',
+      'Wally Cloud accepts reasoning tiers low, medium, xhigh (default), and none; max and minimal are remapped server-side before they reach the upstream.',
+    ],
+  },
   fireworks: {
     description: 'Fast inference for GPT-OSS 120B, GLM-5 and Whisper v3 Large.',
     endpoint: '/v1',

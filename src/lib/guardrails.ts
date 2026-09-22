@@ -66,6 +66,7 @@ export const PII_SLUGS: SensitiveFilter['slug'][] = ['email', 'phone', 'ssn', 'c
 export const PROVIDER_OPTIONS = [
   'openai', 'anthropic', 'google', 'deepseek', 'xai', 'mistral', 'netwrck', 'fal', 'bfl',
   'minimax', 'cutedsl', 'together', 'fireworks', 'groq', 'nvidia', 'sakana', 'openrouter', 'cursor',
+  'runanywhere',
 ];
 
 function authHeaders(): Record<string, string> {

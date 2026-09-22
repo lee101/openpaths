@@ -172,6 +172,14 @@ export const providers: Provider[] = [
     logo: 'https://icons.duckduckgo.com/ip3/cerebras.ai.ico'
   },
   {
+    slug: 'runanywhere',
+    name: 'RunAnywhere',
+    url: 'https://runanywhere.ai',
+    description: 'Wally Cloud hosted inference: GLM-5.3-Flash and Qwen 3.8 27B on RunAnywhere hardware through the standard OpenAI-compatible API, billed per million tokens against prepaid credits.',
+    featured: false,
+    logo: '/logos/runanywhere.svg'
+  },
+  {
     slug: 'minimax',
     name: 'MiniMax',
     url: 'https://minimax.io',

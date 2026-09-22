@@ -461,6 +461,11 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/providers/runanywhere</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/providers/minimax</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -622,6 +627,11 @@
   </url>
   <url>
     <loc>https://openpaths.io/cerebras/docs</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/runanywhere/docs</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -1486,6 +1496,11 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/models/runanywhere%2Fqwen3.8-27b</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/models/qwen%2Fqwen3.7-plus</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
@@ -1512,6 +1527,11 @@
   </url>
   <url>
     <loc>https://openpaths.io/models/glm-5.3-flash</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/runanywhere%2Fglm-5.3-flash</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
