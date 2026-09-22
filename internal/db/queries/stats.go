@@ -70,7 +70,7 @@ func ClassifyProduct(modelName string) string {
 		return "embedding"
 	case has("flux", "image", "dall", "sdxl", "stable-diffusion", "imagen", "ideogram",
 		"recraft", "nano-banana", "qwen-image", "seedream", "glm-image", "zimage",
-		"hidream", "klein", "photon", "smart-resize", "ra1", "ra2", "auto-image", "auto-img"):
+		"hidream", "klein", "photon", "smart-resize", "ra1", "ra2", "ra2-edit", "auto-image", "auto-img"):
 		return "image"
 	default:
 		return "chat"

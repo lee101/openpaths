@@ -314,6 +314,19 @@ const catalogModels: Model[] = [
     pricingType: 'request'
   },
   {
+    id: 'ra2-edit',
+    name: 'RA2 Image Editor',
+    provider: 'Netwrck',
+    description: 'Reference edits and style transfer with RA2: send an image plus a prompt and keep identity and composition. First-party from netwrck.com, $0.04 per image.'s newest first-party art generator: sharper detail, better prompt adherence and text than RA1, 1024px renders in about 10 s. $0.04 per image.',
+    contextLength: 'N/A',
+    priceInput: 0.04,
+    priceOutput: 0,
+    tags: ['art generation', 'image-to-image', 'vision'],
+    released: '2026-09-22',
+    popularity: -3,
+    pricingType: 'request'
+  },
+  {
     id: 'smart-resize',
     name: 'Smart Resize',
     provider: 'Fal',

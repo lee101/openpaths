@@ -60,6 +60,15 @@ func (p *NetwrckProvider) GenerateImage(ctx context.Context, req *model.ImageGen
 		"api_key": p.apiKey,
 		"prompt":  req.Prompt,
 	}
+	// Reference edits (ra2-image-editor and friends) take the first source
+	// image; a data: URL is sent inline, anything else as a fetchable URL.
+	if ref := firstImageRef(req); ref != "" {
+		if idx := strings.Index(ref, ";base64,"); strings.HasPrefix(ref, "data:") && idx > 0 {
+			netwrckReq["image_base64"] = ref[idx+len(";base64,"):]
+		} else {
+			netwrckReq["image_url"] = ref
+		}
+	}
 	if req.Size != "" {
 		netwrckReq["size"] = req.Size
 	} else {
@@ -118,6 +127,25 @@ func (p *NetwrckProvider) GenerateImage(ctx context.Context, req *model.ImageGen
 	}
 
 	return imageResponse(imageURL), nil
+}
+
+func firstImageRef(req *model.ImageGenerationRequest) string {
+	if req.Image != nil && req.Image.URL != "" {
+		return req.Image.URL
+	}
+	for _, image := range req.Images {
+		if image.URL != "" {
+			return image.URL
+		}
+	}
+	for _, list := range [][]string{{req.ImageURL}, req.ImageURLs, req.ReferenceImageURLs} {
+		for _, value := range list {
+			if strings.TrimSpace(value) != "" {
+				return strings.TrimSpace(value)
+			}
+		}
+	}
+	return ""
 }
 
 func imageResponse(imageURL string) *model.ImageGenerationResponse {

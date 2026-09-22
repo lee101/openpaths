@@ -514,6 +514,23 @@ models:
       - "1360x768"
       - "768x1360"
 
+  - id: "ra2-edit"
+    provider: netwrck
+    provider_model_id: "ra2-image-editor"
+    price_per_image: 0.04
+    aliases: ["ra2-image-editor", "netwrck-ra2-edit", "ra2-image-edit"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+    supported_sizes:
+      - "1024x1024"
+      - "1152x768"
+      - "768x1152"
+      - "1152x864"
+      - "864x1152"
+      - "1360x768"
+      - "768x1360"
+
   - id: "zimage"
     provider: netwrck
     provider_model_id: "zimage"
@@ -1662,6 +1679,7 @@ models:
       - "1536x1024"
       - "1024x1536"
     fallback_models:
+      - "ra2-edit"
       - "fal-ai/hidream-o1-image/edit"
 
   - id: "gpt-image-1.5"

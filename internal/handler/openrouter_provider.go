@@ -206,6 +206,7 @@ var orModelDisplayNames = map[string]string{
 	"muse-voice-transcribe-1.0":    "Meta: Muse Voice Transcribe 1.0",
 	"ra1":                          "Netwrck: RA1",
 	"ra2":                          "Netwrck: RA2",
+	"ra2-edit":                     "Netwrck: RA2 Image Editor",
 	"flux-schnell":                 "Black Forest Labs: FLUX.1 Schnell",
 	"flux-dev":                     "Black Forest Labs: FLUX.2 Dev",
 	"flux-pro":                     "Black Forest Labs: FLUX 1.1 Pro",

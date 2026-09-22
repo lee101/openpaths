@@ -63,3 +63,27 @@ func TestGenerateImageDefaultsSizeTo1024(t *testing.T) {
 		t.Errorf("size = %v, want 1024x1024", gotBody["size"])
 	}
 }
+
+func TestGenerateImageSendsReferenceForEdits(t *testing.T) {
+	var got map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/ra2-image-editor" {
+			t.Fatalf("path = %s", r.URL.Path)
+		}
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		_ = json.NewEncoder(w).Encode(map[string]string{"image_url": "https://cdn.example/edited.webp"})
+	}))
+	defer srv.Close()
+	p := New("key", srv.URL)
+	resp, err := p.GenerateImage(context.Background(), &model.ImageGenerationRequest{Model: "ra2-image-editor", Prompt: "make it night", ImageURL: "https://cdn.example/src.png"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got["image_url"] != "https://cdn.example/src.png" || resp.Data[0].URL != "https://cdn.example/edited.webp" {
+		t.Fatalf("request %v response %v", got, resp.Data)
+	}
+	resp, err = p.GenerateImage(context.Background(), &model.ImageGenerationRequest{Model: "ra2-image-editor", Prompt: "x", Images: []model.ImageInput{{URL: "data:image/png;base64,AAAA"}}})
+	if err != nil || got["image_base64"] != "AAAA" || resp == nil {
+		t.Fatalf("data url request %v err %v", got, err)
+	}
+}
