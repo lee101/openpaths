@@ -51,3 +51,4 @@ Current direct targets:
 | Fireworks | `fireworks/gpt-oss-120b` |
 | NVIDIA | `nvidia/deepseek-v3.2` |
 | Cursor | `composer-2.5` |
+| RunAnywhere | `runanywhere/glm-5.3-flash` |

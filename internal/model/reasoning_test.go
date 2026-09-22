@@ -71,6 +71,14 @@ func TestCompatibleReasoningEffort(t *testing.T) {
 		{"qwen-3.8-27b", "none", "none"},
 		{"qwen-3.8-27b", "max", "high"},
 		{"qwen-3.8-27b", "xhigh", "high"},
+		// RunAnywhere serves the same 27B from a vLLM stack that 400s on max
+		// and minimal, so those remap; none/low/medium/xhigh pass through.
+		{"qwen3.8-27b", "max", "xhigh"},
+		{"qwen3.8-27b", "minimal", "low"},
+		{"qwen3.8-27b", "none", "none"},
+		{"qwen3.8-27b", "medium", "medium"},
+		// The app.nz spelling of the family keeps the untouched pass-through.
+		{"qwen3.8-27b-uncensored", "max", "max"},
 		// GPT-OSS rejects none/minimal/max; nearest supported tier wins.
 		{"openai/gpt-oss-20b", "none", "low"},
 		{"openai/gpt-oss-120b", "max", "high"},

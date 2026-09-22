@@ -125,6 +125,7 @@ GOMAXPROCS=3 go build -tags="gpu cuda" \
 | `FAL_API_KEY` | Fal API key |
 | `FAL_ADMIN_API_KEY` | Optional. fal admin key used by `rotation/rotate_provider_key.py`; falls back to `FAL_API_KEY` if unset |
 | `Z_API_KEY` | Z.AI API key |
+| `RUNANYWHERE_API_KEY` | RunAnywhere (Wally Cloud) API key |
 | `TEXTGENERATOR_API_KEY` | Text-Generator.io API key |
 | `MISTRAL_API_KEY` | Mistral API key |
 | `NVIDIA_API_KEY` | NVIDIA API key |

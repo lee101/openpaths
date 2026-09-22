@@ -172,6 +172,14 @@ providers:
     api_key: "${CEREBRAS_API_KEY}"
     enabled: true
 
+  # Wally Cloud (RunAnywhere): OpenAI-compatible hosted inference at
+  # https://inference.runanywhere.ai/v1. The base URL omits /v1 because the
+  # client appends it for chat completions and the /v1/models health probe.
+  - name: runanywhere
+    base_url: "https://inference.runanywhere.ai"
+    api_key: "${RUNANYWHERE_API_KEY}"
+    enabled: true
+
 models:
 
   # Live speech: provider list prices + 5%, including text/reasoning and audio.
@@ -252,6 +260,37 @@ models:
     output_price_per_1m: 1.49
     aliases: ["qwen-3.8-27b", "qwen3.8-27b", "cerebras-qwen", "cerebras/qwen"]
     context_window: 131072
+    max_output_tokens: 40960
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  # --- RunAnywhere (Wally Cloud) ---
+  # The console quotes "cost to send/answer ~750,000 words", which is the
+  # 1M-token billing unit Wally charges on (1M tokens ~= 750k words), so each
+  # listed figure is already the per-1M-token rate. Resold at list price, like
+  # the other gateway lanes. Model ids, limits and capability flags verified
+  # against GET /v1/models plus live chat, tool, and image probes 2026-09-22.
+  - id: "runanywhere/glm-5.3-flash"
+    provider: runanywhere
+    provider_model_id: "glm-5.3-flash"
+    input_price_per_1m: 0.10
+    output_price_per_1m: 0.35
+    aliases: ["runa/glm-5.3-flash", "runanywhere-glm-5.3-flash", "runa-glm-5.3-flash"]
+    context_window: 1048567
+    max_output_tokens: 131072
+    default_reasoning_effort: "max"
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "runanywhere/qwen3.8-27b"
+    provider: runanywhere
+    provider_model_id: "qwen3.8-27b"
+    input_price_per_1m: 0.20
+    output_price_per_1m: 2.50
+    aliases: ["runa/qwen3.8-27b", "runanywhere-qwen3.8-27b", "runa-qwen3.8-27b"]
+    context_window: 262137
     max_output_tokens: 40960
     supports_streaming: true
     supports_tools: true
@@ -3083,6 +3122,9 @@ models:
     supports_streaming: true
     supports_tools: true
     supports_vision: true
+    # Only failover whose upstream id matches this route's "glm-5.3-flash".
+    # Billing stays on this model's own rates, which sit above Wally's.
+    fallback_providers: ["runanywhere"]
 
   - id: "glm-5.3"
     provider: zai

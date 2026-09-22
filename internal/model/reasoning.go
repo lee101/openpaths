@@ -41,6 +41,13 @@ var reasoningVocabularies = []reasoningVocabulary{
 	{matches: family("qwen/qwen3.8-max"), supported: effortSet("minimal", "low", "medium", "high", "xhigh", "max")},
 	// Qwen 3.8 27B on Cerebras defaults to high; none disables it.
 	{matches: bareFamily("qwen-3.8-27b"), supported: effortSet("none", "low", "medium", "high")},
+	// Qwen 3.8 27B on RunAnywhere (Wally Cloud) runs the same vLLM stack as
+	// Qwen3.8 2.4T: "Supported types are xhigh (default), medium, and low",
+	// with none additionally accepted to turn thinking off. max and minimal
+	// come back as HTTP 400, so they are remapped before forwarding. Matched on
+	// the exact dotted id so the Cerebras (qwen-3.8-27b) and app.nz
+	// (qwen3.8-27b-uncensored) spellings keep their own vocabulary.
+	{matches: exactID("qwen3.8-27b"), supported: effortSet("none", "low", "medium", "xhigh")},
 	// GPT-OSS only accepts low/medium/high; none and the outer tiers remap.
 	{matches: bareFamily("gpt-oss-20b"), supported: effortSet("low", "medium", "high")},
 	{matches: bareFamily("gpt-oss-120b"), supported: effortSet("low", "medium", "high")},
@@ -72,6 +79,13 @@ func family(name string) func(string) bool {
 	return func(modelID string) bool {
 		return modelID == name || strings.HasPrefix(modelID, name+"-")
 	}
+}
+
+// exactID matches one model ID with no namespacing or suffix rule, for a lane
+// whose upstream id would otherwise collide with another provider's spelling of
+// the same family.
+func exactID(name string) func(string) bool {
+	return func(modelID string) bool { return modelID == name }
 }
 
 // bareFamily matches like family but first strips any provider namespace, so

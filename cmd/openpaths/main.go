@@ -235,6 +235,10 @@ func main() {
 			// Cerebras is OpenAI-compatible (/v1/chat/completions) and hosts the
 			// zai GLM models (e.g. zai-glm-4.7).
 			p = openai.NewCompatible("cerebras", provCfg.APIKey, provCfg.BaseURL, nil)
+		case "runanywhere":
+			// Wally Cloud (RunAnywhere) is OpenAI-compatible
+			// (/v1/chat/completions) and hosts glm-5.3-flash and qwen3.8-27b.
+			p = openai.NewCompatible("runanywhere", provCfg.APIKey, provCfg.BaseURL, sanitizeOpenAICompatible)
 		case "fireworks":
 			p = fireworks.New(provCfg.APIKey, provCfg.BaseURL)
 			transcribers = append(transcribers, fireworks.NewTranscriber(provCfg.APIKey, provCfg.BaseURL))

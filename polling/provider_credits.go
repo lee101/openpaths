@@ -52,6 +52,7 @@ var targetSpecs = []struct {
 	{Provider: "fireworks", ModelID: "fireworks/gpt-oss-120b"},
 	{Provider: "nvidia", ModelID: "nvidia/deepseek-v3.2"},
 	{Provider: "cursor", ModelID: "composer-2.5"},
+	{Provider: "runanywhere", ModelID: "runanywhere/glm-5.3-flash"},
 }
 
 type providerRegistry interface {
