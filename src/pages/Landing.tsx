@@ -83,7 +83,7 @@ export function Landing() {
           <AutoVariantCard modelId="openpaths/auto-cheap" title="Auto Cheap" purpose="Lowest acceptable cost" backends="GPT-5.6 Luna, Gemini Flash Lite" />
           <AutoVariantCard modelId="openpaths/auto-reasoning" title="Auto Reasoning" purpose="Planning, math, hard problems" backends="Auto thinking depth + GPT-5.6, Gemini 3.7, GLM-5.3" />
           <AutoVariantCard modelId="openpaths/auto-vision" title="Auto Vision" purpose="Image understanding" backends="Gemini 3.7 Flash; DeepSeek V4 Flash Vision Exp for mid-complexity visual analysis; Lite for thumbnails" />
-          <AutoVariantCard modelId="openpaths/auto-image" title="Auto Image" purpose="Image generation" backends="GPT Image 2 → RA1 fallback" className="md:col-span-2 lg:col-span-1" />
+          <AutoVariantCard modelId="openpaths/auto-image" title="Auto Image" purpose="Image generation" backends="RA2 → GPT Image 2 / RA1 fallback" className="md:col-span-2 lg:col-span-1" />
         </div>
         <p className="mt-8 text-center text-white/55 font-mono text-xs">
           <code className="text-white/60">auto</code>, <code className="text-white/60">auto-easy-task</code>, <code className="text-white/60">auto-think</code>, <code className="text-white/60">auto-image</code>

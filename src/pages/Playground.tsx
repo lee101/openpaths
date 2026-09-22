@@ -226,6 +226,7 @@ const FALLBACK_MODELS: CatalogModel[] = [
   { id: 'minimax-m2.7', label: 'MiniMax M2.7', provider: 'MiniMax' },
   { id: 'minimax-m2.5-direct', label: 'MiniMax M2.5', provider: 'MiniMax' },
   { id: 'kimi-k2.5', label: 'Kimi K2.5', provider: 'Together' },
+  { id: 'ra2', label: 'RA2 Art Generator', provider: 'Netwrck', pricing: { per_image: 0.04 } },
   { id: 'ra1', label: 'RA1 Art Generator', provider: 'Netwrck', pricing: { per_image: 0.04 } },
   { id: 'zimage', label: 'ZImage', provider: 'Netwrck', pricing: { per_image: 0.007 } },
   { id: 'klein', label: 'FLUX Klein 4B', provider: 'Fal', pricing: { per_image: 0.02 } },
@@ -421,7 +422,7 @@ const AUTO_ARCHIVE_DAYS_KEY = 'op_playground_auto_archive_days';
 // Models excluded from the chat selector. Image models remain available since
 // the playground now routes them to /v1/images/generations automatically.
 const NON_CHAT_PATTERNS = /^(gpt-realtime|gemini-3\.8-live|whisper|xai-stt|grok-voice|text-embedding|openpaths-embed|modernbert|mistral-embed|codestral-embed|nemotron-embed|gemini-embedding-001|gemini-embedding-2-preview|gemini-embedding-2|gpt-4o-transcribe|gpt-4o-mini-transcribe|distil-whisper|whisper-v3)/i;
-const IMAGE_MODEL_PATTERNS = /^(openpaths\/auto-image|auto-image|flux|klein|ra1|zimage|glm-image|grok-imagine-image|gpt-image|fal-gpt-image|hidream|dall-e|stable-diffusion|sd3|ideogram|fal-ai\/flux-2-pro\/outpaint)/i;
+const IMAGE_MODEL_PATTERNS = /^(openpaths\/auto-image|auto-image|flux|klein|ra1|ra2(?!v)|zimage|glm-image|grok-imagine-image|gpt-image|fal-gpt-image|hidream|dall-e|stable-diffusion|sd3|ideogram|fal-ai\/flux-2-pro\/outpaint)/i;
 const BFL_IMAGE_SIZES = ['1024x1024', '1152x768', '768x1152', '1360x768', '768x1360', '1920x1088', '1088x1920', '2048x880', '2048x2048'];
 const VIDEO_MODEL_PATTERNS = /^(auto-video|flux-3-video|wan|ltx|hailuo|kling|luma|ra2v|sora|seedance)/i;
 const SPEECH_MODEL_PATTERNS = /(tts|speech-)/i;

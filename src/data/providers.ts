@@ -29,7 +29,7 @@ export const providers: Provider[] = [
     slug: 'netwrck',
     name: 'Netwrck',
     url: 'https://netwrck.com',
-    description: 'Creative media platform with RA1 image generation, ZImage anime art, RA2V/LTX/Wan video, and adjacent image editing tools.',
+    description: 'Creative media platform with flagship RA2 art generation, RA1 images, ZImage anime art, RA2V/LTX/Wan video, and adjacent image editing tools.',
     featured: true,
     logo: '/logos/netwrck.webp'
   },

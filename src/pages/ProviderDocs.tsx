@@ -227,14 +227,18 @@ const EXAMPLES: Record<string, ProviderExample> = {
     chatModel: 'or/gpt-5.4',
   },
   netwrck: {
-    description: 'Creative media platform centered on RA1 images, ZImage anime art, and video tooling such as RA2V and LTX. OpenPaths maps that into a clean OpenAI-style images/videos surface.',
+    description: 'Creative media platform centered on flagship RA2 and RA1 images, ZImage anime art, and video tooling such as RA2V and LTX. OpenPaths maps that into a clean OpenAI-style images/videos surface.',
     endpoint: '/v1',
-    imageModel: 'ra1',
+    imageModel: 'ra2',
     videoModel: 'ra2v',
     provides: [
       {
+        title: 'RA2 Art Generator',
+        description: 'Netwrck\'s newest flagship text-to-image system: sharper detail, better prompt adherence and text than RA1, 1024px renders in about 10 s at $0.04 per image.',
+      },
+      {
         title: 'RA1 Art Generator',
-        description: 'Netwrck positions RA1 as its flagship text-to-image system for high-quality creative work, marketing visuals, and prompt-driven image generation.',
+        description: 'Netwrck\'s previous flagship text-to-image system, still served as the policy-flexible workhorse for high-volume creative work.',
       },
       {
         title: 'Video Generation Stack',

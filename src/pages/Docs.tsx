@@ -193,7 +193,7 @@ export function Docs() {
               <div><code>openpaths/auto-cheap</code> - Nano / Flash Lite classifiers</div>
               <div><code>openpaths/auto-reasoning</code> - planning, math, auto thinking depth</div>
               <div><code>openpaths/auto-vision</code> - image understanding</div>
-              <div><code>openpaths/auto-image</code> - GPT Image 2, RA1 fallback</div>
+              <div><code>openpaths/auto-image</code> - RA2 default, GPT Image 2 / RA1 fallback</div>
             </div>
             <p className="mb-4 text-sm text-white/55">
               Fallback candidates are price-sorted by default. Send <code>routing_strategy=&quot;config&quot;</code> to preserve catalogue order, or use <code>openpaths/auto-fast</code> for latency-biased routing. The stats page records latency, time to first token, throughput, and spend by provider/model.

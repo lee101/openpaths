@@ -23,6 +23,7 @@ func TestClassifyProduct(t *testing.T) {
 		"zimage":                "image",
 		"hidream-o1-image-dev":  "image",
 		"ra1":                   "image",
+		"ra2":                   "image",
 		"smart-resize":          "image",
 		"fal-ai/flux-2-pro/outpaint": "image",
 		// video (must beat image even when name contains "image")

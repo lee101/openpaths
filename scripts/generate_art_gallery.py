@@ -79,6 +79,36 @@ PROMPTS: dict[str, dict[str, str]] = {
             "paper lamps glowing amber, cinematic illustration with rich texture"
         ),
     },
+    "lighthouse-keeper": {
+        "title": "The Keeper",
+        "prompt": (
+            "Photorealistic portrait of an elderly lighthouse keeper in a wool peacoat with a salt-crusted collar, "
+            "brass telescope under one arm, overcast North Atlantic light, 85mm lens, shallow depth of field, "
+            "weathered skin detail, editorial photography"
+        ),
+    },
+    "midnight-roast-tin": {
+        "title": "Midnight Roast",
+        "prompt": (
+            "Studio product shot of a matte black coffee tin with a cream paper label reading MIDNIGHT ROAST in "
+            "crisp serif capitals, the words SINGLE ORIGIN and ETHIOPIA legible beneath it, marble counter, soft "
+            "window light, gentle steam, commercial packaging photography"
+        ),
+    },
+    "fjord-first-light": {
+        "title": "Fjord at First Light",
+        "prompt": (
+            "Painterly oil landscape of a glacier fjord at first light, cobalt water against ochre cliffs, a tiny red "
+            "rowing boat, thick visible brushstrokes and palette knife texture, romantic luminism"
+        ),
+    },
+    "sky-courier": {
+        "title": "Sky Courier",
+        "prompt": (
+            "Anime key visual of a teenage sky courier on a hovering delivery bike above a neon coastal town at dusk, "
+            "wind-swept scarf, cel shading, crisp line art, cinematic bloom, no text"
+        ),
+    },
 }
 
 PROMPT_ORDER = [
@@ -88,6 +118,13 @@ PROMPT_ORDER = [
     "ocean-typewriter",
     "clockmaker-desert",
     "monsoon-teahouse",
+]
+
+RA2_PROMPT_ORDER = [
+    "lighthouse-keeper",
+    "midnight-roast-tin",
+    "fjord-first-light",
+    "sky-courier",
 ]
 
 
@@ -109,9 +146,10 @@ def build_provider_series(
     model: str,
     provider_model_id: str,
     prefix: str,
+    prompt_order: list[str] | None = None,
 ) -> list[GalleryJob]:
     jobs: list[GalleryJob] = []
-    for prompt_slug in PROMPT_ORDER:
+    for prompt_slug in prompt_order or PROMPT_ORDER:
         prompt = PROMPTS[prompt_slug]
         jobs.append(
             GalleryJob(
@@ -198,9 +236,18 @@ OPENAI_GALLERY_JOBS = build_provider_series(
     prefix="gpt-image-2",
 )
 
+RA2_GALLERY_JOBS = build_provider_series(
+    provider="Netwrck",
+    model="RA2 Art Generator",
+    provider_model_id="ra2",
+    prefix="ra2",
+    prompt_order=RA2_PROMPT_ORDER,
+)
+
 JOB_SETS: dict[str, list[GalleryJob]] = {
     "live": LIVE_GALLERY_JOBS,
     "ra1": RA1_GALLERY_JOBS,
+    "ra2": RA2_GALLERY_JOBS,
     "zimage": ZIMAGE_GALLERY_JOBS,
     "openai": OPENAI_GALLERY_JOBS,
 }
@@ -336,6 +383,31 @@ def generate_ra1(job: GalleryJob) -> str:
     return image_url
 
 
+def generate_netwrck_ra2(job: GalleryJob) -> str:
+    key = os.environ.get("NETWRCK_API_KEY")
+    if not key:
+        raise RuntimeError("Missing NETWRCK_API_KEY")
+    payload = {
+        "api_key": key,
+        "prompt": job.prompt,
+        "size": "1024x1024",
+    }
+    response = requests.post(
+        "https://netwrck.com/api/ra2-art-generator",
+        json=payload,
+        timeout=300,
+    )
+    if response.status_code != 200:
+        raise RuntimeError(
+            f"RA2 returned status {response.status_code} for {job.slug}: {response.text}"
+        )
+    data = response.json()
+    image_url = data.get("image_url")
+    if not image_url:
+        raise RuntimeError(f"RA2 returned no image url for {job.slug}: {data}")
+    return image_url
+
+
 def generate_fal_netwrck_fallback(job: GalleryJob) -> str:
     endpoint = "fal-ai/flux/dev"
     payload: dict[str, Any] = {
@@ -450,6 +522,8 @@ def generate_image(job: GalleryJob) -> str:
     if job.provider == "Netwrck":
         if job.provider_model_id == "zimage":
             return generate_zimage(job)
+        if job.provider_model_id == "ra2":
+            return generate_netwrck_ra2(job)
         return generate_ra1(job)
     if job.provider == "OpenAI":
         return generate_openai(job)
@@ -535,7 +609,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--set",
         action="append",
         default=[],
-        help="Job set to run: live, ra1, zimage, openai",
+        help="Job set to run: live, ra1, ra2, zimage, openai",
     )
     parser.add_argument("--prefix", default=DEFAULT_PREFIX, help="Upload key prefix")
     parser.add_argument(

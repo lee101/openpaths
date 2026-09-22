@@ -301,6 +301,19 @@ const catalogModels: Model[] = [
     pricingType: 'request'
   },
   {
+    id: 'ra2',
+    name: 'RA2 Art Generator',
+    provider: 'Netwrck',
+    description: 'Netwrck\'s newest first-party art generator: sharper detail, better prompt adherence and text than RA1, 1024px renders in about 10 s. $0.04 per image.',
+    contextLength: 'N/A',
+    priceInput: 0.04,
+    priceOutput: 0,
+    tags: ['art generation', 'text-to-image'],
+    released: '2026-09-22',
+    popularity: -3,
+    pricingType: 'request'
+  },
+  {
     id: 'smart-resize',
     name: 'Smart Resize',
     provider: 'Fal',
@@ -537,7 +550,7 @@ const catalogModels: Model[] = [
     id: 'openpaths/auto-image',
     name: 'OpenPaths Auto Image',
     provider: 'OpenPaths',
-    description: 'Image generation. GPT Image 2 by default with automatic RA1 fallback.',
+    description: 'Image generation. RA2 by default with GPT Image 2 / RA1 fallback.',
     contextLength: 'N/A',
     priceInput: 0.211,
     priceOutput: 0,

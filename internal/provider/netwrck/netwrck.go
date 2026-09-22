@@ -52,7 +52,7 @@ func (p *NetwrckProvider) ChatCompletionStream(ctx context.Context, req *model.C
 	}
 }
 
-// GenerateImage handles ra1 and zimage endpoints.
+// GenerateImage handles ra1, ra2, and zimage endpoints.
 func (p *NetwrckProvider) GenerateImage(ctx context.Context, req *model.ImageGenerationRequest) (*model.ImageGenerationResponse, error) {
 	endpoint := "/api/" + req.Model
 
