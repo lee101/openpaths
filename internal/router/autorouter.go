@@ -286,26 +286,26 @@ func TaskTierToModality(tier string) (modality string, ok bool) {
 func defaultRoutingTables() map[string][]AutoEntry {
 	return map[string][]AutoEntry{
 		"image": {
-			// gpt-image-2 - default for safe commercial and creative generation
-			{Description: "portrait headshot face character person selfie photo of someone professional", ModelID: "gpt-image-2"},
+			// ra2 (Netwrck) - default for everyday commercial and creative generation; gpt-image-2 keeps typography-heavy work
+			{Description: "portrait headshot face character person selfie photo of someone professional", ModelID: "ra2"},
 			{Description: "logo icon symbol badge emblem brand design graphic clean corporate", ModelID: "gpt-image-2"},
-			{Description: "product photo studio lighting commercial advertisement mockup ecommerce", ModelID: "gpt-image-2"},
-			{Description: "simple illustration drawing sketch concept art storyboard", ModelID: "gpt-image-2"},
-			{Description: "food photography recipe dish meal plating restaurant menu", ModelID: "gpt-image-2"},
-			{Description: "wallpaper background desktop phone aesthetic landscape", ModelID: "gpt-image-2"},
-			{Description: "architectural visualization interior design room building render", ModelID: "gpt-image-2"},
-			{Description: "hyperrealistic photo studio quality magazine cover editorial fashion", ModelID: "gpt-image-2"},
+			{Description: "product photo studio lighting commercial advertisement mockup ecommerce", ModelID: "ra2"},
+			{Description: "simple illustration drawing sketch concept art storyboard", ModelID: "ra2"},
+			{Description: "food photography recipe dish meal plating restaurant menu", ModelID: "ra2"},
+			{Description: "wallpaper background desktop phone aesthetic landscape", ModelID: "ra2"},
+			{Description: "architectural visualization interior design room building render", ModelID: "ra2"},
+			{Description: "hyperrealistic photo studio quality magazine cover editorial fashion", ModelID: "ra2"},
 			// ra1 - policy-flexible / NSFW / violence / adult when GPT refuses
 			{Description: "nude naked nsfw adult erotic sexual explicit lingerie topless", ModelID: "ra1"},
 			{Description: "pornographic lewd obscene hentai ecchi mature content", ModelID: "ra1"},
 			{Description: "violence gore blood graphic horror disturbing brutal fight", ModelID: "ra1"},
 			{Description: "refused blocked censored cannot generate policy violation fallback", ModelID: "ra1"},
-			{Description: "anime manga japanese animation style character cel shaded fanart", ModelID: "zimage"},
-			{Description: "chibi kawaii cute anime girl boy manga panel", ModelID: "zimage"},
-			{Description: "complex scene detailed environment photorealistic landscape city crowd", ModelID: "flux-pro"},
-			{Description: "panoramic wide angle scenery epic vista detailed background world building", ModelID: "flux-pro"},
-			{Description: "pixel art retro 8bit 16bit sprite game asset", ModelID: "ra1"},
-			{Description: "meme funny image joke humor reaction", ModelID: "ra1"},
+			{Description: "anime manga japanese animation style character cel shaded fanart", ModelID: "ra2"},
+			{Description: "chibi kawaii cute anime girl boy manga panel", ModelID: "ra2"},
+			{Description: "complex scene detailed environment photorealistic landscape city crowd", ModelID: "ra2"},
+			{Description: "panoramic wide angle scenery epic vista detailed background world building", ModelID: "ra2"},
+			{Description: "pixel art retro 8bit 16bit sprite game asset", ModelID: "ra2"},
+			{Description: "meme funny image joke humor reaction", ModelID: "ra2"},
 		},
 		"video": {
 			{Description: "short clip simple animation basic motion loop gif small", ModelID: "ltx-video"},
