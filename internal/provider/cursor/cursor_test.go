@@ -34,6 +34,9 @@ func TestCursorGrokEffort(t *testing.T) {
 		{"grok-4.5", "xhigh", "high"},
 		{"grok-4.6", "xhigh", "xhigh"},
 		{"grok-4.6", "minimal", "low"},
+		{"grok-4.7", "max", "xhigh"},
+		{"grok-4.7", "medium", "medium"},
+		{"grok-4.7", "none", ""},
 		{"composer-2.5", "high", ""},
 	}
 	for _, tt := range tests {

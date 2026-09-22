@@ -44,6 +44,7 @@ func TestAuditedTokenPrices(t *testing.T) {
 		// api.x.ai/v1/language-models
 		"grok-4.5": {2.00, 0.30, 6.00},
 		"grok-4.3": {1.25, 0.20, 2.50},
+		"grok-4.7": {2.00, 0.50, 6.00},
 		// ai.google.dev/gemini-api/docs/pricing
 		"gemini-3.8-flash":      {0.75, 0.075, 3.75},
 		"gemini-3.7-flash":      {0.75, 0.075, 3.75},

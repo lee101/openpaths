@@ -5,6 +5,9 @@ import (
 	"testing"
 )
 
+// Cursor is the only surface serving the Grok 4.7 fast variant, so the whole
+// cursor-grok family routes to Cursor's grok-4.7 / grok-4.7-fast while each id
+// keeps its own billed price.
 func TestCursorGrokModels(t *testing.T) {
 	cfg, err := Load(filepath.Join("..", "..", "config.yaml"))
 	if err != nil {
@@ -16,10 +19,12 @@ func TestCursorGrokModels(t *testing.T) {
 		cache         float64
 		output        float64
 	}{
-		"cursor-grok-4.5":      {"grok-4.5", 2, 0.30, 6},
-		"cursor-grok-4.5-fast": {"grok-4.5-fast", 4, 0.60, 18},
-		"cursor-grok-4.6":      {"grok-4.6", 2, 0.50, 6},
-		"cursor-grok-4.6-fast": {"grok-4.6-fast", 4, 1.00, 12},
+		"cursor-grok-4.5":      {"grok-4.7", 2, 0.30, 6},
+		"cursor-grok-4.5-fast": {"grok-4.7-fast", 4, 0.60, 18},
+		"cursor-grok-4.6":      {"grok-4.7", 2, 0.50, 6},
+		"cursor-grok-4.6-fast": {"grok-4.7-fast", 4, 1.00, 12},
+		"cursor-grok-4.7":      {"grok-4.7", 2, 0.50, 6},
+		"cursor-grok-4.7-fast": {"grok-4.7-fast", 4, 1.00, 12},
 	}
 	seen := map[string]bool{}
 	for _, m := range cfg.Models {

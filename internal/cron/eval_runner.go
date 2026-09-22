@@ -43,7 +43,7 @@ var evalModels = []string{
 	"claude-opus-5",
 	"gemini-3.7-flash",
 	"deepseek-v4-pro",
-	"grok-4.6",
+	"grok-4.7",
 	"glm-5.1",
 	"openpaths/auto",
 }

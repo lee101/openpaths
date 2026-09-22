@@ -113,6 +113,8 @@ var models = []Model{
 	{"openpaths/auto-vision", "OpenPaths Auto Vision", "Routes image understanding between frontier, mid-complexity, and thumbnail models.", "text", "visibility"},
 	{"gpt-5-codex", "GPT-5 Codex", "OpenAI coding model for autocomplete, refactors, and generation.", "text", "terminal"},
 	{"composer-2.5", "Composer 2.5", "Cursor's fast agentic coding model.", "text", "bolt"},
+	{"cursor-grok-4.7", "Cursor Grok 4.7", "Cursor-hosted Grok model for long-running agents and knowledge work.", "text", "smart_toy"},
+	{"cursor-grok-4.7-fast", "Cursor Grok 4.7 Fast", "Cursor's twice-speed Grok 4.7 route for lower-latency agentic work.", "text", "bolt"},
 	{"cursor-grok-4.6", "Cursor Grok 4.6", "Cursor-hosted Grok model for long-running agents and knowledge work.", "text", "smart_toy"},
 	{"cursor-grok-4.5", "Cursor Grok 4.5", "Cursor-hosted Grok model for coding and agentic knowledge work.", "text", "smart_toy"},
 	{"gpt-5.5", "GPT-5.5", "OpenAI flagship for reasoning, writing, and analysis.", "text", "smart_toy"},

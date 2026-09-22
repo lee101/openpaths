@@ -496,6 +496,7 @@ func TestNew_DerivesGrokLatestAliasFromHighestVersion(t *testing.T) {
 
 func TestNew_GrokLatestUsesFractionalVersionOrdering(t *testing.T) {
 	models := []model.ModelConfig{
+		{ID: "grok-4.7", Provider: "xai"},
 		{ID: "grok-4.6", Provider: "xai"},
 		{ID: "grok-4.5", Provider: "xai"},
 		{ID: "grok-4.20-0309-reasoning", Provider: "xai"},
@@ -511,8 +512,8 @@ func TestNew_GrokLatestUsesFractionalVersionOrdering(t *testing.T) {
 		if !found {
 			t.Fatalf("GetModelConfig(%q) not found", name)
 		}
-		if cfg.ID != "grok-4.6" {
-			t.Errorf("GetModelConfig(%q) ID = %q, want grok-4.6", name, cfg.ID)
+		if cfg.ID != "grok-4.7" {
+			t.Errorf("GetModelConfig(%q) ID = %q, want grok-4.7", name, cfg.ID)
 		}
 	}
 }

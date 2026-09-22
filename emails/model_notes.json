@@ -45,9 +45,9 @@
         "settings": "thinking budget auto · temperature 0.7 default, 0 for classification"
       },
       {
-        "id": "grok-4.5",
-        "name": "Grok 4.5",
-        "note": "xAI's fast frontier reasoner with 500K context. Strong on current-events reasoning and willing to take positions other models hedge on.",
+        "id": "grok-4.7",
+        "name": "Grok 4.7",
+        "note": "xAI's frontier reasoner with 500K context at the same price as Grok 4.6. Strong on current-events reasoning and willing to take positions other models hedge on.",
         "settings": "temperature 0.7 default · pair with search tools for live data"
       }
     ]

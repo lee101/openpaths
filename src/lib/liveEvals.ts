@@ -73,7 +73,7 @@ export const MODEL_META: Record<string, { label: string; color: string }> = {
   'claude-opus-5': { label: 'Claude Opus 5', color: DRACULA.purple },
   'gemini-3.7-flash': { label: 'Gemini 3.7 Flash', color: DRACULA.cyan },
   'deepseek-v4-pro': { label: 'DeepSeek V4 Pro', color: DRACULA.green },
-  'grok-4.6': { label: 'Grok 4.6', color: DRACULA.yellow },
+  'grok-4.7': { label: 'Grok 4.7', color: DRACULA.yellow },
   'glm-5.1': { label: 'GLM-5.1', color: DRACULA.red },
 };
 

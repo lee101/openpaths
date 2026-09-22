@@ -175,6 +175,7 @@ var orModelDisplayNames = map[string]string{
 	"gemini-2.5-pro":               "Google: Gemini 2.5 Pro",
 	"gemini-2.5-flash":             "Google: Gemini 2.5 Flash",
 	"gemini-3.1-flash-lite":        "Google: Gemini 3.1 Flash Lite",
+	"grok-4.7":                     "xAI: Grok 4.7",
 	"grok-4.6":                     "xAI: Grok 4.6",
 	"grok-4.5":                     "xAI: Grok 4.5",
 	"grok-4.3":                     "xAI: Grok 4.3",

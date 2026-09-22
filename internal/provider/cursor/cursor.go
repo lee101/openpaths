@@ -311,24 +311,24 @@ func parseModelSelection(providerModelID string) (id string, fast bool) {
 }
 
 func cursorGrokEffort(modelID, requested string) string {
-	if modelID != "grok-4.5" && modelID != "grok-4.6" {
+	switch modelID {
+	case "grok-4.5", "grok-4.6", "grok-4.7":
+	default:
 		return ""
 	}
-	switch strings.ToLower(strings.TrimSpace(requested)) {
+	// grok-4.6 and newer expose xhigh upstream; grok-4.5 tops out at high.
+	xhigh := modelID != "grok-4.5"
+	requested = strings.ToLower(strings.TrimSpace(requested))
+	switch requested {
 	case "low", "medium", "high":
-		return strings.ToLower(strings.TrimSpace(requested))
-	case "xhigh":
-		if modelID == "grok-4.6" {
+		return requested
+	case "xhigh", "max":
+		if xhigh {
 			return "xhigh"
 		}
 		return "high"
 	case "minimal":
 		return "low"
-	case "max":
-		if modelID == "grok-4.6" {
-			return "xhigh"
-		}
-		return "high"
 	default:
 		return ""
 	}

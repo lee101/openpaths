@@ -22,7 +22,7 @@ func TestDeprecatedModelsRouteToWorkingUpstreams(t *testing.T) {
 		providerName string
 		deadUpstream string
 	}{
-		{"grok-4.20-multi-agent-0309", "xai", "grok-4.5", "grok-4.20-multi-agent-0309"},
+		{"grok-4.20-multi-agent-0309", "xai", "grok-4.7", "grok-4.20-multi-agent-0309"},
 		{"nvidia/gpt-oss-120b", "fireworks", "accounts/fireworks/models/gpt-oss-120b", "openai/gpt-oss-120b"},
 		{"nvidia/mistral-medium-3.5", "mistral", "mistral-medium-latest", "mistralai/mistral-medium-3.5-128b"},
 		// thinkingmachines/inkling was here while it had no upstream; the open

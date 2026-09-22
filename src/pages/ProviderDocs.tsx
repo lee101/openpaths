@@ -126,7 +126,7 @@ const EXAMPLES: Record<string, ProviderExample> = {
     ],
   },
   xai: {
-    description: 'Grok 4.6, Grok 4.5, Grok Build, Grok 4.3/4.20, Grok Imagine, plus xAI realtime Voice, Text to Speech, and Speech to Text APIs.',
+    description: 'Grok 4.7, Grok 4.6, Grok 4.5, Grok Build, Grok 4.3/4.20, Grok Imagine, plus xAI realtime Voice, Text to Speech, and Speech to Text APIs.',
     endpoint: '/v1',
     chatModel: 'grok-latest',
     imageModel: 'grok-imagine-image',
@@ -180,7 +180,7 @@ const EXAMPLES: Record<string, ProviderExample> = {
     ],
   },
   cursor: {
-    description: 'Cursor Composer 2.5 and Cursor Grok 4.5/4.6 via the Cursor Cloud Agents API - agentic coding and knowledge work exposed as standard OpenAI-style chat completions through OpenPaths.',
+    description: 'Cursor Composer 2.5 and Cursor Grok 4.5/4.6/4.7 via the Cursor Cloud Agents API - agentic coding and knowledge work exposed as standard OpenAI-style chat completions through OpenPaths.',
     endpoint: '/v1',
     chatModel: 'composer-2.5',
     provides: [
@@ -190,7 +190,7 @@ const EXAMPLES: Record<string, ProviderExample> = {
       },
       {
         title: 'Cursor Grok',
-        description: 'Use `cursor-grok-4.5` or `cursor-grok-4.6` for standard reasoning, or append `-fast` for the low-latency variants.',
+        description: 'Use `cursor-grok-4.5`, `cursor-grok-4.6`, or `cursor-grok-4.7` for standard reasoning, or append `-fast` for the low-latency variants.',
       },
       {
         title: 'OpenAI-Compatible Surface',
@@ -198,8 +198,8 @@ const EXAMPLES: Record<string, ProviderExample> = {
       },
     ],
     notes: [
-      'Use `composer-2.5`, `composer-2.5-fast`, `cursor-grok-4.5`, `cursor-grok-4.5-fast`, `cursor-grok-4.6`, or `cursor-grok-4.6-fast` as the model name.',
-      'Cursor Grok supports `low`, `medium`, `high`, and (for 4.6) `xhigh` reasoning effort through the standard `reasoning_effort` field.',
+      'Use `composer-2.5`, `composer-2.5-fast`, or the `cursor-grok-4.5`/`cursor-grok-4.6`/`cursor-grok-4.7` ids (each with a `-fast` variant) as the model name.',
+      'Cursor Grok supports `low`, `medium`, `high`, and (for 4.6 and newer) `xhigh` reasoning effort through the standard `reasoning_effort` field.',
       'Best for coding agents, refactors, knowledge work, and tool-driven workflows - pass your tools array as usual.',
     ],
   },

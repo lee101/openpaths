@@ -37,7 +37,7 @@ var targetSpecs = []struct {
 	Provider string
 	ModelID  string
 }{
-	{Provider: "xai", ModelID: "grok-4.6"},
+	{Provider: "xai", ModelID: "grok-4.7"},
 	{Provider: "openai", ModelID: "gpt-5.4-nano"},
 	{Provider: "google", ModelID: "gemini-3.1-flash-lite"},
 	{Provider: "anthropic", ModelID: "claude-haiku-4-5-20251001"},

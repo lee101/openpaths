@@ -932,7 +932,7 @@ const catalogModels: Model[] = [
     priceInput: 2,
     priceOutput: 6,
     tags: ['reasoning', 'programming', 'agentic', 'general'],
-    aliases: ['cursor-grok-latest', 'grok-4.6@cursor', 'cursor-grok-4-6'],
+    aliases: ['grok-4.6@cursor', 'cursor-grok-4-6'],
     released: '2026-08-12',
     popularity: 20
   },
@@ -945,9 +945,35 @@ const catalogModels: Model[] = [
     priceInput: 4,
     priceOutput: 12,
     tags: ['reasoning', 'programming', 'agentic', 'fast'],
-    aliases: ['cursor-grok-latest-fast', 'grok-4.6-fast@cursor', 'cursor-grok-4-6-fast'],
+    aliases: ['grok-4.6-fast@cursor', 'cursor-grok-4-6-fast'],
     released: '2026-08-12',
     popularity: 19
+  },
+  {
+    id: 'cursor-grok-4.7',
+    name: 'Cursor Grok 4.7',
+    provider: 'Cursor',
+    description: 'Cursor-hosted Grok 4.7 for long-running agents, coding, knowledge work, and interactive builds.',
+    contextLength: '256K',
+    priceInput: 2,
+    priceOutput: 6,
+    tags: ['reasoning', 'programming', 'agentic', 'general'],
+    aliases: ['cursor-grok-latest', 'grok-4.7@cursor', 'cursor-grok-4-7'],
+    released: '2026-09-02',
+    popularity: 19
+  },
+  {
+    id: 'cursor-grok-4.7-fast',
+    name: 'Cursor Grok 4.7 Fast',
+    provider: 'Cursor',
+    description: 'Grok 4.7 at twice the output speed and twice the price, for lower-latency agentic work.',
+    contextLength: '256K',
+    priceInput: 4,
+    priceOutput: 12,
+    tags: ['reasoning', 'programming', 'agentic', 'fast'],
+    aliases: ['cursor-grok-latest-fast', 'grok-4.7-fast@cursor', 'cursor-grok-4-7-fast'],
+    released: '2026-09-02',
+    popularity: 18
   },
   {
     id: 'gpt5.3-codex',
@@ -1174,6 +1200,19 @@ const catalogModels: Model[] = [
 
   // --- xAI Grok ---
   {
+    id: 'grok-4.7',
+    name: 'Grok 4.7',
+    provider: 'xAI',
+    description: 'xAI’s frontier model for coding, agentic tasks, and knowledge work, with configurable reasoning effort and vision.',
+    contextLength: '500K',
+    priceInput: 2,
+    priceOutput: 6,
+    tags: ['reasoning', 'programming', 'agentic', 'general', 'vision'],
+    aliases: ['grok', 'grok-latest'],
+    released: '2026-09-02',
+    popularity: 4
+  },
+  {
     id: 'grok-4.6',
     name: 'Grok 4.6',
     provider: 'xAI',
@@ -1182,7 +1221,6 @@ const catalogModels: Model[] = [
     priceInput: 2,
     priceOutput: 6,
     tags: ['reasoning', 'programming', 'agentic', 'general', 'vision'],
-    aliases: ['grok', 'grok-latest'],
     released: '2026-08-13',
     popularity: 5
   },

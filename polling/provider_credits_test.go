@@ -99,7 +99,7 @@ func TestRunOnceEmailsOnlyCreditFailures(t *testing.T) {
 		"google": &fakeProvider{name: "google"},
 	}
 	models := []model.ModelConfig{
-		{ID: "grok-4.6", Provider: "xai", ProviderModelID: "grok-4.6"},
+		{ID: "grok-4.7", Provider: "xai", ProviderModelID: "grok-4.7"},
 		{ID: "gpt-5.4-nano", Provider: "openai", ProviderModelID: "gpt-5.4-nano"},
 		{ID: "gemini-3.1-flash-lite", Provider: "google", ProviderModelID: "gemini-3.1-flash-lite"},
 	}
@@ -120,10 +120,10 @@ func TestRunOnceEmailsOnlyCreditFailures(t *testing.T) {
 	if !strings.Contains(subject, "xai") || strings.Contains(subject, "openai") {
 		t.Fatalf("unexpected subject %q", subject)
 	}
-	if !strings.Contains(body, "grok-4.6") || strings.Contains(body, "service unavailable") {
+	if !strings.Contains(body, "grok-4.7") || strings.Contains(body, "service unavailable") {
 		t.Fatalf("unexpected body %q", body)
 	}
-	if xaiProvider.lastReq == nil || xaiProvider.lastReq.Model != "grok-4.6" {
+	if xaiProvider.lastReq == nil || xaiProvider.lastReq.Model != "grok-4.7" {
 		t.Fatalf("direct xAI model request = %#v", xaiProvider.lastReq)
 	}
 	if len(xaiProvider.lastReq.Messages) != 1 || xaiProvider.lastReq.Messages[0].Content != probePrompt {

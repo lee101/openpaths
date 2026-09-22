@@ -278,7 +278,7 @@ models:
       - "deepseek-v4-flash"
       - "deepseek-chat"
       - "claude-sonnet-5"
-      - "grok-4.6"
+      - "grok-4.7"
       - "or/gpt-5.6-terra"
 
   # Cheap default for ordinary chat; hard coding/math/science prompts can
@@ -1413,9 +1413,13 @@ models:
     supports_tools: false
     supports_vision: false
 
+  # Cursor is the only surface that serves the Grok 4.7 fast variant (xAI ships
+  # it in Cursor and Grok Build only, at 2x rates), so the whole cursor-grok
+  # family follows the 4.7 line: ids and prices stay put, the Cursor upstream
+  # model id moves. See https://docs.x.ai/developers/grok-4-7.
   - id: "cursor-grok-4.5"
     provider: cursor
-    provider_model_id: "grok-4.5"
+    provider_model_id: "grok-4.7"
     input_price_per_1m: 2.00
     input_cache_hit_price_per_1m: 0.30
     output_price_per_1m: 6.00
@@ -1429,7 +1433,7 @@ models:
 
   - id: "cursor-grok-4.5-fast"
     provider: cursor
-    provider_model_id: "grok-4.5-fast"
+    provider_model_id: "grok-4.7-fast"
     input_price_per_1m: 4.00
     input_cache_hit_price_per_1m: 0.60
     output_price_per_1m: 18.00
@@ -1443,11 +1447,11 @@ models:
 
   - id: "cursor-grok-4.6"
     provider: cursor
-    provider_model_id: "grok-4.6"
+    provider_model_id: "grok-4.7"
     input_price_per_1m: 2.00
     input_cache_hit_price_per_1m: 0.50
     output_price_per_1m: 6.00
-    aliases: ["cursor-grok-latest", "grok-4.6@cursor", "cursor-grok-4-6"]
+    aliases: ["grok-4.6@cursor", "cursor-grok-4-6"]
     default_reasoning_effort: "high"
     context_window: 256000
     max_output_tokens: 16384
@@ -1457,11 +1461,39 @@ models:
 
   - id: "cursor-grok-4.6-fast"
     provider: cursor
-    provider_model_id: "grok-4.6-fast"
+    provider_model_id: "grok-4.7-fast"
     input_price_per_1m: 4.00
     input_cache_hit_price_per_1m: 1.00
     output_price_per_1m: 12.00
-    aliases: ["cursor-grok-latest-fast", "grok-4.6-fast@cursor", "cursor-grok-4-6-fast"]
+    aliases: ["grok-4.6-fast@cursor", "cursor-grok-4-6-fast"]
+    default_reasoning_effort: "high"
+    context_window: 256000
+    max_output_tokens: 16384
+    supports_streaming: true
+    supports_tools: false
+    supports_vision: false
+
+  - id: "cursor-grok-4.7"
+    provider: cursor
+    provider_model_id: "grok-4.7"
+    input_price_per_1m: 2.00
+    input_cache_hit_price_per_1m: 0.50
+    output_price_per_1m: 6.00
+    aliases: ["cursor-grok-latest", "grok-4.7@cursor", "cursor-grok-4-7"]
+    default_reasoning_effort: "high"
+    context_window: 256000
+    max_output_tokens: 16384
+    supports_streaming: true
+    supports_tools: false
+    supports_vision: false
+
+  - id: "cursor-grok-4.7-fast"
+    provider: cursor
+    provider_model_id: "grok-4.7-fast"
+    input_price_per_1m: 4.00
+    input_cache_hit_price_per_1m: 1.00
+    output_price_per_1m: 12.00
+    aliases: ["cursor-grok-latest-fast", "grok-4.7-fast@cursor", "cursor-grok-4-7-fast"]
     default_reasoning_effort: "high"
     context_window: 256000
     max_output_tokens: 16384
@@ -1985,9 +2017,36 @@ models:
     supports_vision: false
 
   # --- xAI Grok ---
+  # grok-4.7 ships at grok-4.6's 2.00/6.00 rate with the same 500k window and
+  # 200k long-context threshold (api.x.ai/v1/language-models), so it takes over
+  # the family aliases. Same-or-higher-priced grok ids below compat-route to it;
+  # the cheaper tiers (4.3, 4.20, build) keep their own upstream and rate card.
+  - id: "grok-4.7"
+    provider: xai
+    provider_model_id: "grok-4.7"
+    input_price_per_1m: 2.00
+    input_cache_hit_price_per_1m: 0.50
+    output_price_per_1m: 6.00
+    long_context_threshold: 200000
+    input_price_per_1m_long: 4.00
+    input_cache_hit_price_per_1m_long: 1.00
+    output_price_per_1m_long: 12.00
+    aliases: ["grok", "grok-latest", "grok-4", "grok-reasoning", "grok-4-0709", "grok-4-1-fast-reasoning", "grok-4-1-fast-non-reasoning", "grok-4-fast-reasoning", "grok-4-fast-non-reasoning", "grok-code-fast-1", "grok-3"]
+    default_reasoning_effort: "low"
+    context_window: 500000
+    max_output_tokens: 16384
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models:
+      - "or/grok-4"
+
+  # Compatibility route: grok-4.7 supersedes grok-4.6 at identical pricing, so
+  # this id keeps its own price and capability metadata and only the upstream
+  # call moves.
   - id: "grok-4.6"
     provider: xai
-    provider_model_id: "grok-4.6"
+    provider_model_id: "grok-4.7"
     input_price_per_1m: 2.00
     input_cache_hit_price_per_1m: 0.30
     output_price_per_1m: 6.00
@@ -1995,7 +2054,6 @@ models:
     input_price_per_1m_long: 4.00
     input_cache_hit_price_per_1m_long: 0.60
     output_price_per_1m_long: 12.00
-    aliases: ["grok", "grok-latest", "grok-4", "grok-reasoning", "grok-4-0709", "grok-4-1-fast-reasoning", "grok-4-1-fast-non-reasoning", "grok-4-fast-reasoning", "grok-4-fast-non-reasoning", "grok-code-fast-1", "grok-3"]
     default_reasoning_effort: "low"
     context_window: 500000
     max_output_tokens: 16384
@@ -2023,9 +2081,10 @@ models:
     fallback_models:
       - "grok-4.6"
 
+  # Compatibility route: same 2.00/6.00 as grok-4.7, so the upstream call follows.
   - id: "grok-4.5"
     provider: xai
-    provider_model_id: "grok-4.6"
+    provider_model_id: "grok-4.7"
     input_price_per_1m: 2.00
     input_cache_hit_price_per_1m: 0.30
     output_price_per_1m: 6.00
@@ -2084,7 +2143,7 @@ models:
 
   - id: "grok-4.20-multi-agent-0309"
     provider: xai
-    provider_model_id: "grok-4.5"
+    provider_model_id: "grok-4.7"
     input_price_per_1m: 2.00
     output_price_per_1m: 6.00
     long_context_threshold: 200000
@@ -2096,7 +2155,7 @@ models:
     supports_tools: true
     supports_vision: true
     deprecated: true
-    deprecated_note: "Upstream retired; compatibility route uses grok-4.5."
+    deprecated_note: "Upstream retired; compatibility route uses grok-4.7."
 
   - id: "grok-build-0.1"
     provider: xai
@@ -2787,7 +2846,7 @@ models:
 
   - id: "or/grok-4"
     provider: openrouter
-    provider_model_id: "x-ai/grok-4.6"
+    provider_model_id: "x-ai/grok-4.7"
     input_price_per_1m: 3.00
     output_price_per_1m: 15.00
     context_window: 256000
