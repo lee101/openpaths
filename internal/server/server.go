@@ -449,8 +449,15 @@ func New(deps *Dependencies) *Server {
 	r.GET("/v1/skills/search", publicChain(skillsH.HandleSearch))
 	r.POST("/v1/skills", accountChain(skillsH.HandleCreate))
 	r.POST("/v1/skills/reindex", accountChain(adminH.RequireAdmin(skillsH.HandleReindex)))
-	r.GET("/v1/skills/{slug}/files/{filepath:*}", publicChain(skillsH.HandleFileRaw))
-	r.GET("/v1/skills/{slug}/files", publicChain(skillsH.HandleFiles))
+	// One catch-all: fasthttp/router also claims the bare "/files" path for a
+	// "{filepath:*}" route, so a separate "/files" registration panics.
+	r.GET("/v1/skills/{slug}/files/{filepath:*}", publicChain(func(ctx *fasthttp.RequestCtx) {
+		if raw, _ := ctx.UserValue("filepath").(string); strings.Trim(raw, "/") == "" {
+			skillsH.HandleFiles(ctx)
+			return
+		}
+		skillsH.HandleFileRaw(ctx)
+	}))
 	r.GET("/v1/skills/{slug}", publicChain(skillsH.HandleGet))
 	r.PUT("/v1/skills/{slug}", accountChain(skillsH.HandleUpdate))
 	r.DELETE("/v1/skills/{slug}", accountChain(skillsH.HandleDelete))
