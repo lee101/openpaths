@@ -114,9 +114,9 @@ func NewRequiringUserTurn(providerName, apiKey, baseURL string) *OpenAIProvider 
 }
 
 // isReasoningModel reports whether the model is an OpenAI reasoning-class model
-// (o-series, or the GPT-5 family excluding the gpt-5-chat aliases). These
-// models reject the legacy max_tokens parameter and only accept the default
-// values for sampling parameters such as temperature and top_p.
+// (o-series, or the GPT-5/GPT-6 families excluding the gpt-5-chat aliases).
+// These models reject the legacy max_tokens parameter and only accept the
+// default values for sampling parameters such as temperature and top_p.
 func isReasoningModel(m string) bool {
 	if strings.HasPrefix(m, "gpt-5-chat") {
 		// gpt-5-chat-latest is the conversational variant and supports the
@@ -124,7 +124,8 @@ func isReasoningModel(m string) bool {
 		return false
 	}
 	return strings.HasPrefix(m, "o1") || strings.HasPrefix(m, "o3") ||
-		strings.HasPrefix(m, "o4") || strings.HasPrefix(m, "gpt-5")
+		strings.HasPrefix(m, "o4") || strings.HasPrefix(m, "gpt-5") ||
+		strings.HasPrefix(m, "gpt-6")
 }
 
 // normalizeMaxTokens converts max_tokens to max_completion_tokens for newer

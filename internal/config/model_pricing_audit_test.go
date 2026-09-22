@@ -52,6 +52,8 @@ func TestAuditedTokenPrices(t *testing.T) {
 		"gemini-3.5-flash-lite": {0.30, 0, 2.50},
 		// developers.openai.com/api/docs/pricing
 		"gpt-5.5-pro": {30.00, 0, 180.00},
+		"gpt-6-sol":   {2.00, 0.20, 10.00},
+		"gpt-6-luna":  {0.10, 0.01, 0.50},
 		// z.ai launch pricing / openrouter.ai/api/v1/models
 		"glm-5.3-flash":    {0.075, 0.015, 0.25},
 		"glm-5.3":          {1.40, 0.26, 4.40},
@@ -59,6 +61,8 @@ func TestAuditedTokenPrices(t *testing.T) {
 		"or/gpt-5.6-sol":   {5.00, 0.50, 30.00},
 		"or/gpt-5.6-terra": {1.00, 0.10, 6.00},
 		"or/gpt-5.6-luna":  {0.10, 0.01, 0.60},
+		"or/gpt-6-sol":     {2.00, 0.20, 10.00},
+		"or/gpt-6-luna":    {0.10, 0.01, 0.50},
 		"or/qwen3.8-max":   {2.00, 0.25, 6.00},
 		"or/gpt-5-codex":   {1.75, 0.175, 14.00},
 		// console.groq.com/docs/pricing (gpt-oss verified Aug 2026)

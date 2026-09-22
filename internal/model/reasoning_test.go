@@ -11,6 +11,13 @@ func TestCompatibleReasoningEffort(t *testing.T) {
 		{"gpt-5.6-sol", "future", "future"},
 		{"gpt-5.6-sol", "max", "xhigh"},
 		{"gpt-5.6-terra", "xhigh", "xhigh"},
+		// GPT-6 carries the GPT-5.6 effort vocabulary on chat completions:
+		// "max" is a Responses-API-only value, and "minimal" is rejected too.
+		{"gpt-6-sol", "max", "xhigh"},
+		{"gpt-6-sol", "minimal", "low"},
+		{"gpt-6-sol", "xhigh", "xhigh"},
+		{"gpt-6-luna", "none", "none"},
+		{"gpt-6-luna", " future ", "future"},
 		// Grok via OpenRouter cannot disable reasoning; xAI direct can.
 		{"x-ai/grok-4.6", "none", "minimal"},
 		{"x-ai/grok-4.6", "max", "max"},

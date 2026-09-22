@@ -1106,6 +1106,16 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/models/gpt-6-sol</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/gpt-6-luna</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/models/gpt-5.6</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>

@@ -16,6 +16,12 @@ type reasoningVocabulary struct {
 }
 
 var reasoningVocabularies = []reasoningVocabulary{
+	// GPT-6 Sol/Luna on /v1/chat/completions (the endpoint the gateway calls)
+	// reject both "minimal" and "max" with "Supported values are: 'none',
+	// 'low', 'medium', 'high', and 'xhigh'" (probed against api.openai.com
+	// 2026-09-22). The model docs list "max" for reasoning.effort on the
+	// Responses API, so the chat-completions set is the narrower one.
+	{matches: family("gpt-6"), supported: effortSet("none", "low", "medium", "high", "xhigh")},
 	// GPT-5.6 has neither a "minimal" nor a "max" tier.
 	{matches: family("gpt-5.6"), supported: effortSet("none", "low", "medium", "high", "xhigh")},
 	// Grok through OpenRouter makes reasoning mandatory, unlike xAI direct.

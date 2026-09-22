@@ -106,6 +106,11 @@ func TestIsReasoningModel(t *testing.T) {
 		{"gpt-5.4-nano", true},
 		{"gpt-5-codex", true},
 		{"gpt-5-mini", true},
+		// GPT-6 rejects max_tokens with "Use 'max_completion_tokens' instead"
+		// (probed against api.openai.com 2026-09-22).
+		{"gpt-6-sol", true},
+		{"gpt-6-luna", true},
+		{"gpt-6-astra", true},
 		{"o1", true},
 		{"o3", true},
 		{"o4-mini", true},
@@ -118,6 +123,33 @@ func TestIsReasoningModel(t *testing.T) {
 		if got := isReasoningModel(c.model); got != c.want {
 			t.Errorf("isReasoningModel(%q) = %v, want %v", c.model, got, c.want)
 		}
+	}
+}
+
+// normalizeMaxTokens is what keeps a client sending the legacy max_tokens
+// parameter working against reasoning-class models, which answer
+// "Unsupported parameter: 'max_tokens' is not supported with this model."
+func TestNormalizeMaxTokens(t *testing.T) {
+	maxTokens := 16
+	req := &model.ChatCompletionRequest{Model: "gpt-6-sol", MaxTokens: &maxTokens}
+	normalizeMaxTokens(req)
+	if req.MaxTokens != nil || req.MaxCompletionTokens == nil || *req.MaxCompletionTokens != 16 {
+		t.Errorf("reasoning model max_tokens not converted: %#v", req)
+	}
+
+	// A caller that already set max_completion_tokens keeps it untouched.
+	completionTokens := 32
+	both := &model.ChatCompletionRequest{Model: "gpt-6-luna", MaxTokens: &maxTokens, MaxCompletionTokens: &completionTokens}
+	normalizeMaxTokens(both)
+	if both.MaxTokens == nil || both.MaxCompletionTokens == nil || *both.MaxCompletionTokens != 32 {
+		t.Errorf("existing max_completion_tokens overwritten: %#v", both)
+	}
+
+	// Non-reasoning models still accept the legacy parameter.
+	legacy := &model.ChatCompletionRequest{Model: "gpt-4o", MaxTokens: &maxTokens}
+	normalizeMaxTokens(legacy)
+	if legacy.MaxTokens == nil || legacy.MaxCompletionTokens != nil {
+		t.Errorf("non-reasoning model max_tokens rewritten: %#v", legacy)
 	}
 }
 

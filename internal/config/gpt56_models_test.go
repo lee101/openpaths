@@ -4,6 +4,8 @@ import "testing"
 
 // GPT-5.6 ships as three capability tiers (Sol/Terra/Luna). Each must exist in
 // config.yaml with openai provider, correct pricing, and fallbacks that resolve.
+// Sol and Luna compat-route to the GPT-6 upstreams while keeping their own id,
+// alias and 5.6 rate card; Terra still runs on its own 5.6 checkpoint.
 func TestGPT56TierModels(t *testing.T) {
 	cfg, err := Load("../../config.yaml")
 	if err != nil {
@@ -20,13 +22,13 @@ func TestGPT56TierModels(t *testing.T) {
 		}
 	}
 	want := []struct {
-		id      string
-		in, out float64
-		alias   string
+		id, providerModel string
+		in, out           float64
+		alias             string
 	}{
-		{"gpt-5.6-sol", 4.00, 20.00, "gpt5.6-sol"},
-		{"gpt-5.6-terra", 2.00, 12.00, "gpt5.6-terra"},
-		{"gpt-5.6-luna", 0.20, 1.20, "gpt5.6-luna"},
+		{"gpt-5.6-sol", "gpt-6-sol", 4.00, 20.00, "gpt5.6-sol"},
+		{"gpt-5.6-terra", "gpt-5.6-terra", 2.00, 12.00, "gpt5.6-terra"},
+		{"gpt-5.6-luna", "gpt-6-luna", 0.20, 1.20, "gpt5.6-luna"},
 	}
 	for _, w := range want {
 		i, ok := byID[w.id]
@@ -38,8 +40,8 @@ func TestGPT56TierModels(t *testing.T) {
 		if m.Provider != "openai" {
 			t.Errorf("%s provider = %q, want openai", w.id, m.Provider)
 		}
-		if m.ProviderModelID != w.id {
-			t.Errorf("%s provider_model_id = %q, want %q", w.id, m.ProviderModelID, w.id)
+		if m.ProviderModelID != w.providerModel {
+			t.Errorf("%s provider_model_id = %q, want %q", w.id, m.ProviderModelID, w.providerModel)
 		}
 		if m.InputPricePer1M != w.in || m.OutputPricePer1M != w.out {
 			t.Errorf("%s pricing = %v/%v, want %v/%v", w.id, m.InputPricePer1M, m.OutputPricePer1M, w.in, w.out)
@@ -91,9 +93,9 @@ func TestGPT56OpenRouterMirrors(t *testing.T) {
 		input, cache, output          float64
 		longInput, longCache, longOut float64
 	}{
-		"or/gpt-5.6-sol":   {"openai/gpt-5.6-sol", 5, .5, 30, 10, 1, 45},
+		"or/gpt-5.6-sol":   {"openai/gpt-6-sol", 5, .5, 30, 10, 1, 45},
 		"or/gpt-5.6-terra": {"openai/gpt-5.6-terra", 1, .1, 6, 2, .2, 9},
-		"or/gpt-5.6-luna":  {"openai/gpt-5.6-luna", .1, .01, .6, .2, .02, .9},
+		"or/gpt-5.6-luna":  {"openai/gpt-6-luna", .1, .01, .6, .2, .02, .9},
 	}
 	for id, expected := range want {
 		got := byID[id]

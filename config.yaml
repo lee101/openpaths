@@ -1263,9 +1263,12 @@ models:
     supports_tools: true
     supports_vision: true
 
+  # Sol/Luna keep their ids, aliases and prices; the upstream model id follows
+  # the GPT-6 line added below - the compat-route pattern the cursor-grok family
+  # already uses. Terra stays on its own 5.6 upstream.
   - id: "gpt-5.6-sol"
     provider: openai
-    provider_model_id: "gpt-5.6-sol"
+    provider_model_id: "gpt-6-sol"
     input_price_per_1m: 4.00
     output_price_per_1m: 20.00
     aliases: ["gpt5.6-sol", "gpt56-sol", "sol"]
@@ -1297,7 +1300,7 @@ models:
 
   - id: "gpt-5.6-luna"
     provider: openai
-    provider_model_id: "gpt-5.6-luna"
+    provider_model_id: "gpt-6-luna"
     input_price_per_1m: 0.20
     output_price_per_1m: 1.20
     aliases: ["gpt5.6-luna", "gpt56-luna", "luna"]
@@ -1322,6 +1325,54 @@ models:
     supports_streaming: true
     supports_tools: true
     supports_vision: true
+
+  # --- OpenAI GPT-6 (Sol, Luna) ---
+  # developers.openai.com/api/docs/models/gpt-6-sol and .../gpt-6-luna, cross
+  # checked against GET api.openai.com/v1/models and a live /v1/chat/completions
+  # probe on 2026-09-22. Both tiers ship 1,050,000 context / 922,000 max input /
+  # 128,000 max output, text+image input, reasoning and tool use, and the same
+  # 272K input-token cliff: above it the *Long column prices the whole request
+  # (2x input and cache, 1.5x output). GPT-6 rejects max_tokens and non-default
+  # sampling values, and its chat-completions effort set stops at xhigh.
+  - id: "gpt-6-sol"
+    provider: openai
+    provider_model_id: "gpt-6-sol"
+    input_price_per_1m: 2.00
+    input_cache_hit_price_per_1m: 0.20
+    output_price_per_1m: 10.00
+    input_price_per_1m_long: 4.00
+    input_cache_hit_price_per_1m_long: 0.40
+    output_price_per_1m_long: 15.00
+    long_context_threshold: 272000
+    aliases: ["gpt6-sol", "gpt6.0-sol", "openai/gpt-6-sol"]
+    context_window: 1050000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models:
+      - "gpt-5.6-terra"
+      - "or/gpt-6-sol"
+
+  - id: "gpt-6-luna"
+    provider: openai
+    provider_model_id: "gpt-6-luna"
+    input_price_per_1m: 0.10
+    input_cache_hit_price_per_1m: 0.01
+    output_price_per_1m: 0.50
+    input_price_per_1m_long: 0.20
+    input_cache_hit_price_per_1m_long: 0.02
+    output_price_per_1m_long: 0.75
+    long_context_threshold: 272000
+    aliases: ["gpt6-luna", "gpt6.0-luna", "openai/gpt-6-luna"]
+    context_window: 1050000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models:
+      - "gemini-3.1-flash-lite"
+      - "or/gpt-6-luna"
 
   - id: "gpt-5.5-pro"
     provider: openai
@@ -2771,7 +2822,7 @@ models:
 
   - id: "or/gpt-5.6-sol"
     provider: openrouter
-    provider_model_id: "openai/gpt-5.6-sol"
+    provider_model_id: "openai/gpt-6-sol"
     input_price_per_1m: 5.00
     input_cache_hit_price_per_1m: 0.50
     output_price_per_1m: 30.00
@@ -2803,13 +2854,45 @@ models:
 
   - id: "or/gpt-5.6-luna"
     provider: openrouter
-    provider_model_id: "openai/gpt-5.6-luna"
+    provider_model_id: "openai/gpt-6-luna"
     input_price_per_1m: 0.10
     input_cache_hit_price_per_1m: 0.01
     output_price_per_1m: 0.60
     input_price_per_1m_long: 0.20
     input_cache_hit_price_per_1m_long: 0.02
     output_price_per_1m_long: 0.90
+    long_context_threshold: 272000
+    context_window: 1050000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "or/gpt-6-sol"
+    provider: openrouter
+    provider_model_id: "openai/gpt-6-sol"
+    input_price_per_1m: 2.00
+    input_cache_hit_price_per_1m: 0.20
+    output_price_per_1m: 10.00
+    input_price_per_1m_long: 4.00
+    input_cache_hit_price_per_1m_long: 0.40
+    output_price_per_1m_long: 15.00
+    long_context_threshold: 272000
+    context_window: 1050000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "or/gpt-6-luna"
+    provider: openrouter
+    provider_model_id: "openai/gpt-6-luna"
+    input_price_per_1m: 0.10
+    input_cache_hit_price_per_1m: 0.01
+    output_price_per_1m: 0.50
+    input_price_per_1m_long: 0.20
+    input_cache_hit_price_per_1m_long: 0.02
+    output_price_per_1m_long: 0.75
     long_context_threshold: 272000
     context_window: 1050000
     max_output_tokens: 128000

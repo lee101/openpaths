@@ -17,6 +17,10 @@ func TestSanitizeSamplingParametersByUpstreamModel(t *testing.T) {
 		wantTempValue   float64
 	}{
 		{name: "OpenAI reasoning", modelID: "openai/gpt-5.6-sol"},
+		// Same upstream rejection profile as the 5.6 tiers: non-default
+		// temperature is only accepted with reasoning disabled, so the gateway
+		// drops it rather than risk an upstream 400.
+		{name: "OpenAI GPT-6 reasoning", modelID: "openai/gpt-6-luna"},
 		{name: "xAI reasoning", modelID: "x-ai/grok-4.6", wantTemperature: true, wantTopP: true, wantTempValue: 2},
 		{name: "xAI non reasoning", modelID: "x-ai/grok-4.20-non-reasoning", wantTemperature: true, wantTopP: true, wantTempValue: 2},
 		{name: "ZAI GLM", modelID: "z-ai/glm-5.3", wantTemperature: true, wantTopP: true, wantStop: true, wantTempValue: 1},

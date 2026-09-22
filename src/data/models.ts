@@ -810,6 +810,32 @@ const catalogModels: Model[] = [
     popularity: 3
   },
   {
+    id: 'gpt-6-sol',
+    name: 'GPT-6 Sol',
+    provider: 'OpenAI',
+    description: 'GPT-6 flagship tier built for complex coding and agentic workflows: 1.05M-token context, text and image input, reasoning effort up to xhigh, and native tool use.',
+    contextLength: '1.05M',
+    priceInput: 2,
+    priceOutput: 10,
+    tags: ['general', 'vision', 'programming', 'reasoning', 'agentic'],
+    aliases: ['gpt6-sol'],
+    released: '2026-09-14',
+    popularity: 4
+  },
+  {
+    id: 'gpt-6-luna',
+    name: 'GPT-6 Luna',
+    provider: 'OpenAI',
+    description: 'GPT-6 efficiency tier for focused, high-volume tasks: the same 1.05M-token context and reasoning controls as Sol at a fraction of the rate.',
+    contextLength: '1.05M',
+    priceInput: 0.1,
+    priceOutput: 0.5,
+    tags: ['general', 'vision', 'programming', 'reasoning', 'fast'],
+    aliases: ['gpt6-luna'],
+    released: '2026-09-14',
+    popularity: 4
+  },
+  {
     id: 'gpt-5.6',
     name: 'GPT-5.6',
     provider: 'OpenAI',

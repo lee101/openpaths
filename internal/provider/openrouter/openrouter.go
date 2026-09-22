@@ -102,8 +102,9 @@ func isOpenAIReasoningSlug(slug string) bool {
 	if strings.HasPrefix(slug, "gpt-5-chat") {
 		return false
 	}
-	return strings.HasPrefix(slug, "gpt-5") || strings.HasPrefix(slug, "o1") ||
-		strings.HasPrefix(slug, "o3") || strings.HasPrefix(slug, "o4")
+	return strings.HasPrefix(slug, "gpt-5") || strings.HasPrefix(slug, "gpt-6") ||
+		strings.HasPrefix(slug, "o1") || strings.HasPrefix(slug, "o3") ||
+		strings.HasPrefix(slug, "o4")
 }
 
 func (p *OpenRouterProvider) ChatCompletion(ctx context.Context, req *model.ChatCompletionRequest) (*model.ChatCompletionResponse, error) {
