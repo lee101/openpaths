@@ -399,9 +399,9 @@ models:
       - "pixtral-large-latest"
 
   - id: "openpaths/auto-image"
-    provider: openai
-    provider_model_id: "gpt-image-2"
-    price_per_image: 0.211
+    provider: netwrck
+    provider_model_id: "ra2"
+    price_per_image: 0.04
     aliases: ["auto-image", "auto-img", "openpaths-auto-image"]
     supports_streaming: false
     supports_tools: false
@@ -417,7 +417,6 @@ models:
       - "1280x720"
       - "720x1280"
     fallback_models:
-      - "ra2"
       - "gpt-image-2"
       - "or/gemini-3.1-flash-image"
       - "ra1"
