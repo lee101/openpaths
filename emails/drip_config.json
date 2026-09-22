@@ -165,6 +165,13 @@
       "subject": "GLM-5.3 is live - 1M context, same price as 5.2",
       "template": "23-glm-5.3.html",
       "description": "GLM-5.3 launch: 1M context, always-on reasoning, glm-latest alias, same-price route-up from 5.2/5.1"
+    },
+    {
+      "id": 24,
+      "delay_days": 1,
+      "subject": "MiMo-V2.6 is live - 1M context from $0.14/M, pelican tested",
+      "template": "24-mimo-v2.6.html",
+      "description": "Xiaomi MiMo-V2.6 launch: pro, pro-ultraspeed, flash; 1M multimodal context, frontier chart, pelican test write-up"
     }
   ]
 }

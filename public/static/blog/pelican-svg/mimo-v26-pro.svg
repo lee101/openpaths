@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300">
+  <rect width="400" height="300" fill="#aee1f9"/>
+  <circle cx="330" cy="50" r="35" fill="#ffeb3b" stroke="#fbc02d" stroke-width="3"/>
+  <rect x="0" y="245" width="400" height="55" fill="#8bc34a"/>
+  <rect x="0" y="235" width="400" height="12" fill="#7cb342"/>
+  <g fill="#fff">
+    <ellipse cx="60" cy="60" rx="30" ry="15" opacity="0.8"/>
+    <ellipse cx="85" cy="55" rx="25" ry="12" opacity="0.8"/>
+  </g>
+  <!-- Bicycle group -->
+  <g id="bike" stroke-linecap="round">
+    <!-- Rear wheel -->
+    <g transform="translate(120,225)">
+      <circle r="38" fill="none" stroke="#333" stroke-width="5"/>
+      <circle r="32" fill="none" stroke="#ccc" stroke-width="1"/>
+      <g class="spokes">
+        <line x1="0" y1="-32" x2="0" y2="32" stroke="#999" stroke-width="1.5"/>
+        <line x1="-32" y1="0" x2="32" y2="0" stroke="#999" stroke-width="1.5"/>
+        <line x1="-22" y1="-22" x2="22" y2="22" stroke="#999" stroke-width="1.5"/>
+        <line x1="-22" y1="22" x2="22" y2="-22" stroke="#999" stroke-width="1.5"/>
+      </g>
+    </g>
+    <!-- Front wheel -->
+    <g transform="translate(280,225)">
+      <circle r="38" fill="none" stroke="#333" stroke-width="5"/>
+      <circle r="32" fill="none" stroke="#ccc" stroke-width="1"/>
+      <g class="spokes">
+        <line x1="0" y1="-32" x2="0" y2="32" stroke="#999" stroke-width="1.5"/>
+        <line x1="-32" y1="0" x2="32" y2="0" stroke="#999" stroke-width="1.5"/>
+        <line x1="-22" y1="-22" x2="22" y2="22" stroke="#999" stroke-width="1.5"/>
+        <line x1="-22" y1="22" x2="22" y2="-22" stroke="#999" stroke-width="1.5"/>
+      </g>
+    </g>
+    <!-- Frame -->
+    <path d="M120,225 L180,175 L240,175 L280,225 L180,175 Z" fill="none" stroke="#d32f2f" stroke-width="6"/>
+    <path d="M180,175 L165,155 L145,155" stroke="#d32f2f" stroke-width="6" fill="none"/>
+    <!-- Handlebar -->
+    <path d="M145,155 L125,150 M145,155 L145,135" stroke="#333" stroke-width="5" fill="none"/>
+    <!-- Seat -->
+    <path d="M240,175 L255,155 M245,150 L265,150" stroke="#333" stroke-width="5" fill="none"/>
+    <!-- Pedal crank -->
+    <g id="crank" transform="translate(180,175)">
+      <circle r="8" fill="#333"/>
+      <line id="crankarm1" x1="0" y1="0" x2="0" y2="25" stroke="#555" stroke-width="4"/>
+      <line id="crankarm2" x1="0" y1="0" x2="0" y2="-25" stroke="#555" stroke-width="4"/>
+    </g>
+  </g>
+  <!-- Pelican -->
+  <g id="pelican">
+    <!-- Body -->
+    <ellipse cx="225" cy="130" rx="45" ry="35" fill="#fff"/>
+    <path d="M185,125 Q165,115 155,105" fill="none" stroke="#fff" stroke-width="15" stroke-linecap="round"/>
+    <!-- Wing -->
+    <path d="M215,125 Q245,110 255,135 Q235,155 215,125 Z" fill="#f5f5f5" stroke="#ddd" stroke-width="1"/>
+    <!-- Head -->
+    <circle cx="165" cy="95" r="20" fill="#fff"/>
+    <!-- Eye -->
+    <circle cx="158" cy="88" r="3" fill="#333"/>
+    <circle cx="157" cy="87" r="1" fill="#fff"/>
+    <!-- Beak -->
+    <path d="M148,95 L105,108 L148,105 Z" fill="#ff9800"/>
+    <path d="M148,100 L105,108 L148,105 Z" fill="#ffb74d"/>
+    <!-- Pouch -->
+    <path d="M105,108 Q115,125 135,115 Q148,112 148,105 Z" fill="#ffc107" opacity="0.8"/>
+    <!-- Crest -->
+    <path d="M155,78 Q152,65 160,60 Q160,70 165,75" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+    <!-- Legs (animated pedaling) -->
+    <g id="leg1">
+      <path d="M215,160 L205,195" stroke="#ff9800" stroke-width="7" stroke-linecap="round" fill="none"/>
+    </g>
+    <g id="leg2">
+      <path d="M235,160 L245,195" stroke="#ff9800" stroke-width="7" stroke-linecap="round" fill="none"/>
+    </g>
+  </g>
+  <style>
+    #crank { animation: spin 1s linear infinite; transform-origin: 180px 175px; }
+    .spokes { animation: spin 0.5s linear infinite; transform-origin: center; }
+    #leg1 { animation: pedal1 1s linear infinite; transform-origin: 215px 160px; }
+    #leg2 { animation: pedal2 1s linear infinite; transform-origin: 235px 160px; }
+    #pelican { animation: bob 0.5s ease-in-out infinite alternate; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes pedal1 { 0% { transform: rotate(20deg); } 50% { transform: rotate(-20deg); } 100% { transform: rotate(20deg); } }
+    @keyframes pedal2 { 0% { transform: rotate(-20deg); } 50% { transform: rotate(20deg); } 100% { transform: rotate(-20deg); } }
+    @keyframes bob { from { transform: translateY(0); } to { transform: translateY(-3px); } }
+  </style>
+</svg>

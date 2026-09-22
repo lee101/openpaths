@@ -14,6 +14,110 @@ export interface BlogPost {
 
 export const posts: BlogPost[] = [
   {
+    slug: 'xiaomi-mimo-v2-6-pelican-bike-svg',
+    title: 'Xiaomi MiMo-V2.6 on OpenPaths: Pro, UltraSpeed and Flash Pelican-Tested',
+    excerpt: 'Three Xiaomi routes join OpenPaths - MiMo-V2.6 Pro, Pro-UltraSpeed, and the open-source Flash, all 1M context and multimodal from $0.14 per million tokens. We gave all three the house pelican test; one failed it on the first try.',
+    date: '2026-09-22',
+    author: 'OpenPaths Team',
+    readTime: '6 min',
+    tags: ['xiaomi', 'mimo', 'models', 'svg', 'creative-coding', 'pricing', 'model-comparison'],
+    content: `Xiaomi's MiMo-V2.6 line is live on OpenPaths today, routed through OpenRouter: \`xiaomi/mimo-v2.6-pro\`, \`xiaomi/mimo-v2.6-pro-ultraspeed\`, and \`xiaomi/mimo-v2.6-flash\`. Three routes with one shape - 1M-token context, native text, image, video and audio input, tool calls, 131K max output tokens.
+
+Tradition demands the pelican. Same house test we run on every new model ([the animated-SVG comparison](/blog/pelican-bicycle-animated-svg-model-comparison), [Opus 4.8 vs GPT-5.5](/blog/pelican-bicycle-opus-4-8-vs-gpt-5-5-xhigh), [DeepSeek V4.1 Flash](/blog/deepseek-v4-1-flash-pelican-bike-svg)): a pelican riding a bicycle as an animated SVG, one shot, thinking off, no retries. Two of the three models cleared it. The third cleared it too, after a failure worth writing down.
+
+## The line-up
+
+| Model id | In / cached in / out per 1M | Context | Max output | Route |
+|---|---:|---:|---:|---|
+| xiaomi/mimo-v2.6-pro | $0.435 / $0.0036 / $0.87 | 1M | 131K | Xiaomi via OpenRouter |
+| xiaomi/mimo-v2.6-pro-ultraspeed | $4.35 / $0.036 / $8.70 | 1M | 131K | Xiaomi via OpenRouter |
+| xiaomi/mimo-v2.6-flash | $0.14 / $0.0028 / $0.28 | 1M | 131K | Xiaomi via OpenRouter |
+
+Pro is the 1T-parameter flagship. UltraSpeed serves the same 1T checkpoint at roughly 10x the output speed for 10x the rate. Flash is the open-source 309B/15B mixture-of-experts with hybrid attention. Xiaomi publishes no direct API, so all three are OpenRouter-fronted; every id also answers to its bare name (\`mimo-v2.6-flash\`) and its OpenRouter-prefixed form (\`or/xiaomi/mimo-v2.6-flash\`).
+
+## Where Pro lands on the cost frontier
+
+![MiMo-V2.6-Pro on the Artificial Analysis intelligence-cost frontier](/static/blog/pelican-svg/evalsmimo.jpeg)
+
+This is the chart Xiaomi published with the launch, over Artificial Analysis data, and it is the honest summary of why this line matters: MiMo-V2.6-Pro sits on the intelligence-cost frontier at an Intelligence Index of 46.0 for $0.13 per task. That is frontier-adjacent intelligence at a price that used to buy mid-tier models. (Chart: Xiaomi, data: Artificial Analysis.)
+
+## The pelican test
+
+The prompt, unchanged from the series apart from the token ceiling (12,000):
+
+\`\`\`text
+Draw a pelican riding a bicycle as an animated SVG. Return only a complete standalone SVG document.
+\`\`\`
+
+The system instruction is the series default: \`You output only final code. No markdown, no prose. The first character must be <.\` Reasoning was switched off with \`reasoning_effort: none\`.
+
+| Run | Model | Output tokens | Artifact | Animation | Approx. cost |
+|---|---|---:|---|---|---:|
+| 1 | xiaomi/mimo-v2.6-flash | 2,257 | 5.6 KB, 137 lines | 3 SMIL + CSS keyframes | ~$0.0006 |
+| 2 | xiaomi/mimo-v2.6-pro | 2,567 then 1,968 | 5.9 KB broken, then 4.5 KB / 85 lines | CSS keyframes | ~$0.0017 |
+| 3 | xiaomi/mimo-v2.6-pro-ultraspeed | 863 | 1.9 KB, 31 lines | 5 SMIL | ~$0.0077 |
+
+Costs are computed at the listed rates for the tokens each run actually used (no cache hits).
+
+## MiMo-V2.6 Flash: the full scene
+
+![MiMo-V2.6 Flash one-shot SVG: a pelican riding a bicycle](/static/blog/pelican-svg/mimo-v26-flash.svg)
+
+Flash produced the most complete illustration of the three, on the first try: a gradient sky, sun and clouds, a dash-marked road, two trees scrolling past on an 8s loop, spoked wheels turning under a spin keyframe, a rotating crank with pedals and the legs reaching them, an orange beak with a pouch line, an eye, wing shading, and a red frame. 2,257 completion tokens, \`finish_reason: stop\`, first character \`<\`, no markdown wrapper.
+
+At $0.14 in and $0.28 out per million tokens it is the cheapest pelican in the series so far - about $0.0006 for the artifact and the only run that animated the background as well as the bird.
+
+## MiMo-V2.6 Pro: the failure, then the fixed file
+
+Pro's first sample is the interesting one. It drew a good pelican - and wrote invalid XML. One frame line carries \`y1\` twice:
+
+\`\`\`svg
+<line x1="250" y1="280" x2="235" y1="225" />
+\`\`\`
+
+A single duplicated attribute makes the document non-well-formed, so browsers refuse to draw it at all: Chrome renders an XML error page instead of the bird. Everything else about the file was fine - valid root element, closed tags, CSS keyframes for wheel spin and body bob, correct viewBox.
+
+Retrying returned the byte-identical file, because OpenPaths caches identical completions: same model, same messages, same parameters, same response. Sending the same request with \`"cache": false\` bypasses the cache and produced a clean second sample:
+
+![MiMo-V2.6 Pro one-shot SVG: a pelican riding a bicycle](/static/blog/pelican-svg/mimo-v26-pro.svg)
+
+4,542 bytes, 85 lines, CSS keyframes, pelican on a red-framed bike with both wheels spoked, over grass and sky. It renders. Total cost for both Pro samples: about $0.0017.
+
+## MiMo-V2.6 Pro-UltraSpeed: 863 tokens of pelican
+
+![MiMo-V2.6 Pro-UltraSpeed one-shot SVG: a pelican riding a bicycle](/static/blog/pelican-svg/mimo-v26-pro-ultraspeed.svg)
+
+UltraSpeed is the fastest route and the most expensive one, and it wrote the tersest file in the series: 863 completion tokens, 1.9 KB, 31 lines, five SMIL animations. What that brevity buys is a shape that reads as a bird on a bicycle and nothing else - no sky gradient, no road, no tree, no wing, an unfilled triangle for the frame and two bare circles for wheels. Valid XML, animates, renders, ships. It is a wireframe, not an illustration.
+
+At $8.70 per million output tokens it is also 10x Pro's rate, so this pelican cost about $0.0077 - 4.5x the richer Flash artifact. That is the trade the name advertises: the same checkpoint, fewer seconds, a thinner drawing.
+
+## What we take from it
+
+Flash is the standout of the three: at $0.14/$0.28 it produced the most complete scene, the best pelican anatomy, and the only moving background. Pro is close behind at 3x Flash's input price with the same cartoon grammar. Both are cheap enough to run as bulk creative-coding routes at well under a cent per artifact. UltraSpeed earns its 10x rate only where wall-clock latency matters more than detail.
+
+The failure mode generalizes past Xiaomi: a model that writes 99% valid SVG has written an unusable file, and the error is invisible in the text. If you generate SVG or XML in a pipeline, parse it before you ship it. We would not have caught Pro's duplicate attribute - or the silent retry that returned the same broken bytes from cache - without rendering it.
+
+## API
+
+\`\`\`bash
+curl https://openpaths.io/v1/chat/completions \
+  -H "Authorization: Bearer op-..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "xiaomi/mimo-v2.6-flash",
+    "reasoning_effort": "none",
+    "max_tokens": 12000,
+    "messages": [
+      {"role": "system", "content": "You output only final code. No markdown, no prose. The first character must be <."},
+      {"role": "user", "content": "Draw a pelican riding a bicycle as an animated SVG. Return only a complete standalone SVG document."}
+    ]
+  }'
+\`\`\`
+
+All three ids are live now, next to the rest of the pelican series. If you want to re-run this yourself, \`"cache": false\` gives you a fresh sample every time.
+`
+  },
+  {
     slug: 'glm53-flash-vs-deepseek-v41-flash-coding-comparison',
     title: 'GLM-5.3 vs GLM-5.3 Flash vs DeepSeek V4.1 Flash: Pelican SVG vs TSL Water',
     excerpt: 'Same two creative-coding prompts to GLM-5.3, GLM-5.3 Flash, and DeepSeek V4.1 Flash: a pelican SVG and a TSL water shader. Five artifacts hosted with code and live demos - plus one honest flagship failure.',

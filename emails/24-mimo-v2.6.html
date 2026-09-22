@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Xiaomi MiMo-V2.6 is live on OpenPaths</title>
+</head>
+<body style="margin:0; padding:0; background-color:#0a0a0a; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0a0a0a;">
+<tr>
+<td align="center" style="padding:24px 16px;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px; width:100%; background-color:#111111; border:1px solid #222222; border-radius:12px; overflow:hidden;">
+
+<tr>
+<td style="background:linear-gradient(135deg, #1a1a1a, #1a1a1a); padding:40px 40px 32px; text-align:center;">
+<a href="https://openpaths.io" style="display:inline-block; text-decoration:none;"><img src="https://openpaths.io/logo.webp" alt="OpenPaths" width="44" height="44" style="display:block; margin:0 auto 12px; width:44px; height:44px; border:0;"></a>
+<h1 style="margin:0; color:#f5f5f5; font-size:28px; font-weight:700; line-height:1.3; font-family:monospace;"><a href="https://openpaths.io" style="color:#f5f5f5; text-decoration:none;">OpenPaths</a></h1>
+<p style="margin:8px 0 0; color:#888888; font-size:16px; font-weight:400;">MiMo-V2.6 is live</p>
+</td>
+</tr>
+
+<tr>
+<td style="padding:36px 40px;">
+<p style="margin:0 0 20px; color:#e0e0e0; font-size:16px; line-height:1.6;">
+Xiaomi's MiMo-V2.6 line is routable on OpenPaths today. Three ids: the 1T-parameter flagship <span style="color:#f5f5f5; font-family:monospace;">xiaomi/mimo-v2.6-pro</span>, its speed edition, and the open-source Flash model. All three take a 1M token context, text, image, video and audio input, tool calls, and 131K max output.
+</p>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
+<tr>
+<td style="padding:16px 20px; background-color:#1a1a1a; border:1px solid #2a2a2a; border-radius:10px;">
+<p style="margin:0 0 6px; color:#f5f5f5; font-size:15px; font-weight:600;">xiaomi/mimo-v2.6-flash &middot; $0.14 in / $0.28 out</p>
+<p style="margin:0; color:#888888; font-size:13px; line-height:1.5;">The value pick: 309B-parameter MoE with 15B active per token, hybrid attention, 1M context, native multimodal input. It also drew the best pelican of the three.</p>
+</td>
+</tr>
+</table>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
+<tr>
+<td style="padding:16px 20px; background-color:#1a1a1a; border:1px solid #2a2a2a; border-radius:10px;">
+<p style="margin:0 0 6px; color:#f5f5f5; font-size:15px; font-weight:600;">xiaomi/mimo-v2.6-pro &middot; $0.435 in / $0.87 out</p>
+<p style="margin:0; color:#888888; font-size:13px; line-height:1.5;">The flagship 1T model. On Artificial Analysis' intelligence-cost frontier at 46.0 index for $0.13 per task - frontier-adjacent intelligence at mid-tier prices.</p>
+</td>
+</tr>
+</table>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+<tr>
+<td style="padding:16px 20px; background-color:#1a1a1a; border:1px solid #2a2a2a; border-radius:10px;">
+<p style="margin:0 0 6px; color:#f5f5f5; font-size:15px; font-weight:600;">xiaomi/mimo-v2.6-pro-ultraspeed &middot; $4.35 in / $8.70 out</p>
+<p style="margin:0; color:#888888; font-size:13px; line-height:1.5;">Same 1T checkpoint at roughly 10x the output speed for 10x the rate. Pick it when wall-clock matters more than detail.</p>
+</td>
+</tr>
+</table>
+
+<p style="margin:0 0 12px; color:#f5f5f5; font-size:16px; font-weight:600;">The pelican test</p>
+<p style="margin:0 0 20px; color:#e0e0e0; font-size:16px; line-height:1.6;">
+We point every new model at the same one-shot prompt: draw a pelican riding a bicycle as an animated SVG, thinking off. Flash answered with the richest scene yet at this price and the only pedaling legs. UltraSpeed wrote 863 tokens of animated wireframe. Pro drew a good pelican whose SVG was invalid XML - one duplicated attribute on a frame line, which makes browsers refuse to render the whole file. A retry returned the identical broken bytes from our response cache until the request bypassed it, which is worth knowing if you ever hit regenerate and wonder why nothing changes.
+</p>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+<tr>
+<td style="padding:16px 20px; background-color:#1a1a1a; border:1px solid #2a2a2a; border-radius:10px;">
+<p style="margin:0; color:#888888; font-size:13px; font-family:monospace; line-height:1.7;">
+curl https://openpaths.io/v1/chat/completions \<br>
+&nbsp;&nbsp;-H "Authorization: Bearer $OPENPATHS_API_KEY" \<br>
+&nbsp;&nbsp;-d '{"model":"xiaomi/mimo-v2.6-flash","messages":[{"role":"user","content":"say only hi"}]}'
+</p>
+</td>
+</tr>
+</table>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:32px;">
+<tr>
+<td align="center" style="padding-bottom:14px;">
+<a href="https://openpaths.io/blog/xiaomi-mimo-v2-6-pelican-bike-svg" style="display:inline-block; background:#f5f5f5; color:#000000; text-decoration:none; padding:14px 36px; border-radius:8px; font-size:16px; font-weight:600;">Read the pelican write-up</a>
+</td>
+</tr>
+<tr>
+<td align="center">
+<a href="https://openpaths.io/playground?model=xiaomi/mimo-v2.6-flash" style="display:inline-block; background:#1a1a1a; color:#f5f5f5; border:1px solid #f5f5f5; text-decoration:none; padding:13px 30px; border-radius:8px; font-size:15px; font-weight:600;">Try MiMo-V2.6 Flash in the Playground</a>
+</td>
+</tr>
+</table>
+
+</td>
+</tr>
+
+<tr>
+<td style="padding:28px 40px; border-top:1px solid #222222; text-align:center; background-color:#0d0d0d;">
+<p style="margin:0 0 10px; font-size:13px;">
+<a href="https://openpaths.io/playground" style="color:#555555; text-decoration:none;">Playground</a> &nbsp;&middot;&nbsp;
+<a href="https://openpaths.io/models" style="color:#555555; text-decoration:none;">Models</a> &nbsp;&middot;&nbsp;
+<a href="https://openpaths.io/blog" style="color:#555555; text-decoration:none;">Blog</a> &nbsp;&middot;&nbsp;
+<a href="{{.UnsubscribeURL}}" style="color:#555555; text-decoration:none;">Unsubscribe</a>
+</p>
+<p style="margin:0; color:#444444; font-size:12px;"><a href="https://openpaths.io" style="color:#f5f5f5; text-decoration:none;">OpenPaths</a> &middot; by <a href="https://app.nz" style="color:#444444; text-decoration:underline;">Applied Science</a></p>
+</td>
+</tr>
+
+</table>
+</td>
+</tr>
+</table>
+</body>
+</html>

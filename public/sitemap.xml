@@ -2606,6 +2606,11 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/blog/xiaomi-mimo-v2-6-pelican-bike-svg</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/blog/glm53-flash-vs-deepseek-v41-flash-coding-comparison</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>

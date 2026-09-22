@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
+  <rect width="800" height="600" fill="#87CEEB"/>
+  <circle cx="650" cy="120" r="50" fill="#FFD700">
+    <animateTransform attributeName="transform" type="rotate" from="0 650 120" to="360 650 120" dur="20s" repeatCount="indefinite"/>
+  </circle>
+  <g id="bicycle">
+    <circle cx="320" cy="450" r="40" fill="none" stroke="#333" stroke-width="4">
+      <animateTransform attributeName="transform" type="rotate" from="0 320 450" to="360 320 450" dur="1s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="480" cy="450" r="40" fill="none" stroke="#333" stroke-width="4">
+      <animateTransform attributeName="transform" type="rotate" from="0 480 450" to="360 480 450" dur="1s" repeatCount="indefinite"/>
+    </circle>
+    <line x1="320" y1="450" x2="400" y2="350" stroke="#333" stroke-width="4"/>
+    <line x1="400" y1="350" x2="480" y2="450" stroke="#333" stroke-width="4"/>
+    <line x1="320" y1="450" x2="400" y2="450" stroke="#333" stroke-width="4"/>
+    <line x1="400" y1="450" x2="400" y2="350" stroke="#333" stroke-width="4"/>
+  </g>
+  <g id="pelican">
+    <ellipse cx="420" cy="280" rx="50" ry="30" fill="#FFF"/>
+    <ellipse cx="470" cy="250" rx="40" ry="25" fill="#FFF"/>
+    <path d="M500 240 Q530 220 540 250 Q520 260 500 250 Z" fill="#FFA500"/>
+    <circle cx="485" cy="235" r="3" fill="#000"/>
+    <g>
+      <animateTransform attributeName="transform" type="rotate" from="0 420 300" to="360 420 300" dur="1s" repeatCount="indefinite"/>
+      <line x1="400" y1="300" x2="380" y2="350" stroke="#FFA500" stroke-width="5"/>
+    </g>
+    <g>
+      <animateTransform attributeName="transform" type="rotate" from="0 440 300" to="360 440 300" dur="1s" repeatCount="indefinite"/>
+      <line x1="440" y1="300" x2="460" y2="350" stroke="#FFA500" stroke-width="5"/>
+    </g>
+  </g>
+</svg>
