@@ -64,6 +64,10 @@ func TestAuditedTokenPrices(t *testing.T) {
 		// console.groq.com/docs/pricing (gpt-oss verified Aug 2026)
 		"groq/gpt-oss-120b": {0.15, 0.075, 0.60},
 		"groq/gpt-oss-20b":  {0.075, 0.0375, 0.30},
+		// openrouter.ai/api/v1/models (Xiaomi's own card; no direct lane)
+		"xiaomi/mimo-v2.6-pro":            {0.435, 0.0036, 0.87},
+		"xiaomi/mimo-v2.6-pro-ultraspeed": {4.35, 0.036, 8.70},
+		"xiaomi/mimo-v2.6-flash":          {0.14, 0.0028, 0.28},
 	}
 	for id, w := range want {
 		m, ok := byName[id]

@@ -2195,6 +2195,47 @@ const catalogModels: Model[] = [
     popularity: 41
   },
 
+  // --- Xiaomi MiMo ---
+  {
+    id: 'xiaomi/mimo-v2.6-pro',
+    name: 'MiMo-V2.6-Pro',
+    provider: 'Xiaomi',
+    description: 'Xiaomi’s 1T-parameter flagship: 1M-token context, native text, image, video, and audio input, reasoning, and tool use. Routed through OpenRouter.',
+    contextLength: '1.05M',
+    priceInput: 0.435,
+    priceOutput: 0.87,
+    tags: ['reasoning', 'programming', 'agentic', 'general', 'vision'],
+    aliases: ['mimo-v2.6-pro', 'mimo-pro'],
+    released: '2026-09-21',
+    popularity: 18
+  },
+  {
+    id: 'xiaomi/mimo-v2.6-pro-ultraspeed',
+    name: 'MiMo-V2.6-Pro-UltraSpeed',
+    provider: 'Xiaomi',
+    description: 'The speed edition of MiMo-V2.6-Pro: the same 1T checkpoint at roughly 10x output speed and 10x the rate, with the same 1M-token multimodal context.',
+    contextLength: '1.05M',
+    priceInput: 4.35,
+    priceOutput: 8.7,
+    tags: ['reasoning', 'programming', 'agentic', 'general', 'vision', 'fast'],
+    aliases: ['mimo-v2.6-pro-ultraspeed', 'mimo-v2.6-ultraspeed'],
+    released: '2026-09-21',
+    popularity: 20
+  },
+  {
+    id: 'xiaomi/mimo-v2.6-flash',
+    name: 'MiMo-V2.6-Flash',
+    provider: 'Xiaomi',
+    description: 'Open-source 309B-parameter MoE (15B active) with hybrid attention: 1M-token multimodal context, reasoning, and tool use at Flash pricing.',
+    contextLength: '1.05M',
+    priceInput: 0.14,
+    priceOutput: 0.28,
+    tags: ['reasoning', 'programming', 'agentic', 'general', 'vision', 'open-source', 'fast'],
+    aliases: ['mimo-v2.6-flash', 'mimo-flash'],
+    released: '2026-09-21',
+    popularity: 29
+  },
+
   // --- Free Models ---
   {
     id: 'stepfun/step-3.7-flash',

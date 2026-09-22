@@ -2855,6 +2855,53 @@ models:
     supports_tools: true
     supports_vision: true
 
+  # --- Xiaomi MiMo (via OpenRouter) ---
+  # Xiaomi publishes no direct API lane, so the MiMo-V2.6 family is
+  # OpenRouter-fronted (openrouter.ai/api/v1/models): 1M-token context,
+  # 131072 max output, text/image/video/audio input, native reasoning and tool
+  # use. Rates are Xiaomi's card as listed there; cache reads bill at the
+  # listed input_cache_read rate.
+  - id: "xiaomi/mimo-v2.6-pro"
+    provider: openrouter
+    provider_model_id: "xiaomi/mimo-v2.6-pro"
+    input_price_per_1m: 0.435
+    input_cache_hit_price_per_1m: 0.0036
+    output_price_per_1m: 0.87
+    aliases: ["mimo-v2.6-pro", "mimo-pro", "or/mimo-v2.6-pro", "or/xiaomi/mimo-v2.6-pro"]
+    context_window: 1048576
+    max_output_tokens: 131072
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  # Same 1T checkpoint as mimo-v2.6-pro at ~10x output speed and 10x the rate.
+  - id: "xiaomi/mimo-v2.6-pro-ultraspeed"
+    provider: openrouter
+    provider_model_id: "xiaomi/mimo-v2.6-pro-ultraspeed"
+    input_price_per_1m: 4.35
+    input_cache_hit_price_per_1m: 0.036
+    output_price_per_1m: 8.70
+    aliases: ["mimo-v2.6-pro-ultraspeed", "mimo-v2.6-ultraspeed", "or/mimo-v2.6-pro-ultraspeed", "or/xiaomi/mimo-v2.6-pro-ultraspeed"]
+    context_window: 1048576
+    max_output_tokens: 131072
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  # Open-source 309B/15B MoE with hybrid attention; the cheap MiMo lane.
+  - id: "xiaomi/mimo-v2.6-flash"
+    provider: openrouter
+    provider_model_id: "xiaomi/mimo-v2.6-flash"
+    input_price_per_1m: 0.14
+    input_cache_hit_price_per_1m: 0.0028
+    output_price_per_1m: 0.28
+    aliases: ["mimo-v2.6-flash", "mimo-flash", "or/mimo-v2.6-flash", "or/xiaomi/mimo-v2.6-flash"]
+    context_window: 1048576
+    max_output_tokens: 131072
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
   # --- OpenPaths First-Party Embedding (gobed) ---
   - id: "openpaths-embed"
     provider: gobed

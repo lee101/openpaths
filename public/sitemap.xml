@@ -1641,6 +1641,21 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/models/xiaomi%2Fmimo-v2.6-pro</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/xiaomi%2Fmimo-v2.6-pro-ultraspeed</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/xiaomi%2Fmimo-v2.6-flash</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/models/stepfun%2Fstep-3.7-flash</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>

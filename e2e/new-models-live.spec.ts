@@ -25,6 +25,9 @@ const defaultModels = [
   'or/gpt-5.6-terra',
   'or/gpt-5.6-luna',
   'or/gpt-5-codex',
+  'xiaomi/mimo-v2.6-pro',
+  'xiaomi/mimo-v2.6-flash',
+  'xiaomi/mimo-v2.6-pro-ultraspeed',
 ];
 const modelIDs = (process.env.PAID_MODEL_E2E_MODELS || defaultModels.join(','))
   .split(',')
