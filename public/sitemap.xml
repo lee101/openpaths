@@ -916,6 +916,11 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/models/ra2-edit</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/models/smart-resize</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>

@@ -317,7 +317,7 @@ const catalogModels: Model[] = [
     id: 'ra2-edit',
     name: 'RA2 Image Editor',
     provider: 'Netwrck',
-    description: 'Reference edits and style transfer with RA2: send an image plus a prompt and keep identity and composition. First-party from netwrck.com, $0.04 per image.'s newest first-party art generator: sharper detail, better prompt adherence and text than RA1, 1024px renders in about 10 s. $0.04 per image.',
+    description: 'Reference edits and style transfer with RA2: send an image plus a prompt and keep identity and composition. First-party from netwrck.com, $0.04 per image.',
     contextLength: 'N/A',
     priceInput: 0.04,
     priceOutput: 0,
