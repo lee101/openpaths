@@ -6,6 +6,7 @@ import {
 } from '../src/lib/artificialAnalysis';
 import { seedApps } from '../src/data/seedApps';
 import { models as catalogModels } from '../src/data/models';
+import { modelOgPath } from '../src/lib/modelOg';
 import { appOgImage } from '../src/lib/appStats';
 import { TOOLS, TOOLS_INDEX_SEO, TOOLS_INDEX_SLUG, toolOgImage } from '../src/data/tools';
 
@@ -97,7 +98,7 @@ const routes: StaticMeta[] = [
     path: `/models/${encodeURIComponent(model.id)}`,
     title: `${model.name} API, Pricing, Context Window | OpenPaths`,
     description: clip(`${model.name} from ${model.provider}: ${model.description} Use model ID ${model.id} through the OpenPaths API.`, 160),
-    image: model.ogImage,
+    image: model.ogImage || modelOgPath(model.id),
   })),
 ];
 

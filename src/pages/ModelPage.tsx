@@ -5,6 +5,7 @@ import { ImageSpacePanel } from '../components/ImageSpacePanel';
 import { VideoSpacePanel } from '../components/VideoSpacePanel';
 import { Seo } from '../components/Seo';
 import { ShareButton } from '../components/ShareButton';
+import { modelOgPath } from '../lib/modelOg';
 import { isPromotionActive, models, type Model } from '../data/models';
 import { providersByName, getProviderLogo } from '../data/providers';
 import { IMAGE_DEMOS } from '../data/imageDemos';
@@ -72,7 +73,7 @@ export function ModelPage() {
 
   return (
     <>
-      <Seo title={title} description={description} path={`/models/${encodeURIComponent(model.id)}`} image={model.ogImage} jsonLd={jsonLd} />
+      <Seo title={title} description={description} path={`/models/${encodeURIComponent(model.id)}`} image={model.ogImage || modelOgPath(model.id)} jsonLd={jsonLd} />
 
       <section className="max-w-5xl mx-auto px-6 py-16">
         <div className="mb-8">

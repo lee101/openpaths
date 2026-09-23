@@ -59,7 +59,28 @@
     </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><div id="static-shell" class="bg-black text-white font-sans flex flex-col min-h-screen">
+      <nav class="relative border-b border-white/20 px-4 py-3 sm:px-6 sm:py-4 flex items-center justify-between bg-black/90 z-50 shrink-0 min-h-[61px] sm:min-h-[69px]">
+        <a href="/" class="flex items-center gap-2"><img src="/openpaths-road-logo.svg" alt="" width="24" height="24" class="h-6 w-6 brightness-0 invert" /><span class="font-mono font-bold text-xl tracking-tighter">OpenPaths</span></a>
+      </nav>
+      <section class="relative overflow-hidden border-b border-white/20">
+        <div class="relative px-6 py-28 md:py-40 min-h-[680px] max-w-7xl mx-auto flex flex-col items-center justify-center text-center">
+          <div class="relative z-10 w-full min-w-0">
+            <h1 class="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter mb-6 leading-[0.9]">The Open Source <br /><span class="text-white/55">Model Router.</span></h1>
+            <p class="text-lg md:text-xl text-white/60 max-w-2xl mx-auto mb-10 font-light leading-relaxed"><span class="text-white font-medium">You don't have to pick a model.</span> Use <code class="text-white font-mono text-base">openpaths/auto</code>, auto thinking, and the <code class="text-white font-mono text-base">-latest</code> series to stay on the frontier.</p>
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <a href="/models" class="w-full sm:w-auto bg-white text-black px-8 py-4 font-mono font-bold flex items-center justify-center gap-2 rounded">Explore Models &rarr;</a>
+              <a href="https://codex-infinity.com/@lee101/openpaths" class="w-full sm:w-auto border border-white/20 px-8 py-4 font-mono flex items-center justify-center gap-2 rounded">View Source</a>
+            </div>
+            <div class="mx-auto mt-10 w-full min-w-0 max-w-3xl text-left" aria-hidden="true">
+              <div class="mb-2 flex flex-wrap items-center justify-between gap-2 font-mono text-xs text-white/70"><span>Step 1: get a key. Step 2: paste this in a terminal.</span><span class="inline-flex items-center gap-1 rounded bg-emerald-300 px-3 py-1.5 font-bold text-black">Get an API key</span></div>
+              <div class="flex items-stretch overflow-hidden rounded-lg border border-white/25 bg-black/80"><code class="min-w-0 flex-1 overflow-hidden whitespace-nowrap px-4 py-3 font-mono text-xs text-white/85">curl https://openpaths.io/v1/chat/completions -H "Authorization: Bearer $OPENPATHS_API_KEY"</code></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div></div>
+    <script>if(location.pathname!=='/'){var s=document.getElementById('static-shell');s&&s.remove()}</script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

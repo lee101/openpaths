@@ -9,7 +9,7 @@ import { videoGallery } from '../data/videoGallery';
 import { getProviderLogo, providersByName } from '../data/providers';
 import { Seo } from '../components/Seo';
 import { AuthModal } from '../components/AuthModal';
-import { AUTH_EVENT, api, setApiKey } from '../lib/api';
+import { AUTH_EVENT, api, requestCreditTopUp, setApiKey } from '../lib/api';
 import { modelPath } from '../lib/paths';
 
 function HeroQuickstart() {
@@ -72,6 +72,13 @@ function HeroQuickstart() {
           {copied ? 'Copied' : 'Copy'}
         </button>
       </div>
+      {apiKey && (
+        <p className="mt-2 font-mono text-xs text-white/70">
+          Calls are billed from prepaid credit.{' '}
+          <button type="button" onClick={requestCreditTopUp} className="text-emerald-300 underline underline-offset-4 hover:text-emerald-200">Add credits</button>{' '}
+          if the request returns 402.
+        </p>
+      )}
       {keyError && <p className="mt-2 font-mono text-xs text-red-300">{keyError} <Link to="/account/apikeys" className="underline">Create one in your account</Link></p>}
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} onSuccess={createFirstKey} initialMode="register" />
     </div>
@@ -98,9 +105,7 @@ export function Landing() {
         <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.06),_transparent_32%),linear-gradient(180deg,_rgba(0,0,0,0.04),_rgba(0,0,0,0.22)_58%,_#000_96%)]" />
         <div className="relative px-6 py-28 md:py-40 min-h-[680px] max-w-7xl mx-auto flex flex-col items-center justify-center text-center">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          initial={false}
           className="relative z-10 w-full min-w-0"
         >
           <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter mb-6 leading-[0.9]">

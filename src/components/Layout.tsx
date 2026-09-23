@@ -222,7 +222,7 @@ export function Layout() {
       <TopUpModal open={topUpOpen} onClose={() => setTopUpOpen(false)} />
 
       <main className="flex-1 min-h-0">
-        <Suspense fallback={<div className="min-h-[80vh]" aria-busy="true" />}>
+        <Suspense fallback={<div className="min-h-screen" aria-busy="true" />}>
           <Outlet />
         </Suspense>
         {showAds && <AdSenseSlot />}

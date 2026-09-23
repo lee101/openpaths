@@ -9,7 +9,7 @@
     "generate:brand-assets": "python3 scripts/generate-logo-assets.py",
     "generate:og": "python3 scripts/gen_og.py && python3 scripts/gen_og_providers.py && python3 scripts/gen_og_sync_lipsync.py && npm run generate:app-og",
     "generate:app-og": "tsx scripts/generate-app-og.ts",
-    "build": "vite build && tsx scripts/prerender-static-meta.ts",
+    "build": "tsx scripts/gen-model-og.ts && vite build && tsx scripts/prerender-static-meta.ts",
     "generate:sitemap": "tsx scripts/generate-sitemap.ts",
     "crawl:artificial-analysis": "node crawlers/artificial_analysis.mjs --refresh",
     "crawl:artificial-analysis-images": "node crawlers/artificial_analysis_images.mjs --refresh",
