@@ -300,6 +300,29 @@ func TestTranslateRequest_UsesLowEffortWhenFableThinkingCannotBeDisabled(t *test
 	}
 }
 
+// Opus 5.5 rejects thinking.type "disabled" the way Fable 5.1 does: "Use
+// \"thinking.type.adaptive\" and \"output_config.effort\" instead", so a request
+// asking for no reasoning has to travel as the lowest effort level.
+func TestTranslateRequest_Opus55UsesLowEffortWhenThinkingCannotBeDisabled(t *testing.T) {
+	temp := 0.7
+	req := translateRequest(&model.ChatCompletionRequest{
+		Model:           "claude-opus-5-5",
+		Messages:        []model.ChatMessage{{Role: "user", Content: "Say hi."}},
+		ReasoningEffort: "none",
+		Temperature:     &temp,
+	})
+	if req.Thinking != nil {
+		t.Fatalf("thinking = %#v, want nil (adaptive thinking is always on)", req.Thinking)
+	}
+	if req.OutputConfig == nil || req.OutputConfig.Effort != "low" {
+		t.Fatalf("output_config = %#v, want low", req.OutputConfig)
+	}
+	// Adaptive-thinking models reject non-default sampling controls.
+	if req.Temperature != nil {
+		t.Fatalf("temperature = %v, want dropped", *req.Temperature)
+	}
+}
+
 func TestTranslateRequest_AutoEnablesAdaptiveThinkingForOpus(t *testing.T) {
 	req := translateRequest(&model.ChatCompletionRequest{
 		Model: "claude-opus-4-8", Messages: []model.ChatMessage{{Role: "user", Content: "Choose the right depth."}}, ReasoningEffort: "auto",

@@ -658,6 +658,19 @@ const catalogModels: Model[] = [
     popularity: 0
   },
   {
+    id: 'claude-opus-5-5',
+    name: 'Claude Opus 5.5',
+    provider: 'Anthropic',
+    description: 'Anthropic flagship for long-running agentic coding and knowledge work: 1M-token context at standard rates, adaptive thinking with selectable effort, and tool use. Use claude-opus-latest to auto-track the newest Opus.',
+    contextLength: '1M',
+    priceInput: 4,
+    priceOutput: 20,
+    tags: ['programming', 'reasoning', 'general', 'vision', 'agentic'],
+    aliases: ['opus-5.5', 'claude-opus-5.5'],
+    released: '2026-09-22',
+    popularity: 0
+  },
+  {
     id: 'claude-opus-5',
     name: 'Claude Opus 5',
     provider: 'Anthropic',

@@ -46,12 +46,21 @@ func TestSanitizeSamplingParametersByUpstreamModel(t *testing.T) {
 	}
 }
 
-func TestSanitizeFableNoneReasoningToLow(t *testing.T) {
-	req := &model.ChatCompletionRequest{
-		Model: "anthropic/claude-fable-5.1", ReasoningEffort: "none",
+// Adaptive-thinking Anthropic models cannot run with reasoning disabled through
+// OpenRouter, unlike the older Opus and Sonnet slugs that accept "none".
+func TestSanitizeMandatoryReasoningNoneToLow(t *testing.T) {
+	for _, id := range []string{"anthropic/claude-fable-5.1", "anthropic/claude-opus-5.5"} {
+		req := &model.ChatCompletionRequest{Model: id, ReasoningEffort: "none"}
+		sanitizeForOpenRouter(req)
+		if req.ReasoningEffort != "low" {
+			t.Fatalf("%s: reasoning_effort = %q, want low", id, req.ReasoningEffort)
+		}
 	}
-	sanitizeForOpenRouter(req)
-	if req.ReasoningEffort != "low" {
-		t.Fatalf("reasoning_effort = %q, want low", req.ReasoningEffort)
+	for _, id := range []string{"anthropic/claude-opus-5", "anthropic/claude-opus-4.8", "anthropic/claude-sonnet-5"} {
+		req := &model.ChatCompletionRequest{Model: id, ReasoningEffort: "none"}
+		sanitizeForOpenRouter(req)
+		if req.ReasoningEffort != "none" {
+			t.Fatalf("%s: reasoning_effort = %q, want none preserved", id, req.ReasoningEffort)
+		}
 	}
 }

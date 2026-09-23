@@ -771,10 +771,20 @@ func applyAnthropicReasoning(req *anthropicRequest, effort string) {
 }
 
 // requiresAdaptiveThinking reports models where adaptive thinking cannot be
-// disabled. They accept output_config.effort but reject thinking: disabled.
+// disabled. They accept output_config.effort but reject thinking: disabled -
+// Opus 5.5 answers "\"thinking.type.disabled\" is not supported for this model.
+// Use \"thinking.type.adaptive\" and \"output_config.effort\" instead", so
+// reasoning_effort "none" has to travel as the lowest effort instead.
 func requiresAdaptiveThinking(modelID string) bool {
 	id := strings.ToLower(strings.TrimSpace(modelID))
-	return strings.HasPrefix(id, "claude-fable-5")
+	for _, prefix := range []string{
+		"claude-fable-5", "claude-opus-5-5",
+	} {
+		if strings.HasPrefix(id, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 func usesAdaptiveThinking(modelID string) bool {

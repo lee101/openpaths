@@ -118,6 +118,7 @@ var models = []Model{
 	{"cursor-grok-4.6", "Cursor Grok 4.6", "Cursor-hosted Grok model for long-running agents and knowledge work.", "text", "smart_toy"},
 	{"cursor-grok-4.5", "Cursor Grok 4.5", "Cursor-hosted Grok model for coding and agentic knowledge work.", "text", "smart_toy"},
 	{"gpt-5.5", "GPT-5.5", "OpenAI flagship for reasoning, writing, and analysis.", "text", "smart_toy"},
+	{"claude-opus-5-5", "Claude Opus 5.5", "Anthropic's newest flagship for agentic coding, long-horizon work, and writing.", "text", "psychology"},
 	{"claude-opus-5", "Claude Opus 5", "Anthropic's most capable model for writing and reasoning.", "text", "psychology"},
 	{"claude-opus-4-8", "Claude Opus 4.8", "Previous-gen Anthropic flagship for writing and reasoning.", "text", "psychology"},
 	{"claude-opus-4-7", "Claude Opus 4.7", "Older Anthropic flagship for writing and reasoning.", "text", "psychology"},

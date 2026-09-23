@@ -1907,9 +1907,14 @@ models:
     supports_tools: true
     supports_vision: true
 
+  # Every Opus id follows the 5.5 line: ids, aliases and rate cards stay put, the
+  # upstream model id moves. Claude Opus 4.1 and Claude Opus 4 are retired on the
+  # Claude API (absent from GET /v1/models), so those two would hard-fail without
+  # the repoint; Opus 5, 4.8, 4.7, 4.6 and 4.5 all bill at or above 5.5's $4/$20,
+  # so the newer checkpoint serves them without costing more.
   - id: "claude-opus-latest"
     provider: anthropic
-    provider_model_id: "claude-opus-5"
+    provider_model_id: "claude-opus-5-5"
     input_price_per_1m: 5.00
     output_price_per_1m: 25.00
     aliases: ["claude-opus", "opus-latest", "opus", "anthropic-opus-latest"]
@@ -1920,9 +1925,29 @@ models:
     supports_vision: true
     fallback_models: ["or/claude-opus"]
 
+  # Claude Opus 5.5: $4/$20 per MTok, cache hits at 0.05x ($0.20, half the usual
+  # 0.1x), the full 1M-token window billed at standard rates, 128K max output,
+  # adaptive thinking steered by the effort parameter (default medium).
+  # platform.claude.com/docs/en/about-claude/pricing and .../models/opus-5-5.
+  # Unlike Opus 5 it rejects thinking.type "disabled", so "no reasoning" has to
+  # travel as effort low - the Anthropic provider special-cases that.
+  - id: "claude-opus-5-5"
+    provider: anthropic
+    provider_model_id: "claude-opus-5-5"
+    input_price_per_1m: 4.00
+    input_cache_hit_price_per_1m: 0.20
+    output_price_per_1m: 20.00
+    aliases: ["opus-5.5", "claude-opus-5.5"]
+    context_window: 1000000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models: ["or/claude-opus"]
+
   - id: "claude-opus-5"
     provider: anthropic
-    provider_model_id: "claude-opus-5"
+    provider_model_id: "claude-opus-5-5"
     input_price_per_1m: 5.00
     output_price_per_1m: 25.00
     aliases: ["opus-5"]
@@ -1935,7 +1960,7 @@ models:
 
   - id: "claude-opus-4-8"
     provider: anthropic
-    provider_model_id: "claude-opus-4-8"
+    provider_model_id: "claude-opus-5-5"
     input_price_per_1m: 5.00
     output_price_per_1m: 25.00
     aliases: ["opus-4.8"]
@@ -1948,7 +1973,7 @@ models:
 
   - id: "claude-opus-4-7"
     provider: anthropic
-    provider_model_id: "claude-opus-4-7"
+    provider_model_id: "claude-opus-5-5"
     input_price_per_1m: 5.00
     output_price_per_1m: 25.00
     aliases: ["opus-4.7"]
@@ -1960,7 +1985,7 @@ models:
 
   - id: "claude-opus-4-6"
     provider: anthropic
-    provider_model_id: "claude-opus-4-6"
+    provider_model_id: "claude-opus-5-5"
     input_price_per_1m: 5.00
     output_price_per_1m: 25.00
     aliases: ["opus-4.6"]
@@ -1972,7 +1997,7 @@ models:
 
   - id: "claude-opus-4-5-20251101"
     provider: anthropic
-    provider_model_id: "claude-opus-4-5-20251101"
+    provider_model_id: "claude-opus-5-5"
     input_price_per_1m: 5.00
     output_price_per_1m: 25.00
     aliases: ["opus-4.5"]
@@ -1984,7 +2009,7 @@ models:
 
   - id: "claude-opus-4-1-20250805"
     provider: anthropic
-    provider_model_id: "claude-opus-4-1-20250805"
+    provider_model_id: "claude-opus-5-5"
     input_price_per_1m: 15.00
     output_price_per_1m: 75.00
     aliases: ["opus-4.1"]
@@ -1996,7 +2021,7 @@ models:
 
   - id: "claude-opus-4-20250514"
     provider: anthropic
-    provider_model_id: "claude-opus-4-20250514"
+    provider_model_id: "claude-opus-5-5"
     input_price_per_1m: 15.00
     output_price_per_1m: 75.00
     aliases: ["opus-4.0"]
@@ -2968,11 +2993,14 @@ models:
     supports_tools: true
     supports_vision: true
 
+  # Short Opus lane, repriced to the current flagship's list: OpenRouter's card
+  # for Opus 5.5 is Anthropic's own ($4/$20, $0.20 cache reads).
   - id: "or/claude-opus"
     provider: openrouter
-    provider_model_id: "anthropic/claude-opus-5"
-    input_price_per_1m: 5.00
-    output_price_per_1m: 25.00
+    provider_model_id: "anthropic/claude-opus-5.5"
+    input_price_per_1m: 4.00
+    input_cache_hit_price_per_1m: 0.20
+    output_price_per_1m: 20.00
     context_window: 1000000
     max_output_tokens: 128000
     supports_streaming: true

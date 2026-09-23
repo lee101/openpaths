@@ -54,6 +54,10 @@ func TestAuditedTokenPrices(t *testing.T) {
 		"gpt-5.5-pro": {30.00, 0, 180.00},
 		"gpt-6-sol":   {2.00, 0.20, 10.00},
 		"gpt-6-luna":  {0.10, 0.01, 0.50},
+		// platform.claude.com/docs/en/about-claude/pricing (cache hits on Opus
+		// 5.5 bill at 0.05x base, not the usual 0.1x)
+		"claude-opus-5-5": {4.00, 0.20, 20.00},
+		"or/claude-opus":  {4.00, 0.20, 20.00},
 		// z.ai launch pricing / openrouter.ai/api/v1/models
 		"glm-5.3-flash":    {0.075, 0.015, 0.25},
 		"glm-5.3":          {1.40, 0.26, 4.40},

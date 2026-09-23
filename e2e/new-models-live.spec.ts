@@ -21,6 +21,8 @@ const defaultModels = [
   'glm-5.3',
   'or/glm-5.3',
   'qwen-latest',
+  'claude-opus-5-5',
+  'opus-5.5',
   'runanywhere/glm-5.3-flash',
   'runanywhere/qwen3.8-27b',
   'or/gpt-6-sol',

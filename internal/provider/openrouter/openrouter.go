@@ -67,10 +67,14 @@ func sanitizeForOpenRouter(req *model.ChatCompletionRequest) {
 	}
 
 	modelID := strings.ToLower(strings.TrimSpace(req.Model))
-	// Fable's adaptive thinking is mandatory. Keep the OpenAI-compatible
-	// cross-provider "none" value useful by translating it to the lowest
-	// supported effort before OpenRouter forwards the request to Anthropic.
-	if strings.Contains(modelID, "claude-fable-5") && strings.EqualFold(strings.TrimSpace(req.ReasoningEffort), "none") {
+	// Adaptive-thinking Anthropic models reject "none" through OpenRouter with
+	// "Reasoning is mandatory for this endpoint and cannot be disabled."
+	// Verified 2026-09-22 for anthropic/claude-fable-5.1 and
+	// anthropic/claude-opus-5.5, while anthropic/claude-opus-5, opus-4.8 and
+	// sonnet-5 accept it. Keep the OpenAI-compatible cross-provider "none" value
+	// useful by translating it to the lowest supported effort before OpenRouter
+	// forwards the request to Anthropic.
+	if mandatoryReasoningSlug(modelID) && strings.EqualFold(strings.TrimSpace(req.ReasoningEffort), "none") {
 		req.ReasoningEffort = "low"
 	}
 	slug := modelID
@@ -96,6 +100,17 @@ func sanitizeForOpenRouter(req *model.ChatCompletionRequest) {
 			req.Temperature = &maxTemperature
 		}
 	}
+}
+
+// mandatoryReasoningSlug reports the Anthropic models OpenRouter refuses to run
+// without extended thinking, so their lanes need the same "none" -> "low"
+// fallback the direct Anthropic provider applies. Opus 5.5 carries the Anthropic
+// hyphenated id ("claude-opus-5-5") and the OpenRouter dotted slug
+// ("claude-opus-5.5"), so both spellings match.
+func mandatoryReasoningSlug(modelID string) bool {
+	return strings.Contains(modelID, "claude-fable-5") ||
+		strings.Contains(modelID, "claude-opus-5-5") ||
+		strings.Contains(modelID, "claude-opus-5.5")
 }
 
 func isOpenAIReasoningSlug(slug string) bool {
