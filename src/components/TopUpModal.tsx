@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { CreditCard, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { loadStripe } from '@stripe/stripe-js';
+import { loadStripe } from '@stripe/stripe-js/pure';
 import { EmbeddedCheckout, EmbeddedCheckoutProvider } from '@stripe/react-stripe-js';
 import { api } from '../lib/api';
 

@@ -240,7 +240,7 @@ export function Layout() {
                 <p className="text-xs font-mono text-white/60 leading-relaxed">Open source model router. Millisecond routing across 400+ AI models.</p>
               </div>
               <div>
-                <h4 className="text-xs font-mono font-bold text-white/60 uppercase tracking-widest mb-3">Product</h4>
+                <h2 className="text-xs font-mono font-bold text-white/60 uppercase tracking-widest mb-3">Product</h2>
                 <ul className="space-y-2 text-sm font-mono text-white/55">
                   <li><Link to="/models" className="hover:text-white transition-colors">Models</Link></li>
                   <li><Link to="/providers" className="hover:text-white transition-colors">Providers</Link></li>
@@ -270,7 +270,7 @@ export function Layout() {
                 </ul>
               </div>
               <div className="col-span-2 lg:col-span-3">
-                <h4 className="text-xs font-mono font-bold text-white/60 uppercase tracking-widest mb-3">Network</h4>
+                <h2 className="text-xs font-mono font-bold text-white/60 uppercase tracking-widest mb-3">Network</h2>
                 <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2 text-sm font-mono text-white/55">
                   {networkLinks.map((link) => (
                     <li key={link.href}>
@@ -282,7 +282,7 @@ export function Layout() {
                 </ul>
               </div>
               <div>
-                <h4 className="text-xs font-mono font-bold text-white/60 uppercase tracking-widest mb-3">Social</h4>
+                <h2 className="text-xs font-mono font-bold text-white/60 uppercase tracking-widest mb-3">Social</h2>
                 <ul className="space-y-2 text-sm font-mono text-white/55">
                   <li><a href="https://twitter.com/Netwrck" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Twitter</a></li>
                   <li><a href="https://github.com/Netwrck" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">GitHub</a></li>

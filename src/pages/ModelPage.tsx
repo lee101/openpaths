@@ -82,7 +82,7 @@ export function ModelPage() {
         </div>
 
         <div className="mb-12">
-          <div className="flex items-center gap-2 text-xs font-mono text-white/45 mb-4">
+          <div className="flex items-center gap-2 text-xs font-mono text-white/60 mb-4">
             <img src={getProviderLogo(model.provider)} alt={`${model.provider} logo`} className={`w-5 h-5 rounded-sm object-contain ${model.provider === 'Black Forest Labs' ? 'bg-white p-px' : ''}`} />
             {provider ? (
               <Link to={providerPath(provider.slug)} className="hover:text-white transition-colors underline underline-offset-4 decoration-white/20">
@@ -269,7 +269,7 @@ function RelatedModels({ current, related }: { current: Model; related: Model[] 
       <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 id="related-models-heading" className="text-2xl font-bold tracking-tight">Related {task} models</h2>
-          <p className="mt-1 text-sm text-white/45">Compare similar APIs without losing the model-specific workflow.</p>
+          <p className="mt-1 text-sm text-white/60">Compare similar APIs without losing the model-specific workflow.</p>
         </div>
         <Link to={`/models?q=${encodeURIComponent(task.replaceAll('-', ' '))}`} className="font-mono text-xs text-white/50 transition-colors hover:text-white">
           Browse all {task} models <ArrowRight className="inline h-3.5 w-3.5" />
@@ -287,7 +287,7 @@ function RelatedModels({ current, related }: { current: Model; related: Model[] 
           </Link>
         ))}
       </div>
-      <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 font-mono text-xs text-white/45">
+      <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 font-mono text-xs text-white/60">
         <Link to={providerPath(providersByName[current.provider]?.slug || current.provider.toLowerCase())} className="hover:text-white">More from {current.provider} →</Link>
         {current.tags.includes('video generation') && <Link to="/blog/video-model-tips-image-to-video-encoding" className="hover:text-white">Image-to-video guide →</Link>}
         {current.tags.includes('art generation') && <Link to="/image-evals" className="hover:text-white">Image model benchmarks →</Link>}

@@ -191,7 +191,7 @@ export function Compare() {
               Artificial Analysis <ExternalLink className="h-3.5 w-3.5" />
             </a>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Comparison table">
             <table className="w-full min-w-[900px] text-left text-sm">
               <thead className="font-mono text-xs uppercase tracking-[0.14em] text-white/50">
                 <tr>
@@ -251,6 +251,7 @@ function AddModelCompare({ models }: { models: ArtificialAnalysisModel[] }) {
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <select
+            aria-label="Model to add"
             value={effectiveSelectedSlug}
             onChange={event => setSelectedSlug(event.target.value)}
             className="h-11 min-w-[260px] rounded-lg border border-white/20 bg-black px-3 font-mono text-sm text-white outline-none transition-colors hover:border-white/45 focus:border-cyan-300"

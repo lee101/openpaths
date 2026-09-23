@@ -54,7 +54,7 @@ function HeroQuickstart() {
     }
   };
   return (
-    <div className="mx-auto mt-10 max-w-3xl text-left" data-testid="hero-quickstart">
+    <div className="mx-auto mt-10 w-full min-w-0 max-w-3xl text-left" data-testid="hero-quickstart">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2 font-mono text-xs text-white/70">
         <span>{apiKey ? 'Your first API call, key included:' : 'Step 1: get a key. Step 2: paste this in a terminal.'}</span>
         {apiKey ? (
@@ -101,7 +101,7 @@ export function Landing() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="relative z-10"
+          className="relative z-10 w-full min-w-0"
         >
           <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter mb-6 leading-[0.9]">
             The Open Source <br />
