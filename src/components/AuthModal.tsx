@@ -3,8 +3,8 @@ import { Eye, EyeOff, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { setApiKey } from '../lib/api';
 
-export function AuthModal({ open, onClose, onSuccess }: { open: boolean; onClose: () => void; onSuccess?: () => void }) {
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+export function AuthModal({ open, onClose, onSuccess, initialMode = 'login' }: { open: boolean; onClose: () => void; onSuccess?: () => void; initialMode?: 'login' | 'register' }) {
+  const [mode, setMode] = useState<'login' | 'register'>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -14,9 +14,10 @@ export function AuthModal({ open, onClose, onSuccess }: { open: boolean; onClose
 
   useEffect(() => {
     if (!open) return;
+    setMode(initialMode);
     setError('');
     setLoading(false);
-  }, [open]);
+  }, [open, initialMode]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();

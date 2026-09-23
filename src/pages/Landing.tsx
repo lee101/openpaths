@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
-import { Zap, Code2, ArrowRight, Github, Search, Layers, Activity, Sparkles, ArrowUpRight, Video } from 'lucide-react';
+import { Zap, Code2, ArrowRight, Check, Copy, KeyRound, Github, Search, Layers, Activity, Sparkles, ArrowUpRight, Video } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ArtificialAnalysisBenchmarkSection } from '../components/ArtificialAnalysisCharts';
 import { CodeBlock } from '../components/CodeBlock';
@@ -8,7 +8,75 @@ import { artGallery } from '../data/artGallery';
 import { videoGallery } from '../data/videoGallery';
 import { getProviderLogo, providersByName } from '../data/providers';
 import { Seo } from '../components/Seo';
+import { AuthModal } from '../components/AuthModal';
+import { AUTH_EVENT, api, setApiKey } from '../lib/api';
 import { modelPath } from '../lib/paths';
+
+function HeroQuickstart() {
+  const [apiKey, setKey] = useState(() => localStorage.getItem('op_api_key') || '');
+  const [authOpen, setAuthOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    const sync = () => setKey(localStorage.getItem('op_api_key') || '');
+    window.addEventListener(AUTH_EVENT, sync);
+    window.addEventListener('auth-change', sync);
+    window.addEventListener('storage', sync);
+    return () => {
+      window.removeEventListener(AUTH_EVENT, sync);
+      window.removeEventListener('auth-change', sync);
+      window.removeEventListener('storage', sync);
+    };
+  }, []);
+  const curl = `curl https://openpaths.io/v1/chat/completions -H "Authorization: Bearer ${apiKey || '$OPENPATHS_API_KEY'}" -H "Content-Type: application/json" -d '{"model":"openpaths/auto","messages":[{"role":"user","content":"Hello"}]}'`;
+  const [keyError, setKeyError] = useState('');
+  const createFirstKey = async () => {
+    if (localStorage.getItem('op_api_key')) return;
+    try {
+      const res = await api('/account/keys', {
+        method: 'POST',
+        headers: localStorage.getItem('op_token') ? { Authorization: `Bearer ${localStorage.getItem('op_token')}` } : {},
+        body: JSON.stringify({ name: 'Quickstart' }),
+      });
+      const data = await res.json();
+      if (res.ok && data.key) setApiKey(data.key);
+      else setKeyError(data.error?.message || 'Could not create a key.');
+    } catch {
+      setKeyError('Could not create a key.');
+    }
+  };
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(curl);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      window.prompt('Copy command', curl);
+    }
+  };
+  return (
+    <div className="mx-auto mt-10 max-w-3xl text-left" data-testid="hero-quickstart">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2 font-mono text-xs text-white/70">
+        <span>{apiKey ? 'Your first API call, key included:' : 'Step 1: get a key. Step 2: paste this in a terminal.'}</span>
+        {apiKey ? (
+          <Link to="/account/apikeys" className="inline-flex items-center gap-1 text-white underline decoration-white/30 underline-offset-4 hover:decoration-white"><KeyRound className="h-3.5 w-3.5" /> Manage keys</Link>
+        ) : (
+          <button type="button" onClick={() => setAuthOpen(true)} className="inline-flex items-center gap-1 rounded bg-emerald-300 px-3 py-1.5 font-bold text-black transition-colors hover:bg-emerald-200" data-testid="hero-get-key">
+            <KeyRound className="h-3.5 w-3.5" /> Get an API key
+          </button>
+        )}
+      </div>
+      <div className="flex items-stretch overflow-hidden rounded-lg border border-white/25 bg-black/80">
+        <code className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap px-4 py-3 font-mono text-xs text-white/85" tabIndex={0} aria-label="Example API request">{curl}</code>
+        <button type="button" onClick={copy} className="flex shrink-0 items-center gap-1.5 border-l border-white/25 px-4 font-mono text-xs text-white transition-colors hover:bg-white/10" aria-label="Copy curl command">
+          {copied ? <Check className="h-4 w-4 text-emerald-300" /> : <Copy className="h-4 w-4" />}
+          {copied ? 'Copied' : 'Copy'}
+        </button>
+      </div>
+      {keyError && <p className="mt-2 font-mono text-xs text-red-300">{keyError} <Link to="/account/apikeys" className="underline">Create one in your account</Link></p>}
+      <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} onSuccess={createFirstKey} initialMode="register" />
+    </div>
+  );
+}
 
 export function Landing() {
   const [activeTab, setActiveTab] = useState<'python' | 'curl'>('python');
@@ -50,6 +118,7 @@ export function Landing() {
               <Github className="w-4 h-4" /> View Source
             </a>
           </div>
+          <HeroQuickstart />
         </motion.div>
         </div>
       </section>
@@ -110,7 +179,7 @@ export function Landing() {
             <FrontierMetric value="30×" label="Lower cost per solve" detail="research baseline" />
           </div>
           <ArtificialAnalysisBenchmarkSection compact />
-          <div className="mt-6 flex flex-wrap items-center justify-end gap-4 font-mono text-xs text-white/45">
+          <div className="mt-6 flex flex-wrap items-center justify-end gap-4 font-mono text-xs text-white/60">
             <div className="flex gap-4">
               <Link to="/blog/learning-to-route-whitepaper" className="text-white/70 hover:text-white">Research <ArrowRight className="ml-1 inline h-3.5 w-3.5" /></Link>
             </div>
@@ -243,7 +312,7 @@ export function Landing() {
                             <Link to={galleryModelPath(item.modelId, item.prompt)} className="pointer-events-auto hover:underline underline-offset-4">{item.title}</Link>
                           </h3>
                           <PromptText text={item.prompt} className="mt-2 text-sm text-white/65" />
-                          <Link to={`/art?q=${encodeURIComponent(item.prompt)}`} className="pointer-events-auto relative z-10 mt-3 inline-flex text-[11px] font-mono uppercase tracking-[0.14em] text-white/45 hover:text-white">Find similar art <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link>
+                          <Link to={`/art?q=${encodeURIComponent(item.prompt)}`} className="pointer-events-auto relative z-10 mt-3 inline-flex text-[11px] font-mono uppercase tracking-[0.14em] text-white/60 hover:text-white">Find similar art <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link>
                         </div>
                       </div>
                     </article>
@@ -283,7 +352,7 @@ export function Landing() {
                             <Link to={galleryModelPath(item.modelId, item.prompt)} className="hover:underline underline-offset-4">{item.title}</Link>
                           </h4>
                           <PromptText text={item.prompt} className="mt-2 text-sm text-white/60" />
-                          <Link to={`/art?q=${encodeURIComponent(item.prompt)}`} className="mt-3 inline-flex text-[11px] font-mono uppercase tracking-[0.14em] text-white/45 hover:text-white">Find similar art <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link>
+                          <Link to={`/art?q=${encodeURIComponent(item.prompt)}`} className="mt-3 inline-flex text-[11px] font-mono uppercase tracking-[0.14em] text-white/60 hover:text-white">Find similar art <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link>
                         </div>
                       </article>
                     ))}
@@ -515,7 +584,7 @@ function FrontierMetric({ value, label, detail }: { value: string; label: string
     <div className="bg-black/75 p-5">
       <div className="font-mono text-3xl font-bold tracking-tight text-white">{value}</div>
       <div className="mt-2 text-sm font-semibold text-white/80">{label}</div>
-      <div className="mt-1 font-mono text-[11px] text-white/45">{detail}</div>
+      <div className="mt-1 font-mono text-[11px] text-white/60">{detail}</div>
     </div>
   );
 }

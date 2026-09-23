@@ -5,11 +5,12 @@ import {
   findArtificialAnalysisModel,
 } from '../src/lib/artificialAnalysis';
 import { seedApps } from '../src/data/seedApps';
+import { models as catalogModels } from '../src/data/models';
 import { appOgImage } from '../src/lib/appStats';
 import { TOOLS, TOOLS_INDEX_SEO, TOOLS_INDEX_SLUG, toolOgImage } from '../src/data/tools';
 
 const BASE_URL = 'https://openpaths.io';
-const DIST_DIR = 'dist';
+const DIST_DIR = process.env.DIST_DIR || 'dist';
 
 type StaticMeta = {
   path: string;
@@ -92,7 +93,20 @@ const routes: StaticMeta[] = [
     image: appOgImage(app.slug),
   })),
   ...compareRoutes(),
+  ...catalogModels.map(model => ({
+    path: `/models/${encodeURIComponent(model.id)}`,
+    title: `${model.name} API, Pricing, Context Window | OpenPaths`,
+    description: clip(`${model.name} from ${model.provider}: ${model.description} Use model ID ${model.id} through the OpenPaths API.`, 160),
+    image: model.ogImage,
+  })),
 ];
+
+function clip(value: string, max: number) {
+  const flat = value.replace(/\s+/g, ' ').trim();
+  if (flat.length <= max) return flat;
+  const cut = flat.slice(0, max - 1);
+  return `${cut.slice(0, Math.max(cut.lastIndexOf(' '), max - 20))}…`;
+}
 
 const seen = new Set<string>();
 let written = 0;
@@ -137,7 +151,7 @@ function compareMeta(path: string): StaticMeta {
 }
 
 function writeRouteFile(path: string, html: string) {
-  const key = path.replace(/^\//, '') || 'index.html';
+  const key = decodeURIComponent(path).replace(/^\//, '') || 'index.html';
   const sourcePath = join(DIST_DIR, 'prerender-routes', `${key.replace(/[^a-z0-9.-]+/gi, '__')}.html`);
   mkdirSync(dirname(sourcePath), { recursive: true });
   writeFileSync(sourcePath, html);

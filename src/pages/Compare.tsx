@@ -1,7 +1,8 @@
 import React from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, ExternalLink, GitCompareArrows, Plus, Search } from 'lucide-react';
 import { Seo } from '../components/Seo';
+import { ShareButton } from '../components/ShareButton';
 import { ArtificialAnalysisBenchmarkSection } from '../components/ArtificialAnalysisCharts';
 import {
   EVALUATION_DEFINITIONS,
@@ -49,8 +50,10 @@ export function CompareIndex() {
           </div>
         </section>
 
+        <ComparePicker />
+
         <section className="mb-10 rounded-lg border border-white/20 bg-white/[0.05] p-5">
-          <div className="mb-4 flex items-center gap-2 font-mono text-xs uppercase tracking-[0.16em] text-white/45">
+          <div className="mb-4 flex items-center gap-2 font-mono text-xs uppercase tracking-[0.16em] text-white/60">
             <Search className="h-4 w-4" />
             URL format
           </div>
@@ -95,6 +98,38 @@ export function CompareIndex() {
   );
 }
 
+function ComparePicker() {
+  const navigate = useNavigate();
+  const options = artificialAnalysisModels;
+  const [a, setA] = React.useState(options[0]?.slug || '');
+  const [b, setB] = React.useState(options[1]?.slug || '');
+  if (options.length < 2) return null;
+  const select = 'h-11 w-full rounded-lg border border-white/20 bg-black px-3 font-mono text-sm text-white outline-none transition-colors hover:border-white/45 focus:border-cyan-300';
+  return (
+    <form
+      className="mb-10 rounded-lg border border-cyan-300/25 bg-cyan-300/[0.04] p-5"
+      onSubmit={event => {
+        event.preventDefault();
+        if (a && b && a !== b) navigate(`/compare/${a}-vs-${b}`);
+      }}
+    >
+      <h2 className="mb-3 font-mono text-sm uppercase tracking-[0.16em] text-white/75">Build a shareable comparison</h2>
+      <div className="grid gap-3 md:grid-cols-[1fr_auto_1fr_auto] md:items-center">
+        <select aria-label="First model" value={a} onChange={event => setA(event.target.value)} className={select}>
+          {options.map(model => <option key={model.slug} value={model.slug}>{model.shortName} - {model.creator.name}</option>)}
+        </select>
+        <span className="text-center font-mono text-sm text-white/60">vs</span>
+        <select aria-label="Second model" value={b} onChange={event => setB(event.target.value)} className={select}>
+          {options.map(model => <option key={model.slug} value={model.slug}>{model.shortName} - {model.creator.name}</option>)}
+        </select>
+        <button type="submit" disabled={!a || !b || a === b} className="h-11 rounded-lg bg-white px-5 font-mono text-sm font-bold text-black transition-colors hover:bg-white/90 disabled:opacity-50">
+          Compare
+        </button>
+      </div>
+    </form>
+  );
+}
+
 export function Compare() {
   const params = useParams();
   const pair = params['*'] || '';
@@ -131,6 +166,7 @@ export function Compare() {
           <p className="mt-5 max-w-3xl text-lg leading-relaxed text-white/60">
             Stored Artificial Analysis data for evals, pricing, context, speed, and Intelligence Index run costs.
           </p>
+          <ShareButton className="mt-6" title={`${heading} | OpenPaths`} text={`Compare ${formatNameList(modelNames)}: evals, speed, and price`} path={`/compare/${pair}`} />
         </section>
 
         <AddModelCompare models={models} />

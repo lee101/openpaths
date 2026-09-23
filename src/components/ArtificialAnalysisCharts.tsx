@@ -85,7 +85,7 @@ export function ArtificialAnalysisBenchmarkSection({ compact = false }: Benchmar
         <div className="overflow-hidden rounded-lg border border-white/20 bg-white/[0.05]">
           <div className="flex items-center justify-between gap-3 border-b border-white/20 px-4 py-3">
             <h3 className="font-mono text-sm uppercase tracking-[0.16em] text-white/65">Intelligence Index</h3>
-            <span className="font-mono text-xs text-white/40">Top {models.length}</span>
+            <span className="font-mono text-xs text-white/60">Top {models.length}</span>
           </div>
           <div className={compact ? 'h-[380px] p-3' : 'h-[440px] p-3'}>
             <ResponsiveContainer width="100%" height="100%">
@@ -110,7 +110,7 @@ export function ArtificialAnalysisBenchmarkSection({ compact = false }: Benchmar
         <div className="overflow-hidden rounded-lg border border-white/20 bg-white/[0.05]">
           <div className="flex items-center justify-between gap-3 border-b border-white/20 px-4 py-3">
             <h3 className="font-mono text-sm uppercase tracking-[0.16em] text-white/65">Intelligence vs. Price</h3>
-            <span className="font-mono text-xs text-white/40">{scatterData.length} priced models</span>
+            <span className="font-mono text-xs text-white/60">{scatterData.length} priced models</span>
           </div>
           <div className={compact ? 'h-[380px] p-3' : 'h-[440px] p-3'}>
             <ResponsiveContainer width="100%" height="100%">
@@ -147,7 +147,7 @@ export function ArtificialAnalysisBenchmarkSection({ compact = false }: Benchmar
               </ScatterChart>
             </ResponsiveContainer>
           </div>
-          <p className="border-t border-white/10 px-4 py-2 font-mono text-[11px] text-white/40">
+          <p className="border-t border-white/10 px-4 py-2 font-mono text-[11px] text-white/60">
             Bubble size reflects output speed. Hover a model for exact price, score, and speed.
           </p>
         </div>

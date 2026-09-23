@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, BookOpen, Gift, Image as ImageIcon, MessageSquar
 import { ImageSpacePanel } from '../components/ImageSpacePanel';
 import { VideoSpacePanel } from '../components/VideoSpacePanel';
 import { Seo } from '../components/Seo';
+import { ShareButton } from '../components/ShareButton';
 import { isPromotionActive, models, type Model } from '../data/models';
 import { providersByName, getProviderLogo } from '../data/providers';
 import { IMAGE_DEMOS } from '../data/imageDemos';
@@ -93,6 +94,7 @@ export function ModelPage() {
           </div>
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-5">{model.name}</h1>
           <p className="max-w-3xl text-lg leading-relaxed text-white/62 font-light">{model.description}</p>
+          <ShareButton className="mt-6" title={`${model.name} on OpenPaths`} text={`${model.name} API and pricing`} path={`/models/${encodeURIComponent(model.id)}`} />
         </div>
 
         {promotionActive && model.promotion && (

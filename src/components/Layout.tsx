@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, useState, useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { Menu, User, Wallet, X } from 'lucide-react';
 import { AdSenseSlot } from './AdSenseSlot';
@@ -134,7 +134,7 @@ export function Layout() {
     <div className={`bg-black text-white font-sans selection:bg-white selection:text-black flex flex-col ${isPlayground ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
       <nav className="relative border-b border-white/20 px-4 py-3 sm:px-6 sm:py-4 flex items-center justify-between bg-black/90 backdrop-blur-md z-50 shrink-0">
         <Link to="/" className="flex items-center gap-2">
-          <img src="/openpaths-road-logo.svg" alt="OpenPaths" className="h-6 w-6 brightness-0 invert" />
+          <img src="/openpaths-road-logo.svg" alt="" width="24" height="24" className="h-6 w-6 brightness-0 invert" />
           <span className="font-mono font-bold text-xl tracking-tighter">OpenPaths</span>
         </Link>
         <div className="hidden xl:flex items-center gap-6 text-sm font-mono text-white/60">
@@ -222,7 +222,9 @@ export function Layout() {
       <TopUpModal open={topUpOpen} onClose={() => setTopUpOpen(false)} />
 
       <main className="flex-1 min-h-0">
-        <Outlet />
+        <Suspense fallback={<div className="min-h-[80vh]" aria-busy="true" />}>
+          <Outlet />
+        </Suspense>
         {showAds && <AdSenseSlot />}
       </main>
 
@@ -232,10 +234,10 @@ export function Layout() {
             <div className="grid grid-cols-2 lg:grid-cols-6 gap-8 mb-10">
               <div>
                 <div className="flex items-center gap-2 mb-4">
-                  <img src="/openpaths-road-logo.svg" alt="OpenPaths" className="h-5 w-5 brightness-0 invert" />
+                  <img src="/openpaths-road-logo.svg" alt="" width="20" height="20" className="h-5 w-5 brightness-0 invert" />
                   <span className="font-mono font-bold tracking-tighter">OpenPaths</span>
                 </div>
-                <p className="text-xs font-mono text-white/45 leading-relaxed">Open source model router. Millisecond routing across 400+ AI models.</p>
+                <p className="text-xs font-mono text-white/60 leading-relaxed">Open source model router. Millisecond routing across 400+ AI models.</p>
               </div>
               <div>
                 <h4 className="text-xs font-mono font-bold text-white/60 uppercase tracking-widest mb-3">Product</h4>
@@ -288,7 +290,7 @@ export function Layout() {
                 </ul>
               </div>
             </div>
-            <div className="border-t border-white/20 pt-6 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs font-mono text-white/35">
+            <div className="border-t border-white/20 pt-6 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs font-mono text-white/60">
               <span>© {new Date().getFullYear()} OpenPaths. Open source model routing.</span>
               <div className="flex flex-wrap justify-center gap-x-4 gap-y-2">
                 <Link to="/docs" className="hover:text-white transition-colors">Docs</Link>

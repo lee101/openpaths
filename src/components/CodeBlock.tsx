@@ -91,6 +91,7 @@ export function CodeBlock({
         data-testid={testId}
       >
         <code
+          tabIndex={0}
           className={joinClasses(
             'hljs block min-w-full font-mono',
             highlighted.language ? `language-${highlighted.language}` : undefined,
