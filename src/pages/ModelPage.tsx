@@ -169,7 +169,7 @@ export function ModelPage() {
 
         {isVideo && (
           <section id="model-workspace" className="mt-12 scroll-mt-24 overflow-hidden rounded-2xl border border-white/20 bg-white/[0.05]">
-            <VideoSpacePanel modelId={model.id} modelName={model.name} demo={videoDemo} initialPrompt={initialPrompt} />
+            <VideoSpacePanel modelId={model.id} modelName={model.name} demo={videoDemo} initialPrompt={initialPrompt} priceLabel={formatPrice(model, model.priceInput, 'input')} />
           </section>
         )}
 
@@ -181,6 +181,7 @@ export function ModelPage() {
               imageToImage={model.tags.includes('image-to-image')}
               demo={imageDemo}
               initialPrompt={initialPrompt}
+              priceLabel={formatPrice(model, model.priceInput, 'input')}
             />
           </section>
         )}

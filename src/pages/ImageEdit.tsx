@@ -19,6 +19,7 @@ export function ImageEdit() {
             modelId="openpaths/image-edit"
             modelName="OpenPaths Image Edit"
             imageToImage
+            priceLabel="$0.30 per edit"
             initialPrompt="Restyle this image as a softly lit editorial photograph with warm paper texture, restrained colors, and a premium art-book finish. Preserve the subject, pose, and composition."
             demo={{
               title: 'Source-preserving style transfer',

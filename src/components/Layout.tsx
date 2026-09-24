@@ -5,6 +5,7 @@ import { AdSenseSlot } from './AdSenseSlot';
 import { AuthModal } from './AuthModal';
 import { TopUpModal } from './TopUpModal';
 import { AUTH_EVENT, CREDITS_REQUIRED_EVENT } from '../lib/api';
+import { AUTH_REQUIRED_EVENT } from '../lib/paywall';
 
 function useIsLoggedIn() {
   const [loggedIn, setLoggedIn] = useState(() => {
@@ -126,8 +127,13 @@ export function Layout() {
 
   useEffect(() => {
     const openTopUp = () => setTopUpOpen(true);
+    const openAuth = () => setAuthModalOpen(true);
     window.addEventListener(CREDITS_REQUIRED_EVENT, openTopUp);
-    return () => window.removeEventListener(CREDITS_REQUIRED_EVENT, openTopUp);
+    window.addEventListener(AUTH_REQUIRED_EVENT, openAuth);
+    return () => {
+      window.removeEventListener(CREDITS_REQUIRED_EVENT, openTopUp);
+      window.removeEventListener(AUTH_REQUIRED_EVENT, openAuth);
+    };
   }, []);
 
   return (

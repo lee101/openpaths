@@ -5,6 +5,9 @@ import type { ImageDemo } from '../data/imageDemos';
 import { OPENPATHS_IMAGE_MODELS } from '../lib/artificialAnalysisImages';
 import { prepareUploadFile } from '../lib/imageUpload';
 import { normalizeUploadedAssetUrl } from '../lib/uploadUrls';
+import { ensureSpaceApiKey, paywallBeforeRun, paywallFromResponse, type Paywall } from '../lib/paywall';
+import { SubscribePrompt } from './SubscribePrompt';
+import { AUTH_EVENT } from '../lib/api';
 
 type Lang = 'python' | 'javascript' | 'curl';
 type ImageResult = { url?: string; b64_json?: string };
@@ -93,12 +96,14 @@ export function ImageSpacePanel({
   imageToImage,
   demo,
   initialPrompt,
+  priceLabel,
 }: {
   modelId: string;
   modelName: string;
   imageToImage: boolean;
   demo?: ImageDemo;
   initialPrompt?: string;
+  priceLabel?: string;
 }) {
   const isBFLFlux2Pro = modelId === 'flux-2-pro-preview';
   const requiresInput = imageToImage && !isBFLFlux2Pro;
@@ -127,6 +132,7 @@ export function ImageSpacePanel({
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
+  const [paywall, setPaywall] = useState<Paywall | null>(null);
 
   useEffect(() => {
     setPrompt(starterPrompt);
@@ -142,6 +148,27 @@ export function ImageSpacePanel({
   useEffect(() => {
     if (apiKey.trim()) localStorage.setItem('op_api_key', apiKey.trim());
   }, [apiKey]);
+
+  useEffect(() => {
+    const sync = () => {
+      const key = storedAPIKey();
+      if (key) setApiKey(key);
+      setPaywall(current => (current?.kind === 'login' ? null : current));
+    };
+    window.addEventListener('auth-change', sync);
+    window.addEventListener(AUTH_EVENT, sync);
+    return () => {
+      window.removeEventListener('auth-change', sync);
+      window.removeEventListener(AUTH_EVENT, sync);
+    };
+  }, []);
+
+  const resolveKey = async () => {
+    const key = apiKey.trim() || await ensureSpaceApiKey();
+    if (key && key !== apiKey) setApiKey(key);
+    if (!key) setPaywall(paywallBeforeRun() || { kind: 'login', message: 'Sign in to run this model.', subscribeUrl: '/pricing' });
+    return key;
+  };
 
   const payload = useMemo(() => {
     const next = { ...initialPayload, model: modelId };
@@ -164,17 +191,18 @@ export function ImageSpacePanel({
 
   const uploadImage = async (file?: File) => {
     if (!file) return;
-    if (!apiKey.trim()) {
-      setError('Add your OpenPaths API key before uploading an image.');
-      return;
-    }
+    const key = await resolveKey();
+    if (!key) return;
     setUploading(true);
     setError('');
+    setPaywall(null);
     try {
       const form = new FormData();
       form.append('file', await prepareUploadFile(file));
-      const resp = await fetch('/v1/files/upload', { method: 'POST', headers: { Authorization: `Bearer ${apiKey.trim()}` }, body: form });
+      const resp = await fetch('/v1/files/upload', { method: 'POST', headers: { Authorization: `Bearer ${key}` }, body: form });
       const data = await responseJSON(resp);
+      const gate = paywallFromResponse(resp, data);
+      if (gate) { setPaywall(gate); return; }
       if (!resp.ok || !data?.url) throw new Error(apiError(data, 'Image upload failed'));
       setInputUrl(normalizeUploadedAssetUrl(data.url));
     } catch (err) {
@@ -185,10 +213,6 @@ export function ImageSpacePanel({
   };
 
   const generate = async () => {
-    if (!apiKey.trim()) {
-      setError('Add your OpenPaths API key before generating.');
-      return;
-    }
     if (('prompt' in payload) && !prompt.trim()) {
       setError('Enter a prompt before generating.');
       return;
@@ -197,15 +221,20 @@ export function ImageSpacePanel({
       setError('Add an input image before generating with this model.');
       return;
     }
+    const key = await resolveKey();
+    if (!key) return;
     setLoading(true);
     setError('');
+    setPaywall(null);
     try {
       const resp = await fetch(imageToImage ? '/v1/images/edits' : '/v1/images/generations', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${apiKey.trim()}`, 'Content-Type': 'application/json' },
+        headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
       const data = await responseJSON(resp);
+      const gate = paywallFromResponse(resp, data);
+      if (gate) { setPaywall(gate); return; }
       if (!resp.ok) throw new Error(apiError(data, `Image generation failed (${resp.status})`));
       const src = responseSource(data?.data?.[0]);
       if (!src) throw new Error('The API completed without returning an image.');
@@ -306,6 +335,7 @@ export function ImageSpacePanel({
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
           {loading ? 'Generating image…' : 'Generate image here'}
         </button>
+        {paywall && <SubscribePrompt paywall={paywall} modelName={modelName} priceLabel={priceLabel} onDismiss={() => setPaywall(null)} />}
         {error && <p className="mt-3 rounded border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs font-mono text-red-200" role="alert">{error}</p>}
       </div>
 
