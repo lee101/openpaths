@@ -77,7 +77,12 @@ func (h *ImageHandler) HandleImageGeneration(ctx *fasthttp.RequestCtx) {
 	app := requestAppAttribution(ctx)
 
 	var req model.ImageGenerationRequest
-	if err := json.Unmarshal(ctx.PostBody(), &req); err != nil {
+	if strings.HasPrefix(strings.ToLower(string(ctx.Request.Header.ContentType())), "multipart/form-data") {
+		if err := parseMultipartImageRequest(ctx, &req); err != nil {
+			writeError(ctx, 400, "invalid_request", "Invalid multipart form: "+err.Error())
+			return
+		}
+	} else if err := json.Unmarshal(ctx.PostBody(), &req); err != nil {
 		writeError(ctx, 400, "invalid_request", "Invalid JSON: "+err.Error())
 		return
 	}
