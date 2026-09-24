@@ -289,6 +289,8 @@ func (p *AppNZProvider) do(ctx context.Context, client *http.Client, method, url
 		return nil, &provider.ProviderError{Provider: "appnz", StatusCode: 502, Message: err.Error(), Retryable: true, Err: err}
 	}
 	httpReq.Header.Set("Authorization", "Bearer "+key)
+	// Credit-metered API traffic: paid lane on omniserve-native (ignored by RunPod).
+	httpReq.Header.Set("X-Omniserve-Tier", "paid")
 	if body != nil {
 		httpReq.Header.Set("Content-Type", "application/json")
 	}
