@@ -351,6 +351,7 @@ func (r *Router) ListModels() []model.ModelInfo {
 		info := model.ModelInfo{
 			ID:              cfg.ID,
 			Object:          "model",
+			Type:            model.ModalityOf(cfg).ModelType(),
 			Created:         now,
 			OwnedBy:         cfg.Provider,
 			ContextWindow:   cfg.ContextWindow,
@@ -420,6 +421,7 @@ func (r *Router) GetModelInfo(modelName string) (model.ModelInfo, bool) {
 	return model.ModelInfo{
 		ID:              cfg.ID,
 		Object:          "model",
+		Type:            model.ModalityOf(cfg).ModelType(),
 		Created:         time.Now().Unix(),
 		OwnedBy:         cfg.Provider,
 		ContextWindow:   cfg.ContextWindow,

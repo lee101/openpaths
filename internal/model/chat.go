@@ -190,8 +190,12 @@ type ErrorDetail struct {
 
 // ModelInfo represents a model in the /v1/models response.
 type ModelInfo struct {
-	ID              string             `json:"id"`
-	Object          string             `json:"object"`
+	ID     string `json:"id"`
+	Object string `json:"object"`
+	// Type is the derived modality, with chat models reported as "language".
+	// A client that can only drive chat completions filters on it instead of
+	// guessing from the id, which vendor prefixes and aliases defeat.
+	Type            string             `json:"type"`
 	Created         int64              `json:"created"`
 	OwnedBy         string             `json:"owned_by"`
 	Pricing         *ModelPricing      `json:"pricing,omitempty"`

@@ -871,35 +871,15 @@ func upstreamMessage(body []byte) string {
 }
 
 // classifyModality maps a model config to the MCP tool domain that serves it.
-// Order matters: id markers beat pricing hints so e.g. pocket-tts (billed per
-// minute like STT) still classifies as speech.
 func classifyModality(id string, cfg *model.ModelConfig) string {
-	idl := strings.ToLower(id)
-	switch {
-	case strings.Contains(idl, "embed"):
-		return "embedding"
-	case strings.Contains(idl, "whisper"), strings.Contains(idl, "stt"),
-		strings.Contains(idl, "transcribe"), strings.Contains(idl, "transcription"):
-		return "transcription"
-	case strings.Contains(idl, "tts"), cfg.PricePer1MCharacters > 0:
-		return "speech"
-	case strings.Contains(idl, "music"), strings.Contains(idl, "sfx"):
-		return "music"
-	case strings.Contains(idl, "to-3d"), strings.Contains(idl, "3d"):
-		return "3d"
-	case cfg.PricePerVideo > 0, cfg.PricePerSecond > 0, cfg.PricePerSecondWithVideoInput > 0,
-		len(cfg.PricePerSecondByResolution) > 0,
-		strings.Contains(idl, "video"), strings.Contains(idl, "sora"), strings.Contains(idl, "veo"):
-		return "video"
-	case cfg.PricePerImage > 0, len(cfg.PricePerImageByResolution) > 0,
-		cfg.PricePerMegapixel > 0, cfg.PriceFirstMegapixel > 0, cfg.PriceExtraMegapixel > 0,
-		strings.Contains(idl, "image"):
-		return "image"
-	case strings.Contains(idl, "chronos"), strings.Contains(idl, "forecast"):
-		return "forecasting"
-	default:
-		return "chat"
+	if id != cfg.ID {
+		// A caller-supplied id that is not the catalog id classifies on its own
+		// text so aliases and typed ids answer the same way.
+		alias := *cfg
+		alias.ID = id
+		return string(model.ModalityOf(&alias))
 	}
+	return string(model.ModalityOf(cfg))
 }
 
 // compactPricing returns only the non-zero rates so list_models stays compact

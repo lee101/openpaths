@@ -345,6 +345,37 @@ func TestListModels(t *testing.T) {
 	}
 }
 
+func TestListModelsReportsTypeSoChatPickersCanFilter(t *testing.T) {
+	r := newTestRouter([]model.ModelConfig{
+		{ID: "gpt-5", Provider: "openai", OutputPricePer1M: 10, MaxOutputTokens: 4096},
+		{ID: "openpaths/qwen3.8-27b-uncensored", Provider: "runanywhere", OutputPricePer1M: 1, MaxOutputTokens: 4096},
+		{ID: "openpaths-embed", Provider: "openai", InputPricePer1M: 1},
+		{ID: "hailuo-video", Provider: "minimax", PricePerVideo: 0.5},
+		{ID: "xai-tts", Provider: "xai", PricePer1MCharacters: 2},
+	})
+
+	want := map[string]string{
+		"gpt-5":                            "language",
+		"openpaths/qwen3.8-27b-uncensored": "language",
+		"openpaths-embed":                  "embedding",
+		"hailuo-video":                     "video",
+		"xai-tts":                          "speech",
+	}
+	for _, info := range r.ListModels() {
+		if info.Type != want[info.ID] {
+			t.Errorf("model %q Type = %q, want %q", info.ID, info.Type, want[info.ID])
+		}
+	}
+
+	info, ok := r.GetModelInfo("openpaths-embed")
+	if !ok {
+		t.Fatal("GetModelInfo(openpaths-embed) not found")
+	}
+	if info.Type != "embedding" {
+		t.Errorf("GetModelInfo Type = %q, want %q", info.Type, "embedding")
+	}
+}
+
 func TestGetModelConfig(t *testing.T) {
 	models := []model.ModelConfig{
 		{
