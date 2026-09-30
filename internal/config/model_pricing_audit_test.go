@@ -54,6 +54,7 @@ func TestAuditedTokenPrices(t *testing.T) {
 		"gpt-5.5-pro": {30.00, 0, 180.00},
 		"gpt-6-sol":   {2.00, 0.20, 10.00},
 		"gpt-6-luna":  {0.10, 0.01, 0.50},
+		"gpt-6.1-sol": {2.00, 0.10, 10.00},
 		// platform.claude.com/docs/en/about-claude/pricing (cache hits on Opus
 		// 5.5 bill at 0.05x base, not the usual 0.1x)
 		"claude-opus-5-5": {4.00, 0.20, 20.00},
@@ -67,6 +68,7 @@ func TestAuditedTokenPrices(t *testing.T) {
 		"or/gpt-5.6-luna":  {0.10, 0.01, 0.60},
 		"or/gpt-6-sol":     {2.00, 0.20, 10.00},
 		"or/gpt-6-luna":    {0.10, 0.01, 0.50},
+		"or/gpt-6.1-sol":   {2.00, 0.10, 10.00},
 		"or/qwen3.8-max":   {2.00, 0.25, 6.00},
 		"or/gpt-5-codex":   {1.75, 0.175, 14.00},
 		// console.groq.com/docs/pricing (gpt-oss verified Aug 2026)

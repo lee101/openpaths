@@ -823,6 +823,19 @@ const catalogModels: Model[] = [
     popularity: 3
   },
   {
+    id: 'gpt-6.1-sol',
+    name: 'GPT-6.1 Sol',
+    provider: 'OpenAI',
+    description: 'Near-Astra quality at the Sol rate card: $2 in, $10 out, and cached input at $0.10 per million - half what GPT-6 Sol charges. 1.05M-token context, text and image input, reasoning effort up to xhigh.',
+    contextLength: '1.05M',
+    priceInput: 2,
+    priceOutput: 10,
+    tags: ['general', 'vision', 'programming', 'reasoning', 'agentic'],
+    aliases: ['gpt6.1-sol', 'gpt61-sol'],
+    released: '2026-09-27',
+    popularity: 5
+  },
+  {
     id: 'gpt-6-sol',
     name: 'GPT-6 Sol',
     provider: 'OpenAI',

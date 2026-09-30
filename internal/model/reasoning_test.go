@@ -18,6 +18,12 @@ func TestCompatibleReasoningEffort(t *testing.T) {
 		{"gpt-6-sol", "xhigh", "xhigh"},
 		{"gpt-6-luna", "none", "none"},
 		{"gpt-6-luna", " future ", "future"},
+		// GPT-6.1 drops "none" as well, so it is clamped up, not down.
+		{"gpt-6.1-sol", "none", "low"},
+		{"gpt-6.1-sol", "minimal", "low"},
+		{"gpt-6.1-sol", "max", "xhigh"},
+		{"gpt-6.1-sol", "xhigh", "xhigh"},
+		{"openai/gpt-6.1-sol", "max", "xhigh"},
 		// Grok via OpenRouter cannot disable reasoning; xAI direct can.
 		{"x-ai/grok-4.6", "none", "minimal"},
 		{"x-ai/grok-4.6", "max", "max"},

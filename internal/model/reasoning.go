@@ -22,6 +22,13 @@ var reasoningVocabularies = []reasoningVocabulary{
 	// 2026-09-22). The model docs list "max" for reasoning.effort on the
 	// Responses API, so the chat-completions set is the narrower one.
 	{matches: family("gpt-6"), supported: effortSet("none", "low", "medium", "high", "xhigh")},
+	// GPT-6.1 Sol takes four efforts on /v1/chat/completions and nothing else:
+	// "Unsupported value: 'reasoning_effort' does not support 'none' with this
+	// model. Supported values are: 'low', 'medium', 'high', and 'xhigh'"
+	// (probed against api.openai.com 2026-09-30). Narrower than 6.0, which still
+	// takes "none", and it has to stay ahead of it - family("gpt-6") does not
+	// match the dotted id at all.
+	{matches: bareFamily("gpt-6.1"), supported: effortSet("low", "medium", "high", "xhigh")},
 	// GPT-5.6 has neither a "minimal" nor a "max" tier.
 	{matches: family("gpt-5.6"), supported: effortSet("none", "low", "medium", "high", "xhigh")},
 	// Grok through OpenRouter makes reasoning mandatory, unlike xAI direct.

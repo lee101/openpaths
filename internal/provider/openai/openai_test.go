@@ -111,6 +111,7 @@ func TestIsReasoningModel(t *testing.T) {
 		{"gpt-6-sol", true},
 		{"gpt-6-luna", true},
 		{"gpt-6-astra", true},
+		{"gpt-6.1-sol", true},
 		{"o1", true},
 		{"o3", true},
 		{"o4-mini", true},

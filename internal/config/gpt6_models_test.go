@@ -11,6 +11,13 @@ import (
 // fallback lane, so every id, cache rate, threshold and fallback target has to
 // resolve. Rates: developers.openai.com/api/docs/pricing and
 // openrouter.ai/api/v1/models, verified 2026-09-22.
+//
+// GPT-6.1 Sol is the same capability tier at the same $2/$10 rate card, with
+// cache reads at 5% of input instead of 10%. Probed against
+// developers.openai.com/api/docs/models/gpt-6.1-sol and
+// api.openai.com/v1/chat/completions on 2026-09-30: its effort set is
+// low/medium/high/xhigh with no "none", and the function-tool path is gone from
+// chat completions, which is what the fallback chain covers.
 func TestGPT6TierModels(t *testing.T) {
 	cfg, err := Load(filepath.Join("..", "..", "config.yaml"))
 	if err != nil {
@@ -33,9 +40,11 @@ func TestGPT6TierModels(t *testing.T) {
 		// OpenRouter lanes are fallback targets themselves and carry no chain.
 		requireFallbacks bool
 	}{
-		{"gpt-6-sol", "openai", "gpt-6-sol", "gpt6-sol", 2.00, 0.20, 10.00, 4.00, 272000, true},
+		{"gpt-6.1-sol", "openai", "gpt-6.1-sol", "gpt6.1-sol", 2.00, 0.10, 10.00, 4.00, 272000, true},
+		{"gpt-6-sol", "openai", "gpt-6.1-sol", "gpt6-sol", 2.00, 0.20, 10.00, 4.00, 272000, true},
 		{"gpt-6-luna", "openai", "gpt-6-luna", "gpt6-luna", 0.10, 0.01, 0.50, 0.20, 272000, true},
-		{"or/gpt-6-sol", "openrouter", "openai/gpt-6-sol", "openai/gpt-6-sol", 2.00, 0.20, 10.00, 4.00, 272000, false},
+		{"or/gpt-6.1-sol", "openrouter", "openai/gpt-6.1-sol", "openai/gpt-6.1-sol", 2.00, 0.10, 10.00, 4.00, 272000, false},
+		{"or/gpt-6-sol", "openrouter", "openai/gpt-6.1-sol", "openai/gpt-6-sol", 2.00, 0.20, 10.00, 4.00, 272000, false},
 		{"or/gpt-6-luna", "openrouter", "openai/gpt-6-luna", "openai/gpt-6-luna", 0.10, 0.01, 0.50, 0.20, 272000, false},
 	}
 	for _, w := range want {

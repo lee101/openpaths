@@ -1264,11 +1264,11 @@ models:
     supports_vision: true
 
   # Sol/Luna keep their ids, aliases and prices; the upstream model id follows
-  # the GPT-6 line added below - the compat-route pattern the cursor-grok family
-  # already uses. Terra stays on its own 5.6 upstream.
+  # the GPT-6.1 line added below - the compat-route pattern the cursor-grok
+  # family already uses. Terra stays on its own 5.6 upstream.
   - id: "gpt-5.6-sol"
     provider: openai
-    provider_model_id: "gpt-6-sol"
+    provider_model_id: "gpt-6.1-sol"
     input_price_per_1m: 4.00
     output_price_per_1m: 20.00
     aliases: ["gpt5.6-sol", "gpt56-sol", "sol"]
@@ -1277,6 +1277,9 @@ models:
     supports_streaming: true
     supports_tools: true
     supports_vision: true
+    # Left as it was: under the default price strategy the cheapest candidate
+    # in this chain serves the request, so a client asking for gpt-5.6-sol gets
+    # a cheaper model by design. routing_strategy=config pins the Sol checkpoint.
     fallback_models:
       - "gpt-5.6-terra"
       - "gemini-3.7-flash"
@@ -1326,17 +1329,51 @@ models:
     supports_tools: true
     supports_vision: true
 
-  # --- OpenAI GPT-6 (Sol, Luna) ---
-  # developers.openai.com/api/docs/models/gpt-6-sol and .../gpt-6-luna, cross
-  # checked against GET api.openai.com/v1/models and a live /v1/chat/completions
-  # probe on 2026-09-22. Both tiers ship 1,050,000 context / 922,000 max input /
-  # 128,000 max output, text+image input, reasoning and tool use, and the same
-  # 272K input-token cliff: above it the *Long column prices the whole request
-  # (2x input and cache, 1.5x output). GPT-6 rejects max_tokens and non-default
-  # sampling values, and its chat-completions effort set stops at xhigh.
+  # --- OpenAI GPT-6.1 / GPT-6 (Sol, Luna) ---
+  # developers.openai.com/api/docs/models/gpt-6.1-sol and .../gpt-6-sol, cross
+  # checked against GET api.openai.com/v1/models and live /v1/chat/completions
+  # probes on 2026-09-22 (6.0) and 2026-09-30 (6.1). Every tier ships
+  # 1,050,000 context / 922,000 max input / 128,000 max output, text+image
+  # input, reasoning and tool use, and the same 272K input-token cliff: above it
+  # the *Long column prices the whole request (2x input and cache, 1.5x output).
+  # GPT-6 rejects max_tokens and non-default sampling values, and its
+  # chat-completions effort set stops at xhigh.
+  #
+  # GPT-6.1 Sol is the same $2/$10 tier with cache reads at 5% of input ($0.10)
+  # instead of 10%, so a long cached conversation costs half what it did on
+  # 6.0. Its chat-completions effort set is narrower still - low, medium, high,
+  # xhigh, no "none" and no "minimal" - and it refuses function tools there at
+  # every accepted effort ("use /v1/responses"), so tool traffic lives on the
+  # fallback chain.
+  - id: "gpt-6.1-sol"
+    provider: openai
+    provider_model_id: "gpt-6.1-sol"
+    input_price_per_1m: 2.00
+    input_cache_hit_price_per_1m: 0.10
+    output_price_per_1m: 10.00
+    input_price_per_1m_long: 4.00
+    input_cache_hit_price_per_1m_long: 0.20
+    output_price_per_1m_long: 15.00
+    long_context_threshold: 272000
+    aliases: ["gpt6.1-sol", "gpt61-sol", "openai/gpt-6.1-sol"]
+    context_window: 1050000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    # Same chain as gpt-6-sol. No cheap flash link: the default price strategy
+    # orders the whole chain by blended rate, so a $0.15/M fallback would serve
+    # every default gpt-6.1-sol request and the flagship lane would never run.
+    # Terra carries the tool calls 6.1 refuses on chat completions.
+    fallback_models:
+      - "gpt-5.6-terra"
+      - "or/gpt-6.1-sol"
+
+  # The 6.0 id keeps its own rate card (cache reads stay at 10% of input) and
+  # now rides the 6.1 upstream.
   - id: "gpt-6-sol"
     provider: openai
-    provider_model_id: "gpt-6-sol"
+    provider_model_id: "gpt-6.1-sol"
     input_price_per_1m: 2.00
     input_cache_hit_price_per_1m: 0.20
     output_price_per_1m: 10.00
@@ -2847,7 +2884,7 @@ models:
 
   - id: "or/gpt-5.6-sol"
     provider: openrouter
-    provider_model_id: "openai/gpt-6-sol"
+    provider_model_id: "openai/gpt-6.1-sol"
     input_price_per_1m: 5.00
     input_cache_hit_price_per_1m: 0.50
     output_price_per_1m: 30.00
@@ -2893,9 +2930,27 @@ models:
     supports_tools: true
     supports_vision: true
 
+  - id: "or/gpt-6.1-sol"
+    provider: openrouter
+    provider_model_id: "openai/gpt-6.1-sol"
+    input_price_per_1m: 2.00
+    input_cache_hit_price_per_1m: 0.10
+    output_price_per_1m: 10.00
+    input_price_per_1m_long: 4.00
+    input_cache_hit_price_per_1m_long: 0.20
+    output_price_per_1m_long: 15.00
+    long_context_threshold: 272000
+    context_window: 1050000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  # The 6.0 mirror keeps the 6.0 rate card - cache reads at 10% of input, like
+  # the direct lane - and rides the 6.1 checkpoint.
   - id: "or/gpt-6-sol"
     provider: openrouter
-    provider_model_id: "openai/gpt-6-sol"
+    provider_model_id: "openai/gpt-6.1-sol"
     input_price_per_1m: 2.00
     input_cache_hit_price_per_1m: 0.20
     output_price_per_1m: 10.00
