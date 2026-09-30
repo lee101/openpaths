@@ -1,0 +1,579 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1000" height="800" viewBox="0 0 1000 800" role="img" aria-labelledby="title description">
+  <title id="title">A voxel pelican riding a bicycle</title>
+  <desc id="description">Side view of a compact white pelican with a folded grey wing, orange pouch and beak, riding a turquoise voxel bicycle. Cubic wheels spin, the pedals turn, and the bird bobs over a tiled road and grassy ground plane.</desc>
+  <defs>
+    <radialGradient id="background" cx="48%" cy="40%" r="75%">
+      <stop offset="0" stop-color="#fcfaf1"/>
+      <stop offset="1" stop-color="#e4e9df"/>
+    </radialGradient>
+    <filter id="shadow" x="-25%" y="-100%" width="150%" height="300%">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+    <pattern id="grassGrid" width="32" height="16" patternUnits="userSpaceOnUse">
+      <path d="M-16 16 16 0 48 16M-16 0 16 16 48 0" fill="none" stroke="#527854" stroke-width=".65" opacity=".25"/>
+    </pattern>
+    <pattern id="roadGrid" width="32" height="16" patternUnits="userSpaceOnUse">
+      <path d="M-16 16 16 0 48 16M-16 0 16 16 48 0" fill="none" stroke="#c6d0ce" stroke-width=".65" opacity=".17"/>
+    </pattern>
+    <g id="cube" stroke-linejoin="round" stroke-width=".55">
+      <path d="M0-10 9-5 0 0-9-5Z" fill="currentColor"/>
+      <path d="M0-10 9-5 0 0-9-5Z" fill="#fff" opacity=".28"/>
+      <path d="M-9-5 0 0 0 13-9 8Z" fill="currentColor"/>
+      <path d="M-9-5 0 0 0 13-9 8Z" fill="#fff" opacity=".045"/>
+      <path d="M0 0 9-5 9 8 0 13Z" fill="currentColor"/>
+      <path d="M0 0 9-5 9 8 0 13Z" fill="#172834" opacity=".21"/>
+      <path d="M0-10 9-5 9 8 0 13-9 8-9-5ZM-9-5 0 0 9-5M0 0V13" fill="none" stroke="#20313b" opacity=".12"/>
+    </g>
+    <g id="row3">
+      <use href="#cube"/>
+      <use href="#cube" x="16"/>
+      <use href="#cube" x="32"/>
+    </g>
+    <g id="row5">
+      <use href="#row3"/>
+      <use href="#cube" x="48"/>
+      <use href="#cube" x="64"/>
+    </g>
+    <g id="row7">
+      <use href="#row5"/>
+      <use href="#cube" x="80"/>
+      <use href="#cube" x="96"/>
+    </g>
+    <g id="row9">
+      <use href="#row7"/>
+      <use href="#cube" x="112"/>
+      <use href="#cube" x="128"/>
+    </g>
+    <g id="tireVoxel">
+      <g class="counter-spin">
+        <use href="#cube"/>
+      </g>
+    </g>
+    <g id="spokeVoxel">
+      <g class="counter-spin">
+        <use href="#cube" transform="scale(.42)"/>
+      </g>
+    </g>
+    <g id="wheel">
+      <g class="wheel-spin">
+        <g color="#6b8290">
+          <use href="#spokeVoxel" x="17"/>
+          <use href="#spokeVoxel" x="30"/>
+          <use href="#spokeVoxel" x="43"/>
+          <use href="#spokeVoxel" x="56"/>
+          <use href="#spokeVoxel" x="69"/>
+          <use href="#spokeVoxel" x="82"/>
+          <use href="#spokeVoxel" x="-17"/>
+          <use href="#spokeVoxel" x="-30"/>
+          <use href="#spokeVoxel" x="-43"/>
+          <use href="#spokeVoxel" x="-56"/>
+          <use href="#spokeVoxel" x="-69"/>
+          <use href="#spokeVoxel" x="-82"/>
+          <use href="#spokeVoxel" y="17"/>
+          <use href="#spokeVoxel" y="30"/>
+          <use href="#spokeVoxel" y="43"/>
+          <use href="#spokeVoxel" y="56"/>
+          <use href="#spokeVoxel" y="69"/>
+          <use href="#spokeVoxel" y="82"/>
+          <use href="#spokeVoxel" y="-17"/>
+          <use href="#spokeVoxel" y="-30"/>
+          <use href="#spokeVoxel" y="-43"/>
+          <use href="#spokeVoxel" y="-56"/>
+          <use href="#spokeVoxel" y="-69"/>
+          <use href="#spokeVoxel" y="-82"/>
+          <use href="#spokeVoxel" x="13" y="13"/>
+          <use href="#spokeVoxel" x="23" y="23"/>
+          <use href="#spokeVoxel" x="33" y="33"/>
+          <use href="#spokeVoxel" x="43" y="43"/>
+          <use href="#spokeVoxel" x="53" y="53"/>
+          <use href="#spokeVoxel" x="62" y="62"/>
+          <use href="#spokeVoxel" x="-13" y="-13"/>
+          <use href="#spokeVoxel" x="-23" y="-23"/>
+          <use href="#spokeVoxel" x="-33" y="-33"/>
+          <use href="#spokeVoxel" x="-43" y="-43"/>
+          <use href="#spokeVoxel" x="-53" y="-53"/>
+          <use href="#spokeVoxel" x="-62" y="-62"/>
+          <use href="#spokeVoxel" x="-13" y="13"/>
+          <use href="#spokeVoxel" x="-23" y="23"/>
+          <use href="#spokeVoxel" x="-33" y="33"/>
+          <use href="#spokeVoxel" x="-43" y="43"/>
+          <use href="#spokeVoxel" x="-53" y="53"/>
+          <use href="#spokeVoxel" x="-62" y="62"/>
+          <use href="#spokeVoxel" x="13" y="-13"/>
+          <use href="#spokeVoxel" x="23" y="-23"/>
+          <use href="#spokeVoxel" x="33" y="-33"/>
+          <use href="#spokeVoxel" x="43" y="-43"/>
+          <use href="#spokeVoxel" x="53" y="-53"/>
+          <use href="#spokeVoxel" x="62" y="-62"/>
+        </g>
+        <g color="#263540">
+          <use href="#tireVoxel" x="92" y="0"/>
+          <use href="#tireVoxel" x="90.2" y="17.9"/>
+          <use href="#tireVoxel" x="85" y="35.2"/>
+          <use href="#tireVoxel" x="76.5" y="51.1"/>
+          <use href="#tireVoxel" x="65.1" y="65.1"/>
+          <use href="#tireVoxel" x="51.1" y="76.5"/>
+          <use href="#tireVoxel" x="35.2" y="85"/>
+          <use href="#tireVoxel" x="17.9" y="90.2"/>
+          <use href="#tireVoxel" x="0" y="92"/>
+          <use href="#tireVoxel" x="-17.9" y="90.2"/>
+          <use href="#tireVoxel" x="-35.2" y="85"/>
+          <use href="#tireVoxel" x="-51.1" y="76.5"/>
+          <use href="#tireVoxel" x="-65.1" y="65.1"/>
+          <use href="#tireVoxel" x="-76.5" y="51.1"/>
+          <use href="#tireVoxel" x="-85" y="35.2"/>
+          <use href="#tireVoxel" x="-90.2" y="17.9"/>
+          <use href="#tireVoxel" x="-92" y="0"/>
+          <use href="#tireVoxel" x="-90.2" y="-17.9"/>
+          <use href="#tireVoxel" x="-85" y="-35.2"/>
+          <use href="#tireVoxel" x="-76.5" y="-51.1"/>
+          <use href="#tireVoxel" x="-65.1" y="-65.1"/>
+          <use href="#tireVoxel" x="-51.1" y="-76.5"/>
+          <use href="#tireVoxel" x="-35.2" y="-85"/>
+          <use href="#tireVoxel" x="-17.9" y="-90.2"/>
+          <use href="#tireVoxel" x="0" y="-92"/>
+          <use href="#tireVoxel" x="17.9" y="-90.2"/>
+          <use href="#tireVoxel" x="35.2" y="-85"/>
+          <use href="#tireVoxel" x="51.1" y="-76.5"/>
+          <use href="#tireVoxel" x="65.1" y="-65.1"/>
+          <use href="#tireVoxel" x="76.5" y="-51.1"/>
+          <use href="#tireVoxel" x="85" y="-35.2"/>
+          <use href="#tireVoxel" x="90.2" y="-17.9"/>
+        </g>
+        <g color="#bac8c9">
+          <use href="#spokeVoxel" x="65.1" y="-65.1"/>
+          <use href="#spokeVoxel" x="-65.1" y="65.1"/>
+        </g>
+      </g>
+      <g color="#beced0">
+        <use href="#cube" transform="scale(.8)"/>
+      </g>
+      <use href="#cube" color="#324b58" transform="translate(1 2) scale(.38)"/>
+    </g>
+    <g id="dash" color="#f5e5b9">
+      <use href="#cube" transform="scale(1 .25)"/>
+      <use href="#cube" transform="translate(16 0) scale(1 .25)"/>
+      <use href="#cube" transform="translate(32 0) scale(1 .25)"/>
+      <use href="#cube" transform="translate(48 0) scale(1 .25)"/>
+    </g>
+    <g id="grassTuft">
+      <use href="#cube" x="-7" y="0" color="#568c51" transform="scale(.7)"/>
+      <use href="#cube" x="6" y="-3" color="#6c9e55" transform="scale(.7)"/>
+      <use href="#cube" x="0" y="-12" color="#7ba960" transform="scale(.7)"/>
+    </g>
+    <style>
+      .wheel-spin { animation: wheelTurn 5s linear infinite; transform-origin: 0px 0px; }
+      .counter-spin { animation: counterTurn 5s linear infinite; transform-origin: 0px 0px; }
+      .crank-spin { animation: crankTurn 3.2s linear infinite; transform-origin: 0px 0px; }
+      .pelican-bob { animation: birdBob 1.6s ease-in-out infinite; }
+      .stride { animation: legStride 3.2s linear infinite; }
+      @keyframes wheelTurn { to { transform: rotate(360deg); } }
+      @keyframes counterTurn { to { transform: rotate(-360deg); } }
+      @keyframes crankTurn { to { transform: rotate(360deg); } }
+      @keyframes birdBob {
+        0%,100% { transform: translateY(0); }
+        50% { transform: translateY(-4px); }
+      }
+      @keyframes legStride {
+        0%,100% { transform: translate(0px,0px); }
+        25% { transform: translate(var(--ax),var(--ay)); }
+        50% { transform: translate(var(--bx),var(--by)); }
+        75% { transform: translate(var(--cx),var(--cy)); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .wheel-spin,.counter-spin,.crank-spin,.pelican-bob,.stride { animation: none; }
+      }
+    </style>
+  </defs>
+
+  <path fill="url(#background)" d="M0 0H1000V800H0Z"/>
+
+  <g id="ground">
+    <path d="M62 706 810 706 950 625 202 625Z" fill="#8daf74"/>
+    <path d="M62 706 810 706 950 625 202 625Z" fill="url(#grassGrid)"/>
+    <path d="M62 706 810 706 810 729 62 729Z" fill="#567653"/>
+    <path d="M810 706 950 625 950 648 810 729Z" fill="#44664d"/>
+    <path d="M62 716H810M86 706V729M118 706V729M150 706V729M182 706V729M214 706V729M246 706V729M278 706V729M310 706V729M342 706V729M374 706V729M406 706V729M438 706V729M470 706V729M502 706V729M534 706V729M566 706V729M598 706V729M630 706V729M662 706V729M694 706V729M726 706V729M758 706V729M790 706V729" fill="none" stroke="#365b47" stroke-width=".75" opacity=".4"/>
+    <path d="M87 697 824 697 922 641 185 641Z" fill="#849594"/>
+    <path d="M87 697 824 697 922 641 185 641Z" fill="url(#roadGrid)"/>
+    <path d="M87 697 824 697 824 703 87 703Z" fill="#647c7a"/>
+    <path d="M824 697 922 641 922 647 824 703Z" fill="#516d6c"/>
+
+    <g opacity=".22" fill="#243f40" filter="url(#shadow)">
+      <path d="M246 692 405 692 446 675 286 675Z"/>
+      <path d="M579 692 740 692 780 675 620 675Z"/>
+      <path d="M382 672 586 672 639 648 435 648Z"/>
+    </g>
+
+    <use href="#dash" x="177" y="672"/>
+    <use href="#dash" x="310" y="672"/>
+    <use href="#dash" x="443" y="672"/>
+    <use href="#dash" x="576" y="672"/>
+    <use href="#dash" x="709" y="672"/>
+    <use href="#dash" x="842" y="672"/>
+
+    <g color="#7ea969">
+      <use href="#cube" x="98" y="704" transform="translate(0 3)"/>
+      <use href="#cube" x="114" y="704" transform="translate(0 3)"/>
+      <use href="#cube" x="130" y="704" transform="translate(0 3)"/>
+      <use href="#cube" x="780" y="704" transform="translate(0 3)"/>
+      <use href="#cube" x="796" y="704" transform="translate(0 3)"/>
+    </g>
+    <use href="#grassTuft" x="145" y="670"/>
+    <use href="#grassTuft" x="216" y="641"/>
+    <use href="#grassTuft" x="817" y="690"/>
+    <use href="#grassTuft" x="890" y="648"/>
+    <use href="#grassTuft" x="183" y="705"/>
+    <use href="#grassTuft" x="735" y="707"/>
+
+    <g transform="translate(150 603)">
+      <use href="#cube" x="0" y="0" color="#b4c3a0"/>
+      <use href="#cube" x="16" y="0" color="#a6b792"/>
+      <use href="#cube" x="8" y="-9" color="#cad2b4"/>
+      <use href="#cube" x="8" y="-22" color="#c6d0b3"/>
+    </g>
+    <g transform="translate(850 587)">
+      <use href="#cube" x="0" y="0" color="#9bad98"/>
+      <use href="#cube" x="16" y="0" color="#a9baa1"/>
+      <use href="#cube" x="32" y="0" color="#9eaf99"/>
+      <use href="#cube" x="8" y="-9" color="#b6c2ab"/>
+      <use href="#cube" x="24" y="-9" color="#a8b89e"/>
+      <use href="#cube" x="8" y="-22" color="#c2ccb7"/>
+    </g>
+  </g>
+
+  <g id="bicycle">
+    <use href="#wheel" x="332" y="589"/>
+    <use href="#wheel" x="665" y="589"/>
+
+    <g color="#27797c">
+      <use href="#cube" x="332" y="589"/>
+      <use href="#cube" x="343" y="577"/>
+      <use href="#cube" x="354" y="565"/>
+      <use href="#cube" x="365" y="553"/>
+      <use href="#cube" x="376" y="541"/>
+      <use href="#cube" x="387" y="529"/>
+      <use href="#cube" x="398" y="517"/>
+      <use href="#cube" x="409" y="505"/>
+      <use href="#cube" x="420" y="493"/>
+      <use href="#cube" x="431" y="481"/>
+      <use href="#cube" x="442" y="469"/>
+      <use href="#cube" x="453" y="457"/>
+      <use href="#cube" x="461" y="449"/>
+    </g>
+
+    <g color="#ef7959">
+      <use href="#cube" x="347" y="587"/>
+      <use href="#cube" x="363" y="585"/>
+      <use href="#cube" x="379" y="583"/>
+      <use href="#cube" x="395" y="581"/>
+      <use href="#cube" x="411" y="579"/>
+      <use href="#cube" x="427" y="577"/>
+      <use href="#cube" x="443" y="575"/>
+      <use href="#cube" x="459" y="573"/>
+      <use href="#cube" x="475" y="570"/>
+      <use href="#cube" x="491" y="567"/>
+    </g>
+
+    <g color="#789795">
+      <use href="#cube" x="628" y="456"/>
+      <use href="#cube" x="632" y="469"/>
+      <use href="#cube" x="637" y="482"/>
+      <use href="#cube" x="641" y="495"/>
+      <use href="#cube" x="646" y="508"/>
+      <use href="#cube" x="651" y="521"/>
+      <use href="#cube" x="655" y="534"/>
+      <use href="#cube" x="660" y="547"/>
+      <use href="#cube" x="664" y="560"/>
+      <use href="#cube" x="669" y="573"/>
+      <use href="#cube" x="673" y="585"/>
+    </g>
+
+    <g color="#17a8a4">
+      <use href="#cube" x="461" y="451"/>
+      <use href="#cube" x="477" y="451"/>
+      <use href="#cube" x="493" y="451"/>
+      <use href="#cube" x="509" y="451"/>
+      <use href="#cube" x="525" y="451"/>
+      <use href="#cube" x="541" y="451"/>
+      <use href="#cube" x="557" y="451"/>
+      <use href="#cube" x="573" y="451"/>
+      <use href="#cube" x="589" y="451"/>
+      <use href="#cube" x="605" y="451"/>
+      <use href="#cube" x="618" y="451"/>
+
+      <use href="#cube" x="465" y="463"/>
+      <use href="#cube" x="470" y="476"/>
+      <use href="#cube" x="475" y="489"/>
+      <use href="#cube" x="480" y="502"/>
+      <use href="#cube" x="485" y="515"/>
+      <use href="#cube" x="490" y="528"/>
+      <use href="#cube" x="495" y="541"/>
+      <use href="#cube" x="500" y="554"/>
+      <use href="#cube" x="502" y="564"/>
+
+      <use href="#cube" x="608" y="462"/>
+      <use href="#cube" x="597" y="473"/>
+      <use href="#cube" x="586" y="484"/>
+      <use href="#cube" x="575" y="495"/>
+      <use href="#cube" x="564" y="506"/>
+      <use href="#cube" x="553" y="517"/>
+      <use href="#cube" x="542" y="528"/>
+      <use href="#cube" x="531" y="539"/>
+      <use href="#cube" x="520" y="550"/>
+      <use href="#cube" x="509" y="561"/>
+    </g>
+
+    <g color="#354e5b">
+      <use href="#cube" x="618" y="454"/>
+      <use href="#cube" x="623" y="467"/>
+      <use href="#cube" x="628" y="480"/>
+      <use href="#cube" x="633" y="493"/>
+      <use href="#cube" x="638" y="506"/>
+      <use href="#cube" x="643" y="519"/>
+      <use href="#cube" x="648" y="532"/>
+      <use href="#cube" x="653" y="545"/>
+      <use href="#cube" x="658" y="558"/>
+      <use href="#cube" x="663" y="571"/>
+      <use href="#cube" x="665" y="584"/>
+    </g>
+
+    <g color="#748c94">
+      <use href="#cube" x="462" y="438"/>
+      <use href="#cube" x="462" y="426"/>
+    </g>
+    <g color="#384650">
+      <use href="#cube" x="446" y="423"/>
+      <use href="#cube" x="462" y="423"/>
+      <use href="#cube" x="478" y="423"/>
+      <use href="#cube" x="454" y="414"/>
+      <use href="#cube" x="470" y="414"/>
+    </g>
+
+    <g color="#506977">
+      <use href="#cube" x="620" y="440"/>
+      <use href="#cube" x="624" y="427"/>
+      <use href="#cube" x="628" y="414"/>
+      <use href="#cube" x="632" y="401"/>
+      <use href="#cube" x="636" y="388"/>
+      <use href="#cube" x="640" y="375"/>
+      <use href="#cube" x="644" y="362"/>
+      <use href="#cube" x="648" y="349"/>
+      <use href="#cube" x="652" y="336"/>
+      <use href="#cube" x="656" y="323"/>
+      <use href="#cube" x="662" y="310"/>
+      <use href="#cube" x="670" y="298"/>
+      <use href="#cube" x="685" y="292"/>
+    </g>
+    <g color="#354653">
+      <use href="#cube" x="700" y="292"/>
+      <use href="#cube" x="711" y="300"/>
+    </g>
+    <use href="#cube" x="700" y="280" color="#e69a69" transform="translate(0 3)"/>
+    <use href="#cube" x="714" y="291" color="#cb8058"/>
+
+    <use href="#cube" x="332" y="589" color="#cad5d2" transform="translate(0 1)"/>
+    <use href="#cube" x="665" y="589" color="#cad5d2" transform="translate(0 1)"/>
+    <use href="#cube" x="502" y="564" color="#d3dcd8" transform="translate(0 1)"/>
+  </g>
+
+  <g id="pelican">
+    <g class="pelican-bob">
+
+      <g color="#d7832b">
+        <use href="#cube" x="456" y="414" transform="translate(0 0)"/>
+        <use href="#cube" x="454" y="430"/>
+        <use href="#cube" x="454" y="446"/>
+        <use href="#cube" x="455" y="462"/>
+        <use href="#cube" x="458" y="478"/>
+        <g class="stride" style="--ax:2px;--ay:-7px;--bx:9px;--by:-5px;--cx:7px;--cy:2px">
+          <use href="#cube" x="461" y="494"/>
+        </g>
+        <g class="stride" style="--ax:4px;--ay:-14px;--bx:18px;--by:-9px;--cx:14px;--cy:4px">
+          <use href="#cube" x="464" y="510"/>
+        </g>
+        <g class="stride" style="--ax:6px;--ay:-21px;--bx:28px;--by:-14px;--cx:21px;--cy:7px">
+          <use href="#cube" x="468" y="526"/>
+        </g>
+        <g class="stride" style="--ax:9px;--ay:-29px;--bx:38px;--by:-20px;--cx:29px;--cy:9px">
+          <use href="#cube" x="472" y="543"/>
+        </g>
+        <g class="stride" style="--ax:11px;--ay:-35px;--bx:46px;--by:-24px;--cx:35px;--cy:11px">
+          <use href="#cube" x="476" y="560"/>
+        </g>
+        <g class="stride" style="--ax:12px;--ay:-38px;--bx:50px;--by:-26px;--cx:38px;--cy:12px">
+          <use href="#cube" x="477" y="574" transform="translate(0 0) scale(1)"/>
+        </g>
+      </g>
+
+      <g color="#f2a135">
+        <use href="#cube" x="489" y="412"/>
+        <use href="#cube" x="496" y="427"/>
+        <use href="#cube" x="503" y="442"/>
+        <use href="#cube" x="510" y="457"/>
+        <use href="#cube" x="516" y="472"/>
+        <g class="stride" style="--ax:-2px;--ay:6px;--bx:-8px;--by:4px;--cx:-6px;--cy:-2px">
+          <use href="#cube" x="519" y="488"/>
+        </g>
+        <g class="stride" style="--ax:-4px;--ay:13px;--bx:-17px;--by:9px;--cx:-13px;--cy:-4px">
+          <use href="#cube" x="521" y="504"/>
+        </g>
+        <g class="stride" style="--ax:-6px;--ay:20px;--bx:-27px;--by:14px;--cx:-20px;--cy:-6px">
+          <use href="#cube" x="523" y="520"/>
+        </g>
+        <g class="stride" style="--ax:-9px;--ay:29px;--bx:-38px;--by:20px;--cx:-29px;--cy:-9px">
+          <use href="#cube" x="525" y="536"/>
+        </g>
+        <g class="stride" style="--ax:-12px;--ay:38px;--bx:-50px;--by:26px;--cx:-38px;--cy:-12px">
+          <use href="#cube" x="527" y="550"/>
+        </g>
+      </g>
+
+      <g id="body-depth" color="#dce4e0">
+        <use href="#row5" x="451" y="323"/>
+        <use href="#row7" x="435" y="336"/>
+        <use href="#row9" x="419" y="349"/>
+        <use href="#row9" x="419" y="362"/>
+        <use href="#row7" x="435" y="375"/>
+        <use href="#row5" x="451" y="388"/>
+      </g>
+
+      <g color="#eaf0e9">
+        <use href="#row3" x="453" y="319"/>
+        <use href="#cube" x="501" y="323"/>
+        <use href="#cube" x="517" y="332"/>
+        <use href="#cube" x="533" y="345"/>
+        <use href="#cube" x="549" y="357"/>
+      </g>
+
+      <g id="body" color="#f8f8eb">
+        <use href="#row5" x="441" y="334"/>
+        <use href="#row7" x="425" y="347"/>
+        <use href="#row9" x="409" y="360"/>
+        <use href="#row9" x="409" y="373"/>
+        <use href="#row9" x="409" y="386"/>
+        <use href="#row7" x="425" y="399"/>
+      </g>
+
+      <g color="#e0e7df">
+        <use href="#cube" x="441" y="405"/>
+        <use href="#cube" x="457" y="405"/>
+        <use href="#cube" x="473" y="405"/>
+        <use href="#cube" x="489" y="405"/>
+        <use href="#cube" x="505" y="402"/>
+      </g>
+
+      <g id="folded-wing">
+        <g color="#b9c9cc">
+          <use href="#cube" x="457" y="359"/>
+          <use href="#cube" x="473" y="359"/>
+          <use href="#cube" x="489" y="359"/>
+          <use href="#cube" x="505" y="363"/>
+          <use href="#row5" x="441" y="373"/>
+          <use href="#cube" x="441" y="386"/>
+          <use href="#cube" x="457" y="386"/>
+          <use href="#cube" x="473" y="386"/>
+          <use href="#cube" x="489" y="386"/>
+          <use href="#cube" x="441" y="399"/>
+          <use href="#cube" x="457" y="396"/>
+        </g>
+        <g color="#d7e0df">
+          <use href="#cube" x="457" y="355"/>
+          <use href="#cube" x="473" y="355"/>
+          <use href="#cube" x="489" y="355"/>
+          <use href="#cube" x="441" y="368"/>
+          <use href="#cube" x="457" y="368"/>
+          <use href="#cube" x="473" y="368"/>
+          <use href="#cube" x="489" y="368"/>
+          <use href="#cube" x="505" y="371"/>
+        </g>
+        <g color="#c9d5d6">
+          <use href="#cube" x="441" y="382"/>
+          <use href="#cube" x="457" y="382"/>
+          <use href="#cube" x="473" y="382"/>
+          <use href="#cube" x="489" y="382"/>
+          <use href="#cube" x="441" y="394"/>
+        </g>
+      </g>
+
+      <g id="neck-depth" color="#dce6df">
+        <use href="#cube" x="541" y="333"/>
+        <use href="#cube" x="546" y="319"/>
+        <use href="#cube" x="551" y="305"/>
+        <use href="#cube" x="556" y="291"/>
+        <use href="#cube" x="561" y="277"/>
+      </g>
+      <g id="neck" color="#faf9ed">
+        <use href="#cube" x="531" y="339"/>
+        <use href="#cube" x="536" y="325"/>
+        <use href="#cube" x="541" y="311"/>
+        <use href="#cube" x="546" y="297"/>
+        <use href="#cube" x="551" y="283"/>
+      </g>
+
+      <g id="head">
+        <g color="#e5ece4">
+          <use href="#cube" x="557" y="269"/>
+          <use href="#cube" x="573" y="269"/>
+          <use href="#cube" x="573" y="282"/>
+        </g>
+        <g color="#faf9ed">
+          <use href="#cube" x="548" y="276"/>
+          <use href="#cube" x="564" y="276"/>
+          <use href="#cube" x="548" y="289"/>
+          <use href="#cube" x="564" y="289"/>
+        </g>
+        <use href="#cube" color="#192b34" transform="translate(567 277) scale(.46)"/>
+      </g>
+
+      <g id="beak-pouch">
+        <g color="#e69a32">
+          <use href="#cube" x="583" y="298"/>
+          <use href="#cube" x="599" y="298"/>
+          <use href="#cube" x="615" y="298"/>
+          <use href="#cube" x="631" y="295"/>
+        </g>
+        <g color="#efb448">
+          <use href="#cube" x="591" y="307"/>
+          <use href="#cube" x="607" y="310"/>
+          <use href="#cube" x="623" y="303"/>
+        </g>
+        <g color="#f69332">
+          <use href="#cube" x="580" y="284"/>
+          <use href="#cube" x="596" y="284"/>
+          <use href="#cube" x="612" y="284"/>
+          <use href="#cube" x="628" y="284"/>
+          <use href="#cube" x="644" y="284"/>
+        </g>
+        <use href="#cube" color="#ee8730" transform="translate(655 286) scale(.62)"/>
+      </g>
+    </g>
+  </g>
+
+  <g id="crank" transform="translate(502 564)">
+    <g class="crank-spin">
+      <g color="#bbc9c8">
+        <use href="#cube" transform="translate(8 -4) scale(.55)"/>
+        <use href="#cube" transform="translate(16 -8) scale(.55)"/>
+        <use href="#cube" transform="translate(24 -12) scale(.55)"/>
+        <use href="#cube" transform="translate(-8 4) scale(.55)"/>
+        <use href="#cube" transform="translate(-16 8) scale(.55)"/>
+        <use href="#cube" transform="translate(-24 12) scale(.55)"/>
+      </g>
+      <g transform="translate(25 -13)">
+        <use href="#cube" color="#334852" transform="translate(-6 3) scale(.7)"/>
+        <use href="#cube" color="#334852" transform="translate(6 3) scale(.7)"/>
+        <use href="#cube" color="#f3a136" transform="translate(0 -4) scale(.67)"/>
+        <use href="#cube" color="#f3a136" transform="translate(9 -4) scale(.56)"/>
+      </g>
+      <g transform="translate(-25 13)">
+        <use href="#cube" color="#334852" transform="translate(-6 3) scale(.7)"/>
+        <use href="#cube" color="#334852" transform="translate(6 3) scale(.7)"/>
+        <use href="#cube" color="#dc8b2d" transform="translate(0 -4) scale(.67)"/>
+        <use href="#cube" color="#dc8b2d" transform="translate(9 -4) scale(.56)"/>
+      </g>
+    </g>
+    <use href="#cube" color="#e1e6db" transform="scale(.65)"/>
+    <use href="#cube" color="#3d5561" transform="translate(0 2) scale(.3)"/>
+  </g>
+</svg>

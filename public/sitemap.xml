@@ -1111,6 +1111,11 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/models/gpt-6.1-sol</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/models/gpt-6-sol</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
@@ -2649,6 +2654,11 @@
     <loc>https://openpaths.io/models/flux-video-upscale</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/blog/gpt-6-1-sol-voxel-pelican-bike</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/xiaomi-mimo-v2-6-pelican-bike-svg</loc>

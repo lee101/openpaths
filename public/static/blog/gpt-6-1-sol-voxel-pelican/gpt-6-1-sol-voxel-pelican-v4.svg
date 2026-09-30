@@ -1,0 +1,463 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1080" height="820" viewBox="0 0 1080 820">
+  <title>Voxel pelican riding a bicycle</title>
+  <desc>A white pelican with a long orange beak, black cube eye and folded grey wing pedals a teal bicycle with two large dark voxel wheels. A short handlebar sits below its head. The wheels and crank turn, the legs pedal and the bird bobs above a tiled road with dashes and grass.</desc>
+  <defs>
+    <linearGradient id="background" x2="0" y2="1">
+      <stop stop-color="#e7f2f1"/>
+      <stop offset="1" stop-color="#cbdeda"/>
+    </linearGradient>
+    <radialGradient id="shadow">
+      <stop stop-color="#263e3a" stop-opacity=".25"/>
+      <stop offset="1" stop-color="#263e3a" stop-opacity="0"/>
+    </radialGradient>
+    <g id="cube">
+      <path d="M0-10 9-5 0 0-9-5Z" fill="var(--top,#fafcf8)"/>
+      <path d="M-9-5 0 0V11L-9 6Z" fill="var(--left,#dce5e3)"/>
+      <path d="M0 0 9-5V6L0 11Z" fill="var(--right,#b9c9c7)"/>
+    </g>
+    <g id="wheelCube">
+      <g>
+        <animateTransform attributeName="transform" type="rotate" from="0" to="-360" dur="2.4s" repeatCount="indefinite"/>
+        <use xlink:href="#cube"/>
+      </g>
+    </g>
+    <g id="tile">
+      <path d="M0 0 48 0 66-16 18-16Z" fill="var(--top,#6b8587)"/>
+      <path d="M0 0H48V12H0Z" fill="var(--left,#4c686b)"/>
+      <path d="M48 0 66-16V-4L48 12Z" fill="var(--right,#3b575b)"/>
+    </g>
+    <g id="tileRow">
+      <use xlink:href="#tile" x="0"/>
+      <use xlink:href="#tile" x="48"/>
+      <use xlink:href="#tile" x="96"/>
+      <use xlink:href="#tile" x="144"/>
+      <use xlink:href="#tile" x="192"/>
+      <use xlink:href="#tile" x="240"/>
+      <use xlink:href="#tile" x="288"/>
+      <use xlink:href="#tile" x="336"/>
+      <use xlink:href="#tile" x="384"/>
+      <use xlink:href="#tile" x="432"/>
+      <use xlink:href="#tile" x="480"/>
+      <use xlink:href="#tile" x="528"/>
+      <use xlink:href="#tile" x="576"/>
+      <use xlink:href="#tile" x="624"/>
+      <use xlink:href="#tile" x="672"/>
+      <use xlink:href="#tile" x="720"/>
+      <use xlink:href="#tile" x="768"/>
+    </g>
+    <g id="wheel">
+      <g style="--top:#38464b;--left:#202d33;--right:#101b22">
+        <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="2.4s" repeatCount="indefinite"/>
+        <use xlink:href="#wheelCube" x="0" y="-126"/>
+        <use xlink:href="#wheelCube" x="25" y="-124"/>
+        <use xlink:href="#wheelCube" x="48" y="-116"/>
+        <use xlink:href="#wheelCube" x="70" y="-105"/>
+        <use xlink:href="#wheelCube" x="89" y="-89"/>
+        <use xlink:href="#wheelCube" x="105" y="-70"/>
+        <use xlink:href="#wheelCube" x="116" y="-48"/>
+        <use xlink:href="#wheelCube" x="124" y="-25"/>
+        <use xlink:href="#wheelCube" x="126" y="0"/>
+        <use xlink:href="#wheelCube" x="124" y="25"/>
+        <use xlink:href="#wheelCube" x="116" y="48"/>
+        <use xlink:href="#wheelCube" x="105" y="70"/>
+        <use xlink:href="#wheelCube" x="89" y="89"/>
+        <use xlink:href="#wheelCube" x="70" y="105"/>
+        <use xlink:href="#wheelCube" x="48" y="116"/>
+        <use xlink:href="#wheelCube" x="25" y="124"/>
+        <use xlink:href="#wheelCube" x="0" y="126"/>
+        <use xlink:href="#wheelCube" x="-25" y="124"/>
+        <use xlink:href="#wheelCube" x="-48" y="116"/>
+        <use xlink:href="#wheelCube" x="-70" y="105"/>
+        <use xlink:href="#wheelCube" x="-89" y="89"/>
+        <use xlink:href="#wheelCube" x="-105" y="70"/>
+        <use xlink:href="#wheelCube" x="-116" y="48"/>
+        <use xlink:href="#wheelCube" x="-124" y="25"/>
+        <use xlink:href="#wheelCube" x="-126" y="0"/>
+        <use xlink:href="#wheelCube" x="-124" y="-25"/>
+        <use xlink:href="#wheelCube" x="-116" y="-48"/>
+        <use xlink:href="#wheelCube" x="-105" y="-70"/>
+        <use xlink:href="#wheelCube" x="-89" y="-89"/>
+        <use xlink:href="#wheelCube" x="-70" y="-105"/>
+        <use xlink:href="#wheelCube" x="-48" y="-116"/>
+        <use xlink:href="#wheelCube" x="-25" y="-124"/>
+        <g style="--top:#455159;--left:#29363d;--right:#18252c">
+          <use xlink:href="#wheelCube" x="0" y="-109"/>
+          <use xlink:href="#wheelCube" x="28" y="-105"/>
+          <use xlink:href="#wheelCube" x="54" y="-94"/>
+          <use xlink:href="#wheelCube" x="77" y="-77"/>
+          <use xlink:href="#wheelCube" x="94" y="-54"/>
+          <use xlink:href="#wheelCube" x="105" y="-28"/>
+          <use xlink:href="#wheelCube" x="109" y="0"/>
+          <use xlink:href="#wheelCube" x="105" y="28"/>
+          <use xlink:href="#wheelCube" x="94" y="54"/>
+          <use xlink:href="#wheelCube" x="77" y="77"/>
+          <use xlink:href="#wheelCube" x="54" y="94"/>
+          <use xlink:href="#wheelCube" x="28" y="105"/>
+          <use xlink:href="#wheelCube" x="0" y="109"/>
+          <use xlink:href="#wheelCube" x="-28" y="105"/>
+          <use xlink:href="#wheelCube" x="-54" y="94"/>
+          <use xlink:href="#wheelCube" x="-77" y="77"/>
+          <use xlink:href="#wheelCube" x="-94" y="54"/>
+          <use xlink:href="#wheelCube" x="-105" y="28"/>
+          <use xlink:href="#wheelCube" x="-109" y="0"/>
+          <use xlink:href="#wheelCube" x="-105" y="-28"/>
+          <use xlink:href="#wheelCube" x="-94" y="-54"/>
+          <use xlink:href="#wheelCube" x="-77" y="-77"/>
+          <use xlink:href="#wheelCube" x="-54" y="-94"/>
+          <use xlink:href="#wheelCube" x="-28" y="-105"/>
+        </g>
+        <g style="--top:#a8bbbd;--left:#738e93;--right:#4d6870">
+          <use xlink:href="#wheelCube" x="0" y="-87" transform="scale(.65)"/>
+          <use xlink:href="#wheelCube" x="0" y="-111" transform="scale(.65)"/>
+          <use xlink:href="#wheelCube" x="0" y="-135" transform="scale(.65)"/>
+          <use xlink:href="#wheelCube" x="0" y="-63" transform="scale(.65)"/>
+          <use xlink:href="#wheelCube" x="0" y="-39" transform="scale(.65)"/>
+          <use xlink:href="#wheelCube" x="0" y="39" transform="scale(.65)"/>
+          <use xlink:href="#wheelCube" x="0" y="63" transform="scale(.65)"/>
+          <use xlink:href="#wheelCube" x="0" y="87" transform="scale(.65)"/>
+          <use xlink:href="#wheelCube" x="0" y="111" transform="scale(.65)"/>
+          <use xlink:href="#wheelCube" x="0" y="135" transform="scale(.65)"/>
+          <use xlink:href="#wheelCube" x="-135" y="0" transform="scale(.65)"/>
+          <use xlink:href="#wheelCube" x="-111" y="0" transform="scale(.65)"/>
+          <use xlink:href="#wheelCube" x="-87" y="0" transform="scale(.65)"/>
+          <use xlink:href="#wheelCube" x="-63" y="0" transform="scale(.65)"/>
+          <use xlink:href="#wheelCube" x="-39" y="0" transform="scale(.65)"/>
+          <use xlink:href="#wheelCube" x="39" y="0" transform="scale(.65)"/>
+          <use xlink:href="#wheelCube" x="63" y="0" transform="scale(.65)"/>
+          <use xlink:href="#wheelCube" x="87" y="0" transform="scale(.65)"/>
+          <use xlink:href="#wheelCube" x="111" y="0" transform="scale(.65)"/>
+          <use xlink:href="#wheelCube" x="135" y="0" transform="scale(.65)"/>
+        </g>
+      </g>
+      <g style="--top:#ccd9d7;--left:#829c9c;--right:#4a6a70">
+        <use xlink:href="#cube" transform="scale(1.3)"/>
+      </g>
+    </g>
+  </defs>
+
+  <rect width="1080" height="820" fill="url(#background)"/>
+  <ellipse cx="540" cy="710" rx="454" ry="59" fill="url(#shadow)"/>
+
+  <g id="ground">
+    <g style="--top:#83aa74;--left:#5d865b;--right:#436e4c">
+      <use xlink:href="#tileRow" x="158" y="624"/>
+      <use xlink:href="#tileRow" x="86" y="688"/>
+    </g>
+    <g style="--top:#71898b;--left:#536e72;--right:#405d63">
+      <use xlink:href="#tileRow" x="140" y="640"/>
+      <use xlink:href="#tileRow" x="122" y="656"/>
+      <use xlink:href="#tileRow" x="104" y="672"/>
+    </g>
+    <g style="--top:#e2e5c7;--left:#b5bea5;--right:#929f91">
+      <use xlink:href="#tile" x="182" y="656" transform="translate(0 5) scale(1 .25)"/>
+      <use xlink:href="#tile" x="326" y="656" transform="translate(0 5) scale(1 .25)"/>
+      <use xlink:href="#tile" x="470" y="656" transform="translate(0 5) scale(1 .25)"/>
+      <use xlink:href="#tile" x="614" y="656" transform="translate(0 5) scale(1 .25)"/>
+      <use xlink:href="#tile" x="758" y="656" transform="translate(0 5) scale(1 .25)"/>
+      <use xlink:href="#tile" x="902" y="656" transform="translate(0 5) scale(1 .25)"/>
+    </g>
+    <g style="--top:#e9ebce;--left:#c2c8ac;--right:#a1ae97">
+      <use xlink:href="#cube" x="213" y="663" transform="translate(213 663) scale(1.4 .28) translate(-213 -663)"/>
+      <use xlink:href="#cube" x="231" y="663" transform="translate(231 663) scale(1.4 .28) translate(-231 -663)"/>
+      <use xlink:href="#cube" x="357" y="663" transform="translate(357 663) scale(1.4 .28) translate(-357 -663)"/>
+      <use xlink:href="#cube" x="375" y="663" transform="translate(375 663) scale(1.4 .28) translate(-375 -663)"/>
+      <use xlink:href="#cube" x="501" y="663" transform="translate(501 663) scale(1.4 .28) translate(-501 -663)"/>
+      <use xlink:href="#cube" x="519" y="663" transform="translate(519 663) scale(1.4 .28) translate(-519 -663)"/>
+      <use xlink:href="#cube" x="645" y="663" transform="translate(645 663) scale(1.4 .28) translate(-645 -663)"/>
+      <use xlink:href="#cube" x="663" y="663" transform="translate(663 663) scale(1.4 .28) translate(-663 -663)"/>
+      <use xlink:href="#cube" x="789" y="663" transform="translate(789 663) scale(1.4 .28) translate(-789 -663)"/>
+      <use xlink:href="#cube" x="807" y="663" transform="translate(807 663) scale(1.4 .28) translate(-807 -663)"/>
+    </g>
+    <g style="--top:#a6cf7d;--left:#76a35e;--right:#507c47">
+      <use xlink:href="#cube" x="175" y="608"/>
+      <use xlink:href="#cube" x="191" y="612"/>
+      <use xlink:href="#cube" x="239" y="615"/>
+      <use xlink:href="#cube" x="854" y="609"/>
+      <use xlink:href="#cube" x="870" y="613"/>
+      <use xlink:href="#cube" x="903" y="605"/>
+      <use xlink:href="#cube" x="139" y="680"/>
+      <use xlink:href="#cube" x="156" y="679"/>
+      <use xlink:href="#cube" x="287" y="680"/>
+      <use xlink:href="#cube" x="303" y="683"/>
+      <use xlink:href="#cube" x="745" y="681"/>
+      <use xlink:href="#cube" x="762" y="677"/>
+      <use xlink:href="#cube" x="850" y="679"/>
+    </g>
+  </g>
+
+  <use xlink:href="#wheel" x="320" y="510"/>
+  <use xlink:href="#wheel" x="690" y="510"/>
+
+  <g id="far-leg" style="--top:#efb154;--left:#d78632;--right:#ad5d22">
+    <animateTransform attributeName="transform" type="rotate" values="-7 462 350;7 462 350;-7 462 350" dur="1.2s" repeatCount="indefinite"/>
+    <use xlink:href="#cube" x="449" y="350"/>
+    <use xlink:href="#cube" x="440" y="367"/>
+    <use xlink:href="#cube" x="431" y="384"/>
+    <use xlink:href="#cube" x="423" y="401"/>
+    <use xlink:href="#cube" x="416" y="418"/>
+    <use xlink:href="#cube" x="420" y="436"/>
+    <use xlink:href="#cube" x="426" y="454"/>
+    <use xlink:href="#cube" x="431" y="472"/>
+    <use xlink:href="#cube" x="436" y="490"/>
+    <use xlink:href="#cube" x="441" y="508"/>
+    <use xlink:href="#cube" x="446" y="526"/>
+    <use xlink:href="#cube" x="462" y="526"/>
+  </g>
+
+  <g id="frame" style="--top:#55d0c7;--left:#239c99;--right:#137675">
+    <use xlink:href="#cube" x="320" y="510"/>
+    <use xlink:href="#cube" x="332" y="495"/>
+    <use xlink:href="#cube" x="344" y="480"/>
+    <use xlink:href="#cube" x="356" y="465"/>
+    <use xlink:href="#cube" x="368" y="450"/>
+    <use xlink:href="#cube" x="380" y="435"/>
+    <use xlink:href="#cube" x="392" y="420"/>
+    <use xlink:href="#cube" x="404" y="405"/>
+    <use xlink:href="#cube" x="416" y="390"/>
+    <use xlink:href="#cube" x="428" y="375"/>
+    <use xlink:href="#cube" x="440" y="360"/>
+
+    <use xlink:href="#cube" x="336" y="510"/>
+    <use xlink:href="#cube" x="352" y="510"/>
+    <use xlink:href="#cube" x="368" y="510"/>
+    <use xlink:href="#cube" x="384" y="510"/>
+    <use xlink:href="#cube" x="400" y="510"/>
+    <use xlink:href="#cube" x="416" y="510"/>
+    <use xlink:href="#cube" x="432" y="510"/>
+    <use xlink:href="#cube" x="448" y="510"/>
+    <use xlink:href="#cube" x="464" y="510"/>
+    <use xlink:href="#cube" x="480" y="510"/>
+
+    <use xlink:href="#cube" x="444" y="376"/>
+    <use xlink:href="#cube" x="448" y="392"/>
+    <use xlink:href="#cube" x="452" y="408"/>
+    <use xlink:href="#cube" x="456" y="424"/>
+    <use xlink:href="#cube" x="460" y="440"/>
+    <use xlink:href="#cube" x="464" y="456"/>
+    <use xlink:href="#cube" x="468" y="472"/>
+    <use xlink:href="#cube" x="472" y="488"/>
+
+    <use xlink:href="#cube" x="456" y="359"/>
+    <use xlink:href="#cube" x="472" y="358"/>
+    <use xlink:href="#cube" x="488" y="357"/>
+    <use xlink:href="#cube" x="504" y="356"/>
+    <use xlink:href="#cube" x="520" y="355"/>
+    <use xlink:href="#cube" x="536" y="354"/>
+    <use xlink:href="#cube" x="552" y="353"/>
+    <use xlink:href="#cube" x="568" y="352"/>
+    <use xlink:href="#cube" x="584" y="351"/>
+    <use xlink:href="#cube" x="600" y="350"/>
+    <use xlink:href="#cube" x="616" y="349"/>
+
+    <use xlink:href="#cube" x="490" y="495"/>
+    <use xlink:href="#cube" x="503" y="479"/>
+    <use xlink:href="#cube" x="516" y="463"/>
+    <use xlink:href="#cube" x="529" y="447"/>
+    <use xlink:href="#cube" x="542" y="431"/>
+    <use xlink:href="#cube" x="555" y="415"/>
+    <use xlink:href="#cube" x="568" y="399"/>
+    <use xlink:href="#cube" x="581" y="383"/>
+    <use xlink:href="#cube" x="594" y="367"/>
+    <use xlink:href="#cube" x="607" y="351"/>
+
+    <use xlink:href="#cube" x="624" y="367"/>
+    <use xlink:href="#cube" x="632" y="385"/>
+    <use xlink:href="#cube" x="640" y="403"/>
+    <use xlink:href="#cube" x="648" y="421"/>
+    <use xlink:href="#cube" x="656" y="439"/>
+    <use xlink:href="#cube" x="664" y="457"/>
+    <use xlink:href="#cube" x="672" y="475"/>
+    <use xlink:href="#cube" x="680" y="493"/>
+    <use xlink:href="#cube" x="690" y="510"/>
+  </g>
+
+  <g id="seat-post" style="--top:#b2c5c6;--left:#7a979b;--right:#526c73">
+    <use xlink:href="#cube" x="437" y="343"/>
+    <use xlink:href="#cube" x="434" y="327"/>
+  </g>
+  <g id="saddle" style="--top:#48575c;--left:#2b3a41;--right:#182a31">
+    <use xlink:href="#cube" x="403" y="326"/>
+    <use xlink:href="#cube" x="419" y="326"/>
+    <use xlink:href="#cube" x="435" y="326"/>
+    <use xlink:href="#cube" x="451" y="326"/>
+    <use xlink:href="#cube" x="467" y="326"/>
+  </g>
+
+  <g id="short-handlebar" style="--top:#b5c8c9;--left:#7c989d;--right:#526c75">
+    <use xlink:href="#cube" x="615" y="334"/>
+    <use xlink:href="#cube" x="619" y="318"/>
+    <use xlink:href="#cube" x="623" y="302"/>
+    <use xlink:href="#cube" x="627" y="286"/>
+    <use xlink:href="#cube" x="643" y="286"/>
+    <use xlink:href="#cube" x="659" y="286"/>
+    <g style="--top:#40545b;--left:#2a3c43;--right:#172c34">
+      <use xlink:href="#cube" x="675" y="286"/>
+      <use xlink:href="#cube" x="691" y="286"/>
+    </g>
+  </g>
+
+  <g id="pelican">
+    <animateTransform attributeName="transform" type="translate" values="0 0;0 -5;0 0;0 -5;0 0" dur="2.4s" repeatCount="indefinite"/>
+    <g style="--top:#fffef3;--left:#e5ece6;--right:#bdcecb">
+      <use xlink:href="#cube" x="384" y="294"/>
+      <use xlink:href="#cube" x="400" y="278"/>
+      <use xlink:href="#cube" x="416" y="262"/>
+      <use xlink:href="#cube" x="432" y="246"/>
+      <use xlink:href="#cube" x="448" y="246"/>
+      <use xlink:href="#cube" x="464" y="246"/>
+      <use xlink:href="#cube" x="480" y="246"/>
+      <use xlink:href="#cube" x="496" y="246"/>
+
+      <use xlink:href="#cube" x="400" y="294"/>
+      <use xlink:href="#cube" x="416" y="278"/>
+      <use xlink:href="#cube" x="432" y="262"/>
+      <use xlink:href="#cube" x="448" y="262"/>
+      <use xlink:href="#cube" x="464" y="262"/>
+      <use xlink:href="#cube" x="480" y="262"/>
+      <use xlink:href="#cube" x="496" y="262"/>
+      <use xlink:href="#cube" x="512" y="262"/>
+
+      <use xlink:href="#cube" x="400" y="310"/>
+      <use xlink:href="#cube" x="416" y="294"/>
+      <use xlink:href="#cube" x="432" y="278"/>
+      <use xlink:href="#cube" x="448" y="278"/>
+      <use xlink:href="#cube" x="464" y="278"/>
+      <use xlink:href="#cube" x="480" y="278"/>
+      <use xlink:href="#cube" x="496" y="278"/>
+      <use xlink:href="#cube" x="512" y="278"/>
+      <use xlink:href="#cube" x="528" y="278"/>
+
+      <use xlink:href="#cube" x="416" y="310"/>
+      <use xlink:href="#cube" x="432" y="294"/>
+      <use xlink:href="#cube" x="448" y="294"/>
+      <use xlink:href="#cube" x="464" y="294"/>
+      <use xlink:href="#cube" x="480" y="294"/>
+      <use xlink:href="#cube" x="496" y="294"/>
+      <use xlink:href="#cube" x="512" y="294"/>
+      <use xlink:href="#cube" x="528" y="294"/>
+
+      <use xlink:href="#cube" x="432" y="310"/>
+      <use xlink:href="#cube" x="448" y="310"/>
+      <use xlink:href="#cube" x="464" y="310"/>
+      <use xlink:href="#cube" x="480" y="310"/>
+      <use xlink:href="#cube" x="496" y="310"/>
+      <use xlink:href="#cube" x="512" y="310"/>
+
+      <use xlink:href="#cube" x="512" y="246"/>
+      <use xlink:href="#cube" x="528" y="246"/>
+      <use xlink:href="#cube" x="528" y="262"/>
+      <use xlink:href="#cube" x="544" y="262"/>
+      <use xlink:href="#cube" x="528" y="230"/>
+      <use xlink:href="#cube" x="544" y="230"/>
+      <use xlink:href="#cube" x="544" y="246"/>
+      <use xlink:href="#cube" x="528" y="214"/>
+      <use xlink:href="#cube" x="544" y="214"/>
+      <use xlink:href="#cube" x="544" y="198"/>
+      <use xlink:href="#cube" x="560" y="214"/>
+
+      <use xlink:href="#cube" x="544" y="182"/>
+      <use xlink:href="#cube" x="544" y="166"/>
+      <use xlink:href="#cube" x="560" y="166"/>
+      <use xlink:href="#cube" x="576" y="166"/>
+      <use xlink:href="#cube" x="560" y="182"/>
+      <use xlink:href="#cube" x="576" y="182"/>
+      <use xlink:href="#cube" x="592" y="182"/>
+      <use xlink:href="#cube" x="560" y="198"/>
+      <use xlink:href="#cube" x="576" y="198"/>
+      <use xlink:href="#cube" x="592" y="198"/>
+    </g>
+
+    <g id="folded-wing" style="--top:#bcc7c8;--left:#909fa4;--right:#697e86">
+      <use xlink:href="#cube" x="433" y="273"/>
+      <use xlink:href="#cube" x="449" y="273"/>
+      <use xlink:href="#cube" x="465" y="273"/>
+      <use xlink:href="#cube" x="481" y="273"/>
+      <use xlink:href="#cube" x="417" y="289"/>
+      <use xlink:href="#cube" x="433" y="289"/>
+      <use xlink:href="#cube" x="449" y="289"/>
+      <use xlink:href="#cube" x="465" y="289"/>
+      <use xlink:href="#cube" x="481" y="289"/>
+      <use xlink:href="#cube" x="497" y="289"/>
+      <use xlink:href="#cube" x="401" y="305"/>
+      <use xlink:href="#cube" x="417" y="305"/>
+      <use xlink:href="#cube" x="433" y="305"/>
+      <use xlink:href="#cube" x="449" y="305"/>
+      <use xlink:href="#cube" x="465" y="305"/>
+      <use xlink:href="#cube" x="481" y="305"/>
+      <g style="--top:#d2dbd9;--left:#a8b6b6;--right:#7d9297">
+        <use xlink:href="#cube" x="431" y="271"/>
+        <use xlink:href="#cube" x="447" y="271"/>
+        <use xlink:href="#cube" x="463" y="271"/>
+      </g>
+    </g>
+
+    <g id="beak-pouch" style="--top:#ffc56d;--left:#efa043;--right:#ce7930">
+      <use xlink:href="#cube" x="600" y="214"/>
+      <use xlink:href="#cube" x="616" y="218"/>
+      <use xlink:href="#cube" x="632" y="222"/>
+      <use xlink:href="#cube" x="648" y="226"/>
+      <use xlink:href="#cube" x="664" y="226"/>
+      <use xlink:href="#cube" x="680" y="226"/>
+      <use xlink:href="#cube" x="696" y="222"/>
+      <use xlink:href="#cube" x="712" y="218"/>
+    </g>
+    <g id="long-beak" style="--top:#ffd180;--left:#f2a041;--right:#d37729">
+      <use xlink:href="#cube" x="600" y="198"/>
+      <use xlink:href="#cube" x="616" y="198"/>
+      <use xlink:href="#cube" x="632" y="198"/>
+      <use xlink:href="#cube" x="648" y="202"/>
+      <use xlink:href="#cube" x="664" y="202"/>
+      <use xlink:href="#cube" x="680" y="206"/>
+      <use xlink:href="#cube" x="696" y="206"/>
+      <use xlink:href="#cube" x="712" y="210"/>
+      <use xlink:href="#cube" x="728" y="210"/>
+      <use xlink:href="#cube" x="744" y="214"/>
+    </g>
+    <g id="black-eye" style="--top:#3d4c50;--left:#16252b;--right:#071319">
+      <use xlink:href="#cube" transform="translate(580 180) scale(.64)"/>
+    </g>
+  </g>
+
+  <g id="crank" transform="translate(480 510)">
+    <g>
+      <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="1.2s" repeatCount="indefinite"/>
+      <g style="--top:#9eadae;--left:#677f85;--right:#435d66">
+        <use xlink:href="#cube" x="-16" y="8"/>
+        <use xlink:href="#cube" x="-32" y="16"/>
+        <use xlink:href="#cube" x="16" y="-8"/>
+        <use xlink:href="#cube" x="32" y="-16"/>
+      </g>
+      <g style="--top:#4c6268;--left:#293e46;--right:#182c35">
+        <use xlink:href="#cube" x="-40" y="20"/>
+        <use xlink:href="#cube" x="-56" y="20"/>
+        <use xlink:href="#cube" x="40" y="-20"/>
+        <use xlink:href="#cube" x="56" y="-20"/>
+      </g>
+    </g>
+    <g style="--top:#d0d9d2;--left:#8ba29f;--right:#54747a">
+      <use xlink:href="#cube" transform="scale(1.15)"/>
+    </g>
+  </g>
+
+  <g id="near-leg" style="--top:#ffc36a;--left:#ed973d;--right:#c77129">
+    <g>
+      <animateTransform attributeName="transform" type="rotate" values="0 483 318;-12 483 318;0 483 318;10 483 318;0 483 318" dur="1.2s" repeatCount="indefinite"/>
+      <use xlink:href="#cube" x="483" y="326"/>
+      <use xlink:href="#cube" x="493" y="342"/>
+      <use xlink:href="#cube" x="503" y="358"/>
+      <use xlink:href="#cube" x="513" y="374"/>
+      <use xlink:href="#cube" x="523" y="390"/>
+      <use xlink:href="#cube" x="533" y="406"/>
+      <g>
+        <animateTransform attributeName="transform" type="rotate" values="0 533 406;24 533 406;0 533 406;-18 533 406;0 533 406" dur="1.2s" repeatCount="indefinite"/>
+        <use xlink:href="#cube" x="529" y="422"/>
+        <use xlink:href="#cube" x="525" y="438"/>
+        <use xlink:href="#cube" x="521" y="454"/>
+        <use xlink:href="#cube" x="517" y="470"/>
+        <use xlink:href="#cube" x="513" y="486"/>
+        <use xlink:href="#cube" x="529" y="490"/>
+        <use xlink:href="#cube" x="545" y="490"/>
+      </g>
+    </g>
+  </g>
+</svg>

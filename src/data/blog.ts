@@ -14,6 +14,108 @@ export interface BlogPost {
 
 export const posts: BlogPost[] = [
   {
+    slug: 'gpt-6-1-sol-voxel-pelican-bike',
+    title: 'GPT-6.1 Sol: Same $2/$10 Card, Cached Input at Half the Rate, Pelican-Tested in 3D Voxel Art',
+    excerpt: 'GPT-6.1 Sol is live at $2 in / $10 out with cached input at $0.10 per million - half what GPT-6 Sol charges. We gave it the house pelican test in 3D voxel art: four runs, and the bird only stopped looking like a staircase on the third try.',
+    date: '2026-09-30',
+    author: 'OpenPaths Team',
+    readTime: '7 min',
+    tags: ['openai', 'gpt-6.1', 'models', 'pricing', 'voxel-art', 'creative-coding', 'svg', 'pelican'],
+    content: `GPT-6.1 Sol is live on OpenPaths as \`gpt-6.1-sol\`, on the direct OpenAI lane and the OpenRouter mirror \`or/gpt-6.1-sol\`. It is the Sol rate card - $2 per million input tokens, $10 per million output - unchanged from GPT-6 Sol, with one number halved: **cached input is $0.10 per million**, 5% of the input rate, where GPT-6 Sol charges $0.20.
+
+OpenAI's own summary is "near-Astra performance for complex work at a lower cost": 1,050,000-token context, 922,000 max input, 128,000 max output, text and image input, reasoning and tool use, and the same 272K input cliff as the rest of GPT-6 - above it the whole request prices at 2x input and cache and 1.5x output.
+
+| Model id | In / cached in / out per 1M | Context | Max output | Route |
+|---|---:|---:|---:|---|
+| gpt-6.1-sol | $2.00 / $0.10 / $10.00 | 1.05M | 128K | OpenAI |
+| or/gpt-6.1-sol | $2.00 / $0.10 / $10.00 | 1.05M | 128K | OpenRouter |
+| gpt-6-sol | $2.00 / $0.20 / $10.00 | 1.05M | 128K | OpenAI, now the 6.1 checkpoint |
+| gpt-5.6-sol | $4.00 / - / $20.00 | 1.05M | 128K | OpenAI, now the 6.1 checkpoint |
+
+## The whole Sol family rides 6.1
+
+\`gpt-6-sol\`, \`gpt-5.6-sol\` and the \`or/\` mirrors keep their own ids, aliases and rate cards and now all send \`gpt-6.1-sol\` upstream - the same compat-route pattern the Claude Opus family uses. Existing keys and existing price lists do not change; the checkpoints under them move.
+
+## Four API details worth knowing
+
+Verified against \`GET api.openai.com/v1/models\` and live \`/v1/chat/completions\` probes on 2026-09-30:
+
+- **\`max_tokens\` is rejected** ("Unsupported parameter: 'max_tokens' ... Use 'max_completion_tokens' instead"). The gateway converts it for every GPT-6 id.
+- **\`reasoning_effort\` has four values**: \`low\`, \`medium\`, \`high\`, \`xhigh\`. Both \`none\` and \`minimal\` are rejected outright - GPT-6 Sol still accepts \`none\`, so this is narrower than the model it replaces. The gateway clamps \`none\` and \`minimal\` up to \`low\` and \`max\` down to \`xhigh\`.
+- **Function tools are refused on \`/v1/chat/completions\`**: "Function tools with reasoning_effort are not supported for gpt-6.1-sol in /v1/chat/completions. To use function tools, use /v1/responses". The suggested workaround, \`reasoning_effort: none\`, is itself not a value 6.1 accepts. Tool traffic is served by \`gpt-5.6-terra\` in the fallback chain, with the OpenRouter mirror behind it.
+- **Cache reads are the win.** 5% of input instead of 10%, on a 1.05M-token window. An agent loop that re-sends its context every turn pays half the cache rate for everything that was not new.
+
+
+## The house test, in voxels
+
+Same house test as [the animated-SVG comparison](/blog/pelican-bicycle-animated-svg-model-comparison), [Opus 4.8 vs GPT-5.5](/blog/pelican-bicycle-opus-4-8-vs-gpt-5-5-xhigh) and [MiMo-V2.6](/blog/xiaomi-mimo-v2-6-pelican-bike-svg) - a pelican riding a bicycle - with one change: this time in 3D voxel art, isometric cubes, three shaded faces per cube.
+
+The system instruction is the series default, \`You output only final code. No markdown, no prose. The first character must be <.\` One detail the series has never had to handle: every cheap model we have run this on accepts \`reasoning_effort: none\`, and 6.1 does not. There is no thinking-off switch here, so effort is the only dial we have.
+
+| Run | Effort | Output tokens (of which reasoning) | Artifact | Animation | Cost |
+|---|---|---:|---|---|---:|
+| 1 | low | 5,825 (190) | 13.4 KB, 183 lines | 3 SMIL | ~$0.059 |
+| 2 | medium | 8,438 (1,024) | 19.6 KB, 429 lines | 6 SMIL | ~$0.085 |
+| 3 | high | 16,947 (8,187) | 24.3 KB, 579 lines | 5 CSS keyframes | ~$0.170 |
+| 4 | medium | 9,384 (1,024) | 22.4 KB, 463 lines | 7 SMIL | ~$0.094 |
+
+Costs are the listed rates for the tokens each run actually used, no cache hits. All four artifacts are valid standalone XML and render.
+
+## Run 1: a good scene with no bicycle in it
+
+![GPT-6.1 Sol run 1: voxel pelican scene](/static/blog/gpt-6-1-sol-voxel-pelican/gpt-6-1-sol-voxel-pelican.svg)
+
+The voxel grammar is genuinely good: every cube shaded as three faces from an upper-left light through CSS custom properties, a tiled ground plane, grass, road, a voxel tree, drifting clouds. The bird is a white cloud-shaped mass with an orange beak. The bicycle is a turquoise lattice with two rings of dark cubes for wheels, and it is not a bicycle - there is no triangle, no saddle, no crank, and the bird floats above the frame rather than on it.
+
+## Run 2: the bicycle arrives, the bird walks away
+
+![GPT-6.1 Sol run 2: voxel bicycle with a stretched pelican](/static/blog/gpt-6-1-sol-voxel-pelican/gpt-6-1-sol-voxel-pelican-v2.svg)
+
+Told exactly what was wrong - the frame has to be a triangle, the saddle above the rear wheel, the handlebars in front of the front one - the second sample drew the best bicycle in the series: two large spoked wheels of dark cubes, a proper triangular frame, saddle, bars, crank and pedals. Then it lost the bird. The pelican is a white voxel serpent arcing from the saddle up across the sky, with the beak trailing at the far end like a tail.
+
+The failure is not randomness: run 2 is a picture of a bicycle with a pelican-shaped line drawn over it.
+
+## Run 3: anatomy at last, and one grey column
+![GPT-6.1 Sol run 3: voxel pelican on a voxel bicycle](/static/blog/gpt-6-1-sol-voxel-pelican/gpt-6-1-sol-voxel-pelican-v3.svg)
+
+Naming the parts fixed it - body a compact blob on the saddle, neck four cubes rising, head with one black cube eye and a long orange beak level with the handlebars, legs angled down to the pedals, one folded wing - and the drawing became a pelican on a bicycle for the first time. It also became the most expensive run in the series: 8,187 of its 16,947 output tokens were reasoning, 48% of the whole file's budget spent thinking about a bird.
+
+The blemish is the handlebar: a tall grey column arcing up the right of the frame, taller than the bird.
+
+## Run 4: the pelican
+
+![GPT-6.1 Sol run 4: voxel pelican riding a voxel bicycle](/static/blog/gpt-6-1-sol-voxel-pelican/gpt-6-1-sol-voxel-pelican-v4.svg)
+
+One sentence about the blemish - a short stem and a horizontal bar ending below the height of the bird's head - and the fourth sample is the one that ships: white body on the saddle, black cube eye, long orange beak over the bars, orange legs down to the pedals, folded wing, teal triangular frame, two spoked wheels, spoked hubs turning on a 3.2s crank loop, the bird bobbing on a 1.6s cycle.
+
+## What we take from it
+
+Geometry is a specification problem, not a capability problem. 6.1 Sol built convincing isometric cubes, a convincing bicycle and a convincing scene on the first try. It took three corrections, each one naming what was structurally wrong - no frame triangle, the bird is not a line, the body is a blob on the saddle, the handlebar is short - to get a picture of a pelican riding a bicycle. Models that draw well and models that *compose* well are not the same thing, and the composition part is what a reasoning model still cannot do without being told the layout.
+
+More effort did not buy the drawing. Run 3 at \`high\` cost 1.8x run 4 at \`medium\`, spent 8x the reasoning tokens, and shipped a file with a visible defect. For a task this visual, naming the defect is worth more than thinking longer about it.
+
+And the price of the house test is now visible: about $0.06 to $0.17 per artifact, against ~$0.0006 for MiMo-V2.6 Flash, ~$0.007 for GLM-5.3 Flash and ~$0.012 for DeepSeek V4.1 Flash in the same series. GPT-6.1 Sol is not a cheap model to point at a drawing task, and the half-price cache rate does not help here - all four runs were uncached, and none of them re-sent their context. It is aimed at the other end of the bill: long agent loops where the cache does the work.
+
+## API
+
+\`\`\`bash
+curl https://openpaths.io/v1/chat/completions \\
+    "model": "gpt-6.1-sol",
+    "reasoning_effort": "medium",
+    "max_tokens": 24000,
+    "messages": [
+      {"role": "system", "content": "You output only final code. No markdown, no prose. The first character must be <."},
+      {"role": "user", "content": "Draw a pelican riding a bicycle as a 3D voxel art render, returned as one complete standalone SVG document. Side view, the bicycle centred on a flat voxel ground plane. ..."}
+    ]
+  }'
+\`\`\`
+
+Send \`reasoning_effort\` as \`low\`, \`medium\`, \`high\` or \`xhigh\` - there is no \`none\` on this model, and the gateway will quietly turn one into \`low\`. The full artifact is hosted at [/static/blog/gpt-6-1-sol-voxel-pelican/gpt-6-1-sol-voxel-pelican-v4.svg](/static/blog/gpt-6-1-sol-voxel-pelican/gpt-6-1-sol-voxel-pelican-v4.svg); all four runs are in the directory next to it. Add \`"cache": false\` if you want a fresh sample instead of the cached one.
+
+The four artifacts were produced against \`gpt-6.1-sol\` on the OpenAI API with the exact prompts quoted above, before the route went out - the model the route now serves, and the same reasoning vocabulary the gateway clamps.
+`
+  },
+  {
     slug: 'xiaomi-mimo-v2-6-pelican-bike-svg',
     title: 'Xiaomi MiMo-V2.6 on OpenPaths: Pro, UltraSpeed and Flash Pelican-Tested',
     excerpt: 'Three Xiaomi routes join OpenPaths - MiMo-V2.6 Pro, Pro-UltraSpeed, and the open-source Flash, all 1M context and multimodal from $0.14 per million tokens. We gave all three the house pelican test; one failed it on the first try.',
