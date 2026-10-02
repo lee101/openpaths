@@ -80,6 +80,7 @@ func (h *ChatHandler) HandleChatCompletion(ctx *fasthttp.RequestCtx) {
 		writeError(ctx, 400, "invalid_request", "model is required")
 		return
 	}
+	req.SessionID = requestSessionID(ctx, body)
 	if req.Fusion != nil {
 		h.HandleFusionCompletion(ctx, &req, userID, apiKey)
 		return

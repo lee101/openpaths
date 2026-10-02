@@ -392,11 +392,10 @@ func translateRequest(req *model.ChatCompletionRequest) *anthropicRequest {
 
 	// Extract system message
 	var messages []anthropicMessage
+	var systemMsgs []model.ChatMessage
 	for _, msg := range req.Messages {
 		if msg.Role == "system" {
-			if s, ok := msg.Content.(string); ok {
-				anthReq.System = s
-			}
+			systemMsgs = append(systemMsgs, msg)
 			continue
 		}
 		messages = append(messages, anthropicMessage{
@@ -416,6 +415,7 @@ func translateRequest(req *model.ChatCompletionRequest) *anthropicRequest {
 		}
 	}
 	anthReq.Messages = messages
+	anthReq.System = buildSystem(systemMsgs)
 
 	// Translate tools
 	for _, tool := range req.Tools {
@@ -423,68 +423,15 @@ func translateRequest(req *model.ChatCompletionRequest) *anthropicRequest {
 			continue
 		}
 		anthReq.Tools = append(anthReq.Tools, anthropicTool{
-			Name:        tool.Function.Name,
-			Description: tool.Function.Description,
-			InputSchema: tool.Function.Parameters,
+			Name:         tool.Function.Name,
+			Description:  tool.Function.Description,
+			InputSchema:  tool.Function.Parameters,
+			CacheControl: normalizeCacheControl(tool.CacheControl),
 		})
 	}
+	capBreakpoints(anthReq)
 
 	return anthReq
-}
-
-// applyCacheControl records the request's prefix timing and sets the cheapest
-// cache_control TTL for it, as decided by the optimizer. No-op when no optimizer
-// is attached.
-func (p *AnthropicProvider) applyCacheControl(anthReq *anthropicRequest) {
-	if p.optimizer == nil {
-		return
-	}
-	// Anthropic only caches prefixes above a minimum size (~1024 tokens for
-	// Opus/Sonnet). Below that, cache_control is ignored upstream, so skip it
-	// rather than track a prefix that can never produce a cache write/hit.
-	if cacheablePrefixChars(anthReq) < minCacheablePrefixChars {
-		return
-	}
-	key := prefixKey(anthReq)
-	p.optimizer.Observe(key, anthReq.Model, time.Now())
-	switch p.optimizer.Decide(key) {
-	case promptcache.TTL5m:
-		attachCacheControl(anthReq, &anthropicCacheControl{Type: "ephemeral", TTL: "5m"})
-	case promptcache.TTL1h:
-		attachCacheControl(anthReq, &anthropicCacheControl{Type: "ephemeral", TTL: "1h"})
-	}
-}
-
-func attachCacheControl(anthReq *anthropicRequest, cc *anthropicCacheControl) {
-	if cc == nil {
-		return
-	}
-	if len(anthReq.Tools) > 0 {
-		anthReq.Tools[len(anthReq.Tools)-1].CacheControl = cc
-		return
-	}
-	if anthReq.System == nil {
-		return
-	}
-	switch sys := anthReq.System.(type) {
-	case string:
-		anthReq.System = []anthropicTextBlock{{Type: "text", Text: sys, CacheControl: cc}}
-	case []anthropicTextBlock:
-		if len(sys) == 0 {
-			anthReq.System = []anthropicTextBlock{{Type: "text", Text: "", CacheControl: cc}}
-			return
-		}
-		sys[len(sys)-1].CacheControl = cc
-		anthReq.System = sys
-	case []any:
-		if len(sys) > 0 {
-			if block, ok := sys[len(sys)-1].(map[string]any); ok {
-				block["cache_control"] = cc
-				sys[len(sys)-1] = block
-			}
-		}
-		anthReq.System = sys
-	}
 }
 
 // minCacheablePrefixChars approximates Anthropic's ~1024-token minimum cacheable
@@ -519,34 +466,6 @@ func prefixKey(anthReq *anthropicRequest) string {
 	return hex.EncodeToString(h.Sum(nil)[:16])
 }
 
-// setCacheBeta adds the beta header required for 1h cache TTLs.
-func setCacheBeta(httpReq *http.Request, anthReq *anthropicRequest) {
-	if requestCacheControlTTL(anthReq) == "1h" {
-		httpReq.Header.Set("anthropic-beta", extendedCacheTTLBeta)
-	}
-}
-
-func requestCacheControlTTL(anthReq *anthropicRequest) string {
-	for _, tool := range anthReq.Tools {
-		if tool.CacheControl != nil && tool.CacheControl.TTL != "" {
-			return tool.CacheControl.TTL
-		}
-	}
-	for _, block := range systemTextBlocks(anthReq.System) {
-		if block.CacheControl != nil && block.CacheControl.TTL != "" {
-			return block.CacheControl.TTL
-		}
-	}
-	for _, msg := range anthReq.Messages {
-		for _, block := range contentTextBlocks(msg.Content) {
-			if block.CacheControl != nil && block.CacheControl.TTL != "" {
-				return block.CacheControl.TTL
-			}
-		}
-	}
-	return ""
-}
-
 func systemTextLen(system any) int {
 	return len(systemText(system))
 }
@@ -568,20 +487,6 @@ func systemText(system any) string {
 		data, _ := json.Marshal(system)
 		return string(data)
 	}
-}
-
-func systemTextBlocks(system any) []anthropicTextBlock {
-	if blocks, ok := system.([]anthropicTextBlock); ok {
-		return blocks
-	}
-	return nil
-}
-
-func contentTextBlocks(content any) []anthropicTextBlock {
-	if blocks, ok := content.([]anthropicTextBlock); ok {
-		return blocks
-	}
-	return nil
 }
 
 func translateContentBlocks(content any) any {
@@ -610,7 +515,7 @@ func translateContentBlockSlice(parts []any) any {
 		switch blockType, _ := block["type"].(string); blockType {
 		case "text":
 			if text, ok := block["text"].(string); ok {
-				translated = append(translated, anthropicTextBlock{Type: "text", Text: text})
+				translated = append(translated, anthropicTextBlock{Type: "text", Text: text, CacheControl: normalizeCacheControl(block["cache_control"])})
 				continue
 			}
 		case "image_url":
@@ -619,7 +524,7 @@ func translateContentBlockSlice(parts []any) any {
 				continue
 			}
 		}
-		translated = append(translated, part)
+		translated = append(translated, sanitizeBlockCacheControl(block))
 	}
 	return translated
 }

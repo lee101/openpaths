@@ -1,6 +1,10 @@
 package model
 
-import "testing"
+import (
+	"encoding/json"
+	"strings"
+	"testing"
+)
 
 func TestPromoteSystemToUser(t *testing.T) {
 	roles := func(msgs []ChatMessage) string {
@@ -80,5 +84,23 @@ func TestNeedsUserTurn(t *testing.T) {
 		if got := NeedsUserTurn(tt.model); got != tt.want {
 			t.Errorf("NeedsUserTurn(%q) = %v, want %v", tt.model, got, tt.want)
 		}
+	}
+}
+
+func TestToolCacheControlReadButNeverSerialized(t *testing.T) {
+	var tools []Tool
+	in := `[{"type":"function","function":{"name":"a"},"cache_control":{"type":"ephemeral","ttl":"1h"}},{"type":"function","function":{"name":"b"}}]`
+	if err := json.Unmarshal([]byte(in), &tools); err != nil {
+		t.Fatal(err)
+	}
+	if tools[0].CacheControl == nil || tools[0].CacheControl.TTL != "1h" || tools[1].CacheControl != nil {
+		t.Fatalf("tools = %#v", tools)
+	}
+	if tools[0].Function == nil || tools[0].Function.Name != "a" {
+		t.Fatalf("function lost: %#v", tools[0])
+	}
+	out, _ := json.Marshal(tools)
+	if strings.Contains(string(out), "cache_control") {
+		t.Fatalf("serialized: %s", out)
 	}
 }
