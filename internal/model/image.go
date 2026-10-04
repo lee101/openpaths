@@ -1,6 +1,9 @@
 package model
 
+import "encoding/json"
+
 type ImageGenerationRequest struct {
+	Grounding           *bool        `json:"grounding,omitempty"`
 	Model               string       `json:"model"`
 	Prompt              string       `json:"prompt"`
 	N                   int          `json:"n,omitempty"`
@@ -51,4 +54,52 @@ type ImageData struct {
 type ImageInput struct {
 	Type string `json:"type,omitempty"`
 	URL  string `json:"url,omitempty"`
+}
+
+// Accept native BFL URL/base64 images and numeric safety tolerance alongside
+// the shared object-based image schema used by other providers.
+func (r *ImageGenerationRequest) UnmarshalJSON(data []byte) error {
+	type plain ImageGenerationRequest
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return err
+	}
+	images := fields["images"]
+	delete(fields, "images")
+	if raw := fields["safety_tolerance"]; len(raw) > 0 && raw[0] != '"' && string(raw) != "null" {
+		var n json.Number
+		if err := json.Unmarshal(raw, &n); err != nil {
+			return err
+		}
+		fields["safety_tolerance"], _ = json.Marshal(n.String())
+	}
+	rest, err := json.Marshal(fields)
+	if err != nil {
+		return err
+	}
+	var decoded plain
+	if err := json.Unmarshal(rest, &decoded); err != nil {
+		return err
+	}
+	if len(images) > 0 && string(images) != "null" {
+		var entries []json.RawMessage
+		if images[0] == '"' {
+			entries = []json.RawMessage{images}
+		} else if err := json.Unmarshal(images, &entries); err != nil {
+			return err
+		}
+		for _, entry := range entries {
+			var image ImageInput
+			if len(entry) > 0 && entry[0] == '"' {
+				if err := json.Unmarshal(entry, &image.URL); err != nil {
+					return err
+				}
+			} else if err := json.Unmarshal(entry, &image); err != nil {
+				return err
+			}
+			decoded.Images = append(decoded.Images, image)
+		}
+	}
+	*r = ImageGenerationRequest(decoded)
+	return nil
 }

@@ -1,3 +1,4 @@
+import { IMAGE_DEMOS } from './imageDemos';
 export interface ArtGalleryItem {
   slug: string;
   provider: string;
@@ -13,6 +14,17 @@ export interface ArtGalleryItem {
 }
 
 export const artGallery: ArtGalleryItem[] = [
+  {
+    slug: 'flux-3-forest-observatory',
+    provider: 'Black Forest Labs',
+    model: 'FLUX 3 Image',
+    modelId: 'flux-3-image',
+    providerModelId: 'flux-3-image',
+    title: 'The Forest Observatory',
+    prompt: IMAGE_DEMOS['flux-3-image'].prompt!,
+    imageUrl: '/static/image-gallery/bfl/flux-3-forest-observatory.webp',
+    layout: 'wide',
+  },
   {
     slug: 'openai-h3-routing-engine',
     provider: 'OpenAI',

@@ -40,6 +40,7 @@ type VideoGenerationRequest struct {
 	Operation             string             `json:"operation,omitempty"`
 	ImageURL              string             `json:"image_url,omitempty"`
 	EndImageURL           string             `json:"end_image_url,omitempty"`
+	ReferenceImageURLs    []string           `json:"reference_image_urls,omitempty"`
 	ImageURLs             []string           `json:"image_urls,omitempty"`
 	VideoURL              string             `json:"video_url,omitempty"`
 	Video                 *VideoInput        `json:"video,omitempty"`
@@ -103,6 +104,7 @@ type VideoInput struct {
 }
 
 type VideoGenerationResponse struct {
+	DurationSeconds  float64 `json:"duration_seconds,omitempty"`
 	VideoURL         string  `json:"video_url"`
 	OriginalVideoURL string  `json:"original_video_url,omitempty"`
 	OutputFormat     string  `json:"output_format,omitempty"`
@@ -133,7 +135,7 @@ func (r VideoGenerationRequest) HasVideoInput() bool {
 }
 
 func (r VideoGenerationRequest) InputImageCount() int {
-	count := len(r.ImageURLs)
+	count := len(r.ImageURLs) + len(r.ReferenceImageURLs)
 	if r.ImageURL != "" {
 		count++
 	}
@@ -158,4 +160,8 @@ func (r VideoGenerationRequest) TextPrompt() string {
 		}
 	}
 	return ""
+}
+
+func IsH3MaxRecast(id string) bool {
+	return id == "minimax-h3-max-recast" || id == "minimax/h3-max/recast" || id == "h3-max-recast"
 }

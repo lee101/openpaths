@@ -1,9 +1,9 @@
 name: CI
 on:
   push:
-    branches: [master]
+    branches: [main]
   pull_request:
-    branches: [master]
+    branches: [main]
 
 jobs:
   test:
@@ -20,7 +20,8 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: go build ./...
-      - run: go test ./... -count=1
+      - run: go vet ./...
+      - run: go test ./... -count=1 -race
       - run: npm run build
       - run: npm run verify:assets
       - run: npm run test:e2e

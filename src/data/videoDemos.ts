@@ -11,7 +11,7 @@ export const GEMINI_OMNI_PERFUME_IMAGE_URL = 'https://openpathsstatic.openpaths.
 export type VideoDemo = {
   prompt: string;
   outputUrl: string;
-  resolution: '480p' | '720p' | '768P' | '1080p' | '2K' | 'HD' | 'FHD';
+  resolution: '480p' | '720p' | '768P' | '1080p' | '1080P' | '2K' | 'HD' | 'FHD';
   duration: 'auto' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | '11' | '12' | '13' | '14' | '15' | '16' | '17' | '18' | '19' | '20';
   aspectRatio: 'auto' | '21:9' | '16:9' | '4:3' | '1:1' | '3:4' | '9:16';
   generateAudio: boolean;
@@ -22,7 +22,18 @@ export type VideoDemo = {
   audioUrls?: string[];
 };
 
+const RECAST_BASE = 'https://manifoldgenstatic.manifoldgen.com/static/tools/character-recast';
 export const VIDEO_DEMOS: Record<string, VideoDemo> = {
+  'minimax-h3-max-recast': {
+    prompt: '',
+    outputUrl: `${RECAST_BASE}/cat-recast.webm`,
+    resolution: '1080P',
+    duration: 'auto',
+    aspectRatio: 'auto',
+    generateAudio: true,
+    imageUrls: [`${RECAST_BASE}/cat-reference.webp`],
+    videoUrls: [`${RECAST_BASE}/dance-source.webm`],
+  },
   'flux-3-video-draft': {
     prompt: 'A cinematic macro journey through a miniature Black Forest at night where luminous fiber-optic paths weave between moss-covered stones like an intelligent routing network. The camera glides slowly forward at ground level; cool moonlight, warm bioluminescent pulses, light fog, realistic depth of field. Natural forest ambience and subtle electronic tones, no speech, no readable text, no logos.',
     outputUrl: '/static/video-gallery/bfl/flux-3-routing-forest-draft.webm',

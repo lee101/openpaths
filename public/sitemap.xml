@@ -811,6 +811,11 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/models/flux-3-image</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/models/flux-3-video-draft</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -1797,6 +1802,11 @@
   </url>
   <url>
     <loc>https://openpaths.io/models/minimax-h3-max</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/minimax-h3-max-recast</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>

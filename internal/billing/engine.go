@@ -325,7 +325,11 @@ func (e *Engine) DeductVideoWithResolution(ctx context.Context, userID, modelID 
 }
 
 func (e *Engine) DeductVideoWithMediaInputs(ctx context.Context, userID, modelID string, durationSeconds int, hasVideoInput bool, inputImageCount int, resolution, usageLogID string) (int64, error) {
-	cost, err := e.pricing.CalculateVideoCostWithMediaInputs(modelID, durationSeconds, hasVideoInput, inputImageCount, resolution)
+	return e.DeductVideoForDuration(ctx, userID, modelID, float64(durationSeconds), hasVideoInput, inputImageCount, resolution, usageLogID)
+}
+
+func (e *Engine) DeductVideoForDuration(ctx context.Context, userID, modelID string, durationSeconds float64, hasVideoInput bool, inputImageCount int, resolution, usageLogID string) (int64, error) {
+	cost, err := e.pricing.CalculateVideoCostForDuration(modelID, durationSeconds, hasVideoInput, inputImageCount, resolution)
 	if err != nil {
 		return 0, err
 	}

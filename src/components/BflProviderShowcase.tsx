@@ -131,6 +131,7 @@ export function BflProviderShowcase({ models }: { models: Model[] }) {
         </div>
       </section>
 
+      <FamilySection id="flux-3-image" eyebrow="Image generation + editing" title="FLUX 3 Image" description="Text generation, edits with up to ten references, composition boxes, and web grounding. Per image: 768sq $0.041 · 1k $0.048 · 2k $0.100 · 4k $0.607." icon={<ImageIcon className="h-4 w-4" />} ids={['flux-3-image']} byId={byId} />
       <FamilySection id="flux-2" eyebrow="Image generation + editing" title="FLUX.2" description="From sub-second interactive generation to maximum-quality grounded images, with exact color control and multi-reference editing. FLUX.2 Pro starts at $0.03/MP for generation and $0.045/MP for edits; prompt upsampling is enabled by default and can be switched off when the original wording must be preserved exactly." icon={<ImageIcon className="h-4 w-4" />} ids={FLUX2_IDS} byId={byId} />
       <FamilySection id="flux-tools" eyebrow="Purpose-built editing" title="FLUX Tools" description="Specialized one-call endpoints for extending scenes, removing objects, and placing garments while preserving the important details." icon={<Scissors className="h-4 w-4" />} ids={TOOL_IDS} byId={byId} />
       <FamilySection id="flux-1" eyebrow="Previous generation + open weights" title="FLUX.1" description="Kontext editing, high-resolution FLUX1.1 Pro generation, masked Fill, and the open-weight development model." icon={<WandSparkles className="h-4 w-4" />} ids={FLUX1_IDS} byId={byId} />

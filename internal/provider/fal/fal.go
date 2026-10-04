@@ -970,7 +970,13 @@ func (p *FalProvider) GenerateVideo(ctx context.Context, req *model.VideoGenerat
 	}
 
 	modelID := req.Model
-	if strings.HasPrefix(modelID, "minimax/h3-max/") {
+	if modelID == "minimax/h3-max/recast" {
+		var err error
+		falReq, err = h3MaxRecastInput(req)
+		if err != nil {
+			return nil, &provider.ProviderError{Provider: "fal", StatusCode: 400, Message: err.Error()}
+		}
+	} else if strings.HasPrefix(modelID, "minimax/h3-max/") {
 		modelID = applyMiniMaxH3MaxVideoRequest(req, falReq)
 	} else if strings.HasPrefix(modelID, "minimax/h3/") {
 		modelID = applyMiniMaxH3VideoRequest(req, falReq)
@@ -1344,6 +1350,9 @@ func (p *FalProvider) waitFalQueueResult(ctx context.Context, modelID, requestID
 func (p *FalProvider) falQueueRequestBases(modelID, requestID string) []string {
 	queueBase := strings.TrimRight(p.queueBaseURL(), "/")
 	bases := []string{queueBase + "/" + strings.TrimLeft(modelID, "/") + "/requests/" + requestID}
+	if modelID == "minimax/h3-max/recast" {
+		bases = append(bases, queueBase+"/minimax/h3-max/requests/"+requestID)
+	}
 	if strings.Contains(modelID, "bytedance/seedance-2.0") {
 		bases = append(bases, queueBase+"/bytedance/seedance-2.0/requests/"+requestID)
 	}

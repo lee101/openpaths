@@ -50,3 +50,16 @@ func TestH3MaxVideoPricingByResolution(t *testing.T) {
 		}
 	}
 }
+
+func TestRecastMeasuredDurationPricing(t *testing.T) {
+	pt := NewPricingTable([]model.ModelConfig{{ID: "minimax-h3-max-recast", PricePerSecond: .45, PricePerSecondByResolution: map[string]float64{"768p": .30, "1080p": .45}, FreeInputImageCount: 4}})
+	for _, tc := range []struct {
+		resolution string
+		want       int64
+	}{{"768P", 31500}, {"1080P", 47250}, {"", 47250}} {
+		got, err := pt.CalculateVideoCostForDuration("minimax-h3-max-recast", 10.5, true, 4, tc.resolution)
+		if err != nil || got != tc.want {
+			t.Fatalf("%s: got %d, err %v; want %d", tc.resolution, got, err, tc.want)
+		}
+	}
+}

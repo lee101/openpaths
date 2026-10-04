@@ -1053,6 +1053,9 @@ function ChatPlayground() {
   const [imageQuality, setImageQuality] = useState<typeof IMAGE_QUALITIES[number]>('standard');
   const [imageCount, setImageCount] = useState(1);
   const [imageResponseFormat, setImageResponseFormat] = useState<typeof IMAGE_RESPONSE_FORMATS[number]>('url');
+  const [flux3Resolution, setFlux3Resolution] = useState('1k');
+  const [flux3Grounding, setFlux3Grounding] = useState(true);
+  const [flux3Safety, setFlux3Safety] = useState(2);
   const [imageOutputFormat, setImageOutputFormat] = useState('webp');
   const [imagePromptUpsampling, setImagePromptUpsampling] = useState(true);
   const [imageAspectRatio, setImageAspectRatio] = useState<typeof IMAGE_ASPECT_RATIOS[number]>('auto');
@@ -1123,6 +1126,7 @@ function ChatPlayground() {
   const primaryIsHappyHorseVideo = isHappyHorseVideoModel(primaryModel);
   const videoSpec = getVideoParamSpec(panes[0]?.modelId || '');
   const primaryIsOutpaintImage = isOutpaintImageModel(primaryModel) || panes[0]?.modelId === 'fal-ai/flux-2-pro/outpaint';
+  const primaryIsFlux3 = panes[0]?.modelId === 'flux-3-image';
   const primaryIsBFLImage = panes[0]?.modelId === 'flux-2-pro-preview';
   const primaryImageDemo = IMAGE_DEMOS[panes[0]?.modelId || ''];
   const primaryVideoDemo = VIDEO_DEMOS[panes[0]?.modelId || ''];
@@ -1525,6 +1529,16 @@ ${text}`;
         body.reference_image_urls = inputUrls;
         body.aspect_ratio = imageAspectRatio;
       }
+      if (modelId === 'flux-3-image') {
+        body.resolution = flux3Resolution;
+        body.grounding = flux3Grounding;
+        body.safety_tolerance = flux3Safety;
+        body.aspect_ratio = imageAspectRatio;
+        if (inputUrls.length) body.images = inputUrls;
+        delete body.reference_image_urls;
+        delete body.size;
+        delete body.quality;
+      }
       if (imageDemo?.imageSize) body.image_size = imageDemo.imageSize;
       if (imageDemo?.numInferenceSteps) body.num_inference_steps = imageDemo.numInferenceSteps;
       if (imageDemo?.guidanceScale !== undefined) body.guidance_scale = imageDemo.guidanceScale;
@@ -1608,7 +1622,7 @@ ${text}`;
     } finally {
       abortRefs.current.delete(paneId);
     }
-  }, [apiKey, baseUrl, imageAspectRatio, imageCount, imageInputUrls, imageOutputFormat, imagePromptUpsampling, imageQuality, imageResponseFormat, imageSize, modelIndex, outpaintBottom, outpaintLeft, outpaintRight, outpaintTop, refreshBalance, soundEnabled]);
+  }, [flux3Resolution, flux3Grounding, flux3Safety, apiKey, baseUrl, imageAspectRatio, imageCount, imageInputUrls, imageOutputFormat, imagePromptUpsampling, imageQuality, imageResponseFormat, imageSize, modelIndex, outpaintBottom, outpaintLeft, outpaintRight, outpaintTop, refreshBalance, soundEnabled]);
 
   const sendToVideoModel = useCallback(async (paneId: string, modelId: string, prompt: string) => {
     const controller = new AbortController();
@@ -1632,7 +1646,7 @@ ${text}`;
         imageUrl: videoSpec.inputModes ? (videoInputMode === 'image-to-video' ? videoImageUrl : undefined) : videoImageUrl,
         endImageUrl: videoSpec.inputModes && videoInputMode !== 'image-to-video' ? undefined : videoEndImageUrl,
         videoUrl: videoSpec.inputModes && videoInputMode === 'video-to-video' ? videoUrls[0] : undefined,
-        imageUrls: videoSpec.inputModes ? undefined : imageUrls,
+        imageUrls: videoSpec.recast ? imageUrls : videoSpec.inputModes ? undefined : imageUrls,
         videoUrls: videoSpec.inputModes ? undefined : videoUrls,
         audioUrls,
       };
@@ -2040,7 +2054,9 @@ ${text}`;
     const imageIsOutpaint = model === 'fal-ai/flux-2-pro/outpaint';
     const imageDemo = IMAGE_DEMOS[model];
     const imageRequestPath = inputUrls.length > 0 && !imageIsOutpaint ? 'images/edits' : 'images/generations';
-    const imageCodePayload = imageIsOutpaint
+    const imageCodePayload = primaryIsFlux3
+      ? { model, prompt: imagePayload.prompt, n: imageCount, resolution: flux3Resolution, aspect_ratio: imageAspectRatio, grounding: flux3Grounding, safety_tolerance: flux3Safety, ...(inputUrls.length ? { images: inputUrls } : {}) }
+      : imageIsOutpaint
       ? {
           model,
           image_url: inputUrls[0] || IMAGE_DEMOS['fal-ai/flux-2-pro/outpaint'].imageUrl,
@@ -2067,7 +2083,7 @@ ${text}`;
           ...(imageDemo?.safetyChecker !== undefined ? { enable_safety_checker: imageDemo.safetyChecker } : {}),
         }
       : imagePayload;
-    const videoPrompt = input.trim() || [...allMessages].reverse().find(m => m.role === 'user')?.content || 'A cinematic handheld shot of a rainy neon street at night';
+    const videoPrompt = input.trim() || [...allMessages].reverse().find(m => m.role === 'user')?.content || (videoSpec.recast ? '' : 'A cinematic handheld shot of a rainy neon street at night');
     const videoCodePayload = buildVideoPayload(model, {
       prompt: videoPrompt,
       resolution: videoResolution,
@@ -2077,7 +2093,7 @@ ${text}`;
       imageUrl: videoSpec.inputModes ? (videoInputMode === 'image-to-video' ? videoImageUrl : undefined) : videoImageUrl,
       endImageUrl: videoSpec.inputModes && videoInputMode !== 'image-to-video' ? undefined : videoEndImageUrl,
       videoUrl: videoSpec.inputModes && videoInputMode === 'video-to-video' ? parseImageInputUrls(videoVideoUrls)[0] : undefined,
-      imageUrls: videoSpec.inputModes ? undefined : parseImageInputUrls(videoImageUrls),
+      imageUrls: videoSpec.recast ? parseImageInputUrls(videoImageUrls) : videoSpec.inputModes ? undefined : parseImageInputUrls(videoImageUrls),
       videoUrls: videoSpec.inputModes ? undefined : parseImageInputUrls(videoVideoUrls),
       audioUrls: parseImageInputUrls(videoAudioUrls),
     }, videoAdvanced);
@@ -3222,7 +3238,13 @@ JSON`;
       {primaryIsImage && (
         <div className="border-b border-white/20 px-4 py-3 bg-black/40">
           <div className="max-w-5xl grid grid-cols-2 md:grid-cols-6 gap-3">
-            {!primaryIsOutpaintImage && <label className="block">
+            {primaryIsFlux3 && <>
+              <label className="text-xs text-white/60">Resolution<select value={flux3Resolution} onChange={e => setFlux3Resolution(e.target.value)} className="block w-full bg-black border border-white/30 rounded p-2" data-testid="image-flux3-resolution">{['768sq','1k','2k','4k'].map(tier => <option key={tier}>{tier}</option>)}</select></label>
+              <label className="text-xs text-white/60">Grounding<button type="button" onClick={() => setFlux3Grounding(value => !value)} className="block w-full border border-white/30 rounded p-2">{flux3Grounding ? 'on' : 'off'}</button></label>
+              <label className="text-xs text-white/60">Safety tolerance<select value={flux3Safety} onChange={e => setFlux3Safety(Number(e.target.value))} className="block w-full bg-black border border-white/30 rounded p-2">{[0,1,2,3,4].map(n => <option key={n}>{n}</option>)}</select></label>
+              <p className="col-span-2 text-xs text-white/60">Per image: 768sq $0.041 · 1k $0.048 · 2k $0.100 · 4k $0.607. Up to 10 references.</p>
+            </>}
+            {!primaryIsOutpaintImage && !primaryIsFlux3 && <label className="block">
               <span className="text-[10px] font-mono text-white/55 uppercase tracking-wider block mb-1.5">Size</span>
               <select
                 value={imageSize}
@@ -3404,6 +3426,13 @@ JSON`;
                 </div>
               </div>
             )}
+            {videoSpec.recast && <label className="block col-span-2 md:col-span-3">
+              <span className="text-[10px] font-mono text-white/55 block mb-1.5">Reference photos (1–4, one URL per person)</span>
+              <textarea value={videoImageUrls} onChange={e => setVideoImageUrls(normalizeUploadUrlText(e.target.value))} rows={2} className="w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-xs font-mono text-white" data-testid="video-recast-photos" />
+              <input type="file" accept="image/*" multiple disabled={uploadingRefs} onChange={e => e.target.files && uploadReferenceFiles(e.target.files, 'images')} />
+              <ImagePreviewStrip urls={parseImageInputUrls(videoImageUrls)} label="video-recast-photos" />
+              <p className="mt-2 text-xs text-white/60">$0.30/s at 768p or $0.45/s at 1080p of output video. Reference photos are included. Source: 5–30 seconds, no shot over 15 seconds; source audio is preserved.</p>
+            </label>}
             {videoSpec.inputModes ? (
               videoInputMode === 'image-to-video' ? (
                 <>

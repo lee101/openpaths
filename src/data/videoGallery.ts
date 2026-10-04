@@ -10,12 +10,26 @@ export type VideoGalleryItem = {
   posterUrl?: string;
   originalVideoUrl?: string;
   duration: number;
-  resolution: '480p' | '720p' | 'HD' | 'FHD';
+  resolution: '480p' | '720p' | 'HD' | 'FHD' | '1080p';
   aspectRatio: '16:9' | '9:16' | '1:1' | '4:3' | '3:4';
   format?: 'WebM' | 'MP4';
 };
 
 export const videoGallery: VideoGalleryItem[] = [
+  {
+    slug: 'h3-max-recast-cat-dance',
+    title: 'Same Dance, New Character',
+    provider: 'Fal',
+    model: 'H3 Max Recast',
+    modelId: 'minimax-h3-max-recast',
+    prompt: '',
+    videoUrl: 'https://manifoldgenstatic.manifoldgen.com/static/tools/character-recast/cat-recast.webm',
+    posterUrl: 'https://manifoldgenstatic.manifoldgen.com/static/tools/character-recast/cat-reference.webp',
+    duration: 10,
+    resolution: '1080p',
+    aspectRatio: '9:16',
+    format: 'WebM',
+  },
   {
     slug: "manifoldgen-kfold-h3-glass-hummingbird",
     title: "Glass Hummingbird",

@@ -778,7 +778,7 @@ func applyAnthropicReasoning(req *anthropicRequest, effort string) {
 func requiresAdaptiveThinking(modelID string) bool {
 	id := strings.ToLower(strings.TrimSpace(modelID))
 	for _, prefix := range []string{
-		"claude-fable-5", "claude-opus-5-5",
+		"claude-fable-5", "claude-opus-5-5", "claude-sonnet-5-5",
 	} {
 		if strings.HasPrefix(id, prefix) {
 			return true

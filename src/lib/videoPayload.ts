@@ -66,6 +66,15 @@ export function buildVideoPayload(
     if (base.audioUrls?.length) body.audio_urls = base.audioUrls;
   }
 
+  if (spec.recast) {
+    delete body.duration;
+    delete body.aspect_ratio;
+    delete body.generate_audio;
+    if (!base.prompt.trim()) delete body.prompt;
+    body.video_url = base.videoUrl?.trim() || base.videoUrls?.[0];
+    body.reference_image_urls = (base.imageUrls || []).map(url => url.trim()).filter(Boolean);
+  }
+
   // Advanced args: only included when supported by the model AND set by the user.
   const a = advanced;
   if (spec.negativePrompt && a.negativePrompt?.trim()) body.negative_prompt = a.negativePrompt.trim();

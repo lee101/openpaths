@@ -8,6 +8,13 @@ export interface ImageDemo {
 }
 
 export const IMAGE_DEMOS: Record<string, ImageDemo> = {
+  'flux-3-image': {
+    title: 'FLUX 3 Image · The Forest Observatory',
+    description: 'Generated with the BFL FLUX 3 Image API at 1k, with grounding enabled.',
+    outputUrl: '/static/image-gallery/bfl/flux-3-forest-observatory.webp',
+    prompt: 'A cinematic photograph of a circular glass observatory deep in a misty Black Forest at blue hour. Inside, miniature luminous forests connect through delicate amber fiber-optic roots, like an intelligent routing network. An astronomer in a cream coat studies the living constellation. Wet moss, realistic glass reflections, warm interior light, cool pine silhouettes, 35mm film texture, elegant composition, no text or logos.',
+    payload: { model: 'flux-3-image', prompt: 'A cinematic photograph of a circular glass observatory deep in a misty Black Forest at blue hour. Inside, miniature luminous forests connect through delicate amber fiber-optic roots, like an intelligent routing network. An astronomer in a cream coat studies the living constellation. Wet moss, realistic glass reflections, warm interior light, cool pine silhouettes, 35mm film texture, elegant composition, no text or logos.', resolution: '1k', aspect_ratio: '16:9', grounding: true, safety_tolerance: 2 },
+  },
   'flux-2-pro-preview': {
     title: 'FLUX.2 Pro Preview generation',
     description: 'A live BFL API generation using the default prompt upsampler, fixed safety tolerance 5, and a web-ready WebP output.',

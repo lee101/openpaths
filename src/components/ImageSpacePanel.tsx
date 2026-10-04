@@ -106,7 +106,8 @@ export function ImageSpacePanel({
   priceLabel?: string;
 }) {
   const isBFLFlux2Pro = modelId === 'flux-2-pro-preview';
-  const requiresInput = imageToImage && !isBFLFlux2Pro;
+  const isFlux3 = modelId === 'flux-3-image';
+  const requiresInput = imageToImage && !isBFLFlux2Pro && !isFlux3;
   const catalogExample = OPENPATHS_IMAGE_MODELS.find(item => item.openpathsId === modelId);
   const initialPayload = useMemo<Record<string, unknown>>(() => demo?.payload || {
     model: modelId,
@@ -123,6 +124,11 @@ export function ImageSpacePanel({
   const [prompt, setPrompt] = useState(starterPrompt);
   const [inputUrl, setInputUrl] = useState(starterInput);
   const [size, setSize] = useState(String(initialPayload.size || '1024x1024'));
+  const [resolution, setResolution] = useState(String(initialPayload.resolution || '1k'));
+  const [aspectRatio, setAspectRatio] = useState(String(initialPayload.aspect_ratio || 'auto'));
+  const [grounding, setGrounding] = useState(true);
+  const [safetyTolerance, setSafetyTolerance] = useState(2);
+  const [references, setReferences] = useState('');
   const [outputFormat, setOutputFormat] = useState(String(initialPayload.output_format || 'webp'));
   const [promptUpsampling, setPromptUpsampling] = useState(initialPayload.disable_pup !== true);
   const [outputUrl, setOutputUrl] = useState(starterOutput);
@@ -138,6 +144,11 @@ export function ImageSpacePanel({
     setPrompt(starterPrompt);
     setInputUrl(starterInput);
     setSize(String(initialPayload.size || '1024x1024'));
+    setResolution(String(initialPayload.resolution || '1k'));
+    setAspectRatio(String(initialPayload.aspect_ratio || 'auto'));
+    setGrounding(initialPayload.grounding !== false);
+    setSafetyTolerance(Number(initialPayload.safety_tolerance ?? 2));
+    setReferences('');
     setOutputFormat(String(initialPayload.output_format || 'webp'));
     setPromptUpsampling(initialPayload.disable_pup !== true);
     setOutputUrl(starterOutput);
@@ -185,8 +196,12 @@ export function ImageSpacePanel({
       if (inputUrl) next.reference_image_urls = [inputUrl];
       else delete next.reference_image_urls;
     }
+    if (isFlux3) {
+      return { model: modelId, prompt, resolution, aspect_ratio: aspectRatio, grounding, safety_tolerance: safetyTolerance,
+        ...(references.trim() ? { images: references.split(/\s+/).filter(Boolean) } : {}) };
+    }
     return next;
-  }, [demo, imageToImage, initialPayload, inputUrl, isBFLFlux2Pro, modelId, outputFormat, prompt, promptUpsampling, size]);
+  }, [isFlux3, resolution, aspectRatio, grounding, safetyTolerance, references, demo, imageToImage, initialPayload, inputUrl, isBFLFlux2Pro, modelId, outputFormat, prompt, promptUpsampling, size]);
   const snippet = useMemo(() => snippetFor(payload, lang, apiKey), [apiKey, lang, payload]);
 
   const uploadImage = async (file?: File) => {
@@ -204,7 +219,8 @@ export function ImageSpacePanel({
       const gate = paywallFromResponse(resp, data);
       if (gate) { setPaywall(gate); return; }
       if (!resp.ok || !data?.url) throw new Error(apiError(data, 'Image upload failed'));
-      setInputUrl(normalizeUploadedAssetUrl(data.url));
+      if (isFlux3) setReferences(current => [...current.split(/\s+/).filter(Boolean), normalizeUploadedAssetUrl(data.url)].join('\n'));
+      else setInputUrl(normalizeUploadedAssetUrl(data.url));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Image upload failed');
     } finally {
@@ -221,13 +237,16 @@ export function ImageSpacePanel({
       setError('Add an input image before generating with this model.');
       return;
     }
+    if (isFlux3 && references.split(/\s+/).filter(Boolean).length > 10) {
+      setError('Use at most ten reference images.'); return;
+    }
     const key = await resolveKey();
     if (!key) return;
     setLoading(true);
     setError('');
     setPaywall(null);
     try {
-      const resp = await fetch(imageToImage ? '/v1/images/edits' : '/v1/images/generations', {
+      const resp = await fetch((isFlux3 ? Boolean(references.trim()) : imageToImage) ? '/v1/images/edits' : '/v1/images/generations', {
         method: 'POST',
         headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -290,7 +309,7 @@ export function ImageSpacePanel({
           </label>
         )}
 
-        {imageToImage && (
+        {imageToImage && !isFlux3 && (
           <label className="mt-3 block">
             <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/55">Input image URL{isBFLFlux2Pro ? ' (optional)' : ''}</span>
             <span className="flex gap-2">
@@ -303,6 +322,34 @@ export function ImageSpacePanel({
             </span>
           </label>
         )}
+
+        {isFlux3 && <div className="mt-3 space-y-3">
+          <label className="block text-xs text-white/60">Reference images (optional, up to 10; one URL or base64 value per line)
+            <textarea value={references} onChange={e => setReferences(e.target.value)} rows={3} className={inputCls} data-testid="mp-image-references" />
+            <input type="file" accept="image/*" disabled={uploading || loading} onChange={e => void uploadImage(e.target.files?.[0])} className="mt-2" />
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="text-xs text-white/60">Resolution
+              <select value={resolution} onChange={e => setResolution(e.target.value)} className={inputCls} data-testid="mp-image-resolution">
+                {Object.entries({'768sq': '$0.041', '1k': '$0.048', '2k': '$0.100', '4k': '$0.607'}).map(([tier,price]) => <option key={tier} value={tier} className="bg-black">{tier} · {price} / image</option>)}
+              </select>
+            </label>
+            <label className="text-xs text-white/60">Aspect ratio
+              <select value={aspectRatio} onChange={e => setAspectRatio(e.target.value)} className={inputCls} data-testid="mp-image-aspect-ratio">
+                {['auto','21:9','2:1','16:9','3:2','7:5','4:3','5:4','1:1','4:5','3:4','5:7','2:3','9:16','1:2','9:21'].map(ratio => <option key={ratio} className="bg-black">{ratio}</option>)}
+              </select>
+            </label>
+            <label className="text-xs text-white/60">Safety tolerance
+              <select value={safetyTolerance} onChange={e => setSafetyTolerance(Number(e.target.value))} className={inputCls} data-testid="mp-image-safety">
+                {[0,1,2,3,4].map(n => <option key={n} className="bg-black">{n}</option>)}
+              </select>
+            </label>
+            <label className="text-xs text-white/60">Web grounding
+              <button type="button" onClick={() => setGrounding(value => !value)} className={inputCls} data-testid="mp-image-grounding">{grounding ? 'on' : 'off'}</button>
+            </label>
+          </div>
+          <p className="text-xs text-white/55">Generate from a prompt or edit with references. Refer to images by position. Add composition boxes at the end of the prompt as [top, left, bottom, right] on a 0–1000 grid. Auto aspect uses the first reference or a square canvas.</p>
+        </div>}
 
         {isBFLFlux2Pro && (
           <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">

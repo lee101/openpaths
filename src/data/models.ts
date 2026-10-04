@@ -37,6 +37,20 @@ export function parseContextLength(ctx: string): number {
 const catalogModels: Model[] = [
   // --- Black Forest Labs ---
   {
+    id: 'flux-3-image',
+    name: 'FLUX 3 Image',
+    provider: 'Black Forest Labs',
+    description: 'Generate and edit images with up to ten references, bounding boxes in the prompt, and optional web grounding. Priced per image: 768sq $0.041, 1k $0.048, 2k $0.100, 4k $0.607.',
+    contextLength: 'N/A',
+    priceInput: 0.048,
+    priceOutput: 0,
+    tags: ['art generation', 'text-to-image', 'image-to-image', 'vision'],
+    aliases: ['bfl/flux-3-image', 'flux3-image', 'flux-3'],
+    released: '2026-10-02',
+    popularity: -3,
+    pricingType: 'request'
+  },
+  {
     id: 'flux-3-video-draft',
     name: 'FLUX 3 Video Draft',
     provider: 'Black Forest Labs',
@@ -2586,6 +2600,20 @@ const catalogModels: Model[] = [
     aliases: ['h3-max', 'minimax-h3-max-text-to-video'],
     released: '2026-08-26',
     popularity: 75,
+    pricingType: 'second'
+  },
+  {
+    id: 'minimax-h3-max-recast',
+    name: 'H3 Max Recast',
+    provider: 'Fal',
+    description: 'Recast the people in a video using up to four reference photos while preserving the source motion, camera, cuts, and audio. Source videos must be 5–30 seconds with no shot longer than 15 seconds. $0.30 per output second at 768p or $0.45 at 1080p; reference images are included at no additional charge.',
+    contextLength: 'N/A',
+    priceInput: 0.45,
+    priceOutput: 0,
+    tags: ['video generation', 'video-to-video', 'vision', 'audio'],
+    aliases: ['minimax/h3-max/recast', 'h3-max-recast'],
+    released: '2026-10-02',
+    popularity: 76,
     pricingType: 'second'
   },
   {

@@ -83,7 +83,7 @@ func (h *VideoHandler) handleVideoRequest(ctx *fasthttp.RequestCtx, operation st
 		return
 	}
 	req.Prompt = req.TextPrompt()
-	if req.Prompt == "" && len(req.Input) == 0 {
+	if req.Prompt == "" && len(req.Input) == 0 && !model.IsH3MaxRecast(req.Model) {
 		writeError(ctx, 400, "invalid_request", "prompt or input is required")
 		return
 	}
@@ -350,6 +350,13 @@ func (h *VideoHandler) executeVideoGeneration(ctx context.Context, req model.Vid
 		}
 
 		h.router.MarkModelHealthy(cand.Provider.Name(), cand.ModelCfg.ID)
+		if model.IsH3MaxRecast(cand.ModelCfg.ProviderModelID) {
+			seconds, err := probeRecastOutputDuration(ctx, resp.VideoURL)
+			if err != nil {
+				return videoExecutionResult{StatusCode: 502, ErrorType: "video_duration_failed", ErrorMessage: err.Error()}
+			}
+			resp.DurationSeconds = seconds
+		}
 		h.ensurePublicVideoURL(ctx, resp, originalModel)
 		if wantsVideoWebM(req.OutputFormat) {
 			optimized, err := h.reencodeVideoWebM(ctx, resp.VideoURL, originalModel)
@@ -366,7 +373,11 @@ func (h *VideoHandler) executeVideoGeneration(ctx context.Context, req model.Vid
 		resp.Model = originalModel
 		var cost int64
 		if h.billing != nil {
-			cost, _ = h.billing.DeductVideoWithMediaInputs(ctx, userID, cand.ModelCfg.ID, videoDurationSeconds(string(req.Duration)), req.HasVideoInput(), req.InputImageCount(), req.Resolution, "")
+			seconds := float64(videoDurationSeconds(string(req.Duration)))
+			if model.IsH3MaxRecast(cand.ModelCfg.ProviderModelID) {
+				seconds = resp.DurationSeconds
+			}
+			cost, _ = h.billing.DeductVideoForDuration(ctx, userID, cand.ModelCfg.ID, seconds, req.HasVideoInput(), req.InputImageCount(), req.Resolution, "")
 		}
 		resp.CreditsCharged = float64(cost) / 10000
 		if h.recorder != nil {

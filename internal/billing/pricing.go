@@ -255,6 +255,11 @@ func (pt *PricingTable) CalculateVideoCostWithResolution(modelID string, duratio
 }
 
 func (pt *PricingTable) CalculateVideoCostWithMediaInputs(modelID string, durationSeconds int, hasVideoInput bool, inputImageCount int, resolution string) (int64, error) {
+	return pt.CalculateVideoCostForDuration(modelID, float64(durationSeconds), hasVideoInput, inputImageCount, resolution)
+}
+
+// CalculateVideoCostForDuration supports measured fractional output seconds.
+func (pt *PricingTable) CalculateVideoCostForDuration(modelID string, durationSeconds float64, hasVideoInput bool, inputImageCount int, resolution string) (int64, error) {
 	cfg, ok := pt.models[modelID]
 	if !ok {
 		return 0, fmt.Errorf("unknown model %q for pricing", modelID)

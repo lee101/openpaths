@@ -63,6 +63,7 @@ type resultResponse struct {
 	ID     string `json:"id"`
 	Status string `json:"status"`
 	Result *struct {
+		Prompt  string   `json:"prompt"`
 		Sample  string   `json:"sample"`
 		Samples []string `json:"samples"`
 	} `json:"result"`
@@ -70,7 +71,15 @@ type resultResponse struct {
 }
 
 func (p *Provider) GenerateImage(ctx context.Context, req *model.ImageGenerationRequest) (*model.ImageGenerationResponse, error) {
-	payload, err := bflImagePayload(req)
+	var payload map[string]any
+	var err error
+	endpoint := "/v1/flux-2-pro-preview"
+	if req.Model == "flux-3-image" {
+		payload, err = flux3ImagePayload(req)
+		endpoint = "/v1/flux-3-image"
+	} else {
+		payload, err = bflImagePayload(req)
+	}
 	if err != nil {
 		return nil, &baseprovider.ProviderError{Provider: p.Name(), StatusCode: 400, Message: err.Error(), Retryable: false, Err: err}
 	}
@@ -89,7 +98,7 @@ func (p *Provider) GenerateImage(ctx context.Context, req *model.ImageGeneration
 			return nil, err
 		}
 		var submitted asyncResponse
-		if err := p.submitWithRetry(ctx, "/v1/flux-2-pro-preview", body, &submitted); err != nil {
+		if err := p.submitWithRetry(ctx, endpoint, body, &submitted); err != nil {
 			return nil, err
 		}
 		pollURL, err := p.resolvePollingURL(submitted.PollingURL)
@@ -110,7 +119,13 @@ func (p *Provider) GenerateImage(ctx context.Context, req *model.ImageGeneration
 		if imageURL == "" {
 			return nil, &baseprovider.ProviderError{Provider: p.Name(), StatusCode: 502, Message: "BFL completed without an image URL", Retryable: true}
 		}
-		response.Data = append(response.Data, model.ImageData{URL: imageURL, Width: payload["width"].(int), Height: payload["height"].(int)})
+		width, _ := payload["width"].(int)
+		height, _ := payload["height"].(int)
+		revisedPrompt := ""
+		if result.Result != nil {
+			revisedPrompt = result.Result.Prompt
+		}
+		response.Data = append(response.Data, model.ImageData{URL: imageURL, Width: width, Height: height, RevisedPrompt: revisedPrompt})
 	}
 	return response, nil
 }
