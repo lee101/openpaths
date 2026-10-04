@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Check, Copy, Image as ImageIcon, Loader2, Upload, Wand2 } from 'lucide-react';
+import { Check, Copy, Loader2, Upload, Wand2 } from 'lucide-react';
 import { CodeBlock } from './CodeBlock';
 import type { ImageDemo } from '../data/imageDemos';
 import { OPENPATHS_IMAGE_MODELS } from '../lib/artificialAnalysisImages';
@@ -273,45 +273,35 @@ export function ImageSpacePanel({
   };
 
   return (
-    <div className="grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]" data-testid="mp-image-panel">
+    <div className="grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_minmax(340px,420px)] xl:grid-cols-[minmax(0,1fr)_440px]" data-testid="mp-image-panel">
       <div className="border-b border-white/20 lg:border-b-0 lg:border-r">
         <div className={`grid gap-px bg-white/10 ${inputUrl ? 'grid-cols-2' : 'grid-cols-1'}`}>
           {inputUrl && (
-            <div className="bg-black">
-              <div className="border-b border-white/20 px-4 py-2 text-[10px] font-mono uppercase tracking-[0.16em] text-white/50">Input</div>
-              <img src={inputUrl} alt={`${modelName} input`} className="aspect-square w-full object-contain p-3" data-testid="mp-image-input-preview" />
+            <div className="relative bg-black">
+              <span className="absolute left-3 top-3 rounded border border-white/15 bg-black/75 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-white/70 backdrop-blur">Input</span>
+              <img src={inputUrl} alt={`${modelName} input`} className="aspect-square w-full object-contain p-2 lg:aspect-auto lg:h-[calc(100vh-8.5rem)] lg:min-h-[360px]" data-testid="mp-image-input-preview" />
             </div>
           )}
           <div className="relative bg-black">
-            <div className="border-b border-white/20 px-4 py-2 text-[10px] font-mono uppercase tracking-[0.16em] text-white/50">{generated ? 'Generated output' : demo ? 'Output' : 'Starter output preview'}</div>
-            <img src={outputUrl} alt={`${modelName} output`} className="aspect-square w-full object-contain p-3" data-testid="mp-image-output" />
+            <span className="absolute left-3 top-3 rounded border border-white/15 bg-black/75 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-white/70 backdrop-blur">{generated ? 'Generated output' : demo ? 'Output' : 'Starter output preview'}</span>
+            <img src={outputUrl} alt={`${modelName} output`} className="aspect-square w-full object-contain p-2 lg:aspect-auto lg:h-[calc(100vh-8.5rem)] lg:min-h-[360px]" data-testid="mp-image-output" />
           </div>
-        </div>
-        <div className="border-t border-white/20 p-5">
-          <h2 className="text-xl font-bold tracking-tight">{demo?.title || `${modelName} starter example`}</h2>
-          <p className="mt-2 text-sm leading-relaxed text-white/55">{demo?.description || 'A preloaded request and output keep this model page useful on first paint. Generate to replace it with your result.'}</p>
         </div>
       </div>
 
-      <div className="p-5">
-        <h2 className="text-xl font-bold tracking-tight">Create an image in place</h2>
-        <p className="mt-1 text-sm text-white/45">Run {modelName} here; the API example below stays synchronized.</p>
-
-        <label className="mt-4 block">
-          <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/55">OpenPaths API key</span>
-          <input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="op-..." autoComplete="off" className={inputCls} data-testid="mp-image-api-key" />
-        </label>
+      <div className="p-4">
+        <h2 className="sr-only">Create an image with {modelName}</h2>
 
         {('prompt' in payload) && (
-          <label className="mt-3 block">
-            <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/55">Prompt</span>
-            <textarea value={prompt} onChange={e => setPrompt(e.target.value)} rows={6} className={`${inputCls} resize-y text-sm leading-relaxed`} data-testid="mp-image-prompt" />
+          <label className="block">
+            <span className="mb-1 block text-[10px] font-mono uppercase tracking-wider text-white/55">Prompt</span>
+            <textarea value={prompt} onChange={e => setPrompt(e.target.value)} rows={7} className={`${inputCls} resize-y text-sm leading-relaxed`} data-testid="mp-image-prompt" />
           </label>
         )}
 
         {imageToImage && !isFlux3 && (
-          <label className="mt-3 block">
-            <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/55">Input image URL{isBFLFlux2Pro ? ' (optional)' : ''}</span>
+          <label className="mt-2.5 block">
+            <span className="mb-1 block text-[10px] font-mono uppercase tracking-wider text-white/55">Input image URL{isBFLFlux2Pro ? ' (optional)' : ''}</span>
             <span className="flex gap-2">
               <input value={inputUrl} onChange={e => setInputUrl(e.target.value)} placeholder="https://example.com/input.webp" className={inputCls} data-testid="mp-image-input-url" />
               <span className="inline-flex shrink-0 cursor-pointer items-center justify-center rounded border border-white/12 px-3 text-white/55 hover:border-white/50 hover:text-white">
@@ -323,12 +313,12 @@ export function ImageSpacePanel({
           </label>
         )}
 
-        {isFlux3 && <div className="mt-3 space-y-3">
+        {isFlux3 && <div className="mt-2.5 space-y-2.5">
           <label className="block text-xs text-white/60">Reference images (optional, up to 10; one URL or base64 value per line)
-            <textarea value={references} onChange={e => setReferences(e.target.value)} rows={3} className={inputCls} data-testid="mp-image-references" />
+            <textarea value={references} onChange={e => setReferences(e.target.value)} rows={2} className={inputCls} data-testid="mp-image-references" />
             <input type="file" accept="image/*" disabled={uploading || loading} onChange={e => void uploadImage(e.target.files?.[0])} className="mt-2" />
           </label>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2.5">
             <label className="text-xs text-white/60">Resolution
               <select value={resolution} onChange={e => setResolution(e.target.value)} className={inputCls} data-testid="mp-image-resolution">
                 {Object.entries({'768sq': '$0.041', '1k': '$0.048', '2k': '$0.100', '4k': '$0.607'}).map(([tier,price]) => <option key={tier} value={tier} className="bg-black">{tier} · {price} / image</option>)}
@@ -348,50 +338,54 @@ export function ImageSpacePanel({
               <button type="button" onClick={() => setGrounding(value => !value)} className={inputCls} data-testid="mp-image-grounding">{grounding ? 'on' : 'off'}</button>
             </label>
           </div>
-          <p className="text-xs text-white/55">Generate from a prompt or edit with references. Refer to images by position. Add composition boxes at the end of the prompt as [top, left, bottom, right] on a 0–1000 grid. Auto aspect uses the first reference or a square canvas.</p>
         </div>}
 
         {isBFLFlux2Pro && (
           <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <label className="block">
-              <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/55">Size</span>
+              <span className="mb-1 block text-[10px] font-mono uppercase tracking-wider text-white/55">Size</span>
               <select value={size} onChange={e => setSize(e.target.value)} className={inputCls} data-testid="mp-image-size">
                 {BFL_IMAGE_SIZES.map(value => <option key={value} value={value} className="bg-black">{value}</option>)}
               </select>
             </label>
             <label className="block">
-              <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/55">Output</span>
+              <span className="mb-1 block text-[10px] font-mono uppercase tracking-wider text-white/55">Output</span>
               <select value={outputFormat} onChange={e => setOutputFormat(e.target.value)} className={inputCls} data-testid="mp-image-output-format">
                 {['webp', 'png', 'jpeg'].map(value => <option key={value} value={value} className="bg-black">{value}</option>)}
               </select>
             </label>
             <label className="block">
-              <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/55">Prompt upsampling</span>
+              <span className="mb-1 block text-[10px] font-mono uppercase tracking-wider text-white/55">Prompt upsampling</span>
               <button type="button" onClick={() => setPromptUpsampling(value => !value)} className={`w-full rounded border px-3 py-2 font-mono text-xs ${promptUpsampling ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' : 'border-white/20 bg-black text-white/50'}`} data-testid="mp-image-prompt-upsampling">
                 {promptUpsampling ? 'on' : 'off'}
               </button>
             </label>
             <div>
-              <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/55">Safety</span>
+              <span className="mb-1 block text-[10px] font-mono uppercase tracking-wider text-white/55">Safety</span>
               <div className="rounded border border-white/20 bg-white/[0.06] px-3 py-2 font-mono text-xs text-white/55" data-testid="mp-image-safety-tolerance"><span className="text-white">5</span> · fixed</div>
             </div>
           </div>
         )}
 
-        <button type="button" onClick={generate} disabled={loading || uploading} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded border border-white bg-white px-4 py-2.5 font-mono text-sm font-bold text-black hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-60" data-testid="mp-image-generate">
+        <button type="button" onClick={generate} disabled={loading || uploading} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded border border-white bg-white px-4 py-2.5 font-mono text-sm font-bold text-black hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-60" data-testid="mp-image-generate">
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
           {loading ? 'Generating image…' : 'Generate image here'}
         </button>
         {paywall && <SubscribePrompt paywall={paywall} modelName={modelName} priceLabel={priceLabel} onDismiss={() => setPaywall(null)} />}
         {error && <p className="mt-3 rounded border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs font-mono text-red-200" role="alert">{error}</p>}
+        {isFlux3 && <p className="mt-3 text-[11px] leading-relaxed text-white/50">Generate from a prompt or edit with references. Refer to images by position. Add composition boxes at the end of the prompt as [top, left, bottom, right] on a 0–1000 grid. Auto aspect uses the first reference or a square canvas.</p>}
       </div>
 
-      <div className="border-t border-white/20 p-5 lg:col-span-2">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+      <div className="border-t border-white/20 p-4 lg:col-span-2">
+        <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h3 className="font-mono text-xs font-bold uppercase tracking-[0.14em] text-white/65">Image API example</h3>
-            <p className="mt-1 text-xs text-white/50">Prompt and input image changes update this executable request immediately.</p>
+            <h3 className="font-mono text-xs font-bold uppercase tracking-[0.14em] text-white/65">{demo?.title || 'Image API example'}</h3>
+            <p className="mt-1 text-xs text-white/50">{demo?.description || 'Prompt and input image changes update this executable request immediately.'}</p>
           </div>
+          <label className="block w-full sm:ml-auto sm:w-64">
+            <span className="mb-1 block text-[10px] font-mono uppercase tracking-wider text-white/55">OpenPaths API key</span>
+            <input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="op-..." autoComplete="off" className={inputCls} data-testid="mp-image-api-key" />
+          </label>
           <button type="button" onClick={copy} className="inline-flex items-center gap-2 rounded border border-white/12 px-3 py-2 font-mono text-xs text-white/60 hover:border-white/50 hover:text-white">
             {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
             {copied ? 'Copied' : 'Copy request'}
@@ -405,7 +399,6 @@ export function ImageSpacePanel({
           ))}
         </div>
         <CodeBlock code={snippet} language={lang === 'curl' ? 'bash' : lang} containerClassName="overflow-hidden rounded-lg border border-white/20 bg-black/60" preClassName="max-h-[420px] text-xs" />
-        <div className="mt-3 flex items-center gap-2 text-[11px] text-white/45"><ImageIcon className="h-3.5 w-3.5" /> Output replaces the preview without leaving this model page.</div>
       </div>
     </div>
   );

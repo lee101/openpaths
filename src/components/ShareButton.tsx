@@ -1,7 +1,7 @@
 import React from 'react';
 import { Check, Link2, Share2 } from 'lucide-react';
 
-export function ShareButton({ title, text, path, className = '' }: { title: string; text?: string; path?: string; className?: string }) {
+export function ShareButton({ title, text, path, className = '', compact = false }: { title: string; text?: string; path?: string; className?: string; compact?: boolean }) {
   const [copied, setCopied] = React.useState(false);
   const url = typeof window === 'undefined' ? '' : new URL(path || window.location.pathname, window.location.origin).toString();
   const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
@@ -24,7 +24,7 @@ export function ShareButton({ title, text, path, className = '' }: { title: stri
     }
   };
 
-  const btn = 'inline-flex h-10 items-center gap-2 rounded-lg border border-white/25 px-3 font-mono text-sm text-white/80 transition-colors hover:border-white/60 hover:text-white';
+  const btn = `inline-flex ${compact ? 'h-8 text-xs' : 'h-10 text-sm'} items-center gap-2 rounded-lg border border-white/25 px-3 font-mono text-white/80 transition-colors hover:border-white/60 hover:text-white`;
   return (
     <div className={`flex flex-wrap items-center gap-2 ${className}`}>
       {canShare && (

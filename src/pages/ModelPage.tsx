@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, BookOpen, Gift, Image as ImageIcon, MessageSquare, Video } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookOpen, Check, Copy, Gift, MessageSquare } from 'lucide-react';
 import { ImageSpacePanel } from '../components/ImageSpacePanel';
 import { VideoSpacePanel } from '../components/VideoSpacePanel';
 import { Seo } from '../components/Seo';
@@ -33,6 +33,7 @@ export function ModelPage() {
   const imageDemo = IMAGE_DEMOS[model.id];
   const videoDemo = VIDEO_DEMOS[model.id];
   const relatedModels = getRelatedModels(model);
+  const workspaceFirst = isImage || isVideo;
   const promotionActive = isPromotionActive(model);
   const title = `${model.name} API, Pricing, Context Window | OpenPaths`;
   const description = `${model.name} from ${model.provider}: ${model.description} Use model ID ${model.id} through the OpenPaths API.`;
@@ -67,14 +68,126 @@ export function ModelPage() {
     },
   ];
 
-  const scrollToWorkspace = () => {
-    document.getElementById('model-workspace')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
 
   return (
     <>
       <Seo title={title} description={description} path={`/models/${encodeURIComponent(model.id)}`} image={model.ogImage || modelOgPath(model.id)} jsonLd={jsonLd} />
 
+      {workspaceFirst ? (
+        <section className="mx-auto w-full max-w-[1800px] px-3 py-3 sm:px-4 lg:px-5">
+        <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          <Link to="/models" className="inline-flex items-center gap-1.5 text-xs font-mono text-white/50 hover:text-white transition-colors">
+            <ArrowLeft className="w-3.5 h-3.5" /> Models
+          </Link>
+          <img src={getProviderLogo(model.provider)} alt={`${model.provider} logo`} className={`w-5 h-5 rounded-sm object-contain ${model.provider === 'Black Forest Labs' ? 'bg-white p-px' : ''}`} />
+          <h1 className="text-lg font-bold tracking-tight">{model.name}</h1>
+          <CopyId id={model.id} />
+          <span className="rounded border border-white/20 px-2 py-1 font-mono text-[11px] text-white/70">{formatPrice(model, model.priceInput, 'input')}</span>
+          <p className="hidden min-w-0 flex-1 truncate text-xs text-white/45 2xl:block">{model.description}</p>
+          <div className="ml-auto flex items-center gap-2">
+            {provider && (
+              <Link to={providerDocsPath(provider.slug)} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-white/25 px-3 font-mono text-xs text-white/70 transition-colors hover:border-white/60 hover:text-white">
+                <BookOpen className="h-3.5 w-3.5" /> Docs
+              </Link>
+            )}
+            <ShareButton compact title={`${model.name} on OpenPaths`} text={`${model.name} API and pricing`} path={`/models/${encodeURIComponent(model.id)}`} />
+          </div>
+        </div>
+
+        {isVideo && (
+          <section id="model-workspace" className="scroll-mt-16 overflow-hidden rounded-xl border border-white/20 bg-white/[0.05]">
+            <VideoSpacePanel modelId={model.id} modelName={model.name} demo={videoDemo} initialPrompt={initialPrompt} priceLabel={formatPrice(model, model.priceInput, 'input')} />
+          </section>
+        )}
+
+        {isImage && (
+          <section id={isVideo ? undefined : 'model-workspace'} className="scroll-mt-16 overflow-hidden rounded-xl border border-white/20 bg-white/[0.05]">
+            <ImageSpacePanel
+              modelId={model.id}
+              modelName={model.name}
+              imageToImage={model.tags.includes('image-to-image')}
+              demo={imageDemo}
+              initialPrompt={initialPrompt}
+              priceLabel={formatPrice(model, model.priceInput, 'input')}
+            />
+          </section>
+        )}
+
+
+          <div className="mx-auto max-w-5xl px-3 pb-16 pt-12">
+        <div className="mb-12">
+          <div className="flex items-center gap-2 text-xs font-mono text-white/60 mb-4">
+            <img src={getProviderLogo(model.provider)} alt={`${model.provider} logo`} className={`w-5 h-5 rounded-sm object-contain ${model.provider === 'Black Forest Labs' ? 'bg-white p-px' : ''}`} />
+            {provider ? (
+              <Link to={providerPath(provider.slug)} className="hover:text-white transition-colors underline underline-offset-4 decoration-white/20">
+                {model.provider}
+              </Link>
+            ) : (
+              model.provider
+            )}
+          </div>
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">About {model.name}</h2>
+          <p className="max-w-3xl text-lg leading-relaxed text-white/62 font-light">{model.description}</p>
+        </div>
+
+        {promotionActive && model.promotion && (
+          <div className="mb-10 rounded-2xl border border-emerald-300/20 bg-emerald-300/[0.06] p-6">
+            <div className="flex items-start gap-3">
+              <Gift className="mt-0.5 h-5 w-5 shrink-0 text-emerald-200" />
+              <div>
+                <h2 className="font-semibold text-emerald-50">OpenRouter-exclusive launch discount: 50% off through August 27</h2>
+                <p className="mt-2 text-sm leading-relaxed text-emerald-50/65">
+                  OpenPaths is routing {model.name} through OpenRouter and passing the full savings on to customers: {formatCurrency(model.priceInput)} / 1M input tokens and {formatCurrency(model.priceOutput)} / 1M output tokens. Standard {formatCurrency(model.promotion.standardPriceInput)} / {formatCurrency(model.promotion.standardPriceOutput)} rates and direct Google routing resume August 28.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="grid gap-4 md:grid-cols-3 mb-10">
+          <Fact label="Model ID" value={model.id} code />
+          <Fact label="Context" value={model.contextLength} />
+          <Fact label="Released" value={model.released} />
+          <Fact label="Input price" value={formatPrice(model, model.priceInput, 'input')} />
+          <Fact label="Output price" value={formatPrice(model, model.priceOutput, 'output')} />
+          <Fact label="Provider" value={model.provider} />
+        </div>
+
+        <div className="rounded-2xl border border-white/20 bg-white/[0.05] p-6 mb-10">
+          <h2 className="text-xl font-bold tracking-tight mb-4">Capabilities</h2>
+          <div className="flex flex-wrap gap-2">
+            {model.tags.map(tag => (
+              <span key={tag} className="rounded-full border border-white/20 bg-white/[0.07] px-3 py-1.5 text-xs font-mono text-white/65">
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3 sm:flex-row">
+          {canChat && (
+            <button
+              onClick={() => navigate(`${/^(gpt-realtime|gemini-3.8-live)/.test(model.id) ? '/tools/live-voice' : '/playground'}?model=${encodeURIComponent(model.id)}`)}
+              className="inline-flex items-center justify-center gap-2 rounded border border-white bg-white px-5 py-3 font-mono text-sm font-bold text-black hover:bg-white/90 transition-colors"
+            >
+              <MessageSquare className="w-4 h-4" /> {/^(gpt-realtime|gemini-3.8-live)/.test(model.id) ? 'Start voice call' : 'Chat in playground'}
+            </button>
+          )}
+          {provider && (
+            <Link
+              to={providerDocsPath(provider.slug)}
+              className="inline-flex items-center justify-center gap-2 rounded border border-white/15 bg-white/[0.06] px-5 py-3 font-mono text-sm text-white/70 hover:text-white hover:border-white/50 transition-colors"
+            >
+              <BookOpen className="w-4 h-4" /> {model.provider} docs
+            </Link>
+          )}
+        </div>
+
+
+            <RelatedModels current={model} related={relatedModels} />
+          </div>
+        </section>
+      ) : (
       <section className="max-w-5xl mx-auto px-6 py-16">
         <div className="mb-8">
           <Link to="/models" className="inline-flex items-center gap-1.5 text-xs font-mono text-white/50 hover:text-white transition-colors">
@@ -141,22 +254,6 @@ export function ModelPage() {
               <MessageSquare className="w-4 h-4" /> {/^(gpt-realtime|gemini-3.8-live)/.test(model.id) ? 'Start voice call' : 'Chat in playground'}
             </button>
           )}
-          {isImage && (
-            <button
-              onClick={scrollToWorkspace}
-              className="inline-flex items-center justify-center gap-2 rounded border border-white bg-white px-5 py-3 font-mono text-sm font-bold text-black hover:bg-white/90 transition-colors"
-            >
-              <ImageIcon className="w-4 h-4" /> Open image workspace
-            </button>
-          )}
-          {isVideo && (
-            <button
-              onClick={scrollToWorkspace}
-              className="inline-flex items-center justify-center gap-2 rounded border border-white bg-white px-5 py-3 font-mono text-sm font-bold text-black hover:bg-white/90 transition-colors"
-            >
-              <Video className="w-4 h-4" /> Open video workspace
-            </button>
-          )}
           {provider && (
             <Link
               to={providerDocsPath(provider.slug)}
@@ -167,28 +264,26 @@ export function ModelPage() {
           )}
         </div>
 
-        {isVideo && (
-          <section id="model-workspace" className="mt-12 scroll-mt-24 overflow-hidden rounded-2xl border border-white/20 bg-white/[0.05]">
-            <VideoSpacePanel modelId={model.id} modelName={model.name} demo={videoDemo} initialPrompt={initialPrompt} priceLabel={formatPrice(model, model.priceInput, 'input')} />
-          </section>
-        )}
-
-        {isImage && (
-          <section id={isVideo ? undefined : 'model-workspace'} className="mt-12 scroll-mt-24 rounded-2xl border border-white/20 bg-white/[0.05] overflow-hidden">
-            <ImageSpacePanel
-              modelId={model.id}
-              modelName={model.name}
-              imageToImage={model.tags.includes('image-to-image')}
-              demo={imageDemo}
-              initialPrompt={initialPrompt}
-              priceLabel={formatPrice(model, model.priceInput, 'input')}
-            />
-          </section>
-        )}
-
         <RelatedModels current={model} related={relatedModels} />
       </section>
+      )}
     </>
+  );
+}
+
+function CopyId({ id }: { id: string }) {
+  const [copied, setCopied] = React.useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(id);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {}
+  };
+  return (
+    <button type="button" onClick={copy} title="Copy model ID" className="inline-flex h-7 items-center gap-1.5 rounded border border-white/20 bg-white/[0.05] px-2 font-mono text-[11px] text-white/75 transition-colors hover:border-white/50 hover:text-white">
+      {id} {copied ? <Check className="h-3 w-3 text-emerald-300" /> : <Copy className="h-3 w-3" />}
+    </button>
   );
 }
 

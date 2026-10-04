@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Check, Copy, Loader2, Upload, Video, Wand2 } from 'lucide-react';
+import { Check, Copy, Loader2, Upload, Wand2 } from 'lucide-react';
 import { CodeBlock } from './CodeBlock';
 import type { VideoDemo } from '../data/videoDemos';
 import {
@@ -117,14 +117,14 @@ JSON`;
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-white/55">{label}</span>
+      <span className="mb-1 block text-[10px] font-mono uppercase tracking-wider text-white/55">{label}</span>
       {children}
     </label>
   );
 }
 
 const selectCls =
-  'w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white/50';
+  'w-full bg-white/[0.06] border border-white/30 rounded px-2.5 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-white/50';
 const inputCls = selectCls + ' placeholder:text-white/45';
 
 async function responseJSON(resp: Response) {
@@ -343,81 +343,49 @@ export function VideoSpacePanel({ modelId, modelName, demo, initialPrompt, price
   const previewImage = spec.recast ? base.imageUrls?.[0] : usesImageInput ? imageUrl || starter.imageUrls?.[0] : undefined;
 
   return (
-    <div className="grid gap-0 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]" data-testid="mp-video-panel">
-      <div className="border-b border-white/20 lg:border-b-0 lg:border-r">
-        <div className="relative bg-black">
-          <video
-            key={outputUrl}
-            src={outputUrl}
-            controls
-            muted
-            loop
-            playsInline
-            preload="auto"
-            poster={generated ? undefined : previewImage}
-            className="aspect-video w-full bg-black object-contain"
-            data-testid="mp-video-output"
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-0 lg:grid-cols-[minmax(0,1fr)_minmax(340px,400px)] xl:grid-cols-[minmax(0,1fr)_420px]" data-testid="mp-video-panel">
+      <div className="relative border-b border-white/20 bg-black lg:border-b-0 lg:border-r">
+        <video
+          key={outputUrl}
+          src={outputUrl}
+          controls
+          muted
+          loop
+          playsInline
+          preload="auto"
+          poster={generated ? undefined : previewImage}
+          className="mx-auto aspect-video w-full bg-black object-contain lg:max-h-[calc(100vh-8.5rem)] lg:min-h-[320px]"
+          data-testid="mp-video-output"
+        />
+        <div className="absolute left-3 top-3 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-white/70">
+          <span className="rounded border border-white/15 bg-black/75 px-2 py-1 backdrop-blur">{generated ? 'Generated output' : demo ? 'Example output' : 'Starter output preview'}</span>
+          <span className="hidden rounded border border-white/15 bg-black/75 px-2 py-1 backdrop-blur sm:inline">{resolution} · {duration === 'auto' ? 'auto' : `${duration}s`} · {aspectRatio}</span>
+        </div>
+        {previewImage ? (
+          <img
+            src={previewImage}
+            alt={`${modelName} reference input`}
+            className="absolute bottom-14 left-3 h-16 w-16 rounded-md border border-white/30 bg-black/70 object-contain backdrop-blur sm:h-20 sm:w-20"
+            data-testid="mp-video-input-preview"
           />
-          <div className="absolute left-3 top-3 rounded border border-white/15 bg-black/75 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.14em] text-white/65 backdrop-blur">
-            {generated ? 'Generated output' : demo ? 'Example output' : 'Starter output preview'}
-          </div>
-        </div>
-        <div className={`grid gap-4 border-t border-white/20 p-4 ${previewImage ? 'md:grid-cols-[140px_minmax(0,1fr)]' : ''}`}>
-          {previewImage ? (
-            <div>
-              <div className="mb-2 text-[10px] font-mono uppercase tracking-[0.16em] text-white/50">Input image</div>
-              <img
-                src={previewImage}
-                alt={`${modelName} reference input`}
-                className="aspect-square w-full rounded-lg border border-white/20 bg-white/[0.06] object-contain"
-                data-testid="mp-video-input-preview"
-              />
-            </div>
-          ) : null}
-          <div className="min-w-0">
-            <div className="mb-2 text-[10px] font-mono uppercase tracking-[0.16em] text-white/50">Current prompt</div>
-            <p className="text-sm leading-relaxed text-white/58">{prompt}</p>
-            <div className="mt-4 flex flex-wrap gap-2 text-[10px] font-mono uppercase tracking-[0.14em] text-white/50">
-              <span className="rounded border border-white/20 px-2 py-1">{resolution}</span>
-              <span className="rounded border border-white/20 px-2 py-1">{duration === 'auto' ? 'auto duration' : `${duration}s`}</span>
-              <span className="rounded border border-white/20 px-2 py-1">{aspectRatio}</span>
-            </div>
-          </div>
-        </div>
+        ) : null}
       </div>
 
-      <div className="p-5">
-        <div className="mb-4">
-          <h2 className="text-xl font-bold tracking-tight">Generate with {modelName}</h2>
-          <p className="mt-1 text-sm text-white/45">Edit the example and run it here. The API request below stays in sync.</p>
-        </div>
+      <div className="p-4">
+        <h2 className="sr-only">Generate with {modelName}</h2>
 
-        <Field label="OpenPaths API key">
-          <input
-            type="password"
-            value={apiKey}
-            onChange={e => setApiKey(e.target.value)}
-            placeholder="op-..."
-            autoComplete="off"
-            className={inputCls}
-            data-testid="mp-video-api-key"
+        <Field label={spec.recast ? 'Who becomes whom (optional)' : usesImageInput || inputMode === 'video-to-video' ? 'Motion prompt' : 'Prompt'}>
+          <textarea
+            value={prompt}
+            onChange={e => setPrompt(e.target.value)}
+            rows={8}
+            className={`${inputCls} resize-y text-sm leading-relaxed`}
+            data-testid="mp-video-prompt"
           />
         </Field>
 
-        <div className="mt-3">
-          <Field label={spec.recast ? 'Who becomes whom (optional)' : usesImageInput || inputMode === 'video-to-video' ? 'Motion prompt' : 'Prompt'}>
-            <textarea
-              value={prompt}
-              onChange={e => setPrompt(e.target.value)}
-              rows={5}
-              className={`${inputCls} resize-y text-sm leading-relaxed`}
-              data-testid="mp-video-prompt"
-            />
-          </Field>
-        </div>
-
         {spec.inputModes && (
-          <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+          <div className="mt-2.5 grid gap-2.5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
             <Field label="Video mode">
               <select
                 value={inputMode}
@@ -431,7 +399,7 @@ export function VideoSpacePanel({ modelId, modelName, demo, initialPrompt, price
               >
                 {spec.inputModes.map(mode => (
                   <option key={mode} value={mode} className="bg-black">
-                    {mode === 'text-to-video' ? 'Text / Image → Video: text' : mode === 'image-to-video' ? 'Text / Image → Video: image' : 'Video → Video'}
+                    {mode === 'text-to-video' ? 'Text → Video' : mode === 'image-to-video' ? 'Image → Video' : 'Video → Video'}
                   </option>
                 ))}
               </select>
@@ -445,7 +413,7 @@ export function VideoSpacePanel({ modelId, modelName, demo, initialPrompt, price
         )}
 
         {usesImageInput && !spec.recast && (
-          <div className="mt-3">
+          <div className="mt-2.5">
             <Field label={spec.referenceToVideo ? 'Reference image URL' : 'Input image URL'}>
               <div className="flex gap-2">
                 <input
@@ -466,7 +434,7 @@ export function VideoSpacePanel({ modelId, modelName, demo, initialPrompt, price
         )}
 
         {usesImageInput && !spec.recast && (spec.inputModes || (spec.imageToVideo && spec.endImage)) && (
-          <div className="mt-3">
+          <div className="mt-2.5">
             <Field label="End image URL (optional)">
               <input value={endImageUrl} onChange={e => setEndImageUrl(e.target.value)} placeholder="https://example.com/last-frame.webp" className={inputCls} data-testid="mp-video-end-image-url" />
             </Field>
@@ -501,7 +469,7 @@ export function VideoSpacePanel({ modelId, modelName, demo, initialPrompt, price
           </div>
         )}
 
-        <div className="my-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="my-3 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
           <Field label="Resolution">
             <select value={resolution} onChange={e => setResolution(e.target.value as typeof resolution)} className={selectCls} data-testid="mp-video-resolution">
               {spec.resolutions.map(v => <option key={v} value={v} className="bg-black">{v}</option>)}
@@ -605,11 +573,16 @@ export function VideoSpacePanel({ modelId, modelName, demo, initialPrompt, price
         {error && <p className="mt-3 rounded border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs font-mono text-red-200" role="alert">{error}</p>}
       </div>
 
-      <div className="border-t border-white/20 p-5 lg:col-span-2">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+      <div className="border-t border-white/20 p-4 lg:col-span-2">
+        <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
           <div>
             <h3 className="font-mono text-xs font-bold uppercase tracking-[0.14em] text-white/65">Video API example</h3>
             <p className="mt-1 text-xs text-white/50">Prompt, image, and settings update this code immediately.</p>
+          </div>
+          <div className="w-full sm:ml-auto sm:w-64">
+            <Field label="OpenPaths API key">
+              <input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="op-..." autoComplete="off" className={inputCls} data-testid="mp-video-api-key" />
+            </Field>
           </div>
           <button type="button" onClick={copy} className="inline-flex items-center gap-2 rounded border border-white/12 px-3 py-2 font-mono text-xs text-white/60 transition-colors hover:border-white/50 hover:text-white">
             {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
@@ -634,9 +607,6 @@ export function VideoSpacePanel({ modelId, modelName, demo, initialPrompt, price
           containerClassName="overflow-hidden rounded-lg border border-white/20 bg-black/60"
           preClassName="max-h-[420px] text-xs"
         />
-        <div className="mt-3 flex items-center gap-2 text-[11px] text-white/45">
-          <Video className="h-3.5 w-3.5" /> Output replaces the preview without leaving this model page.
-        </div>
       </div>
     </div>
   );
