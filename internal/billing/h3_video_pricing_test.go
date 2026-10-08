@@ -63,3 +63,17 @@ func TestRecastMeasuredDurationPricing(t *testing.T) {
 		}
 	}
 }
+
+func TestRelightPricing(t *testing.T) {
+	pt := NewPricingTable([]model.ModelConfig{{ID: "minimax-h3-max-relight", PricePerSecond: .352, PricePerSecondByResolution: map[string]float64{"480p": .055, "768p": .088, "1080p": .176, "2k": .352}}})
+	for _, tc := range []struct {
+		resolution string
+		seconds    float64
+		want       int64
+	}{{"480P", 4, 2200}, {"768P", 3, 2640}, {"1080P", 10, 17600}, {"2K", 10, 35200}, {"", 5, 17600}} {
+		got, err := pt.CalculateVideoCostForDuration("minimax-h3-max-relight", tc.seconds, true, 1, tc.resolution)
+		if err != nil || got > tc.want || got < tc.want-1 {
+			t.Fatalf("%s %vs: got %d, err %v; want %d", tc.resolution, tc.seconds, got, err, tc.want)
+		}
+	}
+}

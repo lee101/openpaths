@@ -75,6 +75,16 @@ export function buildVideoPayload(
     body.reference_image_urls = (base.imageUrls || []).map(url => url.trim()).filter(Boolean);
   }
 
+  if (spec.relight) {
+    delete body.prompt;
+    delete body.duration;
+    delete body.generate_audio;
+    delete body.image_url;
+    delete body.end_image_url;
+    body.video_url = base.videoUrl?.trim() || base.videoUrls?.[0];
+    body.reference_image_url = base.imageUrl?.trim() || base.imageUrls?.[0]?.trim();
+  }
+
   // Advanced args: only included when supported by the model AND set by the user.
   const a = advanced;
   if (spec.negativePrompt && a.negativePrompt?.trim()) body.negative_prompt = a.negativePrompt.trim();

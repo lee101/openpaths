@@ -40,6 +40,7 @@ type VideoGenerationRequest struct {
 	Operation             string             `json:"operation,omitempty"`
 	ImageURL              string             `json:"image_url,omitempty"`
 	EndImageURL           string             `json:"end_image_url,omitempty"`
+	ReferenceImageURL     string             `json:"reference_image_url,omitempty"`
 	ReferenceImageURLs    []string           `json:"reference_image_urls,omitempty"`
 	ImageURLs             []string           `json:"image_urls,omitempty"`
 	VideoURL              string             `json:"video_url,omitempty"`
@@ -164,4 +165,8 @@ func (r VideoGenerationRequest) TextPrompt() string {
 
 func IsH3MaxRecast(id string) bool {
 	return id == "minimax-h3-max-recast" || id == "minimax/h3-max/recast" || id == "h3-max-recast"
+}
+
+func IsH3MaxRelight(id string) bool {
+	return id == "minimax-h3-max-relight" || id == "minimax/h3-max/relight" || id == "h3-max-relight"
 }

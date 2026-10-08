@@ -2617,6 +2617,20 @@ const catalogModels: Model[] = [
     pricingType: 'second'
   },
   {
+    id: 'minimax-h3-max-relight',
+    name: 'H3 Max Relight',
+    provider: 'Fal',
+    description: 'Video relighting: re-light an existing 2.3-15 second clip from a reference sphere render that shows the target lighting, keeping the original motion and subject. Choose a preset or upload your own sphere. $0.055 per second at 480P, $0.088 at 768P, $0.176 at 1080P or $0.352 at 2K, billed on clip length (3-15 s).',
+    contextLength: 'N/A',
+    priceInput: 0.088,
+    priceOutput: 0,
+    tags: ['video generation', 'video-to-video', 'vision'],
+    aliases: ['minimax/h3-max/relight', 'h3-max-relight', 'video-relighting'],
+    released: '2026-10-07',
+    popularity: 77,
+    pricingType: 'second'
+  },
+  {
     id: 'minimax-h3-max-image-to-video',
     name: 'MiniMax H3 Max Image to Video',
     provider: 'Fal',

@@ -83,7 +83,7 @@ func (h *VideoHandler) handleVideoRequest(ctx *fasthttp.RequestCtx, operation st
 		return
 	}
 	req.Prompt = req.TextPrompt()
-	if req.Prompt == "" && len(req.Input) == 0 && !model.IsH3MaxRecast(req.Model) {
+	if req.Prompt == "" && len(req.Input) == 0 && !model.IsH3MaxRecast(req.Model) && !model.IsH3MaxRelight(req.Model) {
 		writeError(ctx, 400, "invalid_request", "prompt or input is required")
 		return
 	}
@@ -356,6 +356,12 @@ func (h *VideoHandler) executeVideoGeneration(ctx context.Context, req model.Vid
 				return videoExecutionResult{StatusCode: 502, ErrorType: "video_duration_failed", ErrorMessage: err.Error()}
 			}
 			resp.DurationSeconds = seconds
+		} else if model.IsH3MaxRelight(cand.ModelCfg.ProviderModelID) {
+			seconds, err := probeRelightOutputDuration(ctx, resp.VideoURL)
+			if err != nil {
+				return videoExecutionResult{StatusCode: 502, ErrorType: "video_duration_failed", ErrorMessage: err.Error()}
+			}
+			resp.DurationSeconds = relightBillableSeconds(seconds)
 		}
 		h.ensurePublicVideoURL(ctx, resp, originalModel)
 		if wantsVideoWebM(req.OutputFormat) {
@@ -374,7 +380,7 @@ func (h *VideoHandler) executeVideoGeneration(ctx context.Context, req model.Vid
 		var cost int64
 		if h.billing != nil {
 			seconds := float64(videoDurationSeconds(string(req.Duration)))
-			if model.IsH3MaxRecast(cand.ModelCfg.ProviderModelID) {
+			if model.IsH3MaxRecast(cand.ModelCfg.ProviderModelID) || model.IsH3MaxRelight(cand.ModelCfg.ProviderModelID) {
 				seconds = resp.DurationSeconds
 			}
 			cost, _ = h.billing.DeductVideoForDuration(ctx, userID, cand.ModelCfg.ID, seconds, req.HasVideoInput(), req.InputImageCount(), req.Resolution, "")

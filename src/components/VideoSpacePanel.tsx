@@ -50,7 +50,7 @@ function storedAPIKey() {
   return localStorage.getItem('op_api_key') || '';
 }
 
-function snippetFor(payload: Record<string, unknown>, lang: Lang, apiKey: string): string {
+export function snippetFor(payload: Record<string, unknown>, lang: Lang, apiKey: string): string {
   const apiBase = 'https://openpaths.io/v1';
   const bearer = apiKey.trim() || 'op-...';
   const body = JSON.stringify(payload, null, 2);
@@ -114,7 +114,7 @@ ${body}
 JSON`;
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+export function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
       <span className="mb-1 block text-[10px] font-mono uppercase tracking-wider text-white/55">{label}</span>
@@ -123,11 +123,11 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-const selectCls =
+export const selectCls =
   'w-full bg-white/[0.06] border border-white/30 rounded px-2.5 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-white/50';
-const inputCls = selectCls + ' placeholder:text-white/45';
+export const inputCls = selectCls + ' placeholder:text-white/45';
 
-async function responseJSON(resp: Response) {
+export async function responseJSON(resp: Response) {
   const text = await resp.text();
   if (!text) return {};
   try {
@@ -137,12 +137,12 @@ async function responseJSON(resp: Response) {
   }
 }
 
-function apiError(data: any, fallback: string) {
+export function apiError(data: any, fallback: string) {
   if (typeof data?.error === 'string') return data.error;
   return data?.error?.message || fallback;
 }
 
-async function pollVideoJob(apiKey: string, id: string): Promise<any> {
+export async function pollVideoJob(apiKey: string, id: string): Promise<any> {
   const deadline = Date.now() + 15 * 60 * 1000;
   while (Date.now() < deadline) {
     await new Promise(resolve => window.setTimeout(resolve, 2000));
