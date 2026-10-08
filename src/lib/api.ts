@@ -26,9 +26,9 @@ export function onAuthChange(fn: () => void): () => void {
   return () => window.removeEventListener(AUTH_EVENT, fn);
 }
 
-export function requestCreditTopUp() {
+export function requestCreditTopUp(surface?: unknown) {
   if (typeof window === 'undefined') return;
-  window.dispatchEvent(new CustomEvent(CREDITS_REQUIRED_EVENT));
+  window.dispatchEvent(new CustomEvent(CREDITS_REQUIRED_EVENT, { detail: { surface: typeof surface === 'string' ? surface : 'credits_required' } }));
 }
 
 export async function api(path: string, opts: RequestInit = {}): Promise<Response> {
