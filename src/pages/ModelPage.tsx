@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-r
 import { ArrowLeft, ArrowRight, BookOpen, Gift, Image as ImageIcon, MessageSquare, Video } from 'lucide-react';
 import { ImageSpacePanel } from '../components/ImageSpacePanel';
 import { VideoSpacePanel } from '../components/VideoSpacePanel';
+import { RelightSpacePanel } from '../components/RelightSpacePanel';
 import { Seo } from '../components/Seo';
 import { ShareButton } from '../components/ShareButton';
 import { modelOgPath } from '../lib/modelOg';
@@ -169,7 +170,9 @@ export function ModelPage() {
 
         {isVideo && (
           <section id="model-workspace" className="mt-12 scroll-mt-24 overflow-hidden rounded-2xl border border-white/20 bg-white/[0.05]">
-            <VideoSpacePanel modelId={model.id} modelName={model.name} demo={videoDemo} initialPrompt={initialPrompt} priceLabel={formatPrice(model, model.priceInput, 'input')} />
+            {model.id === 'minimax-h3-max-relight'
+              ? <RelightSpacePanel modelId={model.id} modelName={model.name} />
+              : <VideoSpacePanel modelId={model.id} modelName={model.name} demo={videoDemo} initialPrompt={initialPrompt} priceLabel={formatPrice(model, model.priceInput, 'input')} />}
           </section>
         )}
 

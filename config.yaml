@@ -863,6 +863,33 @@ models:
     supports_tools: false
     supports_vision: false
     supported_sizes:
+  - id: "minimax-h3-max-recast"
+    provider: fal
+    provider_model_id: "minimax/h3-max/recast"
+    price_per_second: 0.45
+    price_per_second_by_resolution:
+      768p: 0.30
+      1080p: 0.45
+    free_input_image_count: 4
+    aliases: ["minimax/h3-max/recast", "h3-max-recast"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "minimax-h3-max-relight"
+    provider: fal
+    provider_model_id: "minimax/h3-max/relight"
+    price_per_second: 0.352
+    price_per_second_by_resolution:
+      480p: 0.055
+      768p: 0.088
+      1080p: 0.176
+      2k: 0.352
+    aliases: ["minimax/h3-max/relight", "h3-max-relight"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
       - "512x512"
       - "768x768"
       - "1024x1024"

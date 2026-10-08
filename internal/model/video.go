@@ -159,3 +159,11 @@ func (r VideoGenerationRequest) TextPrompt() string {
 	}
 	return ""
 }
+
+func IsH3MaxRecast(id string) bool {
+	return id == "minimax-h3-max-recast" || id == "minimax/h3-max/recast" || id == "h3-max-recast"
+}
+
+func IsH3MaxRelight(id string) bool {
+	return id == "minimax-h3-max-relight" || id == "minimax/h3-max/relight" || id == "h3-max-relight"
+}

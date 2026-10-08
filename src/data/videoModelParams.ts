@@ -13,6 +13,8 @@ export type VideoParamSpec = {
   generateAudio: boolean; // audio toggle supported (false => hidden / forced)
   enableSafetyChecker: boolean; // forces enable_safety_checker:true (happy-horse)
   safetyTolerance?: number; // fixed provider value included in the request
+  recast?: boolean;
+  relight?: boolean;
   // input modes
   inputModes?: VideoInputMode[];
   imageToVideo: boolean;
@@ -49,6 +51,34 @@ const BASE: VideoParamSpec = {
 
 // Family overrides keyed by a detector. First match wins (order matters).
 const FAMILIES: Array<{ test: RegExp; spec: Partial<VideoParamSpec> }> = [
+  {
+    test: /^(minimax-h3-max-relight|minimax\/h3-max\/relight|h3-max-relight)$/i,
+    spec: {
+      relight: true,
+      inputModes: ['video-to-video'],
+      resolutions: ['768P', '480P', '1080P', '2K'],
+      durations: ['auto'],
+      aspectRatios: ['16:9', 'adaptive', '21:9', '4:3', '1:1', '3:4', '9:16'],
+      generateAudio: false,
+      negativePrompt: false,
+      seed: true,
+      outputFormats: undefined,
+    },
+  },
+  {
+    test: /^(minimax-h3-max-recast|minimax\/h3-max\/recast|h3-max-recast)$/i,
+    spec: {
+      recast: true,
+      inputModes: ['video-to-video'],
+      resolutions: ['1080P', '768P'],
+      durations: ['auto'],
+      aspectRatios: ['auto'],
+      generateAudio: false,
+      negativePrompt: false,
+      seed: true,
+      outputFormats: undefined,
+    },
+  },
   {
     // Wan 3.0: resolution tiers 480p-1080p, smart or fixed 2-30s duration,
     // native audio. No negative prompt / guidance / steps in its schema.
