@@ -52,6 +52,7 @@ import { TopUpModal, getStripe } from '../components/TopUpModal';
 import { GuardrailsPanel } from '../components/GuardrailsPanel';
 import { ProviderKeysPanel } from '../components/ProviderKeysPanel';
 import { AUTH_EVENT, clearApiKey, setApiKey as storeApiKey } from '../lib/api';
+import { trackAuthCompleted, trackAuthStarted } from '../lib/th';
 
 const API_BASE = '';
 const RECOMMENDED_THRESHOLD_USD = 100;
@@ -212,6 +213,7 @@ function AuthForms({ onAuth }: { onAuth: (token: string, user: any, newApiKey?: 
     setLoading(true);
     try {
       const body = mode === 'register' ? { email, password, name } : { email, password };
+      trackAuthStarted(mode, 'account_page');
       const res = await api(`/auth/${mode}`, { method: 'POST', body: JSON.stringify(body) });
       const data = await res.json();
       if (!res.ok) {
@@ -224,6 +226,7 @@ function AuthForms({ onAuth }: { onAuth: (token: string, user: any, newApiKey?: 
       localStorage.setItem('op_user', JSON.stringify(data.user));
 	  window.userData = { id: data.user.id, email: data.user.email, name: data.user.name, secret: token, authenticated: true };
       window.dispatchEvent(new Event('auth-change'));
+      trackAuthCompleted(mode, 'account_page', data.user?.id);
 	  onAuth(token, data.user, data.api_key);
     } catch {
       setError('Network error');
@@ -2570,6 +2573,7 @@ export function Account() {
 
       <TopUpModal
         open={stripeModalOpen}
+        surface="account_billing"
         onClose={() => {
           setStripeModalOpen(false);
           void refreshBilling();

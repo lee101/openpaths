@@ -643,8 +643,8 @@ export function ArtGenerationStudio({
         </div>
       </div>
 
-      <AuthModal open={authOpen} onClose={() => { setAuthOpen(false); pendingAction.current = null; }} onSuccess={() => void handleAuthSuccess()} />
-      <TopUpModal open={topUpOpen} initialAmount={25} onClose={() => { setTopUpOpen(false); void refreshBalance(); }} />
+      <AuthModal open={authOpen} surface="art_studio" onClose={() => { setAuthOpen(false); pendingAction.current = null; }} onSuccess={() => void handleAuthSuccess()} />
+      <TopUpModal open={topUpOpen} surface="art_studio" initialAmount={25} onClose={() => { setTopUpOpen(false); void refreshBalance(); }} />
     </section>
   );
 }

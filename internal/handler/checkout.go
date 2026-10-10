@@ -13,6 +13,7 @@ import (
 	"github.com/openpaths/openpaths/internal/db/queries"
 	"github.com/openpaths/openpaths/internal/middleware"
 	stripesvc "github.com/openpaths/openpaths/internal/stripe"
+	"github.com/openpaths/openpaths/internal/twohelixes"
 )
 
 type CheckoutHandler struct {
@@ -40,7 +41,8 @@ func NewCheckoutHandler(stripe *stripesvc.Service, userQ *queries.UserQueries, b
 }
 
 type createCheckoutRequest struct {
-	AmountUSD int `json:"amount_usd"`
+	AmountUSD int    `json:"amount_usd"`
+	Surface   string `json:"surface"`
 }
 
 // HandleCreateCheckout creates an embedded Stripe Checkout session.
@@ -100,6 +102,12 @@ func (h *CheckoutHandler) HandleCreateCheckout(ctx *fasthttp.RequestCtx) {
 		"user_id":    userID,
 		"amount_usd": fmt.Sprintf("%d", req.AmountUSD),
 		"type":       "credits_purchase",
+	}
+	if s := req.Surface; s != "" {
+		if len(s) > 40 {
+			s = s[:40]
+		}
+		metadata["surface"] = s
 	}
 
 	clientSecret, err := h.stripe.CreateCheckoutSession(customerID, h.priceID, returnURL, quantity, metadata)
@@ -213,6 +221,7 @@ func (h *CheckoutHandler) handleCheckoutCompleted(ctx *fasthttp.RequestCtx, raw 
 	} else {
 		log.Printf("webhook: session %s already credited, no-op", session.ID)
 	}
+	twohelixes.Purchase(userID, session.ID, "credits", session.Metadata["surface"], strings.ToUpper(session.Currency), float64(session.AmountTotal)/100.0)
 
 	h.saveCheckoutPaymentMethod(ctx, userID, session.PaymentIntent)
 }

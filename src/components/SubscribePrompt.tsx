@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, CreditCard, Lock, Sparkles, X } from 'lucide-react';
 import { requestCreditTopUp } from '../lib/api';
 import { requestSignIn, type Paywall } from '../lib/paywall';
+import { track } from '../lib/th';
 
 export function SubscribePrompt({
   paywall,
@@ -17,6 +18,9 @@ export function SubscribePrompt({
 }) {
   const login = paywall.kind === 'login';
   const pricingHref = paywall.subscribeUrl.replace(/^https:\/\/openpaths\.io/, '') || '/pricing';
+  useEffect(() => {
+    track('paywall_open', { surface: 'model_space', kind: paywall.kind, model: modelName });
+  }, [paywall.kind, modelName]);
   return (
     <div className="relative mt-4 overflow-hidden rounded-xl border border-white/25 bg-gradient-to-br from-white/[0.10] via-white/[0.04] to-emerald-400/[0.08] p-5" role="dialog" aria-label={login ? 'Sign in to generate' : 'Add credits to generate'} data-testid="subscribe-prompt">
       <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-emerald-400/10 blur-2xl" />
@@ -41,11 +45,11 @@ export function SubscribePrompt({
       </ul>
       <div className="mt-4 flex flex-wrap gap-2">
         {login ? (
-          <button type="button" onClick={requestSignIn} className="inline-flex items-center gap-2 rounded border border-white bg-white px-4 py-2 font-mono text-sm font-bold text-black hover:bg-white/90" data-testid="subscribe-prompt-signin">
+          <button type="button" onClick={() => { track('paywall_signup_clicked', { surface: 'model_space', model: modelName }); requestSignIn(); }} className="inline-flex items-center gap-2 rounded border border-white bg-white px-4 py-2 font-mono text-sm font-bold text-black hover:bg-white/90" data-testid="subscribe-prompt-signin">
             Sign in or create account <ArrowRight className="h-4 w-4" />
           </button>
         ) : (
-          <button type="button" onClick={requestCreditTopUp} className="inline-flex items-center gap-2 rounded border border-white bg-white px-4 py-2 font-mono text-sm font-bold text-black hover:bg-white/90" data-testid="subscribe-prompt-topup">
+          <button type="button" onClick={() => requestCreditTopUp('model_space')} className="inline-flex items-center gap-2 rounded border border-white bg-white px-4 py-2 font-mono text-sm font-bold text-black hover:bg-white/90" data-testid="subscribe-prompt-topup">
             <CreditCard className="h-4 w-4" /> Add credits
           </button>
         )}

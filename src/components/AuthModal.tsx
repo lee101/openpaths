@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { Eye, EyeOff, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { setApiKey } from '../lib/api';
+import { trackAuthCompleted, trackAuthStarted } from '../lib/th';
 
-export function AuthModal({ open, onClose, onSuccess, initialMode = 'login' }: { open: boolean; onClose: () => void; onSuccess?: () => void; initialMode?: 'login' | 'register' }) {
+export function AuthModal({ open, onClose, onSuccess, initialMode = 'login', surface = 'auth_modal' }: { open: boolean; onClose: () => void; onSuccess?: () => void; initialMode?: 'login' | 'register'; surface?: string }) {
   const [mode, setMode] = useState<'login' | 'register'>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,6 +24,7 @@ export function AuthModal({ open, onClose, onSuccess, initialMode = 'login' }: {
     e.preventDefault();
     setError('');
     setLoading(true);
+    trackAuthStarted(mode, surface);
     try {
       const body = mode === 'register' ? { email, password, name } : { email, password };
       const res = await fetch(`/auth/${mode}`, {
@@ -41,6 +43,7 @@ export function AuthModal({ open, onClose, onSuccess, initialMode = 'login' }: {
       localStorage.setItem('op_user', JSON.stringify(data.user));
 	  window.userData = { id: data.user?.id, email: data.user?.email, name: data.user?.name, secret: token, authenticated: true };
       window.dispatchEvent(new Event('auth-change'));
+      trackAuthCompleted(mode, surface, data.user?.id);
       onSuccess?.();
       onClose();
     } catch {

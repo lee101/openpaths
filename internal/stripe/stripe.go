@@ -153,6 +153,7 @@ type CheckoutSession struct {
 	PaymentIntent string            `json:"payment_intent"`
 	PaymentStatus string            `json:"payment_status"`
 	AmountTotal   int64             `json:"amount_total"`
+	Currency      string            `json:"currency"`
 	Metadata      map[string]string `json:"metadata"`
 	Status        string            `json:"status"`
 }
