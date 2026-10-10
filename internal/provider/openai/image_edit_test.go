@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/openpaths/openpaths/internal/model"
+	"github.com/openpaths/openpaths/internal/provider"
 )
 
 func TestGenerateImageEditUploadsURLInputAsMultipart(t *testing.T) {
@@ -105,5 +106,18 @@ func TestImageInputURLsCollectsPrimaryAndReferenceInputs(t *testing.T) {
 	})
 	if len(urls) != 3 || urls[0] != "https://example.com/one.png" || urls[2] != "https://example.com/three.png" {
 		t.Fatalf("urls = %#v", urls)
+	}
+}
+
+func TestGenerateImageErrorMessageTruncated(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write(make([]byte, 50000))
+	}))
+	defer srv.Close()
+	_, err := New("k", srv.URL).GenerateImage(context.Background(), &model.ImageGenerationRequest{Model: "dall-e-3", Prompt: "x"})
+	pe, ok := err.(*provider.ProviderError)
+	if !ok || len(pe.Message) > maxImageErrorBytes {
+		t.Fatalf("err = %#v", err)
 	}
 }

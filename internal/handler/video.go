@@ -253,11 +253,7 @@ func (h *VideoHandler) waitDurableVideoJob(jobID string, timeout time.Duration) 
 func (h *VideoHandler) runDurableVideoJob(jobID string, req model.VideoGenerationRequest, userID, apiKeyID string, app requestApp) {
 	atomic.AddInt64(&activeVideoJobs, 1)
 	defer atomic.AddInt64(&activeVideoJobs, -1)
-	// video-dramatize rides the upstream dramatizer agent SLA (~30-60 min).
-	budget := 15 * time.Minute
-	if req.Model == "video-dramatize" {
-		budget = 60 * time.Minute
-	}
+	budget := videoJobBudget(req.Model)
 	bg, cancel := context.WithTimeout(context.Background(), budget)
 	defer cancel()
 	_ = h.jobQ.MarkRunning(bg, jobID)
@@ -276,11 +272,7 @@ func (h *VideoHandler) runDurableVideoJob(jobID string, req model.VideoGeneratio
 
 func (h *VideoHandler) runVideoJob(jobID string, req model.VideoGenerationRequest, userID, apiKeyID string, app requestApp) {
 	atomic.AddInt64(&activeVideoJobs, 1)
-	// video-dramatize rides the upstream dramatizer agent SLA (~30-60 min).
-	budget := 15 * time.Minute
-	if req.Model == "video-dramatize" {
-		budget = 60 * time.Minute
-	}
+	budget := videoJobBudget(req.Model)
 	ctx, cancel := context.WithTimeout(context.Background(), budget)
 	defer cancel()
 	defer atomic.AddInt64(&activeVideoJobs, -1)
@@ -364,6 +356,9 @@ func (h *VideoHandler) executeVideoGeneration(ctx context.Context, req model.Vid
 			resp.DurationSeconds = relightBillableSeconds(seconds)
 		}
 		h.ensurePublicVideoURL(ctx, resp, originalModel)
+		if cand.Provider.Name() == "alibaba" {
+			h.rehostExpiringVideoURL(ctx, resp, originalModel)
+		}
 		if wantsVideoWebM(req.OutputFormat) {
 			optimized, err := h.reencodeVideoWebM(ctx, resp.VideoURL, originalModel)
 			if err != nil {
@@ -380,7 +375,7 @@ func (h *VideoHandler) executeVideoGeneration(ctx context.Context, req model.Vid
 		var cost int64
 		if h.billing != nil {
 			seconds := float64(videoDurationSeconds(string(req.Duration)))
-			if model.IsH3MaxRecast(cand.ModelCfg.ProviderModelID) || model.IsH3MaxRelight(cand.ModelCfg.ProviderModelID) {
+			if resp.DurationSeconds > 0 {
 				seconds = resp.DurationSeconds
 			}
 			cost, _ = h.billing.DeductVideoForDuration(ctx, userID, cand.ModelCfg.ID, seconds, req.HasVideoInput(), req.InputImageCount(), req.Resolution, "")
@@ -452,6 +447,18 @@ func videoExtFromContentType(contentType string) string {
 func wantsVideoWebM(format string) bool {
 	format = strings.ToLower(strings.TrimSpace(format))
 	return format == "webm" || format == "video/webm"
+}
+
+func videoJobBudget(modelID string) time.Duration {
+	switch {
+	case modelID == "video-dramatize":
+		// video-dramatize rides the upstream dramatizer agent SLA (~30-60 min).
+		return 60 * time.Minute
+	case model.IsWan3DirectVideo(modelID):
+		// Alibaba queues 30s 1080P Wan jobs for well over 15 minutes at peak.
+		return 30 * time.Minute
+	}
+	return 15 * time.Minute
 }
 
 func videoDurationSeconds(duration string) int {

@@ -10,19 +10,20 @@ const ENDPOINTS = [
   { method: 'POST', path: '/v1/chat/completions', description: 'OpenAI-compatible chat completions (streaming + tools).' },
   { method: 'POST', path: '/v1/messages', description: 'Anthropic-compatible Messages API for Claude SDKs and agent SDKs.' },
   { method: 'GET', path: '/v1/models', description: 'List all available models and capabilities.' },
-  { method: 'POST', path: '/v1/images/generations', description: 'Generate images (GPT Image 2, Flux, RA1, Klein, and more).' },
+  { method: 'POST', path: '/v1/images/generations', description: 'Generate images (Gemini Nano Banana, GPT Image 2, Flux, RA1, Klein, and more). See /docs/image-generation.' },
   { method: 'POST', path: '/v1/images/edits', description: 'Edit images and image-to-image workflows (GPT Image 2, Grok Imagine Image).' },
   { method: 'POST', path: '/v1/3d/generations', description: 'Generate textured GLB models from image URLs with Pixal3D.' },
   { method: 'POST', path: '/v1/3d/text-generations', description: 'Generate a GLB straight from a text prompt (auto image then Pixal3D).' },
   { method: 'POST', path: '/v1/3d/rigging', description: 'Auto-rig a humanoid GLB into a rigged character (GLB + FBX) with Meshy.' },
   { method: 'POST', path: '/v1/3d/generations', description: 'Also retextures a mesh: pass model trellis-2-retexture with mesh_url + image_url.' },
-  { method: 'POST', path: '/v1/videos/generations', description: 'Generate videos (MiniMax H3, Sora 2, Grok Imagine, Hailuo, Wan, LTX).' },
+  { method: 'POST', path: '/v1/videos/generations', description: 'Generate videos (Wan 3.0, MiniMax H3, Sora 2, Grok Imagine, Hailuo, LTX).' },
   { method: 'POST', path: '/v1/videos/edits', description: 'Edit an existing video with Grok Imagine Video.' },
   { method: 'POST', path: '/v1/videos/extensions', description: 'Extend an existing video from its last frame with Grok Imagine Video.' },
   { method: 'POST', path: '/v1/audio/transcriptions', description: 'Transcribe speech to text (Whisper, GPT-4o Transcribe).' },
   { method: 'POST', path: '/v1/audio/speech', description: 'Text-to-speech (xAI TTS, MiniMax Speech 2.8 HD).' },
   { method: 'POST', path: '/v1/stt', description: 'xAI Speech to Text shortcut; defaults to xai-stt.' },
   { method: 'POST', path: '/v1/tts', description: 'xAI Text to Speech shortcut; defaults to xai-tts.' },
+  { method: 'POST', path: '/v1/systemone', description: 'Typed decisions (yes/no, choice, score) with probabilities; TypeSafe SDK compatible. Model decision-model-preview.' },
   { method: 'POST', path: '/v1/embeddings', description: 'Generate vector embeddings (OpenPaths, Google Gemini, Mistral, Nemotron).' },
   { method: 'GET', path: '/v1/artifacts/{id}', description: 'Retrieve an artifact and all its files (free).' },
   { method: 'GET', path: '/v1/artifacts/search', description: 'Search public artifacts by title, description, or tag ($1 per 1,000 searches).' },
@@ -80,7 +81,7 @@ export function Docs() {
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">OpenAI And Anthropic SDK Compatible Docs</h1>
         <p className="text-white/60 max-w-3xl font-light leading-relaxed mb-6">
           Use the same base URL pattern for chat, images, video, music, speech, and models from either SDK. If you are signed in on this device,
-          your API key is injected into the examples automatically. For framework-specific setup, see the <Link to="/integrations" className="text-white underline underline-offset-4">integrations guide</Link>.
+          your API key is injected into the examples automatically. For framework-specific setup, see the <Link to="/integrations" className="text-white underline underline-offset-4">integrations guide</Link>. Generating images? Read the <Link to="/docs/image-generation" className="text-white underline underline-offset-4">image generation API docs</Link> for Gemini Nano Banana, GPT Image, and Flux.
         </p>
         <div className="flex flex-wrap items-center gap-3">
           <Link

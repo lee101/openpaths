@@ -25,9 +25,7 @@ func TestWantsVideoWebM(t *testing.T) {
 }
 
 func TestReencodeVideoWebMUploadsResult(t *testing.T) {
-	if _, err := exec.LookPath("ffmpeg"); err != nil {
-		t.Skip("ffmpeg not installed")
-	}
+	requireFFmpeg(t)
 	tmp := t.TempDir()
 	source := filepath.Join(tmp, "source.mp4")
 	cmd := exec.Command("ffmpeg", "-y", "-f", "lavfi", "-i", "testsrc=size=160x90:rate=12", "-t", "1", "-pix_fmt", "yuv420p", source)

@@ -37,6 +37,7 @@ var costTable = map[string]ModelCost{
 	"claude-sonnet-4-6": {BaseInputPer1M: 3, Write5mPer1M: 3.75, Write1hPer1M: 6, CacheHitPer1M: 0.30, OutputPer1M: 15},
 	"claude-sonnet-4-5": {BaseInputPer1M: 3, Write5mPer1M: 3.75, Write1hPer1M: 6, CacheHitPer1M: 0.30, OutputPer1M: 15},
 	"claude-sonnet-4":   {BaseInputPer1M: 3, Write5mPer1M: 3.75, Write1hPer1M: 6, CacheHitPer1M: 0.30, OutputPer1M: 15},
+	"claude-haiku-5-5":  {BaseInputPer1M: 0.10, Write5mPer1M: 0.125, Write1hPer1M: 0.20, CacheHitPer1M: 0.01, OutputPer1M: 0.50},
 	"claude-haiku-4-5":  {BaseInputPer1M: 1, Write5mPer1M: 1.25, Write1hPer1M: 2, CacheHitPer1M: 0.10, OutputPer1M: 5},
 	"claude-haiku-3-5":  {BaseInputPer1M: 0.80, Write5mPer1M: 1, Write1hPer1M: 1.60, CacheHitPer1M: 0.08, OutputPer1M: 4},
 }

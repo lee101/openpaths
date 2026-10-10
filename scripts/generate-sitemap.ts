@@ -5,6 +5,7 @@ import { providers } from '../src/data/providers';
 import { artificialAnalysisModels } from '../src/lib/artificialAnalysis';
 import { seedApps } from '../src/data/seedApps';
 import { TOOLS } from '../src/data/tools';
+import { allPricingSeo } from '../src/lib/llmPricingSeo';
 
 const BASE_URL = 'https://openpaths.io';
 
@@ -20,6 +21,8 @@ const entries: SitemapEntry[] = [
   { path: '/pricing', changefreq: 'weekly', priority: '0.9' },
   { path: '/providers', changefreq: 'weekly', priority: '0.8' },
   { path: '/docs', changefreq: 'weekly', priority: '0.8' },
+  { path: '/docs/image-generation', changefreq: 'weekly', priority: '0.8' },
+  { path: '/search', changefreq: 'monthly', priority: '0.6' },
   { path: '/artifacts', changefreq: 'daily', priority: '0.8' },
   { path: '/integrations', changefreq: 'weekly', priority: '0.8' },
   { path: '/mcp', changefreq: 'weekly', priority: '0.8' },
@@ -39,6 +42,7 @@ const entries: SitemapEntry[] = [
   { path: '/alternatives', changefreq: 'weekly', priority: '0.8' },
   { path: '/byok', changefreq: 'weekly', priority: '0.9' },
   { path: '/calculator', changefreq: 'monthly', priority: '0.7' },
+  ...allPricingSeo().map(page => ({ path: page.path, changefreq: 'weekly' as const, priority: page.path === '/llm-pricing' ? '0.9' : page.path.includes('/compare/') ? '0.7' : '0.6' })),
   { path: '/status', changefreq: 'daily', priority: '0.5' },
   { path: '/teams', changefreq: 'weekly', priority: '0.8' },
   { path: '/use-cases', changefreq: 'weekly', priority: '0.8' },

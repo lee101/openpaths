@@ -47,14 +47,15 @@ func defaultJSON(v json.RawMessage, fallback string) json.RawMessage {
 	return v
 }
 
-func (q *ModelMetadataQueries) Upsert(ctx context.Context, m *ModelMetadata) error {
+func (q *ModelMetadataQueries) Upsert(ctx context.Context, m *ModelMetadata) (bool, error) {
 	features := defaultJSON(m.Features, "[]")
 	inputMod := defaultJSON(m.InputModalities, `["text"]`)
 	outputMod := defaultJSON(m.OutputModalities, `["text"]`)
 	deployment := defaultJSON(m.Deployment, "[]")
 	rawMeta := defaultJSON(m.RawMetadata, "{}")
 
-	_, err := q.pool.Exec(ctx, `
+	var inserted bool
+	err := q.pool.QueryRow(ctx, `
 		INSERT INTO model_metadata (provider, model_id, display_name, organization, model_type,
 			context_length, parameters, license, link, input_price, output_price, price_per_image,
 			features, input_modalities, output_modalities, deployment, raw_metadata, last_scraped_at, updated_at)
@@ -67,11 +68,18 @@ func (q *ModelMetadataQueries) Upsert(ctx context.Context, m *ModelMetadata) err
 			price_per_image=EXCLUDED.price_per_image, features=EXCLUDED.features,
 			input_modalities=EXCLUDED.input_modalities, output_modalities=EXCLUDED.output_modalities,
 			deployment=EXCLUDED.deployment, raw_metadata=EXCLUDED.raw_metadata,
-			last_scraped_at=now(), updated_at=now()`,
+			last_scraped_at=now(), updated_at=now()
+		RETURNING (xmax = 0)`,
 		m.Provider, m.ModelID, m.DisplayName, m.Organization, m.ModelType,
 		m.ContextLength, m.Parameters, m.License, m.Link, m.InputPrice, m.OutputPrice,
-		m.PricePerImage, features, inputMod, outputMod, deployment, rawMeta)
-	return err
+		m.PricePerImage, features, inputMod, outputMod, deployment, rawMeta).Scan(&inserted)
+	return inserted, err
+}
+
+func (q *ModelMetadataQueries) CountByProvider(ctx context.Context, provider string) (int, error) {
+	var n int
+	err := q.pool.QueryRow(ctx, `SELECT count(*) FROM model_metadata WHERE provider=$1`, provider).Scan(&n)
+	return n, err
 }
 
 func (q *ModelMetadataQueries) ListByProvider(ctx context.Context, provider string) ([]*ModelMetadata, error) {

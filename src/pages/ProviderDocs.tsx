@@ -444,7 +444,7 @@ const EXAMPLES: Record<string, ProviderExample> = {
     chatModel: 'auto',
     embeddingModel: 'openpaths-embed',
     notes: [
-      '`openpaths-embed` is billed per request and optimized for cost-effective local embeddings.',
+      '`openpaths-embed` is billed at $1 per billion input tokens; use `dimensions` (1-512) and `encoding_format=base64` to shrink responses.',
       '`reasoning_effort="auto"` can be used on any thinking-capable direct chat model to keep that model while auto-selecting none, low, medium, or high thinking.',
       'Use `long_text_mode=average_chunks` when you want full-text averaging on longer inputs.',
     ],
@@ -518,7 +518,7 @@ export function ProviderDocs() {
               src={provider.logo || FALLBACK_LOGO}
               srcSet={provider.logoSrcSet}
               sizes="48px"
-              alt=""
+              alt={`${providerName} logo`}
               className={`w-12 h-12 rounded-lg border border-white/20 p-2 object-contain ${provider.slug === 'black-forest-labs' ? 'bg-white' : 'bg-white/[0.07]'}`}
             />
           )}

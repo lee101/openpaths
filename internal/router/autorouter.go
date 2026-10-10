@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"unicode/utf8"
 
 	"github.com/openpaths/openpaths/internal/model"
 	"github.com/openpaths/openpaths/internal/provider"
@@ -40,19 +41,16 @@ func NewAutoRouter(embedder provider.EmbeddingProvider) *AutoRouter {
 }
 
 func (ar *AutoRouter) Init(ctx context.Context) error {
-	ar.mu.Lock()
-	defer ar.mu.Unlock()
-
-	total := 0
-	for _, entries := range ar.tables {
-		total += len(entries)
-	}
-
-	descs := make([]string, 0, total)
 	type entryRef struct {
 		modality string
 		index    int
 	}
+	ar.mu.RLock()
+	total := 0
+	for _, entries := range ar.tables {
+		total += len(entries)
+	}
+	descs := make([]string, 0, total)
 	refs := make([]entryRef, 0, total)
 	for modality, entries := range ar.tables {
 		for i, e := range entries {
@@ -60,35 +58,45 @@ func (ar *AutoRouter) Init(ctx context.Context) error {
 			refs = append(refs, entryRef{modality: modality, index: i})
 		}
 	}
+	modalities := len(ar.tables)
+	ar.mu.RUnlock()
 
 	embeddings, err := ar.embedBatch(ctx, descs)
 	if err != nil {
 		return fmt.Errorf("autorouter init: %w", err)
 	}
 
-	for i, ref := range refs {
-		ar.tables[ref.modality][ref.index].Embedding = embeddings[i]
+	ar.mu.Lock()
+	tables := make(map[string][]AutoEntry, len(ar.tables))
+	for modality, entries := range ar.tables {
+		tables[modality] = append([]AutoEntry(nil), entries...)
 	}
-
+	for i, ref := range refs {
+		tables[ref.modality][ref.index].Embedding = embeddings[i]
+	}
+	ar.tables = tables
 	ar.ready = true
-	log.Printf("autorouter: initialized %d entries across %d modalities", total, len(ar.tables))
+	ar.mu.Unlock()
+	log.Printf("autorouter: initialized %d entries across %d modalities", total, modalities)
 	return nil
 }
 
+const maxAutoPromptBytes = 8000
+
 func (ar *AutoRouter) ResolveAuto(ctx context.Context, modality, prompt string) (AutoRouteResult, error) {
 	ar.mu.RLock()
-	defer ar.mu.RUnlock()
+	ready := ar.ready
+	entries := ar.tables[modality]
+	ar.mu.RUnlock()
 
-	if !ar.ready {
+	if !ready {
 		return AutoRouteResult{}, fmt.Errorf("autorouter not initialized")
 	}
-
-	entries, ok := ar.tables[modality]
-	if !ok || len(entries) == 0 {
+	if len(entries) == 0 {
 		return AutoRouteResult{}, fmt.Errorf("no auto entries for modality %q", modality)
 	}
 
-	queryEmb, err := ar.embed(ctx, prompt)
+	queryEmb, err := ar.embed(ctx, clipUTF8(prompt, maxAutoPromptBytes))
 	if err != nil {
 		return AutoRouteResult{}, err
 	}
@@ -96,6 +104,16 @@ func (ar *AutoRouter) ResolveAuto(ctx context.Context, modality, prompt string) 
 	e, bestSim, confidence, policy := selectAutoEntry(entries, queryEmb, 8)
 	log.Printf("autorouter: %s %q -> %s reasoning=%s (sim=%.4f confidence=%.3f policy=%s)", modality, truncate(prompt, 60), e.ModelID, e.ReasoningEffort, bestSim, confidence, policy)
 	return AutoRouteResult{ModelID: e.ModelID, ReasoningEffort: e.ReasoningEffort}, nil
+}
+
+func clipUTF8(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	for n > 0 && !utf8.RuneStart(s[n]) {
+		n--
+	}
+	return s[:n]
 }
 
 // selectAutoEntry mirrors the weighted k-nearest-anchor policy validated in

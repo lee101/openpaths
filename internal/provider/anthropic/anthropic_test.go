@@ -514,3 +514,28 @@ func TestToolCallTranslation(t *testing.T) {
 		t.Errorf("got finish reason %q", *openaiResp.Choices[0].FinishReason)
 	}
 }
+
+func TestTranslateRequest_Haiku55EffortLevels(t *testing.T) {
+	for _, effort := range []string{"low", "medium", "high", "xhigh", "max"} {
+		temp := 0.3
+		req := translateRequest(&model.ChatCompletionRequest{
+			Model: "claude-haiku-5-5", Messages: []model.ChatMessage{{Role: "user", Content: "Say hi."}},
+			ReasoningEffort: effort, Temperature: &temp,
+		})
+		if req.OutputConfig == nil || req.OutputConfig.Effort != effort {
+			t.Fatalf("%s: output_config = %#v", effort, req.OutputConfig)
+		}
+		if req.Thinking != nil {
+			t.Fatalf("%s: thinking = %#v, want model default", effort, req.Thinking)
+		}
+		if req.Temperature != nil || req.TopP != nil {
+			t.Fatalf("%s: sampling params must not be forwarded", effort)
+		}
+	}
+	off := translateRequest(&model.ChatCompletionRequest{
+		Model: "claude-haiku-5-5", Messages: []model.ChatMessage{{Role: "user", Content: "Say hi."}}, ReasoningEffort: "none",
+	})
+	if off.Thinking == nil || off.Thinking.Type != "disabled" || off.OutputConfig != nil {
+		t.Fatalf("none: thinking=%#v output_config=%#v", off.Thinking, off.OutputConfig)
+	}
+}

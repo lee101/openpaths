@@ -12,6 +12,7 @@ import (
 	"io"
 	"net/http"
 	"os/exec"
+	"regexp"
 	"strings"
 	"time"
 
@@ -407,7 +408,13 @@ func googleProviderError(err error) error {
 			Err:        err,
 		}
 	}
-	return &provider.ProviderError{Provider: "google", StatusCode: 502, Message: err.Error(), Retryable: true, Err: err}
+	return &provider.ProviderError{Provider: "google", StatusCode: 502, Message: redactKey(err.Error()), Retryable: true, Err: err}
+}
+
+var apiKeyParamRe = regexp.MustCompile(`([?&]key=)[^&\s"]+`)
+
+func redactKey(s string) string {
+	return apiKeyParamRe.ReplaceAllString(s, "${1}REDACTED")
 }
 
 // Gemini API types
@@ -591,7 +598,7 @@ func (p *GoogleProvider) sendGenerate(ctx context.Context, modelName string, gem
 	resp, err := p.client.Do(httpReq)
 	if err != nil {
 		return nil, 0, &provider.ProviderError{
-			Provider: "google", StatusCode: 502, Message: err.Error(), Retryable: true, Err: err,
+			Provider: "google", StatusCode: 502, Message: redactKey(err.Error()), Retryable: true, Err: err,
 		}
 	}
 	defer resp.Body.Close()
@@ -642,7 +649,7 @@ func (p *GoogleProvider) Embed(ctx context.Context, req *model.EmbeddingRequest)
 	resp, err := p.client.Do(httpReq)
 	if err != nil {
 		return nil, &provider.ProviderError{
-			Provider: "google", StatusCode: 502, Message: err.Error(), Retryable: true, Err: err,
+			Provider: "google", StatusCode: 502, Message: redactKey(err.Error()), Retryable: true, Err: err,
 		}
 	}
 	defer resp.Body.Close()
@@ -707,7 +714,7 @@ func (p *GoogleProvider) ChatCompletionStream(ctx context.Context, req *model.Ch
 	resp, err := p.client.Do(httpReq)
 	if err != nil {
 		return nil, &provider.ProviderError{
-			Provider: "google", StatusCode: 502, Message: err.Error(), Retryable: true, Err: err,
+			Provider: "google", StatusCode: 502, Message: redactKey(err.Error()), Retryable: true, Err: err,
 		}
 	}
 

@@ -4,18 +4,41 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math"
+	"runtime"
+	"sync"
 	"time"
 
 	gobedlib "github.com/lee101/gobed"
+	"github.com/lee101/gobed/pkg/ann/simd"
 	"github.com/openpaths/openpaths/internal/model"
 	"github.com/openpaths/openpaths/internal/provider"
 )
 
-const gobedChunkSize = 256
+const (
+	gobedChunkSize = 256
+	dim            = gobedlib.Int8EmbeddingDim
+	// inputs per worker before a batch is split across goroutines
+	parallelGrain = 8
+	maxInputBytes = 4 << 20
+)
 
 type GobedProvider struct {
-	model *gobedlib.SimpleInt8Model512
+	model   *gobedlib.SimpleInt8Model512
+	tok     *fastTokenizer
+	table   [][]int8
+	scales  []float32
+	workers int
 }
+
+type scratch struct {
+	tokens []int16
+	acc    [dim]float32
+}
+
+var scratchPool = sync.Pool{New: func() any {
+	return &scratch{tokens: make([]int16, 0, gobedChunkSize)}
+}}
 
 func New() (*GobedProvider, error) {
 	start := time.Now()
@@ -24,8 +47,14 @@ func New() (*GobedProvider, error) {
 	if err != nil {
 		return nil, fmt.Errorf("gobed load: %w", err)
 	}
-	log.Printf("gobed: model loaded in %dms", time.Since(start).Milliseconds())
-	return &GobedProvider{model: m}, nil
+	p := &GobedProvider{model: m, table: m.EmbeddingTable(), scales: m.ScaleTable(), workers: runtime.GOMAXPROCS(0)}
+	if tok, err := loadFastTokenizer("model/tokenizer.json"); err != nil {
+		log.Printf("gobed: fast tokenizer disabled (%v)", err)
+	} else {
+		p.tok = tok
+	}
+	log.Printf("gobed: model loaded in %dms (fast tokenizer=%t)", time.Since(start).Milliseconds(), p.tok != nil)
+	return p, nil
 }
 
 func (p *GobedProvider) Name() string { return "gobed" }
@@ -33,95 +62,129 @@ func (p *GobedProvider) Name() string { return "gobed" }
 func (p *GobedProvider) Embed(ctx context.Context, req *model.EmbeddingRequest) (*model.EmbeddingResponse, error) {
 	inputs, err := normalizeInput(req.Input)
 	if err != nil {
-		return nil, &provider.ProviderError{
-			Provider: "gobed", StatusCode: 400, Message: err.Error(),
+		return nil, &provider.ProviderError{Provider: "gobed", StatusCode: 400, Message: err.Error()}
+	}
+	mode := normalizeLongTextMode(req.LongTextMode)
+	if mode != "truncate" && mode != "average_chunks" {
+		return nil, &provider.ProviderError{Provider: "gobed", StatusCode: 400, Message: fmt.Sprintf("unsupported long_text_mode %q", req.LongTextMode)}
+	}
+	dims := req.Dimensions
+	if dims < 0 || dims > dim {
+		return nil, &provider.ProviderError{Provider: "gobed", StatusCode: 400, Message: fmt.Sprintf("dimensions must be between 1 and %d", dim)}
+	}
+	if dims == 0 {
+		dims = dim
+	}
+	b64 := req.EncodingFormat == "base64"
+	for _, s := range inputs {
+		if len(s) > maxInputBytes {
+			return nil, &provider.ProviderError{Provider: "gobed", StatusCode: 400, Message: fmt.Sprintf("input exceeds %d bytes", maxInputBytes)}
 		}
 	}
 
-	data := make([]model.EmbeddingData, 0, len(inputs))
-	totalTokens := 0
+	data := make([]model.EmbeddingData, len(inputs))
+	tokens := make([]int, len(inputs))
+	run := func(lo, hi int) {
+		sc := scratchPool.Get().(*scratch)
+		for i := lo; i < hi; i++ {
+			tokens[i] = p.embedInto(sc, mode, inputs[i], dims, b64, &data[i])
+			data[i].Object = "embedding"
+			data[i].Index = i
+		}
+		scratchPool.Put(sc)
+	}
 
-	for i, text := range inputs {
-		emb, tokensUsed, err := p.embedText(req.LongTextMode, text)
-		if err != nil {
-			return nil, &provider.ProviderError{
-				Provider: "gobed", StatusCode: 500, Message: err.Error(), Retryable: true, Err: err,
+	w := len(inputs) / parallelGrain
+	if w > p.workers {
+		w = p.workers
+	}
+	if w <= 1 {
+		run(0, len(inputs))
+	} else {
+		var wg sync.WaitGroup
+		step := (len(inputs) + w - 1) / w
+		for lo := 0; lo < len(inputs); lo += step {
+			hi := lo + step
+			if hi > len(inputs) {
+				hi = len(inputs)
 			}
+			wg.Add(1)
+			go func(lo, hi int) {
+				defer wg.Done()
+				run(lo, hi)
+			}(lo, hi)
 		}
-
-		emb64 := make([]float64, len(emb))
-		for j, v := range emb {
-			emb64[j] = float64(v)
-		}
-
-		data = append(data, model.EmbeddingData{
-			Object:    "embedding",
-			Embedding: emb64,
-			Index:     i,
-		})
-		totalTokens += tokensUsed
+		wg.Wait()
 	}
 
+	total := 0
+	for _, n := range tokens {
+		total += n
+	}
 	return &model.EmbeddingResponse{
 		Object: "list",
 		Data:   data,
 		Model:  req.Model,
-		Usage: model.EmbeddingUsage{
-			PromptTokens: totalTokens,
-			TotalTokens:  totalTokens,
-		},
+		Usage:  model.EmbeddingUsage{PromptTokens: total, TotalTokens: total},
 	}, nil
 }
 
-func (p *GobedProvider) embedText(mode, text string) ([]float32, int, error) {
-	tokens := p.model.SimpleTokenize(text)
-	if len(tokens) == 0 {
-		return make([]float32, gobedlib.Int8EmbeddingDim), 0, nil
+func (p *GobedProvider) tokenize(sc *scratch, mode, text string) []int16 {
+	limit := math.MaxInt32
+	if mode == "truncate" {
+		limit = gobedChunkSize
 	}
-
-	switch normalizeLongTextMode(mode) {
-	case "truncate":
-		if len(tokens) > gobedChunkSize {
-			tokens = tokens[:gobedChunkSize]
-		}
-		emb, err := p.model.EmbedTokens(tokens)
-		return emb, len(tokens), err
-	case "average_chunks":
-		return p.embedAverageChunks(tokens)
-	default:
-		return nil, 0, fmt.Errorf("unsupported long_text_mode %q", mode)
+	if p.tok != nil && isASCII(text) {
+		return p.tok.tokenize(text, sc.tokens[:0], limit)
 	}
+	t := p.model.SimpleTokenize(text)
+	if len(t) > limit {
+		t = t[:limit]
+	}
+	return t
 }
 
-func (p *GobedProvider) embedAverageChunks(tokens []int16) ([]float32, int, error) {
-	accum := make([]float32, gobedlib.Int8EmbeddingDim)
-	totalWeight := 0
-
-	for start := 0; start < len(tokens); start += gobedChunkSize {
-		end := start + gobedChunkSize
-		if end > len(tokens) {
-			end = len(tokens)
+// embedInto embeds text into out and returns the token count billed.
+func (p *GobedProvider) embedInto(sc *scratch, mode, text string, dims int, b64 bool, out *model.EmbeddingData) int {
+	toks := p.tokenize(sc, mode, text)
+	if cap(toks) > cap(sc.tokens) && cap(toks) <= 1<<14 {
+		sc.tokens = toks[:0]
+	}
+	acc := sc.acc[:]
+	for i := range acc {
+		acc[i] = 0
+	}
+	valid := 0
+	for _, t := range toks {
+		if t < 0 || int(t) >= len(p.table) {
+			continue
 		}
-		chunk := tokens[start:end]
-		emb, err := p.model.EmbedTokens(chunk)
-		if err != nil {
-			return nil, 0, err
+		simd.EmbedAccum(p.table[t], p.scales[t], acc)
+		valid++
+	}
+	if valid > 1 {
+		simd.ScaleF32(acc, 1/float32(valid))
+	}
+	v := acc[:dims]
+	if dims < dim {
+		var n float64
+		for _, x := range v {
+			n += float64(x) * float64(x)
 		}
-		weight := len(chunk)
-		totalWeight += weight
-		for i, v := range emb {
-			accum[i] += v * float32(weight)
+		if n > 0 {
+			simd.ScaleF32(v, float32(1/math.Sqrt(n)))
 		}
 	}
-
-	if totalWeight > 0 {
-		inv := 1 / float32(totalWeight)
-		for i := range accum {
-			accum[i] *= inv
+	if b64 {
+		out.Base64 = encodeF32(v)
+	} else {
+		out.Embedding = make([]float64, dims)
+		for i, x := range v {
+			out.Embedding[i] = float64(x)
 		}
+		out.F32 = true
 	}
-
-	return accum, len(tokens), nil
+	return len(toks)
 }
 
 func normalizeLongTextMode(mode string) string {

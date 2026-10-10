@@ -53,6 +53,12 @@ type VideoProvider interface {
 	GenerateVideo(ctx context.Context, req *model.VideoGenerationRequest) (*model.VideoGenerationResponse, error)
 }
 
+// DecisionProvider answers TypeSafe-style typed questions (noul/choice/score).
+type DecisionProvider interface {
+	Name() string
+	Decide(ctx context.Context, req *model.DecisionRequest) (*model.DecisionResponse, error)
+}
+
 // ForecastingProvider defines the interface for time-series forecasting
 // (e.g. CuteDSL chronos2). A forecaster takes a historical series and returns
 // a point forecast plus optional quantiles.

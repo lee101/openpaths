@@ -1,4 +1,17 @@
 User-agent: *
 Allow: /
+Disallow: /v1/
+Disallow: /auth/
+Disallow: /account
+Disallow: /apikeys
+Disallow: /usage
+Disallow: /admin
+Disallow: /adminlee
+Disallow: /stripe/
+Disallow: /crypto/
+Disallow: /monitoring/
+Disallow: /uploads/
+Disallow: /artifacts/new
+Disallow: /skills/new
 
 Sitemap: https://openpaths.io/sitemap.xml

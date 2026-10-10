@@ -1,0 +1,13 @@
+{
+  "model": "gemini-3.1-flash-lite-image",
+  "prompt": "Using the art style of this game (soft stylized 3D, warm medieval palette), draw a clean 4x3 sprite sheet of twelve build-menu icons on a parchment background: stone wall, wooden palisade, gatehouse, archer tower, moat, keep, barracks, house, market, bridge, farm plot, windmill. Each icon is a separate tidy square cell with no text.",
+  "edit": true,
+  "aspect": "1:1",
+  "ms": 14581,
+  "usage": [
+    {
+      "modality": "image",
+      "tokens": 1120
+    }
+  ]
+}

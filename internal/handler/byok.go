@@ -8,6 +8,7 @@ import (
 	"github.com/openpaths/openpaths/internal/model"
 	"github.com/openpaths/openpaths/internal/provider"
 	"github.com/openpaths/openpaths/internal/provider/anthropic"
+	"github.com/openpaths/openpaths/internal/provider/alibaba"
 	"github.com/openpaths/openpaths/internal/provider/bfl"
 	"github.com/openpaths/openpaths/internal/provider/deepseek"
 	"github.com/openpaths/openpaths/internal/provider/fal"
@@ -44,6 +45,7 @@ var providerBaseURLs = map[string]string{
 	"sakana":           "https://api.sakana.ai",
 	"fal":              "https://fal.run",
 	"bfl":              "https://api.bfl.ai",
+	"alibaba":          "https://dashscope-intl.aliyuncs.com",
 }
 
 func getUserProviderKeys(ctx *fasthttp.RequestCtx) map[string]*queries.UserProviderKey {
@@ -93,6 +95,8 @@ func makeUserProvider(providerName, apiKey string) provider.Provider {
 		return fal.New(apiKey)
 	case "bfl":
 		return bfl.New(apiKey, baseURL)
+	case "alibaba":
+		return alibaba.New(apiKey, baseURL)
 	}
 	return nil
 }

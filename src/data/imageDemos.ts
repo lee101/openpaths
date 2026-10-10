@@ -8,6 +8,37 @@ export interface ImageDemo {
 }
 
 export const IMAGE_DEMOS: Record<string, ImageDemo> = {
+  'gemini-3.1-flash-lite-image': {
+    title: 'Nano Banana 2 Lite · Castle game, deep winter',
+    description: 'A game-dev edit: one concept screenshot in, the same game in winter out, HUD and layout preserved. Generated with the OpenPaths images API at 1K for $0.0336.',
+    imageUrl: "https://openpaths.io/static/blog/gemini-image/fort-source.webp",
+    outputUrl: '/static/blog/gemini-image/fort-winter.webp',
+    prompt: "Re-render this game screenshot in deep winter: snow on every roof and wall, frozen river with ice, bare and snow-dusted pines, low pale sun. Keep the exact camera angle, castle layout, river, bridges, walls, and the bottom build menu and HUD panels so it looks like the same game in a different state. Change the year to 128 and the objective to \"Survive the Winter\".",
+    payload: { model: 'gemini-3.1-flash-lite-image', prompt: "Re-render this game screenshot in deep winter: snow on every roof and wall, frozen river with ice, bare and snow-dusted pines, low pale sun. Keep the exact camera angle, castle layout, river, bridges, walls, and the bottom build menu and HUD panels so it looks like the same game in a different state. Change the year to 128 and the objective to \"Survive the Winter\".", image_url: "https://openpaths.io/static/blog/gemini-image/fort-source.webp", aspect_ratio: '16:9', n: 1 },
+  },
+  'gemini-nano-banana-2.1': {
+    title: 'Nano Banana 2.1 · Castle game, dragon aftermath',
+    description: 'A state-variation edit: the same castle-builder screenshot after a dragon raid, HUD and layout preserved. Generated with the OpenPaths images API at 1K for $0.0336.',
+    imageUrl: "https://openpaths.io/static/blog/gemini-image/fort-source.webp",
+    outputUrl: '/static/blog/gemini-image/fort-dragon-attack.webp',
+    prompt: "Show the aftermath of a dragon attack on this castle: a large dragon circling above, several towers burning with smoke columns, damaged wall sections, villagers fleeing. Keep the exact camera angle, castle layout, river, bridges, walls, and the bottom build menu and HUD panels so it looks like the same game in a different state. Change the objective to \"Repair the Walls\".",
+    payload: { model: 'gemini-nano-banana-2.1', prompt: "Show the aftermath of a dragon attack on this castle: a large dragon circling above, several towers burning with smoke columns, damaged wall sections, villagers fleeing. Keep the exact camera angle, castle layout, river, bridges, walls, and the bottom build menu and HUD panels so it looks like the same game in a different state. Change the objective to \"Repair the Walls\".", image_url: "https://openpaths.io/static/blog/gemini-image/fort-source.webp", aspect_ratio: '16:9', n: 1 },
+  },
+  'qwen-image-3.0': {
+    title: 'Qwen Image 3.0 · Label edit',
+    description: 'One reference photo in, the same scene out with new label text and liquid colour. Generated with the OpenPaths images API at 1K for $0.033 ($0.03 image + $0.003 input).',
+    imageUrl: 'https://openpathsstatic.openpaths.io/static/uploads/playground/hidream-edit/perfume.jpg',
+    outputUrl: 'https://openpathsstatic.openpaths.io/uploads/1a122ec399a76937badb268bb4c9fc31222.png',
+    prompt: 'Change the label text to say OPENPATHS and make the liquid emerald green',
+    payload: { model: 'qwen-image-3.0', prompt: 'Change the label text to say OPENPATHS and make the liquid emerald green', image_url: 'https://openpathsstatic.openpaths.io/static/uploads/playground/hidream-edit/perfume.jpg', size: '1024x1024' },
+  },
+  'qwen-image-3.0-pro': {
+    title: 'Qwen Image 3.0 Pro · Jazz poster',
+    description: 'Dense poster layout with clean typography in one pass. Generated with the OpenPaths images API at 1K for $0.04.',
+    outputUrl: 'https://openpathsstatic.openpaths.io/uploads/1a122ebe1d60006b86144feace3df97a380.png',
+    prompt: 'Minimalist poster for a jazz night titled MIDNIGHT ROUTES, bold typography, deep blue and gold, saxophone silhouette',
+    payload: { model: 'qwen-image-3.0-pro', prompt: 'Minimalist poster for a jazz night titled MIDNIGHT ROUTES, bold typography, deep blue and gold, saxophone silhouette', aspect_ratio: '3:4' },
+  },
   'flux-3-image': {
     title: 'FLUX 3 Image · The Forest Observatory',
     description: 'Generated with the BFL FLUX 3 Image API at 1k, with grounding enabled.',

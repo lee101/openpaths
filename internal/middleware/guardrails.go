@@ -73,19 +73,6 @@ func GuardrailCheck(deps GuardrailDeps) Middleware {
 						break
 					}
 				}
-				// Assignments may not be loaded on Resolve — check via target resolution again.
-				if !perKey && apiKeyID != "" {
-					// Heuristic: if this policy was resolved via key assignment it is first when key has one.
-					// ResolveForRequest order: key then user. Prefer per-key spend when limit is on a key-assigned policy.
-					as, _ := deps.Q.ListAssignments(ctx, g.ID)
-					g.Assignments = as
-					for _, a := range as {
-						if a.TargetType == "api_key" && a.TargetID == apiKeyID {
-							perKey = true
-							break
-						}
-					}
-				}
 				spend, err := deps.Q.SpendSince(ctx, userID, apiKeyID, since, perKey)
 				if err != nil {
 					log.Printf("guardrail spend check: %v", err)

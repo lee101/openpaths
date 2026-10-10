@@ -1,7 +1,8 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { ScrollToTop } from './components/ScrollToTop';
+import { NoIndex } from './components/NoIndex';
 import { Landing } from './pages/Landing';
 const Models = lazy(() => import('./pages/Models').then(module => ({ default: module.Models })));
 const Account = lazy(() => import('./pages/Account').then(module => ({ default: module.Account })));
@@ -14,6 +15,7 @@ const OpenPathsHarness = lazy(() => import('./pages/OpenPathsHarness').then(modu
 const Providers = lazy(() => import('./pages/Providers').then(module => ({ default: module.Providers })));
 const ProviderPage = lazy(() => import('./pages/ProviderPage').then(module => ({ default: module.ProviderPage })));
 const Docs = lazy(() => import('./pages/Docs').then(module => ({ default: module.Docs })));
+const ImageGenerationDocs = lazy(() => import('./pages/ImageGenerationDocs').then(module => ({ default: module.ImageGenerationDocs })));
 const Integrations = lazy(() => import('./pages/Integrations').then(module => ({ default: module.Integrations })));
 const Mcp = lazy(() => import('./pages/Mcp').then(module => ({ default: module.Mcp })));
 const WorksWith = lazy(() => import('./pages/WorksWith').then(module => ({ default: module.WorksWith })));
@@ -61,6 +63,11 @@ const SkillEdit = lazy(() => import('./pages/SkillEdit').then(module => ({ defau
 const OrgJoin = lazy(() => import('./pages/OrgJoin').then(module => ({ default: module.OrgJoin })));
 const Byok = lazy(() => import('./pages/Byok').then(module => ({ default: module.Byok })));
 const Calculator = lazy(() => import('./pages/Calculator').then(module => ({ default: module.Calculator })));
+const LlmPricingHub = lazy(() => import('./pages/LlmPricing').then(module => ({ default: module.LlmPricingHub })));
+const LlmPricingModel = lazy(() => import('./pages/LlmPricing').then(module => ({ default: module.LlmPricingModel })));
+const LlmPricingCompare = lazy(() => import('./pages/LlmPricing').then(module => ({ default: module.LlmPricingCompare })));
+const LlmPricingProvider = lazy(() => import('./pages/LlmPricing').then(module => ({ default: module.LlmPricingProvider })));
+const LlmPricingScenario = lazy(() => import('./pages/LlmPricing').then(module => ({ default: module.LlmPricingScenario })));
 const Status = lazy(() => import('./pages/Status').then(module => ({ default: module.Status })));
 const Teams = lazy(() => import('./pages/Teams').then(module => ({ default: module.Teams })));
 const UseCasesIndex = lazy(() => import('./pages/UseCases').then(module => ({ default: module.UseCasesIndex })));
@@ -86,6 +93,7 @@ export default function App() {
           <Route path="providers" element={<Providers />} />
           <Route path="providers/:slug" element={<ProviderPage />} />
           <Route path="docs" element={<Docs />} />
+          <Route path="docs/image-generation" element={<ImageGenerationDocs />} />
           <Route path="integrations" element={<Integrations />} />
           <Route path="mcp" element={<Mcp />} />
           <Route path="works-with-openpaths" element={<WorksWith />} />
@@ -95,10 +103,10 @@ export default function App() {
           <Route path="agents" element={<Agents />} />
           <Route path="agents/:id" element={<AgentDetail />} />
           <Route path="skills" element={<Skills />} />
-          <Route path="skills/new" element={<SkillEdit mode="new" />} />
-          <Route path="skills/:slug/edit" element={<SkillEdit mode="edit" />} />
+          <Route path="skills/new" element={<NoIndex><SkillEdit mode="new" /></NoIndex>} />
+          <Route path="skills/:slug/edit" element={<NoIndex><SkillEdit mode="edit" /></NoIndex>} />
           <Route path="skills/:slug" element={<SkillDetail />} />
-		  <Route path="orgs/:slug/join" element={<OrgJoin />} />
+		  <Route path="orgs/:slug/join" element={<NoIndex><OrgJoin /></NoIndex>} />
           <Route path="fusion" element={<Fusion />} />
           <Route path="compound" element={<Compound />} />
           <Route path="tools" element={<Tools />} />
@@ -126,19 +134,27 @@ export default function App() {
           <Route path="prompts/type/:slug" element={<Prompts scope="type" />} />
           <Route path="prompts/model/*" element={<Prompts scope="model" />} />
           <Route path="prompts/:slug" element={<PromptDetail />} />
-          <Route path="account" element={<Account />} />
-          <Route path="account/apikeys" element={<Account />} />
-          <Route path="apikeys" element={<Account />} />
-          <Route path="usage" element={<Account />} />
-          <Route path="usage/prompts" element={<UsagePrompts />} />
-          <Route path="usage/images" element={<UsageImages />} />
-          <Route path="admin" element={<AdminLee />} />
-          <Route path="adminlee" element={<AdminLee />} />
-          <Route path="admin/users/:userId/usage" element={<AdminUserUsage />} />
+          <Route path="account" element={<NoIndex><Account /></NoIndex>} />
+          <Route path="account/apikeys" element={<NoIndex><Account /></NoIndex>} />
+          <Route path="apikeys" element={<NoIndex><Account /></NoIndex>} />
+          <Route path="usage" element={<NoIndex><Account /></NoIndex>} />
+          <Route path="usage/prompts" element={<NoIndex><UsagePrompts /></NoIndex>} />
+          <Route path="usage/images" element={<NoIndex><UsageImages /></NoIndex>} />
+          <Route path="admin" element={<NoIndex><AdminLee /></NoIndex>} />
+          <Route path="adminlee" element={<NoIndex><AdminLee /></NoIndex>} />
+          <Route path="admin/users/:userId/usage" element={<NoIndex><AdminUserUsage /></NoIndex>} />
           <Route path="stats" element={<Stats />} />
           <Route path="status" element={<Status />} />
           <Route path="byok" element={<Byok />} />
           <Route path="calculator" element={<Calculator />} />
+          <Route path="llm-pricing" element={<LlmPricingHub />} />
+          <Route path="llm-pricing/compare" element={<Navigate to="/llm-pricing" replace />} />
+          <Route path="llm-pricing/provider" element={<Navigate to="/llm-pricing" replace />} />
+          <Route path="llm-pricing/cost" element={<Navigate to="/llm-pricing" replace />} />
+          <Route path="llm-pricing/compare/:pair" element={<LlmPricingCompare />} />
+          <Route path="llm-pricing/provider/:provider" element={<LlmPricingProvider />} />
+          <Route path="llm-pricing/cost/:scenario" element={<LlmPricingScenario />} />
+          <Route path="llm-pricing/:slug" element={<LlmPricingModel />} />
           <Route path="teams" element={<Teams />} />
           <Route path="use-cases" element={<UseCasesIndex />} />
           <Route path="use-cases/:slug" element={<UseCaseDetail />} />
@@ -147,8 +163,8 @@ export default function App() {
           <Route path="apps/:slug" element={<Suspense fallback={<RouteLoading />}><AppDetail /></Suspense>} />
           <Route path="apps/:slug/" element={<Suspense fallback={<RouteLoading />}><AppDetail /></Suspense>} />
           <Route path="artifacts" element={<Suspense fallback={<RouteLoading />}><Artifacts /></Suspense>} />
-          <Route path="artifacts/new" element={<Suspense fallback={<RouteLoading />}><ArtifactEditor /></Suspense>} />
-          <Route path="artifacts/:id/edit" element={<Suspense fallback={<RouteLoading />}><ArtifactEditor isEdit /></Suspense>} />
+          <Route path="artifacts/new" element={<NoIndex><Suspense fallback={<RouteLoading />}><ArtifactEditor /></Suspense></NoIndex>} />
+          <Route path="artifacts/:id/edit" element={<NoIndex><Suspense fallback={<RouteLoading />}><ArtifactEditor isEdit /></Suspense></NoIndex>} />
           <Route path="artifacts/:id" element={<Suspense fallback={<RouteLoading />}><ArtifactDetail /></Suspense>} />
           <Route path="evals" element={<Evals />} />
           <Route path="image-evals" element={<ImageEvals />} />
@@ -159,7 +175,7 @@ export default function App() {
           <Route path="op" element={<OpenPathsHarness />} />
           <Route path="alternatives" element={<Alternatives />} />
           <Route path="alternatives/:slug" element={<BlogPost />} />
-          <Route path="*" element={<NotFound />} />
+          <Route path="*" element={<NoIndex><NotFound /></NoIndex>} />
         </Route>
       </Routes>
     </BrowserRouter>

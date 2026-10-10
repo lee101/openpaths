@@ -33,6 +33,7 @@ func TestArtSitemapIndexUsesCleanPathScheme(t *testing.T) {
 	}
 	for _, want := range []string{
 		"<loc>https://openpaths.io/sitemap-pages.xml</loc>",
+		"<loc>https://openpaths.io/sitemap-models.xml</loc>",
 		"<loc>https://openpaths.io/sitemap-art-tags.xml</loc>",
 		"<loc>https://openpaths.io/sitemap-art-1.xml</loc>",
 		"<loc>https://openpaths.io/sitemap-art-3.xml</loc>",

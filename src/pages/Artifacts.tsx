@@ -153,7 +153,7 @@ function ArtifactCard({ artifact }: { artifact: Artifact; key?: React.Key }) {
     >
       <div className="aspect-[16/9] w-full overflow-hidden bg-gradient-to-br from-white/[0.06] to-transparent">
         {artifact.image_url ? (
-          <img src={artifact.image_url} alt="" loading="lazy" className="h-full w-full object-cover" />
+          <img src={artifact.image_url} alt={artifact.title} loading="lazy" className="h-full w-full object-cover" />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-white/30">
             <Boxes className="h-10 w-10" />

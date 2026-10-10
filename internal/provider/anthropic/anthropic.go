@@ -791,7 +791,7 @@ func usesAdaptiveThinking(modelID string) bool {
 	id := strings.ToLower(strings.TrimSpace(modelID))
 	for _, prefix := range []string{
 		"claude-fable-5", "claude-opus-5", "claude-opus-4-8", "claude-opus-4-7",
-		"claude-opus-4-6", "claude-sonnet-5", "claude-sonnet-4-6",
+		"claude-opus-4-6", "claude-sonnet-5", "claude-sonnet-4-6", "claude-haiku-5",
 	} {
 		if strings.HasPrefix(id, prefix) {
 			return true
@@ -807,6 +807,7 @@ func thinksByDefault(modelID string) bool {
 	id := strings.ToLower(strings.TrimSpace(modelID))
 	return strings.HasPrefix(id, "claude-fable-5") ||
 		strings.HasPrefix(id, "claude-sonnet-5") ||
+		strings.HasPrefix(id, "claude-haiku-5") ||
 		strings.HasPrefix(id, "claude-opus-5")
 }
 
@@ -816,7 +817,7 @@ func supportsXHighEffort(modelID string) bool {
 	id := strings.ToLower(strings.TrimSpace(modelID))
 	for _, prefix := range []string{
 		"claude-fable-5", "claude-opus-5", "claude-opus-4-8", "claude-opus-4-7",
-		"claude-sonnet-5",
+		"claude-sonnet-5", "claude-haiku-5",
 	} {
 		if strings.HasPrefix(id, prefix) {
 			return true

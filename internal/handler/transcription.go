@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"context"
 	"log"
+	"math"
 	"strings"
 	"time"
 
@@ -187,16 +189,34 @@ func (h *TranscriptionHandler) handleRoutedTranscription(ctx *fasthttp.RequestCt
 		}
 
 		h.router.MarkModelHealthy(cand.Provider.Name(), cand.ModelCfg.ID)
-		durationSeconds := audioinfo.EstimateDurationSeconds(req.Filename, req.File)
-		cost, _ := h.billing.DeductAudio(ctx, userID, cand.ModelCfg.ID, durationSeconds, "")
+		cost, units := h.deductTranscription(ctx, userID, cand.ModelCfg.ID, req, resp)
 		h.recorder.RecordSuccessWithApp(userID, apiKeyID, originalModel, cand.Provider.Name(),
-			durationSeconds, 0, int(latency.Milliseconds()), 0, cost, false, app.ID, app.URL, app.Title, app.Categories)
+			units, 0, int(latency.Milliseconds()), 0, cost, false, app.ID, app.URL, app.Title, app.Categories)
 		writeJSON(ctx, 200, resp)
 		return true
 	}
 
 	writeError(ctx, 502, "provider_error", "all providers failed for model "+originalModel)
 	return true
+}
+
+// deductTranscription bills provider-reported usage (tokens or seconds) when
+// present and falls back to estimating the file duration.
+func (h *TranscriptionHandler) deductTranscription(ctx context.Context, userID, modelID string, req *model.TranscriptionRequest, resp *model.TranscriptionResponse) (int64, int) {
+	if u := resp.Usage; u != nil {
+		if u.Type == "tokens" && u.InputTokens+u.OutputTokens > 0 {
+			cost, _ := h.billing.Deduct(ctx, userID, modelID, u.InputTokens, u.OutputTokens, "", "")
+			return cost, u.InputTokens
+		}
+		if u.Seconds > 0 {
+			seconds := int(math.Ceil(u.Seconds))
+			cost, _ := h.billing.DeductAudio(ctx, userID, modelID, seconds, "")
+			return cost, seconds
+		}
+	}
+	seconds := audioinfo.EstimateDurationSeconds(req.Filename, req.File)
+	cost, _ := h.billing.DeductAudio(ctx, userID, modelID, seconds, "")
+	return cost, seconds
 }
 
 func (h *TranscriptionHandler) transcriberByName(name string) (provider.TranscriptionProvider, bool) {

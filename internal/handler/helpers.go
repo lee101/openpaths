@@ -3,12 +3,35 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"unicode/utf8"
 
 	"github.com/openpaths/openpaths/internal/model"
 	"github.com/valyala/fasthttp"
 )
 
+const maxErrorMessageBytes = 8192
+
+func clipErrorMessage(message string) string {
+	if len(message) <= maxErrorMessageBytes {
+		return message
+	}
+	n := maxErrorMessageBytes
+	for n > 0 && !utf8.RuneStart(message[n]) {
+		n--
+	}
+	return message[:n]
+}
+
+func upstreamClientStatus(status int) int {
+	switch status {
+	case 401, 403:
+		return 502
+	}
+	return status
+}
+
 func writeError(ctx *fasthttp.RequestCtx, status int, errType, message string) {
+	message = clipErrorMessage(message)
 	ctx.SetStatusCode(status)
 	ctx.SetContentType("application/json")
 	resp := model.ErrorResponse{

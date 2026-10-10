@@ -41,12 +41,20 @@ export function CompareIndex() {
                 Pick two or more crawled models and compare intelligence, coding, agentic work, token pricing, speed, context, and benchmark run costs.
               </p>
             </div>
-            <Link
-              to="/evals"
-              className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/20 px-4 py-3 font-mono text-sm text-white/65 transition-colors hover:border-white/50 hover:text-white"
-            >
-              Browse evals <ArrowRight className="h-4 w-4" />
-            </Link>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                to="/llm-pricing"
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/20 px-4 py-3 font-mono text-sm text-white/65 transition-colors hover:border-white/50 hover:text-white"
+              >
+                Compare pricing <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link
+                to="/evals"
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/20 px-4 py-3 font-mono text-sm text-white/65 transition-colors hover:border-white/50 hover:text-white"
+              >
+                Browse evals <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
           </div>
         </section>
 

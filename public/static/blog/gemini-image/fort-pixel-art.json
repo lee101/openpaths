@@ -1,0 +1,12 @@
+{
+  "model": "gemini-nano-banana-2.1",
+  "prompt": "Completely redraw this game screenshot as a retro 16-bit SNES-era pixel art game: every object built from large visible square pixels, limited 32-color palette, dithered shading, blocky pixel trees and water, chunky pixel-font UI. It must look unmistakably like pixel art, not a photo filter. Keep the exact camera angle, castle layout, river, bridges, walls, and the bottom build menu and HUD panels so it looks like the same game in a different state.",
+  "edit": true,
+  "ms": 22752,
+  "usage": [
+    {
+      "modality": "image",
+      "tokens": 1120
+    }
+  ]
+}

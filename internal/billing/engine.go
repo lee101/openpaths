@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/openpaths/openpaths/internal/db/queries"
@@ -24,6 +26,9 @@ type Engine struct {
 	autoTopup *AutoTopupService
 	guards    *queries.GuardQueries
 	appURL    string
+
+	carryMu sync.Mutex
+	carry   map[string]float64
 }
 
 func NewEngine(pricing *PricingTable, credits *queries.CreditQueries) *Engine {
@@ -135,12 +140,36 @@ func (e *Engine) Deduct(ctx context.Context, userID, modelID string, inputTokens
 	return e.DeductWithCachedInput(ctx, userID, modelID, inputTokens, outputTokens, 0, reasoningEffort, usageLogID)
 }
 
+// accrue adds a fractional unit cost to the key's carry and returns the whole
+// units now due; the remainder stays in memory (a restart forgives < 1 unit).
+func (e *Engine) accrue(key string, units float64) int64 {
+	e.carryMu.Lock()
+	defer e.carryMu.Unlock()
+	if e.carry == nil {
+		e.carry = make(map[string]float64)
+	}
+	total := e.carry[key] + units
+	whole := math.Floor(total)
+	if rem := total - whole; rem > 0 {
+		e.carry[key] = rem
+	} else {
+		delete(e.carry, key)
+	}
+	return int64(whole)
+}
+
 // DeductWithCachedInput calculates actual cost with cache-hit prompt tokens and
 // atomically deducts from balance.
 func (e *Engine) DeductWithCachedInput(ctx context.Context, userID, modelID string, inputTokens, outputTokens, cachedInputTokens int, reasoningEffort, usageLogID string) (int64, error) {
-	cost, err := e.pricing.CalculateCostWithCachedInput(modelID, inputTokens, outputTokens, cachedInputTokens)
-	if err != nil {
-		return 0, err
+	var cost int64
+	var err error
+	if exact, ok := e.pricing.SubUnitCost(modelID, inputTokens, outputTokens); ok {
+		cost = e.accrue(userID+"\x00"+modelID, exact)
+	} else {
+		cost, err = e.pricing.CalculateCostWithCachedInput(modelID, inputTokens, outputTokens, cachedInputTokens)
+		if err != nil {
+			return 0, err
+		}
 	}
 
 	if cost == 0 {
@@ -152,7 +181,7 @@ func (e *Engine) DeductWithCachedInput(ctx context.Context, userID, modelID stri
 		refID = &usageLogID
 	}
 
-	err = e.credits.DeductWithTransaction(ctx, userID, cost,
+	err = e.deductTx(ctx, userID, cost,
 		model.TxTypeUsageDeduction,
 		formatUsageDescriptionWithCache(modelID, inputTokens, outputTokens, cachedInputTokens, reasoningEffort),
 		refID,
@@ -175,7 +204,7 @@ func (e *Engine) DeductRealtime(ctx context.Context, userID, modelID string, usa
 	if usageLogID != "" {
 		refID = &usageLogID
 	}
-	err = e.credits.DeductWithTransaction(ctx, userID, cost, model.TxTypeUsageDeduction,
+	err = e.deductTx(ctx, userID, cost, model.TxTypeUsageDeduction,
 		fmt.Sprintf("Realtime: %s (%d text in, %d audio in, %d image in, %d text out, %d audio out)",
 			modelID, usage.TextInputTokens, usage.AudioInputTokens, usage.ImageInputTokens,
 			usage.TextOutputTokens, usage.AudioOutputTokens), refID)
@@ -219,7 +248,7 @@ func (e *Engine) DeductImageWithInputsAndSize(ctx context.Context, userID, model
 	if usageLogID != "" {
 		refID = &usageLogID
 	}
-	err = e.credits.DeductWithTransaction(ctx, userID, cost,
+	err = e.deductTx(ctx, userID, cost,
 		model.TxTypeUsageDeduction,
 		formatImageUsageDescription(modelID, outputImageCount, inputImageCount, size),
 		refID,
@@ -246,7 +275,7 @@ func (e *Engine) DeductForecast(ctx context.Context, userID, modelID, usageLogID
 	if usageLogID != "" {
 		refID = &usageLogID
 	}
-	err = e.credits.DeductWithTransaction(ctx, userID, cost,
+	err = e.deductTx(ctx, userID, cost,
 		model.TxTypeUsageDeduction,
 		fmt.Sprintf("Forecast: %s", modelID),
 		refID,
@@ -272,7 +301,7 @@ func (e *Engine) DeductOutpaint(ctx context.Context, userID, modelID string, inp
 	if usageLogID != "" {
 		refID = &usageLogID
 	}
-	err = e.credits.DeductWithTransaction(ctx, userID, cost,
+	err = e.deductTx(ctx, userID, cost,
 		model.TxTypeUsageDeduction,
 		formatOutpaintUsageDescription(modelID, inputWidth, inputHeight, outputWidth, outputHeight, outputImageCount),
 		refID,
@@ -340,7 +369,7 @@ func (e *Engine) DeductVideoForDuration(ctx context.Context, userID, modelID str
 	if usageLogID != "" {
 		refID = &usageLogID
 	}
-	err = e.credits.DeductWithTransaction(ctx, userID, cost,
+	err = e.deductTx(ctx, userID, cost,
 		model.TxTypeUsageDeduction,
 		fmt.Sprintf("Video: %s", modelID),
 		refID,
@@ -367,7 +396,7 @@ func (e *Engine) DeductAudio(ctx context.Context, userID, modelID string, durati
 	if usageLogID != "" {
 		refID = &usageLogID
 	}
-	err = e.credits.DeductWithTransaction(ctx, userID, cost,
+	err = e.deductTx(ctx, userID, cost,
 		model.TxTypeUsageDeduction,
 		fmt.Sprintf("Audio: %s, duration_seconds: %d", modelID, durationSeconds),
 		refID,
@@ -401,7 +430,7 @@ func (e *Engine) DeductFixed(ctx context.Context, userID, modelID string, cost i
 	if description == "" {
 		description = fmt.Sprintf("Usage: %s", modelID)
 	}
-	err := e.credits.DeductWithTransaction(ctx, userID, cost,
+	err := e.deductTx(ctx, userID, cost,
 		model.TxTypeUsageDeduction,
 		description,
 		refID,
@@ -434,4 +463,15 @@ func formatUsageDescription(modelID string, inputTokens, outputTokens int, reaso
 		fmt.Sprintf("out: %d", outputTokens),
 	)
 	return strings.Join(parts, ", ")
+}
+
+func (e *Engine) deductTx(ctx context.Context, userID string, cost int64, txType, description string, refID *string) error {
+	if e.credits == nil {
+		return nil
+	}
+	err := e.credits.DeductWithTransaction(ctx, userID, cost, txType, description, refID)
+	if err != nil {
+		log.Printf("billing: deduct failed user=%s cost=%d %q: %v", userID, cost, description, err)
+	}
+	return err
 }

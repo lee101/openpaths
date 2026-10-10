@@ -27,13 +27,15 @@ import (
 )
 
 var (
-	htmlTagRe     = regexp.MustCompile(`(?is)<(script|style)[^>]*>.*?</(script|style)>`)
-	htmlStripRe   = regexp.MustCompile(`(?s)<[^>]+>`)
-	htmlSpaceRe   = regexp.MustCompile(`[ \t]*\n[ \t\n]*\n[ \t]*`)
-	multiSpaceRe  = regexp.MustCompile(`[ \t]{2,}`)
-	inlineImageRe = regexp.MustCompile(`(?is)<img\s+[^>]*src=["']data:[^>]+>`)
-	imageSourceRe = regexp.MustCompile(`(?is)src=["']data:([^;"']+);base64,([^"']+)["']`)
-	imageAltRe    = regexp.MustCompile(`(?is)alt=["']([^"']*)["']`)
+	htmlBreakRe    = regexp.MustCompile(`(?i)<br\s*/?>`)
+	htmlBlockEndRe = regexp.MustCompile(`(?i)</(p|div|h[1-6]|li|tr)>`)
+	htmlTagRe      = regexp.MustCompile(`(?is)<(script|style)[^>]*>.*?</(script|style)>`)
+	htmlStripRe    = regexp.MustCompile(`(?s)<[^>]+>`)
+	htmlSpaceRe    = regexp.MustCompile(`[ \t]*\n[ \t\n]*\n[ \t]*`)
+	multiSpaceRe   = regexp.MustCompile(`[ \t]{2,}`)
+	inlineImageRe  = regexp.MustCompile(`(?is)<img\s+[^>]*src=["']data:[^>]+>`)
+	imageSourceRe  = regexp.MustCompile(`(?is)src=["']data:([^;"']+);base64,([^"']+)["']`)
+	imageAltRe     = regexp.MustCompile(`(?is)alt=["']([^"']*)["']`)
 )
 
 const (
@@ -476,8 +478,8 @@ func readZipXML(f *zip.File, v any) error {
 
 func htmlToMarkdown(s string) string {
 	s = htmlTagRe.ReplaceAllString(s, "")
-	s = regexp.MustCompile(`(?i)<br\s*/?>`).ReplaceAllString(s, "\n")
-	s = regexp.MustCompile(`(?i)</(p|div|h[1-6]|li|tr)>`).ReplaceAllString(s, "\n")
+	s = htmlBreakRe.ReplaceAllString(s, "\n")
+	s = htmlBlockEndRe.ReplaceAllString(s, "\n")
 	s = htmlStripRe.ReplaceAllString(s, "")
 	s = htmlEntities(s)
 	s = htmlSpaceRe.ReplaceAllString(s, "\n\n")

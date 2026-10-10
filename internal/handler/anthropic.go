@@ -363,7 +363,7 @@ func (h *AnthropicHandler) tryAnthStream(
 					"type": "error",
 					"error": map[string]string{
 						"type":    "api_error",
-						"message": event.Err.Error(),
+						"message": clipErrorMessage(event.Err.Error()),
 					},
 				}
 				writeSSE(w, "error", errEvt)

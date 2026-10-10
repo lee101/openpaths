@@ -87,6 +87,9 @@ func (c *Collector) flush(batch []model.UsageLog) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	if len(batch) > 1 && c.usageQ.InsertBatch(ctx, batch) == nil {
+		return
+	}
 	for i := range batch {
 		if err := c.usageQ.Insert(ctx, &batch[i]); err != nil {
 			log.Printf("metrics flush: %v", err)

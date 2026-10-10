@@ -37,7 +37,7 @@ func TestQwen38FlashModels(t *testing.T) {
 		default:
 			continue
 		}
-		if m.InputPricePer1M != 0.15 || m.InputCacheHitPricePer1M != 0.016 || m.OutputPricePer1M != 0.47 {
+		if m.InputPricePer1M != 0.15 || (m.ID == "or/qwen3.8-flash" && m.InputCacheHitPricePer1M != 0.016) || (m.ID == "qwen/qwen3.8-flash" && m.InputCacheHitPricePer1M != 0.03) || m.OutputPricePer1M != 0.47 {
 			t.Errorf("%s pricing = %v/%v/%v, want 0.15/0.016/0.47", m.ID, m.InputPricePer1M, m.InputCacheHitPricePer1M, m.OutputPricePer1M)
 		}
 		if m.ContextWindow != 1000000 || m.MaxOutputTokens != 131072 {
@@ -53,9 +53,9 @@ func TestQwen38FlashModels(t *testing.T) {
 	if !or {
 		t.Error("or/qwen3.8-flash missing from config")
 	}
-	for _, alias := range []string{"qwen3.8-flash", "qwen3.8-omni-flash", "qwen-omni-flash", "qwen3.8-omni", "qwen-flash"} {
-		if got := known[alias]; got != "qwen/qwen3.8-flash" {
-			t.Errorf("alias %q resolves to %q, want qwen/qwen3.8-flash", alias, got)
+	for alias, want := range map[string]string{"qwen3.8-flash": "qwen/qwen3.8-flash", "qwen-flash": "qwen/qwen3.8-flash", "qwen3.8-omni-flash": "qwen/qwen3.8-omni-flash", "qwen-omni-flash": "qwen/qwen3.8-omni-flash", "qwen3.8-omni": "qwen/qwen3.8-omni-flash"} {
+		if got := known[alias]; got != want {
+			t.Errorf("alias %q resolves to %q, want %s", alias, got, want)
 		}
 	}
 }

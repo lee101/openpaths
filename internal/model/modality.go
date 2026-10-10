@@ -17,6 +17,7 @@ const (
 	ModalityImage         Modality = "image"
 	ModalityThreeD        Modality = "3d"
 	ModalityForecasting   Modality = "forecasting"
+	ModalityDecision      Modality = "decision"
 )
 
 // ModalityOf maps a model config to the domain that serves it. Order matters:
@@ -27,7 +28,9 @@ func ModalityOf(cfg *ModelConfig) Modality {
 	switch {
 	case strings.Contains(idl, "embed"):
 		return ModalityEmbedding
-	case strings.Contains(idl, "whisper"), strings.Contains(idl, "stt"),
+	case strings.Contains(idl, "decision-model"), strings.HasPrefix(idl, "jev"):
+		return ModalityDecision
+	case strings.Contains(idl, "whisper"), strings.Contains(idl, "stt"), strings.Contains(idl, "-asr"),
 		strings.Contains(idl, "transcribe"), strings.Contains(idl, "transcription"):
 		return ModalityTranscription
 	case strings.Contains(idl, "tts"), strings.Contains(idl, "voice"),

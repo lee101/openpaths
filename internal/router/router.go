@@ -2,6 +2,7 @@ package router
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"sort"
@@ -324,6 +325,25 @@ func (r *Router) MarkModelUnhealthy(providerName, modelID string) {
 	r.health.MarkUnhealthy(key)
 }
 
+func (r *Router) MarkModelFailure(providerName, modelID string, err error) {
+	if IsRequestError(err) {
+		return
+	}
+	r.MarkModelUnhealthy(providerName, modelID)
+}
+
+func IsRequestError(err error) bool {
+	var pe *provider.ProviderError
+	if !errors.As(err, &pe) {
+		return false
+	}
+	switch pe.StatusCode {
+	case 400, 413, 422:
+		return true
+	}
+	return false
+}
+
 func (r *Router) MarkModelHealthy(providerName, modelID string) {
 	key := r.health.ModelProviderKey(providerName, modelID)
 	r.health.MarkHealthy(key)
@@ -340,89 +360,13 @@ func (r *Router) ListModelConfigs() []*model.ModelConfig {
 	return configs
 }
 
-func (r *Router) ListModels() []model.ModelInfo {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	now := time.Now().Unix()
-	var models []model.ModelInfo
-	for _, cfg := range r.models {
-		inputRate, cacheRate, outputRate := cfg.TokenRatesAt(r.now())
-		info := model.ModelInfo{
-			ID:              cfg.ID,
-			Object:          "model",
-			Type:            model.ModalityOf(cfg).ModelType(),
-			Created:         now,
-			OwnedBy:         cfg.Provider,
-			ContextWindow:   cfg.ContextWindow,
-			MaxOutputTokens: cfg.MaxOutputTokens,
-			Aliases:         cfg.Aliases,
-			SupportedSizes:  cfg.SupportedSizes,
-			Deprecated:      cfg.Deprecated,
-			DeprecatedNote:  cfg.DeprecatedNote,
-			Pricing: &model.ModelPricing{
-				InputPer1M:              inputRate,
-				InputCacheHitPer1M:      cacheRate,
-				OutputPer1M:             outputRate,
-				AudioInputPer1M:         cfg.AudioInputPricePer1M,
-				AudioInputCacheHitPer1M: cfg.AudioInputCacheHitPricePer1M,
-				AudioOutputPer1M:        cfg.AudioOutputPricePer1M,
-				ImageInputPer1M:         cfg.ImageInputPricePer1M,
-				ImageInputCacheHitPer1M: cfg.ImageInputCacheHitPricePer1M,
-				Per1MCharacters:         cfg.PricePer1MCharacters,
-				LongContextThreshold:    cfg.LongContextThreshold,
-				InputPer1MLong:          cfg.InputPricePer1MLong,
-				InputCacheHitPer1MLong:  cfg.InputCacheHitPricePer1MLong,
-				OutputPer1MLong:         cfg.OutputPricePer1MLong,
-				PerRequest:              cfg.PricePerRequest,
-				PerImage:                cfg.PricePerImage,
-				PerImageByResolution:    cfg.PricePerImageByResolution,
-				PerMegapixel:            cfg.PricePerMegapixel,
-				FirstMegapixel:          cfg.PriceFirstMegapixel,
-				ExtraMegapixel:          cfg.PriceExtraMegapixel,
-				PerInputImage:           cfg.PricePerInputImage,
-				PerVideo:                cfg.PricePerVideo,
-				PerSecond:               cfg.PricePerSecond,
-				PerSecondByResolution:   cfg.PricePerSecondByResolution,
-				PerSecondWithVideoInput: cfg.PricePerSecondWithVideoInput,
-				PerInputVideoSecond:     cfg.PricePerInputVideoSecond,
-				PerMinute:               cfg.PricePerMinute,
-				PerHour:                 cfg.PricePerHour,
-			},
-			Capabilities: &model.ModelCapabilities{
-				Streaming: cfg.SupportsStreaming,
-				Tools:     cfg.SupportsTools,
-				Vision:    cfg.SupportsVision,
-			},
-		}
-		models = append(models, info)
-	}
-	return models
-}
-
-func (r *Router) GetModelConfig(modelName string) (*model.ModelConfig, bool) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	canonical := modelName
-	if mapped, ok := r.aliases[modelName]; ok {
-		canonical = mapped
-	}
-	cfg, ok := r.models[canonical]
-	return cfg, ok
-}
-
-func (r *Router) GetModelInfo(modelName string) (model.ModelInfo, bool) {
-	cfg, ok := r.GetModelConfig(modelName)
-	if !ok {
-		return model.ModelInfo{}, false
-	}
-	inputRate, cacheRate, outputRate := cfg.TokenRatesAt(r.now())
+func modelInfoOf(cfg *model.ModelConfig, at time.Time, created int64) model.ModelInfo {
+	inputRate, cacheRate, outputRate := cfg.TokenRatesAt(at)
 	return model.ModelInfo{
 		ID:              cfg.ID,
 		Object:          "model",
 		Type:            model.ModalityOf(cfg).ModelType(),
-		Created:         time.Now().Unix(),
+		Created:         created,
 		OwnedBy:         cfg.Provider,
 		ContextWindow:   cfg.ContextWindow,
 		MaxOutputTokens: cfg.MaxOutputTokens,
@@ -464,7 +408,41 @@ func (r *Router) GetModelInfo(modelName string) (model.ModelInfo, bool) {
 			Tools:     cfg.SupportsTools,
 			Vision:    cfg.SupportsVision,
 		},
-	}, true
+	}
+}
+
+func (r *Router) ListModels() []model.ModelInfo {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	at := r.now()
+	now := time.Now().Unix()
+	models := make([]model.ModelInfo, 0, len(r.models))
+	for _, cfg := range r.models {
+		models = append(models, modelInfoOf(cfg, at, now))
+	}
+	sort.Slice(models, func(i, j int) bool { return models[i].ID < models[j].ID })
+	return models
+}
+
+func (r *Router) GetModelConfig(modelName string) (*model.ModelConfig, bool) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	canonical := modelName
+	if mapped, ok := r.aliases[modelName]; ok {
+		canonical = mapped
+	}
+	cfg, ok := r.models[canonical]
+	return cfg, ok
+}
+
+func (r *Router) GetModelInfo(modelName string) (model.ModelInfo, bool) {
+	cfg, ok := r.GetModelConfig(modelName)
+	if !ok {
+		return model.ModelInfo{}, false
+	}
+	return modelInfoOf(cfg, r.now(), time.Now().Unix()), true
 }
 
 func (r *Router) SetAutoRouter(ar *AutoRouter) {
@@ -477,12 +455,19 @@ func (r *Router) MaybeResolveAuto(ctx context.Context, modelName, modality, prom
 	return r.MaybeResolveAutoWithTier(ctx, modelName, modality, "", prompt)
 }
 
+func (r *Router) autoRouterRef() *AutoRouter {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return r.autoRouter
+}
+
 func (r *Router) MaybeResolveAutoReasoning(ctx context.Context, prompt string) string {
-	if r.autoRouter == nil {
+	ar := r.autoRouterRef()
+	if ar == nil {
 		return ""
 	}
 
-	result, err := r.autoRouter.ResolveAuto(ctx, "reasoning-task", prompt)
+	result, err := ar.ResolveAuto(ctx, "reasoning-task", prompt)
 	if err != nil {
 		log.Printf("autorouter: %v, using default reasoning", err)
 		return ""
@@ -498,7 +483,8 @@ func (r *Router) MaybeResolveAutoReasoning(ctx context.Context, prompt string) s
 func (r *Router) MaybeResolveAutoWithTier(ctx context.Context, modelName, modality, taskTier, prompt string) AutoRouteResult {
 	fallback := AutoRouteResult{ModelID: modelName}
 
-	if r.autoRouter == nil {
+	ar := r.autoRouterRef()
+	if ar == nil {
 		return fallback
 	}
 
@@ -522,7 +508,7 @@ func (r *Router) MaybeResolveAutoWithTier(ctx context.Context, modelName, modali
 		mod = modality
 	}
 
-	result, err := r.autoRouter.ResolveAuto(ctx, mod, prompt)
+	result, err := ar.ResolveAuto(ctx, mod, prompt)
 	if err != nil {
 		log.Printf("autorouter: %v, using default", err)
 		return fallback

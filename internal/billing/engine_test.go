@@ -1,6 +1,9 @@
 package billing
 
-import "testing"
+import (
+	"context"
+	"testing"
+)
 
 func TestFormatUsageDescription(t *testing.T) {
 	got := formatUsageDescription("gpt-5.4-mini", 120, 340, "medium")
@@ -15,5 +18,12 @@ func TestFormatUsageDescriptionWithoutReasoning(t *testing.T) {
 	want := "Model: gemini-3.1-flash-lite, in: 12, out: 3"
 	if got != want {
 		t.Fatalf("formatUsageDescription() = %q, want %q", got, want)
+	}
+}
+
+func TestDeductWithoutCreditsStoreIsNoop(t *testing.T) {
+	e := &Engine{}
+	if err := e.DeductFixed(context.Background(), "u", "m", 5, "", ""); err != nil {
+		t.Fatal(err)
 	}
 }

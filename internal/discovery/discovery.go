@@ -9,16 +9,36 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/openpaths/openpaths/internal/db/queries"
 	"github.com/openpaths/openpaths/internal/model"
 )
 
+type metaStore interface {
+	Upsert(ctx context.Context, m *queries.ModelMetadata) (bool, error)
+	CountByProvider(ctx context.Context, provider string) (int, error)
+}
+
+type NewModel struct {
+	Provider     string    `json:"provider"`
+	ModelID      string    `json:"model_id"`
+	DiscoveredAt time.Time `json:"discovered_at"`
+}
+
+const maxNewModels = 500
+
 type Service struct {
 	providers []model.ProviderConfig
-	modelQ    *queries.ModelMetadataQueries
+	modelQ    metaStore
 	client    *http.Client
+
+	runMu     sync.Mutex
+	bootstrap map[string]bool
+
+	newMu     sync.Mutex
+	newModels []NewModel
 }
 
 func New(providers []model.ProviderConfig, modelQ *queries.ModelMetadataQueries) *Service {
@@ -29,11 +49,53 @@ func New(providers []model.ProviderConfig, modelQ *queries.ModelMetadataQueries)
 	}
 }
 
+func (s *Service) upsert(ctx context.Context, meta *queries.ModelMetadata) error {
+	inserted, err := s.modelQ.Upsert(ctx, meta)
+	if err != nil {
+		return err
+	}
+	if inserted && !s.bootstrap[meta.Provider] {
+		s.recordNew(meta.Provider, meta.ModelID)
+	}
+	return nil
+}
+
+func (s *Service) recordNew(provider, modelID string) {
+	s.newMu.Lock()
+	defer s.newMu.Unlock()
+	for _, n := range s.newModels {
+		if n.Provider == provider && n.ModelID == modelID {
+			return
+		}
+	}
+	if len(s.newModels) >= maxNewModels {
+		s.newModels = s.newModels[1:]
+	}
+	s.newModels = append(s.newModels, NewModel{Provider: provider, ModelID: modelID, DiscoveredAt: time.Now()})
+	log.Printf("discovery %s: NEW model %s", provider, modelID)
+}
+
+func (s *Service) NewlyDiscovered() []NewModel {
+	s.newMu.Lock()
+	defer s.newMu.Unlock()
+	return append([]NewModel{}, s.newModels...)
+}
+
 func (s *Service) DiscoverAll(ctx context.Context) (int, error) {
+	s.runMu.Lock()
+	defer s.runMu.Unlock()
 	total := 0
 	for _, p := range s.providers {
 		if !p.Enabled || p.APIKey == "" {
 			continue
+		}
+		s.bootstrap = map[string]bool{}
+		if n, err := s.modelQ.CountByProvider(ctx, p.Name); err == nil && n == 0 {
+			s.bootstrap[p.Name] = true
+			log.Printf("discovery %s: first index, new-model signal suppressed", p.Name)
+		} else if err != nil {
+			s.bootstrap[p.Name] = true
+			log.Printf("discovery %s: count failed, new-model signal suppressed: %v", p.Name, err)
 		}
 		n, err := s.discoverProvider(ctx, p)
 		if err != nil {
@@ -43,6 +105,7 @@ func (s *Service) DiscoverAll(ctx context.Context) (int, error) {
 		total += n
 		log.Printf("discovery %s: indexed %d models", p.Name, n)
 	}
+	s.bootstrap = nil
 	return total, nil
 }
 
@@ -194,7 +257,7 @@ func (s *Service) discoverMistral(ctx context.Context, p model.ProviderConfig) (
 			OutputModalities: outputModJSON,
 			RawMetadata:      rawJSON,
 		}
-		if err := s.modelQ.Upsert(ctx, meta); err != nil {
+		if err := s.upsert(ctx, meta); err != nil {
 			log.Printf("discovery mistral upsert %s: %v", m.ID, err)
 			continue
 		}
@@ -265,7 +328,7 @@ func (s *Service) discoverOpenAICompat(ctx context.Context, p model.ProviderConf
 			OutputModalities: json.RawMessage(`["text"]`),
 			RawMetadata:      rawJSON,
 		}
-		if err := s.modelQ.Upsert(ctx, meta); err != nil {
+		if err := s.upsert(ctx, meta); err != nil {
 			log.Printf("discovery %s upsert %s: %v", provName, m.ID, err)
 			continue
 		}
@@ -383,7 +446,7 @@ func (s *Service) discoverOpenRouter(ctx context.Context, p model.ProviderConfig
 			OutputModalities: outputModJSON,
 			RawMetadata:      rawJSON,
 		}
-		if err := s.modelQ.Upsert(ctx, meta); err != nil {
+		if err := s.upsert(ctx, meta); err != nil {
 			log.Printf("discovery openrouter upsert %s: %v", m.ID, err)
 			continue
 		}
@@ -447,7 +510,7 @@ func (s *Service) discoverAnthropic(ctx context.Context, p model.ProviderConfig)
 			OutputModalities: outputModJSON,
 			RawMetadata:      rawJSON,
 		}
-		if err := s.modelQ.Upsert(ctx, meta); err != nil {
+		if err := s.upsert(ctx, meta); err != nil {
 			log.Printf("discovery anthropic upsert %s: %v", m.ID, err)
 			continue
 		}
@@ -536,7 +599,7 @@ func (s *Service) discoverGoogle(ctx context.Context, p model.ProviderConfig) (i
 			OutputModalities: outputModJSON,
 			RawMetadata:      rawJSON,
 		}
-		if err := s.modelQ.Upsert(ctx, meta); err != nil {
+		if err := s.upsert(ctx, meta); err != nil {
 			log.Printf("discovery google upsert %s: %v", modelID, err)
 			continue
 		}
@@ -607,7 +670,7 @@ func (s *Service) discoverMiniMax(ctx context.Context, p model.ProviderConfig) (
 			OutputModalities: json.RawMessage(`["text"]`),
 			RawMetadata:      rawJSON,
 		}
-		if err := s.modelQ.Upsert(ctx, meta); err != nil {
+		if err := s.upsert(ctx, meta); err != nil {
 			log.Printf("discovery minimax upsert %s: %v", m.ID, err)
 			continue
 		}
@@ -674,7 +737,7 @@ func (s *Service) discoverZAI(ctx context.Context, p model.ProviderConfig) (int,
 			OutputModalities: outputModJSON,
 			RawMetadata:      rawJSON,
 		}
-		if err := s.modelQ.Upsert(ctx, meta); err != nil {
+		if err := s.upsert(ctx, meta); err != nil {
 			log.Printf("discovery zai upsert %s: %v", m.ID, err)
 			continue
 		}

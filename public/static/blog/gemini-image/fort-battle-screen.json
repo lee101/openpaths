@@ -1,0 +1,12 @@
+{
+  "model": "gemini-nano-banana-2.1",
+  "prompt": "Create the battle-mode screen for this same game: same art style and HUD frame, but the camera is closer on the gatehouse, archers on the walls, a knight squad selection panel with unit portraits and health bars at the bottom, an enemy army approaching over the bridge. Title \"Aethelgard Chronicles\" top left.",
+  "edit": true,
+  "ms": 23240,
+  "usage": [
+    {
+      "modality": "image",
+      "tokens": 1120
+    }
+  ]
+}

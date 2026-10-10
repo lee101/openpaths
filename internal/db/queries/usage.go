@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/openpaths/openpaths/internal/model"
 )
@@ -17,22 +18,46 @@ func NewUsageQueries(pool *pgxpool.Pool) *UsageQueries {
 	return &UsageQueries{pool: pool}
 }
 
-func (q *UsageQueries) Insert(ctx context.Context, log *model.UsageLog) error {
+const usageInsertSQL = `INSERT INTO usage_logs (user_id, api_key_id, model, provider, tokens_in, tokens_out,
+		 latency_ms, ttft_ms, tps, cost_cents, error, status_code, streaming, app_id, app_url, app_title, app_categories)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17::jsonb)`
+
+func usageInsertArgs(log *model.UsageLog) []any {
 	categories, _ := json.Marshal(log.AppCategories)
 	var appID any
 	if log.AppID != "" {
 		appID = log.AppID
 	}
-	_, err := q.pool.Exec(ctx,
-		`INSERT INTO usage_logs (user_id, api_key_id, model, provider, tokens_in, tokens_out,
-		 latency_ms, ttft_ms, tps, cost_cents, error, status_code, streaming, app_id, app_url, app_title, app_categories)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17::jsonb)`,
+	return []any{
 		log.UserID, log.APIKeyID, log.Model, log.Provider, log.TokensIn, log.TokensOut,
 		log.LatencyMs, log.TTFTMs, log.TPS, log.CostCents, log.Error, log.StatusCode, log.Streaming,
 		appID, log.AppURL, log.AppTitle, string(categories),
-	)
-	if err != nil {
+	}
+}
+
+func (q *UsageQueries) Insert(ctx context.Context, log *model.UsageLog) error {
+	if _, err := q.pool.Exec(ctx, usageInsertSQL, usageInsertArgs(log)...); err != nil {
 		return fmt.Errorf("insert usage log: %w", err)
+	}
+	return nil
+}
+
+// InsertBatch writes all logs in one round trip and one implicit transaction:
+// any failing row fails the whole batch.
+func (q *UsageQueries) InsertBatch(ctx context.Context, logs []model.UsageLog) error {
+	if len(logs) == 0 {
+		return nil
+	}
+	batch := &pgx.Batch{}
+	for i := range logs {
+		batch.Queue(usageInsertSQL, usageInsertArgs(&logs[i])...)
+	}
+	br := q.pool.SendBatch(ctx, batch)
+	defer br.Close()
+	for range logs {
+		if _, err := br.Exec(); err != nil {
+			return fmt.Errorf("insert usage logs: %w", err)
+		}
 	}
 	return nil
 }

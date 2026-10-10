@@ -6,8 +6,11 @@ import { VideoSpacePanel } from '../components/VideoSpacePanel';
 import { RelightSpacePanel } from '../components/RelightSpacePanel';
 import { RelightSpacePanel } from '../components/RelightSpacePanel';
 import { Seo } from '../components/Seo';
+import { ServerModelPage, readServerModel } from './ServerModelPage';
+import { faqLd, softwareApplicationLd } from '../lib/seoSchema';
 import { ShareButton } from '../components/ShareButton';
 import { modelOgPath } from '../lib/modelOg';
+import { modelSeoTitle } from '../lib/modelSeo';
 import { isPromotionActive, models, type Model } from '../data/models';
 import { providersByName, getProviderLogo } from '../data/providers';
 import { IMAGE_DEMOS } from '../data/imageDemos';
@@ -25,7 +28,8 @@ export function ModelPage() {
   const model = models.find(item => item.id === decodedId);
 
   if (!model) {
-    return <Navigate to="/models" replace />;
+    const serverModel = readServerModel(decodedId);
+    return serverModel ? <ServerModelPage model={serverModel} /> : <Navigate to="/models" replace />;
   }
 
   const provider = providersByName[model.provider];
@@ -37,7 +41,7 @@ export function ModelPage() {
   const relatedModels = getRelatedModels(model);
   const workspaceFirst = isImage || isVideo;
   const promotionActive = isPromotionActive(model);
-  const title = `${model.name} API, Pricing, Context Window | OpenPaths`;
+  const title = modelSeoTitle(model);
   const description = `${model.name} from ${model.provider}: ${model.description} Use model ID ${model.id} through the OpenPaths API.`;
   const canonical = `https://openpaths.io/models/${encodeURIComponent(model.id)}`;
   const jsonLd = [
@@ -60,20 +64,17 @@ export function ModelPage() {
         },
       } : {}),
     },
-    {
-      '@context': 'https://schema.org',
-      '@type': 'BreadcrumbList',
-      itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Models', item: 'https://openpaths.io/models' },
-        { '@type': 'ListItem', position: 2, name: model.name, item: canonical },
-      ],
-    },
+    softwareApplicationLd({ name: model.name, description: model.description, path: `/models/${encodeURIComponent(model.id)}`, price: model.priceInput }),
+    faqLd([
+      { q: `What is the model ID for ${model.name} on OpenPaths?`, a: `Use ${model.id} as the model field in the OpenPaths API.` },
+      { q: `How much does ${model.name} cost?`, a: `${formatPrice(model, model.priceInput, 'input')}${model.pricingType === 'request' || model.pricingType === 'second' ? '' : ` input and ${formatPrice(model, model.priceOutput, 'output')} output`}, with near-zero OpenPaths markup.` },
+    ]),
   ];
 
 
   return (
     <>
-      <Seo title={title} description={description} path={`/models/${encodeURIComponent(model.id)}`} image={model.ogImage || modelOgPath(model.id)} jsonLd={jsonLd} />
+      <Seo title={title} description={description} path={`/models/${encodeURIComponent(model.id)}`} breadcrumbName={model.name} image={model.ogImage || modelOgPath(model.id)} jsonLd={jsonLd} />
 
       {workspaceFirst ? (
         <section className="mx-auto w-full max-w-[1800px] px-3 py-3 sm:px-4 lg:px-5">

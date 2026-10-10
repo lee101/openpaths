@@ -14,6 +14,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"strings"
 	"time"
@@ -28,6 +29,7 @@ import (
 	"github.com/openpaths/openpaths/internal/modelaccess"
 	"github.com/openpaths/openpaths/internal/provider"
 	"github.com/openpaths/openpaths/internal/router"
+	"github.com/openpaths/openpaths/internal/safefetch"
 	"github.com/openpaths/openpaths/internal/savedresp"
 	"github.com/openpaths/openpaths/internal/storage"
 )
@@ -187,7 +189,7 @@ func (h *ImageHandler) executeImageGeneration(ctx context.Context, req *model.Im
 			statusCode := 502
 			errMsg := "upstream error"
 			if pe, ok := err.(*provider.ProviderError); ok {
-				statusCode = pe.StatusCode
+				statusCode = upstreamClientStatus(pe.StatusCode)
 				errMsg = pe.Message
 				if !pe.Retryable && i == len(candidates)-1 {
 					h.recorder.RecordErrorWithApp(userID, apiKeyID, originalModel, cand.Provider.Name(),
@@ -195,7 +197,7 @@ func (h *ImageHandler) executeImageGeneration(ctx context.Context, req *model.Im
 					return imageExecutionResult{StatusCode: statusCode, ErrorType: "provider_error", ErrorMessage: errMsg}
 				}
 			}
-			h.router.MarkModelUnhealthy(cand.Provider.Name(), cand.ModelCfg.ID)
+			h.router.MarkModelFailure(cand.Provider.Name(), cand.ModelCfg.ID, err)
 			h.recorder.RecordErrorWithApp(userID, apiKeyID, originalModel, cand.Provider.Name(),
 				int(latency.Milliseconds()), statusCode, errMsg, false, app.ID, app.URL, app.Title, app.Categories)
 			if i < len(candidates)-1 {
@@ -343,12 +345,30 @@ func inputImageURLs(req *model.ImageGenerationRequest) []string {
 	return urls
 }
 
+const (
+	maxImageDownloadBytes = 50 << 20
+	imageDownloadTimeout  = time.Minute
+)
+
+var (
+	userImageClient = safefetch.NewClient(imageDownloadTimeout)
+	rehostClient    = &http.Client{Timeout: 2 * time.Minute}
+)
+
 func downloadImageDimensions(ctx context.Context, sourceURL string) (int, int) {
+	return downloadImageDimensionsWith(ctx, userImageClient, sourceURL)
+}
+
+func downloadImageDimensionsWith(ctx context.Context, client *http.Client, sourceURL string) (int, int) {
+	u, err := url.Parse(sourceURL)
+	if err != nil || safefetch.ValidateURL(u) != nil {
+		return 0, 0
+	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, sourceURL, nil)
 	if err != nil {
 		return 0, 0
 	}
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return 0, 0
 	}
@@ -356,7 +376,7 @@ func downloadImageDimensions(ctx context.Context, sourceURL string) (int, int) {
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return 0, 0
 	}
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxImageDownloadBytes))
 	if err != nil {
 		return 0, 0
 	}
@@ -391,7 +411,7 @@ func (h *ImageHandler) rehostImageURL(ctx context.Context, sourceURL string, ind
 	if err != nil {
 		return "", 0, 0, err
 	}
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := rehostClient.Do(req)
 	if err != nil {
 		return "", 0, 0, err
 	}
@@ -399,9 +419,12 @@ func (h *ImageHandler) rehostImageURL(ctx context.Context, sourceURL string, ind
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return "", 0, 0, fmt.Errorf("download status %d", resp.StatusCode)
 	}
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxImageDownloadBytes+1))
 	if err != nil {
 		return "", 0, 0, err
+	}
+	if len(body) > maxImageDownloadBytes {
+		return "", 0, 0, fmt.Errorf("image exceeds %d bytes", maxImageDownloadBytes)
 	}
 	width, height := imageDimensions(body)
 	contentType := resp.Header.Get("Content-Type")

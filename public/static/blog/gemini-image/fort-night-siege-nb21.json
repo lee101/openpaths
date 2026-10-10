@@ -1,0 +1,12 @@
+{
+  "model": "gemini-nano-banana-2.1",
+  "prompt": "Turn this strategy game screenshot into a night siege: deep blue moonlit sky, torches and braziers glowing along the walls, small enemy campfires in the forest. Keep the exact camera angle, castle layout, river, bridges, walls, and the bottom build menu and HUD panels so it looks like the same game in a different state. Change the objective banner to \"Hold the Walls\".",
+  "edit": true,
+  "ms": 24838,
+  "usage": [
+    {
+      "modality": "image",
+      "tokens": 1120
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "model": "gemini-3.1-flash-lite-image",
+  "prompt": "Key art for a cozy medieval castle-builder game called \"Aethelgard Chronicles\": a hilltop castle at golden hour, rivers and forests, soft stylized 3D look, warm light, title lettering at the top.",
+  "edit": false,
+  "aspect": "16:9",
+  "ms": 8059,
+  "usage": [
+    {
+      "modality": "image",
+      "tokens": 1120
+    }
+  ]
+}

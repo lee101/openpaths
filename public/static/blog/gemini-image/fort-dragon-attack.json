@@ -1,0 +1,12 @@
+{
+  "model": "gemini-nano-banana-2.1",
+  "prompt": "Show the aftermath of a dragon attack on this castle: a large dragon circling above, several towers burning with smoke columns, damaged wall sections, villagers fleeing. Keep the exact camera angle, castle layout, river, bridges, walls, and the bottom build menu and HUD panels so it looks like the same game in a different state. Change the objective to \"Repair the Walls\".",
+  "edit": true,
+  "ms": 24322,
+  "usage": [
+    {
+      "modality": "image",
+      "tokens": 1120
+    }
+  ]
+}

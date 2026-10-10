@@ -1,7 +1,9 @@
 export const LIVE_MODELS = [
-  { id: 'gemini-3.8-live-extended-thinking', name: 'Gemini 3.8 Live · Extended Thinking', provider: 'google', audioIn: 3.15, audioOut: 12.60, textIn: 0.7875, textOut: 4.725 },
-  { id: 'gpt-realtime-2.1-mini', name: 'GPT Realtime 2.1 Mini', provider: 'openai', audioIn: 10.50, audioOut: 21, textIn: 0.63, textOut: 2.52 },
-  { id: 'gpt-realtime-2.1', name: 'GPT Realtime 2.1', provider: 'openai', audioIn: 33.60, audioOut: 67.20, textIn: 4.20, textOut: 25.20 },
+  { id: 'gemini-3.8-live-extended-thinking', name: 'Gemini 3.8 Live · Extended Thinking', provider: 'google', audioIn: 3.15, audioOut: 12.60, textIn: 0.7875, textOut: 4.725, voices: ['Zephyr', 'Puck', 'Kore', 'Aoede', 'Charon', 'Fenrir'] },
+  { id: 'gpt-realtime-2.1-mini', name: 'GPT Realtime 2.1 Mini', provider: 'openai', audioIn: 10.50, audioOut: 21, textIn: 0.63, textOut: 2.52, voices: ['marin', 'cedar', 'alloy', 'ash', 'coral', 'sage', 'verse'] },
+  { id: 'gpt-realtime-2.1', name: 'GPT Realtime 2.1', provider: 'openai', audioIn: 33.60, audioOut: 67.20, textIn: 4.20, textOut: 25.20, voices: ['marin', 'cedar', 'alloy', 'ash', 'coral', 'sage', 'verse'] },
+  { id: 'qwen3.8-omni-flash-realtime', name: 'Qwen 3.8 Omni Flash Realtime', provider: 'alibaba', audioIn: 0.9765, audioOut: 1.9635, textIn: 0.2415, textOut: 0.735, voices: ['Tina'] },
+  { id: 'qwen-audio-3.1-realtime-plus', name: 'Qwen Audio 3.1 Realtime Plus', provider: 'alibaba', audioIn: 6.72, audioOut: 25.20, textIn: 0.84, textOut: 6.72, voices: ['longanqian_v3.1'] },
 ] as const;
 
 export type VoiceState = 'idle' | 'connecting' | 'listening' | 'thinking' | 'speaking';
@@ -38,9 +40,11 @@ export class LiveVoiceSession {
   private busy = false;
   private stats: VoiceStats = { sentFrames: 0, receivedFrames: 0, playedSeconds: 0, firstAudioMs: null };
   private google: boolean;
+  private qwen: boolean;
 
   constructor(private model: string, private callbacks: Callbacks) {
     this.google = model.startsWith('gemini-');
+    this.qwen = model.startsWith('qwen');
   }
 
   async start(key: string, voice: string, instructions: string) {
@@ -53,7 +57,7 @@ export class LiveVoiceSession {
       this.stream = stream;
       await context.audioWorklet.addModule('/audio/pcm-capture.js');
       if (this.closed) return;
-      const inputRate = this.google ? 16000 : 24000;
+      const inputRate = this.google || this.qwen ? 16000 : 24000;
       this.source = context.createMediaStreamSource(stream);
       this.capture = new AudioWorkletNode(context, 'pcm-capture', { processorOptions: { sampleRate: inputRate } });
       this.capture.port.onmessage = ({ data }: MessageEvent<ArrayBuffer>) => {
@@ -144,6 +148,14 @@ export class LiveVoiceSession {
     }
     switch (event.type) {
       case 'session.created':
+        // Qwen realtime speaks the beta session shape: 16 kHz pcm in, 24 kHz pcm out.
+        if (this.qwen) {
+          this.send({ type: 'session.update', session: {
+            modalities: ['text', 'audio'], instructions, voice, input_audio_format: 'pcm', output_audio_format: 'pcm',
+            turn_detection: { type: 'server_vad', silence_duration_ms: 500 },
+          } });
+          break;
+        }
         this.send({ type: 'session.update', session: {
           type: 'realtime', instructions, output_modalities: ['audio'], max_output_tokens: 1024,
           audio: {
@@ -209,7 +221,7 @@ export class LiveVoiceSession {
   }
 
   private interrupt() {
-    if (!this.google && this.itemID && this.context && this.output.size) {
+    if (!this.google && !this.qwen && this.itemID && this.context && this.output.size) {
       this.send({ type: 'conversation.item.truncate', item_id: this.itemID, content_index: 0, audio_end_ms: Math.max(0, Math.floor(Math.min(this.itemDuration, this.context.currentTime - this.itemStart) * 1000)) });
     }
     for (const source of this.output) { source.onended = null; source.stop(); source.disconnect(); }

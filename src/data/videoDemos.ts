@@ -75,6 +75,22 @@ export const VIDEO_DEMOS: Record<string, VideoDemo> = {
     aspectRatio: '16:9',
     generateAudio: false,
   },
+  'wan3.0-video-prime': {
+    prompt: 'A hummingbird hovering at a red flower in slow motion, morning light, shallow depth of field.',
+    outputUrl: 'https://openpathsstatic.openpaths.io/static/uploads/playground/wan3.0-video/wan3-prime-hummingbird.webm',
+    resolution: '480p',
+    duration: 'auto',
+    aspectRatio: '16:9',
+    generateAudio: true,
+  },
+  'wan3.0-video': {
+    prompt: 'A kitten running across a rooftop under the moonlight, city neon lights flickering in the distance, cinematic quality, smooth camera movement.',
+    outputUrl: 'https://openpathsstatic.openpaths.io/static/uploads/playground/wan3.0-video/wan3-kitten-rooftop.webm',
+    resolution: '720p',
+    duration: '5',
+    aspectRatio: '16:9',
+    generateAudio: true,
+  },
   'wan-3.0-text-to-video': {
     prompt: 'A cinematic drone shot gliding over a winding mountain road at sunrise, mist drifting between pine ridges, warm light spilling across the valley, smooth continuous motion, no readable text.',
     outputUrl: 'https://openpathsstatic.openpaths.io/static/uploads/playground/wan-3.0/wan-3.0-text-to-video-demo.mp4',

@@ -11,6 +11,18 @@ import { Seo } from '../components/Seo';
 import { AuthModal } from '../components/AuthModal';
 import { AUTH_EVENT, api, requestCreditTopUp, setApiKey } from '../lib/api';
 import { modelPath } from '../lib/paths';
+import { faqLd, softwareApplicationLd } from '../lib/seoSchema';
+
+const LANDING_FAQ = [
+  { q: 'What is OpenPaths?', a: 'OpenPaths is an OpenAI- and Anthropic-compatible AI gateway. One API key and base URL give you chat, image, video, speech, music, embedding and 3D models from many providers, with smart routing and near-zero markup.' },
+  { q: 'Is OpenPaths compatible with the OpenAI SDK?', a: 'Yes. Set the base URL to https://openpaths.io/v1 and use your OpenPaths API key. The Anthropic Messages API is supported at /v1/messages.' },
+  { q: 'Which image models are available?', a: 'Gemini Nano Banana, GPT Image 2, Flux, RA1 and more through POST /v1/images/generations. See the image generation docs for parameters and pricing.' },
+  { q: 'How does OpenPaths pricing work?', a: 'Pay as you go with pooled credits. OpenPaths passes provider prices through with near-zero markup, and requests made with your own provider key (BYOK) cost nothing on OpenPaths.' },
+];
+const LANDING_JSON_LD = [
+  softwareApplicationLd({ name: 'OpenPaths', description: 'Open source AI model router and OpenAI-compatible gateway for chat, image, video, speech and embedding models.', path: '/' }),
+  faqLd(LANDING_FAQ),
+];
 
 function HeroQuickstart() {
   const [apiKey, setKey] = useState(() => localStorage.getItem('op_api_key') || '');
@@ -97,6 +109,7 @@ export function Landing() {
         title="OpenPaths | Open Source AI Model Router"
         description="OpenPaths is an OpenAI-compatible model router for chat, image, video, speech, transcription, and embeddings across leading AI providers."
         path="/"
+        jsonLd={LANDING_JSON_LD}
       />
 
       {/* Hero */}
@@ -401,6 +414,23 @@ export function Landing() {
             description="Prefer decentralization? Fund your API usage instantly with Solana (SOL) or USDC on the world's fastest blockchain."
             to="/pricing"
           />
+        </div>
+      </section>
+
+      <section className="border-t border-white/20 px-6 py-20">
+        <div className="mx-auto max-w-3xl">
+          <h2 className="mb-8 text-3xl font-bold tracking-tight md:text-4xl">Frequently asked questions</h2>
+          <div className="space-y-6">
+            {LANDING_FAQ.map(item => (
+              <div key={item.q}>
+                <h3 className="mb-1 text-lg font-semibold">{item.q}</h3>
+                <p className="leading-relaxed text-white/60">{item.a}</p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-8 font-mono text-sm text-white/55">
+            <Link to="/docs" className="underline underline-offset-4 hover:text-white">API docs</Link> · <Link to="/docs/image-generation" className="underline underline-offset-4 hover:text-white">Image generation API</Link> · <Link to="/pricing" className="underline underline-offset-4 hover:text-white">Pricing</Link> · <Link to="/models" className="underline underline-offset-4 hover:text-white">Models</Link>
+          </p>
         </div>
       </section>
 

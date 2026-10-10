@@ -59,10 +59,21 @@ func renderModelCards(notesPath string, models []model.ModelConfig) (map[string]
 	return out, nil
 }
 
-func renderCard(n modelNote, m *model.ModelConfig) string {
+func priceLine(m *model.ModelConfig) string {
 	price := ""
-	if m.InputPricePer1M > 0 || m.OutputPricePer1M > 0 {
+	switch {
+	case m.InputPricePer1M > 0 || m.OutputPricePer1M > 0:
 		price = fmt.Sprintf("$%s/M in · $%s/M out", trimFloat(m.InputPricePer1M), trimFloat(m.OutputPricePer1M))
+	case m.PricePerImage > 0:
+		price = fmt.Sprintf("$%s/image", trimFloat4(m.PricePerImage))
+	case m.PricePerSecond > 0:
+		price = fmt.Sprintf("$%s/second", trimFloat4(m.PricePerSecond))
+	case m.PricePerVideo > 0:
+		price = fmt.Sprintf("$%s/video", trimFloat4(m.PricePerVideo))
+	case m.PricePerMinute > 0:
+		price = fmt.Sprintf("$%s/minute", trimFloat4(m.PricePerMinute))
+	case m.PricePerRequest > 0:
+		price = fmt.Sprintf("$%s/request", trimFloat4(m.PricePerRequest))
 	}
 	if m.ContextWindow > 0 {
 		ctx := fmt.Sprintf("%dK ctx", m.ContextWindow/1000)
@@ -75,6 +86,11 @@ func renderCard(n modelNote, m *model.ModelConfig) string {
 			price = ctx
 		}
 	}
+	return price
+}
+
+func renderCard(n modelNote, m *model.ModelConfig) string {
+	price := priceLine(m)
 	settings := ""
 	if n.Settings != "" {
 		settings = fmt.Sprintf(`<p style="margin:6px 0 0; color:#6a9a8a; font-size:12px; line-height:1.5; font-family:monospace;">%s</p>`, n.Settings)
@@ -100,4 +116,78 @@ func trimFloat(f float64) string {
 	s := fmt.Sprintf("%.2f", f)
 	s = strings.TrimRight(s, "0")
 	return strings.TrimRight(s, ".")
+}
+
+func trimFloat4(f float64) string {
+	s := fmt.Sprintf("%.4f", f)
+	s = strings.TrimRight(s, "0")
+	return strings.TrimRight(s, ".")
+}
+
+func FindModel(models []model.ModelConfig, id string) *model.ModelConfig {
+	id = strings.ToLower(strings.TrimSpace(id))
+	for i := range models {
+		if strings.ToLower(models[i].ID) == id {
+			return &models[i]
+		}
+	}
+	for i := range models {
+		for _, a := range models[i].Aliases {
+			if strings.ToLower(a) == id {
+				return &models[i]
+			}
+		}
+	}
+	return nil
+}
+
+type ModelCard struct {
+	ID      string
+	Name    string
+	Price   string
+	Context string
+	HTML    string
+}
+
+func BuildModelCard(notesPath string, m *model.ModelConfig) ModelCard {
+	note := modelNote{ID: m.ID, Name: m.ID, Note: defaultNote(m)}
+	if data, err := os.ReadFile(notesPath); err == nil {
+		var notes modelNotes
+		if json.Unmarshal(data, &notes) == nil {
+		found:
+			for _, entries := range notes.Sections {
+				for _, n := range entries {
+					if FindModel([]model.ModelConfig{*m}, n.ID) != nil {
+						note = n
+						break found
+					}
+				}
+			}
+		}
+	}
+	ctxLine := ""
+	if m.ContextWindow >= 1000000 {
+		ctxLine = fmt.Sprintf("%.1fM", float64(m.ContextWindow)/1e6)
+	} else if m.ContextWindow > 0 {
+		ctxLine = fmt.Sprintf("%dK", m.ContextWindow/1000)
+	}
+	return ModelCard{ID: m.ID, Name: note.Name, Price: priceLine(m), Context: ctxLine, HTML: renderCard(note, m)}
+}
+
+func defaultNote(m *model.ModelConfig) string {
+	var caps []string
+	if m.SupportsTools {
+		caps = append(caps, "tool use")
+	}
+	if m.SupportsVision {
+		caps = append(caps, "vision")
+	}
+	if m.SupportsStreaming {
+		caps = append(caps, "streaming")
+	}
+	s := "Now routable on OpenPaths through the same API key and OpenAI-compatible endpoint you already use."
+	if len(caps) > 0 {
+		s += " Supports " + strings.Join(caps, ", ") + "."
+	}
+	return s
 }

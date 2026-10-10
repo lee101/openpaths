@@ -2,15 +2,16 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Copy, Download, ImageIcon, Loader2, Wand2 } from 'lucide-react';
 import { ToolSeo } from '../components/ToolSeo';
 import { CodeBlock } from '../components/CodeBlock';
+import { Link } from 'react-router-dom';
+import { AUTO_IMAGE, featuredImageModels } from '../data/imageCatalog';
+import { modelPath } from '../lib/paths';
 
 const DEFAULT_PROMPT = 'A beige ceramic coffee mug on a wooden table, soft natural window light, editorial product photo';
 const EXAMPLE_OUTPUT_URL = 'https://openpathsstatic.openpaths.io/static/uploads/text-to-image/mug-example.jpg';
 
 const IMAGE_MODELS = [
-  { id: 'openpaths/auto-image', label: 'Auto Image (routed)', price: 0.211 },
-  { id: 'gpt-image-2', label: 'GPT Image 2', price: 0.04 },
-  { id: 'ra1', label: 'RA1 Art Generator', price: 0.04 },
-  { id: 'flux-pro', label: 'Flux Pro', price: 0.014 },
+  { id: AUTO_IMAGE.id, label: AUTO_IMAGE.name, price: AUTO_IMAGE.price },
+  ...featuredImageModels.map(m => ({ id: m.id, label: m.name, price: m.priceInput })),
 ];
 
 const SIZES = ['1024x1024', '768x1024', '1024x768', '1280x720', '720x1280'];
@@ -272,6 +273,21 @@ console.log(data.data[0].url);`,
               headerClassName="bg-white/[0.06]"
               preClassName="text-xs"
             />
+          </section>
+
+          <section className="mt-6 rounded-lg border border-white/20 bg-white/[0.05] p-5">
+            <h2 className="mb-3 font-mono text-sm font-bold uppercase tracking-wider text-white/70">Image models</h2>
+            <ul className="grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-3">
+              {featuredImageModels.map(m => (
+                <li key={m.id}>
+                  <Link to={modelPath(m.id)} className="text-white/70 underline decoration-white/25 underline-offset-4 hover:text-white">{m.name}</Link>
+                  <span className="ml-2 font-mono text-xs text-white/45">{m.provider}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-4 text-sm text-white/55">
+              Full parameters, Gemini Nano Banana examples, reference images and size mapping are in the <Link to="/docs/image-generation" className="text-white underline underline-offset-4">image generation API docs</Link>.
+            </p>
           </section>
         </div>
       </div>
