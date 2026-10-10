@@ -1,6 +1,10 @@
 package handler
 
 import (
+	"encoding/json"
+	"sync/atomic"
+	"time"
+
 	"github.com/valyala/fasthttp"
 
 	"github.com/openpaths/openpaths/internal/router"
@@ -8,6 +12,34 @@ import (
 
 type ModelsHandler struct {
 	router *router.Router
+	cache  ttlBodyCache
+}
+
+type ttlBodyEntry struct {
+	body    []byte
+	expires time.Time
+}
+
+type ttlBodyCache struct {
+	v atomic.Pointer[ttlBodyEntry]
+}
+
+const modelsListTTL = 30 * time.Second
+
+func (c *ttlBodyCache) serve(ctx *fasthttp.RequestCtx, build func() any) {
+	e := c.v.Load()
+	if e == nil || time.Now().After(e.expires) {
+		body, err := json.Marshal(build())
+		if err != nil {
+			writeJSON(ctx, 500, map[string]any{"error": map[string]string{"message": "internal error"}})
+			return
+		}
+		e = &ttlBodyEntry{body: body, expires: time.Now().Add(modelsListTTL)}
+		c.v.Store(e)
+	}
+	ctx.SetStatusCode(200)
+	ctx.SetContentType("application/json")
+	ctx.SetBody(e.body)
 }
 
 func NewModelsHandler(r *router.Router) *ModelsHandler {
@@ -15,10 +47,11 @@ func NewModelsHandler(r *router.Router) *ModelsHandler {
 }
 
 func (h *ModelsHandler) HandleListModels(ctx *fasthttp.RequestCtx) {
-	models := h.router.ListModels()
-	writeJSON(ctx, 200, map[string]any{
-		"object": "list",
-		"data":   models,
+	h.cache.serve(ctx, func() any {
+		return map[string]any{
+			"object": "list",
+			"data":   h.router.ListModels(),
+		}
 	})
 }
 

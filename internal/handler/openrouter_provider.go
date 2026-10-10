@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/valyala/fasthttp"
@@ -14,6 +15,7 @@ import (
 // so that OpenPaths can be registered as a provider on OpenRouter.
 type OpenRouterProviderHandler struct {
 	router *router.Router
+	cache  ttlBodyCache
 }
 
 func NewOpenRouterProviderHandler(r *router.Router) *OpenRouterProviderHandler {
@@ -55,18 +57,17 @@ type ORSlug struct {
 }
 
 func (h *OpenRouterProviderHandler) HandleListModels(ctx *fasthttp.RequestCtx) {
-	models := h.router.ListModelConfigs()
-
-	var orModels []ORModel
-	for _, cfg := range models {
-		orModel := configToORModel(cfg)
-		if orModel != nil {
-			orModels = append(orModels, *orModel)
+	h.cache.serve(ctx, func() any {
+		models := h.router.ListModelConfigs()
+		sort.Slice(models, func(i, j int) bool { return models[i].ID < models[j].ID })
+		var orModels []ORModel
+		for _, cfg := range models {
+			orModel := configToORModel(cfg)
+			if orModel != nil {
+				orModels = append(orModels, *orModel)
+			}
 		}
-	}
-
-	writeJSON(ctx, 200, map[string]any{
-		"data": orModels,
+		return map[string]any{"data": orModels}
 	})
 }
 

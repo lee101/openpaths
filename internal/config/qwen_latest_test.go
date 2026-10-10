@@ -40,9 +40,10 @@ func TestQwen38MaxOpenRouterModel(t *testing.T) {
 	if !found {
 		t.Fatal("or/qwen3.8-max missing from config")
 	}
+	// Generic Qwen Max names go direct to Alibaba; OpenRouter is the fallback.
 	for _, alias := range []string{"qwen3.8-max", "qwen3.8", "qwen-max", "qwen-latest", "qwen/qwen3.8-max"} {
-		if got := known[alias]; got != "or/qwen3.8-max" {
-			t.Errorf("alias %q resolves to %q, want or/qwen3.8-max", alias, got)
+		if got := known[alias]; got != "qwen/qwen3.8-max" {
+			t.Errorf("alias %q resolves to %q, want qwen/qwen3.8-max", alias, got)
 		}
 	}
 }

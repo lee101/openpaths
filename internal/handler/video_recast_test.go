@@ -12,12 +12,7 @@ import (
 )
 
 func TestRecastMeasuresActualOutputDuration(t *testing.T) {
-	if _, err := exec.LookPath("ffprobe"); err != nil {
-		t.Skip("ffprobe unavailable")
-	}
-	if _, err := exec.LookPath("ffmpeg"); err != nil {
-		t.Skip("ffmpeg unavailable")
-	}
+	requireFFmpeg(t, "ffprobe", "ffmpeg")
 	file := filepath.Join(t.TempDir(), "video.mp4")
 	output, err := exec.Command("ffmpeg", "-y", "-f", "lavfi", "-i", "color=c=black:s=32x32:r=20", "-t", "5.5", "-c:v", "libx264", file).CombinedOutput()
 	if err != nil {

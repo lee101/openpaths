@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -26,6 +25,7 @@ import (
 	"github.com/openpaths/openpaths/internal/crypto"
 	"github.com/openpaths/openpaths/internal/db/queries"
 	"github.com/openpaths/openpaths/internal/discovery"
+	"github.com/openpaths/openpaths/internal/email"
 	"github.com/openpaths/openpaths/internal/handler"
 	"github.com/openpaths/openpaths/internal/metrics"
 	"github.com/openpaths/openpaths/internal/middleware"
@@ -33,6 +33,7 @@ import (
 	"github.com/openpaths/openpaths/internal/provider"
 	"github.com/openpaths/openpaths/internal/router"
 	"github.com/openpaths/openpaths/internal/savedresp"
+	"github.com/openpaths/openpaths/internal/seo"
 	"github.com/openpaths/openpaths/internal/skillindex"
 	"github.com/openpaths/openpaths/internal/storage"
 	stripesvc "github.com/openpaths/openpaths/internal/stripe"
@@ -91,6 +92,7 @@ type Dependencies struct {
 	TeamQ            *queries.TeamQueries
 	SuppressionQ     *queries.SuppressionQueries
 	ArtifactQ        *queries.ArtifactQueries
+	Announcer        *email.Announcer
 }
 
 func New(deps *Dependencies) *Server {
@@ -271,6 +273,9 @@ func New(deps *Dependencies) *Server {
 
 	embeddingH := handler.NewEmbeddingHandler(deps.Router, deps.Billing, deps.Recorder, deps.Embedders)
 	r.POST("/v1/embeddings", apiKeyChain(embeddingH.HandleEmbedding))
+	decisionH := handler.NewDecisionHandler(deps.Router, deps.Billing, deps.Recorder)
+	r.POST("/v1/systemone", apiKeyChain(decisionH.HandleDecision))
+	r.POST("/v1/decisions", apiKeyChain(decisionH.HandleDecision))
 	log.Printf("Embedding endpoint enabled (%d fallback providers)", len(deps.Embedders))
 
 	// MCP server: exposes all models over the Model Context Protocol. Runs under
@@ -546,6 +551,14 @@ func New(deps *Dependencies) *Server {
 		log.Printf("Model discovery endpoints enabled")
 	}
 
+	if deps.Announcer != nil {
+		announceH := handler.NewAnnounceHandler(deps.Announcer, deps.Discovery)
+		r.POST("/admin/announce/model", accountChain(adminH.RequireAdmin(announceH.HandleAnnounce)))
+		r.GET("/admin/announce/candidates", accountChain(adminH.RequireAdmin(announceH.HandleCandidates)))
+		r.GET("/admin/announce/{model_id:*}", accountChain(adminH.RequireAdmin(announceH.HandleStatus)))
+		log.Printf("Model announcement endpoints enabled")
+	}
+
 	// OpenRouter provider endpoint - public, no auth required
 	// This lets OpenRouter discover our models and route traffic to us
 	orProvH := handler.NewOpenRouterProviderHandler(deps.Router)
@@ -568,6 +581,8 @@ func New(deps *Dependencies) *Server {
 		ctx.SetStatusCode(200)
 		ctx.SetBodyString(handler.ArtSitemapIndexXML("https://openpaths.io", artH.ArtSitemapPages(ctx)))
 	})
+	seoCat := seo.New(deps.Router.ListModels())
+	registerSEORoutes(r, seoCat)
 	r.GET("/sitemap-art-tags.xml", publicChain(artH.HandleSitemapTags))
 	// Clean per-page art sitemaps (/sitemap-art-1.xml …) plus the legacy ?p= route
 	// so URLs Google already discovered keep resolving.
@@ -585,6 +600,7 @@ func New(deps *Dependencies) *Server {
 	}
 	r.HEAD("/sitemap.xml", sitemapHead)
 	r.HEAD("/sitemap-pages.xml", sitemapHead)
+	r.HEAD("/sitemap-models.xml", sitemapHead)
 	r.HEAD("/sitemap-art-tags.xml", sitemapHead)
 	r.HEAD("/sitemap-art-{page}.xml", sitemapHead)
 	r.HEAD("/sitemap-art.xml", sitemapHead)
@@ -692,7 +708,7 @@ func New(deps *Dependencies) *Server {
 
 	handler := r.Handler
 	if staticDir := deps.Config.Server.StaticDir; staticDir != "" {
-		handler = spaHandler(staticDir, r.Handler, deps.APIKeyQ, deps.UserQ, deps.JWTService, deps.ArtImageQ)
+		handler = spaHandler(staticDir, r.Handler, deps.APIKeyQ, deps.UserQ, deps.JWTService, deps.ArtImageQ, seoCat)
 		log.Printf("Serving frontend from %s", staticDir)
 	}
 
@@ -752,7 +768,7 @@ func isArtAPIPath(path string) bool {
 	return false
 }
 
-func spaHandler(dir string, api fasthttp.RequestHandler, apiKeyQ *queries.APIKeyQueries, userQ *queries.UserQueries, jwtService *auth.JWTService, artMetaQ *queries.ArtImageQueries) fasthttp.RequestHandler {
+func spaHandler(dir string, api fasthttp.RequestHandler, apiKeyQ *queries.APIKeyQueries, userQ *queries.UserQueries, jwtService *auth.JWTService, artMetaQ *queries.ArtImageQueries, seoCat *seo.Catalog) fasthttp.RequestHandler {
 	fs := &fasthttp.FS{
 		Root:       dir,
 		IndexNames: []string{"index.html"},
@@ -764,6 +780,7 @@ func spaHandler(dir string, api fasthttp.RequestHandler, apiKeyQ *queries.APIKey
 	if err != nil {
 		log.Printf("WARN: could not pre-read index.html: %v", err)
 	}
+	modelSEO := newModelSEO(dir, seoCat)
 
 	return func(ctx *fasthttp.RequestCtx) {
 		path := string(ctx.Path())
@@ -786,8 +803,16 @@ func spaHandler(dir string, api fasthttp.RequestHandler, apiKeyQ *queries.APIKey
 			strings.HasPrefix(path, "/monitoring/") ||
 			path == "/health" ||
 			path == "/unsubscribe" ||
+			path == "/llms.txt" ||
+			path == "/llms-full.txt" ||
 			strings.HasPrefix(path, "/sitemap") {
 			api(ctx)
+			return
+		}
+		if page, ok := modelSEO.render(indexData, path); ok {
+			ctx.SetStatusCode(200)
+			ctx.SetContentType("text/html; charset=utf-8")
+			ctx.SetBody(injectUserData(page, ctx, apiKeyQ, userQ, jwtService))
 			return
 		}
 		resolveMeta := func() pageMeta {
@@ -795,6 +820,12 @@ func spaHandler(dir string, api fasthttp.RequestHandler, apiKeyQ *queries.APIKey
 				return m
 			}
 			return pageMetaForPath(path)
+		}
+		if page := readPrerendered(dir, path); page != nil {
+			ctx.SetStatusCode(200)
+			ctx.SetContentType("text/html; charset=utf-8")
+			ctx.SetBody(injectUserData(page, ctx, apiKeyQ, userQ, jwtService))
+			return
 		}
 		if isSPARoute(path) && indexData != nil {
 			ctx.SetStatusCode(200)
@@ -967,7 +998,7 @@ func injectPageMeta(doc []byte, meta pageMeta) []byte {
 
 	out := string(doc)
 	for _, replacement := range replacements {
-		re := regexp.MustCompile(replacement.pattern)
+		re := cachedRegexp(replacement.pattern)
 		if re.MatchString(out) {
 			out = re.ReplaceAllString(out, replacement.value)
 			continue

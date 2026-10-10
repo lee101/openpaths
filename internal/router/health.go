@@ -6,9 +6,9 @@ import (
 )
 
 type HealthTracker struct {
-	mu        sync.RWMutex
-	unhealthy map[string]time.Time
-	failures  map[string]int
+	mu           sync.RWMutex
+	unhealthy    map[string]time.Time
+	failures     map[string]int
 	baseCooldown time.Duration
 	maxCooldown  time.Duration
 }

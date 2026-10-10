@@ -40,6 +40,7 @@ export function SkillDetail() {
     <>
       <Seo title={`${decoded} skill | OpenPaths`} description={`Versioned agent skill ${decoded}: copy the markdown, pin a version, browse files.`} path={`/skills/${slug}`} />
       <div className="min-h-screen bg-black">
+        <h1 className="sr-only">{decoded} agent skill</h1>
         <div className="mx-auto max-w-5xl px-6 py-10">
           <div className="mb-6 flex items-center gap-2 font-mono text-xs text-white/45">
             <Link to="/skills" className="inline-flex items-center gap-1 hover:text-white"><ArrowLeft className="h-3.5 w-3.5" /> Skills</Link>

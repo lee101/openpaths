@@ -387,6 +387,7 @@ func ArtSitemapIndexXML(base string, artPages int) string {
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8"?>` + "\n")
 	b.WriteString(`<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` + "\n")
 	fmt.Fprintf(&b, "  <sitemap>\n    <loc>%s/sitemap-pages.xml</loc>\n  </sitemap>\n", base)
+	fmt.Fprintf(&b, "  <sitemap>\n    <loc>%s/sitemap-models.xml</loc>\n  </sitemap>\n", base)
 	fmt.Fprintf(&b, "  <sitemap>\n    <loc>%s/sitemap-art-tags.xml</loc>\n  </sitemap>\n", base)
 	for p := 1; p <= artPages; p++ {
 		fmt.Fprintf(&b, "  <sitemap>\n    <loc>%s/sitemap-art-%d.xml</loc>\n  </sitemap>\n", base, p)

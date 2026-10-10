@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 type VideoDuration string
@@ -160,6 +161,11 @@ func (r VideoGenerationRequest) TextPrompt() string {
 		}
 	}
 	return ""
+}
+
+func IsWan3DirectVideo(id string) bool {
+	id = strings.TrimSuffix(strings.TrimSuffix(strings.ToLower(strings.TrimPrefix(id, "alibaba/")), "-prime"), "-video")
+	return id == "wan3.0" || id == "wan-3.0" || id == "wan3"
 }
 
 func IsH3MaxRecast(id string) bool {

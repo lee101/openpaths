@@ -1,0 +1,12 @@
+{
+  "model": "gemini-3.1-flash-lite-image",
+  "prompt": "Re-render this game screenshot in deep winter: snow on every roof and wall, frozen river with ice, bare and snow-dusted pines, low pale sun. Keep the exact camera angle, castle layout, river, bridges, walls, and the bottom build menu and HUD panels so it looks like the same game in a different state. Change the year to 128 and the objective to \"Survive the Winter\".",
+  "edit": true,
+  "ms": 14311,
+  "usage": [
+    {
+      "modality": "image",
+      "tokens": 1120
+    }
+  ]
+}

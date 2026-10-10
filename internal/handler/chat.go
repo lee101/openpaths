@@ -797,7 +797,7 @@ func (h *ChatHandler) tryStreamingBYOK(
 		for event := range streamCh {
 			if event.Err != nil {
 				errData, _ := json.Marshal(model.ErrorResponse{
-					Error: model.ErrorDetail{Message: event.Err.Error(), Type: "provider_error"},
+					Error: model.ErrorDetail{Message: clipErrorMessage(event.Err.Error()), Type: "provider_error"},
 				})
 				w.WriteString("data: ")
 				w.Write(errData)

@@ -1,7 +1,10 @@
 package handler
 
 import (
+	"os/exec"
+	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/valyala/fasthttp"
 )
@@ -34,5 +37,36 @@ func TestStripeSignatureHeaderIsCaseInsensitive(t *testing.T) {
 
 	if got := stripeSignatureHeader(&ctx); got != "t=123,v1=abc" {
 		t.Fatalf("stripeSignatureHeader() = %q, want lower-case header value", got)
+	}
+}
+
+func requireFFmpeg(t *testing.T, bins ...string) {
+	t.Helper()
+	if len(bins) == 0 {
+		bins = []string{"ffmpeg"}
+	}
+	for _, bin := range bins {
+		if err := exec.Command(bin, "-version").Run(); err != nil {
+			t.Skipf("%s not runnable: %v", bin, err)
+		}
+	}
+}
+
+func TestWriteErrorClipsLongMessages(t *testing.T) {
+	ctx := &fasthttp.RequestCtx{}
+	writeError(ctx, 502, "provider_error", strings.Repeat("é", 20000))
+	if len(ctx.Response.Body()) > maxErrorMessageBytes+256 {
+		t.Fatalf("body = %d bytes", len(ctx.Response.Body()))
+	}
+	if !utf8.Valid(ctx.Response.Body()) {
+		t.Fatal("invalid utf8")
+	}
+}
+
+func TestUpstreamClientStatusHidesProviderAuthFailures(t *testing.T) {
+	for in, want := range map[int]int{401: 502, 403: 502, 400: 400, 429: 429, 500: 500} {
+		if got := upstreamClientStatus(in); got != want {
+			t.Errorf("%d -> %d, want %d", in, got, want)
+		}
 	}
 }

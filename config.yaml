@@ -103,6 +103,12 @@ providers:
     api_key: "${DASHSCOPE_API_KEY}"
     enabled: true
 
+  # Alibaba Model Studio native async API (Wan video), Singapore workspace.
+  - name: alibaba
+    base_url: "https://ws-rvo01jxeg9yitdn7.ap-southeast-1.maas.aliyuncs.com"
+    api_key: "${DASHSCOPE_API_KEY}"
+    enabled: true
+
   - name: thinkingmachines
     base_url: "https://tinker.thinkingmachines.dev/services/tinker-prod/oai/api"
     api_key: "${TINKER_API_KEY}"
@@ -476,6 +482,7 @@ models:
       - "720x1280"
     fallback_models:
       - "gpt-image-2"
+      - "gemini-3.1-flash-lite-image"
       - "or/gemini-3.1-flash-image"
       - "ra1"
       - "zimage"
@@ -930,6 +937,163 @@ models:
     supports_streaming: false
     supports_tools: false
     supports_vision: false
+
+  # --- Alibaba Wan 3.0 Video direct (all-in-one: text, first/last frame,
+  # up to 10 reference images, 5 reference videos, 5 reference audio clips,
+  # a document or a web link; up to 30s with native audio). Alibaba list is
+  # 480P $0.05/s, 720P $0.10/s, 1080P $0.20/s (default) on input + output
+  # seconds; we bill usage.duration at the delivered tier. ---
+  - id: "wan3.0-video"
+    provider: alibaba
+    provider_model_id: "wan3.0-video"
+    price_per_second: 0.20
+    price_per_second_by_resolution:
+      480p: 0.05
+      720p: 0.10
+      1080p: 0.20
+    free_input_image_count: 10
+    aliases: ["alibaba/wan3.0-video", "wan-3.0-video", "wan3-video", "wan3.0", "alibaba/wan-3.0-video"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  # Wan 3.0 Video Prime: high-speed tier of the same all-in-one model.
+  - id: "wan3.0-video-prime"
+    provider: alibaba
+    provider_model_id: "wan3.0-video-prime"
+    price_per_second: 0.28
+    price_per_second_by_resolution:
+      480p: 0.068
+      720p: 0.14
+      1080p: 0.28
+    free_input_image_count: 10
+    aliases: ["alibaba/wan3.0-video-prime", "wan-3.0-video-prime", "wan3-video-prime", "wan3.0-prime"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  # --- Qwen Image 3.0 direct (sync). 1K tier <= 2.25MP, else 2K. Edits take
+  # up to 3 input images at $0.003 each. Standard is flat $0.03/image. ---
+  - id: "qwen-image-3.0"
+    provider: alibaba
+    provider_model_id: "qwen-image-3.0"
+    price_per_image: 0.03
+    price_per_input_image: 0.003
+    aliases: ["alibaba/qwen-image-3.0", "qwen-image-3", "qwen-image-latest"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "qwen-image-3.0-pro"
+    provider: alibaba
+    provider_model_id: "qwen-image-3.0-pro"
+    price_per_image: 0.075
+    price_per_image_by_resolution:
+      1k: 0.04
+      2k: 0.075
+    price_per_input_image: 0.003
+    aliases: ["alibaba/qwen-image-3.0-pro", "qwen-image-3-pro", "qwen-image-pro"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  # --- Qwen speech recognition direct ---
+  # 3.0 flash: sync, <=10MB/5min, billed per second of audio ($0.000035/s).
+  - id: "qwen-audio-3.0-asr-flash"
+    provider: alibaba
+    provider_model_id: "qwen-audio-3.0-asr-flash"
+    input_price_per_1m: 0
+    output_price_per_1m: 0
+    price_per_minute: 0.0021
+    aliases: ["alibaba/qwen-audio-3.0-asr-flash", "qwen-asr-3.0"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  # 3.1 filetrans: async, long files, word timestamps; billed per token
+  # (~16 audio tokens/s of speech, silence is free).
+  - id: "qwen-audio-3.1-asr-flash-filetrans"
+    provider: alibaba
+    provider_model_id: "qwen-audio-3.1-asr-flash-filetrans"
+    input_price_per_1m: 0.15
+    output_price_per_1m: 0.47
+    aliases: ["alibaba/qwen-audio-3.1-asr-flash-filetrans", "qwen-asr-3.1", "qwen-asr", "qwen-transcribe"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  # 3.1 message: duplex WebSocket ASR (16kHz PCM, we transcode), per token.
+  - id: "qwen-audio-3.1-asr-flash-message"
+    provider: alibaba
+    provider_model_id: "qwen-audio-3.1-asr-flash-message"
+    input_price_per_1m: 0.93
+    output_price_per_1m: 0.70
+    aliases: ["alibaba/qwen-audio-3.1-asr-flash-message", "qwen-asr-3.1-message"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  # --- Qwen realtime voice via /v1/realtime (OpenAI-style events) ---
+  # Live speech: provider list prices + 5%, like the other realtime models.
+  - id: "qwen3.8-omni-flash-realtime"
+    provider: alibaba
+    provider_model_id: "qwen3.8-omni-flash-realtime"
+    input_price_per_1m: 0.2415
+    output_price_per_1m: 0.735
+    audio_input_price_per_1m: 0.9765
+    audio_output_price_per_1m: 1.9635
+    image_input_price_per_1m: 0.2415
+    aliases: ["alibaba/qwen3.8-omni-flash-realtime", "qwen-omni-realtime", "qwen-live"]
+    context_window: 65536
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "qwen-audio-3.1-realtime-plus"
+    provider: alibaba
+    provider_model_id: "qwen-audio-3.1-realtime-plus"
+    input_price_per_1m: 0.84
+    output_price_per_1m: 6.72
+    audio_input_price_per_1m: 6.72
+    audio_output_price_per_1m: 25.20
+    aliases: ["alibaba/qwen-audio-3.1-realtime-plus", "qwen-audio-realtime"]
+    context_window: 262144
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "qwen-audio-3.0-realtime-plus"
+    provider: alibaba
+    provider_model_id: "qwen-audio-3.0-realtime-plus"
+    input_price_per_1m: 0.84
+    output_price_per_1m: 6.72
+    audio_input_price_per_1m: 6.72
+    audio_output_price_per_1m: 25.20
+    aliases: ["alibaba/qwen-audio-3.0-realtime-plus"]
+    context_window: 65536
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  # Live speech translation (audio[/video] in, translated text+speech out).
+  # No published text-input rate; config/transcript text billed at the image rate.
+  - id: "qwen3.8-livetranslate-flash-realtime"
+    provider: alibaba
+    provider_model_id: "qwen3.8-livetranslate-flash-realtime"
+    input_price_per_1m: 0.5775
+    output_price_per_1m: 21.00
+    audio_input_price_per_1m: 7.875
+    audio_output_price_per_1m: 31.50
+    image_input_price_per_1m: 0.5775
+    aliases: ["alibaba/qwen3.8-livetranslate-flash-realtime", "qwen-livetranslate", "qwen-live-translate"]
+    context_window: 53248
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: false
+    supports_vision: true
 
   # --- Alibaba Wan 3.0 via Fal (per-second by resolution tier:
   # 480p $0.05/s, 720p $0.10/s, 1080p is the endpoint default at $0.20/s) ---
@@ -1799,6 +1963,8 @@ models:
       - "1536x1024"
       - "1024x1536"
     fallback_models:
+      - "gemini-3.1-flash-lite-image"
+      - "gemini-nano-banana-2.1"
       - "ra2-edit"
       - "fal-ai/hidream-o1-image/edit"
 
@@ -2116,12 +2282,52 @@ models:
     supports_tools: true
     supports_vision: true
 
+  - id: "claude-haiku-latest"
+    provider: anthropic
+    provider_model_id: "claude-haiku-5-5"
+    input_price_per_1m: 0.10
+    input_cache_hit_price_per_1m: 0.01
+    output_price_per_1m: 0.50
+    long_context_threshold: 100000
+    input_price_per_1m_long: 0.50
+    input_cache_hit_price_per_1m_long: 0.05
+    output_price_per_1m_long: 2.50
+    aliases: ["claude-haiku", "haiku", "haiku-latest"]
+    context_window: 1000000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models: ["claude-haiku-4-5-20251001"]
+
+  # Claude Haiku 5.5: $0.10/$0.50 per MTok for prompts up to 100K tokens;
+  # longer prompts bill the whole request at $0.50/$2.50. Adaptive thinking
+  # with output_config.effort low/medium/high/xhigh/max; sampling params are
+  # not forwarded.
+  - id: "claude-haiku-5-5"
+    provider: anthropic
+    provider_model_id: "claude-haiku-5-5"
+    input_price_per_1m: 0.10
+    input_cache_hit_price_per_1m: 0.01
+    output_price_per_1m: 0.50
+    long_context_threshold: 100000
+    input_price_per_1m_long: 0.50
+    input_cache_hit_price_per_1m_long: 0.05
+    output_price_per_1m_long: 2.50
+    aliases: ["haiku-5.5", "claude-haiku-5.5", "haiku-5-5", "haiku55"]
+    context_window: 1000000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models: ["claude-haiku-4-5-20251001"]
+
   - id: "claude-haiku-4-5-20251001"
     provider: anthropic
     provider_model_id: "claude-haiku-4-5-20251001"
     input_price_per_1m: 1.00
     output_price_per_1m: 5.00
-    aliases: ["claude-haiku", "haiku"]
+    aliases: ["haiku-4.5"]
     context_window: 200000
     max_output_tokens: 64000
     supports_streaming: true
@@ -2229,6 +2435,44 @@ models:
     supports_streaming: true
     supports_tools: true
     supports_vision: true
+
+  - id: "gemini-3-flash-preview"
+    provider: google
+    provider_model_id: "gemini-3-flash-preview"
+    input_price_per_1m: 0.50
+    output_price_per_1m: 3.00
+    aliases: ["gemini-3-flash", "google/gemini-3-flash-preview"]
+    context_window: 1000000
+    max_output_tokens: 65536
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  # Gemini image generation/editing over the Interactions API. Image output is
+  # 1120 tokens at 1K, billed per image at list price ($0.0336).
+  - id: "gemini-3.1-flash-lite-image"
+    provider: google
+    provider_model_id: "gemini-3.1-flash-lite-image"
+    price_per_image: 0.0336
+    aliases: ["nano-banana-2-lite", "gemini-flash-lite-image", "google/gemini-3.1-flash-lite-image"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+    fallback_models:
+      - "gemini-nano-banana-2.1"
+      - "or/gemini-3.1-flash-image"
+
+  - id: "gemini-nano-banana-2.1"
+    provider: google
+    provider_model_id: "gemini-nano-banana-2.1"
+    price_per_image: 0.0336
+    aliases: ["nano-banana-2.1", "nano-banana-21", "gemini-nano-banana", "google/gemini-nano-banana-2.1"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+    fallback_models:
+      - "gemini-3.1-flash-lite-image"
+      - "or/gemini-3.1-flash-image"
 
   - id: "gemini-3.5-flash-lite"
     provider: google
@@ -3034,12 +3278,119 @@ models:
     input_price_per_1m: 2.00
     input_cache_hit_price_per_1m: 0.25
     output_price_per_1m: 6.00
-    aliases: ["qwen3.8-max", "qwen3.8", "qwen-max", "qwen-latest", "qwen/qwen3.8-max"]
+    aliases: ["openrouter/qwen3.8-max"]
     context_window: 1000000
     max_output_tokens: 131072
     supports_streaming: true
     supports_tools: true
     supports_vision: true
+
+  # --- Alibaba Cloud Model Studio direct (DashScope compatible mode) ---
+  # Qwen3.8-Max: 2.4T MoE flagship, $2/$6 per 1M, 1M window, 128K out.
+  - id: "qwen/qwen3.8-max"
+    provider: qwen
+    provider_model_id: "qwen3.8-max"
+    input_price_per_1m: 2.00
+    input_cache_hit_price_per_1m: 0.40
+    output_price_per_1m: 6.00
+    aliases: ["qwen3.8-max", "qwen3.8", "qwen-max", "qwen-latest", "alibaba/qwen3.8-max"]
+    context_window: 1000000
+    max_output_tokens: 131072
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models:
+      - "or/qwen3.8-max"
+
+  - id: "qwen/qwen3.8-max-0902"
+    provider: qwen
+    provider_model_id: "qwen3.8-max-0902"
+    input_price_per_1m: 2.00
+    input_cache_hit_price_per_1m: 0.40
+    output_price_per_1m: 6.00
+    aliases: ["qwen3.8-max-0902", "alibaba/qwen3.8-max-0902"]
+    context_window: 1000000
+    max_output_tokens: 131072
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models:
+      - "qwen/qwen3.8-max"
+
+  # Qwen3.8-Omni-Flash: text/image/audio/video in, 1M window, $0.15/$0.47.
+  - id: "qwen/qwen3.8-omni-flash"
+    provider: qwen
+    provider_model_id: "qwen3.8-omni-flash"
+    input_price_per_1m: 0.15
+    input_cache_hit_price_per_1m: 0.016
+    output_price_per_1m: 0.47
+    aliases: ["qwen3.8-omni-flash", "qwen-omni-flash", "qwen3.8-omni", "alibaba/qwen3.8-omni-flash"]
+    context_window: 1000000
+    max_output_tokens: 131072
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models:
+      - "qwen/qwen3.8-flash"
+
+  # Qwen3.8 open-weights 27B served by Alibaba ($0.50/$3, 1M window).
+  - id: "qwen/qwen3.8-27b"
+    provider: qwen
+    provider_model_id: "qwen3.8-27b"
+    input_price_per_1m: 0.50
+    input_cache_hit_price_per_1m: 0.10
+    output_price_per_1m: 3.00
+    aliases: ["alibaba/qwen3.8-27b", "dashscope/qwen3.8-27b"]
+    context_window: 1000000
+    max_output_tokens: 131072
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models:
+      - "runanywhere/qwen3.8-27b"
+
+  # Kimi K3 sold by Alibaba Cloud ($3/$15, 1M window), OpenRouter fallback.
+  - id: "kimi-k3"
+    provider: qwen
+    provider_model_id: "kimi-k3"
+    input_price_per_1m: 3.00
+    output_price_per_1m: 15.00
+    aliases: ["kimi", "kimi-k3-1m", "moonshot-kimi-k3", "alibaba/kimi-k3", "moonshotai/kimi-k3"]
+    context_window: 1048576
+    max_output_tokens: 131072
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models:
+      - "or/kimi-k3"
+
+  - id: "or/kimi-k3"
+    provider: openrouter
+    provider_model_id: "moonshotai/kimi-k3"
+    input_price_per_1m: 3.00
+    input_cache_hit_price_per_1m: 0.30
+    output_price_per_1m: 15.00
+    aliases: ["openrouter/kimi-k3"]
+    context_window: 1048576
+    max_output_tokens: 131072
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  # Decision model: TypeSafe /v1/systemone schema (noul/choice/score answers
+  # with probabilities). Alibaba lists $0 during preview; billed at TypeSafe
+  # Jev parity ($0.042 per 1M input tokens, output free). 64K input window.
+  - id: "decision-model-preview"
+    provider: alibaba
+    provider_model_id: "decision-model-preview"
+    input_price_per_1m: 0.042
+    output_price_per_1m: 0
+    aliases: ["decision-model", "alibaba/decision-model-preview", "qwen/decision-model-preview", "jev-latest", "jev"]
+    context_window: 65536
+    max_output_tokens: 1
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
 
   # Qwen3.8-Flash (omni-class multimodal: text+image+video in) direct via
   # DashScope compatible mode, OpenRouter fallback. Pricing = DashScope
@@ -3050,9 +3401,9 @@ models:
     provider: qwen
     provider_model_id: "qwen3.8-flash"
     input_price_per_1m: 0.15
-    input_cache_hit_price_per_1m: 0.016
+    input_cache_hit_price_per_1m: 0.03
     output_price_per_1m: 0.47
-    aliases: ["qwen3.8-flash", "qwen3.8-omni-flash", "qwen-omni-flash", "qwen3.8-omni", "qwen-flash"]
+    aliases: ["qwen3.8-flash", "qwen-flash", "alibaba/qwen3.8-flash"]
     context_window: 1000000
     max_output_tokens: 131072
     supports_streaming: true
@@ -3194,8 +3545,8 @@ models:
   - id: "openpaths-embed"
     provider: gobed
     provider_model_id: "static-retrieval-mrl-en-v1"
-    price_per_request: 0.001
-    input_price_per_1m: 0
+    sub_unit_billing: true
+    input_price_per_1m: 0.001
     output_price_per_1m: 0
     aliases: ["gobed", "gobed-embed", "op-embed"]
     context_window: 256

@@ -94,7 +94,7 @@ func newTestPricingTable() *PricingTable {
 		{ID: "gpt-4o", InputPricePer1M: 2.50, OutputPricePer1M: 10.00},
 		{ID: "gpt-4o-mini", InputPricePer1M: 0.15, OutputPricePer1M: 0.60},
 		{ID: "deepseek-v4-pro", InputPricePer1M: 0.435, InputCacheHitPricePer1M: 0.003625, OutputPricePer1M: 0.87},
-		{ID: "openpaths-embed", PricePerRequest: 0.001},
+		{ID: "openpaths-embed", InputPricePer1M: 0.001, SubUnitBilling: true},
 		{ID: "grok-imagine-image", PricePerImage: 0.02, PricePerInputImage: 0.002},
 		{ID: "grok-imagine-image-quality", PricePerImage: 0.05, PricePerImageByResolution: map[string]float64{"1k": 0.05, "2k": 0.07}, PricePerInputImage: 0.01},
 		{ID: "hidream-o1-image-dev", PricePerMegapixel: 0.011},
@@ -303,11 +303,11 @@ func TestCalculateCost(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name:         "request priced model charges once per request",
+			name:         "sub-unit model rounds up to minimum in static calc",
 			modelID:      "openpaths-embed",
 			inputTokens:  50000,
 			outputTokens: 0,
-			wantCost:     10,
+			wantCost:     1,
 			wantErr:      false,
 		},
 		{
@@ -572,10 +572,10 @@ func TestEstimateMaxCost(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name:            "request priced model estimates one request",
+			name:            "sub-unit model estimates minimum charge",
 			modelID:         "openpaths-embed",
 			maxOutputTokens: 0,
-			wantCost:        10,
+			wantCost:        1,
 			wantErr:         false,
 		},
 		{
@@ -758,5 +758,27 @@ func TestRealtimeUnpricedCacheUsesNormalRate(t *testing.T) {
 	got, err := pt.CalculateRealtimeCost("gemini-live", cached)
 	if err != nil || got != want || got == 0 {
 		t.Fatalf("cache without discounted rate: got %d want %d err=%v", got, want, err)
+	}
+}
+
+func TestSubUnitCostEmbed(t *testing.T) {
+	pt := newTestPricingTable()
+	units, ok := pt.SubUnitCost("openpaths-embed", 1_000_000_000, 0)
+	if !ok || units < 9999.99 || units > 10000.01 {
+		t.Fatalf("1B tokens want 10000 units ($1), got %v ok=%v", units, ok)
+	}
+	if _, ok := pt.SubUnitCost("gpt-4o", 10, 10); ok {
+		t.Fatal("gpt-4o must not be sub-unit")
+	}
+}
+
+func TestEngineAccrueCarry(t *testing.T) {
+	e := &Engine{pricing: newTestPricingTable()}
+	var total int64
+	for i := 0; i < 1000; i++ {
+		total += e.accrue("u", 0.0256)
+	}
+	if total != 25 {
+		t.Fatalf("1000 x 0.0256 units want 25 whole, got %d", total)
 	}
 }

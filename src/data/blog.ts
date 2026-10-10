@@ -14,6 +14,82 @@ export interface BlogPost {
 
 export const posts: BlogPost[] = [
   {
+    slug: 'gemini-image-models-game-dev-concept-art',
+    title: 'Nano Banana 2 Lite and 2.1 on OpenPaths: Game Dev Concept Art for 3.4 Cents an Image',
+    excerpt: 'Gemini 3.1 Flash Lite Image and Nano Banana 2.1 are live: text-to-image and multi-image editing at $0.0336 per 1K image. We took one castle-builder screenshot and turned it into a night siege, a winter build, a dragon raid, a battle screen, an icon sheet and key art - nine images, about thirty cents.',
+    date: '2026-10-07',
+    author: 'OpenPaths Team',
+    readTime: '6 min',
+    tags: ['gemini', 'nano-banana', 'image-generation', 'image-editing', 'game-dev', 'models', 'pricing'],
+    content: `Two Google image models are routable on OpenPaths today: \`gemini-3.1-flash-lite-image\` (Nano Banana 2 Lite, "our smallest and most cost effective image generation and editing model") and \`gemini-nano-banana-2.1\` (higher fidelity, better factuality and multi-turn consistency at Flash scale). Both bill $0.0336 per 1K image - 1,120 output image tokens at $30 per million - through the same \`/v1/images/generations\` and \`/v1/images/edits\` endpoints as every other image model. We also added \`gemini-3-flash-preview\` ($0.50 in / $3.00 out, 1M context) and kept \`gemini-3.1-flash-lite\` ($0.25 / $1.50) next to them.
+
+The pitch for game developers is iteration speed. A concept screenshot is the expensive artifact; every variation of it (another time of day, another season, a damaged state, another UI screen) used to be a day of paint-over. At 3.4 cents each, you can ask for twenty and keep two.
+
+## One screenshot in
+
+This is the source: a castle-builder mockup, "Aethelgard Chronicles", with a HUD, a build menu and an objective banner. Every example below sends this image plus one instruction to \`/v1/images/edits\`.
+
+![Source castle-builder game concept screenshot](/static/blog/gemini-image/fort-source.webp)
+
+## Same game, different state
+
+**Night siege.** Prompt: turn it into a night siege, moonlit sky, torches along the walls, enemy campfires in the forest, keep the camera, layout and HUD, change the objective to "Hold the Walls". Lite (left, 15 s) and 2.1 (right, 25 s) both kept the walls, river, bridges, menu and HUD in place and rewrote the objective text. Lite went for a cold blue moon with warm torchlines; 2.1 kept the forest darker and lit the river harder.
+
+![Night siege by Gemini 3.1 Flash Lite Image](/static/blog/gemini-image/fort-night-siege-lite.webp)
+![Night siege by Nano Banana 2.1](/static/blog/gemini-image/fort-night-siege-nb21.webp)
+
+**Deep winter.** Snow on every roof and wall, a frozen river, bare pines, and the HUD updated to "Year 128 - Survive the Winter". Lite, 14 s.
+
+![Winter version of the castle game](/static/blog/gemini-image/fort-winter.webp)
+
+**Dragon aftermath.** A dragon over the keep, burning towers, smoke columns, breached wall sections, villagers fleeing, objective "Repair the Walls". 2.1, 24 s. This is the kind of state-variation art that normally means a separate paint pass for a "damaged" mood board.
+
+![Dragon attack on the castle](/static/blog/gemini-image/fort-dragon-attack.webp)
+
+## Screens that do not exist yet
+
+**A battle-mode UI.** We asked for the same art style and HUD frame, but a closer camera on the gatehouse, archers on the walls, a "Knight Squads" selection panel with portraits and health bars, and an army crossing the bridge. 2.1 invented the panel, unit labels (Defend, Charge, Paladin, Retreat) and the new objective, and carried over the HUD frame and typography. Treat it as a layout study, not production UI - the small text is plausible rather than exact.
+
+![Battle mode screen designed from the original HUD](/static/blog/gemini-image/fort-battle-screen.webp)
+
+**A build-menu icon sheet.** Lite, 1:1, using the screenshot as the style reference: "a 4x3 sprite sheet of twelve icons on parchment". It matched the soft stylized 3D look and parchment tone, and every labelled icon is usable. It also drew fourteen cells instead of twelve - the market appears twice and one cell is an unlabelled tower. Count your cells; crop what you need.
+
+![Sprite sheet of build menu icons in the game's art style](/static/blog/gemini-image/fort-building-icons.webp)
+
+**Key art from text alone.** No reference image: a hilltop castle at golden hour with the title lettered at the top, 16:9. Lite, 8 seconds, and the title rendered cleanly.
+
+![Key art for Aethelgard Chronicles](/static/blog/gemini-image/game-key-art.webp)
+
+## Where it fell short
+
+Pixel art was the weakest edit. "Redraw this exact screenshot as 16-bit pixel art" returned the original render with a mild texture on the first try (Lite) and visible dithering and slightly blockier water on the second (2.1, with a prompt that said it must not look like a photo filter). Neither is real pixel art. For that style, generate from scratch with a text prompt and use the screenshot only as a layout reference, or use an edit-specialist model.
+
+![Attempted pixel art redraw](/static/blog/gemini-image/fort-pixel-art.webp)
+
+These are single runs, not a benchmark: Lite finished in 8-18 seconds, 2.1 in 23-25 seconds. Nine images in total cost about $0.30.
+
+## Image editing now has a Gemini fallback
+
+\`openpaths/image-edit\`, the stable logical route for prompt-driven edits, now falls back to \`gemini-3.1-flash-lite-image\` and then \`gemini-nano-banana-2.1\` before the Fal edit providers, and \`gemini-3.1-flash-lite-image\` is also in the \`openpaths/auto-image\` fallback chain. If your primary edit model is down or rate limited, the request lands on a $0.0336 edit instead of an error. Products built on OpenPaths, such as the HomesyAI listing photo tools, use the same fallback for their edit calls.
+
+## API
+
+\`\`\`bash
+curl https://openpaths.io/v1/images/edits \\
+  -H "Authorization: Bearer op-..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "model": "gemini-3.1-flash-lite-image",
+    "prompt": "Re-render this game screenshot in deep winter. Keep the camera, layout and HUD.",
+    "image_url": "https://example.com/screenshot.png",
+    "aspect_ratio": "16:9"
+  }'
+\`\`\`
+
+Text-to-image uses \`/v1/images/generations\` with the same body minus \`image_url\`. Pass several \`images\` for multi-reference edits. Output is a base64 JPEG at 1K. You can also try both models in the browser on their model pages: [Nano Banana 2 Lite](/models/gemini-3.1-flash-lite-image), [Nano Banana 2.1](/models/gemini-nano-banana-2.1), or the [image edit tool](/image-edit).
+`
+  },
+  {
     slug: 'gpt-6-1-sol-voxel-pelican-bike',
     title: 'GPT-6.1 Sol: Same $2/$10 Card, Cached Input at Half the Rate, Pelican-Tested in 3D Voxel Art',
     excerpt: 'GPT-6.1 Sol is live at $2 in / $10 out with cached input at $0.10 per million - half what GPT-6 Sol charges. We gave it the house pelican test in 3D voxel art: four runs, and the bird only stopped looking like a staircase on the third try.',

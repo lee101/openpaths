@@ -31,6 +31,7 @@ import (
 	"github.com/openpaths/openpaths/internal/promptcache"
 	"github.com/openpaths/openpaths/internal/promptlib"
 	"github.com/openpaths/openpaths/internal/provider"
+	"github.com/openpaths/openpaths/internal/provider/alibaba"
 	"github.com/openpaths/openpaths/internal/provider/anthropic"
 	"github.com/openpaths/openpaths/internal/provider/appnz"
 	"github.com/openpaths/openpaths/internal/provider/bfl"
@@ -248,6 +249,8 @@ func main() {
 			p = f
 		case "bfl":
 			p = bfl.New(provCfg.APIKey, provCfg.BaseURL)
+		case "alibaba":
+			p = alibaba.New(provCfg.APIKey, provCfg.BaseURL)
 		case "exa":
 			log.Printf("Registered search provider: exa")
 			continue
@@ -446,6 +449,13 @@ func main() {
 	providerCreditMonitor.Start()
 	defer providerCreditMonitor.Stop()
 
+	announcer := email.NewAnnouncer(ctx, database.Pool, "emails", cfg.JWT.Secret, cfg.Models)
+	go func() {
+		if _, err := announcer.DetectNewModels(ctx); err != nil {
+			log.Printf("announce: catalog detection failed: %v", err)
+		}
+	}()
+
 	// Start drip email campaign scheduler.
 	var onRegister func(string, string)
 	if os.Getenv("AWS_SMTP_USERNAME") != "" {
@@ -483,6 +493,8 @@ func main() {
 		ModelProbeQ:      modelProbeQ,
 		Transcribers:     transcribers,
 		Embedders:        embedders,
+		AutoEmotion:      autoEmotion,
+		Storage:          store,
 		EvalQ:            evalQ,
 		EvalRunner:       evalRunner,
 		StripeSvc:        stripe,
@@ -510,6 +522,7 @@ func main() {
 		TeamQ:            teamQ,
 		SuppressionQ:     suppressionQ,
 		ArtifactQ:        artifactQ,
+		Announcer:        announcer,
 	})
 
 	done := make(chan os.Signal, 1)

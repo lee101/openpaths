@@ -84,7 +84,7 @@ func (p *OpenAIProvider) GenerateImage(ctx context.Context, req *model.ImageGene
 	}
 	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(io.LimitReader(resp.Body, maxImageResponseBytes))
 	if err != nil {
 		return nil, fmt.Errorf("read response: %w", err)
 	}
@@ -93,7 +93,7 @@ func (p *OpenAIProvider) GenerateImage(ctx context.Context, req *model.ImageGene
 		return nil, &provider.ProviderError{
 			Provider:   p.providerName,
 			StatusCode: resp.StatusCode,
-			Message:    string(respBody),
+			Message:    truncateBody(respBody),
 			Retryable:  resp.StatusCode >= 500 || resp.StatusCode == 429,
 		}
 	}
@@ -170,18 +170,30 @@ func (p *OpenAIProvider) editImage(ctx context.Context, req *model.ImageGenerati
 		return nil, &provider.ProviderError{Provider: p.providerName, StatusCode: http.StatusBadGateway, Message: err.Error(), Retryable: true, Err: err}
 	}
 	defer resp.Body.Close()
-	respBody, err := io.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(io.LimitReader(resp.Body, maxImageResponseBytes))
 	if err != nil {
 		return nil, fmt.Errorf("read image edit response: %w", err)
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, &provider.ProviderError{Provider: p.providerName, StatusCode: resp.StatusCode, Message: string(respBody), Retryable: resp.StatusCode >= 500 || resp.StatusCode == 429}
+		return nil, &provider.ProviderError{Provider: p.providerName, StatusCode: resp.StatusCode, Message: truncateBody(respBody), Retryable: resp.StatusCode >= 500 || resp.StatusCode == 429}
 	}
 	var result model.ImageGenerationResponse
 	if err := json.Unmarshal(respBody, &result); err != nil {
 		return nil, fmt.Errorf("unmarshal image edit response: %w", err)
 	}
 	return &result, nil
+}
+
+const (
+	maxImageResponseBytes = 128 << 20
+	maxImageErrorBytes    = 2048
+)
+
+func truncateBody(b []byte) string {
+	if len(b) > maxImageErrorBytes {
+		b = b[:maxImageErrorBytes]
+	}
+	return string(b)
 }
 
 func escapeImageFilename(filename string) string {

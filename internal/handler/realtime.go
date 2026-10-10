@@ -64,7 +64,7 @@ func (h *RealtimeHandler) providerByName(name string) (model.ProviderConfig, boo
 func (h *RealtimeHandler) HandleRealtime(ctx *fasthttp.RequestCtx) {
 	cfg, ok := h.router.GetModelConfig(strings.TrimSpace(string(ctx.QueryArgs().Peek("model"))))
 	if !ok || !supportedRealtimeModel(cfg) {
-		writeJSON(ctx, http.StatusBadRequest, realtimeError("invalid_model", "Choose a supported OpenAI or Gemini live model"))
+		writeJSON(ctx, http.StatusBadRequest, realtimeError("invalid_model", "Choose a supported OpenAI, Gemini, or Qwen live model"))
 		return
 	}
 	if !realtimeSameOrigin(ctx) {
@@ -100,9 +100,12 @@ func (h *RealtimeHandler) HandleRealtime(ctx *fasthttp.RequestCtx) {
 	}
 	var upstreamURL string
 	var err error
-	if cfg.Provider == "google" {
+	switch cfg.Provider {
+	case "google":
 		upstreamURL, err = makeGeminiRealtimeURL(providerCfg.BaseURL)
-	} else {
+	case "alibaba":
+		upstreamURL, err = makeAlibabaRealtimeURL(providerCfg.BaseURL, cfg.ProviderModelID)
+	default:
 		upstreamURL, err = makeRealtimeURL(providerCfg.BaseURL, cfg.ProviderModelID)
 	}
 	if err != nil {
@@ -121,7 +124,8 @@ func (h *RealtimeHandler) HandleRealtime(ctx *fasthttp.RequestCtx) {
 
 func supportedRealtimeModel(cfg *model.ModelConfig) bool {
 	return (cfg.Provider == "openai" && strings.HasPrefix(cfg.ProviderModelID, "gpt-realtime-")) ||
-		(cfg.Provider == "google" && cfg.ProviderModelID == "gemini-3.8-live-extended-thinking")
+		(cfg.Provider == "google" && cfg.ProviderModelID == "gemini-3.8-live-extended-thinking") ||
+		(cfg.Provider == "alibaba" && (strings.HasSuffix(cfg.ProviderModelID, "-realtime") || strings.HasSuffix(cfg.ProviderModelID, "-realtime-plus")))
 }
 
 // validateRealtimeClientMessage runs on every frame so a second setup/update
@@ -177,9 +181,12 @@ func validateRealtimeClientMessage(payload []byte, cfg *model.ModelConfig, first
 func (h *RealtimeHandler) relay(client *fws.Conn, upstreamURL, upstreamKey, userID, apiKeyID string, cfg *model.ModelConfig, byok bool, app requestApp, started time.Time) {
 	defer client.Close()
 	headers := http.Header{}
-	if cfg.Provider == "google" {
+	switch cfg.Provider {
+	case "google":
 		headers.Set("x-goog-api-key", upstreamKey)
-	} else {
+	case "alibaba":
+		headers.Set("Authorization", "Bearer "+upstreamKey)
+	default:
 		headers.Set("Authorization", "Bearer "+upstreamKey)
 		headers.Set("OpenAI-Safety-Identifier", safetyIdentifier(userID))
 	}
@@ -350,8 +357,9 @@ func (h *RealtimeHandler) recordRealtimeError(userID, apiKeyID, modelID, provide
 type realtimeUsageEnvelope struct {
 	Type     string `json:"type"`
 	Response struct {
-		ID    string `json:"id"`
-		Usage *struct {
+		ID     string `json:"id"`
+		Status string `json:"status"`
+		Usage  *struct {
 			InputTokens  int `json:"input_tokens"`
 			OutputTokens int `json:"output_tokens"`
 			InputDetails struct {
@@ -369,6 +377,17 @@ type realtimeUsageEnvelope struct {
 				TextTokens  int `json:"text_tokens"`
 				AudioTokens int `json:"audio_tokens"`
 			} `json:"output_token_details"`
+			// Qwen realtime spells these with an "s" and reports images as video tokens.
+			QwenInputDetails struct {
+				TextTokens  int `json:"text_tokens"`
+				AudioTokens int `json:"audio_tokens"`
+				VideoTokens int `json:"video_tokens"`
+				ImageTokens int `json:"image_tokens"`
+			} `json:"input_tokens_details"`
+			QwenOutputDetails struct {
+				TextTokens  int `json:"text_tokens"`
+				AudioTokens int `json:"audio_tokens"`
+			} `json:"output_tokens_details"`
 		} `json:"usage"`
 	} `json:"response"`
 }
@@ -379,9 +398,19 @@ func parseRealtimeUsage(payload []byte) (string, billing.RealtimeUsage, bool, er
 		return "", billing.RealtimeUsage{}, false, nil
 	}
 	if event.Response.Usage == nil {
-		return event.Response.ID, billing.RealtimeUsage{}, false, errors.New("OpenAI response.done did not include usage")
+		// Qwen omits usage on responses cut off by barge-in; nothing was billed upstream.
+		if event.Response.Status == "cancelled" {
+			return event.Response.ID, billing.RealtimeUsage{}, false, nil
+		}
+		return event.Response.ID, billing.RealtimeUsage{}, false, errors.New("Realtime response.done did not include usage")
 	}
 	u := event.Response.Usage
+	if q := u.QwenInputDetails; q.TextTokens+q.AudioTokens+q.VideoTokens+q.ImageTokens > 0 {
+		u.InputDetails.TextTokens, u.InputDetails.AudioTokens, u.InputDetails.ImageTokens = q.TextTokens, q.AudioTokens, q.VideoTokens+q.ImageTokens
+	}
+	if q := u.QwenOutputDetails; q.TextTokens+q.AudioTokens > 0 {
+		u.OutputDetails.TextTokens, u.OutputDetails.AudioTokens = q.TextTokens, q.AudioTokens
+	}
 	textIn := max(u.InputDetails.TextTokens, u.InputTokens-u.InputDetails.AudioTokens-u.InputDetails.ImageTokens)
 	if textIn < 0 {
 		textIn = 0
@@ -452,6 +481,18 @@ func makeRealtimeURL(baseURL, modelID string) (string, error) {
 	query := u.Query()
 	query.Set("model", modelID)
 	u.RawQuery = query.Encode()
+	return u.String(), nil
+}
+
+// makeAlibabaRealtimeURL targets Model Studio's realtime gateway (/api-ws/v1/realtime).
+func makeAlibabaRealtimeURL(baseURL, modelID string) (string, error) {
+	u, err := url.Parse(baseURL)
+	if err != nil || u.Host == "" || (u.Scheme != "https" && u.Scheme != "wss") {
+		return "", errors.New("invalid provider URL")
+	}
+	u.Scheme = "wss"
+	u.Path = "/api-ws/v1/realtime"
+	u.RawQuery = url.Values{"model": {modelID}}.Encode()
 	return u.String(), nil
 }
 

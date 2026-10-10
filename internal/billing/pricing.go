@@ -104,6 +104,17 @@ func (pt *PricingTable) CalculateCostWithCachedInput(modelID string, inputTokens
 	return totalCents, nil
 }
 
+// SubUnitCost returns the exact (fractional) cost in billing units for models
+// with SubUnitBilling, and false for all other models.
+func (pt *PricingTable) SubUnitCost(modelID string, inputTokens, outputTokens int) (float64, bool) {
+	cfg, ok := pt.models[modelID]
+	if !ok || !cfg.SubUnitBilling {
+		return 0, false
+	}
+	in, _, out := pt.tokenRates(cfg)
+	return (float64(inputTokens)*in + float64(outputTokens)*out) / 1_000_000.0 * 10000, true
+}
+
 func (pt *PricingTable) tokenRates(cfg *model.ModelConfig) (float64, float64, float64) {
 	return cfg.TokenRatesAt(pt.now())
 }

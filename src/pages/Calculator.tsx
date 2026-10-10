@@ -103,6 +103,10 @@ export function Calculator() {
             per-1M-token price from our catalog - nothing estimated, no invented competitor pricing. Compare up to four
             models side by side.
           </p>
+          <p className="mt-3 max-w-3xl text-white/58">
+            Want tier-aware answers like <Link to="/llm-pricing/compare/claude-haiku-5-5-vs-deepseek-v4-flash" className="text-cyan-300 hover:text-cyan-200">Claude Haiku 5.5 vs DeepSeek Flash</Link>?
+            Try the <Link to="/llm-pricing" className="text-cyan-300 hover:text-cyan-200">LLM pricing calculator</Link> with long-context tiers, cache discounts and benchmarks.
+          </p>
         </section>
 
         <section className="mb-10 grid gap-6 md:grid-cols-2">

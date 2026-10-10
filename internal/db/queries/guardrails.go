@@ -63,14 +63,21 @@ const guardrailCols = `id::text, user_id::text, name, limit_cents, reset_interva
 	email_on_violation, allowed_models, allowed_providers, blocked_models, blocked_providers,
 	prompt_injection, sensitive_info, custom_filters, created_at, updated_at`
 
+var guardrailColsPrefixed = "g." + strings.ReplaceAll(strings.Join(strings.Fields(guardrailCols), " "), ", ", ", g.")
+
 func scanGuardrail(row pgx.Row) (*Guardrail, error) {
+	return scanGuardrailWith(row)
+}
+
+func scanGuardrailWith(row pgx.Row, extra ...any) (*Guardrail, error) {
 	g := &Guardrail{}
-	err := row.Scan(
+	dest := append([]any{
 		&g.ID, &g.UserID, &g.Name, &g.LimitCents, &g.ResetInterval, &g.BudgetActions, &g.EmailOnViolation,
 		&g.AllowedModels, &g.AllowedProviders, &g.BlockedModels, &g.BlockedProviders,
 		&g.PromptInjection, &g.SensitiveInfo, &g.CustomFilters,
 		&g.CreatedAt, &g.UpdatedAt,
-	)
+	}, extra...)
+	err := row.Scan(dest...)
 	if err != nil {
 		return nil, err
 	}
@@ -119,12 +126,33 @@ func (q *GuardrailQueries) ListByUser(ctx context.Context, userID string) ([]*Gu
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
+	if len(out) == 0 {
+		return out, nil
+	}
+	arows, err := q.pool.Query(ctx,
+		`SELECT guardrail_id::text, target_type, target_id, created_at
+		 FROM guardrail_assignments
+		 WHERE guardrail_id IN (SELECT id FROM guardrails WHERE user_id = $1) ORDER BY created_at`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer arows.Close()
+	byID := make(map[string]*Guardrail, len(out))
 	for _, g := range out {
-		as, err := q.ListAssignments(ctx, g.ID)
-		if err != nil {
+		g.Assignments = []GuardrailAssignment{}
+		byID[g.ID] = g
+	}
+	for arows.Next() {
+		var a GuardrailAssignment
+		if err := arows.Scan(&a.GuardrailID, &a.TargetType, &a.TargetID, &a.CreatedAt); err != nil {
 			return nil, err
 		}
-		g.Assignments = as
+		if g := byID[a.GuardrailID]; g != nil {
+			g.Assignments = append(g.Assignments, a)
+		}
+	}
+	if err := arows.Err(); err != nil {
+		return nil, err
 	}
 	return out, nil
 }
@@ -270,50 +298,23 @@ func (q *GuardrailQueries) ReplaceAssignments(ctx context.Context, guardrailID, 
 // when the key has no specific assignment. The account default is therefore
 // inherited by keys created in the future.
 func (q *GuardrailQueries) ResolveForRequest(ctx context.Context, userID, apiKeyID string) ([]*Guardrail, error) {
-	var out []*Guardrail
-	seen := map[string]bool{}
-
-	load := func(targetType, targetID string) error {
-		var id string
-		err := q.pool.QueryRow(ctx,
-			`SELECT guardrail_id::text FROM guardrail_assignments WHERE target_type = $1 AND target_id = $2`,
-			targetType, targetID).Scan(&id)
-		if err == pgx.ErrNoRows {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-		if seen[id] {
-			return nil
-		}
-		g, err := scanGuardrail(q.pool.QueryRow(ctx,
-			`SELECT `+guardrailCols+` FROM guardrails WHERE id = $1 AND user_id = $2`, id, userID))
-		if err == pgx.ErrNoRows {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-		seen[id] = true
-		out = append(out, g)
-		return nil
+	var a GuardrailAssignment
+	g, err := scanGuardrailWith(q.pool.QueryRow(ctx,
+		`SELECT `+guardrailColsPrefixed+`, a.guardrail_id::text, a.target_type, a.target_id, a.created_at
+		 FROM guardrail_assignments a JOIN guardrails g ON g.id = a.guardrail_id
+		 WHERE g.user_id = $1
+		   AND ((a.target_type = 'api_key' AND a.target_id = $2 AND $2 <> '') OR (a.target_type = 'user' AND a.target_id = $3))
+		 ORDER BY (a.target_type = 'api_key') DESC
+		 LIMIT 1`, userID, apiKeyID, userID),
+		&a.GuardrailID, &a.TargetType, &a.TargetID, &a.CreatedAt)
+	if err == pgx.ErrNoRows {
+		return nil, nil
 	}
-
-	if apiKeyID != "" {
-		if err := load("api_key", apiKeyID); err != nil {
-			return nil, err
-		}
+	if err != nil {
+		return nil, err
 	}
-	// A key-specific policy overrides the account default. This is important
-	// for accounts that use a restrictive default for all current and future
-	// keys but need a separately configured exception for a key.
-	if len(out) == 0 {
-		if err := load("user", userID); err != nil {
-			return nil, err
-		}
-	}
-	return out, nil
+	g.Assignments = []GuardrailAssignment{a}
+	return []*Guardrail{g}, nil
 }
 
 func (q *GuardrailQueries) SpendSince(ctx context.Context, userID, apiKeyID string, since time.Time, perKey bool) (int64, error) {

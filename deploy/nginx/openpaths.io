@@ -54,6 +54,26 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
+    # Model catalog SEO generated from config.yaml by the Go backend:
+    # llms.txt files and per-model pages (meta tags, JSON-LD, static body).
+    location ~ ^/(llms\.txt|llms-full\.txt)$ {
+        proxy_pass http://openpath_backend;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location ~* ^/models/(?!.*\.(png|webp|jpe?g|gif|svg|ico|json|js|css|map|mp4|webm|mp3|glb|txt|xml)$).+ {
+        proxy_pass http://openpath_backend;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
     # Art detail + tag pages proxy to Go so crawler-visible meta (title/og:image)
     # is injected per prompt; the SPA still hydrates client-side.
     location ~ ^/art/(i|tag)/ {

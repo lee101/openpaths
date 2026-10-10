@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os/exec"
+	"strings"
 	"testing"
 
 	"github.com/openpaths/openpaths/internal/model"
@@ -41,9 +42,7 @@ func TestBrowserReadySpeechAudioLeavesEncodedAudioAlone(t *testing.T) {
 }
 
 func TestEncodeLyriaOutputAsOpus(t *testing.T) {
-	if _, err := exec.LookPath("ffmpeg"); err != nil {
-		t.Skip("ffmpeg is not installed")
-	}
+	requireFFmpeg(t)
 	pcm := make([]byte, 2400)
 	wav, _ := browserReadySpeechAudio(pcm, "audio/pcm")
 	got, mimeType, format, err := encodeLyriaOutput(context.Background(), wav, "audio/wav", "opus")
@@ -208,5 +207,25 @@ func TestEmbed_BatchEmbeddings(t *testing.T) {
 	}
 	if resp.Usage.TotalTokens == 0 {
 		t.Fatal("expected non-zero token accounting")
+	}
+}
+
+func requireFFmpeg(t *testing.T, bins ...string) {
+	t.Helper()
+	if len(bins) == 0 {
+		bins = []string{"ffmpeg"}
+	}
+	for _, bin := range bins {
+		if err := exec.Command(bin, "-version").Run(); err != nil {
+			t.Skipf("%s not runnable: %v", bin, err)
+		}
+	}
+}
+
+func TestRedactKey(t *testing.T) {
+	in := `Post "https://h/v1beta/models/m:generateContent?key=AIzaSECRET&alt=sse": EOF`
+	got := redactKey(in)
+	if strings.Contains(got, "AIzaSECRET") || !strings.Contains(got, "&alt=sse") {
+		t.Fatalf("got %q", got)
 	}
 }

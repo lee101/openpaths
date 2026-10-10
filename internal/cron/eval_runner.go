@@ -107,18 +107,22 @@ func (r *EvalRunner) Start() {
 		return
 	}
 	go func() {
+		ctx, cancel := r.stopContext()
+		defer cancel()
+		boot := time.NewTimer(evalsBootDelay)
+		defer boot.Stop()
 		select {
-		case <-time.After(evalsBootDelay):
+		case <-boot.C:
 		case <-r.stop:
 			return
 		}
-		r.runSweep(context.Background())
+		r.sweepOnce(ctx)
 		ticker := time.NewTicker(r.interval)
 		defer ticker.Stop()
 		for {
 			select {
 			case <-ticker.C:
-				r.runSweep(context.Background())
+				r.sweepOnce(ctx)
 			case <-r.stop:
 				return
 			}
@@ -146,11 +150,11 @@ func (r *EvalRunner) Running() bool {
 	return r.running.Load()
 }
 
-
 // Done exposes the stop channel so CLI callers can block until shutdown.
 func (r *EvalRunner) Done() <-chan struct{} {
 	return r.stop
 }
+
 // RunAsync triggers one sweep if none is running. Returns false when a sweep is
 // already in flight.
 func (r *EvalRunner) RunAsync() bool {
@@ -159,8 +163,31 @@ func (r *EvalRunner) RunAsync() bool {
 	}
 	go func() {
 		defer r.running.Store(false)
-		r.runSweep(context.Background())
+		ctx, cancel := r.stopContext()
+		defer cancel()
+		r.runSweep(ctx)
 	}()
+	return true
+}
+
+func (r *EvalRunner) stopContext() (context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		select {
+		case <-r.stop:
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
+	return ctx, cancel
+}
+
+func (r *EvalRunner) sweepOnce(ctx context.Context) bool {
+	if !r.running.CompareAndSwap(false, true) {
+		return false
+	}
+	defer r.running.Store(false)
+	r.runSweep(ctx)
 	return true
 }
 

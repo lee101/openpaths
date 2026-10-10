@@ -181,6 +181,9 @@ const FALLBACK_MODELS: CatalogModel[] = [
   { id: 'gemini-latest', label: 'Gemini Latest', provider: 'Google', pricing: GEMINI_37_PROMO_PRICING },
   { id: 'gemini-3.5-flash', label: 'Gemini 3.5 Flash', provider: 'Google', pricing: { input_per_1m_tokens: 1.50, output_per_1m_tokens: 9.00 } },
   { id: 'gemini-3.1-flash-lite', label: 'Gemini 3.1 Flash Lite', provider: 'Google', pricing: { input_per_1m_tokens: 0.25, output_per_1m_tokens: 1.50 } },
+  { id: 'gemini-3-flash-preview', label: 'Gemini 3 Flash Preview', provider: 'Google', pricing: { input_per_1m_tokens: 0.50, output_per_1m_tokens: 3.00 } },
+  { id: 'gemini-3.1-flash-lite-image', label: 'Nano Banana 2 Lite', provider: 'Google', pricing: { per_image: 0.0336 } },
+  { id: 'gemini-nano-banana-2.1', label: 'Nano Banana 2.1', provider: 'Google', pricing: { per_image: 0.0336 } },
   { id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', provider: 'Google' },
   { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', provider: 'Google' },
   { id: 'gemini-3.1-flash-tts-preview', label: 'Gemini 3.1 Flash TTS Preview', provider: 'Google', pricing: { input_per_1m_tokens: 1.20, output_per_1m_tokens: 24.00 } },
@@ -194,7 +197,8 @@ const FALLBACK_MODELS: CatalogModel[] = [
   { id: 'gpt-4o-mini', label: 'GPT-4o Mini', provider: 'OpenAI' },
   { id: 'claude-sonnet-latest', label: 'Claude Sonnet 5 (latest)', provider: 'Anthropic' },
   { id: 'claude-opus-latest', label: 'Claude Opus (latest)', provider: 'Anthropic' },
-  { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku', provider: 'Anthropic' },
+  { id: 'claude-haiku-latest', label: 'Claude Haiku 5.5 (latest)', provider: 'Anthropic' },
+  { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5', provider: 'Anthropic' },
   { id: 'grok-4.7', label: 'Grok 4.7', provider: 'xAI' },
   { id: 'grok-4.6', label: 'Grok 4.6', provider: 'xAI' },
   { id: 'grok-4.3', label: 'Grok 4.3', provider: 'xAI' },
@@ -221,6 +225,9 @@ const FALLBACK_MODELS: CatalogModel[] = [
   { id: 'groq/gpt-oss-120b', label: 'GPT-OSS 120B', provider: 'Groq', pricing: { input_per_1m_tokens: 0.15, input_cache_hit_per_1m_tokens: 0.075, output_per_1m_tokens: 0.60 } },
   { id: 'glm-5.2', label: 'GLM-5.2', provider: 'Z.AI', pricing: { input_per_1m_tokens: 1.40, output_per_1m_tokens: 4.40 } },
   { id: 'glm-5', label: 'GLM-5', provider: 'Together' },
+  { id: 'qwen/qwen3.8-max', label: 'Qwen 3.8 Max', provider: 'Alibaba', pricing: { input_per_1m_tokens: 2, input_cache_hit_per_1m_tokens: 0.40, output_per_1m_tokens: 6 } },
+  { id: 'qwen/qwen3.8-omni-flash', label: 'Qwen 3.8 Omni Flash', provider: 'Alibaba', pricing: { input_per_1m_tokens: 0.15, input_cache_hit_per_1m_tokens: 0.016, output_per_1m_tokens: 0.47 } },
+  { id: 'kimi-k3', label: 'Kimi K3', provider: 'Alibaba', pricing: { input_per_1m_tokens: 3, output_per_1m_tokens: 15 } },
   { id: 'qwen3.8-2.4t-a95b', label: 'Qwen 3.8 2.4T A95B', provider: 'Together', pricing: { input_per_1m_tokens: 2.50, input_cache_hit_per_1m_tokens: 0.50, output_per_1m_tokens: 6.25 } },
   { id: 'qwen3.5-397b', label: 'Qwen 3.5 397B', provider: 'Together' },
   { id: 'minimax-m2.7', label: 'MiniMax M2.7', provider: 'MiniMax' },
@@ -237,6 +244,8 @@ const FALLBACK_MODELS: CatalogModel[] = [
   { id: 'stable-diffusion-3', label: 'Stable Diffusion 3', provider: 'Together', pricing: { per_image: 0.002 } },
   { id: 'glm-image', label: 'GLM Image', provider: 'Z.AI', pricing: { per_image: 0.015 } },
   { id: 'fal-gpt-image-2', label: 'GPT Image 2 via Fal', provider: 'Fal', pricing: { per_image: 0.22 } },
+  { id: 'qwen-image-3.0', label: 'Qwen Image 3.0', provider: 'Alibaba', pricing: { per_image: 0.03 } },
+  { id: 'qwen-image-3.0-pro', label: 'Qwen Image 3.0 Pro', provider: 'Alibaba', pricing: { per_image: 0.04 } },
   { id: 'hidream-o1-image-dev', label: 'HiDream O1 Image Dev', provider: 'Fal', pricing: { per_megapixel: 0.011 } },
   { id: 'fal-ai/hidream-o1-image/edit', label: 'HiDream O1 Image Edit', provider: 'Fal', pricing: { per_megapixel: 0.011 } },
   { id: 'fal-ai/flux-2-pro/outpaint', label: 'FLUX 2 Pro Outpaint', provider: 'Fal', pricing: { first_megapixel: 0.033, extra_megapixel: 0.0165 } },
@@ -250,6 +259,8 @@ const FALLBACK_MODELS: CatalogModel[] = [
   { id: 'seedance-2.0-fast-reference-to-video', label: 'Seedance 2.0 Fast Reference to Video', provider: 'Fal', pricing: { per_second: 0.26609, per_second_with_video_input: 0.15972 } },
   { id: 'seedance-2.0-reference-to-video', label: 'Seedance 2.0 Reference to Video', provider: 'Fal', pricing: { per_second: 0.33264, per_second_with_video_input: 0.19954 } },
   { id: 'alibaba/happy-horse/image-to-video', label: 'Happy Horse Image to Video', provider: 'Alibaba', pricing: { per_second: 0.28 } },
+  { id: 'wan3.0-video', label: 'Wan 3.0 Video', provider: 'Alibaba', pricing: { per_second: 0.2 } },
+  { id: 'wan3.0-video-prime', label: 'Wan 3.0 Video Prime', provider: 'Alibaba', pricing: { per_second: 0.28 } },
   { id: 'wan-3.0-text-to-video', label: 'Wan 3.0 Text to Video', provider: 'Alibaba', pricing: { per_second: 0.2 } },
   { id: 'wan-3.0-image-to-video', label: 'Wan 3.0 Image to Video', provider: 'Alibaba', pricing: { per_second: 0.2 } },
 ];
@@ -2924,6 +2935,7 @@ JSON`;
   return (
     <div className="flex h-full min-h-0">
       <ToolSeo slug="playground" />
+      <h1 className="sr-only">Multi-model AI playground</h1>
       {sidebarOpen && (
         <ChatSidebar activeId={activeConvId} onSelect={loadConversation} onNewChat={newChatInFolder} />
       )}

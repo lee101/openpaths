@@ -31,6 +31,26 @@ type DripEmail struct {
 	Subject     string `json:"subject"`
 	Template    string `json:"template"`
 	Description string `json:"description"`
+	Kind        string `json:"kind,omitempty"`
+	LaunchDate  string `json:"launch_date,omitempty"`
+	MaxAgeDays  int    `json:"max_age_days,omitempty"`
+}
+
+const KindModelLaunch = "model_launch"
+
+func (de DripEmail) signupCutoff() (*time.Time, error) {
+	if de.Kind != KindModelLaunch {
+		return nil, nil
+	}
+	if de.LaunchDate == "" || de.MaxAgeDays <= 0 {
+		return nil, fmt.Errorf("model_launch entry needs launch_date and max_age_days")
+	}
+	d, err := time.Parse("2006-01-02", de.LaunchDate)
+	if err != nil {
+		return nil, fmt.Errorf("bad launch_date %q: %w", de.LaunchDate, err)
+	}
+	end := d.AddDate(0, 0, de.MaxAgeDays+1)
+	return &end, nil
 }
 
 type DripRunner struct {
@@ -122,11 +142,18 @@ func (r *DripRunner) RunScheduled(ctx context.Context) {
 			continue // welcome email is sent on signup
 		}
 
+		signupBefore, err := de.signupCutoff()
+		if err != nil {
+			log.Printf("drip: skipping email %d: %v", de.ID, err)
+			continue
+		}
+
 		// Find users who signed up delay_days ago and haven't received this email yet.
 		cutoff := time.Now().AddDate(0, 0, -de.DelayDays)
 		rows, err := r.db.Query(ctx, `
 			SELECT u.id, u.email FROM users u
 			WHERE u.created_at <= $1
+			  AND ($3::timestamptz IS NULL OR u.created_at < $3)
 			  AND u.email != ''
 			  AND u.disabled = false
 			  AND u.email NOT ILIKE 'e2e-%'
@@ -152,7 +179,7 @@ func (r *DripRunner) RunScheduled(ctx context.Context) {
 				WHERE d.user_id = u.id::text AND d.sent_at > NOW() - INTERVAL '20 hours'
 			  )
 			LIMIT 100
-		`, cutoff, de.ID)
+		`, cutoff, de.ID, signupBefore)
 		if err != nil {
 			log.Printf("drip: query error for email %d: %v", de.ID, err)
 			continue
@@ -236,7 +263,7 @@ func (r *DripRunner) sendDripEmail(ctx context.Context, userID, userEmail string
 	}
 
 	// Send the email.
-	if err := SendWithUnsubscribe(userEmail, de.Subject, html, unsubscribeURL); err != nil {
+	if err := SendMessage(Message{To: userEmail, Subject: de.Subject, HTML: html, UnsubscribeURL: unsubscribeURL, FromName: r.config.FromName}); err != nil {
 		return fmt.Errorf("sending: %w", err)
 	}
 

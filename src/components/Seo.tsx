@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { withBreadcrumbs } from '../lib/seoSchema';
 
 interface SeoProps {
   title: string;
@@ -7,13 +8,16 @@ interface SeoProps {
   image?: string;
   type?: 'website' | 'article';
   jsonLd?: object | object[];
+  noindex?: boolean;
+  breadcrumbName?: string;
 }
 
 const BASE_URL = 'https://openpaths.io';
 const DEFAULT_OG_IMAGE = `${BASE_URL}/og-image.png`;
 const TWITTER_HANDLE = '@openpaths';
 
-export function Seo({ title, description, path = '/', image, type = 'website', jsonLd }: SeoProps) {
+export function Seo({ title, description, path = '/', image, type = 'website', jsonLd, noindex = false, breadcrumbName }: SeoProps) {
+  const jsonLdKey = JSON.stringify(jsonLd ?? null);
   useEffect(() => {
     const normalizedPath = path.startsWith('/') ? path : `/${path}`;
     const canonicalUrl = `${BASE_URL}${normalizedPath}`;
@@ -33,10 +37,23 @@ export function Seo({ title, description, path = '/', image, type = 'website', j
     upsertMeta('name', 'twitter:description', description);
     upsertMeta('name', 'twitter:image', imageUrl);
     upsertCanonical(canonicalUrl);
-    upsertJsonLd(jsonLd);
-  }, [description, image, path, title, type, jsonLd]);
+    upsertMeta('property', 'og:locale', 'en_US');
+    upsertMeta('property', 'og:image:alt', title);
+    upsertMeta('name', 'twitter:image:alt', title);
+    if (noindex) upsertMeta('name', 'robots', 'noindex,nofollow');
+    else removeMeta('name', 'robots');
+    const graph = noindex ? [] : withBreadcrumbs(jsonLd, normalizedPath, breadcrumbName);
+    upsertJsonLd(graph.length ? graph : undefined);
+    return () => {
+      removeMeta('name', 'robots');
+    };
+  }, [description, image, path, title, type, jsonLdKey, noindex, breadcrumbName]);
 
   return null;
+}
+
+function removeMeta(attrName: 'name' | 'property', attrValue: string) {
+  document.head.querySelector(`meta[${attrName}="${attrValue}"]`)?.remove();
 }
 
 function upsertJsonLd(data?: object | object[]) {

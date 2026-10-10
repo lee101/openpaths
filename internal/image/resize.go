@@ -242,9 +242,12 @@ func nearestNeighborScale(src image.Image, w, h int) image.Image {
 	return dst
 }
 
+var maxFetchImageBytes int64 = 64 << 20
+
+var fetchImageClient = &http.Client{Timeout: 30 * time.Second}
+
 func FetchImage(url string) ([]byte, error) {
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Get(url)
+	resp, err := fetchImageClient.Get(url)
 	if err != nil {
 		return nil, err
 	}
@@ -252,7 +255,14 @@ func FetchImage(url string) ([]byte, error) {
 	if resp.StatusCode != 200 {
 		return nil, fmt.Errorf("fetch %s: status %d", url, resp.StatusCode)
 	}
-	return io.ReadAll(resp.Body)
+	data, err := io.ReadAll(io.LimitReader(resp.Body, maxFetchImageBytes+1))
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(data)) > maxFetchImageBytes {
+		return nil, fmt.Errorf("fetch %s: image exceeds %d bytes", url, maxFetchImageBytes)
+	}
+	return data, nil
 }
 
 // ProcessImageURL fetches, resizes/crops, returns b64.

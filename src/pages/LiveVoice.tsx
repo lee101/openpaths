@@ -13,7 +13,7 @@ export function LiveVoice() {
   const [modelID, setModelID] = useState(LIVE_MODELS.find(m => m.id === params.get('model'))?.id || LIVE_MODELS[0].id);
   const model = LIVE_MODELS.find(m => m.id === modelID)!;
   const [key, setKey] = useState(getApiKey);
-  const [voice, setVoice] = useState(model.provider === 'google' ? 'Zephyr' : 'marin');
+  const [voice, setVoice] = useState<string>(model.voices[0]);
   const [instructions, setInstructions] = useState('You are a friendly voice assistant. Speak naturally and keep answers brief. Respond in the language the user speaks.');
   const [state, setState] = useState<VoiceState>('idle');
   const [muted, setMuted] = useState(false);
@@ -42,7 +42,7 @@ export function LiveVoice() {
 
   const fieldClass = 'w-full rounded-lg border border-white/15 bg-[#141414] px-3 py-3 text-sm outline-none focus:border-white/50 disabled:opacity-50';
   return <>
-    <Seo title="Live Voice — Gemini & OpenAI Speech to Speech | OpenPaths" description="Talk naturally with Gemini 3.8 Live Extended Thinking and GPT Realtime. Streaming voice, interruptions, and transparent provider pricing plus 5%." path="/tools/live-voice" />
+    <Seo title="Live Voice — Gemini, OpenAI & Qwen Speech to Speech | OpenPaths" description="Talk naturally with Gemini 3.8 Live Extended Thinking, GPT Realtime, and Qwen Omni Realtime. Streaming voice, interruptions, and transparent provider pricing plus 5%." path="/tools/live-voice" />
     <main className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
       <Link to="/tools" className="text-sm text-white/50 hover:text-white">← All tools</Link>
       <div className="mt-7 flex items-center gap-3"><AudioLines className="h-8 w-8 text-emerald-300" /><h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Live voice</h1></div>
@@ -50,13 +50,13 @@ export function LiveVoice() {
       <div className="mt-8 grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
         <section className="space-y-5 rounded-2xl border border-white/10 bg-white/[0.025] p-5 sm:p-6" aria-label="Voice settings">
           <label className="block space-y-2"><span className="text-sm text-white/70">Model</span>
-            <select aria-label="Voice model" className={fieldClass} value={modelID} disabled={active} onChange={e => { const m = LIVE_MODELS.find(m => m.id === e.target.value)!; setModelID(m.id); setVoice(m.provider === 'google' ? 'Zephyr' : 'marin'); }}>
+            <select aria-label="Voice model" className={fieldClass} value={modelID} disabled={active} onChange={e => { const m = LIVE_MODELS.find(m => m.id === e.target.value)!; setModelID(m.id); setVoice(m.voices[0]); }}>
               {LIVE_MODELS.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
             </select>
           </label>
           <label className="block space-y-2"><span className="text-sm text-white/70">Voice</span>
             <select aria-label="Voice" className={fieldClass} value={voice} disabled={active} onChange={e => setVoice(e.target.value)}>
-              {(model.provider === 'google' ? ['Zephyr', 'Puck', 'Kore', 'Aoede', 'Charon', 'Fenrir'] : ['marin', 'cedar', 'alloy', 'ash', 'coral', 'sage', 'verse']).map(v => <option key={v}>{v}</option>)}
+              {model.voices.map(v => <option key={v}>{v}</option>)}
             </select>
           </label>
           <label className="block space-y-2"><span className="text-sm text-white/70">Instructions</span>

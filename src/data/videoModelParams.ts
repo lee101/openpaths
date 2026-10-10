@@ -65,6 +65,20 @@ const FAMILIES: Array<{ test: RegExp; spec: Partial<VideoParamSpec> }> = [
     },
   },
   {
+    // Wan 3.0 Video direct from Alibaba: text, first/last frame, or a
+    // reference clip to edit/extend; 2-30s or smart duration, native audio.
+    test: /^(alibaba\/)?wan3\.0-video(-prime)?$/i,
+    spec: {
+      inputModes: ['text-to-video', 'image-to-video', 'video-to-video'],
+      resolutions: ['480p', '720p', '1080p'],
+      durations: ['auto', ...Array.from({ length: 29 }, (_, index) => String(index + 2))],
+      aspectRatios: ['auto', '21:9', '16:9', '4:3', '1:1', '3:4', '9:16'],
+      negativePrompt: false,
+      seed: true,
+      outputFormats: undefined,
+    },
+  },
+  {
     // Wan 3.0: resolution tiers 480p-1080p, smart or fixed 2-30s duration,
     // native audio. No negative prompt / guidance / steps in its schema.
     test: /^wan-3\.0/i,

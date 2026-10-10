@@ -107,15 +107,16 @@ export function ImageSpacePanel({
 }) {
   const isBFLFlux2Pro = modelId === 'flux-2-pro-preview';
   const isFlux3 = modelId === 'flux-3-image';
-  const requiresInput = imageToImage && !isBFLFlux2Pro && !isFlux3;
+  const isGeminiImage = modelId === 'gemini-3.1-flash-lite-image' || modelId === 'gemini-nano-banana-2.1';
+  const requiresInput = imageToImage && !isBFLFlux2Pro && !isFlux3 && !isGeminiImage;
   const catalogExample = OPENPATHS_IMAGE_MODELS.find(item => item.openpathsId === modelId);
   const initialPayload = useMemo<Record<string, unknown>>(() => demo?.payload || {
     model: modelId,
     prompt: DEFAULT_PROMPT,
     ...(isBFLFlux2Pro
       ? { size: '1024x1024', n: 1, output_format: 'webp', safety_tolerance: 5, disable_pup: false }
-      : imageToImage ? { image_url: DEFAULT_INPUT } : { size: '1024x1024', n: 1 }),
-  }, [demo, imageToImage, isBFLFlux2Pro, modelId]);
+      : isGeminiImage ? { aspect_ratio: '16:9', n: 1 } : imageToImage ? { image_url: DEFAULT_INPUT } : { size: '1024x1024', n: 1 }),
+  }, [demo, imageToImage, isBFLFlux2Pro, isGeminiImage, modelId]);
   const starterPrompt = String(initialPrompt || demo?.prompt || initialPayload.prompt || '');
   const starterInput = String(demo?.imageUrl || initialPayload.image_url || (Array.isArray(initialPayload.reference_image_urls) ? initialPayload.reference_image_urls[0] : '') || (requiresInput ? DEFAULT_INPUT : ''));
   const starterOutput = demo?.outputUrl || catalogExample?.image || DEFAULT_OUTPUT;
@@ -196,12 +197,15 @@ export function ImageSpacePanel({
       if (inputUrl) next.reference_image_urls = [inputUrl];
       else delete next.reference_image_urls;
     }
+    if (isGeminiImage) {
+      return { model: modelId, prompt, aspect_ratio: aspectRatio === 'auto' ? '16:9' : aspectRatio, n: 1, ...(inputUrl ? { image_url: inputUrl } : {}) };
+    }
     if (isFlux3) {
       return { model: modelId, prompt, resolution, aspect_ratio: aspectRatio, grounding, safety_tolerance: safetyTolerance,
         ...(references.trim() ? { images: references.split(/\s+/).filter(Boolean) } : {}) };
     }
     return next;
-  }, [isFlux3, resolution, aspectRatio, grounding, safetyTolerance, references, demo, imageToImage, initialPayload, inputUrl, isBFLFlux2Pro, modelId, outputFormat, prompt, promptUpsampling, size]);
+  }, [isFlux3, isGeminiImage, resolution, aspectRatio, grounding, safetyTolerance, references, demo, imageToImage, initialPayload, inputUrl, isBFLFlux2Pro, modelId, outputFormat, prompt, promptUpsampling, size]);
   const snippet = useMemo(() => snippetFor(payload, lang, apiKey), [apiKey, lang, payload]);
 
   const uploadImage = async (file?: File) => {
@@ -246,7 +250,7 @@ export function ImageSpacePanel({
     setError('');
     setPaywall(null);
     try {
-      const resp = await fetch((isFlux3 ? Boolean(references.trim()) : imageToImage) ? '/v1/images/edits' : '/v1/images/generations', {
+      const resp = await fetch((isFlux3 ? Boolean(references.trim()) : isGeminiImage ? Boolean(inputUrl.trim()) : imageToImage) ? '/v1/images/edits' : '/v1/images/generations', {
         method: 'POST',
         headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -339,6 +343,14 @@ export function ImageSpacePanel({
             </label>
           </div>
         </div>}
+
+        {isGeminiImage && (
+          <label className="mt-2.5 block text-xs text-white/60">Aspect ratio
+            <select value={aspectRatio === 'auto' ? '16:9' : aspectRatio} onChange={e => setAspectRatio(e.target.value)} className={inputCls} data-testid="mp-image-aspect-ratio">
+              {['1:1','16:9','9:16','4:3','3:4','3:2','2:3','5:4','4:5','21:9'].map(ratio => <option key={ratio} className="bg-black">{ratio}</option>)}
+            </select>
+          </label>
+        )}
 
         {isBFLFlux2Pro && (
           <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
