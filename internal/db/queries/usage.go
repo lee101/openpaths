@@ -19,8 +19,8 @@ func NewUsageQueries(pool *pgxpool.Pool) *UsageQueries {
 }
 
 const usageInsertSQL = `INSERT INTO usage_logs (user_id, api_key_id, model, provider, tokens_in, tokens_out,
-		 latency_ms, ttft_ms, tps, cost_cents, error, status_code, streaming, app_id, app_url, app_title, app_categories)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17::jsonb)`
+		 latency_ms, ttft_ms, tps, cost_cents, error, status_code, streaming, app_id, app_url, app_title, app_categories, request_count)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17::jsonb, $18)`
 
 func usageInsertArgs(log *model.UsageLog) []any {
 	categories, _ := json.Marshal(log.AppCategories)
@@ -28,10 +28,14 @@ func usageInsertArgs(log *model.UsageLog) []any {
 	if log.AppID != "" {
 		appID = log.AppID
 	}
+	count := log.RequestCount
+	if count < 1 {
+		count = 1
+	}
 	return []any{
 		log.UserID, log.APIKeyID, log.Model, log.Provider, log.TokensIn, log.TokensOut,
 		log.LatencyMs, log.TTFTMs, log.TPS, log.CostCents, log.Error, log.StatusCode, log.Streaming,
-		appID, log.AppURL, log.AppTitle, string(categories),
+		appID, log.AppURL, log.AppTitle, string(categories), count,
 	}
 }
 

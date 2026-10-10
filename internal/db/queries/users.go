@@ -179,7 +179,7 @@ func (q *UserQueries) ListAdminUserSpend(ctx context.Context) ([]model.AdminUser
 		usage AS (
 			SELECT
 				user_id,
-				COUNT(*)::bigint AS requests,
+				SUM(request_count)::bigint AS requests,
 				COALESCE(SUM(cost_cents), 0)::bigint AS api_spend_cents,
 				MAX(created_at) AS last_request_at
 			FROM usage_logs

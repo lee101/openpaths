@@ -108,7 +108,7 @@ func (q *AppQueries) AggregateOpenPathsDaily(ctx context.Context, day time.Time)
 	start := time.Date(day.Year(), day.Month(), day.Day(), 0, 0, 0, 0, time.UTC)
 	end := start.Add(24 * time.Hour)
 	rows, err := q.pool.Query(ctx,
-		`SELECT app_id::text, model, provider, COUNT(*)::bigint,
+		`SELECT app_id::text, model, provider, SUM(request_count)::bigint,
 			COALESCE(SUM(tokens_in), 0)::bigint,
 			COALESCE(SUM(tokens_out), 0)::bigint,
 			COALESCE(SUM(tokens_in + tokens_out), 0)::bigint,
@@ -144,7 +144,7 @@ func (q *AppQueries) ListAppStats(ctx context.Context, period string, limit int)
 
 	rows, err := q.pool.Query(ctx,
 		`WITH live AS (
-			SELECT app_id, 'openpaths'::text AS source, model, provider, COUNT(*)::bigint AS requests,
+			SELECT app_id, 'openpaths'::text AS source, model, provider, SUM(request_count)::bigint AS requests,
 				COALESCE(SUM(tokens_in), 0)::bigint AS tokens_in,
 				COALESCE(SUM(tokens_out), 0)::bigint AS tokens_out,
 				COALESCE(SUM(tokens_in + tokens_out), 0)::bigint AS total_tokens
@@ -226,7 +226,7 @@ func (q *AppQueries) GetAppStats(ctx context.Context, slug, period string) (*mod
 		`WITH target AS (
 			SELECT * FROM ai_apps WHERE slug = $2
 		), live AS (
-			SELECT app_id, 'openpaths'::text AS source, model, provider, COUNT(*)::bigint AS requests,
+			SELECT app_id, 'openpaths'::text AS source, model, provider, SUM(request_count)::bigint AS requests,
 				COALESCE(SUM(tokens_in), 0)::bigint AS tokens_in,
 				COALESCE(SUM(tokens_out), 0)::bigint AS tokens_out,
 				COALESCE(SUM(tokens_in + tokens_out), 0)::bigint AS total_tokens

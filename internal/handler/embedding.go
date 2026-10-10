@@ -80,9 +80,9 @@ func (h *EmbeddingHandler) HandleEmbedding(ctx *fasthttp.RequestCtx) {
 					h.router.MarkModelHealthy(cand.Provider.Name(), cand.ModelCfg.ID)
 					resp.Model = originalModel
 					cost, _ := h.billing.Deduct(ctx, userID, cand.ModelCfg.ID, resp.Usage.TotalTokens, 0, "", "")
-					h.recorder.RecordSuccessWithApp(userID, apiKeyID, originalModel, cand.Provider.Name(),
-						resp.Usage.TotalTokens, 0, int(latency.Milliseconds()), 0, cost, false, app.ID, app.URL, app.Title, app.Categories)
-					writeJSON(ctx, 200, resp)
+					h.recorder.RecordSuccessCoalesced(userID, apiKeyID, originalModel, cand.Provider.Name(),
+						resp.Usage.TotalTokens, int(latency.Milliseconds()), cost, app.ID, app.URL, app.Title, app.Categories)
+					writeEmbeddingJSON(ctx, resp)
 					return
 				}
 			}
@@ -101,12 +101,21 @@ func (h *EmbeddingHandler) HandleEmbedding(ctx *fasthttp.RequestCtx) {
 		}
 
 		resp.Model = originalModel
-		log.Printf("embedding: %s ok (%dms)", ep.Name(), latency.Milliseconds())
-		h.recorder.RecordSuccessWithApp(userID, apiKeyID, originalModel, ep.Name(),
-			resp.Usage.TotalTokens, 0, int(latency.Milliseconds()), 0, 0, false, app.ID, app.URL, app.Title, app.Categories)
-		writeJSON(ctx, 200, resp)
+		var cost int64
+		if originalModel != "" && h.billing != nil {
+			cost, _ = h.billing.Deduct(ctx, userID, originalModel, resp.Usage.TotalTokens, 0, "", "")
+		}
+		h.recorder.RecordSuccessCoalesced(userID, apiKeyID, originalModel, ep.Name(),
+			resp.Usage.TotalTokens, int(latency.Milliseconds()), cost, app.ID, app.URL, app.Title, app.Categories)
+		writeEmbeddingJSON(ctx, resp)
 		return
 	}
 
 	writeError(ctx, 502, "provider_error", "all embedding providers failed")
+}
+
+func writeEmbeddingJSON(ctx *fasthttp.RequestCtx, resp *model.EmbeddingResponse) {
+	ctx.SetStatusCode(200)
+	ctx.SetContentType("application/json")
+	ctx.Response.SetBodyRaw(resp.AppendJSON(make([]byte, 0, 256+len(resp.Data)*4096)))
 }

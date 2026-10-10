@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"bytes"
 	"encoding/json"
 
 	"github.com/valyala/fasthttp"
@@ -44,11 +45,27 @@ func BalanceCheck(engine *billing.Engine) Middleware {
 }
 
 func requestModel(ctx *fasthttp.RequestCtx) string {
-	var body struct {
-		Model string `json:"model"`
-	}
-	if err := json.Unmarshal(ctx.PostBody(), &body); err != nil {
+	dec := json.NewDecoder(bytes.NewReader(ctx.PostBody()))
+	if t, err := dec.Token(); err != nil || t != json.Delim('{') {
 		return ""
 	}
-	return body.Model
+	for dec.More() {
+		kt, err := dec.Token()
+		if err != nil {
+			return ""
+		}
+		key, _ := kt.(string)
+		if key == "model" {
+			var m string
+			if err := dec.Decode(&m); err != nil {
+				return ""
+			}
+			return m
+		}
+		var skip json.RawMessage
+		if err := dec.Decode(&skip); err != nil {
+			return ""
+		}
+	}
+	return ""
 }

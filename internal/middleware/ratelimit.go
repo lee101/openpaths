@@ -56,7 +56,15 @@ func RateLimit() Middleware {
 			// Enforce both the key limit and an account-wide ceiling. Otherwise a
 			// user can create many keys and multiply the default allowance.
 			userLimit := envRateLimit("USER_RATE_LIMIT_RPM", 120)
-			if !rl.allow(apiKey.ID, limit) || !rl.allow("user:"+apiKey.UserID, userLimit) {
+			keyBucket, userBucket := apiKey.ID, "user:"+apiKey.UserID
+			if string(ctx.Path()) == "/v1/embeddings" {
+				mult := envRateLimit("EMBED_RATE_LIMIT_MULT", 50)
+				limit *= mult
+				userLimit *= mult
+				keyBucket += ":emb"
+				userBucket += ":emb"
+			}
+			if !rl.allow(keyBucket, limit) || !rl.allow(userBucket, userLimit) {
 				ctx.SetStatusCode(429)
 				ctx.SetContentType("application/json")
 				ctx.SetBodyString(`{"error":{"message":"Rate limit exceeded","type":"rate_limit_error","code":"rate_limit_exceeded"}}`)

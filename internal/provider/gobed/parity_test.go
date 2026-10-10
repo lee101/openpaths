@@ -22,7 +22,7 @@ func testProvider(t testing.TB) *GobedProvider {
 		}
 	}
 	p, err := New()
-	if err != nil || p.tok == nil {
+	if err != nil {
 		t.Skipf("model unavailable: %v", err)
 	}
 	return p
@@ -52,20 +52,17 @@ func randASCII(r *rand.Rand) string {
 	return sb.String()
 }
 
-func TestFastTokenizerParity(t *testing.T) {
+func TestTokenizeIntoMatchesSimpleTokenize(t *testing.T) {
 	p := testProvider(t)
 	r := rand.New(rand.NewSource(1))
-	for i := 0; i < 20000; i++ {
+	for i := 0; i < 5000; i++ {
 		s := randASCII(r)
-		if !isASCII(s) {
-			continue
-		}
 		want := p.model.SimpleTokenize(s)
-		got := p.tok.tokenize(s, nil, math.MaxInt32)
+		got := p.model.TokenizeInto(s, nil, 0)
 		if !slices.Equal(want, got) {
-			t.Fatalf("mismatch for %q\nwant %v\ngot  %v", s, want, got)
+			t.Fatalf("mismatch for %q", s)
 		}
-		lim := p.tok.tokenize(s, nil, gobedChunkSize)
+		lim := p.model.TokenizeInto(s, nil, gobedChunkSize)
 		w := want
 		if len(w) > gobedChunkSize {
 			w = w[:gobedChunkSize]

@@ -25,9 +25,6 @@ const (
 
 type GobedProvider struct {
 	model   *gobedlib.SimpleInt8Model512
-	tok     *fastTokenizer
-	table   [][]int8
-	scales  []float32
 	workers int
 }
 
@@ -47,13 +44,8 @@ func New() (*GobedProvider, error) {
 	if err != nil {
 		return nil, fmt.Errorf("gobed load: %w", err)
 	}
-	p := &GobedProvider{model: m, table: m.EmbeddingTable(), scales: m.ScaleTable(), workers: runtime.GOMAXPROCS(0)}
-	if tok, err := loadFastTokenizer("model/tokenizer.json"); err != nil {
-		log.Printf("gobed: fast tokenizer disabled (%v)", err)
-	} else {
-		p.tok = tok
-	}
-	log.Printf("gobed: model loaded in %dms (fast tokenizer=%t)", time.Since(start).Milliseconds(), p.tok != nil)
+	p := &GobedProvider{model: m, workers: runtime.GOMAXPROCS(0)}
+	log.Printf("gobed: model loaded in %dms", time.Since(start).Milliseconds())
 	return p, nil
 }
 
@@ -129,42 +121,18 @@ func (p *GobedProvider) Embed(ctx context.Context, req *model.EmbeddingRequest) 
 	}, nil
 }
 
-func (p *GobedProvider) tokenize(sc *scratch, mode, text string) []int16 {
-	limit := math.MaxInt32
+// embedInto embeds text into out and returns the token count billed.
+func (p *GobedProvider) embedInto(sc *scratch, mode, text string, dims int, b64 bool, out *model.EmbeddingData) int {
+	limit := 0
 	if mode == "truncate" {
 		limit = gobedChunkSize
 	}
-	if p.tok != nil && isASCII(text) {
-		return p.tok.tokenize(text, sc.tokens[:0], limit)
-	}
-	t := p.model.SimpleTokenize(text)
-	if len(t) > limit {
-		t = t[:limit]
-	}
-	return t
-}
-
-// embedInto embeds text into out and returns the token count billed.
-func (p *GobedProvider) embedInto(sc *scratch, mode, text string, dims int, b64 bool, out *model.EmbeddingData) int {
-	toks := p.tokenize(sc, mode, text)
+	toks := p.model.TokenizeInto(text, sc.tokens[:0], limit)
 	if cap(toks) > cap(sc.tokens) && cap(toks) <= 1<<14 {
 		sc.tokens = toks[:0]
 	}
 	acc := sc.acc[:]
-	for i := range acc {
-		acc[i] = 0
-	}
-	valid := 0
-	for _, t := range toks {
-		if t < 0 || int(t) >= len(p.table) {
-			continue
-		}
-		simd.EmbedAccum(p.table[t], p.scales[t], acc)
-		valid++
-	}
-	if valid > 1 {
-		simd.ScaleF32(acc, 1/float32(valid))
-	}
+	p.model.EmbedTokensIntoSIMD(toks, acc)
 	v := acc[:dims]
 	if dims < dim {
 		var n float64

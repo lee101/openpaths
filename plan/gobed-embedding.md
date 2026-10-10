@@ -55,3 +55,14 @@ Static embeddings are table lookup + mean: no GPU needed. A CPU pod (or the same
 - Tier 2: sustained overflow for 15 min -> start a RunPod CPU pod via existing provisioning/ scripts; scale down after 30 idle min
 - Billing unchanged (billed at the gateway on usage tokens)
 - Status: not implemented
+
+## End-to-end hot path (2026-10)
+- billing.Engine: sub-unit models skip the DB balance read when a cached balance (3s TTL, >= 1000 units) exists; cache is decremented on charge
+- Charges only hit the DB when a user's carry crosses 1 unit (about 100k tokens at $1/B)
+- queries caches (internal/ttlcache): API key validation 10s (last_used_at write throttled to 1/min), "no BYOK keys" 10s, guardrail policy resolve 5s; invalidated on revoke/upsert/guardrail edits. Disabling a user takes up to 10s to take effect
+- middleware.requestModel stops decoding at the `model` key
+- /v1/embeddings has its own rate bucket with limits x50 (EMBED_RATE_LIMIT_MULT)
+- model.EmbeddingResponse.AppendJSON writes the response directly
+- metrics.Collector buffer 4096 -> 65536, batch 256 -> 1024
+- gobed lib (~/code/gobed, uncommitted): default alloc-free tokenizer, drops unknown tokens, TokenizeInto/EmbedTextInto; Embed 96us -> 10.7us. Provider still uses its local tokenizer until a gobed tag is cut
+- TODO: per-request usage_logs rows still 1/request (needs request_count column + coalescing), overflow tier, HTTP e2e benchmark

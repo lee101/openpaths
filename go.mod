@@ -12,7 +12,7 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/jackc/pgx/v5 v5.11.0
 	github.com/joho/godotenv v1.5.1
-	github.com/lee101/gobed v1.0.5
+	github.com/lee101/gobed v1.0.6
 	github.com/mr-tron/base58 v1.3.0
 	github.com/valyala/fasthttp v1.75.0
 	golang.org/x/crypto v0.57.0
