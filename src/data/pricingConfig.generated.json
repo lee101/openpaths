@@ -15,23 +15,6 @@
   ]
  },
  {
-  "id": "muse-spark-1.3",
-  "provider": "meta",
-  "upstream": "muse-spark-1.3",
-  "input": 1.25,
-  "output": 4.25,
-  "context": 1048576,
-  "maxOutput": 131072,
-  "vision": true,
-  "tools": true,
-  "aliases": [
-   "muse-spark",
-   "meta-muse-spark",
-   "meta-chat"
-  ],
-  "cacheRead": 0.15
- },
- {
   "id": "muse-spark-1.3-contributor",
   "provider": "meta",
   "upstream": "muse-spark-1.3-contributor",
@@ -42,6 +25,10 @@
   "vision": true,
   "tools": true,
   "aliases": [
+   "muse-spark-1.3",
+   "muse-spark",
+   "meta-muse-spark",
+   "meta-chat",
    "muse-spark-contributor",
    "meta-muse-spark-contributor",
    "meta-contributor"
@@ -2235,8 +2222,7 @@
    "decision-model",
    "alibaba/decision-model-preview",
    "qwen/decision-model-preview",
-   "jev-latest",
-   "jev"
+   "jev-latest"
   ]
  },
  {
@@ -2746,6 +2732,23 @@
   "vision": true,
   "tools": true,
   "aliases": []
+ },
+ {
+  "id": "typesafe/jev-router",
+  "provider": "openrouter",
+  "upstream": "typesafe/jev-router",
+  "input": 1.25,
+  "output": 4.25,
+  "context": 1000000,
+  "maxOutput": 131072,
+  "vision": true,
+  "tools": true,
+  "aliases": [
+   "jev-router",
+   "jev",
+   "or/jev-router",
+   "typesafe-jev-router"
+  ]
  },
  {
   "id": "minimax-m2.5",

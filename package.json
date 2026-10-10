@@ -20,6 +20,7 @@
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
+    "test:api-pages": "bun scripts/check-api-pages.ts",
     "test:e2e": "npx playwright test",
     "test:e2e:spaces": "npx playwright test e2e/spaces.spec.ts",
     "test:e2e:paid-models": "npx playwright test e2e/new-models-live.spec.ts --config=playwright.real.config.ts",

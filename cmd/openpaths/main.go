@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -126,6 +127,10 @@ func main() {
 	} else {
 		embedders = append(embedders, gp)
 		localEmbedder = gp
+		if u := strings.TrimSpace(os.Getenv("GOBED_OVERFLOW_URL")); u != "" {
+			gp.SetOverflow(gobedprov.NewRemote(u, os.Getenv("GOBED_OVERFLOW_KEY")))
+			log.Printf("gobed: overflow backend enabled")
+		}
 		log.Printf("Registered embedding provider: gobed")
 	}
 

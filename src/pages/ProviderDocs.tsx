@@ -444,7 +444,7 @@ const EXAMPLES: Record<string, ProviderExample> = {
     chatModel: 'auto',
     embeddingModel: 'openpaths-embed',
     notes: [
-      '`openpaths-embed` is billed at $1 per billion input tokens; use `dimensions` (1-512) and `encoding_format=base64` to shrink responses.',
+      '`openpaths-embed` is billed at $1 per 1 billion embeddings and optimized for cost-effective local embeddings.',
       '`reasoning_effort="auto"` can be used on any thinking-capable direct chat model to keep that model while auto-selecting none, low, medium, or high thinking.',
       'Use `long_text_mode=average_chunks` when you want full-text averaging on longer inputs.',
     ],

@@ -5,6 +5,8 @@ export type StaticMeta = {
   title: string;
   description: string;
   image?: string;
+  // Full static shell (rich body) to prerender instead of the generic staticBody.
+  html?: string;
   jsonLd?: unknown[];
   links?: Array<{ href: string; label: string }>;
   type?: 'website' | 'article';
@@ -82,7 +84,7 @@ export function withMeta(html: string, meta: StaticMeta) {
     const start = out.indexOf('<div id="root">');
     const end = out.indexOf('<script>if(location.pathname');
     if (start >= 0 && end > start) {
-      out = `${out.slice(0, start)}<div id="root">${staticBody(meta)}</div>\n    ${out.slice(end)}`;
+      out = `${out.slice(0, start)}<div id="root">${meta.html ?? staticBody(meta)}</div>\n    ${out.slice(end)}`;
     }
   }
 

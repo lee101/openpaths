@@ -69,3 +69,28 @@ func (d EmbeddingData) MarshalJSON() ([]byte, error) {
 	b = strconv.AppendInt(b, int64(d.Index), 10)
 	return append(b, '}'), nil
 }
+
+// RawEmbeddings is a contiguous float32 batch (N*Dim) produced by providers
+// that can skip per-vector allocation and float64 conversion. Call Release
+// once the response has been written.
+type RawEmbeddings struct {
+	N       int
+	Dim     int
+	Vecs    []float32
+	Tokens  int
+	release func()
+}
+
+func NewRawEmbeddings(n, dim int, vecs []float32, release func()) *RawEmbeddings {
+	return &RawEmbeddings{N: n, Dim: dim, Vecs: vecs, release: release}
+}
+
+func (r *RawEmbeddings) Vec(i int) []float32 { return r.Vecs[i*r.Dim : (i+1)*r.Dim] }
+
+func (r *RawEmbeddings) Release() {
+	if r.release != nil {
+		r.release()
+		r.release = nil
+	}
+	r.Vecs = nil
+}

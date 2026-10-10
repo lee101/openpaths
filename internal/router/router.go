@@ -389,6 +389,7 @@ func modelInfoOf(cfg *model.ModelConfig, at time.Time, created int64) model.Mode
 			InputCacheHitPer1MLong:  cfg.InputCacheHitPricePer1MLong,
 			OutputPer1MLong:         cfg.OutputPricePer1MLong,
 			PerRequest:              cfg.PricePerRequest,
+			Per1MEmbeddings:         cfg.PricePer1MEmbeddings,
 			PerImage:                cfg.PricePerImage,
 			PerImageByResolution:    cfg.PricePerImageByResolution,
 			PerMegapixel:            cfg.PricePerMegapixel,

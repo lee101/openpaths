@@ -226,6 +226,7 @@ type ModelPricing struct {
 	InputCacheHitPer1MLong  float64            `json:"input_cache_hit_per_1m_tokens_long,omitempty"`
 	OutputPer1MLong         float64            `json:"output_per_1m_tokens_long,omitempty"`
 	PerRequest              float64            `json:"per_request,omitempty"`
+	Per1MEmbeddings         float64            `json:"per_1m_embeddings,omitempty"`
 	PerImage                float64            `json:"per_image,omitempty"`
 	PerImageByResolution    map[string]float64 `json:"per_image_by_resolution,omitempty"`
 	PerMegapixel            float64            `json:"per_megapixel,omitempty"`
