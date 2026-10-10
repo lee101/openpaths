@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/openpaths/openpaths/internal/model"
 )
 
 // GuardQueries backs billshock guards: per-user/team billing alert thresholds
@@ -25,16 +26,22 @@ type UserGuards struct {
 
 func (q *GuardQueries) GetUserGuards(ctx context.Context, userID string) (UserGuards, error) {
 	var g UserGuards
+	var configured, hasDeposit bool
 	err := q.pool.QueryRow(ctx,
-		`SELECT COALESCE(billing_alert_enabled,false), COALESCE(billing_alert_threshold_cents,0), COALESCE(max_topup_cap_cents,0)
-		   FROM users WHERE id = $1`, userID,
-	).Scan(&g.AlertEnabled, &g.AlertThresholdCents, &g.MaxTopupCapCents)
+		`SELECT COALESCE(billing_alert_enabled,false), COALESCE(billing_alert_threshold_cents,0), COALESCE(max_topup_cap_cents,0),
+		        COALESCE(billing_alert_configured,false),
+		        EXISTS (SELECT 1 FROM credit_transactions WHERE user_id = users.id AND tx_type = $2)
+		   FROM users WHERE id = $1`, userID, model.TxTypeDeposit,
+	).Scan(&g.AlertEnabled, &g.AlertThresholdCents, &g.MaxTopupCapCents, &configured, &hasDeposit)
+	if err == nil && !configured && hasDeposit {
+		g.AlertEnabled, g.AlertThresholdCents = true, DefaultAlertThresholdCents
+	}
 	return g, err
 }
 
 func (q *GuardQueries) SetUserGuards(ctx context.Context, userID string, g UserGuards) error {
 	_, err := q.pool.Exec(ctx,
-		`UPDATE users SET billing_alert_enabled = $1, billing_alert_threshold_cents = $2, max_topup_cap_cents = $3, updated_at = now()
+		`UPDATE users SET billing_alert_enabled = $1, billing_alert_threshold_cents = $2, max_topup_cap_cents = $3, billing_alert_configured = true, updated_at = now()
 		   WHERE id = $4`,
 		g.AlertEnabled, g.AlertThresholdCents, g.MaxTopupCapCents, userID)
 	return err
@@ -87,12 +94,23 @@ func (q *GuardQueries) TopupWithinCap(ctx context.Context, userID string, amount
 	return true, cap
 }
 
-// AlertState returns the data needed to decide on a low-balance alert.
+// DefaultAlertThresholdCents is the low-balance threshold ($5) applied to paying
+// users who have never configured their own alert.
+const DefaultAlertThresholdCents int64 = 500
+
+// AlertState returns the data needed to decide on a low-balance alert. Users who
+// have never saved alert settings and have made a deposit get the default $5 alert.
 func (q *GuardQueries) AlertState(ctx context.Context, userID string) (enabled bool, thresholdCents int64, lastAt *time.Time, email string, err error) {
+	var configured, hasDeposit bool
 	err = q.pool.QueryRow(ctx,
-		`SELECT COALESCE(billing_alert_enabled,false), COALESCE(billing_alert_threshold_cents,0), billing_alert_last_at, COALESCE(email,'')
-		   FROM users WHERE id = $1`, userID,
-	).Scan(&enabled, &thresholdCents, &lastAt, &email)
+		`SELECT COALESCE(billing_alert_enabled,false), COALESCE(billing_alert_threshold_cents,0), billing_alert_last_at, COALESCE(email,''),
+		        COALESCE(billing_alert_configured,false),
+		        EXISTS (SELECT 1 FROM credit_transactions WHERE user_id = users.id AND tx_type = $2)
+		   FROM users WHERE id = $1`, userID, model.TxTypeDeposit,
+	).Scan(&enabled, &thresholdCents, &lastAt, &email, &configured, &hasDeposit)
+	if err == nil && !configured && hasDeposit {
+		enabled, thresholdCents = true, DefaultAlertThresholdCents
+	}
 	return
 }
 
