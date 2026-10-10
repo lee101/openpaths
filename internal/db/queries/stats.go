@@ -84,7 +84,7 @@ func (q *StatsQueries) GetModelStats(ctx context.Context, period string) ([]mode
 		`SELECT
 			model,
 			provider,
-			COUNT(*) as total_requests,
+			SUM(request_count) as total_requests,
 			COALESCE(SUM(tokens_in), 0) as total_tokens_in,
 			COALESCE(SUM(tokens_out), 0) as total_tokens_out,
 			COALESCE(AVG(latency_ms), 0) as avg_latency_ms,
@@ -93,7 +93,7 @@ func (q *StatsQueries) GetModelStats(ctx context.Context, period string) ([]mode
 			COALESCE(PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY latency_ms), 0) as p99_latency,
 			COALESCE(AVG(NULLIF(ttft_ms, 0)), 0) as avg_ttft_ms,
 			COALESCE(AVG(tps), 0) as avg_tps,
-			COALESCE(SUM(CASE WHEN error IS NOT NULL THEN 1 ELSE 0 END)::float / NULLIF(COUNT(*), 0), 0) as error_rate,
+			COALESCE(SUM(CASE WHEN error IS NOT NULL THEN 1 ELSE 0 END)::float / NULLIF(SUM(request_count), 0), 0) as error_rate,
 			COALESCE(SUM(cost_cents), 0) as total_cost_cents
 		 FROM usage_logs
 		 WHERE created_at >= $1
@@ -127,7 +127,7 @@ func (q *StatsQueries) GetProviderStats(ctx context.Context, period string) ([]m
 		`SELECT
 			'' as model,
 			provider,
-			COUNT(*) as total_requests,
+			SUM(request_count) as total_requests,
 			COALESCE(SUM(tokens_in), 0),
 			COALESCE(SUM(tokens_out), 0),
 			COALESCE(AVG(latency_ms), 0),
@@ -136,7 +136,7 @@ func (q *StatsQueries) GetProviderStats(ctx context.Context, period string) ([]m
 			COALESCE(PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY latency_ms), 0),
 			COALESCE(AVG(NULLIF(ttft_ms, 0)), 0),
 			COALESCE(AVG(tps), 0),
-			COALESCE(SUM(CASE WHEN error IS NOT NULL THEN 1 ELSE 0 END)::float / NULLIF(COUNT(*), 0), 0),
+			COALESCE(SUM(CASE WHEN error IS NOT NULL THEN 1 ELSE 0 END)::float / NULLIF(SUM(request_count), 0), 0),
 			COALESCE(SUM(cost_cents), 0)
 		 FROM usage_logs
 		 WHERE created_at >= $1
@@ -181,14 +181,14 @@ func (q *StatsQueries) GetUsageBreakdown(ctx context.Context, period string) ([]
 			END AS task,
 			provider,
 			model,
-			COUNT(*)::bigint AS total_requests,
+			SUM(request_count)::bigint AS total_requests,
 			COALESCE(SUM(tokens_in), 0)::bigint AS total_tokens_in,
 			COALESCE(SUM(tokens_out), 0)::bigint AS total_tokens_out,
 			COALESCE(SUM(cost_cents), 0)::bigint AS total_cost_cents,
 			COALESCE(AVG(latency_ms), 0) AS avg_latency_ms,
 			COALESCE(AVG(NULLIF(ttft_ms, 0)), 0) AS avg_ttft_ms,
 			COALESCE(AVG(tps), 0) AS avg_tps,
-			COALESCE(SUM(CASE WHEN error IS NOT NULL THEN 1 ELSE 0 END)::float / NULLIF(COUNT(*), 0), 0) AS error_rate
+			COALESCE(SUM(CASE WHEN error IS NOT NULL THEN 1 ELSE 0 END)::float / NULLIF(SUM(request_count), 0), 0) AS error_rate
 		 FROM usage_logs
 		 WHERE created_at >= $1
 		 GROUP BY task, provider, model
@@ -250,11 +250,11 @@ func (q *StatsQueries) GetTimeSeries(ctx context.Context, period, interval, metr
 	case "tps":
 		metricExpr = "AVG(tps)"
 	case "requests":
-		metricExpr = "COUNT(*)"
+		metricExpr = "SUM(request_count)"
 	case "error_rate":
-		metricExpr = "SUM(CASE WHEN error IS NOT NULL THEN 1 ELSE 0 END)::float / NULLIF(COUNT(*), 0)"
+		metricExpr = "SUM(CASE WHEN error IS NOT NULL THEN 1 ELSE 0 END)::float / NULLIF(SUM(request_count), 0)"
 	default:
-		metricExpr = "COUNT(*)"
+		metricExpr = "SUM(request_count)"
 	}
 
 	query := fmt.Sprintf(
@@ -301,7 +301,7 @@ func (q *StatsQueries) GetModelDailyUsage(ctx context.Context, period string, li
 
 	rows, err := q.pool.Query(ctx,
 		`WITH top_models AS (
-			SELECT model, provider, COUNT(*) AS total_requests
+			SELECT model, provider, SUM(request_count) AS total_requests
 			FROM usage_logs
 			WHERE created_at >= $1
 			GROUP BY model, provider
@@ -312,7 +312,7 @@ func (q *StatsQueries) GetModelDailyUsage(ctx context.Context, period string, li
 			date_trunc('day', ul.created_at)::date AS day,
 			ul.model,
 			ul.provider,
-			COUNT(*)::bigint AS requests
+			SUM(request_count)::bigint AS requests
 		FROM usage_logs ul
 		JOIN top_models tm ON tm.model = ul.model AND tm.provider = ul.provider
 		WHERE ul.created_at >= $1
@@ -343,7 +343,7 @@ func (q *StatsQueries) GetUserSpendByAPIKey(ctx context.Context, userID, period 
 	since := time.Now().Add(-parsePeriod(period))
 	rows, err := q.pool.Query(ctx,
 		`SELECT ul.api_key_id, ak.key_prefix, ak.name,
-			COUNT(*) as total_requests,
+			SUM(request_count) as total_requests,
 			COALESCE(SUM(ul.cost_cents), 0) as total_cost_cents
 		 FROM usage_logs ul
 		 JOIN api_keys ak ON ak.id = ul.api_key_id
@@ -372,7 +372,7 @@ func (q *StatsQueries) GetUserSpendByProvider(ctx context.Context, userID, perio
 	since := time.Now().Add(-parsePeriod(period))
 	rows, err := q.pool.Query(ctx,
 		`SELECT provider,
-			COUNT(*) as total_requests,
+			SUM(request_count) as total_requests,
 			COALESCE(SUM(cost_cents), 0) as total_cost_cents
 		 FROM usage_logs
 		 WHERE user_id = $1 AND created_at >= $2
@@ -403,7 +403,7 @@ func (q *StatsQueries) GetUserSpendByProduct(ctx context.Context, userID, period
 	since := time.Now().Add(-parsePeriod(period))
 	rows, err := q.pool.Query(ctx,
 		`SELECT model,
-			COUNT(*) AS total_requests,
+			SUM(request_count) AS total_requests,
 			COALESCE(SUM(tokens_in), 0) AS total_tokens_in,
 			COALESCE(SUM(tokens_out), 0) AS total_tokens_out,
 			COALESCE(SUM(cost_cents), 0) AS total_cost_cents
@@ -459,7 +459,7 @@ func (q *StatsQueries) GetUserSpendByApp(ctx context.Context, userID, period str
 	since := time.Now().Add(-parsePeriod(period))
 	rows, err := q.pool.Query(ctx,
 		`SELECT COALESCE(ul.app_id::text, ''), MAX(COALESCE(ul.app_url, '')), MAX(COALESCE(ul.app_title, '')),
-				ul.model, ul.provider, COUNT(*)::bigint,
+				ul.model, ul.provider, SUM(request_count)::bigint,
 				COALESCE(SUM(ul.tokens_in), 0)::bigint,
 				COALESCE(SUM(ul.tokens_out), 0)::bigint,
 				COALESCE(SUM(ul.cost_cents), 0)::bigint
@@ -470,7 +470,7 @@ func (q *StatsQueries) GetUserSpendByApp(ctx context.Context, userID, period str
 			CASE WHEN ul.app_id IS NULL THEN COALESCE(ul.app_url, '') ELSE '' END,
 			CASE WHEN ul.app_id IS NULL THEN COALESCE(ul.app_title, '') ELSE '' END,
 			ul.model, ul.provider
-		 ORDER BY SUM(ul.cost_cents) DESC, COUNT(*) DESC`,
+		 ORDER BY SUM(ul.cost_cents) DESC, SUM(request_count) DESC`,
 		userID, since,
 	)
 	if err != nil {
@@ -559,7 +559,7 @@ func (q *StatsQueries) GetUserDailyActivity(ctx context.Context, userID string, 
 	since := time.Now().AddDate(0, 0, -days)
 	rows, err := q.pool.Query(ctx,
 		`SELECT to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS day,
-			COUNT(*) AS total_requests,
+			SUM(request_count) AS total_requests,
 			COALESCE(SUM(cost_cents), 0) AS total_cost_cents
 		 FROM usage_logs
 		 WHERE user_id = $1 AND created_at >= $2
@@ -608,7 +608,7 @@ func (q *StatsQueries) GetUserTimeSeries(ctx context.Context, userID, period, in
 	case "cost":
 		metricExpr = "COALESCE(SUM(cost_cents), 0)"
 	case "requests":
-		metricExpr = "COUNT(*)"
+		metricExpr = "SUM(request_count)"
 	case "latency":
 		metricExpr = "COALESCE(AVG(latency_ms), 0)"
 	case "tokens":
@@ -650,13 +650,13 @@ func (q *StatsQueries) GetUserAPIKeyDrilldown(ctx context.Context, userID, apiKe
 	since := time.Now().Add(-parsePeriod(period))
 	rows, err := q.pool.Query(ctx,
 		`SELECT model, provider,
-			COUNT(*),
+			SUM(request_count),
 			COALESCE(SUM(tokens_in), 0),
 			COALESCE(SUM(tokens_out), 0),
 			COALESCE(AVG(latency_ms), 0),
 			0, 0, 0,
 			COALESCE(AVG(tps), 0),
-			COALESCE(SUM(CASE WHEN error IS NOT NULL THEN 1 ELSE 0 END)::float / NULLIF(COUNT(*), 0), 0),
+			COALESCE(SUM(CASE WHEN error IS NOT NULL THEN 1 ELSE 0 END)::float / NULLIF(SUM(request_count), 0), 0),
 			COALESCE(SUM(cost_cents), 0)
 		 FROM usage_logs
 		 WHERE user_id = $1 AND api_key_id = $2 AND created_at >= $3
@@ -687,13 +687,13 @@ func (q *StatsQueries) GetUserProviderDrilldown(ctx context.Context, userID, pro
 	since := time.Now().Add(-parsePeriod(period))
 	rows, err := q.pool.Query(ctx,
 		`SELECT model, provider,
-			COUNT(*),
+			SUM(request_count),
 			COALESCE(SUM(tokens_in), 0),
 			COALESCE(SUM(tokens_out), 0),
 			COALESCE(AVG(latency_ms), 0),
 			0, 0, 0,
 			COALESCE(AVG(tps), 0),
-			COALESCE(SUM(CASE WHEN error IS NOT NULL THEN 1 ELSE 0 END)::float / NULLIF(COUNT(*), 0), 0),
+			COALESCE(SUM(CASE WHEN error IS NOT NULL THEN 1 ELSE 0 END)::float / NULLIF(SUM(request_count), 0), 0),
 			COALESCE(SUM(cost_cents), 0)
 		 FROM usage_logs
 		 WHERE user_id = $1 AND provider = $2 AND created_at >= $3
@@ -727,18 +727,18 @@ func (q *StatsQueries) GetUserUsage(ctx context.Context, userID, period string) 
 		`SELECT
 			model,
 			provider,
-			COUNT(*),
+			SUM(request_count),
 			COALESCE(SUM(tokens_in), 0),
 			COALESCE(SUM(tokens_out), 0),
 			COALESCE(AVG(latency_ms), 0),
 			0, 0, 0,
 			COALESCE(AVG(tps), 0),
-			COALESCE(SUM(CASE WHEN error IS NOT NULL THEN 1 ELSE 0 END)::float / NULLIF(COUNT(*), 0), 0),
+			COALESCE(SUM(CASE WHEN error IS NOT NULL THEN 1 ELSE 0 END)::float / NULLIF(SUM(request_count), 0), 0),
 			COALESCE(SUM(cost_cents), 0)
 		 FROM usage_logs
 		 WHERE user_id = $1 AND created_at >= $2
 		 GROUP BY model, provider
-		 ORDER BY COUNT(*) DESC`,
+		 ORDER BY SUM(request_count) DESC`,
 		userID, since,
 	)
 	if err != nil {

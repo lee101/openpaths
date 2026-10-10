@@ -2,6 +2,7 @@ package queries
 
 import (
 	"context"
+	"github.com/openpaths/openpaths/internal/ttlcache"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -18,14 +19,22 @@ type UserProviderKey struct {
 }
 
 type ProviderKeyQueries struct {
-	pool *pgxpool.Pool
+	pool  *pgxpool.Pool
+	empty *ttlcache.Cache[string, struct{}]
 }
 
 func NewProviderKeyQueries(pool *pgxpool.Pool) *ProviderKeyQueries {
-	return &ProviderKeyQueries{pool: pool}
+	return &ProviderKeyQueries{pool: pool, empty: ttlcache.New[string, struct{}](10*time.Second, 100000)}
+}
+
+func (q *ProviderKeyQueries) forget(userID string) {
+	if q.empty != nil {
+		q.empty.Delete(userID)
+	}
 }
 
 func (q *ProviderKeyQueries) Upsert(ctx context.Context, userID, provider, apiKey, authJSON string) error {
+	defer q.forget(userID)
 	_, err := q.pool.Exec(ctx, `
 		INSERT INTO user_provider_keys (user_id, provider, api_key, auth_json)
 		VALUES ($1, $2, $3, $4)
@@ -36,6 +45,7 @@ func (q *ProviderKeyQueries) Upsert(ctx context.Context, userID, provider, apiKe
 }
 
 func (q *ProviderKeyQueries) UpsertAuthJSON(ctx context.Context, userID, provider, authJSON string) error {
+	defer q.forget(userID)
 	_, err := q.pool.Exec(ctx, `
 		INSERT INTO user_provider_keys (user_id, provider, auth_json)
 		VALUES ($1, $2, $3)
@@ -90,6 +100,19 @@ func (q *ProviderKeyQueries) UpdateAuthJSONLocked(
 }
 
 func (q *ProviderKeyQueries) ListByUser(ctx context.Context, userID string) ([]*UserProviderKey, error) {
+	if q.empty != nil {
+		if _, ok := q.empty.Get(userID); ok {
+			return nil, nil
+		}
+	}
+	keys, err := q.listByUser(ctx, userID)
+	if err == nil && len(keys) == 0 && q.empty != nil {
+		q.empty.Set(userID, struct{}{})
+	}
+	return keys, err
+}
+
+func (q *ProviderKeyQueries) listByUser(ctx context.Context, userID string) ([]*UserProviderKey, error) {
 	rows, err := q.pool.Query(ctx, `
 		SELECT id, user_id, provider, api_key, auth_json, created_at, updated_at
 		FROM user_provider_keys WHERE user_id = $1 ORDER BY provider

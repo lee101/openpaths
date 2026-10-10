@@ -22,4 +22,7 @@ type UsageLog struct {
 	AppTitle      string    `json:"app_title,omitempty"`
 	AppCategories []string  `json:"app_categories,omitempty"`
 	CreatedAt     time.Time `json:"created_at"`
+
+	RequestCount int  `json:"request_count,omitempty"`
+	Coalesce     bool `json:"-"`
 }

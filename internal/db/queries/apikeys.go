@@ -3,17 +3,31 @@ package queries
 import (
 	"context"
 	"fmt"
+	"github.com/openpaths/openpaths/internal/ttlcache"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/openpaths/openpaths/internal/model"
 )
 
 type APIKeyQueries struct {
-	pool *pgxpool.Pool
+	pool     *pgxpool.Pool
+	valid    *ttlcache.Cache[string, *model.APIKey]
+	lastUsed *ttlcache.Cache[string, struct{}]
 }
 
 func NewAPIKeyQueries(pool *pgxpool.Pool) *APIKeyQueries {
-	return &APIKeyQueries{pool: pool}
+	return &APIKeyQueries{
+		pool:     pool,
+		valid:    ttlcache.New[string, *model.APIKey](10*time.Second, 100000),
+		lastUsed: ttlcache.New[string, struct{}](time.Minute, 100000),
+	}
+}
+
+func (q *APIKeyQueries) forgetKeys() {
+	if q.valid != nil {
+		q.valid.Clear()
+	}
 }
 
 func (q *APIKeyQueries) Create(ctx context.Context, userID, keyHash, keyPrefix, name string) (*model.APIKey, error) {
@@ -34,6 +48,7 @@ func (q *APIKeyQueries) Create(ctx context.Context, userID, keyHash, keyPrefix, 
 // internal model-probe key, which fans out across all chat models and would
 // otherwise hit the default 60 rpm limit.
 func (q *APIKeyQueries) SetRateLimit(ctx context.Context, id string, rpm int) error {
+	defer q.forgetKeys()
 	_, err := q.pool.Exec(ctx,
 		"UPDATE api_keys SET rate_limit_rpm = $1 WHERE id = $2",
 		rpm, id,
@@ -45,6 +60,23 @@ func (q *APIKeyQueries) SetRateLimit(ctx context.Context, id string, rpm int) er
 }
 
 func (q *APIKeyQueries) ValidateKey(ctx context.Context, keyHash string) (*model.APIKey, error) {
+	if q.valid == nil {
+		return q.validateKey(ctx, keyHash)
+	}
+	if k, ok := q.valid.Get(keyHash); ok {
+		c := *k
+		return &c, nil
+	}
+	k, err := q.validateKey(ctx, keyHash)
+	if err != nil {
+		return nil, err
+	}
+	stored := *k
+	q.valid.Set(keyHash, &stored)
+	return k, nil
+}
+
+func (q *APIKeyQueries) validateKey(ctx context.Context, keyHash string) (*model.APIKey, error) {
 	var k model.APIKey
 	err := q.pool.QueryRow(ctx,
 		`SELECT ak.id, ak.user_id, ak.key_hash, ak.key_prefix, ak.name, ak.created_at,
@@ -60,6 +92,12 @@ func (q *APIKeyQueries) ValidateKey(ctx context.Context, keyHash string) (*model
 	}
 
 	// Update last_used_at in the background (fire and forget)
+	if q.lastUsed != nil {
+		if _, ok := q.lastUsed.Get(k.ID); ok {
+			return &k, nil
+		}
+		q.lastUsed.Set(k.ID, struct{}{})
+	}
 	go func() {
 		q.pool.Exec(context.Background(),
 			"UPDATE api_keys SET last_used_at = now() WHERE id = $1", k.ID)
@@ -105,6 +143,7 @@ func (q *APIKeyQueries) GetFirstByUser(ctx context.Context, userID string) (*mod
 }
 
 func (q *APIKeyQueries) Revoke(ctx context.Context, id, userID string) error {
+	defer q.forgetKeys()
 	tag, err := q.pool.Exec(ctx,
 		"UPDATE api_keys SET revoked = TRUE WHERE id = $1 AND user_id = $2 AND NOT revoked",
 		id, userID,
@@ -119,6 +158,7 @@ func (q *APIKeyQueries) Revoke(ctx context.Context, id, userID string) error {
 }
 
 func (q *APIKeyQueries) RevokeMany(ctx context.Context, ids []string, userID string) error {
+	defer q.forgetKeys()
 	tx, err := q.pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("begin revoke api keys: %w", err)

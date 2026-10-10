@@ -13,6 +13,7 @@ import (
 	"github.com/openpaths/openpaths/internal/db/queries"
 	"github.com/openpaths/openpaths/internal/email"
 	"github.com/openpaths/openpaths/internal/model"
+	"github.com/openpaths/openpaths/internal/ttlcache"
 )
 
 var ErrInsufficientBalance = errors.New("insufficient balance")
@@ -32,10 +33,14 @@ type Engine struct {
 
 	embedMu    sync.Mutex
 	embedCarry map[string]int64
+
+	balances *ttlcache.Cache[string, int64]
 }
 
+const subUnitBalanceFloor = 1000
+
 func NewEngine(pricing *PricingTable, credits *queries.CreditQueries) *Engine {
-	return &Engine{pricing: pricing, credits: credits}
+	return &Engine{pricing: pricing, credits: credits, balances: ttlcache.New[string, int64](3*time.Second, 100000)}
 }
 
 func (e *Engine) SetAutoTopup(svc *AutoTopupService) {
@@ -100,9 +105,18 @@ func (e *Engine) PreCheck(ctx context.Context, userID, modelID string, estimated
 	if e.credits == nil {
 		return nil
 	}
+	subUnit := e.pricing.balanceCacheable(modelID) && e.balances != nil
+	if subUnit {
+		if b, ok := e.balances.Get(userID); ok && b >= subUnitBalanceFloor {
+			return nil
+		}
+	}
 	balance, err := e.credits.GetBalance(ctx, userID)
 	if err != nil {
 		return fmt.Errorf("balance lookup: %w", err)
+	}
+	if subUnit && balance >= subUnitBalanceFloor {
+		e.balances.Set(userID, balance)
 	}
 
 	estimatedCost, err := e.pricing.EstimateMaxCost(modelID, estimatedMaxOutput)
@@ -184,6 +198,9 @@ func (e *Engine) DeductWithCachedInput(ctx context.Context, userID, modelID stri
 		refID = &usageLogID
 	}
 
+	if e.balances != nil {
+		e.balances.Update(userID, func(b int64) int64 { return b - cost })
+	}
 	err = e.deductTx(ctx, userID, cost,
 		model.TxTypeUsageDeduction,
 		formatUsageDescriptionWithCache(modelID, inputTokens, outputTokens, cachedInputTokens, reasoningEffort),

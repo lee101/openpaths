@@ -103,13 +103,13 @@ func (h *EmbeddingHandler) HandleEmbedding(ctx *fasthttp.RequestCtx) {
 					if !handled {
 						cost, _ = h.billing.Deduct(ctx, userID, cand.ModelCfg.ID, tokens, 0, "", "")
 					}
-					h.recorder.RecordSuccessWithApp(userID, apiKeyID, originalModel, cand.Provider.Name(),
-						tokens, 0, int(latency.Milliseconds()), 0, cost, false, app.ID, app.URL, app.Title, app.Categories)
+					h.recorder.RecordSuccessCoalesced(userID, apiKeyID, originalModel, cand.Provider.Name(),
+						tokens, int(latency.Milliseconds()), cost, app.ID, app.URL, app.Title, app.Categories)
 					if raw != nil {
 						writeRawEmbeddings(ctx, raw, originalModel, req.EncodingFormat)
 						raw.Release()
 					} else {
-						writeJSON(ctx, 200, resp)
+						writeEmbeddingJSON(ctx, resp)
 					}
 					return
 				}
@@ -129,12 +129,25 @@ func (h *EmbeddingHandler) HandleEmbedding(ctx *fasthttp.RequestCtx) {
 		}
 
 		resp.Model = originalModel
-		log.Printf("embedding: %s ok (%dms)", ep.Name(), latency.Milliseconds())
-		h.recorder.RecordSuccessWithApp(userID, apiKeyID, originalModel, ep.Name(),
-			resp.Usage.TotalTokens, 0, int(latency.Milliseconds()), 0, 0, false, app.ID, app.URL, app.Title, app.Categories)
-		writeJSON(ctx, 200, resp)
+		var cost int64
+		if originalModel != "" && h.billing != nil {
+			var handled bool
+			cost, handled, _ = h.billing.DeductEmbeddings(ctx, userID, originalModel, len(resp.Data))
+			if !handled {
+				cost, _ = h.billing.Deduct(ctx, userID, originalModel, resp.Usage.TotalTokens, 0, "", "")
+			}
+		}
+		h.recorder.RecordSuccessCoalesced(userID, apiKeyID, originalModel, ep.Name(),
+			resp.Usage.TotalTokens, int(latency.Milliseconds()), cost, app.ID, app.URL, app.Title, app.Categories)
+		writeEmbeddingJSON(ctx, resp)
 		return
 	}
 
 	writeError(ctx, 502, "provider_error", "all embedding providers failed")
+}
+
+func writeEmbeddingJSON(ctx *fasthttp.RequestCtx, resp *model.EmbeddingResponse) {
+	ctx.SetStatusCode(200)
+	ctx.SetContentType("application/json")
+	ctx.Response.SetBodyRaw(resp.AppendJSON(make([]byte, 0, 256+len(resp.Data)*4096)))
 }

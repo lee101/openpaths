@@ -37,7 +37,10 @@ type EmbeddingUsage struct {
 }
 
 func (d EmbeddingData) MarshalJSON() ([]byte, error) {
-	b := make([]byte, 0, 64+len(d.Embedding)*12+len(d.Base64))
+	return d.AppendJSON(make([]byte, 0, 64+len(d.Embedding)*12+len(d.Base64))), nil
+}
+
+func (d EmbeddingData) AppendJSON(b []byte) []byte {
 	b = append(b, `{"object":`...)
 	b = strconv.AppendQuote(b, d.Object)
 	b = append(b, `,"embedding":`...)
@@ -67,7 +70,28 @@ func (d EmbeddingData) MarshalJSON() ([]byte, error) {
 	}
 	b = append(b, `,"index":`...)
 	b = strconv.AppendInt(b, int64(d.Index), 10)
-	return append(b, '}'), nil
+	return append(b, '}')
+}
+
+// AppendJSON serializes the response without the reflection and re-compaction
+// that json.Marshal applies around custom marshalers.
+func (r *EmbeddingResponse) AppendJSON(b []byte) []byte {
+	b = append(b, `{"object":`...)
+	b = strconv.AppendQuote(b, r.Object)
+	b = append(b, `,"data":[`...)
+	for i := range r.Data {
+		if i > 0 {
+			b = append(b, ',')
+		}
+		b = r.Data[i].AppendJSON(b)
+	}
+	b = append(b, `],"model":`...)
+	b = strconv.AppendQuote(b, r.Model)
+	b = append(b, `,"usage":{"prompt_tokens":`...)
+	b = strconv.AppendInt(b, int64(r.Usage.PromptTokens), 10)
+	b = append(b, `,"total_tokens":`...)
+	b = strconv.AppendInt(b, int64(r.Usage.TotalTokens), 10)
+	return append(b, `}}`...)
 }
 
 // RawEmbeddings is a contiguous float32 batch (N*Dim) produced by providers

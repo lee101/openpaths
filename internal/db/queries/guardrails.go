@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/openpaths/openpaths/internal/ttlcache"
 	"strings"
 	"time"
 
@@ -52,11 +53,18 @@ type GuardrailEvent struct {
 }
 
 type GuardrailQueries struct {
-	pool *pgxpool.Pool
+	pool    *pgxpool.Pool
+	resolve *ttlcache.Cache[string, []*Guardrail]
 }
 
 func NewGuardrailQueries(pool *pgxpool.Pool) *GuardrailQueries {
-	return &GuardrailQueries{pool: pool}
+	return &GuardrailQueries{pool: pool, resolve: ttlcache.New[string, []*Guardrail](5*time.Second, 50000)}
+}
+
+func (q *GuardrailQueries) invalidate() {
+	if q.resolve != nil {
+		q.resolve.Clear()
+	}
 }
 
 const guardrailCols = `id::text, user_id::text, name, limit_cents, reset_interval, budget_actions,
@@ -172,6 +180,7 @@ func (q *GuardrailQueries) Get(ctx context.Context, id, userID string) (*Guardra
 }
 
 func (q *GuardrailQueries) Create(ctx context.Context, g *Guardrail) (*Guardrail, error) {
+	defer q.invalidate()
 	normalizeGuardrail(g)
 	row := q.pool.QueryRow(ctx, `
 		INSERT INTO guardrails (user_id, name, limit_cents, reset_interval, budget_actions,
@@ -187,6 +196,7 @@ func (q *GuardrailQueries) Create(ctx context.Context, g *Guardrail) (*Guardrail
 }
 
 func (q *GuardrailQueries) Update(ctx context.Context, g *Guardrail) (*Guardrail, error) {
+	defer q.invalidate()
 	normalizeGuardrail(g)
 	row := q.pool.QueryRow(ctx, `
 		UPDATE guardrails SET
@@ -205,6 +215,7 @@ func (q *GuardrailQueries) Update(ctx context.Context, g *Guardrail) (*Guardrail
 }
 
 func (q *GuardrailQueries) Delete(ctx context.Context, id, userID string) error {
+	defer q.invalidate()
 	tag, err := q.pool.Exec(ctx, `DELETE FROM guardrails WHERE id = $1 AND user_id = $2`, id, userID)
 	if err != nil {
 		return err
@@ -236,6 +247,7 @@ func (q *GuardrailQueries) ListAssignments(ctx context.Context, guardrailID stri
 
 // ReplaceAssignments sets key targets + optional user-default. Clears prior assignments for this policy.
 func (q *GuardrailQueries) ReplaceAssignments(ctx context.Context, guardrailID, userID string, keyIDs []string, userDefault bool) error {
+	defer q.invalidate()
 	tx, err := q.pool.Begin(ctx)
 	if err != nil {
 		return err
@@ -298,6 +310,21 @@ func (q *GuardrailQueries) ReplaceAssignments(ctx context.Context, guardrailID, 
 // when the key has no specific assignment. The account default is therefore
 // inherited by keys created in the future.
 func (q *GuardrailQueries) ResolveForRequest(ctx context.Context, userID, apiKeyID string) ([]*Guardrail, error) {
+	if q.resolve == nil {
+		return q.resolveForRequest(ctx, userID, apiKeyID)
+	}
+	key := userID + "\x00" + apiKeyID
+	if v, ok := q.resolve.Get(key); ok {
+		return v, nil
+	}
+	v, err := q.resolveForRequest(ctx, userID, apiKeyID)
+	if err == nil {
+		q.resolve.Set(key, v)
+	}
+	return v, err
+}
+
+func (q *GuardrailQueries) resolveForRequest(ctx context.Context, userID, apiKeyID string) ([]*Guardrail, error) {
 	var a GuardrailAssignment
 	g, err := scanGuardrailWith(q.pool.QueryRow(ctx,
 		`SELECT `+guardrailColsPrefixed+`, a.guardrail_id::text, a.target_type, a.target_id, a.created_at

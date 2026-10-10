@@ -476,3 +476,10 @@ func (pt *PricingTable) EmbeddingSubUnits(modelID string, count int) (int64, boo
 	per := int64(math.Round(cfg.PricePer1MEmbeddings * 1e7))
 	return per * int64(count), true
 }
+
+// balanceCacheable reports whether a model's per-request cost is so small that
+// the pre-check may trust a briefly cached balance.
+func (pt *PricingTable) balanceCacheable(modelID string) bool {
+	cfg, ok := pt.models[modelID]
+	return ok && (cfg.SubUnitBilling || cfg.PricePer1MEmbeddings > 0)
+}

@@ -102,3 +102,21 @@ func (r *Recorder) RecordErrorWithApp(
 		CreatedAt:     time.Now(),
 	})
 }
+
+// RecordSuccessCoalesced records a high-volume success; rows sharing the same
+// user/key/model/provider/app within a flush window are merged into one row
+// with request_count set.
+func (r *Recorder) RecordSuccessCoalesced(
+	userID, apiKeyID, modelName, providerName string,
+	tokensIn, latencyMs int,
+	costCents int64,
+	appID, appURL, appTitle string,
+	appCategories []string,
+) {
+	r.collector.Record(model.UsageLog{
+		UserID: userID, APIKeyID: apiKeyID, Model: modelName, Provider: providerName,
+		TokensIn: tokensIn, LatencyMs: latencyMs, CostCents: costCents, StatusCode: 200,
+		AppID: appID, AppURL: appURL, AppTitle: appTitle, AppCategories: appCategories,
+		CreatedAt: time.Now(), RequestCount: 1, Coalesce: true,
+	})
+}
