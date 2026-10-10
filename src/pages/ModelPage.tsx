@@ -4,7 +4,6 @@ import { ArrowLeft, ArrowRight, BookOpen, Check, Copy, Gift, MessageSquare } fro
 import { ImageSpacePanel } from '../components/ImageSpacePanel';
 import { VideoSpacePanel } from '../components/VideoSpacePanel';
 import { RelightSpacePanel } from '../components/RelightSpacePanel';
-import { RelightSpacePanel } from '../components/RelightSpacePanel';
 import { Seo } from '../components/Seo';
 import { ServerModelPage, readServerModel } from './ServerModelPage';
 import { faqLd, softwareApplicationLd } from '../lib/seoSchema';

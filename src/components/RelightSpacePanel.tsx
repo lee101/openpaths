@@ -16,7 +16,7 @@ const RATES: Record<string, number> = { '480P': 0.055, '768P': 0.088, '1080P': 0
 const DEMO_SOURCE = '/static/relight/source.mp4';
 const DEMO_OUTPUT = '/static/relight/relit.mp4';
 
-function SphereThumb({ preset, active, onPick }: { preset: SpherePreset; active: boolean; onPick: () => void }) {
+function SphereThumb({ preset, active, onPick }: { preset: SpherePreset; active: boolean; onPick: () => void; key?: React.Key }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     if (ref.current) renderSphere(ref.current, preset, 96);
