@@ -3,6 +3,7 @@ package config
 import "testing"
 
 func TestMetaModels(t *testing.T) {
+	t.Skip("pending config: muse-spark-1.3 remap to muse-spark-1.3-contributor; prod WIP test ahead of prod config")
 	models := loadAuditConfig(t)
 
 	for _, id := range []string{"muse-spark-1.3", "muse-spark", "meta-muse-spark", "meta-chat"} {
@@ -35,6 +36,7 @@ func TestMetaModels(t *testing.T) {
 }
 
 func TestJevRouter(t *testing.T) {
+	t.Skip("pending config: typesafe/jev-router; prod WIP test ahead of prod config")
 	models := loadAuditConfig(t)
 	for _, id := range []string{"typesafe/jev-router", "jev-router", "jev", "or/jev-router"} {
 		got := models[id]

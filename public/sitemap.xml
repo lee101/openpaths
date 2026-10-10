@@ -236,51 +236,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://openpaths.io/vs/openpaths-free-vs-or-nemotron-ultra-free</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://openpaths.io/vs/openpaths-free-vs-qwen-qwen3.8-max-0902</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://openpaths.io/vs/openpaths-free-vs-claude-fable-5-1</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://openpaths.io/vs/openpaths-free-vs-muse-spark-1.3</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://openpaths.io/vs/openpaths-free-vs-typesafe-jev-router</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://openpaths.io/vs/or-nemotron-ultra-free-vs-qwen-qwen3.8-max-0902</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://openpaths.io/vs/or-nemotron-ultra-free-vs-claude-fable-5-1</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://openpaths.io/vs/or-nemotron-ultra-free-vs-muse-spark-1.3</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://openpaths.io/vs/or-nemotron-ultra-free-vs-typesafe-jev-router</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://openpaths.io/vs/qwen-qwen3.8-max-0902-vs-claude-fable-5-1</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
@@ -291,7 +246,17 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://openpaths.io/vs/qwen-qwen3.8-max-0902-vs-typesafe-jev-router</loc>
+    <loc>https://openpaths.io/vs/qwen-qwen3.8-max-0902-vs-runanywhere-qwen3.8-27b</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/vs/qwen-qwen3.8-max-0902-vs-gpt-5-chat-latest</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/vs/qwen-qwen3.8-max-0902-vs-deepseek-v4-flash</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -301,32 +266,47 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://openpaths.io/vs/claude-fable-5-1-vs-typesafe-jev-router</loc>
+    <loc>https://openpaths.io/vs/claude-fable-5-1-vs-runanywhere-qwen3.8-27b</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://openpaths.io/vs/muse-spark-1.3-vs-typesafe-jev-router</loc>
+    <loc>https://openpaths.io/vs/claude-fable-5-1-vs-gpt-5-chat-latest</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://openpaths.io/vs/or-qwen3.8-27b-free-vs-qwen-qwen3.8-max-0902</loc>
+    <loc>https://openpaths.io/vs/claude-fable-5-1-vs-deepseek-v4-flash</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://openpaths.io/vs/or-qwen3.8-27b-free-vs-claude-fable-5-1</loc>
+    <loc>https://openpaths.io/vs/muse-spark-1.3-vs-runanywhere-qwen3.8-27b</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://openpaths.io/vs/or-qwen3.8-27b-free-vs-muse-spark-1.3</loc>
+    <loc>https://openpaths.io/vs/muse-spark-1.3-vs-gpt-5-chat-latest</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://openpaths.io/vs/or-qwen3.8-27b-free-vs-typesafe-jev-router</loc>
+    <loc>https://openpaths.io/vs/muse-spark-1.3-vs-deepseek-v4-flash</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/vs/runanywhere-qwen3.8-27b-vs-gpt-5-chat-latest</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/vs/runanywhere-qwen3.8-27b-vs-deepseek-v4-flash</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/vs/gpt-5-chat-latest-vs-deepseek-v4-flash</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1066,11 +1046,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://openpaths.io/llm-pricing/typesafe--jev-router</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://openpaths.io/llm-pricing/claude-haiku-5-5</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
@@ -1082,6 +1057,11 @@
   </url>
   <url>
     <loc>https://openpaths.io/llm-pricing/runanywhere--glm-5.3-flash</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/llm-pricing/muse-spark-1.3</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1417,11 +1397,6 @@
   </url>
   <url>
     <loc>https://openpaths.io/llm-pricing/provider/cerebras</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://openpaths.io/llm-pricing/provider/typesafe</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -2311,22 +2286,12 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://openpaths.io/models/openpaths%2Ffree</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://openpaths.io/models/muse-spark-1.3</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://openpaths.io/models/muse-spark-1.3-contributor</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://openpaths.io/models/typesafe%2Fjev-router</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -3119,46 +3084,6 @@
     <loc>https://openpaths.io/models/or%2Fspace-bunny-alpha</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://openpaths.io/models/or%2Fnemotron-ultra-free</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://openpaths.io/models/or%2Fnex-n2.5-pro-free</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://openpaths.io/models/or%2Fnemotron-super-free</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://openpaths.io/models/or%2Fqwen3.8-27b-free</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://openpaths.io/models/or%2Fnorth-mini-code-free</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://openpaths.io/models/or%2Fnemotron-lightning-free</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://openpaths.io/models/or%2Fgemma-4-31b-free</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://openpaths.io/models/or%2Fopenrouter-free</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/models/or%2Fhunter-alpha</loc>

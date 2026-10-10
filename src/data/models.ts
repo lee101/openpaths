@@ -448,14 +448,13 @@ const catalogModels: Model[] = [
     id: 'openpaths-embed',
     name: 'OpenPaths Embed',
     provider: 'OpenPaths',
-    description: 'An extremely efficient local embedding model priced at $1 per billion embeddings. Supports matryoshka `dimensions` and `encoding_format=base64`. Open source at lee101/gobed, so it is portable across environments.',
+    description: 'An extremely efficient local embedding model priced at $1 per billion tokens. Supports matryoshka `dimensions` and `encoding_format=base64`. Open source at lee101/gobed, so it is portable across environments.',
     contextLength: '256',
-    priceInput: 1,
+    priceInput: 0.001,
     priceOutput: 0,
     tags: ['embedding'],
     released: '2026-04-23',
-    popularity: -2,
-    pricingType: 'embedding'
+    popularity: -2
   },
   {
     id: 'text-embedding',
@@ -588,19 +587,6 @@ const catalogModels: Model[] = [
     pricingType: 'request'
   },
 
-  {
-    id: 'openpaths/free',
-    name: 'OpenPaths Free',
-    provider: 'OpenPaths',
-    description: 'Best-effort free tier. One id for whatever free model is live: Space Bunny Alpha first, then the free OpenRouter lanes (Nemotron, Nex, Qwen, Cohere, Gemma) and OpenRouter\'s own free router. A lane that fails is circuit-broken out for the following requests instead of being retried.',
-    contextLength: '1M',
-    priceInput: 0,
-    priceOutput: 0,
-    tags: ['free', 'general', 'programming', 'reasoning'],
-    aliases: ['free', 'openpaths-free', 'free-latest'],
-    released: '2026-09-24',
-    popularity: -3
-  },
 
   // --- Meta ---
   {
@@ -628,20 +614,6 @@ const catalogModels: Model[] = [
     aliases: ['muse-spark-contributor', 'meta-muse-spark-contributor', 'meta-contributor'],
     released: '2026-09-06',
     popularity: 3
-  },
-  // --- TypeSafe ---
-  {
-    id: 'typesafe/jev-router',
-    name: 'Jev Router',
-    provider: 'TypeSafe',
-    description: 'Picks the model and reasoning effort for every request, balancing quality, speed and cost. Runs on Jev, TypeSafe’s first System One model, which scores each prompt on difficulty and precision and re-scores when the task changes.',
-    contextLength: '1M',
-    priceInput: 1.25,
-    priceOutput: 4.25,
-    tags: ['general', 'programming', 'reasoning', 'vision', 'agentic'],
-    aliases: ['jev-router', 'jev', 'typesafe-jev-router'],
-    released: '2026-10-05',
-    popularity: 2
   },
   {
     id: 'muse-image-1.0',
@@ -2042,7 +2014,7 @@ const catalogModels: Model[] = [
     priceInput: 0.042,
     priceOutput: 0,
     tags: ['fast', 'agentic', 'general'],
-    aliases: ['decision-model', 'alibaba/decision-model-preview', 'jev-latest'],
+    aliases: ['decision-model', 'alibaba/decision-model-preview', 'jev-latest', 'jev'],
     released: '2026-09-24',
     popularity: 20
   },
@@ -2664,102 +2636,6 @@ const catalogModels: Model[] = [
     aliases: ['or/space-bunny', 'space-bunny', 'space-bunny-alpha', 'openrouter/space-bunny-alpha', 'openpaths/space-bunny-alpha'],
     released: '2026-09-24',
     popularity: 45
-  },
-  {
-    id: 'or/nemotron-ultra-free',
-    name: 'Nemotron Ultra Free',
-    provider: 'OpenRouter',
-    description: 'NVIDIA Nemotron 3 Ultra 550B-A55B on the free OpenRouter lane. $0 per token; best-effort capacity.',
-    contextLength: '256K',
-    priceInput: 0,
-    priceOutput: 0,
-    tags: ['reasoning', 'programming', 'open-source', 'free'],
-    released: '2026-09-24',
-    popularity: -3
-  },
-  {
-    id: 'or/nex-n2.5-pro-free',
-    name: 'Nex N2.5 Pro Free',
-    provider: 'OpenRouter',
-    description: 'Nex AGI N2.5 Pro on the free OpenRouter lane. $0 per token; best-effort capacity.',
-    contextLength: '256K',
-    priceInput: 0,
-    priceOutput: 0,
-    tags: ['programming', 'agentic', 'free'],
-    released: '2026-09-24',
-    popularity: -3
-  },
-  {
-    id: 'or/nemotron-super-free',
-    name: 'Nemotron Super Free',
-    provider: 'OpenRouter',
-    description: 'NVIDIA Nemotron 3 Super 120B-A12B on the free OpenRouter lane. $0 per token; best-effort capacity.',
-    contextLength: '256K',
-    priceInput: 0,
-    priceOutput: 0,
-    tags: ['reasoning', 'general', 'open-source', 'free'],
-    released: '2026-09-24',
-    popularity: -3
-  },
-  {
-    id: 'or/qwen3.8-27b-free',
-    name: 'Qwen 27B Free',
-    provider: 'OpenRouter',
-    description: 'Qwen3.8 27B with image input on the free OpenRouter lane. $0 per token; best-effort capacity.',
-    contextLength: '256K',
-    priceInput: 0,
-    priceOutput: 0,
-    tags: ['general', 'vision', 'open-source', 'free'],
-    released: '2026-09-24',
-    popularity: -3
-  },
-  {
-    id: 'or/north-mini-code-free',
-    name: 'North Mini Code Free',
-    provider: 'OpenRouter',
-    description: 'Cohere North Mini Code on the free OpenRouter lane. $0 per token; best-effort capacity.',
-    contextLength: '256K',
-    priceInput: 0,
-    priceOutput: 0,
-    tags: ['programming', 'free'],
-    released: '2026-09-24',
-    popularity: -3
-  },
-  {
-    id: 'or/nemotron-lightning-free',
-    name: 'Nemotron Lightning Free',
-    provider: 'OpenRouter',
-    description: 'NVIDIA Nemotron 3.5 Lightning on the free OpenRouter lane. $0 per token; best-effort capacity.',
-    contextLength: '256K',
-    priceInput: 0,
-    priceOutput: 0,
-    tags: ['fast', 'general', 'open-source', 'free'],
-    released: '2026-09-24',
-    popularity: -3
-  },
-  {
-    id: 'or/gemma-4-31b-free',
-    name: 'Gemma 31B Free',
-    provider: 'OpenRouter',
-    description: 'Google Gemma 4 31B instruct with image input on the free OpenRouter lane. $0 per token; best-effort capacity.',
-    contextLength: '256K',
-    priceInput: 0,
-    priceOutput: 0,
-    tags: ['general', 'vision', 'open-source', 'free'],
-    released: '2026-09-24',
-    popularity: -3
-  },
-  {
-    id: 'or/openrouter-free',
-    name: 'OR Free Router',
-    provider: 'OpenRouter',
-    description: 'The OpenRouter free router, the last hop of the openpaths/free ladder. $0 per token; best-effort capacity.',
-    contextLength: '200K',
-    priceInput: 0,
-    priceOutput: 0,
-    tags: ['general', 'free'],
-    released: '2026-09-24',
-    popularity: -3
   },
   {
     id: 'or/hunter-alpha',
