@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, BookOpen, Check, Copy, Gift, MessageSquare } fro
 import { ImageSpacePanel } from '../components/ImageSpacePanel';
 import { VideoSpacePanel } from '../components/VideoSpacePanel';
 import { RelightSpacePanel } from '../components/RelightSpacePanel';
+import { Flux3MaxSpacePanel } from '../components/Flux3MaxSpacePanel';
 import { Seo } from '../components/Seo';
 import { ServerModelPage, readServerModel } from './ServerModelPage';
 import { faqLd, softwareApplicationLd } from '../lib/seoSchema';
@@ -100,6 +101,8 @@ export function ModelPage() {
           <section id="model-workspace" className="scroll-mt-16 overflow-hidden rounded-xl border border-white/20 bg-white/[0.05]">
             {model.id === 'minimax-h3-max-relight'
               ? <RelightSpacePanel modelId={model.id} modelName={model.name} />
+              : model.id === 'flux-3-max-video'
+              ? <Flux3MaxSpacePanel modelName={model.name} priceLabel={formatPrice(model, model.priceInput, 'input')} />
               : <VideoSpacePanel modelId={model.id} modelName={model.name} demo={videoDemo} initialPrompt={initialPrompt} priceLabel={formatPrice(model, model.priceInput, 'input')} />}
           </section>
         )}

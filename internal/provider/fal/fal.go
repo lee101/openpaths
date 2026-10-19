@@ -982,6 +982,12 @@ func (p *FalProvider) GenerateVideo(ctx context.Context, req *model.VideoGenerat
 		if err != nil {
 			return nil, &provider.ProviderError{Provider: "fal", StatusCode: 400, Message: err.Error()}
 		}
+	} else if strings.HasPrefix(modelID, "blackforestlabs/flux-3-max/") {
+		var err error
+		modelID, falReq, err = flux3MaxVideoInput(req)
+		if err != nil {
+			return nil, &provider.ProviderError{Provider: "fal", StatusCode: 400, Message: err.Error()}
+		}
 	} else if strings.HasPrefix(modelID, "minimax/h3-max/") {
 		modelID = applyMiniMaxH3MaxVideoRequest(req, falReq)
 	} else if strings.HasPrefix(modelID, "minimax/h3/") {
@@ -1367,6 +1373,9 @@ func (p *FalProvider) falQueueRequestBases(modelID, requestID string) []string {
 	}
 	if strings.Contains(modelID, "alibaba/happy-horse/") {
 		bases = append(bases, queueBase+"/alibaba/happy-horse/requests/"+requestID)
+	}
+	if strings.HasPrefix(modelID, "blackforestlabs/flux-3-max/") {
+		bases = append(bases, queueBase+"/blackforestlabs/flux-3-max/requests/"+requestID)
 	}
 	if strings.Contains(modelID, "fal-ai/ltx-2.3/") {
 		bases = append(bases, queueBase+"/fal-ai/ltx-2.3/requests/"+requestID)

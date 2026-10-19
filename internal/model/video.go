@@ -41,6 +41,8 @@ type VideoGenerationRequest struct {
 	Operation             string             `json:"operation,omitempty"`
 	ImageURL              string             `json:"image_url,omitempty"`
 	EndImageURL           string             `json:"end_image_url,omitempty"`
+	Keyframes             []VideoKeyframe    `json:"keyframes,omitempty"`
+	ReasoningLevel        string             `json:"reasoning_level,omitempty"`
 	ReferenceImageURL     string             `json:"reference_image_url,omitempty"`
 	ReferenceImageURLs    []string           `json:"reference_image_urls,omitempty"`
 	ImageURLs             []string           `json:"image_urls,omitempty"`
@@ -81,6 +83,12 @@ type VideoGenerationRequest struct {
 	ControlScale          *float64           `json:"control_scale,omitempty"`
 	MaskVideoURL          string             `json:"mask_video_url,omitempty"`
 	BackgroundColor       string             `json:"background_color,omitempty"`
+}
+
+// VideoKeyframe pins an image to a frame position of the generated video.
+type VideoKeyframe struct {
+	ImageURL   string `json:"image_url"`
+	FrameIndex int    `json:"frame_index"`
 }
 
 // VideoContentItem is the multimodal content shape accepted by video models
@@ -137,7 +145,7 @@ func (r VideoGenerationRequest) HasVideoInput() bool {
 }
 
 func (r VideoGenerationRequest) InputImageCount() int {
-	count := len(r.ImageURLs) + len(r.ReferenceImageURLs)
+	count := len(r.ImageURLs) + len(r.ReferenceImageURLs) + len(r.Keyframes)
 	if r.ImageURL != "" {
 		count++
 	}

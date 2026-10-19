@@ -896,6 +896,22 @@ models:
     supports_tools: false
     supports_vision: true
 
+  # --- FLUX 3 Max via Fal (text / image / keyframes to video) ---
+  # One stable model ID. The adapter selects the text-to-video, image-to-video
+  # or keyframes-to-video endpoint from the input shape. Public list rates:
+  # $0.17/s at 720p and $0.29/s at 1080p.
+  - id: "flux-3-max-video"
+    provider: fal
+    provider_model_id: "blackforestlabs/flux-3-max/text-to-video"
+    price_per_second: 0.17
+    price_per_second_by_resolution:
+      720p: 0.17
+      1080p: 0.29
+    aliases: ["flux-3-max", "blackforestlabs/flux-3-max", "blackforestlabs/flux-3-max/text-to-video", "blackforestlabs/flux-3-max/image-to-video", "blackforestlabs/flux-3-max/keyframes-to-video"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
   # --- Alibaba Happy Horse via Fal (Video Generation) ---
   - id: "alibaba/happy-horse/image-to-video"
     provider: fal

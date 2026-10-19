@@ -2826,6 +2826,11 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/models/flux-3-max-video</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/models/hailuo-2.3</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>

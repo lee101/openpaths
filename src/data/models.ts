@@ -2828,6 +2828,20 @@ const catalogModels: Model[] = [
     pricingType: 'second'
   },
   {
+    id: 'flux-3-max-video',
+    name: 'FLUX 3 Max Video',
+    provider: 'Fal',
+    description: 'Black Forest Labs FLUX 3 Max for text-to-video, image-to-video with an optional end frame, and keyframes-to-video with up to ten timed images. 5–20 second clips at 720p or 1080p with native audio, a reasoning level that expands your prompt, aspect ratio control and seeds. $0.17 per second at 720p or $0.29 at 1080p.',
+    contextLength: 'N/A',
+    priceInput: 0.17,
+    priceOutput: 0,
+    tags: ['video generation', 'text-to-video', 'image-to-video', 'audio', 'vision'],
+    aliases: ['flux-3-max', 'blackforestlabs/flux-3-max', 'blackforestlabs/flux-3-max/text-to-video', 'blackforestlabs/flux-3-max/image-to-video', 'blackforestlabs/flux-3-max/keyframes-to-video'],
+    released: '2026-10-20',
+    popularity: 78,
+    pricingType: 'second'
+  },
+  {
     id: 'hailuo-2.3',
     name: 'Hailuo 2.3',
     provider: 'MiniMax',

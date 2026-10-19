@@ -66,6 +66,14 @@ const VIDEO_MODELS: VideoPrice[] = [
     notes: 'Dedicated image-to-video endpoint with optional first/last frames; $0.05/s at 480p and $0.08/s at 768p.',
   },
   {
+    id: 'flux-3-max-video',
+    name: 'FLUX 3 Max Video',
+    provider: 'Fal',
+    unitPrice: 0.17,
+    unitLabel: '/ second',
+    notes: 'Text, image (optional end frame) and keyframes to video with native audio, 5-20 seconds; $0.17/s at 720p and $0.29/s at 1080p.',
+  },
+  {
     id: 'auto-video',
     name: 'Auto Video',
     provider: 'OpenPaths',
