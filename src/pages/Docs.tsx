@@ -16,7 +16,7 @@ const ENDPOINTS = [
   { method: 'POST', path: '/v1/3d/text-generations', description: 'Generate a GLB straight from a text prompt (auto image then Pixal3D).' },
   { method: 'POST', path: '/v1/3d/rigging', description: 'Auto-rig a humanoid GLB into a rigged character (GLB + FBX) with Meshy.' },
   { method: 'POST', path: '/v1/3d/generations', description: 'Also retextures a mesh: pass model trellis-2-retexture with mesh_url + image_url.' },
-  { method: 'POST', path: '/v1/videos/generations', description: 'Generate videos (Wan 3.0, MiniMax H3, Sora 2, Grok Imagine, Hailuo, LTX).' },
+  { method: 'POST', path: '/v1/videos/generations', description: 'Generate videos (Wan 3.0, FLUX 3 Max, MiniMax H3, Sora 2, Grok Imagine, Hailuo, LTX).' },
   { method: 'POST', path: '/v1/videos/edits', description: 'Edit an existing video with Grok Imagine Video.' },
   { method: 'POST', path: '/v1/videos/extensions', description: 'Extend an existing video from its last frame with Grok Imagine Video.' },
   { method: 'POST', path: '/v1/audio/transcriptions', description: 'Transcribe speech to text (Whisper, GPT-4o Transcribe).' },

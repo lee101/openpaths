@@ -133,6 +133,20 @@ const FAMILIES: Array<{ test: RegExp; spec: Partial<VideoParamSpec> }> = [
     },
   },
   {
+    // FLUX 3 Max (Fal): text, image with optional end frame, or timed
+    // keyframes (handled by Flux3MaxSpacePanel); 5-20s, 720p/1080p, native audio.
+    test: /^flux-3-max/i,
+    spec: {
+      resolutions: ['720p', '1080p'],
+      durations: Array.from({ length: 16 }, (_, index) => String(index + 5)),
+      aspectRatios: ['auto', '21:9', '2:1', '16:9', '4:3', '1:1', '3:4', '9:16'],
+      inputModes: ['text-to-video', 'image-to-video'],
+      negativePrompt: false,
+      seed: true,
+      outputFormats: undefined,
+    },
+  },
+  {
     test: /^minimax-h3$/i,
     spec: {
       resolutions: ['768P', '2K'],
