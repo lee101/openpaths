@@ -14,7 +14,7 @@ export interface Model {
   aliases?: string[];
   released: string;
   popularity: number;
-  pricingType?: 'token' | 'request' | 'chars' | 'hour' | 'second' | 'megapixel';
+  pricingType?: 'token' | 'request' | 'chars' | 'hour' | 'second' | 'megapixel' | 'embedding';
   ogImage?: string;
   promotion?: {
     endsAt: string;
@@ -586,6 +586,7 @@ const catalogModels: Model[] = [
     popularity: -4,
     pricingType: 'request'
   },
+
 
   // --- Meta ---
   {
@@ -2560,6 +2561,18 @@ const catalogModels: Model[] = [
     popularity: 26
   },
   {
+    id: 'nvidia/deepseek-v4-flash',
+    name: 'DeepSeek V4 Flash (NVIDIA, free)',
+    provider: 'NVIDIA',
+    description: 'Free NVIDIA-hosted DeepSeek V4 Flash with a 1M-token context window and tool calling; $0 per token.',
+    contextLength: '1M',
+    priceInput: 0,
+    priceOutput: 0,
+    tags: ['general', 'programming', 'reasoning', 'open-source', 'free'],
+    released: '2026-04-24',
+    popularity: 26
+  },
+  {
     id: 'nvidia/deepseek-v4-pro',
     name: 'DeepSeek V4 Pro (NVIDIA)',
     provider: 'NVIDIA',
@@ -2857,6 +2870,19 @@ const catalogModels: Model[] = [
     tags: ['free', 'vision'],
     released: '2025-08-01',
     popularity: 52
+  },
+  {
+    id: 'or/space-bunny-alpha',
+    name: 'Space Bunny Alpha',
+    provider: 'OpenRouter',
+    description: 'Anonymous free preview frontier model with blazing-fast inference, strong coding, and native multimodal input. 1M context, mandatory reasoning, tool use.',
+    contextLength: '1M',
+    priceInput: 0,
+    priceOutput: 0,
+    tags: ['free', 'reasoning', 'general', 'vision'],
+    aliases: ['or/space-bunny', 'space-bunny', 'space-bunny-alpha', 'openrouter/space-bunny-alpha', 'openpaths/space-bunny-alpha'],
+    released: '2026-09-24',
+    popularity: 45
   },
   {
     id: 'or/hunter-alpha',

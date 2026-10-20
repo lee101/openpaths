@@ -897,6 +897,7 @@ func compactPricing(cfg *model.ModelConfig) map[string]any {
 	add("output_per_1m_tokens", outputRate)
 	add("per_1m_characters", cfg.PricePer1MCharacters)
 	add("per_request", cfg.PricePerRequest)
+	add("per_1m_embeddings", cfg.PricePer1MEmbeddings)
 	add("per_image", cfg.PricePerImage)
 	add("per_megapixel", cfg.PricePerMegapixel)
 	add("per_input_image", cfg.PricePerInputImage)

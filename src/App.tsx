@@ -52,6 +52,9 @@ const ArtDetail = lazy(() => import('./pages/ArtDetail').then(module => ({ defau
 const UsagePrompts = lazy(() => import('./pages/UsageSearch').then(module => ({ default: module.UsagePrompts })));
 const UsageImages = lazy(() => import('./pages/UsageSearch').then(module => ({ default: module.UsageImages })));
 const ArtTag = lazy(() => import('./pages/ArtTag').then(module => ({ default: module.ArtTag })));
+const ApiHub = lazy(() => import('./pages/ApiCapability').then(module => ({ default: module.ApiHub })));
+const ApiCapability = lazy(() => import('./pages/ApiCapability').then(module => ({ default: module.ApiCapability })));
+const ModelVs = lazy(() => import('./pages/ApiCapability').then(module => ({ default: module.ModelVs })));
 const NotFound = lazy(() => import('./pages/NotFound').then(module => ({ default: module.NotFound })));
 const Prompts = lazy(() => import('./pages/Prompts').then(module => ({ default: module.Prompts })));
 const PromptDetail = lazy(() => import('./pages/PromptDetail').then(module => ({ default: module.PromptDetail })));
@@ -109,6 +112,9 @@ export default function App() {
 		  <Route path="orgs/:slug/join" element={<NoIndex><OrgJoin /></NoIndex>} />
           <Route path="fusion" element={<Fusion />} />
           <Route path="compound" element={<Compound />} />
+          <Route path="api" element={<ApiHub />} />
+          <Route path="api/:slug" element={<ApiCapability />} />
+          <Route path="vs/:pair" element={<ModelVs />} />
           <Route path="tools" element={<Tools />} />
           <Route path="tools/live-voice" element={<LiveVoice />} />
           <Route path="tools/google-tts" element={<GoogleTTS />} />

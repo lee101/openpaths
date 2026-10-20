@@ -31,6 +31,9 @@ type Engine struct {
 	carryMu sync.Mutex
 	carry   map[string]float64
 
+	embedMu    sync.Mutex
+	embedCarry map[string]int64
+
 	balances *ttlcache.Cache[string, int64]
 }
 
@@ -102,8 +105,7 @@ func (e *Engine) PreCheck(ctx context.Context, userID, modelID string, estimated
 	if e.credits == nil {
 		return nil
 	}
-	_, subUnit := e.pricing.SubUnitCost(modelID, 0, 0)
-	subUnit = subUnit && e.balances != nil
+	subUnit := e.pricing.balanceCacheable(modelID) && e.balances != nil
 	if subUnit {
 		if b, ok := e.balances.Get(userID); ok && b >= subUnitBalanceFloor {
 			return nil
@@ -492,4 +494,28 @@ func (e *Engine) deductTx(ctx context.Context, userID string, cost int64, txType
 		log.Printf("billing: deduct failed user=%s cost=%d %q: %v", userID, cost, description, err)
 	}
 	return err
+}
+
+// DeductEmbeddings bills count embeddings for per-embedding priced models,
+// carrying sub-unit remainders per user so totals are exact over time. It
+// returns handled=false for models not priced per embedding.
+func (e *Engine) DeductEmbeddings(ctx context.Context, userID, modelID string, count int) (cost int64, handled bool, err error) {
+	sub, ok := e.pricing.EmbeddingSubUnits(modelID, count)
+	if !ok {
+		return 0, false, nil
+	}
+	e.embedMu.Lock()
+	if e.embedCarry == nil {
+		e.embedCarry = make(map[string]int64)
+	}
+	key := userID + "\x00" + modelID
+	total := e.embedCarry[key] + sub
+	cost = total / SubUnitsPerUnit
+	e.embedCarry[key] = total % SubUnitsPerUnit
+	e.embedMu.Unlock()
+	if cost == 0 {
+		return 0, true, nil
+	}
+	err = e.DeductFixed(ctx, userID, modelID, cost, fmt.Sprintf("Embeddings: %s, count: %d", modelID, count), "")
+	return cost, true, err
 }

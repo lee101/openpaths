@@ -71,6 +71,7 @@ type ModelConfig struct {
 	DefaultReasoningEffort               string             `yaml:"default_reasoning_effort,omitempty" json:"default_reasoning_effort,omitempty"`
 	PricePerRequest                      float64            `yaml:"price_per_request,omitempty" json:"price_per_request,omitempty"`
 	SubUnitBilling                       bool               `yaml:"sub_unit_billing,omitempty" json:"sub_unit_billing,omitempty"`
+	PricePer1MEmbeddings                 float64            `yaml:"price_per_1m_embeddings,omitempty" json:"price_per_1m_embeddings,omitempty"`
 	PricePerImage                        float64            `yaml:"price_per_image,omitempty" json:"price_per_image,omitempty"`
 	PricePerImageByResolution            map[string]float64 `yaml:"price_per_image_by_resolution,omitempty" json:"price_per_image_by_resolution,omitempty"`
 	PricePerMegapixel                    float64            `yaml:"price_per_megapixel,omitempty" json:"price_per_megapixel,omitempty"`

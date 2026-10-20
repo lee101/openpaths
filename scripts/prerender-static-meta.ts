@@ -17,6 +17,7 @@ import { geminiImageModels, imageModels } from '../src/data/imageCatalog';
 import { modelJsonLd, withMeta, type StaticMeta } from './lib/staticMeta';
 import { allPricingSeo } from '../src/lib/llmPricingSeo';
 import { faqLd } from '../src/lib/seoSchema';
+import { apiPrerenderRoutes } from '../src/lib/apiPagesSeo';
 
 const DIST_DIR = process.env.DIST_DIR || 'dist';
 
@@ -126,6 +127,7 @@ const routes: StaticMeta[] = [
     jsonLd: page.faq.length ? [faqLd(page.faq)] : undefined,
     links: page.links,
   })),
+  ...apiPrerenderRoutes(),
   ...catalogModels.map(model => ({
     path: `/models/${encodeURIComponent(model.id)}`,
     title: modelSeoTitle(model),

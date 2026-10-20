@@ -2,11 +2,13 @@ package gobed
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"math"
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	gobedlib "github.com/lee101/gobed"
@@ -21,11 +23,19 @@ const (
 	// inputs per worker before a batch is split across goroutines
 	parallelGrain = 8
 	maxInputBytes = 4 << 20
+	// MaxInputsPerRequest bounds a single /v1/embeddings call.
+	MaxInputsPerRequest = 4096
+	// embedChunk is the number of inputs per pooled job in EmbedRaw.
+	embedChunk = 32
 )
 
 type GobedProvider struct {
 	model   *gobedlib.SimpleInt8Model512
 	workers int
+	// pool is the bounded worker queue used by EmbedRaw; when saturated the
+	// request diverts to overflow (if set) or is shed with a 429.
+	pool     *batcher
+	overflow provider.EmbeddingProvider
 }
 
 type scratch struct {
@@ -44,7 +54,7 @@ func New() (*GobedProvider, error) {
 	if err != nil {
 		return nil, fmt.Errorf("gobed load: %w", err)
 	}
-	p := &GobedProvider{model: m, workers: runtime.GOMAXPROCS(0)}
+	p := &GobedProvider{model: m, workers: runtime.GOMAXPROCS(0), pool: newBatcher(0, 0, 16, 0)}
 	log.Printf("gobed: model loaded in %dms", time.Since(start).Milliseconds())
 	return p, nil
 }
@@ -121,8 +131,10 @@ func (p *GobedProvider) Embed(ctx context.Context, req *model.EmbeddingRequest) 
 	}, nil
 }
 
-// embedInto embeds text into out and returns the token count billed.
-func (p *GobedProvider) embedInto(sc *scratch, mode, text string, dims int, b64 bool, out *model.EmbeddingData) int {
+// embedVec embeds text into sc.acc and returns the (MRL-truncated and
+// renormalized when dims < dim) vector plus the token count billed. The slice
+// aliases sc and is only valid until the scratch is reused.
+func (p *GobedProvider) embedVec(sc *scratch, mode, text string, dims int) ([]float32, int) {
 	limit := 0
 	if mode == "truncate" {
 		limit = gobedChunkSize
@@ -143,6 +155,12 @@ func (p *GobedProvider) embedInto(sc *scratch, mode, text string, dims int, b64 
 			simd.ScaleF32(v, float32(1/math.Sqrt(n)))
 		}
 	}
+	return v, len(toks)
+}
+
+// embedInto embeds text into out and returns the token count billed.
+func (p *GobedProvider) embedInto(sc *scratch, mode, text string, dims int, b64 bool, out *model.EmbeddingData) int {
+	v, n := p.embedVec(sc, mode, text, dims)
 	if b64 {
 		out.Base64 = encodeF32(v)
 	} else {
@@ -152,7 +170,106 @@ func (p *GobedProvider) embedInto(sc *scratch, mode, text string, dims int, b64 
 		}
 		out.F32 = true
 	}
-	return len(toks)
+	return n
+}
+
+var vecPool sync.Pool
+
+func getVecs(n int) ([]float32, func()) {
+	if v, ok := vecPool.Get().(*[]float32); ok && cap(*v) >= n {
+		s := (*v)[:n]
+		return s, func() { vecPool.Put(v) }
+	}
+	s := make([]float32, n)
+	return s, func() { vecPool.Put(&s) }
+}
+
+// SetOverflow installs a backend used when the local queue is saturated.
+func (p *GobedProvider) SetOverflow(o provider.EmbeddingProvider) { p.overflow = o }
+
+// EmbedRaw embeds all inputs on the shared bounded pool and returns one
+// contiguous float32 buffer (N*Dim), skipping per-vector allocation and float64
+// conversion. Dimensions truncates (MRL) and renormalizes. Call Release on the
+// result once it has been written.
+func (p *GobedProvider) EmbedRaw(ctx context.Context, req *model.EmbeddingRequest) (*model.RawEmbeddings, error) {
+	inputs, err := normalizeInput(req.Input)
+	if err != nil {
+		return nil, &provider.ProviderError{Provider: "gobed", StatusCode: 400, Message: err.Error()}
+	}
+	if len(inputs) > MaxInputsPerRequest {
+		return nil, &provider.ProviderError{Provider: "gobed", StatusCode: 400,
+			Message: fmt.Sprintf("too many inputs: %d (max %d)", len(inputs), MaxInputsPerRequest)}
+	}
+	dims := dim
+	if req.Dimensions != 0 {
+		if req.Dimensions < 1 || req.Dimensions > dim {
+			return nil, &provider.ProviderError{Provider: "gobed", StatusCode: 400,
+				Message: fmt.Sprintf("dimensions must be between 1 and %d", dim)}
+		}
+		dims = req.Dimensions
+	}
+	mode := normalizeLongTextMode(req.LongTextMode)
+	if mode != "truncate" && mode != "average_chunks" {
+		return nil, &provider.ProviderError{Provider: "gobed", StatusCode: 400,
+			Message: fmt.Sprintf("unsupported long_text_mode %q", req.LongTextMode)}
+	}
+	for _, s := range inputs {
+		if len(s) > maxInputBytes {
+			return nil, &provider.ProviderError{Provider: "gobed", StatusCode: 400, Message: fmt.Sprintf("input exceeds %d bytes", maxInputBytes)}
+		}
+	}
+
+	n := len(inputs)
+	buf, release := getVecs(n * dims)
+	var tokens atomic.Int64
+	jobs := make([]func(), 0, (n+embedChunk-1)/embedChunk)
+	for start := 0; start < n; start += embedChunk {
+		start, end := start, min(start+embedChunk, n)
+		jobs = append(jobs, func() {
+			sc := scratchPool.Get().(*scratch)
+			t := 0
+			for i := start; i < end; i++ {
+				v, used := p.embedVec(sc, mode, inputs[i], dims)
+				copy(buf[i*dims:(i+1)*dims], v)
+				t += used
+			}
+			scratchPool.Put(sc)
+			tokens.Add(int64(t))
+		})
+	}
+	if err := p.pool.runAll(ctx, jobs); err != nil {
+		release()
+		if errors.Is(err, ErrSaturated) {
+			if p.overflow != nil {
+				return p.overflowRaw(ctx, req)
+			}
+			return nil, &provider.ProviderError{Provider: "gobed", StatusCode: 429, Message: "embedding queue saturated, retry shortly"}
+		}
+		return nil, err
+	}
+	out := model.NewRawEmbeddings(n, dims, buf, release)
+	out.Tokens = int(tokens.Load())
+	return out, nil
+}
+
+func (p *GobedProvider) overflowRaw(ctx context.Context, req *model.EmbeddingRequest) (*model.RawEmbeddings, error) {
+	resp, err := p.overflow.Embed(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	d := 0
+	if len(resp.Data) > 0 {
+		d = len(resp.Data[0].Embedding)
+	}
+	vecs := make([]float32, 0, len(resp.Data)*d)
+	for _, e := range resp.Data {
+		for _, x := range e.Embedding {
+			vecs = append(vecs, float32(x))
+		}
+	}
+	out := model.NewRawEmbeddings(len(resp.Data), d, vecs, nil)
+	out.Tokens = resp.Usage.TotalTokens
+	return out, nil
 }
 
 func normalizeLongTextMode(mode string) string {
