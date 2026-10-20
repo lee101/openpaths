@@ -1267,6 +1267,19 @@ const catalogModels: Model[] = [
 
   // --- Google Gemini ---
   {
+    id: 'gemini-4-argon',
+    name: 'Gemini 4 Argon',
+    provider: 'Google',
+    description: 'Google\'s Gemini 4 frontier reasoning model with 1M context, tools and multimodal input. Served direct from Google, with OpenRouter as an automatic fallback.',
+    contextLength: '1M',
+    priceInput: 2,
+    priceOutput: 10,
+    tags: ['general', 'vision', 'programming', 'reasoning'],
+    aliases: ['gemini-4', 'gemini-4-argon-high', 'google/gemini-4-argon'],
+    released: '2026-09-30',
+    popularity: 6
+  },
+  {
     id: 'gemini-3.8-flash',
     name: 'Gemini 3.8 Flash',
     provider: 'Google',
@@ -1873,6 +1886,227 @@ const catalogModels: Model[] = [
 
   // --- Nous Research ---
   {
+    "id": "missingno",
+    "name": "MissingNo",
+    "provider": "Nous Research",
+    "description": "Anonymous mystery model via Nous Research. Identity and benchmark performance are unverified.",
+    "contextLength": "256K",
+    "priceInput": 0.0,
+    "priceOutput": 0.0,
+    "tags": [
+      "general",
+      "free"
+    ],
+    "released": "2026-10-11",
+    "popularity": 35,
+    "aliases": [
+      "openpaths/free",
+      "stealth/missingno"
+    ]
+  },
+  {
+    "id": "nous/meituan/longcat-2.5-preview:free",
+    "name": "Meituan: LongCat 2.5 Preview",
+    "provider": "Nous Research",
+    "description": "Available through the Nous Research inference router. Prices are per million tokens; cached input is priced separately.",
+    "contextLength": "1024K",
+    "priceInput": 0.0,
+    "priceOutput": 0.0,
+    "tags": [
+      "general",
+      "free"
+    ],
+    "released": "2026-10-11",
+    "popularity": 35
+  },
+  {
+    "id": "nous/stepfun/step-5-preview:free",
+    "name": "StepFun: Step 5 Preview",
+    "provider": "Nous Research",
+    "description": "Available through the Nous Research inference router. Prices are per million tokens; cached input is priced separately.",
+    "contextLength": "977K",
+    "priceInput": 0.0,
+    "priceOutput": 0.0,
+    "tags": [
+      "general",
+      "free"
+    ],
+    "released": "2026-10-11",
+    "popularity": 35
+  },
+  {
+    "id": "nous/upstage/solar-mini4:free",
+    "name": "Upstage: Solar Mini 4",
+    "provider": "Nous Research",
+    "description": "Available through the Nous Research inference router. Prices are per million tokens; cached input is priced separately.",
+    "contextLength": "512K",
+    "priceInput": 0.0,
+    "priceOutput": 0.0,
+    "tags": [
+      "general",
+      "free"
+    ],
+    "released": "2026-10-11",
+    "popularity": 35
+  },
+  {
+    "id": "nous/poolside/laguna-s-2.1:free",
+    "name": "Poolside: Laguna S 2.1",
+    "provider": "Nous Research",
+    "description": "Available through the Nous Research inference router. Prices are per million tokens; cached input is priced separately.",
+    "contextLength": "256K",
+    "priceInput": 0.0,
+    "priceOutput": 0.0,
+    "tags": [
+      "general",
+      "free"
+    ],
+    "released": "2026-10-11",
+    "popularity": 35
+  },
+  {
+    "id": "nous/poolside/laguna-xs-2.1:free",
+    "name": "Poolside: Laguna XS 2.1",
+    "provider": "Nous Research",
+    "description": "Available through the Nous Research inference router. Prices are per million tokens; cached input is priced separately.",
+    "contextLength": "256K",
+    "priceInput": 0.0,
+    "priceOutput": 0.0,
+    "tags": [
+      "general",
+      "free"
+    ],
+    "released": "2026-10-11",
+    "popularity": 35
+  },
+  {
+    "id": "nous/inclusionai/ling-3.0-flash-sante:free",
+    "name": "inclusionAI: Ling 3.0 Flash Sante",
+    "provider": "Nous Research",
+    "description": "Available through the Nous Research inference router. Prices are per million tokens; cached input is priced separately.",
+    "contextLength": "256K",
+    "priceInput": 0.0,
+    "priceOutput": 0.0,
+    "tags": [
+      "general",
+      "free"
+    ],
+    "released": "2026-10-11",
+    "popularity": 35
+  },
+  {
+    "id": "nous/deepseek/deepseek-v4.1-flash",
+    "name": "DeepSeek: DeepSeek V4.1 Flash",
+    "provider": "Nous Research",
+    "description": "Available through the Nous Research inference router. Prices are per million tokens; cached input is priced separately.",
+    "contextLength": "1024K",
+    "priceInput": 0.106,
+    "priceOutput": 0.513,
+    "tags": [
+      "general"
+    ],
+    "released": "2026-10-11",
+    "popularity": 35
+  },
+  {
+    "id": "nous/deepseek/deepseek-v4-flash",
+    "name": "DeepSeek: DeepSeek V4 Flash 0423",
+    "provider": "Nous Research",
+    "description": "Available through the Nous Research inference router. Prices are per million tokens; cached input is priced separately.",
+    "contextLength": "1024K",
+    "priceInput": 0.03,
+    "priceOutput": 1.28,
+    "tags": [
+      "general"
+    ],
+    "released": "2026-10-11",
+    "popularity": 35
+  },
+  {
+    "id": "nous/z-ai/glm-5.3-flash",
+    "name": "Z.ai: GLM 5.3 Flash",
+    "provider": "Nous Research",
+    "description": "Available through the Nous Research inference router. Prices are per million tokens; cached input is priced separately.",
+    "contextLength": "1024K",
+    "priceInput": 0.12,
+    "priceOutput": 0.4,
+    "tags": [
+      "general"
+    ],
+    "released": "2026-10-11",
+    "popularity": 35
+  },
+  {
+    "id": "nous/anthropic/claude-opus-5.5",
+    "name": "Anthropic: Claude Opus 5.5",
+    "provider": "Nous Research",
+    "description": "Available through the Nous Research inference router. Prices are per million tokens; cached input is priced separately.",
+    "contextLength": "977K",
+    "priceInput": 4.0,
+    "priceOutput": 20.0,
+    "tags": [
+      "general"
+    ],
+    "released": "2026-10-11",
+    "popularity": 35
+  },
+  {
+    "id": "nous/z-ai/glm-5.2",
+    "name": "Z.ai: GLM 5.2",
+    "provider": "Nous Research",
+    "description": "Available through the Nous Research inference router. Prices are per million tokens; cached input is priced separately.",
+    "contextLength": "1024K",
+    "priceInput": 0.8999999999999999,
+    "priceOutput": 2.83,
+    "tags": [
+      "general"
+    ],
+    "released": "2026-10-11",
+    "popularity": 35
+  },
+  {
+    "id": "nous/openai/gpt-6-luna",
+    "name": "OpenAI: GPT-6 Luna",
+    "provider": "Nous Research",
+    "description": "Available through the Nous Research inference router. Prices are per million tokens; cached input is priced separately.",
+    "contextLength": "1025K",
+    "priceInput": 0.09999999999999999,
+    "priceOutput": 0.5,
+    "tags": [
+      "general"
+    ],
+    "released": "2026-10-11",
+    "popularity": 35
+  },
+  {
+    "id": "nous/z-ai/glm-5.3",
+    "name": "Z.ai: GLM 5.3",
+    "provider": "Nous Research",
+    "description": "Available through the Nous Research inference router. Prices are per million tokens; cached input is priced separately.",
+    "contextLength": "1024K",
+    "priceInput": 0.9099999999999999,
+    "priceOutput": 2.86,
+    "tags": [
+      "general"
+    ],
+    "released": "2026-10-11",
+    "popularity": 35
+  },
+  {
+    "id": "nous/xiaomi/mimo-v2.6-pro",
+    "name": "Xiaomi: MiMo-V2.6-Pro",
+    "provider": "Nous Research",
+    "description": "Available through the Nous Research inference router. Prices are per million tokens; cached input is priced separately.",
+    "contextLength": "1025K",
+    "priceInput": 0.43,
+    "priceOutput": 0.87,
+    "tags": [
+      "general"
+    ],
+    "released": "2026-10-11",
+    "popularity": 35
+  },
+  {
     id: 'hermes-4-70b',
     name: 'Hermes 4 70B',
     provider: 'Nous Research',
@@ -2015,6 +2249,19 @@ const catalogModels: Model[] = [
     tags: ['fast', 'agentic', 'general'],
     aliases: ['decision-model', 'alibaba/decision-model-preview', 'jev-latest', 'jev'],
     released: '2026-09-24',
+    popularity: 20
+  },
+  {
+    id: 'openpaths-decision',
+    name: 'OpenPaths Decision (gobed)',
+    provider: 'OpenPaths',
+    description: 'First-party embedding decision model on our gobed static embedder: yes/no, choice and score questions answered by cosine similarity between the state and each option, returned as probabilities with confidence. 4K-token state context (mean of 8 x 512-token chunk embeddings), sub-millisecond, runs in-process. Same POST /v1/systemone schema as TypeSafe, so the TypeSafe SDK works with model openpaths-decision. Best for routing and classification with descriptive criteria.',
+    contextLength: '4K',
+    priceInput: 0.002,
+    priceOutput: 0,
+    tags: ['fast', 'agentic', 'general'],
+    aliases: ['gobed-decision', 'gobed-decide', 'op-decide', 'openpaths-decide'],
+    released: '2026-10-10',
     popularity: 20
   },
   {

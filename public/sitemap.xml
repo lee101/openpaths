@@ -286,6 +286,46 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/llm-pricing/nous--deepseek--deepseek-v4.1-flash</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/llm-pricing/nous--deepseek--deepseek-v4-flash</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/llm-pricing/nous--z-ai--glm-5.3-flash</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/llm-pricing/nous--anthropic--claude-opus-5.5</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/llm-pricing/nous--z-ai--glm-5.2</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/llm-pricing/nous--openai--gpt-6-luna</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/llm-pricing/nous--z-ai--glm-5.3</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/llm-pricing/nous--xiaomi--mimo-v2.6-pro</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/llm-pricing/fireworks--glm-5</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
@@ -426,6 +466,11 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/llm-pricing/openpaths-decision</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/llm-pricing/glm-5.3</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
@@ -562,6 +607,11 @@
   </url>
   <url>
     <loc>https://openpaths.io/llm-pricing/gpt-5.4-nano</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/llm-pricing/gemini-4-argon</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -841,6 +891,11 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/llm-pricing/compare/deepseek-v4-flash-vs-nous--deepseek--deepseek-v4-flash</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/llm-pricing/compare/deepseek-v4-flash-vs-minimax-m2</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -896,17 +951,27 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://openpaths.io/llm-pricing/compare/deepseek-v4-flash-vs-codestral-latest</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://openpaths.io/llm-pricing/compare/claude-haiku-5-5-vs-ministral-14b-latest</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/llm-pricing/compare/claude-haiku-5-5-vs-nous--openai--gpt-6-luna</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/llm-pricing/compare/claude-haiku-5-5-vs-gpt-6-luna</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/llm-pricing/compare/claude-haiku-5-5-vs-nous--deepseek--deepseek-v4.1-flash</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/llm-pricing/compare/claude-haiku-5-5-vs-nous--z-ai--glm-5.3-flash</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -946,21 +1011,6 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://openpaths.io/llm-pricing/compare/claude-haiku-5-5-vs-glm-5.3-flash</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://openpaths.io/llm-pricing/compare/claude-haiku-5-5-vs-runanywhere--glm-5.3-flash</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://openpaths.io/llm-pricing/compare/claude-haiku-5-5-vs-hermes-4-405b</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://openpaths.io/llm-pricing/provider/openrouter</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
@@ -991,12 +1041,12 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://openpaths.io/llm-pricing/provider/fireworks-ai</loc>
+    <loc>https://openpaths.io/llm-pricing/provider/nous-research</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://openpaths.io/llm-pricing/provider/nous-research</loc>
+    <loc>https://openpaths.io/llm-pricing/provider/fireworks-ai</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1047,6 +1097,11 @@
   </url>
   <url>
     <loc>https://openpaths.io/llm-pricing/provider/alibaba</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/llm-pricing/provider/openpaths</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -2221,6 +2276,11 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/models/gemini-4-argon</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/models/gemini-3.8-flash</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
@@ -2461,6 +2521,81 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/models/missingno</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/nous%2Fmeituan%2Flongcat-2.5-preview%3Afree</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/nous%2Fstepfun%2Fstep-5-preview%3Afree</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/nous%2Fupstage%2Fsolar-mini4%3Afree</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/nous%2Fpoolside%2Flaguna-s-2.1%3Afree</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/nous%2Fpoolside%2Flaguna-xs-2.1%3Afree</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/nous%2Finclusionai%2Fling-3.0-flash-sante%3Afree</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/nous%2Fdeepseek%2Fdeepseek-v4.1-flash</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/nous%2Fdeepseek%2Fdeepseek-v4-flash</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/nous%2Fz-ai%2Fglm-5.3-flash</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/nous%2Fanthropic%2Fclaude-opus-5.5</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/nous%2Fz-ai%2Fglm-5.2</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/nous%2Fopenai%2Fgpt-6-luna</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/nous%2Fz-ai%2Fglm-5.3</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/nous%2Fxiaomi%2Fmimo-v2.6-pro</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/models/hermes-4-70b</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
@@ -2512,6 +2647,11 @@
   </url>
   <url>
     <loc>https://openpaths.io/models/decision-model-preview</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/openpaths-decision</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -3714,6 +3854,31 @@
     <loc>https://openpaths.io/models/flux-video-upscale</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/blog/openpaths-browse-agent-in-your-browser</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/blog/llm-routing-cost-latency-quality-experiment-checklist</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/blog/model-router-failure-checklist</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/blog/gemini-4-argon-pelican-bike</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/blog/missingno-free-pelican-bike</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/gemini-image-models-game-dev-concept-art</loc>

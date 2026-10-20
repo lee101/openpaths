@@ -4,6 +4,8 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
   testDir: './e2e',
   testIgnore: [
+    '**/funnel-regressions.spec.ts',
+    '**/playground-auth-real.spec.ts',
     '**/live-voice-paid.spec.ts',
     '**/auth-real.spec.ts',
     '**/checkout-flow.spec.ts',

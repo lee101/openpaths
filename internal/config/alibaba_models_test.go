@@ -22,6 +22,7 @@ func TestAlibabaDirectModels(t *testing.T) {
 		{"qwen/qwen3.8-27b", "qwen", "qwen3.8-27b", .5, 3, "runanywhere/qwen3.8-27b"},
 		{"kimi-k3", "qwen", "kimi-k3", 3, 15, "or/kimi-k3"},
 		{"decision-model-preview", "alibaba", "decision-model-preview", .042, 0, ""},
+		{"openpaths-decision", "gobed", "openpaths-decision", .002, 0, ""},
 	} {
 		i, ok := byID[want.id]
 		if !ok {

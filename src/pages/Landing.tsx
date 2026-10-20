@@ -39,7 +39,12 @@ function HeroQuickstart() {
       window.removeEventListener('storage', sync);
     };
   }, []);
-  const curl = `curl https://openpaths.io/v1/chat/completions -H "Authorization: Bearer ${apiKey || '$OPENPATHS_API_KEY'}" -H "Content-Type: application/json" -d '{"model":"openpaths/auto","messages":[{"role":"user","content":"Hello"}]}'`;
+  const curl = [
+    'curl https://openpaths.io/v1/chat/completions \\',
+    `  -H "Authorization: Bearer ${apiKey || '$OPENPATHS_API_KEY'}" \\`,
+    '  -H "Content-Type: application/json" \\',
+    `  -d '{"model":"openpaths/auto","messages":[{"role":"user","content":"Hello"}]}'`,
+  ].join('\n');
   const [keyError, setKeyError] = useState('');
   const createFirstKey = async () => {
     if (localStorage.getItem('op_api_key')) return;
@@ -77,9 +82,9 @@ function HeroQuickstart() {
           </button>
         )}
       </div>
-      <div className="flex items-stretch overflow-hidden rounded-lg border border-white/25 bg-black/80">
-        <code className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap px-4 py-3 font-mono text-xs text-white/85" tabIndex={0} aria-label="Example API request">{curl}</code>
-        <button type="button" onClick={copy} className="flex shrink-0 items-center gap-1.5 border-l border-white/25 px-4 font-mono text-xs text-white transition-colors hover:bg-white/10" aria-label="Copy curl command">
+      <div className="flex items-start overflow-hidden rounded-lg border border-white/25 bg-black/80">
+        <code className="min-w-0 flex-1 whitespace-pre-wrap break-all px-4 py-3 font-mono text-xs leading-relaxed text-white/85 sm:text-[13px]" aria-label="Example API request">{curl}</code>
+        <button type="button" onClick={copy} className="m-2 flex shrink-0 items-center gap-1.5 rounded-md border border-white/25 px-3 py-1.5 font-mono text-xs text-white transition-colors hover:bg-white/10" aria-label="Copy curl command">
           {copied ? <Check className="h-4 w-4 text-emerald-300" /> : <Copy className="h-4 w-4" />}
           {copied ? 'Copied' : 'Copy'}
         </button>

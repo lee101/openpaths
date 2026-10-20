@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/openpaths/openpaths/internal/model"
 )
@@ -109,4 +110,33 @@ func (e *ProviderError) Error() string {
 
 func (e *ProviderError) Unwrap() error {
 	return e.Err
+}
+
+// defaultUserAgent identifies OpenPaths to upstream APIs. Go's default
+// "Go-http-client/1.1" is rejected with HTTP 403 by some upstream CDNs
+// (Cloudflare in front of the Nous Research inference API), which broke the
+// `nous` provider's chat route and model discovery.
+const defaultUserAgent = "openpaths/1.0 (+https://openpaths.io)"
+
+// UserAgentTransport wraps base (defaulting to http.DefaultTransport) so every
+// request carries a real User-Agent unless the caller set one explicitly.
+// http.DefaultTransport itself is never mutated: safefetch.NewClient asserts it
+// is a *http.Transport.
+func UserAgentTransport(base http.RoundTripper) http.RoundTripper {
+	if base == nil {
+		base = http.DefaultTransport
+	}
+	return userAgentTransport{base: base, ua: defaultUserAgent}
+}
+
+type userAgentTransport struct {
+	base http.RoundTripper
+	ua   string
+}
+
+func (t userAgentTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if req.Header.Get("User-Agent") == "" {
+		req.Header.Set("User-Agent", t.ua)
+	}
+	return t.base.RoundTrip(req)
 }

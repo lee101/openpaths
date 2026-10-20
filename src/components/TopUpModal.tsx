@@ -64,6 +64,11 @@ export function TopUpModal({
   }, [initialAmount, open]);
 
   const startCheckout = async () => {
+    if (loading) return;
+    if (!Number.isInteger(amount) || amount < 1 || amount > 500) {
+      setError('Choose a whole-dollar amount from $1 to $500.');
+      return;
+    }
     if (!pk) {
       setError('Stripe billing is not configured yet.');
       return;
@@ -77,14 +82,16 @@ export function TopUpModal({
         body: JSON.stringify({ amount_usd: amount, surface }),
       });
       const data = await res.json();
-      if (!res.ok) {
+      if (!res.ok || !data.client_secret) {
         setError(data.error?.message || 'Failed to create checkout');
+        track('checkout_failed', { plan: 'credits', surface, reason: 'checkout_unavailable' });
         return;
       }
       setClientSecret(data.client_secret);
       track('begin_checkout', { plan: 'credits', value: amount, currency: 'USD', surface });
     } catch {
       setError('Network error');
+      track('checkout_failed', { plan: 'credits', surface, reason: 'network' });
     } finally {
       setLoading(false);
     }
@@ -109,13 +116,16 @@ export function TopUpModal({
             exit={{ opacity: 0, scale: 0.96, y: 10 }}
             className="bg-[#090909] border border-white/20 rounded-3xl w-full max-w-2xl p-6 md:p-8 max-h-[90vh] overflow-y-auto shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
             data-testid="stripe-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Add prepaid credits"
           >
             <div className="flex items-start justify-between gap-4 mb-6">
               <div>
                 <p className="text-xs font-mono uppercase tracking-[0.2em] text-white/50 mb-2">Prepaid credits</p>
                 <h2 className="text-2xl font-bold tracking-tight">{clientSecret ? 'Complete Stripe payment' : 'Add funds'}</h2>
               </div>
-              <button onClick={onClose} className="text-white/55 hover:text-white transition-colors shrink-0" data-testid="stripe-modal-close">
+              <button onClick={onClose} aria-label="Close checkout" className="text-white/55 hover:text-white transition-colors shrink-0" data-testid="stripe-modal-close">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -148,6 +158,8 @@ export function TopUpModal({
                       type="number"
                       min="1"
                       max="500"
+                      step="1"
+                      aria-label="Credit amount in USD"
                       value={amount}
                       onChange={e => setAmount(Number(e.target.value))}
                       data-testid="custom-amount-input"
@@ -156,11 +168,11 @@ export function TopUpModal({
                   </div>
                 </div>
 
-                {error && <p className="text-red-400 text-sm font-mono mb-4">{error}</p>}
+                {error && <p role="alert" className="text-red-400 text-sm font-mono mb-4">{error}</p>}
 
                 <button
                   onClick={startCheckout}
-                  disabled={loading || amount < 1}
+                  disabled={loading || !Number.isInteger(amount) || amount < 1 || amount > 500}
                   data-testid="stripe-checkout-btn"
                   className="w-full bg-white text-black py-4 rounded-2xl font-mono font-bold text-sm hover:bg-white/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >

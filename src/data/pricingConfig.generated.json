@@ -1144,6 +1144,23 @@
   ]
  },
  {
+  "id": "gemini-4-argon",
+  "provider": "google",
+  "upstream": "gemini-4-argon",
+  "input": 2.0,
+  "output": 10.0,
+  "context": 1048576,
+  "maxOutput": 65536,
+  "vision": true,
+  "tools": true,
+  "aliases": [
+   "gemini-4",
+   "gemini-4-argon-high",
+   "google/gemini-4-argon"
+  ],
+  "cacheRead": 0.1
+ },
+ {
   "id": "gemini-3.8-flash",
   "provider": "google",
   "upstream": "gemini-3.8-flash",
@@ -1923,6 +1940,22 @@
   "cacheRead": 0.01652
  },
  {
+  "id": "or/gemini-4-argon",
+  "provider": "openrouter",
+  "upstream": "google/gemini-4-argon",
+  "input": 2.0,
+  "output": 10.0,
+  "context": 1048576,
+  "maxOutput": 65536,
+  "vision": true,
+  "tools": true,
+  "aliases": [
+   "openrouter/gemini-4-argon",
+   "openrouter/google/gemini-4-argon"
+  ],
+  "cacheRead": 0.1
+ },
+ {
   "id": "or/gpt-5-codex",
   "provider": "openrouter",
   "upstream": "openai/gpt-5.5-codex",
@@ -2396,6 +2429,39 @@
    "or/xiaomi/mimo-v2.6-flash"
   ],
   "cacheRead": 0.0028
+ },
+ {
+  "id": "openpaths-embed",
+  "provider": "gobed",
+  "upstream": "static-retrieval-mrl-en-v1",
+  "input": 0.001,
+  "output": 0,
+  "context": 256,
+  "maxOutput": 0,
+  "vision": false,
+  "tools": false,
+  "aliases": [
+   "gobed",
+   "gobed-embed",
+   "op-embed"
+  ]
+ },
+ {
+  "id": "openpaths-decision",
+  "provider": "gobed",
+  "upstream": "openpaths-decision",
+  "input": 0.002,
+  "output": 0,
+  "context": 4096,
+  "maxOutput": 1,
+  "vision": false,
+  "tools": false,
+  "aliases": [
+   "gobed-decision",
+   "gobed-decide",
+   "op-decide",
+   "openpaths-decide"
+  ]
  },
  {
   "id": "gemini-embedding-001",
@@ -2962,6 +3028,109 @@
    "kyutai-tts",
    "pocket-tts-gpu"
   ]
+ },
+ {
+  "id": "nous/deepseek/deepseek-v4.1-flash",
+  "provider": "nous",
+  "upstream": "deepseek/deepseek-v4.1-flash",
+  "input": 0.106,
+  "output": 0.513,
+  "context": 1048576,
+  "maxOutput": 8192,
+  "vision": true,
+  "tools": true,
+  "aliases": [],
+  "cacheRead": 0.004
+ },
+ {
+  "id": "nous/deepseek/deepseek-v4-flash",
+  "provider": "nous",
+  "upstream": "deepseek/deepseek-v4-flash",
+  "input": 0.03,
+  "output": 1.28,
+  "context": 1048576,
+  "maxOutput": 943718,
+  "vision": false,
+  "tools": true,
+  "aliases": []
+ },
+ {
+  "id": "nous/z-ai/glm-5.3-flash",
+  "provider": "nous",
+  "upstream": "z-ai/glm-5.3-flash",
+  "input": 0.12,
+  "output": 0.4,
+  "context": 1048576,
+  "maxOutput": 131072,
+  "vision": true,
+  "tools": true,
+  "aliases": [],
+  "cacheRead": 0.024
+ },
+ {
+  "id": "nous/anthropic/claude-opus-5.5",
+  "provider": "nous",
+  "upstream": "anthropic/claude-opus-5.5",
+  "input": 4,
+  "output": 20,
+  "context": 1000000,
+  "maxOutput": 128000,
+  "vision": true,
+  "tools": true,
+  "aliases": [],
+  "cacheRead": 0.2
+ },
+ {
+  "id": "nous/z-ai/glm-5.2",
+  "provider": "nous",
+  "upstream": "z-ai/glm-5.2",
+  "input": 0.9,
+  "output": 2.83,
+  "context": 1048576,
+  "maxOutput": 262144,
+  "vision": false,
+  "tools": true,
+  "aliases": [],
+  "cacheRead": 0.16
+ },
+ {
+  "id": "nous/openai/gpt-6-luna",
+  "provider": "nous",
+  "upstream": "openai/gpt-6-luna",
+  "input": 0.1,
+  "output": 0.5,
+  "context": 1050000,
+  "maxOutput": 128000,
+  "vision": true,
+  "tools": true,
+  "aliases": [],
+  "cacheRead": 0.01
+ },
+ {
+  "id": "nous/z-ai/glm-5.3",
+  "provider": "nous",
+  "upstream": "z-ai/glm-5.3",
+  "input": 0.91,
+  "output": 2.86,
+  "context": 1048576,
+  "maxOutput": 131072,
+  "vision": false,
+  "tools": true,
+  "aliases": [],
+  "cacheRead": 0.169
+ },
+ {
+  "id": "nous/xiaomi/mimo-v2.6-pro",
+  "provider": "nous",
+  "upstream": "xiaomi/mimo-v2.6-pro",
+  "input": 0.43,
+  "output": 0.87,
+  "context": 1050000,
+  "maxOutput": 943718,
+  "vision": true,
+  "tools": true,
+  "aliases": [],
+  "cacheRead": 0.0036
  },
  {
   "id": "hermes-4-70b",

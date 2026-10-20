@@ -240,6 +240,9 @@ func TestChatCompletion_FableOutageFallsBackToOpus(t *testing.T) {
 	if resp.Model != "claude-fable-latest" {
 		t.Fatalf("response model = %q, want claude-fable-latest", resp.Model)
 	}
+	if resp.Routing == nil || resp.Routing.Model != "claude-opus-latest" || resp.Routing.Provider != "anthropic" {
+		t.Fatalf("response must expose the actual fallback route: %+v", resp.Routing)
+	}
 	if len(resp.Choices) != 1 || resp.Choices[0].Message == nil || resp.Choices[0].Message.Content != "OK" {
 		t.Fatalf("choices = %#v, want one assistant message 'OK'", resp.Choices)
 	}

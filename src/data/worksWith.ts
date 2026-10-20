@@ -160,6 +160,12 @@ export const worksWithApps: WorksWithApp[] = [
     prUrl: 'https://github.com/agent0ai/agent-zero/pull/1707',
   },
   {
+    slug: 'openpaths-browse', name: 'OpenPaths Browse', url: 'https://github.com/lee101/sitegeist', repo: 'https://github.com/lee101/sitegeist',
+    description: 'Browser side-panel agent (and MCP bridge for Claude Code, Codex, omp) that works in a background tab group. OpenPaths is a built-in provider.',
+    category: 'Agents & assistants', oss: true, status: 'native-merged',
+    setup: 'Side panel > pick OpenPaths > openpaths/free, or set OPENPATHS_API_KEY.',
+  },
+  {
     slug: 'browser-use', name: 'Browser Use', url: 'https://browser-use.com/', repo: 'https://github.com/browser-use/browser-use',
     description: 'Open-source browser agent driven via CDP as the action layer for any LLM.',
     category: 'Agents & assistants', oss: true, status: 'compatible',

@@ -14,6 +14,7 @@ import (
 
 	"github.com/openpaths/openpaths/internal/db/queries"
 	"github.com/openpaths/openpaths/internal/model"
+	"github.com/openpaths/openpaths/internal/provider"
 )
 
 type metaStore interface {
@@ -45,7 +46,7 @@ func New(providers []model.ProviderConfig, modelQ *queries.ModelMetadataQueries)
 	return &Service{
 		providers: providers,
 		modelQ:    modelQ,
-		client:    &http.Client{Timeout: 60 * time.Second},
+		client:    &http.Client{Timeout: 60 * time.Second, Transport: provider.UserAgentTransport(nil)},
 	}
 }
 

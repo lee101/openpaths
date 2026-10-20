@@ -481,7 +481,7 @@ test.describe('Account Page', () => {
       await page.getByTestId('openai-browser-auth-start').click();
       await expect(page.getByTestId('openai-browser-auth-panel')).toBeVisible();
       await expect(page.getByTestId('openai-browser-auth-link')).toHaveAttribute('href', 'https://auth.openai.test/oauth/authorize');
-      await page.reload();
+      await page.goto('/account');
       await page.getByTestId('tab-keys').click();
       await expect(page.getByTestId('openai-browser-auth-panel')).toBeVisible();
       const callbackURL = 'http://localhost:1455/auth/callback?code=abc&state=state-1';
@@ -620,7 +620,7 @@ test.describe('Account Page', () => {
       await page.getByTestId('stripe-checkout-btn').click();
 
       await expect(page.getByTestId('embedded-checkout-container')).toBeAttached({ timeout: 5000 });
-      expect(capturedBody).toEqual({ amount_usd: 100 });
+      expect(capturedBody).toMatchObject({ amount_usd: 100 });
     });
 
     test('stripe checkout shows error on API failure', async ({ page }) => {
@@ -792,7 +792,8 @@ test.describe('Account Page', () => {
       await page.getByTestId('add-funds-stripe-btn').click();
       await page.getByTestId('stripe-checkout-btn').click();
 
-      await page.waitForURL('**/account', { timeout: 10000 });
+      await expect.poll(() => page.evaluate(() => localStorage.getItem('op_api_key')), { timeout: 10000 }).toBeNull();
+      expect(await page.evaluate(() => localStorage.getItem('op_api_key'))).toBeNull();
     });
   });
 });

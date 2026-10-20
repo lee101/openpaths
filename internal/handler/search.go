@@ -60,6 +60,7 @@ type SearchHandler struct {
 	gemini   SearchProviderConfig
 	openai   SearchProviderConfig
 	xai      SearchProviderConfig
+	deepseek SearchProviderConfig
 	billing  *billing.Engine
 	recorder *metrics.Recorder
 	client   *http.Client
@@ -142,11 +143,17 @@ func (h *SearchHandler) HandleSearch(ctx *fasthttp.RequestCtx) {
 	case grokProviderName:
 		h.handleGrokSearch(ctx, payload, query, userID, apiKeyID)
 		return
+	case deepseekSearchProviderName:
+		h.handleDeepSeekSearch(ctx, payload, query, numResults, userID, apiKeyID)
+		return
+	case openpathsSearchProviderName:
+		h.handleOpenPathsSearch(ctx, payload, query, userID, apiKeyID)
+		return
 	case "", exaProviderName:
 		h.handleExaSearch(ctx, raw, payload, numResults, userID, apiKeyID)
 		return
 	default:
-		writeError(ctx, 400, "invalid_request", "provider must be one of: exa, papers, gemini, openai, grok")
+		writeError(ctx, 400, "invalid_request", "provider must be one of: exa, papers, deepseek, openpaths, gemini, openai, grok")
 		return
 	}
 }
@@ -291,6 +298,9 @@ type answerResult struct {
 	Title string `json:"title,omitempty"`
 	URL   string `json:"url,omitempty"`
 	Text  string `json:"text,omitempty"`
+
+	Snippet       string `json:"snippet,omitempty"`
+	PublishedDate string `json:"publishedDate,omitempty"`
 }
 
 // answerResponse is the normalized shape returned by the answer providers

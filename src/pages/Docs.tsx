@@ -23,7 +23,7 @@ const ENDPOINTS = [
   { method: 'POST', path: '/v1/audio/speech', description: 'Text-to-speech (xAI TTS, MiniMax Speech 2.8 HD).' },
   { method: 'POST', path: '/v1/stt', description: 'xAI Speech to Text shortcut; defaults to xai-stt.' },
   { method: 'POST', path: '/v1/tts', description: 'xAI Text to Speech shortcut; defaults to xai-tts.' },
-  { method: 'POST', path: '/v1/systemone', description: 'Typed decisions (yes/no, choice, score) with probabilities; TypeSafe SDK compatible. Model decision-model-preview.' },
+  { method: 'POST', path: '/v1/systemone', description: 'Typed decisions (yes/no, choice, score) with probabilities; TypeSafe SDK compatible. Models decision-model-preview and openpaths-decision (first-party gobed, $0.002/M).' },
   { method: 'POST', path: '/v1/embeddings', description: 'Generate vector embeddings (OpenPaths, Google Gemini, Mistral, Nemotron).' },
   { method: 'GET', path: '/v1/artifacts/{id}', description: 'Retrieve an artifact and all its files (free).' },
   { method: 'GET', path: '/v1/artifacts/search', description: 'Search public artifacts by title, description, or tag ($1 per 1,000 searches).' },

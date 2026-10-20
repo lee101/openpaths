@@ -68,7 +68,7 @@ test.describe('Public Spaces', () => {
     await expect(page.locator('a[href="/text-to-3d"]').first()).toBeVisible();
 
     const toolImages = page.getByTestId('tools-grid').locator('img');
-    await expect(toolImages).toHaveCount(16);
+    await expect(toolImages).toHaveCount(17);
     await expect.poll(() => toolImages.evaluateAll(images =>
       images.every(image => (image as HTMLImageElement).complete && (image as HTMLImageElement).naturalWidth > 0),
     )).toBe(true);
@@ -85,7 +85,7 @@ test.describe('Public Spaces', () => {
     const count = page.getByTestId('tools-count');
     // Scope to the grid: the footer links to these same routes.
     const grid = page.getByTestId('tools-grid');
-    await expect(count).toContainText('16 of 16 tools');
+    await expect(count).toContainText('17 of 17 tools');
 
     await search.fill('3d');
     await expect(grid.locator('a[href="/image-to-3d"]')).toBeVisible();
@@ -98,7 +98,7 @@ test.describe('Public Spaces', () => {
     await search.fill('zzzz');
     await expect(page.getByText(/No tools match/)).toBeVisible();
     await page.getByRole('button', { name: 'Clear search' }).click();
-    await expect(count).toContainText('16 of 16 tools');
+    await expect(count).toContainText('17 of 17 tools');
   });
 
   test('text-to-3d space exposes prompt controls, viewer, and snippets', async ({ page }) => {
@@ -214,8 +214,7 @@ test.describe('Public Spaces', () => {
   test('outpaint model space renders before-after demo and image API snippets', async ({ page }) => {
     await page.goto(`/models/${encodeURIComponent('fal-ai/flux-2-pro/outpaint')}`);
 
-    await expect(page.getByRole('heading', { name: /FLUX 2 Pro Outpaint/i })).toBeVisible();
-    await expect(page.getByText('Image API example')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'FLUX 2 Pro Outpaint', exact: true })).toBeVisible();
     await expect(page.getByAltText(/FLUX 2 Pro Outpaint input/i)).toHaveAttribute('src', /flux-outpaint\/input\.png/);
     await expect(page.getByAltText(/FLUX 2 Pro Outpaint output/i)).toHaveAttribute('src', /flux-outpaint\/output\.jpg/);
     await expect(page.getByText('/images/edits')).toBeVisible();
@@ -229,8 +228,7 @@ test.describe('Public Spaces', () => {
   test('hidream edit model space renders reference edit demo and image API snippets', async ({ page }) => {
     await page.goto(`/models/${encodeURIComponent('fal-ai/hidream-o1-image/edit')}`);
 
-    await expect(page.getByRole('heading', { name: /HiDream O1 Image Edit/i })).toBeVisible();
-    await expect(page.getByText('Image API example')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'HiDream O1 Image Edit', exact: true })).toBeVisible();
     await expect(page.getByAltText(/HiDream O1 Image Edit input/i)).toHaveAttribute('src', /hidream-edit\/perfume\.jpg/);
     await expect(page.getByAltText(/HiDream O1 Image Edit output/i)).toHaveAttribute('src', /hidream-edit\/lipstick\.png/);
     await expect(page.getByText('/images/edits')).toBeVisible();

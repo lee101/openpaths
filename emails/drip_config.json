@@ -208,6 +208,16 @@
       "subject": "Typed decisions with probabilities, plus Qwen 3.8 Max, Omni and Wan 3.0 video",
       "template": "27-decision-qwen.html",
       "description": "Decision Model (/v1/systemone, TypeSafe compatible, $0.042/M) with a real ticket-triage example, Qwen 3.8 Max/Omni/27B, Qwen Image 3.0, realtime audio, Wan 3.0 video from $0.05/s"
+    },
+    {
+      "id": 28,
+      "delay_days": 1,
+      "kind": "model_launch",
+      "launch_date": "2026-10-14",
+      "max_age_days": 14,
+      "subject": "Gemini 4 Argon is live - Google pricing, OpenRouter fallback, and the best pelican yet",
+      "template": "28-gemini-4-argon.html",
+      "description": "Gemini 4 Argon launch: direct Google route at $2/$10 per M with same-price OpenRouter fallback, say-hi test, one-shot animated pelican-on-a-bicycle SVG"
     }
   ]
 }

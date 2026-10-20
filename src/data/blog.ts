@@ -1,4 +1,7 @@
+import { routingExperimentChecklist } from './routingExperimentChecklist';
+import { routerFailureGuide } from './routerFailureGuide';
 import qwenStory from './qwenTwentySecondWindow';
+import { openpathsBrowse } from './openpathsBrowse';
 
 export interface BlogPost {
   slug: string;
@@ -13,6 +16,43 @@ export interface BlogPost {
 }
 
 export const posts: BlogPost[] = [
+  openpathsBrowse,
+  routingExperimentChecklist,
+  routerFailureGuide,
+  {
+      "slug": "gemini-4-argon-pelican-bike",
+      "title": "Gemini 4 Argon Is Live: Google Pricing, OpenRouter Fallback, and the Best Pelican Yet",
+      "excerpt": "gemini-4-argon routes direct to Google at $2/$10 per million tokens and falls back to OpenRouter at the same price. It answered 'say hi nothing else' with 'hi', and drew an animated pelican on a bicycle in one shot: 122 seconds, 13,081 tokens, about $0.13.",
+      "date": "2026-10-14",
+      "author": "OpenPaths Team",
+      "readTime": "4 min",
+      "tags": [
+          "models",
+          "pricing",
+          "google",
+          "gemini",
+          "svg",
+          "pelican"
+      ],
+      "content": "Gemini 4 Argon is live on OpenPaths as `gemini-4-argon` (aliases `gemini-4`, `google/gemini-4-argon`). It is routed straight to Google at Google's list price: **$2.00 per million input tokens, $0.10 per million cached input, $10.00 per million output**, with a 1,048,576-token context window, tool calling and image input. If Google is unavailable, the request automatically falls back to the same model on OpenRouter (`or/gemini-4-argon`), billed at the same rates, so a provider outage does not change your price.\n\n## The 'say hi' test\n\nWe asked for `say hi nothing else`. The model returned `hi` and nothing more: 35 prompt tokens, 5 completion tokens, no preamble, no punctuation, no explanation. Instruction-following on the small stuff is a good sign for agent loops where a stray sentence breaks a parser.\n\n## The one-shot pelican test\n\nThe house prompt, one attempt, no corrective follow-up: \"Draw a pelican riding a bicycle as an animated SVG. Return only a complete standalone SVG document.\" The system instruction asked for final code only.\n\n![Gemini 4 Argon's one-shot pelican riding a bicycle](/static/blog/pelican-svg/gemini-4-argon.png)\n\n[Watch the original animated SVG](/static/blog/pelican-svg/gemini-4-argon.svg).\n\nThe request took **122.17 seconds**, used **73 prompt tokens** and **13,081 completion tokens**, and finished with `STOP`. At list price that single drawing cost about **$0.131**. These are observations from one request, not a throughput guarantee.\n\nThis is the best pelican we have produced so far. The bird has a proper throat pouch, a cap, a flowing scarf and a wing resting on the handlebars. The red bicycle has a real frame, fenders, a chain, pedals, spoked wheels and a wicker basket, set against a sea, a sun and a road with lane markings. It is a complete standalone SVG with CSS keyframe animation and no scripts. The trade-off is time: two minutes of output is the cost of a frontier reasoning model drawing 28 KB of vector art, so use streaming and generous timeouts for this kind of task. One sample is a taste test, not a coding benchmark score.\n\n[Recorded usage and review](/static/blog/pelican-svg/gemini-4-argon-benchmark.json).\n\n## Use it\n\n```json\n{\"model\":\"gemini-4-argon\",\"messages\":[{\"role\":\"user\",\"content\":\"say hi nothing else\"}]}\n```\n\nSend this to `/v1/chat/completions` with your existing OpenPaths API key. Streaming, tools and image input work as with other Gemini models. Artificial Analysis lists Gemini 4 Argon (high) as a frontier-tier reasoning model; see the [comparison against Claude Opus 5.5](/compare/claude-opus-5-5-vs-gemini-4-argon) for scores and cost side by side.\n\n## Fallback behaviour\n\nPrimary route: Google, billed at Google's rates. Fallback: OpenRouter's `google/gemini-4-argon`, billed at the identical rates. Fallback fires only when the primary is unhealthy or errors, and the chat response's `routing` object names the model actually served. Prices are snapshots of the upstream tariff and can change.\n"
+  },
+  {
+    "slug": "missingno-free-pelican-bike",
+    "title": "OpenPaths Free Is Back: MissingNo and the Pelican-on-a-Bike Test",
+    "excerpt": "The free route now uses MissingNo through Nous Research. Our one-shot animated SVG took 8.462 seconds, used 3,327 completion tokens, and the provider reported $0 cost. The wheels work; the bird anatomy and pedalling need polish.",
+    "date": "2026-10-11",
+    "author": "OpenPaths Team",
+    "readTime": "3 min",
+    "tags": [
+      "models",
+      "pricing",
+      "free",
+      "coding",
+      "svg",
+      "pelican"
+    ],
+    "content": "The `openpaths/free` model is back, powered by `stealth/missingno` through Nous Research. MissingNo is an anonymous, text-only reasoning model with a 262,144-token context window, tool calling and structured outputs. Its identity is undisclosed: we are not claiming it is a particular vendor model.\n\n## The one-shot pelican test\n\nWe used the house prompt: \"Draw a pelican riding a bicycle as an animated SVG. Return only a complete standalone SVG document.\" One attempt, no corrective follow-up. The system instruction asked for final code only. MissingNo requires reasoning, so this run used `reasoning_effort: medium` and a 12,000-token ceiling; earlier thinking-disabled runs are not identical settings.\n\n![MissingNo's one-shot pelican riding a bicycle](/static/blog/pelican-svg/missingno.png)\n\n[Watch the original animated SVG](/static/blog/pelican-svg/missingno.svg).\n\nThe request took **8.462 seconds** end to end. The API reported **518 prompt tokens**, **3,327 completion tokens**, including **1,479 reasoning tokens**, and **$0 cost**, with `finish_reason: stop`. These are observations from one request, not a throughput guarantee.\n\nThe result is a recognisable white bird on a bicycle, with two spoked wheels, a moving crank, a bobbing body and a scene-crossing ride animation. It returns a complete, standalone SVG on the first try. The limitations are visible too: the throat pouch is weak, the legs are static rather than tracking the pedals, and the frame is stylised rather than a convincing conventional bicycle triangle. Promising free creative-code output, not a flawless drawing and not a coding benchmark score.\n\n[Recorded usage and review](/static/blog/pelican-svg/missingno-benchmark.json).\n\n## Use the free route\n\n```json\n{\"model\":\"openpaths/free\",\"messages\":[{\"role\":\"user\",\"content\":\"Write a small Python function and tests.\"}],\"reasoning_effort\":\"medium\"}\n```\n\nSend this to `/v1/chat/completions` with your existing OpenPaths API key. `missingno` is also available as a model ID. Input and output are currently $0. There is no paid fallback on `openpaths/free`: if MissingNo is unavailable, the request fails rather than quietly becoming a paid request. Availability and upstream promotions can change.\n\n## More Nous router choices\n\nSeparate Nous routes now include LongCat 2.5 Preview, Step 5 Preview, Solar Mini 4, Laguna S/XS 2.1 and Ling 3.0 Flash Sante free variants. Paid Nous routes include DeepSeek, GLM, Claude Opus 5.5, GPT-6 Luna and MiMo-V2.6-Pro. Google is not added to this expansion; existing direct DeepSeek and Z.ai IDs keep their routes.\n\nFree and paid variants have distinct IDs. Prices are copied from the Nous catalog, with ordinary input and cached input priced separately. Ordinary chat responses and streaming chunks expose a `routing` object naming the actual served model and its USD rates per million tokens, including when a configured paid request falls back. Existing billing uses the served model's price, not the original alias. Prices are snapshots, not promises that upstream tariffs will never change.\n"
+  },
   {
     slug: 'gemini-image-models-game-dev-concept-art',
     title: 'Nano Banana 2 Lite and 2.1 on OpenPaths: Game Dev Concept Art for 3.4 Cents an Image',

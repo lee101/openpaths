@@ -15,6 +15,7 @@ import { saveConversation, getConversation, getFolder, effectiveSystemPrompt, de
 import type { Conversation } from '../lib/conversations';
 import { AuthModal } from '../components/AuthModal';
 import { onAuthChange, requestCreditTopUp } from '../lib/api';
+import { ensureSpaceApiKey, hasSession } from '../lib/paywall';
 
 interface Message {
   role: 'system' | 'user' | 'assistant';
@@ -1198,7 +1199,21 @@ function ChatPlayground() {
     }
   }, [apiKey]);
 
-  useEffect(() => onAuthChange(() => setApiKey(localStorage.getItem('op_api_key') || '')), []);
+  // Signed in via JWT/cookie but no stored API key yet: mint one so the playground works.
+  const [sessionPending, setSessionPending] = useState(() => !localStorage.getItem('op_api_key') && hasSession());
+  useEffect(() => {
+    const sync = () => {
+      const k = localStorage.getItem('op_api_key') || '';
+      setApiKey(k);
+      if (k || !hasSession()) { setSessionPending(false); return; }
+      setSessionPending(true);
+      ensureSpaceApiKey().then(nk => { if (nk) setApiKey(nk); }).finally(() => setSessionPending(false));
+    };
+    sync();
+    const off = onAuthChange(sync);
+    window.addEventListener('auth-change', sync);
+    return () => { off(); window.removeEventListener('auth-change', sync); };
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('op_playground_sound', soundEnabled ? '1' : '0');
@@ -3734,6 +3749,7 @@ JSON`;
                 <EmptyState
                   onPrompt={handleSend}
                   hasApiKey={!!apiKey}
+                  sessionPending={sessionPending}
                   isImage={isImageModel(modelIndex.get(pane.modelId))}
                   isSpeech={isSpeechModel(modelIndex.get(pane.modelId))}
                   isGeminiSpeech={isGeminiSpeechModel(modelIndex.get(pane.modelId))}
@@ -3873,7 +3889,7 @@ JSON`;
             </button>
           )}
         </div>
-        {!apiKey && (
+        {!apiKey && !sessionPending && (
           <p className="text-center text-xs font-mono text-white/45 mt-2">
             <button onClick={() => setShowSettings(true)} className="underline hover:text-white/60 transition-colors">Set your API key</button> or <a href="/account" className="underline hover:text-white/60 transition-colors">create an account</a> to get started
           </p>
@@ -3961,7 +3977,7 @@ function GeminiSpeakerControls({
   );
 }
 
-function EmptyState({ onPrompt, hasApiKey, isImage, isSpeech, isGeminiSpeech, isMusic, imageDemo, videoDemo }: { onPrompt: (text: string) => void; hasApiKey: boolean; isImage?: boolean; isSpeech?: boolean; isGeminiSpeech?: boolean; isMusic?: boolean; imageDemo?: ImageDemo; videoDemo?: VideoDemo }) {
+function EmptyState({ onPrompt, hasApiKey, sessionPending, isImage, isSpeech, isGeminiSpeech, isMusic, imageDemo, videoDemo }: { onPrompt: (text: string) => void; hasApiKey: boolean; sessionPending?: boolean; isImage?: boolean; isSpeech?: boolean; isGeminiSpeech?: boolean; isMusic?: boolean; imageDemo?: ImageDemo; videoDemo?: VideoDemo }) {
   const fallback = isMusic ? MUSIC_QUICK_PROMPTS : isGeminiSpeech ? GEMINI_TTS_QUICK_PROMPTS : isSpeech ? SPEECH_QUICK_PROMPTS : isImage ? IMAGE_QUICK_PROMPTS : QUICK_PROMPTS;
   const libType = isImage ? 'image' : isMusic ? 'music' : 'text';
 
@@ -4074,6 +4090,9 @@ function EmptyState({ onPrompt, hasApiKey, isImage, isSpeech, isGeminiSpeech, is
         </>
       ) : (
         <>
+          {sessionPending ? (
+            <p className="text-sm font-mono text-white/60 mb-2" data-testid="playground-session-loading">Setting up your account…</p>
+          ) : (<>
           <p className="text-sm font-mono text-white/60 mb-2">Sign in to start comparing models</p>
           <p className="text-xs font-mono text-white/45 mb-6 max-w-sm text-center leading-relaxed">
             One API key for every major model - GPT, Claude, Gemini, Grok, DeepSeek, Llama, and more.
@@ -4092,6 +4111,7 @@ function EmptyState({ onPrompt, hasApiKey, isImage, isSpeech, isGeminiSpeech, is
               Browse models
             </a>
           </div>
+          </>)}
         </>
       )}
     </div>

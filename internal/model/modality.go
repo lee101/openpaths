@@ -28,7 +28,7 @@ func ModalityOf(cfg *ModelConfig) Modality {
 	switch {
 	case strings.Contains(idl, "embed"):
 		return ModalityEmbedding
-	case strings.Contains(idl, "decision-model"), strings.HasPrefix(idl, "jev"):
+	case strings.Contains(idl, "decision-model"), strings.HasPrefix(idl, "jev"), strings.HasSuffix(idl, "-decision"):
 		return ModalityDecision
 	case strings.Contains(idl, "whisper"), strings.Contains(idl, "stt"), strings.Contains(idl, "-asr"),
 		strings.Contains(idl, "transcribe"), strings.Contains(idl, "transcription"):

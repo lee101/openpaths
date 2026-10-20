@@ -1,0 +1,9 @@
+{
+  "model": "gemini-4-argon",
+  "route": "google direct (generateContent)",
+  "elapsed_seconds": 122.17,
+  "usage": {"prompt_tokens": 73, "completion_tokens": 13081, "total_tokens": 13154},
+  "cost_usd": 0.1310,
+  "finish_reason": "STOP",
+  "visual_review": "Strong one-shot: caped pelican with throat pouch, cap and scarf, red bicycle with spoked wheels, chain, pedals and basket, sea and road scene, CSS keyframe animation. Single sample, not a benchmark score; 122s is slow."
+}

@@ -17,6 +17,7 @@ export function clearApiKey() {
   if (typeof window === 'undefined') return;
   localStorage.removeItem(API_KEY_STORAGE_KEY);
   localStorage.removeItem('op_user');
+  localStorage.removeItem('op_token');
   window.dispatchEvent(new CustomEvent(AUTH_EVENT));
 }
 
@@ -35,5 +36,12 @@ export async function api(path: string, opts: RequestInit = {}): Promise<Respons
   const key = getApiKey();
   const headers: Record<string, string> = { 'Content-Type': 'application/json', ...(opts.headers as Record<string, string>) };
   if (key) headers.Authorization = `Bearer ${key}`;
-  return fetch(path, { ...opts, headers });
+  const res = await fetch(path, { ...opts, headers });
+  // The stored key was rejected: drop the dead session so the UI shows signed-out instead of a stuck "Invalid key".
+  if (res.status === 401 && key && !path.startsWith('/auth/') && !(opts.headers as Record<string, string> | undefined)?.Authorization) {
+    if (typeof window !== 'undefined') window.userData = undefined;
+    clearApiKey();
+    window.dispatchEvent(new Event('auth-change'));
+  }
+  return res;
 }

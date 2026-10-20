@@ -23,10 +23,43 @@ type DecisionHandler struct {
 	router   *router.Router
 	billing  *billing.Engine
 	recorder *metrics.Recorder
+	local    map[string]provider.DecisionProvider
 }
 
-func NewDecisionHandler(r *router.Router, b *billing.Engine, rec *metrics.Recorder) *DecisionHandler {
-	return &DecisionHandler{router: r, billing: b, recorder: rec}
+type decisionRoute struct {
+	cfg     *model.ModelConfig
+	decider provider.DecisionProvider
+}
+
+// NewDecisionHandler also serves models whose provider is an in-process embedder
+// (gobed) that implements DecisionProvider; those are not in the router registry.
+func NewDecisionHandler(r *router.Router, b *billing.Engine, rec *metrics.Recorder, embedders []provider.EmbeddingProvider) *DecisionHandler {
+	local := map[string]provider.DecisionProvider{}
+	for _, e := range embedders {
+		if d, ok := e.(provider.DecisionProvider); ok {
+			local[d.Name()] = d
+		}
+	}
+	return &DecisionHandler{router: r, billing: b, recorder: rec, local: local}
+}
+
+func (h *DecisionHandler) routes(name string) ([]decisionRoute, error) {
+	if cfg, ok := h.router.GetModelConfig(name); ok {
+		if d := h.local[cfg.Provider]; d != nil {
+			return []decisionRoute{{cfg, d}}, nil
+		}
+	}
+	candidates, err := h.router.ResolveWithRetries(name)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]decisionRoute, 0, len(candidates))
+	for _, cand := range candidates {
+		if d, ok := cand.Provider.(provider.DecisionProvider); ok {
+			out = append(out, decisionRoute{cand.ModelCfg, d})
+		}
+	}
+	return out, nil
 }
 
 func (h *DecisionHandler) HandleDecision(ctx *fasthttp.RequestCtx) {
@@ -48,45 +81,42 @@ func (h *DecisionHandler) HandleDecision(ctx *fasthttp.RequestCtx) {
 		return
 	}
 	originalModel := req.Model
-	candidates, err := h.router.ResolveWithRetries(req.Model)
+	routes, err := h.routes(req.Model)
 	if err != nil {
 		writeError(ctx, 404, "model_not_found", err.Error())
 		return
 	}
 	app := requestAppAttribution(ctx)
-	for _, cand := range candidates {
-		decider, ok := cand.Provider.(provider.DecisionProvider)
-		if !ok {
-			continue
-		}
-		if prepaidGate(ctx, h.billing, cand.ModelCfg.ID, 1) {
+	for _, rt := range routes {
+		cfg, decider := rt.cfg, rt.decider
+		if prepaidGate(ctx, h.billing, cfg.ID, 1) {
 			return
 		}
-		req.Model = cand.ModelCfg.ProviderModelID
+		req.Model = cfg.ProviderModelID
 		start := time.Now()
 		resp, err := decider.Decide(ctx, &req)
 		latency := int(time.Since(start).Milliseconds())
 		if err != nil {
 			pe, isProviderErr := err.(*provider.ProviderError)
 			if isProviderErr && !pe.Retryable {
-				h.recordError(userID, apiKeyID, originalModel, cand.Provider.Name(), latency, pe.StatusCode, pe.Message, app)
+				h.recordError(userID, apiKeyID, originalModel, decider.Name(), latency, pe.StatusCode, pe.Message, app)
 				writeError(ctx, pe.StatusCode, "provider_error", pe.Message)
 				return
 			}
-			h.router.MarkModelUnhealthy(cand.Provider.Name(), cand.ModelCfg.ID)
-			h.recordError(userID, apiKeyID, originalModel, cand.Provider.Name(), latency, 502, err.Error(), app)
-			log.Printf("decision: %s/%s failed (%dms): %v", cand.Provider.Name(), cand.ModelCfg.ID, latency, err)
+			h.router.MarkModelUnhealthy(decider.Name(), cfg.ID)
+			h.recordError(userID, apiKeyID, originalModel, decider.Name(), latency, 502, err.Error(), app)
+			log.Printf("decision: %s/%s failed (%dms): %v", decider.Name(), cfg.ID, latency, err)
 			continue
 		}
-		h.router.MarkModelHealthy(cand.Provider.Name(), cand.ModelCfg.ID)
+		h.router.MarkModelHealthy(decider.Name(), cfg.ID)
 		// Report the model that actually answered; TypeSafe SDK defaults to jev-latest.
-		resp.Model = cand.ModelCfg.ID
+		resp.Model = cfg.ID
 		var cost int64
 		if h.billing != nil {
-			cost, _ = h.billing.Deduct(ctx, userID, cand.ModelCfg.ID, resp.Usage.InputTokens, resp.Usage.OutputTokens, "", "")
+			cost, _ = h.billing.Deduct(ctx, userID, cfg.ID, resp.Usage.InputTokens, resp.Usage.OutputTokens, "", "")
 		}
 		if h.recorder != nil {
-			h.recorder.RecordSuccessWithApp(userID, apiKeyID, originalModel, cand.Provider.Name(),
+			h.recorder.RecordSuccessWithApp(userID, apiKeyID, originalModel, decider.Name(),
 				resp.Usage.InputTokens, resp.Usage.OutputTokens, latency, 0, cost, false, app.ID, app.URL, app.Title, app.Categories)
 		}
 		writeJSON(ctx, 200, resp)

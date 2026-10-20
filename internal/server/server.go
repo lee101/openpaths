@@ -178,10 +178,10 @@ func New(deps *Dependencies) *Server {
 		handler.GeminiSearchProviderConfig(deps.Config.Providers),
 		handler.OpenAISearchProviderConfig(deps.Config.Providers),
 		handler.GrokSearchProviderConfig(deps.Config.Providers),
-	)
+	).SetDeepSeekProvider(handler.DeepSeekSearchProviderConfig(deps.Config.Providers))
 	r.POST("/v1/search", searchChain(searchH.HandleSearch))
 	handler.LogExaSearchPricing()
-	log.Printf("Search endpoint enabled at /v1/search (exa, papers, gemini, openai, grok)")
+	log.Printf("Search endpoint enabled at /v1/search (exa, papers, deepseek, openpaths, gemini, openai, grok)")
 
 	anthH := handler.NewAnthropicHandler(deps.Router, deps.Billing, deps.Recorder)
 	anthH.SetAccess(deps.AccessQ)
@@ -273,7 +273,7 @@ func New(deps *Dependencies) *Server {
 
 	embeddingH := handler.NewEmbeddingHandler(deps.Router, deps.Billing, deps.Recorder, deps.Embedders)
 	r.POST("/v1/embeddings", apiKeyChain(embeddingH.HandleEmbedding))
-	decisionH := handler.NewDecisionHandler(deps.Router, deps.Billing, deps.Recorder)
+	decisionH := handler.NewDecisionHandler(deps.Router, deps.Billing, deps.Recorder, deps.Embedders)
 	r.POST("/v1/systemone", apiKeyChain(decisionH.HandleDecision))
 	r.POST("/v1/decisions", apiKeyChain(decisionH.HandleDecision))
 	log.Printf("Embedding endpoint enabled (%d fallback providers)", len(deps.Embedders))

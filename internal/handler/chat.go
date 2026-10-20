@@ -690,7 +690,7 @@ func (h *ChatHandler) tryNonStreamingBYOK(
 				// or outage, e.g. Fable returning "not available, use Opus 4.8"). Fall
 				// through to the next fallback candidate instead of failing hard, so a
 				// configured fallback_models chain can take over.
-				if statusCode == 404 {
+				if statusCode == 404 || isModelNotFoundError(statusCode, errMsg) {
 					return false, err
 				}
 				writeError(ctx, statusCode, "provider_error", errMsg)
@@ -703,6 +703,7 @@ func (h *ChatHandler) tryNonStreamingBYOK(
 	}
 
 	resp.Model = originalModel
+	resp.Routing = chatRoutePricing(modelCfg, prov.Name(), resp.Usage)
 
 	var tps float32
 	var tokensIn, tokensOut, cachedTokensIn int
@@ -772,7 +773,7 @@ func (h *ChatHandler) tryStreamingBYOK(
 			if !pe.Retryable {
 				// See tryNonStreamingBYOK: fall through on 404 so the fallback
 				// chain (e.g. Fable -> Opus during a Fable outage) can take over.
-				if statusCode == 404 {
+				if statusCode == 404 || isModelNotFoundError(statusCode, errMsg) {
 					return false, err
 				}
 				writeError(ctx, statusCode, "provider_error", errMsg)
@@ -813,6 +814,7 @@ func (h *ChatHandler) tryStreamingBYOK(
 			}
 
 			event.Chunk.Model = originalModel
+			event.Chunk.Routing = chatRoutePricing(modelCfg, prov.Name(), event.Chunk.Usage)
 			deltaText := ""
 			if len(event.Chunk.Choices) > 0 && event.Chunk.Choices[0].Delta != nil {
 				deltaText = messageContentText(event.Chunk.Choices[0].Delta.Content)
@@ -864,4 +866,17 @@ func (h *ChatHandler) tryStreamingBYOK(
 		}
 	})
 	return true, nil
+}
+
+func isModelNotFoundError(statusCode int, msg string) bool {
+	if statusCode != 400 {
+		return false
+	}
+	m := strings.ToLower(msg)
+	for _, needle := range []string{"model not found", "model_not_found", "model does not exist", "unknown model", "no such model"} {
+		if strings.Contains(m, needle) {
+			return true
+		}
+	}
+	return false
 }
