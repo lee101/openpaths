@@ -1,4 +1,4 @@
-.PHONY: build test test-go test-frontend lint secrets install-hooks run clean
+.PHONY: build test test-go test-frontend lint secrets install-hooks run clean sync-openrouter sync-openrouter-check
 
 build:
 	go build -o bin/openpaths ./cmd/openpaths
@@ -34,3 +34,9 @@ docker-up:
 
 docker-down:
 	docker-compose down
+
+sync-openrouter:
+	python3 scripts/sync-openrouter-models.py
+
+sync-openrouter-check:
+	python3 scripts/sync-openrouter-models.py --check

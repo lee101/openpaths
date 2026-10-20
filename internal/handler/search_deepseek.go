@@ -22,7 +22,8 @@ const (
 	openpathsSearchProviderName = "openpaths"
 	openpathsSearchModel        = "openpaths-search"
 	openpathsSearchPriceUSD     = 0.01
-	openpathsAgentMaxRounds     = 4
+	openpathsAgentMaxRounds     = 3
+	openpathsMaxCitations       = 12
 	openpathsFetchMaxChars      = 6000
 )
 
@@ -207,6 +208,9 @@ func (h *SearchHandler) handleOpenPathsSearch(ctx *fasthttp.RequestCtx, payload 
 				req := map[string]any{"model": modelName, "messages": msgs}
 				if round < openpathsAgentMaxRounds {
 					req["tools"] = openpathsAgentTools
+				} else {
+					msgs = append(msgs, map[string]any{"role": "user", "content": "Tool budget exhausted. Do not call tools. Write the final cited answer now from the evidence gathered."})
+					req["messages"] = msgs
 				}
 				var cr struct {
 					Choices []struct {
@@ -232,6 +236,12 @@ func (h *SearchHandler) handleOpenPathsSearch(ctx *fasthttp.RequestCtx, payload 
 				m := cr.Choices[0].Message
 				if len(m.ToolCalls) == 0 {
 					out.Answer = strings.TrimSpace(m.Content)
+					if strings.Contains(out.Answer, "DSML") {
+						return nil, 502, fmt.Errorf("agent did not produce a final answer")
+					}
+					if len(out.Citations) > openpathsMaxCitations {
+						out.Citations = out.Citations[:openpathsMaxCitations]
+					}
 					out.Results = out.Citations
 					return out, 200, nil
 				}
@@ -248,8 +258,7 @@ func (h *SearchHandler) handleOpenPathsSearch(ctx *fasthttp.RequestCtx, payload 
 					msgs = append(msgs, map[string]any{"role": "tool", "tool_call_id": tc.ID, "content": result})
 				}
 			}
-			out.Results = out.Citations
-			return out, 200, nil
+			return nil, 502, fmt.Errorf("agent did not produce a final answer")
 		})
 }
 

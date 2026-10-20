@@ -1,0 +1,28 @@
+{
+  "fee": 0.055,
+  "paid": [
+    "minimax/minimax-m3"
+  ],
+  "free_rank": [
+    "minimax/minimax-m3.1-flash:free",
+    "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "thinkingmachines/inkling:free",
+    "nvidia/nemotron-3.5-super-vl:free",
+    "nvidia/nemotron-3-super-120b-a12b:free",
+    "dots-studio/dots-3-note-preview:free",
+    "cohere/north-mini-code:free",
+    "poolside/laguna-s-2.1:free",
+    "google/gemma-4-31b-it:free",
+    "xingchen-agi/xing4.0-29b-a4b:free",
+    "thinkingmachines/inkling-small:free",
+    "nvidia/nemotron-3.5-lightning:free",
+    "google/gemma-4-26b-a4b-it:free",
+    "poolside/laguna-xs-2.1:free",
+    "nvidia/nemotron-3-nano-30b-a3b:free"
+  ],
+  "free_exclude": [
+    "nvidia/nemotron-3.5-content-safety:free"
+  ],
+  "free_min_context": 128000,
+  "free_aliases": ["free", "openpaths-free", "free-latest", "openpaths-auto-free"]
+}

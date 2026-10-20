@@ -3,29 +3,32 @@ package config
 import "testing"
 
 // TestFreeTierBillsNothingOnEveryHop pins the expensive-direction guarantee of
-// the free series: a caller asking for openpaths-free is either served by a
+// the free series: a caller asking for openpaths/free is either served by a
 // free model or gets an error — never silently upgraded onto a paid lane. A
 // paid model pasted into the chain would charge them for a request they made
 // under the free tier.
 func TestFreeTierBillsNothingOnEveryHop(t *testing.T) {
-	t.Skip("pending config: openpaths/free and the or/*-free ladder lanes; prod WIP test ahead of prod config")
 	byID := loadAuditConfig(t)
 
 	free := byID["openpaths/free"]
 	if free == nil {
 		t.Fatal("openpaths/free missing from config.yaml")
 	}
-	if free.Provider != "openrouter" || free.ProviderModelID != "stealth/space-bunny-alpha" {
-		t.Errorf("openpaths/free routes to %s/%s, want openrouter/stealth/space-bunny-alpha",
-			free.Provider, free.ProviderModelID)
+	if free.Provider != "openrouter" {
+		t.Errorf("openpaths/free routes to provider %q, want the OpenRouter free lane", free.Provider)
 	}
-	if free.InputPricePer1M != 0 || free.OutputPricePer1M != 0 {
-		t.Errorf("openpaths/free bills %v/%v, want 0/0", free.InputPricePer1M, free.OutputPricePer1M)
+	if isPriced(t, free) || len(free.FallbackProviders) != 0 {
+		t.Errorf("openpaths/free is priced or has provider fallbacks: %+v", free)
 	}
 	if len(free.FallbackModels) == 0 {
 		t.Fatal("openpaths/free has no fallback ladder")
 	}
-	for _, hop := range free.FallbackModels {
+	for _, alias := range []string{"free", "openpaths-free", "free-latest", "openpaths-auto-free"} {
+		if byID[alias] != free {
+			t.Errorf("alias %q does not reach openpaths/free", alias)
+		}
+	}
+	for i, hop := range free.FallbackModels {
 		m := byID[hop]
 		if m == nil {
 			t.Errorf("free tier hop %q is not a configured model", hop)
@@ -34,40 +37,11 @@ func TestFreeTierBillsNothingOnEveryHop(t *testing.T) {
 		if m.Provider != "openrouter" {
 			t.Errorf("free tier hop %q uses provider %q, want the OpenRouter free lane", hop, m.Provider)
 		}
-		if m.InputPricePer1M != 0 || m.OutputPricePer1M != 0 {
-			t.Errorf("free tier hop %q bills %v/%v, want 0/0", hop, m.InputPricePer1M, m.OutputPricePer1M)
+		if isPriced(t, m) || len(m.FallbackModels) != 0 || len(m.FallbackProviders) != 0 {
+			t.Errorf("free tier hop %q is priced or falls back further: %+v", hop, m)
 		}
-	}
-}
-
-// The free preview lane is also selectable on its own, including through the
-// OpenRouter-style alias callers already use for the other stealth previews.
-func TestSpaceBunnyFreePreviewIsSelectable(t *testing.T) {
-	t.Skip("pending config: or/space-bunny and openrouter/space-bunny-alpha aliases; prod WIP test ahead of prod config")
-	byName := loadAuditConfig(t)
-
-	for _, id := range []string{
-		"or/space-bunny",
-		"space-bunny",
-		"openrouter/space-bunny-alpha",
-		"stealth/space-bunny-alpha",
-		"openpaths/space-bunny-alpha",
-		"openpaths/stealth/space-bunny-alpha",
-	} {
-		m := byName[id]
-		if m == nil {
-			t.Errorf("Space Bunny entry %q is missing", id)
-			continue
-		}
-		if m.ProviderModelID != "stealth/space-bunny-alpha" {
-			t.Errorf("%s routes to %s, want stealth/space-bunny-alpha", id, m.ProviderModelID)
-		}
-		if m.InputPricePer1M != 0 || m.OutputPricePer1M != 0 {
-			t.Errorf("%s bills %v/%v, want 0/0", id, m.InputPricePer1M, m.OutputPricePer1M)
-		}
-		if m.ContextWindow != 1000000 || !m.SupportsTools || !m.SupportsVision {
-			t.Errorf("%s = ctx %d tools %t vision %t, want the published 1M/true/true",
-				id, m.ContextWindow, m.SupportsTools, m.SupportsVision)
+		if last := i == len(free.FallbackModels)-1; last != (m.ProviderModelID == "openrouter/free") {
+			t.Errorf("hop %d %q: OpenRouter's own free router must be the last hop and only there", i, hop)
 		}
 	}
 }
