@@ -259,6 +259,11 @@ func New(deps *Dependencies) *Server {
 	r.POST("/v1/music/generations", middleware.PaywallContract(apiKeyChain(musicH.HandleMusicGeneration)))
 	log.Printf("Music generation endpoint enabled")
 
+	structuredH := handler.NewStructuredHandler(deps.Router, deps.Billing, deps.Recorder)
+	r.POST("/v1/extract", apiKeyChain(structuredH.HandleExtract))
+	r.POST("/v1/decide", apiKeyChain(structuredH.HandleDecide))
+	log.Printf("Structured extraction (Clairic) and decision (Clef) endpoints enabled")
+
 	forecastH := handler.NewForecastingHandler(deps.Router, deps.Billing, deps.Recorder)
 	r.POST("/v1/forecasts", apiKeyChain(forecastH.HandleForecast))
 	r.POST("/v1/forecasts/generations", apiKeyChain(forecastH.HandleForecast))

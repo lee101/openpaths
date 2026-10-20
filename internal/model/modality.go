@@ -18,6 +18,7 @@ const (
 	ModalityThreeD        Modality = "3d"
 	ModalityForecasting   Modality = "forecasting"
 	ModalityDecision      Modality = "decision"
+	ModalityStructured    Modality = "structured"
 )
 
 // ModalityOf maps a model config to the domain that serves it. Order matters:
@@ -49,6 +50,8 @@ func ModalityOf(cfg *ModelConfig) Modality {
 		cfg.PricePerMegapixel > 0, cfg.PriceFirstMegapixel > 0, cfg.PriceExtraMegapixel > 0,
 		strings.Contains(idl, "image"):
 		return ModalityImage
+	case strings.Contains(idl, "clairic"), strings.HasPrefix(idl, "clef"):
+		return ModalityStructured
 	case strings.Contains(idl, "chronos"), strings.Contains(idl, "forecast"):
 		return ModalityForecasting
 	default:

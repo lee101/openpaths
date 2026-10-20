@@ -3,6 +3,7 @@ package nous
 import (
 	"strings"
 
+	"github.com/openpaths/openpaths/internal/model"
 	"github.com/openpaths/openpaths/internal/provider/openai"
 )
 
@@ -15,7 +16,13 @@ func New(apiKey, baseURL string) *NousProvider {
 		baseURL = "https://inference-api.nousresearch.com"
 	}
 	return &NousProvider{
-		OpenAIProvider: openai.New(apiKey, strings.TrimRight(baseURL, "/")),
+		OpenAIProvider: openai.NewCompatible("nous", apiKey, strings.TrimSuffix(strings.TrimRight(baseURL, "/"), "/v1"), func(req *model.ChatCompletionRequest) {
+			req.Prefill = ""
+			req.TaskTier = ""
+			req.RoutingStrategy = ""
+			req.Thinking = nil
+			req.ChatTemplateKwargs = nil
+		}),
 	}
 }
 

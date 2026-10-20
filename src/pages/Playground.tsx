@@ -436,7 +436,7 @@ const AUTO_ARCHIVE_DAYS_KEY = 'op_playground_auto_archive_days';
 const NON_CHAT_PATTERNS = /^(gpt-realtime|gemini-3\.8-live|whisper|xai-stt|grok-voice|text-embedding|openpaths-embed|modernbert|mistral-embed|codestral-embed|nemotron-embed|gemini-embedding-001|gemini-embedding-2-preview|gemini-embedding-2|gpt-4o-transcribe|gpt-4o-mini-transcribe|distil-whisper|whisper-v3)/i;
 const IMAGE_MODEL_PATTERNS = /^(openpaths\/auto-image|auto-image|flux|klein|ra1|ra2(?!v)|zimage|glm-image|grok-imagine-image|gpt-image|fal-gpt-image|hidream|dall-e|stable-diffusion|sd3|ideogram|fal-ai\/flux-2-pro\/outpaint)/i;
 const BFL_IMAGE_SIZES = ['1024x1024', '1152x768', '768x1152', '1360x768', '768x1360', '1920x1088', '1088x1920', '2048x880', '2048x2048'];
-const VIDEO_MODEL_PATTERNS = /^(auto-video|flux-3-video|wan|ltx|hailuo|kling|luma|ra2v|sora|seedance)/i;
+const VIDEO_MODEL_PATTERNS = /^(auto-video|flux-3-video|flux-3-max-video|wan|ltx|hailuo|kling|luma|ra2v|sora|seedance)/i;
 const SPEECH_MODEL_PATTERNS = /(tts|speech-)/i;
 const MUSIC_MODEL_PATTERNS = /^(music-|lyria-)/i;
 

@@ -45,6 +45,7 @@ import (
 	"github.com/openpaths/openpaths/internal/provider/google"
 	"github.com/openpaths/openpaths/internal/provider/groq"
 	"github.com/openpaths/openpaths/internal/provider/localwhisper"
+	"github.com/openpaths/openpaths/internal/provider/cloudflare"
 	"github.com/openpaths/openpaths/internal/provider/manifoldgen"
 	metaprovider "github.com/openpaths/openpaths/internal/provider/meta"
 	"github.com/openpaths/openpaths/internal/provider/minimax"
@@ -220,6 +221,8 @@ func main() {
 			p = minimax.New(provCfg.APIKey)
 		case "netwrck":
 			p = netwrck.New(provCfg.APIKey, provCfg.BaseURL)
+		case "cloudflare":
+			p = cloudflare.New(provCfg.APIKey, provCfg.BaseURL)
 		case "manifoldgen":
 			p = manifoldgen.New(provCfg.APIKey, provCfg.BaseURL)
 		case "cutedsl":

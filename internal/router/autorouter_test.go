@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/openpaths/openpaths/internal/config"
@@ -643,7 +644,7 @@ func TestIsAutoReasoningEffort(t *testing.T) {
 	}
 }
 
-func TestAutoRouter_CodeTaskRoutesEverydayCodingToGLM53Flash(t *testing.T) {
+func TestAutoRouter_CodeTaskRoutesEverydayCodingToDeepSeekPro(t *testing.T) {
 	ar := NewAutoRouter(&fakeEmbedder{})
 	if err := ar.Init(context.Background()); err != nil {
 		t.Fatalf("Init() error = %v", err)
@@ -653,15 +654,15 @@ func TestAutoRouter_CodeTaskRoutesEverydayCodingToGLM53Flash(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ResolveAuto() error = %v", err)
 	}
-	if got.ModelID != "glm-5.3-flash" {
-		t.Fatalf("ModelID = %q, want glm-5.3-flash", got.ModelID)
+	if got.ModelID != "deepseek-v4-pro" {
+		t.Fatalf("ModelID = %q, want deepseek-v4-pro", got.ModelID)
 	}
 	if got.ReasoningEffort != "high" {
 		t.Fatalf("ReasoningEffort = %q, want high", got.ReasoningEffort)
 	}
 }
 
-func TestAutoRouter_CodeTaskRoutesEverydayTestsToGLM53Flash(t *testing.T) {
+func TestAutoRouter_CodeTaskRoutesEverydayTestsToDeepSeekFlash(t *testing.T) {
 	ar := NewAutoRouter(&fakeEmbedder{})
 	if err := ar.Init(context.Background()); err != nil {
 		t.Fatalf("Init() error = %v", err)
@@ -671,8 +672,8 @@ func TestAutoRouter_CodeTaskRoutesEverydayTestsToGLM53Flash(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ResolveAuto() error = %v", err)
 	}
-	if got.ModelID != "glm-5.3-flash" {
-		t.Fatalf("ModelID = %q, want glm-5.3-flash", got.ModelID)
+	if !strings.HasPrefix(got.ModelID, "deepseek-v4-") {
+		t.Fatalf("ModelID = %q, want deepseek-v4-*", got.ModelID)
 	}
 }
 
@@ -767,15 +768,16 @@ func TestDefaultRoutingTables_CodeTaskNeverDisablesGLM53FlashReasoning(t *testin
 	}
 }
 
-func TestDefaultRoutingTables_CodeTaskGLM53FlashIsLargestCohort(t *testing.T) {
+func TestDefaultRoutingTables_CodeTaskTierMix(t *testing.T) {
+	entries := defaultRoutingTables()["code-task"]
 	counts := map[string]int{}
-	for _, e := range defaultRoutingTables()["code-task"] {
+	for _, e := range entries {
 		counts[e.ModelID]++
 	}
-	flash := counts["glm-5.3-flash"]
-	for model, n := range counts {
-		if model != "glm-5.3-flash" && n >= flash {
-			t.Fatalf("code-task cohort %q (%d) rivals GLM-5.3 Flash (%d); everyday coding must stay the majority share", model, n, flash)
-		}
+	if opus := counts["claude-opus-latest"]; opus == 0 || opus*10 > len(entries) {
+		t.Fatalf("opus anchors = %d of %d; top tier must exist but stay at most 10%%", opus, len(entries))
+	}
+	if counts["gpt-5.6-sol"] == 0 || counts["deepseek-v4-flash"] == 0 {
+		t.Fatalf("code-task needs both Sol and DeepSeek lanes: %v", counts)
 	}
 }

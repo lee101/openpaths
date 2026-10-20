@@ -46,7 +46,7 @@ func NewCompatible(providerName, apiKey, baseURL string, sanitizeChat func(*mode
 		baseURL:      strings.TrimRight(baseURL, "/"),
 		providerName: providerName,
 		sanitizeChat: sanitizeChat,
-		client:       &http.Client{Timeout: 5 * time.Minute},
+		client:       &http.Client{Timeout: 5 * time.Minute, Transport: provider.UserAgentTransport(nil)},
 	}
 }
 

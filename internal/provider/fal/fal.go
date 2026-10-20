@@ -1151,6 +1151,66 @@ func (p *FalProvider) GenerateVideo(ctx context.Context, req *model.VideoGenerat
 	return parseFalVideoResult(resultBody)
 }
 
+// applyFlux3MaxVideoRequest selects the Fal FLUX 3 Max endpoint from the input
+// shape: text, image (optionally with an end frame) or evenly spaced keyframes.
+func applyFlux3MaxVideoRequest(req *model.VideoGenerationRequest, falReq map[string]any) string {
+	for _, k := range []string{"fps", "bitrate_mode", "end_user_id", "enable_safety_checker", "image_urls", "video_urls", "audio_urls", "image_url", "end_image_url"} {
+		delete(falReq, k)
+	}
+	duration := 5
+	if d := strings.ToLower(strings.TrimSpace(string(req.Duration))); d != "" && d != "auto" {
+		duration = intOrDefaultString(d, 5)
+	}
+	if duration < 5 {
+		duration = 5
+	} else if duration > 20 {
+		duration = 20
+	}
+	falReq["duration"] = duration
+	switch strings.ToLower(strings.TrimSpace(req.Resolution)) {
+	case "1080p", "fhd":
+		falReq["resolution"] = "1080p"
+	default:
+		falReq["resolution"] = "720p"
+	}
+
+	var images []string
+	if u := strings.TrimSpace(req.ImageURL); u != "" {
+		images = append(images, u)
+	}
+	for _, u := range req.ImageURLs {
+		if u = strings.TrimSpace(u); u != "" {
+			images = append(images, u)
+		}
+	}
+	for _, item := range req.Content {
+		if item.Type == "image_url" && item.ImageURL != nil && strings.TrimSpace(item.ImageURL.URL) != "" {
+			images = append(images, strings.TrimSpace(item.ImageURL.URL))
+		}
+	}
+	end := strings.TrimSpace(req.EndImageURL)
+	if len(images) > 10 {
+		images = images[:10]
+	}
+	switch {
+	case len(images) > 1:
+		last := duration * 24
+		frames := make([]map[string]any, len(images))
+		for i, u := range images {
+			frames[i] = map[string]any{"image_url": u, "frame_index": i * last / (len(images) - 1)}
+		}
+		falReq["keyframes"] = frames
+		return "blackforestlabs/flux-3-max/keyframes-to-video"
+	case len(images) == 1:
+		falReq["image_url"] = images[0]
+		if end != "" {
+			falReq["end_image_url"] = end
+		}
+		return "blackforestlabs/flux-3-max/image-to-video"
+	}
+	return "blackforestlabs/flux-3-max/text-to-video"
+}
+
 // applyMiniMaxH3MaxVideoRequest selects the native Fal H3 Max endpoint from
 // the input shape. H3 Max exposes separate text-to-video and image-to-video
 // endpoints, with a shared schema for the generation controls.
@@ -1367,6 +1427,9 @@ func (p *FalProvider) falQueueRequestBases(modelID, requestID string) []string {
 	}
 	if strings.Contains(modelID, "bytedance/seedance-2.0") {
 		bases = append(bases, queueBase+"/bytedance/seedance-2.0/requests/"+requestID)
+	}
+	if strings.HasPrefix(modelID, "blackforestlabs/flux-3-max/") {
+		bases = append(bases, queueBase+"/blackforestlabs/flux-3-max/requests/"+requestID)
 	}
 	if strings.Contains(modelID, "alibaba/wan-3.0/") {
 		bases = append(bases, queueBase+"/alibaba/wan-3.0/requests/"+requestID)

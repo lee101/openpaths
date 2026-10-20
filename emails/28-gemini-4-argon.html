@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gemini 4 Argon is live on OpenPaths</title>
+</head>
+<body style="margin:0; padding:0; background-color:#0a0a0a; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0a0a0a;">
+<tr>
+<td align="center" style="padding:24px 16px;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px; width:100%; background-color:#111111; border:1px solid #222222; border-radius:12px; overflow:hidden;">
+
+<tr>
+<td style="background:linear-gradient(135deg, #1a1a1a, #1a1a1a); padding:40px 40px 32px; text-align:center;">
+<a href="https://openpaths.io" style="display:inline-block; text-decoration:none;"><img src="https://openpaths.io/logo.webp" alt="OpenPaths" width="44" height="44" style="display:block; margin:0 auto 12px; width:44px; height:44px; border:0;"></a>
+<h1 style="margin:0; color:#f5f5f5; font-size:28px; font-weight:700; line-height:1.3; font-family:monospace;"><a href="https://openpaths.io" style="color:#f5f5f5; text-decoration:none;">OpenPaths</a></h1>
+<p style="margin:8px 0 0; color:#888888; font-size:16px; font-weight:400;">Gemini 4 Argon is live: Google pricing, OpenRouter fallback</p>
+</td>
+</tr>
+
+<tr>
+<td style="padding:36px 40px;">
+<p style="margin:0 0 20px; color:#e0e0e0; font-size:16px; line-height:1.6;">
+Google's Gemini 4 Argon is routable on OpenPaths today as <span style="color:#f5f5f5; font-family:monospace;">gemini-4-argon</span> (aliases <span style="color:#f5f5f5; font-family:monospace;">gemini-4</span>, <span style="color:#f5f5f5; font-family:monospace;">google/gemini-4-argon</span>). It bills at Google's own rates, with a 1M-token context window, tool calling and image input.
+</p>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
+<tr>
+<td style="padding:16px 20px; background-color:#1a1a1a; border:1px solid #2a2a2a; border-radius:10px;">
+<p style="margin:0 0 6px; color:#f5f5f5; font-size:15px; font-weight:600;">$2.00 in &middot; $0.10 cached &middot; $10.00 out, per million tokens</p>
+<p style="margin:0; color:#888888; font-size:13px; line-height:1.5;">Routed direct to Google. If Google is down, requests fall back to the same model on OpenRouter at the same price, so an outage never changes your bill. The response names the model actually served.</p>
+</td>
+</tr>
+</table>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
+<tr>
+<td style="padding:16px 20px; background-color:#1a1a1a; border:1px solid #2a2a2a; border-radius:10px;">
+<p style="margin:0 0 6px; color:#f5f5f5; font-size:15px; font-weight:600;">"say hi nothing else" &rarr; "hi"</p>
+<p style="margin:0; color:#888888; font-size:13px; line-height:1.5;">Five completion tokens, no preamble, no punctuation. Instruction-following on tiny prompts is what keeps agent loops and parsers from breaking.</p>
+</td>
+</tr>
+</table>
+
+<p style="margin:0 0 12px; color:#f5f5f5; font-size:16px; font-weight:600;">The pelican-on-a-bicycle test</p>
+<p style="margin:0 0 16px; color:#e0e0e0; font-size:16px; line-height:1.6;">
+One shot, no retries: "Draw a pelican riding a bicycle as an animated SVG." Gemini 4 Argon returned a complete SVG with a throat pouch, cap, flowing scarf, a red bike with spoked wheels, chain, pedals and a basket, and a sea-and-road scene with CSS animation. It is the best pelican we have seen. It also took 122 seconds and 13,081 output tokens, about $0.13 at list price, so stream it and give it a generous timeout.
+</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+<tr>
+<td align="center">
+<a href="https://openpaths.io/blog/gemini-4-argon-pelican-bike"><img src="https://openpaths.io/static/blog/pelican-svg/gemini-4-argon.jpg" alt="Gemini 4 Argon pelican riding a bicycle" width="520" style="width:100%; max-width:520px; display:block; border-radius:8px; border:0;"></a>
+<p style="margin:10px 0 0; font-size:13px;"><a href="https://openpaths.io/static/blog/pelican-svg/gemini-4-argon.svg" style="color:#f5f5f5;">Watch the animated original</a></p>
+</td>
+</tr>
+</table>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+<tr>
+<td style="padding:16px 20px; background-color:#1a1a1a; border:1px solid #2a2a2a; border-radius:10px;">
+<p style="margin:0; color:#888888; font-size:13px; font-family:monospace; line-height:1.7;">
+curl https://openpaths.io/v1/chat/completions \<br>
+&nbsp;&nbsp;-H "Authorization: Bearer $OPENPATHS_API_KEY" \<br>
+&nbsp;&nbsp;-d '{"model":"gemini-4-argon","messages":[{"role":"user","content":"say hi nothing else"}]}'
+</p>
+</td>
+</tr>
+</table>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:32px;">
+<tr>
+<td align="center" style="padding-bottom:14px;">
+<a href="https://openpaths.io/playground?model=gemini-4-argon" style="display:inline-block; background:#f5f5f5; color:#000000; text-decoration:none; padding:14px 36px; border-radius:8px; font-size:16px; font-weight:600;">Try Gemini 4 Argon in the Playground</a>
+</td>
+</tr>
+<tr>
+<td align="center">
+<a href="https://openpaths.io/blog/gemini-4-argon-pelican-bike" style="display:inline-block; background:#1a1a1a; color:#f5f5f5; border:1px solid #f5f5f5; text-decoration:none; padding:13px 30px; border-radius:8px; font-size:15px; font-weight:600;">Read the write-up</a>
+</td>
+</tr>
+</table>
+
+</td>
+</tr>
+
+<tr>
+<td style="padding:28px 40px; border-top:1px solid #222222; text-align:center; background-color:#0d0d0d;">
+<p style="margin:0 0 10px; font-size:13px;">
+<a href="https://openpaths.io/playground" style="color:#555555; text-decoration:none;">Playground</a> &nbsp;&middot;&nbsp;
+<a href="https://openpaths.io/models" style="color:#555555; text-decoration:none;">Models</a> &nbsp;&middot;&nbsp;
+<a href="https://openpaths.io/blog" style="color:#555555; text-decoration:none;">Blog</a> &nbsp;&middot;&nbsp;
+<a href="{{.UnsubscribeURL}}" style="color:#555555; text-decoration:none;">Unsubscribe</a>
+</p>
+<p style="margin:0; color:#444444; font-size:12px;"><a href="https://openpaths.io" style="color:#f5f5f5; text-decoration:none;">OpenPaths</a> &middot; by <a href="https://app.nz" style="color:#444444; text-decoration:underline;">Applied Science</a></p>
+</td>
+</tr>
+
+</table>
+</td>
+</tr>
+</table>
+</body>
+</html>

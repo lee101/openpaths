@@ -2,7 +2,9 @@ package provider
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"github.com/openpaths/openpaths/internal/model"
 )
@@ -59,6 +61,14 @@ type DecisionProvider interface {
 	Decide(ctx context.Context, req *model.DecisionRequest) (*model.DecisionResponse, error)
 }
 
+// StructuredProvider runs typed-output models (field extraction, decision
+// questions) that take a JSON body and return a JSON result, billed on the
+// input tokens the upstream reports.
+type StructuredProvider interface {
+	Name() string
+	RunStructured(ctx context.Context, providerModelID string, body map[string]any) (result json.RawMessage, inputTokens int, err error)
+}
+
 // ForecastingProvider defines the interface for time-series forecasting
 // (e.g. CuteDSL chronos2). A forecaster takes a historical series and returns
 // a point forecast plus optional quantiles.
@@ -109,4 +119,33 @@ func (e *ProviderError) Error() string {
 
 func (e *ProviderError) Unwrap() error {
 	return e.Err
+}
+
+// defaultUserAgent identifies OpenPaths to upstream APIs. Go's default
+// "Go-http-client/1.1" is rejected with HTTP 403 by some upstream CDNs
+// (Cloudflare in front of the Nous Research inference API), which broke the
+// `nous` provider's chat route and model discovery.
+const defaultUserAgent = "openpaths/1.0 (+https://openpaths.io)"
+
+// UserAgentTransport wraps base (defaulting to http.DefaultTransport) so every
+// request carries a real User-Agent unless the caller set one explicitly.
+// http.DefaultTransport itself is never mutated: safefetch.NewClient asserts it
+// is a *http.Transport.
+func UserAgentTransport(base http.RoundTripper) http.RoundTripper {
+	if base == nil {
+		base = http.DefaultTransport
+	}
+	return userAgentTransport{base: base, ua: defaultUserAgent}
+}
+
+type userAgentTransport struct {
+	base http.RoundTripper
+	ua   string
+}
+
+func (t userAgentTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if req.Header.Get("User-Agent") == "" {
+		req.Header.Set("User-Agent", t.ua)
+	}
+	return t.base.RoundTrip(req)
 }

@@ -2086,7 +2086,7 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://openpaths.io/models/flux-3-video</loc>
+    <loc>https://openpaths.io/models/flux-3-max-video</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -2286,12 +2286,22 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/models/openpaths%2Ffree</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/models/muse-spark-1.3</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://openpaths.io/models/muse-spark-1.3-contributor</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/typesafe%2Fjev-router</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -2787,6 +2797,81 @@
   </url>
   <url>
     <loc>https://openpaths.io/models/ministral-14b-latest</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/missingno</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/nous%2Fmeituan%2Flongcat-2.5-preview%3Afree</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/nous%2Fstepfun%2Fstep-5-preview%3Afree</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/nous%2Fupstage%2Fsolar-mini4%3Afree</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/nous%2Fpoolside%2Flaguna-s-2.1%3Afree</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/nous%2Fpoolside%2Flaguna-xs-2.1%3Afree</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/nous%2Finclusionai%2Fling-3.0-flash-sante%3Afree</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/nous%2Fdeepseek%2Fdeepseek-v4.1-flash</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/nous%2Fdeepseek%2Fdeepseek-v4-flash</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/nous%2Fz-ai%2Fglm-5.3-flash</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/nous%2Fanthropic%2Fclaude-opus-5.5</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/nous%2Fz-ai%2Fglm-5.2</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/nous%2Fopenai%2Fgpt-6-luna</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/nous%2Fz-ai%2Fglm-5.3</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/nous%2Fxiaomi%2Fmimo-v2.6-pro</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>

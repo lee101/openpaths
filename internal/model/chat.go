@@ -70,6 +70,16 @@ type ChatCompletionResponse struct {
 	Choices           []ChatChoice `json:"choices"`
 	Usage             *UsageInfo   `json:"usage,omitempty"`
 	SystemFingerprint string       `json:"system_fingerprint,omitempty"`
+	Routing           *ChatRouting `json:"routing,omitempty"`
+}
+
+type ChatRouting struct {
+	Model                   string  `json:"model"`
+	Provider                string  `json:"provider"`
+	InputPricePer1M         float64 `json:"input_price_per_1m"`
+	InputCacheHitPricePer1M float64 `json:"input_cache_hit_price_per_1m"`
+	OutputPricePer1M        float64 `json:"output_price_per_1m"`
+	Currency                string  `json:"currency"`
 }
 
 type ChatChoice struct {
@@ -114,6 +124,7 @@ func (u *UsageInfo) CachedPromptTokens() int {
 }
 
 type ChatCompletionChunk struct {
+	Routing           *ChatRouting `json:"routing,omitempty"`
 	ID                string       `json:"id"`
 	Object            string       `json:"object"`
 	Created           int64        `json:"created"`
