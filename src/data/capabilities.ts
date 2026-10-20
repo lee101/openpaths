@@ -47,7 +47,7 @@ export function isChatModel(m: Model) {
  * (OpenRouter, Z.AI, NVIDIA): none touches app.nz / RunPod GPU capacity. The Go
  * guard test internal/config/free_models_guard_test.go enforces that against config.yaml.
  */
-export const FREE_MODEL_IDS = ['or/nemotron-nano', 'glm-4.6v-flash', 'nvidia/deepseek-v4-flash', 'or/space-bunny-alpha'];
+export const FREE_MODEL_IDS = ['or/nemotron-nano', 'glm-4.6v-flash', 'nvidia/deepseek-v4-flash', 'or/space-bunny-alpha', 'missingno', 'nous/inclusionai/ling-3.0-flash-sante:free', 'nous/meituan/longcat-2.5-preview:free', 'nous/poolside/laguna-s-2.1:free', 'nous/poolside/laguna-xs-2.1:free', 'nous/stepfun/step-5-preview:free', 'nous/upstage/solar-mini4:free'];
 
 const FREE_SET = new Set(FREE_MODEL_IDS);
 const isFreeChat = (m: Model) => FREE_SET.has(m.id);
