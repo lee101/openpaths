@@ -282,7 +282,7 @@ var mcpTools = []map[string]any{
 		"inputSchema": map[string]any{
 			"type": "object",
 			"properties": map[string]any{
-				"model":    map[string]any{"type": "string", "description": "e.g. mg-music (ManifoldGen MiniMax-Music3 full songs; optional duration seconds 30-300) or music-2.5. Use mg-sfx for short ~5s sound effects."},
+				"model":    map[string]any{"type": "string", "description": "e.g. mg-music (ManifoldGen MiniMax-Music3 full songs; optional duration seconds 30-300) or music-2.5. Use mg-lyric-song for lyrics-to-song, mg-voice-song to turn a sung recording (audio_url + voice_consent) into a full song. Use mg-sfx for short ~5s sound effects."},
 				"prompt":   map[string]any{"type": "string", "description": "Style/genre description."},
 				"lyrics":   map[string]any{"type": "string", "description": "Optional lyrics ([verse]/[chorus] sections supported)."},
 				"duration": map[string]any{"type": "integer", "description": "Song length in seconds (mg-music only, 30-300)."},
@@ -897,6 +897,7 @@ func compactPricing(cfg *model.ModelConfig) map[string]any {
 	add("output_per_1m_tokens", outputRate)
 	add("per_1m_characters", cfg.PricePer1MCharacters)
 	add("per_request", cfg.PricePerRequest)
+	add("per_1m_embeddings", cfg.PricePer1MEmbeddings)
 	add("per_image", cfg.PricePerImage)
 	add("per_megapixel", cfg.PricePerMegapixel)
 	add("per_input_image", cfg.PricePerInputImage)

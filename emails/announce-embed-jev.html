@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Embeddings at $1 per billion, and Jev Router</title>
+</head>
+<body style="margin:0; padding:0; background-color:#0a0a0a; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0a0a0a;">
+<tr>
+<td align="center" style="padding:24px 16px;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px; width:100%; background-color:#111111; border:1px solid #222222; border-radius:12px; overflow:hidden;">
+
+<tr>
+<td style="background:linear-gradient(135deg, #1a0a2a, #1a1a1a); padding:40px 40px 32px; text-align:center;">
+<a href="https://openpaths.io" style="display:inline-block; text-decoration:none;"><img src="https://openpaths.io/logo.webp" alt="OpenPaths" width="44" height="44" style="display:block; margin:0 auto 12px; width:44px; height:44px; border:0;"></a>
+<h1 style="margin:0; color:#f5f5f5; font-size:28px; font-weight:700; line-height:1.3; font-family:monospace;"><a href="https://openpaths.io" style="color:#f5f5f5; text-decoration:none;">OpenPaths</a></h1>
+<p style="margin:8px 0 0; color:#888888; font-size:16px; font-weight:400;">Embeddings $1 / 1B and Jev Router</p>
+</td>
+</tr>
+
+<tr>
+<td style="padding:36px 40px;">
+<p style="margin:0 0 20px; color:#e0e0e0; font-size:16px; line-height:1.6;">
+Two changes today: embeddings got much cheaper, and a new router model is live.
+</p>
+
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;"><tr>
+<td style="padding:20px; background-color:#1a1a1a; border:1px solid #2a2a2a; border-radius:10px;">
+<p style="margin:0 0 6px; color:#f5f5f5; font-size:16px; font-weight:700; font-family:monospace;">openpaths-embed: $1 per 1 billion embeddings</p>
+<p style="margin:0; color:#e0e0e0; font-size:14px; line-height:1.5;">Down from $1 per 1,000 requests. Batch inputs, ask for <span style="font-family:monospace;">encoding_format=base64</span> to cut response size roughly 3x versus JSON floats, and use <span style="font-family:monospace;">dimensions</span> to shrink vectors. Same OpenAI-compatible <span style="font-family:monospace;">/v1/embeddings</span>.</p>
+</td></tr></table>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;"><tr>
+<td style="padding:20px; background-color:#1a1a1a; border:1px solid #2a2a2a; border-radius:10px;">
+<p style="margin:0 0 6px; color:#f5f5f5; font-size:16px; font-weight:700; font-family:monospace;">typesafe/jev-router</p>
+<p style="margin:0; color:#e0e0e0; font-size:14px; line-height:1.5;">TypeSafe's Jev Router scores each prompt on difficulty and precision, then picks the model and reasoning effort. $1.25 input, $4.25 output per 1M tokens, 1M context, tools and vision. Also reachable as <span style="font-family:monospace;">jev-router</span>.</p>
+</td></tr></table>
+<p style="margin:24px 0 0;"><a href="https://openpaths.io/blog/jev-router-system-one-model-routing" style="display:inline-block; padding:12px 22px; background-color:#f5f5f5; color:#0a0a0a; font-weight:700; text-decoration:none; border-radius:8px; font-size:14px;">Read the Jev post</a></p>
+</td>
+</tr>
+<tr>
+<td style="padding:20px 40px 32px; text-align:center; color:#666666; font-size:12px;">
+OpenPaths &middot; <a href="{{.UnsubscribeURL}}" style="color:#888888;">Unsubscribe</a>
+</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body>
+</html>

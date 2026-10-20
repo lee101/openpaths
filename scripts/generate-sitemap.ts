@@ -5,6 +5,7 @@ import { providers } from '../src/data/providers';
 import { artificialAnalysisModels } from '../src/lib/artificialAnalysis';
 import { seedApps } from '../src/data/seedApps';
 import { TOOLS } from '../src/data/tools';
+import { apiSitemapPaths } from '../src/lib/apiPagesSeo';
 
 const BASE_URL = 'https://openpaths.io';
 
@@ -29,6 +30,7 @@ const entries: SitemapEntry[] = [
   { path: '/compound', changefreq: 'monthly', priority: '0.8' },
   { path: '/tools', changefreq: 'weekly', priority: '0.8' },
   ...TOOLS.map(tool => ({ path: tool.path, changefreq: 'monthly' as const, priority: '0.7' })),
+  ...apiSitemapPaths().map(page => ({ path: page.path, changefreq: 'weekly' as const, priority: page.priority })),
   { path: '/art', changefreq: 'daily', priority: '0.7' },
   { path: '/stats', changefreq: 'weekly', priority: '0.6' },
   { path: '/apps/', changefreq: 'daily', priority: '0.7' },

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Decision Model and the Qwen 3.8 lineup on OpenPaths</title>
+</head>
+<body style="margin:0; padding:0; background-color:#0a0a0a; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0a0a0a;">
+<tr>
+<td align="center" style="padding:24px 16px;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px; width:100%; background-color:#111111; border:1px solid #222222; border-radius:12px; overflow:hidden;">
+
+<tr>
+<td style="background:linear-gradient(135deg, #1a1a1a, #1a1a1a); padding:40px 40px 32px; text-align:center;">
+<a href="https://openpaths.io" style="display:inline-block; text-decoration:none;"><img src="https://openpaths.io/logo.webp" alt="OpenPaths" width="44" height="44" style="display:block; margin:0 auto 12px; width:44px; height:44px; border:0;"></a>
+<h1 style="margin:0; color:#f5f5f5; font-size:28px; font-weight:700; line-height:1.3; font-family:monospace;"><a href="https://openpaths.io" style="color:#f5f5f5; text-decoration:none;">OpenPaths</a></h1>
+<p style="margin:8px 0 0; color:#888888; font-size:16px; font-weight:400;">Typed decisions with probabilities, plus Qwen 3.8 Max, Omni and Wan 3.0 video</p>
+</td>
+</tr>
+
+<tr>
+<td style="padding:36px 40px;">
+<p style="margin:0 0 20px; color:#e0e0e0; font-size:16px; line-height:1.6;">
+A lot landed since the last note. The new one is <span style="color:#f5f5f5; font-family:monospace;">decision-model-preview</span>: a model that does not write prose. You hand it a state and a few typed questions, and it answers yes/no, multiple choice and rubric scores in one pass, with probabilities and confidence on every answer. It is wire-compatible with the TypeSafe <span style="color:#f5f5f5; font-family:monospace;">/v1/systemone</span> API, so existing TypeSafe SDKs work with the base URL set to OpenPaths.
+</p>
+<p style="margin:0 0 12px; color:#f5f5f5; font-size:16px; font-weight:600;">One call, three decisions</p>
+<p style="margin:0 0 12px; color:#e0e0e0; font-size:16px; line-height:1.6;">
+We ran a support ticket through it: "My card was charged twice for the same order and I want my money back today." Three questions, 96 input tokens, 598 ms:
+</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:10px;">
+<tr>
+<td style="padding:16px 20px; background-color:#1a1a1a; border:1px solid #2a2a2a; border-radius:10px;">
+<p style="margin:0 0 6px; color:#f5f5f5; font-size:15px; font-weight:600;">Urgent? &middot; yes, 0.91</p>
+<p style="margin:0; color:#888888; font-size:13px; line-height:1.5;">A noul question returns the probability that the answer is true.</p>
+</td>
+</tr>
+</table>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:10px;">
+<tr>
+<td style="padding:16px 20px; background-color:#1a1a1a; border:1px solid #2a2a2a; border-radius:10px;">
+<p style="margin:0 0 6px; color:#f5f5f5; font-size:15px; font-weight:600;">Which team? &middot; billing, confidence 0.99</p>
+<p style="margin:0; color:#888888; font-size:13px; line-height:1.5;">A choice question returns the winner plus the full distribution: billing 0.99, tech 0.01, sales 0.00.</p>
+</td>
+</tr>
+</table>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+<tr>
+<td style="padding:16px 20px; background-color:#1a1a1a; border:1px solid #2a2a2a; border-radius:10px;">
+<p style="margin:0 0 6px; color:#f5f5f5; font-size:15px; font-weight:600;">How angry? &middot; 3.25 on a 0-4 scale</p>
+<p style="margin:0; color:#888888; font-size:13px; line-height:1.5;">A score question returns the weighted score and the probability of each level: angry 0.62, furious 0.32.</p>
+</td>
+</tr>
+</table>
+<p style="margin:0 0 20px; color:#e0e0e0; font-size:16px; line-height:1.6;">
+It bills at $0.042 per million input tokens and output is free, with a 64K input window. That is cheap enough to put in front of every ticket, moderation check, agent-routing step or result validation, and the probabilities let you route low-confidence cases to a human instead of guessing.
+</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+<tr>
+<td style="padding:16px 20px; background-color:#1a1a1a; border:1px solid #2a2a2a; border-radius:10px;">
+<p style="margin:0; color:#888888; font-size:13px; font-family:monospace; line-height:1.7;">
+curl https://openpaths.io/v1/systemone \<br>
+&nbsp;&nbsp;-H "Authorization: Bearer $OPENPATHS_API_KEY" \<br>
+&nbsp;&nbsp;-d '{"model":"decision-model-preview","state":{"ticket":"Charged twice, refund me today"},<br>
+&nbsp;&nbsp;"questions":{"team":{"type":"choice","instructions":"Which team?",<br>
+&nbsp;&nbsp;"criteria":{"billing":"payments, refunds","tech":"bugs, outages","sales":"pricing"}}}}'
+</p>
+</td>
+</tr>
+</table>
+<p style="margin:0 0 12px; color:#f5f5f5; font-size:16px; font-weight:600;">The Qwen 3.8 lineup</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
+<tr>
+<td style="padding:16px 20px; background-color:#1a1a1a; border:1px solid #2a2a2a; border-radius:10px;">
+<p style="margin:0 0 6px; color:#f5f5f5; font-size:15px; font-weight:600;">Qwen 3.8 Max &middot; $2 in / $6 out, 1M context</p>
+<p style="margin:0; color:#888888; font-size:13px; line-height:1.5;">Alibaba's flagship for reasoning, vision, coding and agent tool use. Also pinned as qwen/qwen3.8-max-0902 if you want a stable snapshot. Cached input is $0.40.</p>
+</td>
+</tr>
+</table>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
+<tr>
+<td style="padding:16px 20px; background-color:#1a1a1a; border:1px solid #2a2a2a; border-radius:10px;">
+<p style="margin:0 0 6px; color:#f5f5f5; font-size:15px; font-weight:600;">Qwen 3.8 Omni Flash and 27B &middot; from $0.15 in / $0.47 out</p>
+<p style="margin:0; color:#888888; font-size:13px; line-height:1.5;">Omni Flash takes text, image and video in over a 1M window; the open-weights 27B is $0.50 / $3.00 with the same 1M context.</p>
+</td>
+</tr>
+</table>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
+<tr>
+<td style="padding:16px 20px; background-color:#1a1a1a; border:1px solid #2a2a2a; border-radius:10px;">
+<p style="margin:0 0 6px; color:#f5f5f5; font-size:15px; font-weight:600;">Realtime voice and speech &middot; Omni Flash, Audio 3.1, LiveTranslate</p>
+<p style="margin:0; color:#888888; font-size:13px; line-height:1.5;">Realtime speech-in speech-out models, plus Qwen Audio 3.1 ASR for file and message transcription, all behind the same API key.</p>
+</td>
+</tr>
+</table>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+<tr>
+<td style="padding:16px 20px; background-color:#1a1a1a; border:1px solid #2a2a2a; border-radius:10px;">
+<p style="margin:0 0 6px; color:#f5f5f5; font-size:15px; font-weight:600;">Qwen Image 3.0 &middot; $0.03 an image, Pro from $0.04</p>
+<p style="margin:0; color:#888888; font-size:13px; line-height:1.5;">Generation and editing with strong text rendering. Pro runs $0.04 at 1K and $0.075 at 2K.</p>
+</td>
+</tr>
+</table>
+<p style="margin:0 0 12px; color:#f5f5f5; font-size:16px; font-weight:600;">Wan 3.0 video, from $0.05 a second</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:12px;">
+<tr>
+<td>
+<a href="https://openpaths.io/models/wan3.0-video"><img src="https://openpathsstatic.openpaths.io/static/uploads/playground/wan3.0-video/wan3-kitten-rooftop.jpg" alt="Wan 3.0 Video: a kitten running across a rooftop at night" width="520" style="display:block; width:100%; max-width:520px; height:auto; border:0; border-radius:10px;"></a>
+</td>
+</tr>
+</table>
+<p style="margin:0 0 24px; color:#e0e0e0; font-size:16px; line-height:1.6;">
+A kitten running across a rooftop under the moon, one prompt, 720p with generated audio. Wan 3.0 Video is $0.05 a second at 480p, $0.10 at 720p and $0.20 at 1080p, and the Prime tier is the fast version of the same model at a higher rate. Text-to-video and first-frame image-to-video both go through <span style="color:#f5f5f5; font-family:monospace;">/v1/videos/generations</span>.
+</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:32px;">
+<tr>
+<td align="center" style="padding-bottom:14px;">
+<a href="https://openpaths.io/models/decision-model-preview" style="display:inline-block; background:#f5f5f5; color:#000000; text-decoration:none; padding:14px 36px; border-radius:8px; font-size:16px; font-weight:600;">Try the Decision Model</a>
+</td>
+</tr>
+<tr>
+<td align="center">
+<a href="https://openpaths.io/models/wan3.0-video" style="display:inline-block; background:#1a1a1a; color:#f5f5f5; border:1px solid #f5f5f5; text-decoration:none; padding:13px 30px; border-radius:8px; font-size:15px; font-weight:600;">Make a Wan 3.0 clip</a>
+</td>
+</tr>
+</table>
+
+</td>
+</tr>
+
+<tr>
+<td style="padding:28px 40px; border-top:1px solid #222222; text-align:center; background-color:#0d0d0d;">
+<p style="margin:0 0 10px; font-size:13px;">
+<a href="https://openpaths.io/playground" style="color:#555555; text-decoration:none;">Playground</a> &nbsp;&middot;&nbsp;
+<a href="https://openpaths.io/models" style="color:#555555; text-decoration:none;">Models</a> &nbsp;&middot;&nbsp;
+<a href="https://openpaths.io/blog" style="color:#555555; text-decoration:none;">Blog</a> &nbsp;&middot;&nbsp;
+<a href="{{.UnsubscribeURL}}" style="color:#555555; text-decoration:none;">Unsubscribe</a>
+</p>
+<p style="margin:0; color:#444444; font-size:12px;"><a href="https://openpaths.io" style="color:#f5f5f5; text-decoration:none;">OpenPaths</a> &middot; by <a href="https://app.nz" style="color:#444444; text-decoration:underline;">Applied Science</a></p>
+</td>
+</tr>
+
+</table>
+</td>
+</tr>
+</table>
+</body>
+</html>

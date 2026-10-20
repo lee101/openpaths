@@ -23,6 +23,18 @@ export const IMAGE_DEMOS: Record<string, ImageDemo> = {
       disable_pup: false,
     },
   },
+  'ra2-edit': {
+    title: 'Sad to happy expression edit',
+    description: 'Send a reference image plus an instruction: RA2 changes the expression and lighting while keeping the character, hair, clothing and composition.',
+    imageUrl: 'https://openpathsstatic.openpaths.io/static/uploads/playground/ra2-edit/sad.webp',
+    outputUrl: 'https://openpathsstatic.openpaths.io/static/uploads/playground/ra2-edit/happy.webp',
+    prompt: 'Make her happy: head raised, wide bright eyes, big cheerful smile, no tears. Keep the same character, hair, robe and window; warm sunny daylight.',
+    payload: {
+      model: 'ra2-edit',
+      prompt: 'Make her happy: head raised, wide bright eyes, big cheerful smile, no tears. Keep the same character, hair, robe and window; warm sunny daylight.',
+      image_url: 'https://openpathsstatic.openpaths.io/static/uploads/playground/ra2-edit/sad.webp',
+    },
+  },
   'fal-ai/hidream-o1-image/edit': {
     title: 'Prompted image edit example',
     description: 'Use a reference image plus an edit prompt to replace a product while preserving the photographed scene.',

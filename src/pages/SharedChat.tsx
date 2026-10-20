@@ -133,7 +133,7 @@ export function SharedChat() {
         )}
       </div>
 
-      <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} onSuccess={() => setAuthOpen(false)} />
+      <AuthModal open={authOpen} surface="shared_chat" onClose={() => setAuthOpen(false)} onSuccess={() => setAuthOpen(false)} />
     </div>
   );
 }

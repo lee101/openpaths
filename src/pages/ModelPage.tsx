@@ -11,7 +11,10 @@ import { isPromotionActive, models, type Model } from '../data/models';
 import { providersByName, getProviderLogo } from '../data/providers';
 import { IMAGE_DEMOS } from '../data/imageDemos';
 import { VIDEO_DEMOS } from '../data/videoDemos';
+import { maxVideoSeconds } from '../data/videoModelParams';
 import { modelPath, providerDocsPath, providerPath } from '../lib/paths';
+import { CapabilityTryIt } from '../components/CapabilityTryIt';
+import { capabilityForModel, pairsForModel } from '../data/capabilities';
 
 const NON_CHAT_TAGS = ['art generation', 'video generation', 'audio', 'embedding'];
 
@@ -34,6 +37,8 @@ export function ModelPage() {
   const imageDemo = IMAGE_DEMOS[model.id];
   const videoDemo = VIDEO_DEMOS[model.id];
   const relatedModels = getRelatedModels(model);
+  const apiCap = isImage || isVideo ? undefined : capabilityForModel(model);
+  const vsPairs = pairsForModel(model).slice(0, 6);
   const promotionActive = isPromotionActive(model);
   const title = `${model.name} API, Pricing, Context Window | OpenPaths`;
   const description = `${model.name} from ${model.provider}: ${model.description} Use model ID ${model.id} through the OpenPaths API.`;
@@ -115,10 +120,10 @@ export function ModelPage() {
 
         <div className="grid gap-4 md:grid-cols-3 mb-10">
           <Fact label="Model ID" value={model.id} code />
-          <Fact label="Context" value={model.contextLength} />
+          {limitFact(model) && <Fact label={limitFact(model)!.label} value={limitFact(model)!.value} />}
           <Fact label="Released" value={model.released} />
           <Fact label="Input price" value={formatPrice(model, model.priceInput, 'input')} />
-          <Fact label="Output price" value={formatPrice(model, model.priceOutput, 'output')} />
+          {formatPrice(model, model.priceOutput, 'output') !== 'N/A' && <Fact label="Output price" value={formatPrice(model, model.priceOutput, 'output')} />}
           <Fact label="Provider" value={model.provider} />
         </div>
 
@@ -189,6 +194,21 @@ export function ModelPage() {
           </section>
         )}
 
+        {apiCap && (
+          <section id="model-api" className="mt-12 scroll-mt-24" aria-labelledby="model-api-heading">
+            <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+              <h2 id="model-api-heading" className="text-2xl font-bold tracking-tight">Use {model.name} via API</h2>
+              <Link to={apiCap.path} className="font-mono text-xs text-white/50 transition-colors hover:text-white">{apiCap.name} API <ArrowRight className="inline h-3.5 w-3.5" /></Link>
+            </div>
+            <CapabilityTryIt cap={apiCap} model={model} />
+            {vsPairs.length > 0 && (
+              <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 font-mono text-xs text-white/60">
+                {vsPairs.map(p => <Link key={p.slug} to={`/vs/${p.slug}`} className="hover:text-white">{p.a.id === model.id ? p.b.name : p.a.name} vs {model.name} →</Link>)}
+              </div>
+            )}
+          </section>
+        )}
+
         <RelatedModels current={model} related={relatedModels} />
       </section>
     </>
@@ -208,11 +228,23 @@ function Fact({ label, value, code = false }: { label: string; value: string; co
   );
 }
 
+function limitFact(model: Model): { label: string; value: string } | null {
+  if (model.contextLength !== 'N/A') return { label: 'Context', value: model.contextLength };
+  if (model.tags.includes('video generation')) {
+    const s = maxVideoSeconds(model.id);
+    if (s > 0) return { label: 'Max video length', value: `${s} seconds` };
+  }
+  return null;
+}
+
 function isChatModel(model: Model) {
   return !model.tags.some(tag => NON_CHAT_TAGS.includes(tag)) && model.contextLength !== 'N/A';
 }
 
 function formatPrice(model: Model, price: number, label: 'input' | 'output') {
+  if (model.pricingType === 'embedding') {
+    return label === 'input' ? `${formatCurrency(price)} / 1B embeddings` : 'N/A';
+  }
   if (model.pricingType === 'request') {
     return label === 'input' ? `${formatCurrency(price)} / request` : 'N/A';
   }

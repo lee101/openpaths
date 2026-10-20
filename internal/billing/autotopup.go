@@ -10,6 +10,7 @@ import (
 	"github.com/openpaths/openpaths/internal/db/queries"
 	"github.com/openpaths/openpaths/internal/model"
 	"github.com/openpaths/openpaths/internal/stripe"
+	"github.com/openpaths/openpaths/internal/twohelixes"
 )
 
 const (
@@ -180,6 +181,7 @@ func (s *AutoTopupService) doTopup(ctx context.Context, userID string) error {
 	_ = s.topupQ.LogCharge(ctx, userID, user.AutotopupAmountCents, amountUSD, piID, "succeeded", "")
 
 	log.Printf("autotopup: user=%s amount=$%.2f pi=%s", userID, amountUSD, piID)
+	twohelixes.Purchase(userID, piID, "auto_topup", "autotopup", "USD", amountUSD)
 	return nil
 }
 

@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" width="800" height="400">
+  <rect width="800" height="400" fill="#87CEEB"/>
+  <rect y="320" width="800" height="80" fill="#7ec850"/>
+  <g id="ride">
+    <animateTransform attributeName="transform" type="translate" from="-260,0" to="860,0" dur="7s" repeatCount="indefinite"/>
+    <g transform="translate(0,0)">
+      <animateTransform attributeName="transform" type="translate" values="0,0;0,-6;0,0" dur="0.5s" repeatCount="indefinite"/>
+      <ellipse cx="160" cy="195" rx="58" ry="38" fill="#ffffff" stroke="#cccccc" stroke-width="2"/>
+      <ellipse cx="165" cy="205" rx="40" ry="18" fill="#f0f0f0"/>
+      <circle cx="215" cy="150" r="26" fill="#ffffff" stroke="#cccccc" stroke-width="2"/>
+      <circle cx="228" cy="142" r="4" fill="#222"/>
+      <g>
+        <animateTransform attributeName="transform" type="rotate" values="0 210 145;-12 210 145;0 210 145" dur="0.4s" repeatCount="indefinite"/>
+        <path d="M210 150 L325 138 L318 152 Z" fill="#f4a024" stroke="#d68910" stroke-width="2"/>
+      </g>
+      <g>
+        <animateTransform attributeName="transform" type="rotate" values="0 210 160;18 210 160;0 210 160" dur="0.4s" repeatCount="indefinite"/>
+        <path d="M210 160 L290 168 L300 156 Z" fill="#f4a024" stroke="#d68910" stroke-width="2"/>
+      </g>
+      <ellipse cx="135" cy="190" rx="32" ry="26" fill="#f0f0f0" stroke="#cccccc" stroke-width="2" transform="rotate(-25 135 190)"/>
+      <line x1="150" y1="225" x2="175" y2="275" stroke="#f4a024" stroke-width="4" stroke-linecap="round"/>
+      <line x1="175" y1="275" x2="165" y2="290" stroke="#f4a024" stroke-width="4" stroke-linecap="round"/>
+      <line x1="190" y1="225" x2="215" y2="275" stroke="#f4a024" stroke-width="4" stroke-linecap="round"/>
+      <line x1="215" y1="275" x2="205" y2="290" stroke="#f4a024" stroke-width="4" stroke-linecap="round"/>
+    </g>
+    <ellipse cx="145" cy="195" rx="10" ry="20" fill="#ff69b4" opacity="0.5"/>
+    <g transform="translate(145,200)">
+      <line x1="0" y1="0" x2="45" y2="0" stroke="#555" stroke-width="6" stroke-linecap="round"/>
+    </g>
+    <line x1="100" y1="300" x2="190" y2="265" stroke="#2c3e50" stroke-width="6"/>
+    <line x1="190" y1="265" x2="145" y2="200" stroke="#2c3e50" stroke-width="6"/>
+    <line x1="190" y1="265" x2="280" y2="300" stroke="#2c3e50" stroke-width="6"/>
+    <line x1="280" y1="300" x2="260" y2="210" stroke="#2c3e50" stroke-width="6"/>
+    <line x1="260" y1="210" x2="250" y2="195" stroke="#2c3e50" stroke-width="6"/>
+    <line x1="145" y1="200" x2="250" y2="195" stroke="#2c3e50" stroke-width="4"/>
+    <g transform="translate(190,265)">
+      <g>
+        <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="1s" repeatCount="indefinite"/>
+        <line x1="-18" y1="0" x2="18" y2="0" stroke="#333" stroke-width="5" stroke-linecap="round"/>
+        <circle cx="-18" cy="0" r="5" fill="#222"/>
+        <circle cx="18" cy="0" r="5" fill="#222"/>
+      </g>
+    </g>
+    <g transform="translate(100,300)">
+      <g>
+        <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="1s" repeatCount="indefinite"/>
+        <circle r="60" fill="none" stroke="#333" stroke-width="6"/>
+        <circle r="6" fill="#333"/>
+        <line x1="-60" y1="0" x2="60" y2="0" stroke="#999" stroke-width="2"/>
+        <line x1="0" y1="-60" x2="0" y2="60" stroke="#999" stroke-width="2"/>
+        <line x1="-42" y1="-42" x2="42" y2="42" stroke="#999" stroke-width="2"/>
+        <line x1="-42" y1="42" x2="42" y2="-42" stroke="#999" stroke-width="2"/>
+      </g>
+    </g>
+    <g transform="translate(280,300)">
+      <g>
+        <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="1s" repeatCount="indefinite"/>
+        <circle r="60" fill="none" stroke="#333" stroke-width="6"/>
+        <circle r="6" fill="#333"/>
+        <line x1="-60" y1="0" x2="60" y2="0" stroke="#999" stroke-width="2"/>
+        <line x1="0" y1="-60" x2="0" y2="60" stroke="#999" stroke-width="2"/>
+        <line x1="-42" y1="-42" x2="42" y2="42" stroke="#999" stroke-width="2"/>
+        <line x1="-42" y1="42" x2="42" y2="-42" stroke="#999" stroke-width="2"/>
+      </g>
+    </g>
+  </g>
+</svg>

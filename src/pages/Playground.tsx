@@ -424,7 +424,7 @@ const AUTO_ARCHIVE_DAYS_KEY = 'op_playground_auto_archive_days';
 const NON_CHAT_PATTERNS = /^(gpt-realtime|gemini-3\.8-live|whisper|xai-stt|grok-voice|text-embedding|openpaths-embed|modernbert|mistral-embed|codestral-embed|nemotron-embed|gemini-embedding-001|gemini-embedding-2-preview|gemini-embedding-2|gpt-4o-transcribe|gpt-4o-mini-transcribe|distil-whisper|whisper-v3)/i;
 const IMAGE_MODEL_PATTERNS = /^(openpaths\/auto-image|auto-image|flux|klein|ra1|ra2(?!v)|zimage|glm-image|grok-imagine-image|gpt-image|fal-gpt-image|hidream|dall-e|stable-diffusion|sd3|ideogram|fal-ai\/flux-2-pro\/outpaint)/i;
 const BFL_IMAGE_SIZES = ['1024x1024', '1152x768', '768x1152', '1360x768', '768x1360', '1920x1088', '1088x1920', '2048x880', '2048x2048'];
-const VIDEO_MODEL_PATTERNS = /^(auto-video|flux-3-video|wan|ltx|hailuo|kling|luma|ra2v|sora|seedance)/i;
+const VIDEO_MODEL_PATTERNS = /^(auto-video|flux-3-video|flux-3-max-video|wan|ltx|hailuo|kling|luma|ra2v|sora|seedance)/i;
 const SPEECH_MODEL_PATTERNS = /(tts|speech-)/i;
 const MUSIC_MODEL_PATTERNS = /^(music-|lyria-)/i;
 
@@ -1632,7 +1632,7 @@ ${text}`;
         imageUrl: videoSpec.inputModes ? (videoInputMode === 'image-to-video' ? videoImageUrl : undefined) : videoImageUrl,
         endImageUrl: videoSpec.inputModes && videoInputMode !== 'image-to-video' ? undefined : videoEndImageUrl,
         videoUrl: videoSpec.inputModes && videoInputMode === 'video-to-video' ? videoUrls[0] : undefined,
-        imageUrls: videoSpec.inputModes ? undefined : imageUrls,
+        imageUrls: videoSpec.recast ? imageUrls : videoSpec.inputModes ? undefined : imageUrls,
         videoUrls: videoSpec.inputModes ? undefined : videoUrls,
         audioUrls,
       };
@@ -2067,7 +2067,7 @@ ${text}`;
           ...(imageDemo?.safetyChecker !== undefined ? { enable_safety_checker: imageDemo.safetyChecker } : {}),
         }
       : imagePayload;
-    const videoPrompt = input.trim() || [...allMessages].reverse().find(m => m.role === 'user')?.content || 'A cinematic handheld shot of a rainy neon street at night';
+    const videoPrompt = input.trim() || [...allMessages].reverse().find(m => m.role === 'user')?.content || (videoSpec.recast ? '' : 'A cinematic handheld shot of a rainy neon street at night');
     const videoCodePayload = buildVideoPayload(model, {
       prompt: videoPrompt,
       resolution: videoResolution,
@@ -2077,7 +2077,7 @@ ${text}`;
       imageUrl: videoSpec.inputModes ? (videoInputMode === 'image-to-video' ? videoImageUrl : undefined) : videoImageUrl,
       endImageUrl: videoSpec.inputModes && videoInputMode !== 'image-to-video' ? undefined : videoEndImageUrl,
       videoUrl: videoSpec.inputModes && videoInputMode === 'video-to-video' ? parseImageInputUrls(videoVideoUrls)[0] : undefined,
-      imageUrls: videoSpec.inputModes ? undefined : parseImageInputUrls(videoImageUrls),
+      imageUrls: videoSpec.recast ? parseImageInputUrls(videoImageUrls) : videoSpec.inputModes ? undefined : parseImageInputUrls(videoImageUrls),
       videoUrls: videoSpec.inputModes ? undefined : parseImageInputUrls(videoVideoUrls),
       audioUrls: parseImageInputUrls(videoAudioUrls),
     }, videoAdvanced);
@@ -3404,6 +3404,13 @@ JSON`;
                 </div>
               </div>
             )}
+            {videoSpec.recast && <label className="block col-span-2 md:col-span-3">
+              <span className="text-[10px] font-mono text-white/55 block mb-1.5">Reference photos (1–4, one URL per person)</span>
+              <textarea value={videoImageUrls} onChange={e => setVideoImageUrls(normalizeUploadUrlText(e.target.value))} rows={2} className="w-full bg-white/[0.06] border border-white/30 rounded px-3 py-2 text-xs font-mono text-white" data-testid="video-recast-photos" />
+              <input type="file" accept="image/*" multiple disabled={uploadingRefs} onChange={e => e.target.files && uploadReferenceFiles(e.target.files, 'images')} />
+              <ImagePreviewStrip urls={parseImageInputUrls(videoImageUrls)} label="video-recast-photos" />
+              <p className="mt-2 text-xs text-white/60">$0.30/s at 768p or $0.45/s at 1080p of output video. Reference photos are included. Source: 5–30 seconds, no shot over 15 seconds; source audio is preserved.</p>
+            </label>}
             {videoSpec.inputModes ? (
               videoInputMode === 'image-to-video' ? (
                 <>

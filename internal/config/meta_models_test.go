@@ -5,12 +5,11 @@ import "testing"
 func TestMetaModels(t *testing.T) {
 	models := loadAuditConfig(t)
 
-	spark := models["muse-spark-1.3"]
-	if spark == nil || spark.Provider != "meta" || spark.ProviderModelID != "muse-spark-1.3" {
-		t.Fatalf("Muse Spark route = %+v", spark)
-	}
-	if spark.InputPricePer1M != 1.25 || spark.InputCacheHitPricePer1M != 0.15 || spark.OutputPricePer1M != 4.25 {
-		t.Fatalf("Muse Spark pricing = %v/%v/%v", spark.InputPricePer1M, spark.InputCacheHitPricePer1M, spark.OutputPricePer1M)
+	for _, id := range []string{"muse-spark-1.3", "muse-spark", "meta-muse-spark", "meta-chat"} {
+		got := models[id]
+		if got == nil || got.ID != "muse-spark-1.3-contributor" || got.ProviderModelID != "muse-spark-1.3-contributor" {
+			t.Fatalf("%s resolves to %+v, want muse-spark-1.3-contributor", id, got)
+		}
 	}
 
 	contrib := models["muse-spark-1.3-contributor"]
@@ -32,5 +31,18 @@ func TestMetaModels(t *testing.T) {
 	voice := models["muse-voice-transcribe-1.0"]
 	if voice == nil || voice.Provider != "meta" || voice.PricePerHour != 0.18 {
 		t.Fatalf("Muse Voice config = %+v", voice)
+	}
+}
+
+func TestJevRouter(t *testing.T) {
+	models := loadAuditConfig(t)
+	for _, id := range []string{"typesafe/jev-router", "jev-router", "jev", "or/jev-router"} {
+		got := models[id]
+		if got == nil || got.ID != "typesafe/jev-router" || got.Provider != "openrouter" || got.ProviderModelID != "typesafe/jev-router" {
+			t.Fatalf("%s resolves to %+v", id, got)
+		}
+		if got.InputPricePer1M != 1.25 || got.OutputPricePer1M != 4.25 || got.ContextWindow != 1000000 {
+			t.Fatalf("%s pricing/context = %v/%v/%v", id, got.InputPricePer1M, got.OutputPricePer1M, got.ContextWindow)
+		}
 	}
 }

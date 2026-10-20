@@ -9,6 +9,7 @@ import { models as catalogModels } from '../src/data/models';
 import { modelOgPath } from '../src/lib/modelOg';
 import { appOgImage } from '../src/lib/appStats';
 import { TOOLS, TOOLS_INDEX_SEO, TOOLS_INDEX_SLUG, toolOgImage } from '../src/data/tools';
+import { apiPrerenderRoutes } from '../src/lib/apiPagesSeo';
 
 const BASE_URL = 'https://openpaths.io';
 const DIST_DIR = process.env.DIST_DIR || 'dist';
@@ -18,6 +19,7 @@ type StaticMeta = {
   title: string;
   description: string;
   image?: string;
+  html?: string;
 };
 
 const indexHtml = readFileSync(join(DIST_DIR, 'index.html'), 'utf8');
@@ -94,6 +96,7 @@ const routes: StaticMeta[] = [
     image: appOgImage(app.slug),
   })),
   ...compareRoutes(),
+  ...apiPrerenderRoutes(),
   ...catalogModels.map(model => ({
     path: `/models/${encodeURIComponent(model.id)}`,
     title: `${model.name} API, Pricing, Context Window | OpenPaths`,
@@ -189,6 +192,11 @@ function withMeta(html: string, meta: StaticMeta) {
     out = pattern.test(out)
       ? out.replace(pattern, replacement)
       : out.replace('</head>', `${replacement}\n</head>`);
+  }
+
+  if (meta.html) {
+    const shell = /<div id="static-shell"[\s\S]*?<\/section>\s*<\/div>/;
+    out = shell.test(out) ? out.replace(shell, () => meta.html as string) : out;
   }
 
   return out;

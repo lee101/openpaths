@@ -60,14 +60,28 @@ func (h *EmbeddingHandler) HandleEmbedding(ctx *fasthttp.RequestCtx) {
 				if prepaidGate(ctx, h.billing, cand.ModelCfg.ID, 0) {
 					return
 				}
+				if !validEncodingFormat(req.EncodingFormat) {
+					writeError(ctx, 400, "invalid_request", "encoding_format must be float, base64 or int8")
+					return
+				}
 				start := time.Now()
-				resp, err := embProv.Embed(ctx, &req)
+				var resp *model.EmbeddingResponse
+				var raw *model.RawEmbeddings
+				var err error
+				if re, ok := embProv.(rawEmbedder); ok {
+					raw, err = re.EmbedRaw(ctx, &req)
+				} else {
+					resp, err = embProv.Embed(ctx, &req)
+				}
 				latency := time.Since(start)
 
 				if err != nil {
 					if pe, ok := err.(*provider.ProviderError); ok && !pe.Retryable {
 						h.recorder.RecordErrorWithApp(userID, apiKeyID, originalModel, cand.Provider.Name(),
 							int(latency.Milliseconds()), pe.StatusCode, pe.Message, false, app.ID, app.URL, app.Title, app.Categories)
+						if pe.StatusCode == 429 || pe.StatusCode == 503 {
+							ctx.Response.Header.Set("Retry-After", "1")
+						}
 						writeError(ctx, pe.StatusCode, "provider_error", pe.Message)
 						return
 					}
@@ -78,11 +92,25 @@ func (h *EmbeddingHandler) HandleEmbedding(ctx *fasthttp.RequestCtx) {
 					}
 				} else {
 					h.router.MarkModelHealthy(cand.Provider.Name(), cand.ModelCfg.ID)
-					resp.Model = originalModel
-					cost, _ := h.billing.Deduct(ctx, userID, cand.ModelCfg.ID, resp.Usage.TotalTokens, 0, "", "")
+					count, tokens := 0, 0
+					if raw != nil {
+						count, tokens = raw.N, raw.Tokens
+					} else {
+						resp.Model = originalModel
+						count, tokens = len(resp.Data), resp.Usage.TotalTokens
+					}
+					cost, handled, _ := h.billing.DeductEmbeddings(ctx, userID, cand.ModelCfg.ID, count)
+					if !handled {
+						cost, _ = h.billing.Deduct(ctx, userID, cand.ModelCfg.ID, tokens, 0, "", "")
+					}
 					h.recorder.RecordSuccessWithApp(userID, apiKeyID, originalModel, cand.Provider.Name(),
-						resp.Usage.TotalTokens, 0, int(latency.Milliseconds()), 0, cost, false, app.ID, app.URL, app.Title, app.Categories)
-					writeJSON(ctx, 200, resp)
+						tokens, 0, int(latency.Milliseconds()), 0, cost, false, app.ID, app.URL, app.Title, app.Categories)
+					if raw != nil {
+						writeRawEmbeddings(ctx, raw, originalModel, req.EncodingFormat)
+						raw.Release()
+					} else {
+						writeJSON(ctx, 200, resp)
+					}
 					return
 				}
 			}

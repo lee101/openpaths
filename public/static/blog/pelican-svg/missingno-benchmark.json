@@ -1,0 +1,23 @@
+{
+  "model": "stealth/missingno",
+  "elapsed_seconds": 8.462,
+  "usage": {
+    "prompt_tokens": 518,
+    "completion_tokens": 3327,
+    "total_tokens": 3845,
+    "prompt_tokens_details": {
+      "cached_tokens": 448
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 1479
+    },
+    "cost": 0,
+    "cost_details": {
+      "source": "gateway_computed_spend",
+      "floor_applied": false,
+      "rate_source": "inline_config"
+    }
+  },
+  "finish_reason": "stop",
+  "visual_review": "Recognisable bird on bicycle, spinning spoked wheels and animated crank; weak throat pouch, static legs do not track pedals, frame is stylised."
+}

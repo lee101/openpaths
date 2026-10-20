@@ -29,9 +29,21 @@ crypto:
   min_topup_usd: 5
 
 providers:
+  - name: bfl
+    base_url: "https://api.bfl.ai"
+    api_key: "${BFL_API_KEY}"
+    enabled: true
+
   - name: netwrck
     base_url: "https://netwrck.com"
     api_key: "${NETWRCK_API_KEY}"
+    enabled: true
+
+  # Cloudflare Workers AI structured models (Clairic extraction, Clef
+  # decisions). Auth: CLOUDFLARE_API_KEY (+ CLOUDFLARE_EMAIL for the global key).
+  - name: cloudflare
+    base_url: "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run"
+    api_key: "${CLOUDFLARE_API_KEY}"
     enabled: true
 
   - name: manifoldgen
@@ -95,6 +107,12 @@ providers:
     enabled: true
   - name: qwen
     base_url: "https://dashscope-intl.aliyuncs.com/compatible-mode"
+    api_key: "${DASHSCOPE_API_KEY}"
+    enabled: true
+
+  # Alibaba Model Studio native async API (Wan video), Singapore workspace.
+  - name: alibaba
+    base_url: "https://ws-rvo01jxeg9yitdn7.ap-southeast-1.maas.aliyuncs.com"
     api_key: "${DASHSCOPE_API_KEY}"
     enabled: true
 
@@ -181,6 +199,20 @@ providers:
     enabled: true
 
 models:
+  - id: "flux-3-image"
+    provider: bfl
+    provider_model_id: "flux-3-image"
+    price_per_image: 0.048
+    price_per_image_by_resolution:
+      768sq: 0.041
+      1k: 0.048
+      2k: 0.100
+      4k: 0.607
+    aliases: ["bfl/flux-3-image", "flux3-image", "flux-3"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
 
   # Live speech: provider list prices + 5%, including text/reasoning and audio.
   - id: "gemini-3.8-live-extended-thinking"
@@ -385,15 +417,17 @@ models:
     supports_tools: true
     supports_vision: true
     fallback_models:
-      # Direct GLM-5.3 Flash carries the everyday auto-code share at its paid rate.
-      - "glm-5.3-flash"
+      # Sol is the primary workhorse; DeepSeek carries routine edits. Each
+      # tier falls back to a peer, then to the cheap Muse contributor.
       - "gpt-5.6-sol"
+      - "deepseek-v4-pro"
+      - "deepseek-v4-flash"
+      - "muse-spark-1.3-contributor"
       - "gpt-5-codex"
       - "gemini-3.7-flash"
       - "glm-5.3"
-      - "gpt-5.6-luna"
       - "claude-sonnet-5"
-      - "deepseek-v4-flash"
+      - "gpt-5.6-luna"
       - "or/gpt-5.6-terra"
 
   - id: "openpaths/auto-reasoning"
@@ -457,6 +491,7 @@ models:
       - "720x1280"
     fallback_models:
       - "gpt-image-2"
+      - "gemini-3.1-flash-lite-image"
       - "or/gemini-3.1-flash-image"
       - "ra1"
       - "zimage"
@@ -843,26 +878,6 @@ models:
     supports_tools: false
     supports_vision: true
 
-  # --- Alibaba Happy Horse via Fal (Video Generation) ---
-  - id: "alibaba/happy-horse/image-to-video"
-    provider: fal
-    provider_model_id: "alibaba/happy-horse/image-to-video"
-    price_per_second: 0.28
-    aliases: ["happy-horse", "happy-horse-image-to-video", "alibaba-happy-horse"]
-    supports_streaming: false
-    supports_tools: false
-    supports_vision: true
-
-  # --- CuteDSL (Triton-accelerated image gen + time-series forecasting) ---
-  - id: "cutedsl-image"
-    provider: cutedsl
-    provider_model_id: "z-image-turbo"
-    price_per_image: 0.04
-    aliases: ["cutedsl-zimage", "cute-image", "z-image-turbo"]
-    supports_streaming: false
-    supports_tools: false
-    supports_vision: false
-    supported_sizes:
   - id: "minimax-h3-max-recast"
     provider: fal
     provider_model_id: "minimax/h3-max/recast"
@@ -890,6 +905,42 @@ models:
     supports_tools: false
     supports_vision: true
 
+  # --- FLUX 3 Max via Fal (text / image / keyframes to video) ---
+  # One stable model ID. The adapter selects the text-to-video, image-to-video
+  # or keyframes-to-video endpoint from the input shape. Public list rates:
+  # $0.17/s at 720p and $0.29/s at 1080p.
+  - id: "flux-3-max-video"
+    provider: fal
+    provider_model_id: "blackforestlabs/flux-3-max/text-to-video"
+    price_per_second: 0.17
+    price_per_second_by_resolution:
+      720p: 0.17
+      1080p: 0.29
+    aliases: ["flux-3-max", "blackforestlabs/flux-3-max", "blackforestlabs/flux-3-max/text-to-video", "blackforestlabs/flux-3-max/image-to-video", "blackforestlabs/flux-3-max/keyframes-to-video"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  # --- Alibaba Happy Horse via Fal (Video Generation) ---
+  - id: "alibaba/happy-horse/image-to-video"
+    provider: fal
+    provider_model_id: "alibaba/happy-horse/image-to-video"
+    price_per_second: 0.28
+    aliases: ["happy-horse", "happy-horse-image-to-video", "alibaba-happy-horse"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  # --- CuteDSL (Triton-accelerated image gen + time-series forecasting) ---
+  - id: "cutedsl-image"
+    provider: cutedsl
+    provider_model_id: "z-image-turbo"
+    price_per_image: 0.04
+    aliases: ["cutedsl-zimage", "cute-image", "z-image-turbo"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+    supported_sizes:
       - "512x512"
       - "768x768"
       - "1024x1024"
@@ -925,6 +976,163 @@ models:
     supports_streaming: false
     supports_tools: false
     supports_vision: false
+
+  # --- Alibaba Wan 3.0 Video direct (all-in-one: text, first/last frame,
+  # up to 10 reference images, 5 reference videos, 5 reference audio clips,
+  # a document or a web link; up to 30s with native audio). Alibaba list is
+  # 480P $0.05/s, 720P $0.10/s, 1080P $0.20/s (default) on input + output
+  # seconds; we bill usage.duration at the delivered tier. ---
+  - id: "wan3.0-video"
+    provider: alibaba
+    provider_model_id: "wan3.0-video"
+    price_per_second: 0.20
+    price_per_second_by_resolution:
+      480p: 0.05
+      720p: 0.10
+      1080p: 0.20
+    free_input_image_count: 10
+    aliases: ["alibaba/wan3.0-video", "wan-3.0-video", "wan3-video", "wan3.0", "alibaba/wan-3.0-video"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  # Wan 3.0 Video Prime: high-speed tier of the same all-in-one model.
+  - id: "wan3.0-video-prime"
+    provider: alibaba
+    provider_model_id: "wan3.0-video-prime"
+    price_per_second: 0.28
+    price_per_second_by_resolution:
+      480p: 0.068
+      720p: 0.14
+      1080p: 0.28
+    free_input_image_count: 10
+    aliases: ["alibaba/wan3.0-video-prime", "wan-3.0-video-prime", "wan3-video-prime", "wan3.0-prime"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  # --- Qwen Image 3.0 direct (sync). 1K tier <= 2.25MP, else 2K. Edits take
+  # up to 3 input images at $0.003 each. Standard is flat $0.03/image. ---
+  - id: "qwen-image-3.0"
+    provider: alibaba
+    provider_model_id: "qwen-image-3.0"
+    price_per_image: 0.03
+    price_per_input_image: 0.003
+    aliases: ["alibaba/qwen-image-3.0", "qwen-image-3", "qwen-image-latest"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "qwen-image-3.0-pro"
+    provider: alibaba
+    provider_model_id: "qwen-image-3.0-pro"
+    price_per_image: 0.075
+    price_per_image_by_resolution:
+      1k: 0.04
+      2k: 0.075
+    price_per_input_image: 0.003
+    aliases: ["alibaba/qwen-image-3.0-pro", "qwen-image-3-pro", "qwen-image-pro"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  # --- Qwen speech recognition direct ---
+  # 3.0 flash: sync, <=10MB/5min, billed per second of audio ($0.000035/s).
+  - id: "qwen-audio-3.0-asr-flash"
+    provider: alibaba
+    provider_model_id: "qwen-audio-3.0-asr-flash"
+    input_price_per_1m: 0
+    output_price_per_1m: 0
+    price_per_minute: 0.0021
+    aliases: ["alibaba/qwen-audio-3.0-asr-flash", "qwen-asr-3.0"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  # 3.1 filetrans: async, long files, word timestamps; billed per token
+  # (~16 audio tokens/s of speech, silence is free).
+  - id: "qwen-audio-3.1-asr-flash-filetrans"
+    provider: alibaba
+    provider_model_id: "qwen-audio-3.1-asr-flash-filetrans"
+    input_price_per_1m: 0.15
+    output_price_per_1m: 0.47
+    aliases: ["alibaba/qwen-audio-3.1-asr-flash-filetrans", "qwen-asr-3.1", "qwen-asr", "qwen-transcribe"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  # 3.1 message: duplex WebSocket ASR (16kHz PCM, we transcode), per token.
+  - id: "qwen-audio-3.1-asr-flash-message"
+    provider: alibaba
+    provider_model_id: "qwen-audio-3.1-asr-flash-message"
+    input_price_per_1m: 0.93
+    output_price_per_1m: 0.70
+    aliases: ["alibaba/qwen-audio-3.1-asr-flash-message", "qwen-asr-3.1-message"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  # --- Qwen realtime voice via /v1/realtime (OpenAI-style events) ---
+  # Live speech: provider list prices + 5%, like the other realtime models.
+  - id: "qwen3.8-omni-flash-realtime"
+    provider: alibaba
+    provider_model_id: "qwen3.8-omni-flash-realtime"
+    input_price_per_1m: 0.2415
+    output_price_per_1m: 0.735
+    audio_input_price_per_1m: 0.9765
+    audio_output_price_per_1m: 1.9635
+    image_input_price_per_1m: 0.2415
+    aliases: ["alibaba/qwen3.8-omni-flash-realtime", "qwen-omni-realtime", "qwen-live"]
+    context_window: 65536
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "qwen-audio-3.1-realtime-plus"
+    provider: alibaba
+    provider_model_id: "qwen-audio-3.1-realtime-plus"
+    input_price_per_1m: 0.84
+    output_price_per_1m: 6.72
+    audio_input_price_per_1m: 6.72
+    audio_output_price_per_1m: 25.20
+    aliases: ["alibaba/qwen-audio-3.1-realtime-plus", "qwen-audio-realtime"]
+    context_window: 262144
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "qwen-audio-3.0-realtime-plus"
+    provider: alibaba
+    provider_model_id: "qwen-audio-3.0-realtime-plus"
+    input_price_per_1m: 0.84
+    output_price_per_1m: 6.72
+    audio_input_price_per_1m: 6.72
+    audio_output_price_per_1m: 25.20
+    aliases: ["alibaba/qwen-audio-3.0-realtime-plus"]
+    context_window: 65536
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  # Live speech translation (audio[/video] in, translated text+speech out).
+  # No published text-input rate; config/transcript text billed at the image rate.
+  - id: "qwen3.8-livetranslate-flash-realtime"
+    provider: alibaba
+    provider_model_id: "qwen3.8-livetranslate-flash-realtime"
+    input_price_per_1m: 0.5775
+    output_price_per_1m: 21.00
+    audio_input_price_per_1m: 7.875
+    audio_output_price_per_1m: 31.50
+    image_input_price_per_1m: 0.5775
+    aliases: ["alibaba/qwen3.8-livetranslate-flash-realtime", "qwen-livetranslate", "qwen-live-translate"]
+    context_window: 53248
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: false
+    supports_vision: true
 
   # --- Alibaba Wan 3.0 via Fal (per-second by resolution tier:
   # 480p $0.05/s, 720p $0.10/s, 1080p is the endpoint default at $0.20/s) ---
@@ -1224,6 +1432,41 @@ models:
     supports_tools: false
     supports_vision: false
 
+  # Lyrics to a full song: guide vocal re-performed by YuE2. Upstream quotes
+  # $0.19-$0.52 for 3 minutes by quality; billed flat with lyrics capped at
+  # ~3 minutes (540 words).
+  - id: "mg-lyric-song"
+    provider: manifoldgen
+    provider_model_id: "mg-lyric-song"
+    price_per_image: 0.60
+    aliases: ["lyrics-to-song", "lyric-music", "manifoldgen-lyric-song"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  # Your sung or rapped recording (+ style prompt, optional lyrics) becomes a
+  # produced full song. Requires voice_consent. Quoted upstream from the
+  # recording length (about $0.31 for 3 minutes); duration capped at 180s.
+  - id: "mg-voice-song"
+    provider: manifoldgen
+    provider_model_id: "mg-voice-song"
+    price_per_image: 0.60
+    aliases: ["voice-to-song", "voice-enhancer", "audio-to-song", "manifoldgen-voice-song"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  # Image captioning: one-sentence description of an image sent as an
+  # image_url chat content part.
+  - id: "mg-caption"
+    provider: manifoldgen
+    provider_model_id: "mg-caption"
+    price_per_request: 0.012
+    aliases: ["image-caption", "manifoldgen-caption", "caption"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
   # H3 text-to-SFX lane, ~5s effects.
   - id: "mg-sfx"
     provider: manifoldgen
@@ -1277,6 +1520,37 @@ models:
     supports_tools: false
     supports_vision: true
 
+  # --- Cloudflare Workers AI structured models (billed on input tokens only) ---
+  - id: "clairic"
+    provider: cloudflare
+    provider_model_id: "@cf/cloudflare/clairic"
+    input_price_per_1m: 0.105
+    aliases: ["@cf/cloudflare/clairic", "cloudflare/clairic", "clairic-extraction"]
+    context_window: 65536
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "clef"
+    provider: cloudflare
+    provider_model_id: "@cf/cloudflare/clef"
+    input_price_per_1m: 0.252
+    aliases: ["@cf/cloudflare/clef", "cloudflare/clef"]
+    context_window: 65536
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "clef-flash"
+    provider: cloudflare
+    provider_model_id: "@cf/cloudflare/clef-flash"
+    input_price_per_1m: 0.105
+    aliases: ["@cf/cloudflare/clef-flash", "cloudflare/clef-flash"]
+    context_window: 65536
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
   # --- OpenAI ---
   - id: "gpt-5-chat-latest"
     provider: openai
@@ -1291,11 +1565,11 @@ models:
     supports_vision: true
 
   # Sol/Luna keep their ids, aliases and prices; the upstream model id follows
-  # the GPT-6 line added below - the compat-route pattern the cursor-grok family
-  # already uses. Terra stays on its own 5.6 upstream.
+  # the GPT-6.1 line added below - the compat-route pattern the cursor-grok
+  # family already uses. Terra stays on its own 5.6 upstream.
   - id: "gpt-5.6-sol"
     provider: openai
-    provider_model_id: "gpt-6-sol"
+    provider_model_id: "gpt-6.1-sol"
     input_price_per_1m: 4.00
     output_price_per_1m: 20.00
     aliases: ["gpt5.6-sol", "gpt56-sol", "sol"]
@@ -1304,6 +1578,9 @@ models:
     supports_streaming: true
     supports_tools: true
     supports_vision: true
+    # Left as it was: under the default price strategy the cheapest candidate
+    # in this chain serves the request, so a client asking for gpt-5.6-sol gets
+    # a cheaper model by design. routing_strategy=config pins the Sol checkpoint.
     fallback_models:
       - "gpt-5.6-terra"
       - "gemini-3.7-flash"
@@ -1353,17 +1630,51 @@ models:
     supports_tools: true
     supports_vision: true
 
-  # --- OpenAI GPT-6 (Sol, Luna) ---
-  # developers.openai.com/api/docs/models/gpt-6-sol and .../gpt-6-luna, cross
-  # checked against GET api.openai.com/v1/models and a live /v1/chat/completions
-  # probe on 2026-09-22. Both tiers ship 1,050,000 context / 922,000 max input /
-  # 128,000 max output, text+image input, reasoning and tool use, and the same
-  # 272K input-token cliff: above it the *Long column prices the whole request
-  # (2x input and cache, 1.5x output). GPT-6 rejects max_tokens and non-default
-  # sampling values, and its chat-completions effort set stops at xhigh.
+  # --- OpenAI GPT-6.1 / GPT-6 (Sol, Luna) ---
+  # developers.openai.com/api/docs/models/gpt-6.1-sol and .../gpt-6-sol, cross
+  # checked against GET api.openai.com/v1/models and live /v1/chat/completions
+  # probes on 2026-09-22 (6.0) and 2026-09-30 (6.1). Every tier ships
+  # 1,050,000 context / 922,000 max input / 128,000 max output, text+image
+  # input, reasoning and tool use, and the same 272K input-token cliff: above it
+  # the *Long column prices the whole request (2x input and cache, 1.5x output).
+  # GPT-6 rejects max_tokens and non-default sampling values, and its
+  # chat-completions effort set stops at xhigh.
+  #
+  # GPT-6.1 Sol is the same $2/$10 tier with cache reads at 5% of input ($0.10)
+  # instead of 10%, so a long cached conversation costs half what it did on
+  # 6.0. Its chat-completions effort set is narrower still - low, medium, high,
+  # xhigh, no "none" and no "minimal" - and it refuses function tools there at
+  # every accepted effort ("use /v1/responses"), so tool traffic lives on the
+  # fallback chain.
+  - id: "gpt-6.1-sol"
+    provider: openai
+    provider_model_id: "gpt-6.1-sol"
+    input_price_per_1m: 2.00
+    input_cache_hit_price_per_1m: 0.10
+    output_price_per_1m: 10.00
+    input_price_per_1m_long: 4.00
+    input_cache_hit_price_per_1m_long: 0.20
+    output_price_per_1m_long: 15.00
+    long_context_threshold: 272000
+    aliases: ["gpt6.1-sol", "gpt61-sol", "gpt-6-1-sol", "gpt-6.1", "gpt6.1", "sol-6.1", "openai/gpt-6.1-sol"]
+    context_window: 1050000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    # Same chain as gpt-6-sol. No cheap flash link: the default price strategy
+    # orders the whole chain by blended rate, so a $0.15/M fallback would serve
+    # every default gpt-6.1-sol request and the flagship lane would never run.
+    # Terra carries the tool calls 6.1 refuses on chat completions.
+    fallback_models:
+      - "gpt-5.6-terra"
+      - "or/gpt-6.1-sol"
+
+  # The 6.0 id keeps its own rate card (cache reads stay at 10% of input) and
+  # now rides the 6.1 upstream.
   - id: "gpt-6-sol"
     provider: openai
-    provider_model_id: "gpt-6-sol"
+    provider_model_id: "gpt-6.1-sol"
     input_price_per_1m: 2.00
     input_cache_hit_price_per_1m: 0.20
     output_price_per_1m: 10.00
@@ -1757,6 +2068,8 @@ models:
       - "1536x1024"
       - "1024x1536"
     fallback_models:
+      - "gemini-3.1-flash-lite-image"
+      - "gemini-nano-banana-2.1"
       - "ra2-edit"
       - "fal-ai/hidream-o1-image/edit"
 
@@ -1873,7 +2186,7 @@ models:
 
   - id: "claude-sonnet-latest"
     provider: anthropic
-    provider_model_id: "claude-sonnet-5"
+    provider_model_id: "claude-sonnet-5-5"
     input_price_per_1m: 2.00
     output_price_per_1m: 10.00
     aliases: ["claude-sonnet", "sonnet-latest", "sonnet"]
@@ -1883,6 +2196,22 @@ models:
     supports_tools: true
     supports_vision: true
     fallback_models: ["or/claude-sonnet"]
+
+  # Claude Sonnet 5.5: same $2/$10 rate card as Sonnet 5, 1M window, 128K max
+  # output, adaptive thinking (follows the Opus 5.5 behaviour: thinking.type
+  # "disabled" is not accepted, so "no reasoning" travels as the lowest effort).
+  - id: "claude-sonnet-5-5"
+    provider: anthropic
+    provider_model_id: "claude-sonnet-5-5"
+    input_price_per_1m: 2.00
+    output_price_per_1m: 10.00
+    aliases: ["sonnet-5.5", "claude-sonnet-5.5", "sonnet-5-5", "sonnet55"]
+    context_window: 1000000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models: ["claude-sonnet-5", "or/claude-sonnet"]
 
   - id: "claude-sonnet-5"
     provider: anthropic
@@ -2058,12 +2387,52 @@ models:
     supports_tools: true
     supports_vision: true
 
+  - id: "claude-haiku-latest"
+    provider: anthropic
+    provider_model_id: "claude-haiku-5-5"
+    input_price_per_1m: 0.10
+    input_cache_hit_price_per_1m: 0.01
+    output_price_per_1m: 0.50
+    long_context_threshold: 100000
+    input_price_per_1m_long: 0.50
+    input_cache_hit_price_per_1m_long: 0.05
+    output_price_per_1m_long: 2.50
+    aliases: ["claude-haiku", "haiku", "haiku-latest"]
+    context_window: 1000000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models: ["claude-haiku-4-5-20251001"]
+
+  # Claude Haiku 5.5: $0.10/$0.50 per MTok for prompts up to 100K tokens;
+  # longer prompts bill the whole request at $0.50/$2.50. Adaptive thinking
+  # with output_config.effort low/medium/high/xhigh/max; sampling params are
+  # not forwarded.
+  - id: "claude-haiku-5-5"
+    provider: anthropic
+    provider_model_id: "claude-haiku-5-5"
+    input_price_per_1m: 0.10
+    input_cache_hit_price_per_1m: 0.01
+    output_price_per_1m: 0.50
+    long_context_threshold: 100000
+    input_price_per_1m_long: 0.50
+    input_cache_hit_price_per_1m_long: 0.05
+    output_price_per_1m_long: 2.50
+    aliases: ["haiku-5.5", "claude-haiku-5.5", "haiku-5-5", "haiku55"]
+    context_window: 1000000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models: ["claude-haiku-4-5-20251001"]
+
   - id: "claude-haiku-4-5-20251001"
     provider: anthropic
     provider_model_id: "claude-haiku-4-5-20251001"
     input_price_per_1m: 1.00
     output_price_per_1m: 5.00
-    aliases: ["claude-haiku", "haiku"]
+    aliases: ["haiku-4.5"]
     context_window: 200000
     max_output_tokens: 64000
     supports_streaming: true
@@ -2071,6 +2440,20 @@ models:
     supports_vision: true
 
   # --- Google Gemini ---
+  - id: "gemini-4-argon"
+    provider: google
+    provider_model_id: "gemini-4-argon"
+    input_price_per_1m: 2.00
+    input_cache_hit_price_per_1m: 0.10
+    output_price_per_1m: 10.00
+    aliases: ["gemini-4", "gemini-4-argon-high", "google/gemini-4-argon"]
+    fallback_models: ["or/gemini-4-argon"]
+    context_window: 1048576
+    max_output_tokens: 65536
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
   - id: "gemini-3.8-flash"
     provider: google
     provider_model_id: "gemini-3.8-flash"
@@ -2171,6 +2554,44 @@ models:
     supports_streaming: true
     supports_tools: true
     supports_vision: true
+
+  - id: "gemini-3-flash-preview"
+    provider: google
+    provider_model_id: "gemini-3-flash-preview"
+    input_price_per_1m: 0.50
+    output_price_per_1m: 3.00
+    aliases: ["gemini-3-flash", "google/gemini-3-flash-preview"]
+    context_window: 1000000
+    max_output_tokens: 65536
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  # Gemini image generation/editing over the Interactions API. Image output is
+  # 1120 tokens at 1K, billed per image at list price ($0.0336).
+  - id: "gemini-3.1-flash-lite-image"
+    provider: google
+    provider_model_id: "gemini-3.1-flash-lite-image"
+    price_per_image: 0.0336
+    aliases: ["nano-banana-2-lite", "gemini-flash-lite-image", "google/gemini-3.1-flash-lite-image"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+    fallback_models:
+      - "gemini-nano-banana-2.1"
+      - "or/gemini-3.1-flash-image"
+
+  - id: "gemini-nano-banana-2.1"
+    provider: google
+    provider_model_id: "gemini-nano-banana-2.1"
+    price_per_image: 0.0336
+    aliases: ["nano-banana-2.1", "nano-banana-21", "gemini-nano-banana", "google/gemini-nano-banana-2.1"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+    fallback_models:
+      - "gemini-3.1-flash-lite-image"
+      - "or/gemini-3.1-flash-image"
 
   - id: "gemini-3.5-flash-lite"
     provider: google
@@ -2486,7 +2907,7 @@ models:
 
   - id: "deepseek-v4-pro"
     provider: deepseek
-    provider_model_id: "deepseek-v4-flash"
+    provider_model_id: "deepseek-flash"
     input_price_per_1m: 0.435
     input_cache_hit_price_per_1m: 0.003625
     output_price_per_1m: 0.87
@@ -2800,6 +3221,19 @@ models:
     supports_tools: true
     supports_vision: false
 
+  - id: "or/gemini-4-argon"
+    provider: openrouter
+    provider_model_id: "google/gemini-4-argon"
+    input_price_per_1m: 2.00
+    input_cache_hit_price_per_1m: 0.10
+    output_price_per_1m: 10.00
+    aliases: ["openrouter/gemini-4-argon", "openrouter/google/gemini-4-argon"]
+    context_window: 1048576
+    max_output_tokens: 65536
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
   - id: "or/gemini-3.1-flash-image"
     provider: openrouter
     provider_model_id: "google/gemini-3.1-flash-image"
@@ -2874,7 +3308,7 @@ models:
 
   - id: "or/gpt-5.6-sol"
     provider: openrouter
-    provider_model_id: "openai/gpt-6-sol"
+    provider_model_id: "openai/gpt-6.1-sol"
     input_price_per_1m: 5.00
     input_cache_hit_price_per_1m: 0.50
     output_price_per_1m: 30.00
@@ -2920,9 +3354,27 @@ models:
     supports_tools: true
     supports_vision: true
 
+  - id: "or/gpt-6.1-sol"
+    provider: openrouter
+    provider_model_id: "openai/gpt-6.1-sol"
+    input_price_per_1m: 2.00
+    input_cache_hit_price_per_1m: 0.10
+    output_price_per_1m: 10.00
+    input_price_per_1m_long: 4.00
+    input_cache_hit_price_per_1m_long: 0.20
+    output_price_per_1m_long: 15.00
+    long_context_threshold: 272000
+    context_window: 1050000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  # The 6.0 mirror keeps the 6.0 rate card - cache reads at 10% of input, like
+  # the direct lane - and rides the 6.1 checkpoint.
   - id: "or/gpt-6-sol"
     provider: openrouter
-    provider_model_id: "openai/gpt-6-sol"
+    provider_model_id: "openai/gpt-6.1-sol"
     input_price_per_1m: 2.00
     input_cache_hit_price_per_1m: 0.20
     output_price_per_1m: 10.00
@@ -2958,12 +3410,119 @@ models:
     input_price_per_1m: 2.00
     input_cache_hit_price_per_1m: 0.25
     output_price_per_1m: 6.00
-    aliases: ["qwen3.8-max", "qwen3.8", "qwen-max", "qwen-latest", "qwen/qwen3.8-max"]
+    aliases: ["openrouter/qwen3.8-max"]
     context_window: 1000000
     max_output_tokens: 131072
     supports_streaming: true
     supports_tools: true
     supports_vision: true
+
+  # --- Alibaba Cloud Model Studio direct (DashScope compatible mode) ---
+  # Qwen3.8-Max: 2.4T MoE flagship, $2/$6 per 1M, 1M window, 128K out.
+  - id: "qwen/qwen3.8-max"
+    provider: qwen
+    provider_model_id: "qwen3.8-max"
+    input_price_per_1m: 2.00
+    input_cache_hit_price_per_1m: 0.40
+    output_price_per_1m: 6.00
+    aliases: ["qwen3.8-max", "qwen3.8", "qwen-max", "qwen-latest", "alibaba/qwen3.8-max"]
+    context_window: 1000000
+    max_output_tokens: 131072
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models:
+      - "or/qwen3.8-max"
+
+  - id: "qwen/qwen3.8-max-0902"
+    provider: qwen
+    provider_model_id: "qwen3.8-max-0902"
+    input_price_per_1m: 2.00
+    input_cache_hit_price_per_1m: 0.40
+    output_price_per_1m: 6.00
+    aliases: ["qwen3.8-max-0902", "alibaba/qwen3.8-max-0902"]
+    context_window: 1000000
+    max_output_tokens: 131072
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models:
+      - "qwen/qwen3.8-max"
+
+  # Qwen3.8-Omni-Flash: text/image/audio/video in, 1M window, $0.15/$0.47.
+  - id: "qwen/qwen3.8-omni-flash"
+    provider: qwen
+    provider_model_id: "qwen3.8-omni-flash"
+    input_price_per_1m: 0.15
+    input_cache_hit_price_per_1m: 0.016
+    output_price_per_1m: 0.47
+    aliases: ["qwen3.8-omni-flash", "qwen-omni-flash", "qwen3.8-omni", "alibaba/qwen3.8-omni-flash"]
+    context_window: 1000000
+    max_output_tokens: 131072
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models:
+      - "qwen/qwen3.8-flash"
+
+  # Qwen3.8 open-weights 27B served by Alibaba ($0.50/$3, 1M window).
+  - id: "qwen/qwen3.8-27b"
+    provider: qwen
+    provider_model_id: "qwen3.8-27b"
+    input_price_per_1m: 0.50
+    input_cache_hit_price_per_1m: 0.10
+    output_price_per_1m: 3.00
+    aliases: ["alibaba/qwen3.8-27b", "dashscope/qwen3.8-27b"]
+    context_window: 1000000
+    max_output_tokens: 131072
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models:
+      - "runanywhere/qwen3.8-27b"
+
+  # Kimi K3 sold by Alibaba Cloud ($3/$15, 1M window), OpenRouter fallback.
+  - id: "kimi-k3"
+    provider: qwen
+    provider_model_id: "kimi-k3"
+    input_price_per_1m: 3.00
+    output_price_per_1m: 15.00
+    aliases: ["kimi", "kimi-k3-1m", "moonshot-kimi-k3", "alibaba/kimi-k3", "moonshotai/kimi-k3"]
+    context_window: 1048576
+    max_output_tokens: 131072
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models:
+      - "or/kimi-k3"
+
+  - id: "or/kimi-k3"
+    provider: openrouter
+    provider_model_id: "moonshotai/kimi-k3"
+    input_price_per_1m: 3.00
+    input_cache_hit_price_per_1m: 0.30
+    output_price_per_1m: 15.00
+    aliases: ["openrouter/kimi-k3"]
+    context_window: 1048576
+    max_output_tokens: 131072
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  # Decision model: TypeSafe /v1/systemone schema (noul/choice/score answers
+  # with probabilities). Alibaba lists $0 during preview; billed at TypeSafe
+  # Jev parity ($0.042 per 1M input tokens, output free). 64K input window.
+  - id: "decision-model-preview"
+    provider: alibaba
+    provider_model_id: "decision-model-preview"
+    input_price_per_1m: 0.042
+    output_price_per_1m: 0
+    aliases: ["decision-model", "alibaba/decision-model-preview", "qwen/decision-model-preview", "jev-latest", "jev"]
+    context_window: 65536
+    max_output_tokens: 1
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
 
   # Qwen3.8-Flash (omni-class multimodal: text+image+video in) direct via
   # DashScope compatible mode, OpenRouter fallback. Pricing = DashScope
@@ -2974,9 +3533,9 @@ models:
     provider: qwen
     provider_model_id: "qwen3.8-flash"
     input_price_per_1m: 0.15
-    input_cache_hit_price_per_1m: 0.016
+    input_cache_hit_price_per_1m: 0.03
     output_price_per_1m: 0.47
-    aliases: ["qwen3.8-flash", "qwen3.8-omni-flash", "qwen-omni-flash", "qwen3.8-omni", "qwen-flash"]
+    aliases: ["qwen3.8-flash", "qwen-flash", "alibaba/qwen3.8-flash"]
     context_window: 1000000
     max_output_tokens: 131072
     supports_streaming: true
@@ -3118,12 +3677,28 @@ models:
   - id: "openpaths-embed"
     provider: gobed
     provider_model_id: "static-retrieval-mrl-en-v1"
-    price_per_request: 0.001
-    input_price_per_1m: 0
+    sub_unit_billing: true
+    input_price_per_1m: 0.001
     output_price_per_1m: 0
     aliases: ["gobed", "gobed-embed", "op-embed"]
     context_window: 256
     max_output_tokens: 0
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  # First-party decision model (TypeSafe /v1/systemone schema) on the gobed
+  # static embedder: cosine(state, option) softmax. State context 4096 tokens
+  # = mean of 8 x 512-token chunk embeddings. Billed on state+criteria tokens.
+  - id: "openpaths-decision"
+    provider: gobed
+    provider_model_id: "openpaths-decision"
+    sub_unit_billing: true
+    input_price_per_1m: 0.002
+    output_price_per_1m: 0
+    aliases: ["gobed-decision", "gobed-decide", "op-decide", "openpaths-decide"]
+    context_window: 4096
+    max_output_tokens: 1
     supports_streaming: false
     supports_tools: false
     supports_vision: false
@@ -3477,6 +4052,24 @@ models:
     output_price_per_1m: 4.05
     context_window: 524288
     max_output_tokens: 32768
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  # OpenRouter lists stealth/space-bunny-alpha at $0 prompt / $0 completion
+  # (anonymous model, free tier), 1M context, 524288 max output, native
+  # text+image+video input. Reasoning is mandatory upstream and its effort set
+  # is {max, xhigh, high, medium, low} with default max, so callers must send
+  # max_tokens large enough to hold reasoning plus the answer.
+  - id: "or/space-bunny-alpha"
+    provider: openrouter
+    provider_model_id: "stealth/space-bunny-alpha"
+    input_price_per_1m: 0
+    output_price_per_1m: 0
+    aliases: ["space-bunny-alpha", "stealth/space-bunny-alpha", "openrouter/stealth/space-bunny-alpha", "openpaths/stealth/space-bunny-alpha", "openpaths/space-bunny-alpha", "space-bunny", "openpaths-space-bunny-alpha"]
+    context_window: 1000000
+    max_output_tokens: 524288
+    default_reasoning_effort: "high"
     supports_streaming: true
     supports_tools: true
     supports_vision: true
@@ -3944,6 +4537,180 @@ models:
     supports_vision: false
 
   # --- Nous Research ---
+  # Nous router catalog verified against /v1/models on 2026-10-11.
+  - id: "missingno"
+    provider: nous
+    provider_model_id: "stealth/missingno"
+    input_price_per_1m: 0
+    output_price_per_1m: 0
+    aliases: ["openpaths/free", "stealth/missingno"]
+    context_window: 262144
+    max_output_tokens: 131072
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "nous/meituan/longcat-2.5-preview:free"
+    provider: nous
+    provider_model_id: "meituan/longcat-2.5-preview:free"
+    input_price_per_1m: 0
+    output_price_per_1m: 0
+    context_window: 1048576
+    max_output_tokens: 131072
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "nous/stepfun/step-5-preview:free"
+    provider: nous
+    provider_model_id: "stepfun/step-5-preview:free"
+    input_price_per_1m: 0
+    output_price_per_1m: 0
+    context_window: 1000000
+    max_output_tokens: 64000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "nous/upstage/solar-mini4:free"
+    provider: nous
+    provider_model_id: "upstage/solar-mini4:free"
+    input_price_per_1m: 0
+    output_price_per_1m: 0
+    context_window: 524288
+    max_output_tokens: 131072
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "nous/poolside/laguna-s-2.1:free"
+    provider: nous
+    provider_model_id: "poolside/laguna-s-2.1:free"
+    input_price_per_1m: 0
+    output_price_per_1m: 0
+    context_window: 262144
+    max_output_tokens: 131072
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "nous/poolside/laguna-xs-2.1:free"
+    provider: nous
+    provider_model_id: "poolside/laguna-xs-2.1:free"
+    input_price_per_1m: 0
+    output_price_per_1m: 0
+    context_window: 262144
+    max_output_tokens: 32768
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "nous/inclusionai/ling-3.0-flash-sante:free"
+    provider: nous
+    provider_model_id: "inclusionai/ling-3.0-flash-sante:free"
+    input_price_per_1m: 0
+    output_price_per_1m: 0
+    context_window: 262144
+    max_output_tokens: 32768
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "nous/deepseek/deepseek-v4.1-flash"
+    provider: nous
+    provider_model_id: "deepseek/deepseek-v4.1-flash"
+    input_price_per_1m: 0.106
+    output_price_per_1m: 0.513
+    input_cache_hit_price_per_1m: 0.004
+    context_window: 1048576
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "nous/deepseek/deepseek-v4-flash"
+    provider: nous
+    provider_model_id: "deepseek/deepseek-v4-flash"
+    input_price_per_1m: 0.03
+    output_price_per_1m: 1.28
+    context_window: 1048576
+    max_output_tokens: 943718
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "nous/z-ai/glm-5.3-flash"
+    provider: nous
+    provider_model_id: "z-ai/glm-5.3-flash"
+    input_price_per_1m: 0.12
+    output_price_per_1m: 0.4
+    input_cache_hit_price_per_1m: 0.024
+    context_window: 1048576
+    max_output_tokens: 131072
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "nous/anthropic/claude-opus-5.5"
+    provider: nous
+    provider_model_id: "anthropic/claude-opus-5.5"
+    input_price_per_1m: 4
+    output_price_per_1m: 20
+    input_cache_hit_price_per_1m: 0.2
+    context_window: 1000000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "nous/z-ai/glm-5.2"
+    provider: nous
+    provider_model_id: "z-ai/glm-5.2"
+    input_price_per_1m: 0.9
+    output_price_per_1m: 2.83
+    input_cache_hit_price_per_1m: 0.16
+    context_window: 1048576
+    max_output_tokens: 262144
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "nous/openai/gpt-6-luna"
+    provider: nous
+    provider_model_id: "openai/gpt-6-luna"
+    input_price_per_1m: 0.1
+    output_price_per_1m: 0.5
+    input_cache_hit_price_per_1m: 0.01
+    context_window: 1050000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  - id: "nous/z-ai/glm-5.3"
+    provider: nous
+    provider_model_id: "z-ai/glm-5.3"
+    input_price_per_1m: 0.91
+    output_price_per_1m: 2.86
+    input_cache_hit_price_per_1m: 0.169
+    context_window: 1048576
+    max_output_tokens: 131072
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  - id: "nous/xiaomi/mimo-v2.6-pro"
+    provider: nous
+    provider_model_id: "xiaomi/mimo-v2.6-pro"
+    input_price_per_1m: 0.43
+    output_price_per_1m: 0.87
+    input_cache_hit_price_per_1m: 0.0036
+    context_window: 1050000
+    max_output_tokens: 943718
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
   - id: "hermes-4-70b"
     provider: nous
     provider_model_id: "Hermes-4-70B"

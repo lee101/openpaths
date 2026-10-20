@@ -703,6 +703,7 @@ func (h *ChatHandler) tryNonStreamingBYOK(
 	}
 
 	resp.Model = originalModel
+	resp.Routing = chatRoutePricing(modelCfg, prov.Name(), resp.Usage)
 
 	var tps float32
 	var tokensIn, tokensOut, cachedTokensIn int
@@ -813,6 +814,7 @@ func (h *ChatHandler) tryStreamingBYOK(
 			}
 
 			event.Chunk.Model = originalModel
+			event.Chunk.Routing = chatRoutePricing(modelCfg, prov.Name(), event.Chunk.Usage)
 			deltaText := ""
 			if len(event.Chunk.Choices) > 0 && event.Chunk.Choices[0].Delta != nil {
 				deltaText = messageContentText(event.Chunk.Choices[0].Delta.Content)

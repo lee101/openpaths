@@ -49,7 +49,7 @@ const EXAMPLES: Record<string, ProviderExample> = {
       },
       {
         title: 'Music, SFX & speech',
-        description: 'mg-music renders MiniMax-Music3 full songs with vocals (prompt + optional lyrics, duration 30–300s) at POST /v1/music/generations. mg-sfx generates short sound effects from a prompt. mg-tts covers text-to-speech.',
+        description: 'mg-music renders MiniMax-Music3 full songs with vocals (prompt + optional lyrics, duration 30–300s) at POST /v1/music/generations. mg-sfx generates short sound effects from a prompt. mg-tts covers text-to-speech. mg-lyric-song turns lyrics + a style prompt into a produced full song (quality: studio|standard|lite, up to ~540 words), and mg-voice-song turns a recording of you singing or rapping (audio_url https or data URI, voice_consent: true) into a full song, both at POST /v1/music/generations. mg-caption captions an image sent as an image_url part to /v1/chat/completions.',
       },
       {
         title: 'H3 images & edits',
@@ -444,7 +444,7 @@ const EXAMPLES: Record<string, ProviderExample> = {
     chatModel: 'auto',
     embeddingModel: 'openpaths-embed',
     notes: [
-      '`openpaths-embed` is billed per request and optimized for cost-effective local embeddings.',
+      '`openpaths-embed` is billed at $1 per 1 billion embeddings and optimized for cost-effective local embeddings.',
       '`reasoning_effort="auto"` can be used on any thinking-capable direct chat model to keep that model while auto-selecting none, low, medium, or high thinking.',
       'Use `long_text_mode=average_chunks` when you want full-text averaging on longer inputs.',
     ],

@@ -14,7 +14,7 @@ export interface Model {
   aliases?: string[];
   released: string;
   popularity: number;
-  pricingType?: 'token' | 'request' | 'chars' | 'hour' | 'second' | 'megapixel';
+  pricingType?: 'token' | 'request' | 'chars' | 'hour' | 'second' | 'megapixel' | 'embedding';
   ogImage?: string;
   promotion?: {
     endsAt: string;
@@ -50,14 +50,14 @@ const catalogModels: Model[] = [
     pricingType: 'second'
   },
   {
-    id: 'flux-3-video',
-    name: 'FLUX 3 Video',
+    id: 'flux-3-max-video',
+    name: 'FLUX 3 Max Video',
     provider: 'Black Forest Labs',
-    description: 'Multimodal video generation with native audio, multiple scenes, keyframes, multilingual dialogue, continuation, and video-to-video editing in clips up to 20 seconds.',
+    description: 'Multimodal video generation with native audio, multiple scenes, keyframes, and multilingual dialogue in clips up to 20 seconds, served via Fal.',
     contextLength: 'N/A',
     priceInput: 0.17,
     priceOutput: 0,
-    tags: ['video generation', 'text-to-video', 'image-to-video', 'video-to-video', 'audio'],
+    tags: ['video generation', 'text-to-video', 'image-to-video', 'audio'],
     released: '2026-07-23',
     popularity: -2,
     pricingType: 'second'
@@ -260,6 +260,87 @@ const catalogModels: Model[] = [
     pricingType: 'second'
   },
   {
+    id: 'clairic',
+    name: 'Clairic',
+    provider: 'Cloudflare',
+    description: 'Cloudflare Workers AI typed extraction model (@cf/cloudflare/clairic). POST /v1/extract with state text (plus up to 4 images) and a field map; get back typed answers with confidence, null probability and source spans. 64K context, billed on input tokens only.',
+    contextLength: 'N/A',
+    priceInput: 0.105,
+    priceOutput: 0,
+    tags: ['vision', 'fast'],
+    aliases: ['@cf/cloudflare/clairic', 'cloudflare/clairic', 'clairic-extraction'],
+    released: '2026-10-19',
+    popularity: -2
+  },
+  {
+    id: 'clef',
+    name: 'Clef',
+    provider: 'Cloudflare',
+    description: 'Cloudflare Workers AI decision model (@cf/cloudflare/clef). POST /v1/decide with state and yes/no, choice or score questions; get calibrated probabilities instead of generated text. 64K context, billed on input tokens only.',
+    contextLength: 'N/A',
+    priceInput: 0.252,
+    priceOutput: 0,
+    tags: ['vision', 'reasoning'],
+    aliases: ['@cf/cloudflare/clef', 'cloudflare/clef'],
+    released: '2026-10-19',
+    popularity: -2
+  },
+  {
+    id: 'clef-flash',
+    name: 'Clef Flash',
+    provider: 'Cloudflare',
+    description: 'The smaller, lower-latency Clef decision model (@cf/cloudflare/clef-flash) for latency-critical typed decisions via POST /v1/decide.',
+    contextLength: 'N/A',
+    priceInput: 0.105,
+    priceOutput: 0,
+    tags: ['vision', 'fast'],
+    aliases: ['@cf/cloudflare/clef-flash', 'cloudflare/clef-flash'],
+    released: '2026-10-19',
+    popularity: -2
+  },
+  {
+    id: 'mg-lyric-song',
+    name: 'Lyrics to Song',
+    provider: 'ManifoldGen',
+    description: 'Paste lyrics plus a style prompt and get a produced full song with vocals (up to about 3 minutes). Quality tiers studio, standard and lite pick the guide voice.',
+    contextLength: 'N/A',
+    priceInput: 0.60,
+    priceOutput: 0,
+    tags: ['audio'],
+    aliases: ['lyrics-to-song', 'lyric-music', 'manifoldgen-lyric-song'],
+    released: '2026-10-18',
+    popularity: -2,
+    pricingType: 'request'
+  },
+  {
+    id: 'mg-voice-song',
+    name: 'Voice to Full Song',
+    provider: 'ManifoldGen',
+    description: 'Send a recording of yourself singing or rapping plus a style prompt and optional lyrics; your performance is re-performed and produced into a full, beat-locked song. Requires voice consent.',
+    contextLength: 'N/A',
+    priceInput: 0.60,
+    priceOutput: 0,
+    tags: ['audio'],
+    aliases: ['voice-to-song', 'voice-enhancer', 'audio-to-song', 'manifoldgen-voice-song'],
+    released: '2026-10-18',
+    popularity: -2,
+    pricingType: 'request'
+  },
+  {
+    id: 'mg-caption',
+    name: 'Image Captioning',
+    provider: 'ManifoldGen',
+    description: 'Describe any image in one sentence. Send an image_url content part to /v1/chat/completions and read the caption from the assistant message.',
+    contextLength: 'N/A',
+    priceInput: 0.012,
+    priceOutput: 0,
+    tags: ['vision', 'fast'],
+    aliases: ['image-caption', 'manifoldgen-caption', 'caption'],
+    released: '2026-10-18',
+    popularity: -2,
+    pricingType: 'request'
+  },
+  {
     id: 'cutedsl-image',
     name: 'Z-Image Turbo',
     provider: 'CuteDSL',
@@ -436,12 +517,12 @@ const catalogModels: Model[] = [
     provider: 'OpenPaths',
     description: 'An extremely efficient local embedding model for the lowest-cost text embeddings and similarity checks. Open source at lee101/gobed, so it is portable across environments.',
     contextLength: '256',
-    priceInput: 0.001,
+    priceInput: 1,
     priceOutput: 0,
     tags: ['embedding'],
     released: '2026-04-23',
     popularity: -2,
-    pricingType: 'request'
+    pricingType: 'embedding'
   },
   {
     id: 'text-embedding',
@@ -498,7 +579,7 @@ const catalogModels: Model[] = [
     id: 'openpaths/auto-code',
     name: 'OpenPaths Auto Code',
     provider: 'OpenPaths',
-    description: 'Coding agents, bug fixes, and refactors. Routes easy diffs to GPT-5.6 Luna, visual frontend work to Gemini 3.7 Flash, open-weight coding to GLM-5.3, and hard architecture to GPT-5.6 Sol.',
+    description: 'Coding agents, bug fixes, and refactors. Matches each request to the model that handles it best: routine edits, explanations and tests go to a fast low-cost open-weight coder, visual frontend work to a multimodal specialist, and real engineering such as multi-file fixes, architecture and hard debugging to a frontier coding model. Only huge, highly ambiguous or optimization-heavy tasks reach the top tier. Every tier falls back to a peer model if a provider fails.',
     contextLength: '1M',
     priceInput: 2,
     priceOutput: 12,
@@ -574,6 +655,20 @@ const catalogModels: Model[] = [
     pricingType: 'request'
   },
 
+  {
+    id: 'openpaths/free',
+    name: 'OpenPaths Free',
+    provider: 'OpenPaths',
+    description: 'Best-effort free tier. One id for whatever free model is live: Space Bunny Alpha first, then the free OpenRouter lanes (Nemotron, Nex, Qwen, Cohere, Gemma) and OpenRouter\'s own free router. A lane that fails is circuit-broken out for the following requests instead of being retried.',
+    contextLength: '1M',
+    priceInput: 0,
+    priceOutput: 0,
+    tags: ['free', 'general', 'programming', 'reasoning'],
+    aliases: ['free', 'openpaths-free', 'free-latest'],
+    released: '2026-09-24',
+    popularity: -3
+  },
+
   // --- Meta ---
   {
     id: 'muse-spark-1.3',
@@ -600,6 +695,20 @@ const catalogModels: Model[] = [
     aliases: ['muse-spark-contributor', 'meta-muse-spark-contributor', 'meta-contributor'],
     released: '2026-09-06',
     popularity: 3
+  },
+  // --- TypeSafe ---
+  {
+    id: 'typesafe/jev-router',
+    name: 'Jev Router',
+    provider: 'TypeSafe',
+    description: 'Picks the model and reasoning effort for every request, balancing quality, speed and cost. Runs on Jev, TypeSafe’s first System One model, which scores each prompt on difficulty and precision and re-scores when the task changes.',
+    contextLength: '1M',
+    priceInput: 1.25,
+    priceOutput: 4.25,
+    tags: ['general', 'programming', 'reasoning', 'vision', 'agentic'],
+    aliases: ['jev-router', 'jev', 'typesafe-jev-router'],
+    released: '2026-10-05',
+    popularity: 2
   },
   {
     id: 'muse-image-1.0',
@@ -821,6 +930,19 @@ const catalogModels: Model[] = [
     tags: ['general', 'vision', 'programming'],
     released: '2026-02-22',
     popularity: 3
+  },
+  {
+    id: 'gpt-6.1-sol',
+    name: 'GPT-6.1 Sol',
+    provider: 'OpenAI',
+    description: 'Near-Astra quality at the Sol rate card: $2 in, $10 out, and cached input at $0.10 per million - half what GPT-6 Sol charges. 1.05M-token context, text and image input, reasoning effort up to xhigh.',
+    contextLength: '1.05M',
+    priceInput: 2,
+    priceOutput: 10,
+    tags: ['general', 'vision', 'programming', 'reasoning', 'agentic'],
+    aliases: ['gpt6.1-sol', 'gpt61-sol'],
+    released: '2026-09-27',
+    popularity: 5
   },
   {
     id: 'gpt-6-sol',
@@ -1728,6 +1850,227 @@ const catalogModels: Model[] = [
 
   // --- Nous Research ---
   {
+    "id": "missingno",
+    "name": "MissingNo",
+    "provider": "Nous Research",
+    "description": "Anonymous mystery model via Nous Research. Identity and benchmark performance are unverified.",
+    "contextLength": "256K",
+    "priceInput": 0.0,
+    "priceOutput": 0.0,
+    "tags": [
+      "general",
+      "free"
+    ],
+    "released": "2026-10-11",
+    "popularity": 35,
+    "aliases": [
+      "openpaths/free",
+      "stealth/missingno"
+    ]
+  },
+  {
+    "id": "nous/meituan/longcat-2.5-preview:free",
+    "name": "Meituan: LongCat 2.5 Preview",
+    "provider": "Nous Research",
+    "description": "Available through the Nous Research inference router. Prices are per million tokens; cached input is priced separately.",
+    "contextLength": "1024K",
+    "priceInput": 0.0,
+    "priceOutput": 0.0,
+    "tags": [
+      "general",
+      "free"
+    ],
+    "released": "2026-10-11",
+    "popularity": 35
+  },
+  {
+    "id": "nous/stepfun/step-5-preview:free",
+    "name": "StepFun: Step 5 Preview",
+    "provider": "Nous Research",
+    "description": "Available through the Nous Research inference router. Prices are per million tokens; cached input is priced separately.",
+    "contextLength": "977K",
+    "priceInput": 0.0,
+    "priceOutput": 0.0,
+    "tags": [
+      "general",
+      "free"
+    ],
+    "released": "2026-10-11",
+    "popularity": 35
+  },
+  {
+    "id": "nous/upstage/solar-mini4:free",
+    "name": "Upstage: Solar Mini 4",
+    "provider": "Nous Research",
+    "description": "Available through the Nous Research inference router. Prices are per million tokens; cached input is priced separately.",
+    "contextLength": "512K",
+    "priceInput": 0.0,
+    "priceOutput": 0.0,
+    "tags": [
+      "general",
+      "free"
+    ],
+    "released": "2026-10-11",
+    "popularity": 35
+  },
+  {
+    "id": "nous/poolside/laguna-s-2.1:free",
+    "name": "Poolside: Laguna S 2.1",
+    "provider": "Nous Research",
+    "description": "Available through the Nous Research inference router. Prices are per million tokens; cached input is priced separately.",
+    "contextLength": "256K",
+    "priceInput": 0.0,
+    "priceOutput": 0.0,
+    "tags": [
+      "general",
+      "free"
+    ],
+    "released": "2026-10-11",
+    "popularity": 35
+  },
+  {
+    "id": "nous/poolside/laguna-xs-2.1:free",
+    "name": "Poolside: Laguna XS 2.1",
+    "provider": "Nous Research",
+    "description": "Available through the Nous Research inference router. Prices are per million tokens; cached input is priced separately.",
+    "contextLength": "256K",
+    "priceInput": 0.0,
+    "priceOutput": 0.0,
+    "tags": [
+      "general",
+      "free"
+    ],
+    "released": "2026-10-11",
+    "popularity": 35
+  },
+  {
+    "id": "nous/inclusionai/ling-3.0-flash-sante:free",
+    "name": "inclusionAI: Ling 3.0 Flash Sante",
+    "provider": "Nous Research",
+    "description": "Available through the Nous Research inference router. Prices are per million tokens; cached input is priced separately.",
+    "contextLength": "256K",
+    "priceInput": 0.0,
+    "priceOutput": 0.0,
+    "tags": [
+      "general",
+      "free"
+    ],
+    "released": "2026-10-11",
+    "popularity": 35
+  },
+  {
+    "id": "nous/deepseek/deepseek-v4.1-flash",
+    "name": "DeepSeek: DeepSeek V4.1 Flash",
+    "provider": "Nous Research",
+    "description": "Available through the Nous Research inference router. Prices are per million tokens; cached input is priced separately.",
+    "contextLength": "1024K",
+    "priceInput": 0.106,
+    "priceOutput": 0.513,
+    "tags": [
+      "general"
+    ],
+    "released": "2026-10-11",
+    "popularity": 35
+  },
+  {
+    "id": "nous/deepseek/deepseek-v4-flash",
+    "name": "DeepSeek: DeepSeek V4 Flash 0423",
+    "provider": "Nous Research",
+    "description": "Available through the Nous Research inference router. Prices are per million tokens; cached input is priced separately.",
+    "contextLength": "1024K",
+    "priceInput": 0.03,
+    "priceOutput": 1.28,
+    "tags": [
+      "general"
+    ],
+    "released": "2026-10-11",
+    "popularity": 35
+  },
+  {
+    "id": "nous/z-ai/glm-5.3-flash",
+    "name": "Z.ai: GLM 5.3 Flash",
+    "provider": "Nous Research",
+    "description": "Available through the Nous Research inference router. Prices are per million tokens; cached input is priced separately.",
+    "contextLength": "1024K",
+    "priceInput": 0.12,
+    "priceOutput": 0.4,
+    "tags": [
+      "general"
+    ],
+    "released": "2026-10-11",
+    "popularity": 35
+  },
+  {
+    "id": "nous/anthropic/claude-opus-5.5",
+    "name": "Anthropic: Claude Opus 5.5",
+    "provider": "Nous Research",
+    "description": "Available through the Nous Research inference router. Prices are per million tokens; cached input is priced separately.",
+    "contextLength": "977K",
+    "priceInput": 4.0,
+    "priceOutput": 20.0,
+    "tags": [
+      "general"
+    ],
+    "released": "2026-10-11",
+    "popularity": 35
+  },
+  {
+    "id": "nous/z-ai/glm-5.2",
+    "name": "Z.ai: GLM 5.2",
+    "provider": "Nous Research",
+    "description": "Available through the Nous Research inference router. Prices are per million tokens; cached input is priced separately.",
+    "contextLength": "1024K",
+    "priceInput": 0.8999999999999999,
+    "priceOutput": 2.83,
+    "tags": [
+      "general"
+    ],
+    "released": "2026-10-11",
+    "popularity": 35
+  },
+  {
+    "id": "nous/openai/gpt-6-luna",
+    "name": "OpenAI: GPT-6 Luna",
+    "provider": "Nous Research",
+    "description": "Available through the Nous Research inference router. Prices are per million tokens; cached input is priced separately.",
+    "contextLength": "1025K",
+    "priceInput": 0.09999999999999999,
+    "priceOutput": 0.5,
+    "tags": [
+      "general"
+    ],
+    "released": "2026-10-11",
+    "popularity": 35
+  },
+  {
+    "id": "nous/z-ai/glm-5.3",
+    "name": "Z.ai: GLM 5.3",
+    "provider": "Nous Research",
+    "description": "Available through the Nous Research inference router. Prices are per million tokens; cached input is priced separately.",
+    "contextLength": "1024K",
+    "priceInput": 0.9099999999999999,
+    "priceOutput": 2.86,
+    "tags": [
+      "general"
+    ],
+    "released": "2026-10-11",
+    "popularity": 35
+  },
+  {
+    "id": "nous/xiaomi/mimo-v2.6-pro",
+    "name": "Xiaomi: MiMo-V2.6-Pro",
+    "provider": "Nous Research",
+    "description": "Available through the Nous Research inference router. Prices are per million tokens; cached input is priced separately.",
+    "contextLength": "1025K",
+    "priceInput": 0.43,
+    "priceOutput": 0.87,
+    "tags": [
+      "general"
+    ],
+    "released": "2026-10-11",
+    "popularity": 35
+  },
+  {
     id: 'hermes-4-70b',
     name: 'Hermes 4 70B',
     provider: 'Nous Research',
@@ -2103,6 +2446,18 @@ const catalogModels: Model[] = [
     popularity: 26
   },
   {
+    id: 'nvidia/deepseek-v4-flash',
+    name: 'DeepSeek V4 Flash (NVIDIA, free)',
+    provider: 'NVIDIA',
+    description: 'Free NVIDIA-hosted DeepSeek V4 Flash with a 1M-token context window and tool calling; $0 per token.',
+    contextLength: '1M',
+    priceInput: 0,
+    priceOutput: 0,
+    tags: ['general', 'programming', 'reasoning', 'open-source', 'free'],
+    released: '2026-04-24',
+    popularity: 26
+  },
+  {
     id: 'nvidia/deepseek-v4-pro',
     name: 'DeepSeek V4 Pro (NVIDIA)',
     provider: 'NVIDIA',
@@ -2402,6 +2757,19 @@ const catalogModels: Model[] = [
     popularity: 52
   },
   {
+    id: 'or/space-bunny-alpha',
+    name: 'Space Bunny Alpha',
+    provider: 'OpenRouter',
+    description: 'Anonymous free preview frontier model with blazing-fast inference, strong coding, and native multimodal input. 1M context, mandatory reasoning, tool use.',
+    contextLength: '1M',
+    priceInput: 0,
+    priceOutput: 0,
+    tags: ['free', 'reasoning', 'general', 'vision'],
+    aliases: ['or/space-bunny', 'space-bunny', 'space-bunny-alpha', 'openrouter/space-bunny-alpha', 'openpaths/space-bunny-alpha'],
+    released: '2026-09-24',
+    popularity: 45
+  },
+  {
     id: 'or/hunter-alpha',
     name: 'Hunter Alpha',
     provider: 'OpenRouter',
@@ -2576,6 +2944,34 @@ const catalogModels: Model[] = [
     pricingType: 'second'
   },
   {
+    id: 'minimax-h3-max-recast',
+    name: 'H3 Max Recast',
+    provider: 'Fal',
+    description: 'Recast the people in a video using up to four reference photos while preserving the source motion, camera, cuts, and audio. Source videos must be 5–30 seconds with no shot longer than 15 seconds. $0.30 per output second at 768p or $0.45 at 1080p; reference images are included at no additional charge.',
+    contextLength: 'N/A',
+    priceInput: 0.45,
+    priceOutput: 0,
+    tags: ['video generation', 'video-to-video', 'vision', 'audio'],
+    aliases: ['minimax/h3-max/recast', 'h3-max-recast'],
+    released: '2026-10-02',
+    popularity: 76,
+    pricingType: 'second'
+  },
+  {
+    id: 'minimax-h3-max-relight',
+    name: 'H3 Max Relight',
+    provider: 'Fal',
+    description: 'Video relighting: re-light an existing 2.3-15 second clip from a reference sphere render that shows the target lighting, keeping the original motion and subject. Choose a preset or upload your own sphere. $0.055 per second at 480P, $0.088 at 768P, $0.176 at 1080P or $0.352 at 2K, billed on clip length (3-15 s).',
+    contextLength: 'N/A',
+    priceInput: 0.088,
+    priceOutput: 0,
+    tags: ['video generation', 'video-to-video', 'vision'],
+    aliases: ['minimax/h3-max/relight', 'h3-max-relight', 'video-relighting'],
+    released: '2026-10-07',
+    popularity: 77,
+    pricingType: 'second'
+  },
+  {
     id: 'minimax-h3-max-image-to-video',
     name: 'MiniMax H3 Max Image to Video',
     provider: 'Fal',
@@ -2641,34 +3037,6 @@ const catalogModels: Model[] = [
   {
     id: 'seedance-2.0-fast-text-to-video',
     name: 'Seedance 2.0 Fast Text to Video',
-  {
-    id: 'minimax-h3-max-recast',
-    name: 'H3 Max Recast',
-    provider: 'Fal',
-    description: 'Recast the people in a video using up to four reference photos while preserving the source motion, camera, cuts, and audio. Source videos must be 5–30 seconds with no shot longer than 15 seconds. $0.30 per output second at 768p or $0.45 at 1080p; reference images are included at no additional charge.',
-    contextLength: 'N/A',
-    priceInput: 0.45,
-    priceOutput: 0,
-    tags: ['video generation', 'video-to-video', 'vision', 'audio'],
-    aliases: ['minimax/h3-max/recast', 'h3-max-recast'],
-    released: '2026-10-02',
-    popularity: 76,
-    pricingType: 'second'
-  },
-  {
-    id: 'minimax-h3-max-relight',
-    name: 'H3 Max Relight',
-    provider: 'Fal',
-    description: 'Video relighting: re-light an existing 2.3-15 second clip from a reference sphere render that shows the target lighting, keeping the original motion and subject. Choose a preset or upload your own sphere. $0.055 per second at 480P, $0.088 at 768P, $0.176 at 1080P or $0.352 at 2K, billed on clip length (3-15 s).',
-    contextLength: 'N/A',
-    priceInput: 0.088,
-    priceOutput: 0,
-    tags: ['video generation', 'video-to-video', 'vision'],
-    aliases: ['minimax/h3-max/relight', 'h3-max-relight', 'video-relighting'],
-    released: '2026-10-07',
-    popularity: 77,
-    pricingType: 'second'
-  },
     provider: 'Fal',
     description: 'Fast ByteDance Seedance text-to-video with 720p cinematic output and optional synchronized audio.',
     contextLength: 'N/A',

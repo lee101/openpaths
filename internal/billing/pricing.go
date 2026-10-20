@@ -255,6 +255,11 @@ func (pt *PricingTable) CalculateVideoCostWithResolution(modelID string, duratio
 }
 
 func (pt *PricingTable) CalculateVideoCostWithMediaInputs(modelID string, durationSeconds int, hasVideoInput bool, inputImageCount int, resolution string) (int64, error) {
+	return pt.CalculateVideoCostForDuration(modelID, float64(durationSeconds), hasVideoInput, inputImageCount, resolution)
+}
+
+// CalculateVideoCostForDuration supports measured fractional output seconds.
+func (pt *PricingTable) CalculateVideoCostForDuration(modelID string, durationSeconds float64, hasVideoInput bool, inputImageCount int, resolution string) (int64, error) {
 	cfg, ok := pt.models[modelID]
 	if !ok {
 		return 0, fmt.Errorf("unknown model %q for pricing", modelID)
@@ -405,6 +410,9 @@ func (pt *PricingTable) EstimateMaxCost(modelID string, maxOutputTokens int) (in
 	if !ok {
 		return 0, fmt.Errorf("unknown model %q for pricing", modelID)
 	}
+	if cfg.PricePer1MEmbeddings > 0 {
+		return 1, nil
+	}
 	if cfg.PricePerForecast > 0 {
 		return pt.CalculateForecastCost(modelID)
 	}
@@ -437,4 +445,23 @@ func (pt *PricingTable) EstimateMaxCost(modelID string, maxOutputTokens int) (in
 		maxOutputTokens = 4096
 	}
 	return pt.CalculateCost(modelID, 0, maxOutputTokens)
+}
+
+// SubUnitsPerUnit is the fixed-point scale below one billing unit
+// (hundredth of a cent) used to accrue sub-unit embedding charges exactly.
+const SubUnitsPerUnit int64 = 1_000_000_000
+
+// EmbeddingSubUnits returns the charge for count embeddings in 1e-9 billing
+// units and whether the model is priced per embedding. 1M embeddings at $P cost
+// P*10000 units, so each embedding costs P*1e7 sub-units.
+func (pt *PricingTable) EmbeddingSubUnits(modelID string, count int) (int64, bool) {
+	cfg, ok := pt.models[modelID]
+	if !ok || cfg.PricePer1MEmbeddings <= 0 {
+		return 0, false
+	}
+	if count < 0 {
+		count = 0
+	}
+	per := int64(math.Round(cfg.PricePer1MEmbeddings * 1e7))
+	return per * int64(count), true
 }

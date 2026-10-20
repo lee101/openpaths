@@ -70,7 +70,7 @@ export function OrgJoin() {
           {state === 'success' && <Link to="/account" className="rounded-lg bg-white px-5 py-3 font-mono text-sm font-bold text-black hover:bg-white/90">Open account</Link>}
         </div>
       </div>
-      <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} onSuccess={() => void accept()} />
+      <AuthModal open={authOpen} surface="org_join" onClose={() => setAuthOpen(false)} onSuccess={() => void accept()} />
     </div>
   );
 }

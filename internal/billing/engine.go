@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/openpaths/openpaths/internal/db/queries"
@@ -24,6 +25,9 @@ type Engine struct {
 	autoTopup *AutoTopupService
 	guards    *queries.GuardQueries
 	appURL    string
+
+	embedMu    sync.Mutex
+	embedCarry map[string]int64
 }
 
 func NewEngine(pricing *PricingTable, credits *queries.CreditQueries) *Engine {
@@ -325,7 +329,11 @@ func (e *Engine) DeductVideoWithResolution(ctx context.Context, userID, modelID 
 }
 
 func (e *Engine) DeductVideoWithMediaInputs(ctx context.Context, userID, modelID string, durationSeconds int, hasVideoInput bool, inputImageCount int, resolution, usageLogID string) (int64, error) {
-	cost, err := e.pricing.CalculateVideoCostWithMediaInputs(modelID, durationSeconds, hasVideoInput, inputImageCount, resolution)
+	return e.DeductVideoForDuration(ctx, userID, modelID, float64(durationSeconds), hasVideoInput, inputImageCount, resolution, usageLogID)
+}
+
+func (e *Engine) DeductVideoForDuration(ctx context.Context, userID, modelID string, durationSeconds float64, hasVideoInput bool, inputImageCount int, resolution, usageLogID string) (int64, error) {
+	cost, err := e.pricing.CalculateVideoCostForDuration(modelID, durationSeconds, hasVideoInput, inputImageCount, resolution)
 	if err != nil {
 		return 0, err
 	}
@@ -430,4 +438,28 @@ func formatUsageDescription(modelID string, inputTokens, outputTokens int, reaso
 		fmt.Sprintf("out: %d", outputTokens),
 	)
 	return strings.Join(parts, ", ")
+}
+
+// DeductEmbeddings bills count embeddings for per-embedding priced models,
+// carrying sub-unit remainders per user so totals are exact over time. It
+// returns handled=false for models not priced per embedding.
+func (e *Engine) DeductEmbeddings(ctx context.Context, userID, modelID string, count int) (cost int64, handled bool, err error) {
+	sub, ok := e.pricing.EmbeddingSubUnits(modelID, count)
+	if !ok {
+		return 0, false, nil
+	}
+	e.embedMu.Lock()
+	if e.embedCarry == nil {
+		e.embedCarry = make(map[string]int64)
+	}
+	key := userID + "\x00" + modelID
+	total := e.embedCarry[key] + sub
+	cost = total / SubUnitsPerUnit
+	e.embedCarry[key] = total % SubUnitsPerUnit
+	e.embedMu.Unlock()
+	if cost == 0 {
+		return 0, true, nil
+	}
+	err = e.DeductFixed(ctx, userID, modelID, cost, fmt.Sprintf("Embeddings: %s, count: %d", modelID, count), "")
+	return cost, true, err
 }

@@ -14,6 +14,465 @@ export interface BlogPost {
 
 export const posts: BlogPost[] = [
   {
+    "slug": "missingno-free-pelican-bike",
+    "title": "OpenPaths Free Is Back: MissingNo and the Pelican-on-a-Bike Test",
+    "excerpt": "The free route now uses MissingNo through Nous Research. Our one-shot animated SVG took 8.462 seconds, used 3,327 completion tokens, and the provider reported $0 cost. The wheels work; the bird anatomy and pedalling need polish.",
+    "date": "2026-10-11",
+    "author": "OpenPaths Team",
+    "readTime": "3 min",
+    "tags": [
+      "models",
+      "pricing",
+      "free",
+      "coding",
+      "svg",
+      "pelican"
+    ],
+    "content": "The `openpaths/free` model is back, powered by `stealth/missingno` through Nous Research. MissingNo is an anonymous, text-only reasoning model with a 262,144-token context window, tool calling and structured outputs. Its identity is undisclosed: we are not claiming it is a particular vendor model.\n\n## The one-shot pelican test\n\nWe used the house prompt: \"Draw a pelican riding a bicycle as an animated SVG. Return only a complete standalone SVG document.\" One attempt, no corrective follow-up. The system instruction asked for final code only. MissingNo requires reasoning, so this run used `reasoning_effort: medium` and a 12,000-token ceiling; earlier thinking-disabled runs are not identical settings.\n\n![MissingNo's one-shot pelican riding a bicycle](/static/blog/pelican-svg/missingno.png)\n\n[Watch the original animated SVG](/static/blog/pelican-svg/missingno.svg).\n\nThe request took **8.462 seconds** end to end. The API reported **518 prompt tokens**, **3,327 completion tokens**, including **1,479 reasoning tokens**, and **$0 cost**, with `finish_reason: stop`. These are observations from one request, not a throughput guarantee.\n\nThe result is a recognisable white bird on a bicycle, with two spoked wheels, a moving crank, a bobbing body and a scene-crossing ride animation. It returns a complete, standalone SVG on the first try. The limitations are visible too: the throat pouch is weak, the legs are static rather than tracking the pedals, and the frame is stylised rather than a convincing conventional bicycle triangle. Promising free creative-code output, not a flawless drawing and not a coding benchmark score.\n\n[Recorded usage and review](/static/blog/pelican-svg/missingno-benchmark.json).\n\n## Use the free route\n\n```json\n{\"model\":\"openpaths/free\",\"messages\":[{\"role\":\"user\",\"content\":\"Write a small Python function and tests.\"}],\"reasoning_effort\":\"medium\"}\n```\n\nSend this to `/v1/chat/completions` with your existing OpenPaths API key. `missingno` is also available as a model ID. Input and output are currently $0. There is no paid fallback on `openpaths/free`: if MissingNo is unavailable, the request fails rather than quietly becoming a paid request. Availability and upstream promotions can change.\n\n## More Nous router choices\n\nSeparate Nous routes now include LongCat 2.5 Preview, Step 5 Preview, Solar Mini 4, Laguna S/XS 2.1 and Ling 3.0 Flash Sante free variants. Paid Nous routes include DeepSeek, GLM, Claude Opus 5.5, GPT-6 Luna and MiMo-V2.6-Pro. Google is not added to this expansion; existing direct DeepSeek and Z.ai IDs keep their routes.\n\nFree and paid variants have distinct IDs. Prices are copied from the Nous catalog, with ordinary input and cached input priced separately. Ordinary chat responses and streaming chunks expose a `routing` object naming the actual served model and its USD rates per million tokens, including when a configured paid request falls back. Existing billing uses the served model's price, not the original alias. Prices are snapshots, not promises that upstream tariffs will never change.\n"
+  },
+  {
+    slug: 'jev-router-system-one-model-routing',
+    title: 'Jev Router: Letting a System One Model Pick the Model and the Effort',
+    excerpt: 'TypeSafe\'s Jev Router scores each prompt on difficulty and precision, then chooses the model and reasoning effort. It is now on OpenPaths as typesafe/jev-router at a flat rate, with the caveats a variable-price router deserves.',
+    date: '2026-10-05',
+    author: 'OpenPaths Team',
+    readTime: '5 min',
+    tags: ['router', 'jev', 'typesafe', 'model-routing', 'pricing'],
+    content: `Most routers are a lookup table with opinions: code goes here, long context goes there. Jev Router, from TypeSafe, does something different. It runs on Jev, TypeSafe's first System One (fast, decision-style) model, and uses it to read every prompt before the main model sees it.
+
+## What Jev does before each turn
+
+Per TypeSafe's description, before each turn Jev reads your prompt and scores it on:
+
+- **Difficulty**: how hard the task is.
+- **Precision**: how much the answer needs to be exactly right.
+
+From those scores it also checks whether a bigger model or more reasoning effort would help, whether a cheaper model is enough, and whether the task changed since the last turn. A chat that starts as small talk and turns into a debugging session gets re-scored instead of staying on the model it started with.
+
+The point is that you stop choosing between "always the frontier model" and "always the cheap one." Easy turns go cheap and fast, hard ones get more model and more effort.
+
+## Using it on OpenPaths
+
+It is a normal chat model id:
+
+\`\`\`bash
+curl https://openpaths.io/v1/chat/completions \\
+  -H "Authorization: Bearer $OPENPATHS_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"model":"typesafe/jev-router","messages":[{"role":"user","content":"Refactor this function to be tail recursive."}]}'
+\`\`\`
+
+Aliases: \`jev-router\`, \`jev\`, \`typesafe-jev-router\`. The same key, streaming, tools, vision and 1M-token context work as with any other model. It also accepts \`reasoning_effort\`, \`tools\`, \`response_format\` and structured outputs, matching the parameters TypeSafe lists on OpenRouter.
+
+## Pricing
+
+OpenRouter lists Jev Router at a price of -1, which is its marker for "variable": you pay for whichever model Jev actually chose. A per-token meter on our side needs a number, so on OpenPaths it is a flat blended rate:
+
+| | Per 1M tokens |
+|---|---:|
+| Input | $1.25 |
+| Cached input | $0.125 |
+| Output | $4.25 |
+
+That is the same rate as Muse Spark 1.3. We have not yet measured the real distribution of routed models, so treat this as a launch rate. If routed cost turns out far from it, we will change the rate and say so here rather than quietly.
+
+## What to expect and what we have not verified
+
+- Routing decisions are TypeSafe's. We pass your request through and do not see or override which model was picked.
+- A router adds a decision step. Expect it to help most on mixed workloads (agents, long chats) and least when you already know the right model for a fixed task.
+- Latency and quality will vary by what gets routed. Pin a specific model when you need reproducible output.
+- We have not published benchmark numbers for it. When we run it against our own coding and creative suites we will post the results.
+
+Try it in the [Playground](/playground) by selecting **Jev Router**, or send \`"model": "typesafe/jev-router"\` from any OpenAI-compatible client.`
+  },
+  {
+    slug: 'agent-model-discovery-and-the-free-lane',
+    title: 'Teaching an Agent to Ignore 118 Models, and What Best Effort Actually Means',
+    excerpt: 'Our catalog listed 302 models and never said which ones could answer a chat completion. 118 of them could not. We published a type field, measured what a client does with it, and wrote down why the free lane is a contract rather than a promise.',
+    date: '2026-09-28',
+    author: 'OpenPaths Team',
+    readTime: '8 min',
+    tags: ['agents', 'discoverability', 'free', 'model-catalog', 'api'],
+    content: `An agent's second instruction is almost always some version of "list what you can use." If the answer to that question is wrong, everything downstream is wrong quietly: the model list the user scrolls, the model the router picks, the model a fallback chain quietly reaches for.
+
+This is the story of a catalog that was honest about what it contained and useless because of it, and of the one model id we are willing to stand behind without a caveat.
+
+## The catalog could not tell an agent what a model was
+
+\`GET /v1/models\` returned every entry in \`config.yaml\`. All 302 of them. Each carried an id, an owner, a price table, a context window, and a set of capability booleans. None of it distinguished a language model from a text-to-speech model, because nothing in the response said so.
+
+From inside the building that reads as a reasonable design. From the outside it is a single flat list where 118 entries answer a different endpoint entirely. Sample of what an agent would have offered a user as a chat model:
+
+\`\`\`
+openpaths-embed
+codestral-embed
+whisper-large-v3-turbo
+pocket-tts
+grok-voice-latest
+gpt-image-1.5
+kfold-video
+pixal3d-image-to-3d
+music-2.5
+chronos2
+\`\`\`
+
+Every one of those is a real, working model on OpenPaths. None of them can complete your turn.
+
+## What the catalog actually holds
+
+Measured from this host on 2026-09-28, after the change:
+
+| Type | Models |
+|---|---:|
+| language | 184 |
+| video | 48 |
+| image | 35 |
+| transcription | 11 |
+| speech | 10 |
+| embedding | 6 |
+| music | 4 |
+| 3d | 3 |
+| forecasting | 1 |
+| Total | 302 |
+
+184 of 302 entries can hold a conversation. The other 118 are a video studio, a voice lab, and a vector database that happen to live behind the same domain.
+
+## The fix is one field
+
+Every entry on \`/v1/models\` now carries \`type\`. Chat models report \`"language"\`, which is what the OpenAI model shape calls them; everything else reports its own modality.
+
+\`\`\`json
+{
+  "id": "openpaths-embed",
+  "object": "model",
+  "type": "embedding",
+  "created": 1759012345,
+  "owned_by": "openai"
+}
+\`\`\`
+
+The value is derived, not declared. There is no \`type:\` key to forget in \`config.yaml\`; modality comes out of the id and the price table a model already has, and it is computed in exactly one place. The MCP \`list_models\` tool, which had its own copy of that logic, now calls the same function, so the two surfaces cannot drift.
+
+## What a client does with it
+
+We shipped the field and pointed di's \`/model\` picker at it. The picker had been listing everything the catalog returned. It went from 302 rows to 184, and it now agrees with the authoritative field exactly: same set, no disagreement in either direction.
+
+That last part matters more than the count. A filter that approximates the right answer is a liability, because it is right most of the time.
+
+For catalogs that do not publish a type yet, di falls back to the same signals we classify on, in this order:
+
+1. Unit pricing no language model carries: per image, per megapixel, per video, per second, per minute, per hour, per million characters.
+2. Service markers in the id, matched anywhere in the string.
+
+The second rule is not decoration. \`cdom/openpaths/qwen-embed-8b\` is an embedding model, and an anchored match at the start of the id would have called it a chat model. Marker matching that respects the vendor prefix is the whole point.
+
+Pricing catches what naming cannot. \`fal-ai/flux-2-pro/outpaint\` names no service at all: no embed, no image, no video in the string. It is billed per megapixel, which is the only thing in its entry that gives it away.
+
+## Best effort is a contract, not an apology
+
+Now the other half. \`openpaths/free\` is the model id we will name without qualification, and the reason it needs no qualification is that its behavior is specified rather than hoped for.
+
+It bills 0 in and 0 out per million tokens, with a 1M context window, 524,288 max output tokens, and streaming, tools, and vision input all enabled. Behind it is a ten-hop ladder:
+
+\`\`\`
+1.  stealth/space-bunny-alpha
+2.  nvidia/nemotron-3-ultra-550b-a55b:free
+3.  nex-agi/nex-n2.5-pro:free
+4.  nvidia/nemotron-3-super-120b-a12b:free
+5.  qwen/qwen3.8-27b:free
+6.  cohere/north-mini-code:free
+7.  nvidia/nemotron-3.5-lightning:free
+8.  google/gemma-4-31b-it:free
+9.  nvidia/nemotron-3-nano-30b-a3b:free
+10. openrouter/free
+\`\`\`
+
+Three properties make that a contract rather than a hope, and each is pinned by a test that fails if it drifts:
+
+**The ladder survives price ordering.** The chat handler sorts candidates by price before trying them. Every free hop is zero-priced, so that sort has to leave the capability order alone instead of reshuffling it onto an arbitrary lane. There is a test that runs the ordering and asserts the ladder comes out identical.
+
+**A dead hop steps down.** When a lane fails, its health circuit trips and the next resolution opens on the following lane rather than retrying the dead one. That is the entire point of the free tier: the degradation path is the feature. Clearing the circuit puts the lane back in place.
+
+**The first hop is the preview lane, not the cheapest small one.** You get the 1M-context front end while it is live, and you degrade to progressively smaller models behind it.
+
+## What best effort looks like from outside
+
+Six live completions, sequential, from this host:
+
+| Call | Wall | HTTP | finish_reason | Prompt / completion tokens |
+|---:|---:|---:|---|---|
+| 1 | 1.00s | 200 | stop | 158 / 2 |
+| 2 | 1.23s | 200 | stop | 158 / 19 |
+| 3 | 0.91s | 200 | stop | 158 / 15 |
+| 4 | 1.05s | 200 | stop | 158 / 15 |
+| 5 | 0.95s | 200 | stop | 158 / 17 |
+| 6 | 1.01s | 200 | stop | 158 / 20 |
+
+Tool calling works on the current front hop. Asked for \`get_weather\` with a real function schema, it answered with \`finish_reason: tool_calls\` and \`{"city": "Paris"}\`, no prose needed to extract it.
+
+Here is the part you should design around. The response echoes the id you asked for:
+
+\`\`\`json
+{"model":"openpaths/free","choices":[{"message":{"content":"ok"},"finish_reason":"stop"}]}
+\`\`\`
+
+You cannot see which hop served you, and that is deliberate. The routing header names the provider and the strategy but not the hop:
+
+\`\`\`
+x-openpaths-route: model=openpaths/free; provider=openrouter; strategy=price; byok=false
+\`\`\`
+
+So \`openpaths/free\` is genuinely best effort in the sense that matters for an agent: the model underneath can change between two calls in the same conversation, and there is no signal telling you it did. Prompt caching will not carry across a step-down, either. In the table above, 149 of 158 prompt tokens came from cache on every call because the front hop stayed put; the first call after a step-down pays full input price on the next lane.
+
+**Pin a named model for anything load-bearing.** Use the free lane for exploration, drafts, previews, and the disposable half of a pipeline. If a wrong answer is expensive, name a model and pay for the certainty. The aliases \`free\`, \`openpaths-free\`, \`free-latest\`, and \`openpaths-auto-free\` all reach the same ladder.
+
+## One defect we found while measuring this
+
+\`GET /v1/models/{id}\` returns 200 for ids without a slash and 404 for every id that has one. \`/v1/models/gpt-5.6\` is fine; \`/v1/models/xiaomi%2Fmimo-v2.6-flash\` is a 404, and so is \`or%2Fgrok-4\`, even though all three are in the catalog.
+
+88 of 302 catalog ids contain a slash, so per-model lookup does not work for about 29 percent of the board. If your agent resolves models one at a time, filter the list endpoint instead. We are fixing the route.
+
+## API
+
+\`\`\`bash
+# What can answer a turn
+curl https://openpaths.io/v1/models \\
+  jq -r '.data[] | select(.type == "language") | .id' | head
+
+# What exists, by modality
+curl https://openpaths.io/v1/models \\
+  jq -r '[.data[].type] | group_by(.) | map({(.[0]): length}) | add'
+
+# The free lane
+curl https://openpaths.io/v1/chat/completions \\
+    "model": "openpaths/free",
+    "messages": [{"role": "user", "content": "Say ok"}]
+  }'
+\`\`\`
+
+If your agent is building a model list from a catalog, the only question worth asking is whether the catalog will tell it what each entry is. Ours now does, and the free lane is there when the answer does not matter much.
+`
+  },
+  {
+    slug: 'space-bunny-alpha-pelican-bike-svg',
+    title: 'Space Bunny Alpha on OpenPaths: The Free 1M Preview, Pelican-Tested',
+    excerpt: 'Space Bunny Alpha is the free 1M-context lane behind openpaths/free, and it rejects reasoning_effort none. We ran the house pelican test three times: one clean 181-line coastal scene, two files no browser will render, and a repair pass that fixed the first with a single changed tag.',
+    date: '2026-09-27',
+    author: 'OpenPaths Team',
+    readTime: '7 min',
+    tags: ['models', 'openrouter', 'free', 'creative-coding', 'svg'],
+    content: `Space Bunny Alpha is now its own route on OpenPaths instead of only the thing behind \`openpaths/free\`, and it took the house test the moment it landed. Same test as the rest of the series ([the animated-SVG comparison](/blog/pelican-bicycle-animated-svg-model-comparison), [Opus 4.8 vs GPT-5.5](/blog/pelican-bicycle-opus-4-8-vs-gpt-5-5-xhigh), [MiMo-V2.6](/blog/xiaomi-mimo-v2-6-pelican-bike-svg), [Cerebras Qwen 3.8 27B](/blog/cerebras-qwen3-8-27b-pelican-bike-svg)): a pelican riding a bicycle as an animated SVG, one shot, no retries, then parse the result.
+
+The short version: it draws the best free pelican in the series and it does not reliably close its tags. One clean file out of three one-shot samples, and the one repair pass we ran fixed the broken file by changing a single word.
+
+## The route
+
+- id: \`or/space-bunny\`, upstream \`stealth/space-bunny-alpha\` on OpenRouter
+- aliases: \`openrouter/space-bunny-alpha\`, \`openpaths/space-bunny-alpha\`, \`stealth/space-bunny-alpha\`, \`space-bunny-alpha\`
+- 0 in / 0 out per million tokens, 1M context, 524,288 max output, streaming, tools, vision input
+- first hop of the \`openpaths/free\` ladder, with the zero-priced Nemotron and Nex lanes behind it
+
+Every id above was probed with a live chat completion from this host before it was wired up, and the model page is at [/models/or%2Fspace-bunny](/models/or%2Fspace-bunny).
+
+## The thinking-off dial does not exist here
+
+The series runs every pelican with \`reasoning_effort: none\`. This lane answers that with a hard 400 from upstream:
+
+\`\`\`json
+{"error":{"message":"{\"error\":{\"message\":\"Reasoning is mandatory for this endpoint and cannot be disabled.\",\"code\":400}","type":"provider_error"}}
+\`\`\`
+
+\`low\`, \`minimal\` and omitting the field entirely all return normally; only \`none\` fails. So the house test ran at \`low\`, the cheapest setting this endpoint accepts. If you have a caller that always sends \`none\` - a lot of code-generation scaffolding does - it will work against every other route on OpenPaths and break on this one. Pin the effort, or strip the field.
+
+## Three one-shot samples
+
+Same body every time, \`"cache": false\` so nothing came out of the response cache:
+
+| Sample | Completion tokens | Wall | Bytes | Lines | XML |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 2,950 | 21.3s | 7,362 | 130 | invalid |
+| 2 | 4,015 | 26.7s | 10,735 | 194 | invalid |
+| 3 | 3,796 | 24.0s | 9,705 | 181 | valid |
+
+All three finished \`stop\`, started with \`<\`, carried no markdown fence, and returned 142 to 247 characters of visible reasoning. None of that is the problem. The problem is the other end of the file.
+
+## Sample 3: the good one
+
+![Space Bunny Alpha one-shot SVG: a pelican riding a bicycle](/static/blog/pelican-svg/space-bunny.svg)
+
+The richest single file in the series. Four gradients (\`sky\`, \`sea\`, \`beak\`, \`sun\`), a \`feDropShadow\` filter, and a \`defs\` block that reuses \`#cloud\`, \`#wheel\` and \`#puff\` through \`use\` instead of redrawing them. Two clouds drift across on 24s and 31s loops in opposite directions, the sun pulses its radius, the sea line is animated by rewriting the \`d\` attribute on a 4s cycle, both wheels spin on 1.1s, the crank spins with them, the body bobs on .55s, two legs rock plus and minus 5 degrees on the same 1.1s beat as the crank, and splash puffs fade in and out at the tyres.
+
+It also shows where the model's drawing hand is weak. The beak sits on the crown of the head like a cap, and the pedalling legs are thin strokes that read as a single limb at a glance. The scene grammar is better than the anatomy.
+
+## The two files a browser throws away
+
+Sample 1 opened a \`<path>\` for the rotating crank, put an \`animateTransform\` inside it, and then closed the wrong tag:
+
+\`\`\`svg
+    <path d="M477 460 442 480M477 460l34 21" stroke="#173d50" stroke-width="8" stroke-linecap="round">
+      <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="1.1s" repeatCount="indefinite"/>
+    </g>          <!-- should be </path> -->
+\`\`\`
+
+Sample 2 invented a closing tag that never opened:
+
+\`\`\`svg
+    <ellipse cx="400" cy="526" rx="247" ry="25" fill="#553f30" opacity=".18">
+      <animate attributeName="rx" values="235;250;235" dur=".58s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values=".14;.2;.14" dur=".58s" repeatCount="indefinite"/>
+    </ellabel>   <!-- </ellipse> is on the next line -->
+    </ellipse>
+\`\`\`
+
+Neither file renders. Not badly - not at all: an XML parse error in a standalone \`.svg\` document means the browser shows nothing, with no fallback. Both scenes are good enough that you will not spot it by reading the text.
+
+## The repair pass
+
+We sent sample 1 straight back with the line number and the wrong tag named, and asked for the corrected document with nothing else changed. 3,166 prompt tokens, 2,956 completion tokens, 13.0 seconds, \`stop\`, valid XML on the first try.
+
+![Space Bunny Alpha repaired SVG: a pelican riding a bicycle](/static/blog/pelican-svg/space-bunny-repaired.svg)
+
+The entire diff against the broken original was one line:
+
+\`\`\`diff
+       <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="1.1s" repeatCount="indefinite"/>
+-    </g>
++    </path>
+\`\`\`
+
+Same 130 lines, same 7,362 bytes, one token changed. It can hold a 10KB document in its head well enough to reproduce it byte for byte - the failure is closing the tag on the way out, not forgetting what it drew.
+
+## What we take from it
+
+- Scene construction is the strength: \`defs\` reuse, gradients, filters and layered SMIL on a first shot, at zero cost, with no markdown to strip.
+- Tag discipline is the weakness, and it is the one that costs you. Two of three one-shots were unrenderable, and the error is invisible until a browser refuses the file.
+- So treat it like every other model in this series: parse the output before you ship it. A second pass asking for a corrected document works and is cheap, which makes a validate-then-repair loop a reasonable pipeline rather than a workaround.
+- \`reasoning_effort: none\` is a 400 here. Use \`low\`, or leave the field out.
+- At 0 in / 0 out with 1M context this is the cheapest creative-coding lane on the board, and it is fast enough to retry: 21 to 27 seconds per one-shot pelican.
+
+## API
+
+\`\`\`bash
+curl https://openpaths.io/v1/chat/completions \\
+  -H "Authorization: Bearer op-..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "model": "openrouter/space-bunny-alpha",
+    "reasoning_effort": "low",
+    "max_tokens": 12000,
+    "messages": [
+      {"role": "system", "content": "You output only final code. No markdown, no prose. The first character must be <."},
+      {"role": "user", "content": "Draw a pelican riding a bicycle as an animated SVG. Return only a complete standalone SVG document."}
+    ]
+  }'
+\`\`\`
+
+\`openpaths/free\` routes here first, so a caller that never names a model gets this lane while it is live and falls through to the rest of the free ladder when it is not.
+`
+  },
+  {
+    slug: 'gpt-6-1-sol-voxel-pelican-bike',
+    title: 'GPT-6.1 Sol: Same $2/$10 Card, Cached Input at Half the Rate, Pelican-Tested in 3D Voxel Art',
+    excerpt: 'GPT-6.1 Sol is live at $2 in / $10 out with cached input at $0.10 per million - half what GPT-6 Sol charges. We gave it the house pelican test in 3D voxel art: four runs, and the bird only stopped looking like a staircase on the third try.',
+    date: '2026-09-30',
+    author: 'OpenPaths Team',
+    readTime: '7 min',
+    tags: ['openai', 'gpt-6.1', 'models', 'pricing', 'voxel-art', 'creative-coding', 'svg', 'pelican'],
+    content: `GPT-6.1 Sol is live on OpenPaths as \`gpt-6.1-sol\`, on the direct OpenAI lane and the OpenRouter mirror \`or/gpt-6.1-sol\`. It is the Sol rate card - $2 per million input tokens, $10 per million output - unchanged from GPT-6 Sol, with one number halved: **cached input is $0.10 per million**, 5% of the input rate, where GPT-6 Sol charges $0.20.
+
+OpenAI's own summary is "near-Astra performance for complex work at a lower cost": 1,050,000-token context, 922,000 max input, 128,000 max output, text and image input, reasoning and tool use, and the same 272K input cliff as the rest of GPT-6 - above it the whole request prices at 2x input and cache and 1.5x output.
+
+| Model id | In / cached in / out per 1M | Context | Max output | Route |
+|---|---:|---:|---:|---|
+| gpt-6.1-sol | $2.00 / $0.10 / $10.00 | 1.05M | 128K | OpenAI |
+| or/gpt-6.1-sol | $2.00 / $0.10 / $10.00 | 1.05M | 128K | OpenRouter |
+| gpt-6-sol | $2.00 / $0.20 / $10.00 | 1.05M | 128K | OpenAI, now the 6.1 checkpoint |
+| gpt-5.6-sol | $4.00 / - / $20.00 | 1.05M | 128K | OpenAI, now the 6.1 checkpoint |
+
+## The whole Sol family rides 6.1
+
+\`gpt-6-sol\`, \`gpt-5.6-sol\` and the \`or/\` mirrors keep their own ids, aliases and rate cards and now all send \`gpt-6.1-sol\` upstream - the same compat-route pattern the Claude Opus family uses. Existing keys and existing price lists do not change; the checkpoints under them move.
+
+## Four API details worth knowing
+
+Verified against \`GET api.openai.com/v1/models\` and live \`/v1/chat/completions\` probes on 2026-09-30:
+
+- **\`max_tokens\` is rejected** ("Unsupported parameter: 'max_tokens' ... Use 'max_completion_tokens' instead"). The gateway converts it for every GPT-6 id.
+- **\`reasoning_effort\` has four values**: \`low\`, \`medium\`, \`high\`, \`xhigh\`. Both \`none\` and \`minimal\` are rejected outright - GPT-6 Sol still accepts \`none\`, so this is narrower than the model it replaces. The gateway clamps \`none\` and \`minimal\` up to \`low\` and \`max\` down to \`xhigh\`.
+- **Function tools are refused on \`/v1/chat/completions\`**: "Function tools with reasoning_effort are not supported for gpt-6.1-sol in /v1/chat/completions. To use function tools, use /v1/responses". The suggested workaround, \`reasoning_effort: none\`, is itself not a value 6.1 accepts. Tool traffic is served by \`gpt-5.6-terra\` in the fallback chain, with the OpenRouter mirror behind it.
+- **Cache reads are the win.** 5% of input instead of 10%, on a 1.05M-token window. An agent loop that re-sends its context every turn pays half the cache rate for everything that was not new.
+
+
+## The house test, in voxels
+
+Same house test as [the animated-SVG comparison](/blog/pelican-bicycle-animated-svg-model-comparison), [Opus 4.8 vs GPT-5.5](/blog/pelican-bicycle-opus-4-8-vs-gpt-5-5-xhigh) and [MiMo-V2.6](/blog/xiaomi-mimo-v2-6-pelican-bike-svg) - a pelican riding a bicycle - with one change: this time in 3D voxel art, isometric cubes, three shaded faces per cube.
+
+The system instruction is the series default, \`You output only final code. No markdown, no prose. The first character must be <.\` One detail the series has never had to handle: every cheap model we have run this on accepts \`reasoning_effort: none\`, and 6.1 does not. There is no thinking-off switch here, so effort is the only dial we have.
+
+| Run | Effort | Output tokens (of which reasoning) | Artifact | Animation | Cost |
+|---|---|---:|---|---|---:|
+| 1 | low | 5,825 (190) | 13.4 KB, 183 lines | 3 SMIL | ~$0.059 |
+| 2 | medium | 8,438 (1,024) | 19.6 KB, 429 lines | 6 SMIL | ~$0.085 |
+| 3 | high | 16,947 (8,187) | 24.3 KB, 579 lines | 5 CSS keyframes | ~$0.170 |
+| 4 | medium | 9,384 (1,024) | 22.4 KB, 463 lines | 7 SMIL | ~$0.094 |
+
+Costs are the listed rates for the tokens each run actually used, no cache hits. All four artifacts are valid standalone XML and render.
+
+## Run 1: a good scene with no bicycle in it
+
+![GPT-6.1 Sol run 1: voxel pelican scene](/static/blog/gpt-6-1-sol-voxel-pelican/gpt-6-1-sol-voxel-pelican.svg)
+
+The voxel grammar is genuinely good: every cube shaded as three faces from an upper-left light through CSS custom properties, a tiled ground plane, grass, road, a voxel tree, drifting clouds. The bird is a white cloud-shaped mass with an orange beak. The bicycle is a turquoise lattice with two rings of dark cubes for wheels, and it is not a bicycle - there is no triangle, no saddle, no crank, and the bird floats above the frame rather than on it.
+
+## Run 2: the bicycle arrives, the bird walks away
+
+![GPT-6.1 Sol run 2: voxel bicycle with a stretched pelican](/static/blog/gpt-6-1-sol-voxel-pelican/gpt-6-1-sol-voxel-pelican-v2.svg)
+
+Told exactly what was wrong - the frame has to be a triangle, the saddle above the rear wheel, the handlebars in front of the front one - the second sample drew the best bicycle in the series: two large spoked wheels of dark cubes, a proper triangular frame, saddle, bars, crank and pedals. Then it lost the bird. The pelican is a white voxel serpent arcing from the saddle up across the sky, with the beak trailing at the far end like a tail.
+
+The failure is not randomness: run 2 is a picture of a bicycle with a pelican-shaped line drawn over it.
+
+## Run 3: anatomy at last, and one grey column
+![GPT-6.1 Sol run 3: voxel pelican on a voxel bicycle](/static/blog/gpt-6-1-sol-voxel-pelican/gpt-6-1-sol-voxel-pelican-v3.svg)
+
+Naming the parts fixed it - body a compact blob on the saddle, neck four cubes rising, head with one black cube eye and a long orange beak level with the handlebars, legs angled down to the pedals, one folded wing - and the drawing became a pelican on a bicycle for the first time. It also became the most expensive run in the series: 8,187 of its 16,947 output tokens were reasoning, 48% of the whole file's budget spent thinking about a bird.
+
+The blemish is the handlebar: a tall grey column arcing up the right of the frame, taller than the bird.
+
+## Run 4: the pelican
+
+![GPT-6.1 Sol run 4: voxel pelican riding a voxel bicycle](/static/blog/gpt-6-1-sol-voxel-pelican/gpt-6-1-sol-voxel-pelican-v4.svg)
+
+One sentence about the blemish - a short stem and a horizontal bar ending below the height of the bird's head - and the fourth sample is the one that ships: white body on the saddle, black cube eye, long orange beak over the bars, orange legs down to the pedals, folded wing, teal triangular frame, two spoked wheels, spoked hubs turning on a 3.2s crank loop, the bird bobbing on a 1.6s cycle.
+
+## What we take from it
+
+Geometry is a specification problem, not a capability problem. 6.1 Sol built convincing isometric cubes, a convincing bicycle and a convincing scene on the first try. It took three corrections, each one naming what was structurally wrong - no frame triangle, the bird is not a line, the body is a blob on the saddle, the handlebar is short - to get a picture of a pelican riding a bicycle. Models that draw well and models that *compose* well are not the same thing, and the composition part is what a reasoning model still cannot do without being told the layout.
+
+More effort did not buy the drawing. Run 3 at \`high\` cost 1.8x run 4 at \`medium\`, spent 8x the reasoning tokens, and shipped a file with a visible defect. For a task this visual, naming the defect is worth more than thinking longer about it.
+
+And the price of the house test is now visible: about $0.06 to $0.17 per artifact, against ~$0.0006 for MiMo-V2.6 Flash, ~$0.007 for GLM-5.3 Flash and ~$0.012 for DeepSeek V4.1 Flash in the same series. GPT-6.1 Sol is not a cheap model to point at a drawing task, and the half-price cache rate does not help here - all four runs were uncached, and none of them re-sent their context. It is aimed at the other end of the bill: long agent loops where the cache does the work.
+
+## API
+
+\`\`\`bash
+curl https://openpaths.io/v1/chat/completions \\
+    "model": "gpt-6.1-sol",
+    "reasoning_effort": "medium",
+    "max_tokens": 24000,
+    "messages": [
+      {"role": "system", "content": "You output only final code. No markdown, no prose. The first character must be <."},
+      {"role": "user", "content": "Draw a pelican riding a bicycle as a 3D voxel art render, returned as one complete standalone SVG document. Side view, the bicycle centred on a flat voxel ground plane. ..."}
+    ]
+  }'
+\`\`\`
+
+Send \`reasoning_effort\` as \`low\`, \`medium\`, \`high\` or \`xhigh\` - there is no \`none\` on this model, and the gateway will quietly turn one into \`low\`. The full artifact is hosted at [/static/blog/gpt-6-1-sol-voxel-pelican/gpt-6-1-sol-voxel-pelican-v4.svg](/static/blog/gpt-6-1-sol-voxel-pelican/gpt-6-1-sol-voxel-pelican-v4.svg); all four runs are in the directory next to it. Add \`"cache": false\` if you want a fresh sample instead of the cached one.
+
+The four artifacts were produced against \`gpt-6.1-sol\` on the OpenAI API with the exact prompts quoted above, before the route went out - the model the route now serves, and the same reasoning vocabulary the gateway clamps.
+`
+  },
+  {
     slug: 'xiaomi-mimo-v2-6-pelican-bike-svg',
     title: 'Xiaomi MiMo-V2.6 on OpenPaths: Pro, UltraSpeed and Flash Pelican-Tested',
     excerpt: 'Three Xiaomi routes join OpenPaths - MiMo-V2.6 Pro, Pro-UltraSpeed, and the open-source Flash, all 1M context and multimodal from $0.14 per million tokens. We gave all three the house pelican test; one failed it on the first try.',

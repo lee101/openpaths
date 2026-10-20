@@ -117,8 +117,8 @@ export function Layout() {
   const showAds = !isPlayground && !['/account', '/usage', '/admin'].some(path => location.pathname === path || location.pathname.startsWith(`${path}/`));
   const isLoggedIn = useIsLoggedIn();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [topUpOpen, setTopUpOpen] = useState(false);
+  const [authSurface, setAuthSurface] = useState<string | null>(null);
+  const [topUpSurface, setTopUpSurface] = useState<string | null>(null);
   const initials = accountInitials();
 
   useEffect(() => {
@@ -126,8 +126,8 @@ export function Layout() {
   }, [location.pathname]);
 
   useEffect(() => {
-    const openTopUp = () => setTopUpOpen(true);
-    const openAuth = () => setAuthModalOpen(true);
+    const openTopUp = (e: Event) => setTopUpSurface((e as CustomEvent<{ surface?: string }>).detail?.surface || 'credits_required');
+    const openAuth = () => setAuthSurface('paywall');
     window.addEventListener(CREDITS_REQUIRED_EVENT, openTopUp);
     window.addEventListener(AUTH_REQUIRED_EVENT, openAuth);
     return () => {
@@ -156,7 +156,7 @@ export function Layout() {
             <>
               <button
                 type="button"
-                onClick={() => setTopUpOpen(true)}
+                onClick={() => setTopUpSurface('nav_balance')}
                 className="hidden sm:flex items-center gap-1.5 text-sm font-mono text-white/60 hover:text-white transition-colors"
                 data-testid="nav-add-funds"
               >
@@ -176,8 +176,8 @@ export function Layout() {
             </>
           ) : (
             <>
-              <button type="button" onClick={() => setAuthModalOpen(true)} className="text-sm font-mono text-white/60 hover:text-white transition-colors hidden sm:block" data-testid="nav-signin">Sign In</button>
-              <button type="button" onClick={() => setAuthModalOpen(true)} className="hidden sm:block bg-white text-black px-3 py-2 sm:px-4 text-sm font-mono font-bold hover:bg-white/90 transition-colors rounded" data-testid="nav-get-started">
+              <button type="button" onClick={() => setAuthSurface('nav_signin')} className="text-sm font-mono text-white/60 hover:text-white transition-colors hidden sm:block" data-testid="nav-signin">Sign In</button>
+              <button type="button" onClick={() => setAuthSurface('nav_get_started')} className="hidden sm:block bg-white text-black px-3 py-2 sm:px-4 text-sm font-mono font-bold hover:bg-white/90 transition-colors rounded" data-testid="nav-get-started">
                 Get Started
               </button>
             </>
@@ -212,7 +212,7 @@ export function Layout() {
                   type="button"
                   onClick={() => {
                     setMobileMenuOpen(false);
-                    setAuthModalOpen(true);
+                    setAuthSurface('mobile_nav');
                   }}
                   className="rounded border border-white/25 bg-white px-3 py-2 font-bold text-black transition-colors hover:bg-white/90 text-left"
                 >
@@ -224,8 +224,8 @@ export function Layout() {
         )}
       </nav>
 
-      <AuthModal open={authModalOpen} onClose={() => setAuthModalOpen(false)} />
-      <TopUpModal open={topUpOpen} onClose={() => setTopUpOpen(false)} />
+      <AuthModal open={authSurface !== null} initialMode={authSurface === 'nav_signin' ? 'login' : 'register'} surface={authSurface || undefined} onClose={() => setAuthSurface(null)} />
+      <TopUpModal open={topUpSurface !== null} surface={topUpSurface || undefined} onClose={() => setTopUpSurface(null)} />
 
       <main className="flex-1 min-h-0">
         <Suspense fallback={<div className="min-h-screen" aria-busy="true" />}>

@@ -162,6 +162,9 @@
     {
       "id": 23,
       "delay_days": 1,
+      "kind": "model_launch",
+      "launch_date": "2026-08-23",
+      "max_age_days": 14,
       "subject": "GLM-5.3 is live - 1M context, same price as 5.2",
       "template": "23-glm-5.3.html",
       "description": "GLM-5.3 launch: 1M context, always-on reasoning, glm-latest alias, same-price route-up from 5.2/5.1"
@@ -169,9 +172,52 @@
     {
       "id": 24,
       "delay_days": 1,
+      "kind": "model_launch",
+      "launch_date": "2026-09-22",
+      "max_age_days": 14,
       "subject": "MiMo-V2.6 is live - 1M context from $0.14/M, pelican tested",
       "template": "24-mimo-v2.6.html",
       "description": "Xiaomi MiMo-V2.6 launch: pro, pro-ultraspeed, flash; 1M multimodal context, frontier chart, pelican test write-up"
+    },
+    {
+      "id": 25,
+      "delay_days": 1,
+      "kind": "model_launch",
+      "launch_date": "2026-10-07",
+      "max_age_days": 14,
+      "subject": "Nano Banana 2 Lite + 2.1 are live - game concept art at 3.4 cents an image",
+      "template": "25-gemini-image.html",
+      "description": "Gemini 3.1 Flash Lite Image and Nano Banana 2.1 launch: generation and editing at $0.0336, game-dev examples from one concept screenshot, Gemini fallback for image edits"
+    },
+    {
+      "id": 26,
+      "delay_days": 1,
+      "kind": "model_launch",
+      "launch_date": "2026-10-08",
+      "max_age_days": 14,
+      "subject": "Claude Haiku 5.5 is live - $0.10/M input, and a pricing calculator that knows the tiers",
+      "template": "26-haiku-5-5.html",
+      "description": "Claude Haiku 5.5 launch: Anthropic base pricing with 100K long-context tier, effort levels, Haiku vs DeepSeek Flash tier-aware comparison, new /llm-pricing calculator"
+    },
+    {
+      "id": 27,
+      "delay_days": 1,
+      "kind": "model_launch",
+      "launch_date": "2026-10-10",
+      "max_age_days": 14,
+      "subject": "Typed decisions with probabilities, plus Qwen 3.8 Max, Omni and Wan 3.0 video",
+      "template": "27-decision-qwen.html",
+      "description": "Decision Model (/v1/systemone, TypeSafe compatible, $0.042/M) with a real ticket-triage example, Qwen 3.8 Max/Omni/27B, Qwen Image 3.0, realtime audio, Wan 3.0 video from $0.05/s"
+    },
+    {
+      "id": 28,
+      "delay_days": 1,
+      "kind": "model_launch",
+      "launch_date": "2026-10-14",
+      "max_age_days": 14,
+      "subject": "Gemini 4 Argon is live - Google pricing, OpenRouter fallback, and the best pelican yet",
+      "template": "28-gemini-4-argon.html",
+      "description": "Gemini 4 Argon launch: direct Google route at $2/$10 per M with same-price OpenRouter fallback, say-hi test, one-shot animated pelican-on-a-bicycle SVG"
     }
   ]
 }

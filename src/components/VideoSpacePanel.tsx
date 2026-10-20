@@ -167,6 +167,7 @@ export function VideoSpacePanel({ modelId, modelName, demo, initialPrompt, price
   const [prompt, setPrompt] = useState(initialPrompt || starter.prompt);
   const [inputMode, setInputMode] = useState<VideoInputMode>(() => starterInputMode(starter, spec));
   const [imageUrl, setImageUrl] = useState(starter.imageUrl || starter.imageUrls?.[0] || '');
+  const [referencePhotos, setReferencePhotos] = useState(starter.imageUrls?.join('\n') || '');
   const [endImageUrl, setEndImageUrl] = useState(starter.endImageUrl || '');
   const [videoUrl, setVideoUrl] = useState(starter.videoUrls?.[0] || '');
   const [resolution, setResolution] = useState(starter.resolution);
@@ -187,6 +188,7 @@ export function VideoSpacePanel({ modelId, modelName, demo, initialPrompt, price
     setInputMode(starterInputMode(starter, spec));
     setImageUrl(starter.imageUrl || starter.imageUrls?.[0] || '');
     setEndImageUrl(starter.endImageUrl || '');
+    setReferencePhotos(starter.imageUrls?.join('\n') || '');
     setVideoUrl(starter.videoUrls?.[0] || '');
     setResolution(starter.resolution);
     setDuration(starter.duration);
@@ -234,14 +236,14 @@ export function VideoSpacePanel({ modelId, modelName, demo, initialPrompt, price
     imageUrl: spec.inputModes ? (inputMode === 'image-to-video' ? imageUrl : undefined) : (spec.imageToVideo ? imageUrl : undefined),
     endImageUrl: spec.inputModes && inputMode !== 'image-to-video' ? undefined : endImageUrl,
     videoUrl: spec.inputModes && inputMode === 'video-to-video' ? videoUrl : undefined,
-    imageUrls: spec.referenceToVideo && imageUrl ? [imageUrl] : starter.imageUrls,
+    imageUrls: spec.recast ? referencePhotos.split(/\s+/).filter(Boolean) : spec.referenceToVideo && imageUrl ? [imageUrl] : starter.imageUrls,
     videoUrls: starter.videoUrls,
     audioUrls: starter.audioUrls,
   };
   const payload = useMemo(
     () => buildVideoPayload(modelId, base, adv, spec),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [modelId, spec, prompt, resolution, duration, aspectRatio, generateAudio, inputMode, imageUrl, endImageUrl, videoUrl, adv, starter],
+    [modelId, spec, prompt, resolution, duration, aspectRatio, generateAudio, inputMode, imageUrl, endImageUrl, videoUrl, referencePhotos, adv, starter],
   );
   const snippet = useMemo(() => snippetFor(payload, lang, apiKey), [payload, lang, apiKey]);
 
@@ -251,7 +253,7 @@ export function VideoSpacePanel({ modelId, modelName, demo, initialPrompt, price
     window.setTimeout(() => setCopied(false), 1600);
   };
 
-  const uploadImage = async (file?: File) => {
+  const uploadImage = async (file?: File, kind: 'image' | 'video' | 'photo' = 'image') => {
     if (!file) return;
     const key = await resolveKey();
     if (!key) return;
@@ -260,7 +262,7 @@ export function VideoSpacePanel({ modelId, modelName, demo, initialPrompt, price
     setPaywall(null);
     try {
       const form = new FormData();
-      form.append('file', await prepareUploadFile(file));
+      form.append('file', kind === 'video' ? file : await prepareUploadFile(file));
       const resp = await fetch('/v1/files/upload', {
         method: 'POST',
         headers: { Authorization: `Bearer ${key}` },
@@ -270,7 +272,10 @@ export function VideoSpacePanel({ modelId, modelName, demo, initialPrompt, price
       const gate = paywallFromResponse(resp, data);
       if (gate) { setPaywall(gate); return; }
       if (!resp.ok || !data?.url) throw new Error(apiError(data, 'Image upload failed'));
-      setImageUrl(normalizeUploadedAssetUrl(data.url));
+      const url = normalizeUploadedAssetUrl(data.url);
+      if (kind === 'video') setVideoUrl(url);
+      else if (kind === 'photo') setReferencePhotos(current => [...current.split(/\s+/).filter(Boolean), url].slice(0, 4).join('\n'));
+      else setImageUrl(url);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Image upload failed');
     } finally {
@@ -279,7 +284,7 @@ export function VideoSpacePanel({ modelId, modelName, demo, initialPrompt, price
   };
 
   const generate = async () => {
-    if (!prompt.trim()) {
+    if (!spec.recast && !prompt.trim()) {
       setError('Enter a motion prompt before generating.');
       return;
     }
@@ -289,6 +294,10 @@ export function VideoSpacePanel({ modelId, modelName, demo, initialPrompt, price
     }
     if (spec.inputModes && inputMode === 'video-to-video' && !videoUrl.trim()) {
       setError('Add an input video URL before generating in video-to-video mode.');
+      return;
+    }
+    if (spec.recast && (base.imageUrls!.length < 1 || base.imageUrls!.length > 4)) {
+      setError('Add one to four reference photos, one URL per person.');
       return;
     }
     const key = await resolveKey();
@@ -330,8 +339,8 @@ export function VideoSpacePanel({ modelId, modelName, demo, initialPrompt, price
     !!spec.guidanceScale ||
     !!spec.numInferenceSteps ||
     !!spec.outputFormats;
-  const usesImageInput = spec.inputModes ? inputMode === 'image-to-video' : spec.imageToVideo || spec.referenceToVideo;
-  const previewImage = usesImageInput ? imageUrl || starter.imageUrls?.[0] : undefined;
+  const usesImageInput = spec.recast || (spec.inputModes ? inputMode === 'image-to-video' : spec.imageToVideo || spec.referenceToVideo);
+  const previewImage = spec.recast ? base.imageUrls?.[0] : usesImageInput ? imageUrl || starter.imageUrls?.[0] : undefined;
 
   return (
     <div className="grid gap-0 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]" data-testid="mp-video-panel">
@@ -396,7 +405,7 @@ export function VideoSpacePanel({ modelId, modelName, demo, initialPrompt, price
         </Field>
 
         <div className="mt-3">
-          <Field label={usesImageInput || inputMode === 'video-to-video' ? 'Motion prompt' : 'Prompt'}>
+          <Field label={spec.recast ? 'Who becomes whom (optional)' : usesImageInput || inputMode === 'video-to-video' ? 'Motion prompt' : 'Prompt'}>
             <textarea
               value={prompt}
               onChange={e => setPrompt(e.target.value)}
@@ -435,7 +444,7 @@ export function VideoSpacePanel({ modelId, modelName, demo, initialPrompt, price
           </div>
         )}
 
-        {usesImageInput && (
+        {usesImageInput && !spec.recast && (
           <div className="mt-3">
             <Field label={spec.referenceToVideo ? 'Reference image URL' : 'Input image URL'}>
               <div className="flex gap-2">
@@ -456,7 +465,7 @@ export function VideoSpacePanel({ modelId, modelName, demo, initialPrompt, price
           </div>
         )}
 
-        {usesImageInput && (spec.inputModes || (spec.imageToVideo && spec.endImage)) && (
+        {usesImageInput && !spec.recast && (spec.inputModes || (spec.imageToVideo && spec.endImage)) && (
           <div className="mt-3">
             <Field label="End image URL (optional)">
               <input value={endImageUrl} onChange={e => setEndImageUrl(e.target.value)} placeholder="https://example.com/last-frame.webp" className={inputCls} data-testid="mp-video-end-image-url" />
@@ -474,7 +483,21 @@ export function VideoSpacePanel({ modelId, modelName, demo, initialPrompt, price
                 className={inputCls}
                 data-testid="mp-video-video-url"
               />
+              {spec.recast && <input type="file" accept="video/*" disabled={uploading || loading} onChange={e => void uploadImage(e.target.files?.[0], 'video')} className="mt-2 text-xs" data-testid="mp-video-source-upload" />}
             </Field>
+          </div>
+        )}
+
+        {spec.recast && (
+          <div className="mt-3 space-y-3">
+            <Field label="Reference photos (1–4, one URL per person)">
+              <textarea value={referencePhotos} onChange={e => setReferencePhotos(e.target.value)} rows={4} className={inputCls} data-testid="mp-video-reference-photos" />
+            </Field>
+            <input type="file" accept="image/*" disabled={uploading || loading} onChange={e => void uploadImage(e.target.files?.[0], 'photo')} className="text-xs" data-testid="mp-video-photo-upload" />
+            <div className="flex gap-2">{base.imageUrls?.map((url, index) => <img key={`${index}-${url}`} src={url} alt={`New person ${index + 1}`} className="h-20 w-20 rounded object-contain" />)}</div>
+            <video src={videoUrl} controls playsInline preload="metadata" className="w-full rounded" data-testid="mp-video-source-preview" />
+            <p className="text-xs text-white/60">Source: 5–30 seconds, with no shot longer than 15 seconds. Photos replace people from left to right. Motion, camera, cuts, and source audio are preserved.</p>
+            <p className="text-sm text-white/80" data-testid="mp-video-recast-pricing">$0.30 per second of output video at 768p or $0.45 per second at 1080p. Reference images are included at no additional charge.</p>
           </div>
         )}
 
@@ -484,17 +507,17 @@ export function VideoSpacePanel({ modelId, modelName, demo, initialPrompt, price
               {spec.resolutions.map(v => <option key={v} value={v} className="bg-black">{v}</option>)}
             </select>
           </Field>
-          <Field label="Duration">
+          {!spec.recast && <Field label="Duration">
             <select value={duration} onChange={e => setDuration(e.target.value)} className={selectCls} data-testid="mp-video-duration">
               {spec.durations.map(v => <option key={v} value={v} className="bg-black">{v}</option>)}
             </select>
-          </Field>
-          <Field label="Aspect">
+          </Field>}
+          {!spec.recast && <Field label="Aspect">
             <select value={aspectRatio} onChange={e => setAspectRatio(e.target.value as typeof aspectRatio)} className={selectCls} data-testid="mp-video-aspect-ratio">
               {spec.aspectRatios.map(v => <option key={v} value={v} className="bg-black">{v}</option>)}
             </select>
-          </Field>
-          <Field label={spec.enableSafetyChecker ? 'Safety' : 'Audio'}>
+          </Field>}
+          {!spec.recast && <Field label={spec.enableSafetyChecker ? 'Safety' : 'Audio'}>
             <button
               type="button"
               onClick={() => spec.generateAudio && setGenerateAudio(v => !v)}
@@ -507,7 +530,7 @@ export function VideoSpacePanel({ modelId, modelName, demo, initialPrompt, price
             >
               {spec.enableSafetyChecker || generateAudio ? 'on' : 'off'}
             </button>
-          </Field>
+          </Field>}
         </div>
 
         {hasAdvanced && (

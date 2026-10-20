@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { loadStripe } from '@stripe/stripe-js/pure';
 import { EmbeddedCheckout, EmbeddedCheckoutProvider } from '@stripe/react-stripe-js';
 import { api } from '../lib/api';
+import { track } from '../lib/th';
 
 const RECOMMENDED_TOPUP_USD = 200;
 const QUICK_TOPUP_AMOUNTS = [25, 100, 200, 500];
@@ -23,11 +24,13 @@ export function TopUpModal({
   onClose,
   stripePk,
   initialAmount = RECOMMENDED_TOPUP_USD,
+  surface = 'topup_modal',
 }: {
   open: boolean;
   onClose: () => void;
   stripePk?: string;
   initialAmount?: number;
+  surface?: string;
 }) {
   const [pk, setPk] = useState(stripePk || '');
   const [amount, setAmount] = useState(initialAmount);
@@ -50,6 +53,10 @@ export function TopUpModal({
   }, [open, pk]);
 
   useEffect(() => {
+    if (open) track('paywall_open', { surface, plan: 'credits' });
+  }, [open, surface]);
+
+  useEffect(() => {
     if (!open) return;
     setAmount(initialAmount);
     setClientSecret(null);
@@ -67,7 +74,7 @@ export function TopUpModal({
     try {
       const res = await api('/account/stripe/checkout', {
         method: 'POST',
-        body: JSON.stringify({ amount_usd: amount }),
+        body: JSON.stringify({ amount_usd: amount, surface }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -75,6 +82,7 @@ export function TopUpModal({
         return;
       }
       setClientSecret(data.client_secret);
+      track('begin_checkout', { plan: 'credits', value: amount, currency: 'USD', surface });
     } catch {
       setError('Network error');
     } finally {
