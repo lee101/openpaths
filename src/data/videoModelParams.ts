@@ -120,13 +120,13 @@ const FAMILIES: Array<{ test: RegExp; spec: Partial<VideoParamSpec> }> = [
     },
   },
   {
-    test: /^flux-3-video$/i,
+    test: /^flux-3-max-video$/i,
     spec: {
       resolutions: ['HD', 'FHD'],
       durations: ['auto', ...Array.from({ length: 16 }, (_, index) => String(index + 5))],
       aspectRatios: ['auto', '21:9', '2:1', '16:9', '4:3', '1:1', '3:4', '9:16'],
-      inputModes: ['text-to-video', 'image-to-video', 'video-to-video'],
-      safetyTolerance: 4,
+      inputModes: ['text-to-video', 'image-to-video'],
+      safetyTolerance: undefined,
       negativePrompt: false,
       seed: false,
       outputFormats: undefined,
@@ -259,6 +259,10 @@ export function getVideoParamSpec(modelId: string): VideoParamSpec {
     generateAudio: !isHappyHorse,
     ...(family?.spec ?? {}),
   };
+}
+
+export function maxVideoSeconds(modelId: string): number {
+  return Math.max(0, ...getVideoParamSpec(modelId).durations.map(d => parseInt(d, 10)).filter(Number.isFinite));
 }
 
 // Advanced arg values entered in the UI. Empty string => unset (not sent).

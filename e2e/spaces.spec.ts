@@ -344,13 +344,12 @@ test.describe('Public Spaces', () => {
     await expect(page.getByTestId('mp-video-num-inference-steps')).toHaveCount(0);
   });
 
-  test('FLUX 3 playground exposes native modes and keeps safety tolerance fixed at 4', async ({ page }) => {
-    await page.goto('/playground?model=flux-3-video&mode=video');
+  test('FLUX 3 Max playground exposes native modes', async ({ page }) => {
+    await page.goto('/playground?model=flux-3-max-video&mode=video');
 
     const mode = page.getByTestId('video-input-mode');
     await expect(mode).toBeVisible();
-    await expect(mode.locator('option')).toHaveCount(3);
-    await expect(page.getByTestId('video-safety-tolerance')).toContainText('4 · fixed');
+    await expect(mode.locator('option')).toHaveCount(2);
     await expect(page.getByTestId('video-resolution').locator('option')).toHaveText(['HD', 'FHD']);
     await expect(page.getByTestId('video-duration').locator('option').first()).toHaveText('auto');
     await expect(page.getByTestId('video-aspect-ratio').locator('option', { hasText: '2:1' })).toHaveCount(1);

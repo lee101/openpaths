@@ -582,23 +582,23 @@ func defaultRoutingTables() map[string][]AutoEntry {
 		},
 
 		"code-task": {
-			// ===== EVERYDAY CODING — GLM-5.3 Flash (paid, reasoning mandatory) =====
-			// Carries the bulk (~70%) of auto-code traffic. Never route here with
-			// effort "none": upstream rejects disabled reasoning with a 400.
-			{Description: "debug fix bug error exception crash investigate stack trace reproduce failing case regression", ModelID: "glm-5.3-flash", ReasoningEffort: "high"},
-			{Description: "implement feature add function method class component endpoint api route handler business logic", ModelID: "glm-5.3-flash", ReasoningEffort: "medium"},
-			{Description: "write unit test integration test test case mock stub coverage assertion table driven", ModelID: "glm-5.3-flash", ReasoningEffort: "medium"},
-			{Description: "code review analyze quality security vulnerability check audit patch suggestion diff feedback", ModelID: "glm-5.3-flash", ReasoningEffort: "high"},
-			{Description: "refactor cleanup restructure module rename variable extract helper simplify dead code", ModelID: "glm-5.3-flash", ReasoningEffort: "medium"},
-			{Description: "explain how this code works walkthrough summarize what this function does onboarding", ModelID: "glm-5.3-flash", ReasoningEffort: "low"},
-			{Description: "sql query migration schema design model orm prisma database index", ModelID: "glm-5.3-flash", ReasoningEffort: "low"},
-			{Description: "frontend component react vue svelte tailwind css layout styling responsive fix", ModelID: "glm-5.3-flash", ReasoningEffort: "medium"},
-			{Description: "python node typescript golang shell script automation cli tool utility snippet", ModelID: "glm-5.3-flash", ReasoningEffort: "low"},
-			{Description: "api integration third party sdk client library webhook payload request response http rest", ModelID: "glm-5.3-flash", ReasoningEffort: "low"},
-			{Description: "error handling validation input sanitization edge cases defensive checks retry backoff", ModelID: "glm-5.3-flash", ReasoningEffort: "medium"},
-			{Description: "dockerfile docker compose kubernetes manifest helm chart ci cd pipeline github actions workflow", ModelID: "glm-5.3-flash", ReasoningEffort: "low"},
-			{Description: "documentation readme changelog docstring jsdoc typedoc godoc code comments", ModelID: "glm-5.3-flash", ReasoningEffort: "low"},
-			{Description: "authentication authorization login signup oauth jwt session middleware flow", ModelID: "glm-5.3-flash", ReasoningEffort: "medium"},
+			// ===== EVERYDAY CODING — DeepSeek (cheap, strong at routine edits) =====
+			// Target mix: ~40% routine work here, ~50% GPT-5.6 Sol for real engineering,
+			// <=10% Opus for huge/ambiguous/optimization-heavy tasks.
+			{Description: "debug fix bug error exception crash investigate stack trace reproduce failing case regression", ModelID: "deepseek-v4-pro", ReasoningEffort: "high"},
+			{Description: "implement feature add function method class component endpoint api route handler business logic", ModelID: "deepseek-v4-flash", ReasoningEffort: "medium"},
+			{Description: "write unit test integration test test case mock stub coverage assertion table driven", ModelID: "deepseek-v4-flash", ReasoningEffort: "medium"},
+			{Description: "code review analyze quality security vulnerability check audit patch suggestion diff feedback", ModelID: "deepseek-v4-pro", ReasoningEffort: "high"},
+			{Description: "refactor cleanup restructure module rename variable extract helper simplify dead code", ModelID: "deepseek-v4-flash", ReasoningEffort: "medium"},
+			{Description: "explain how this code works walkthrough summarize what this function does onboarding", ModelID: "deepseek-v4-flash", ReasoningEffort: "low"},
+			{Description: "sql query migration schema design model orm prisma database index", ModelID: "deepseek-v4-flash", ReasoningEffort: "low"},
+			{Description: "frontend component react vue svelte tailwind css layout styling responsive fix", ModelID: "deepseek-v4-flash", ReasoningEffort: "medium"},
+			{Description: "python node typescript golang shell script automation cli tool utility snippet", ModelID: "deepseek-v4-flash", ReasoningEffort: "low"},
+			{Description: "api integration third party sdk client library webhook payload request response http rest", ModelID: "deepseek-v4-flash", ReasoningEffort: "low"},
+			{Description: "error handling validation input sanitization edge cases defensive checks retry backoff", ModelID: "deepseek-v4-flash", ReasoningEffort: "medium"},
+			{Description: "dockerfile docker compose kubernetes manifest helm chart ci cd pipeline github actions workflow", ModelID: "deepseek-v4-flash", ReasoningEffort: "low"},
+			{Description: "documentation readme changelog docstring jsdoc typedoc godoc code comments", ModelID: "deepseek-v4-flash", ReasoningEffort: "low"},
+			{Description: "authentication authorization login signup oauth jwt session middleware flow", ModelID: "deepseek-v4-flash", ReasoningEffort: "medium"},
 			// Trivial mechanical edits stay on the cheap fast tier.
 			{Description: "resolve this git diff merge conflict cherry pick rebase", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
 			{Description: "remove this text delete unused import rename variable lint fix typo", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
@@ -614,6 +614,11 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			{Description: "stock trading system backtesting engine order book market data feed quant strategy risk model hft low latency execution tick data", ModelID: "gpt-5.6-sol", ReasoningEffort: "high"},
 			// AI / LLM development — frontier only
 			{Description: "llm ai development fine tuning training run inference optimization kv cache quantization tokenizer rag pipeline embedding search cuda kernel eval harness", ModelID: "gpt-5.6-sol", ReasoningEffort: "high"},
+			// Top tier: huge scope, hugely ambiguous specs, or optimization where
+			// marginal quality pays for itself.
+			{Description: "optimize performance end to end profile benchmark squeeze latency throughput memory hot path tuning", ModelID: "claude-opus-latest", ReasoningEffort: "high"},
+			{Description: "huge multi repository codebase wide rewrite sweeping change across hundreds of files", ModelID: "claude-opus-latest", ReasoningEffort: "high"},
+			{Description: "vague underspecified open ended ambiguous product requirements figure out what to build and design it", ModelID: "claude-opus-latest", ReasoningEffort: "high"},
 			// Hard coding — GPT-5.6 Sol / Codex
 			{Description: "architect system design distributed microservice scale infrastructure", ModelID: "gpt-5.6-sol", ReasoningEffort: "medium"},
 			{Description: "refactor large codebase migrate rewrite legacy modernize", ModelID: "gpt-5.6-sol", ReasoningEffort: "medium"},

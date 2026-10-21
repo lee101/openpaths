@@ -26,6 +26,14 @@ export const providers: Provider[] = [
     logo: 'https://manifoldgenstatic.manifoldgen.com/static/brand/logo-64.webp'
   },
   {
+    slug: 'cloudflare',
+    name: 'Cloudflare',
+    url: 'https://developers.cloudflare.com/workers-ai/',
+    description: 'Workers AI structured models: Clairic typed extraction and Clef decision models that return calibrated, probability-scored answers instead of generated text.',
+    featured: false,
+    logo: '/logos/openpaths.svg'
+  },
+  {
     slug: 'netwrck',
     name: 'Netwrck',
     url: 'https://netwrck.com',

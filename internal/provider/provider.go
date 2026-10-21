@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -58,6 +59,14 @@ type VideoProvider interface {
 type DecisionProvider interface {
 	Name() string
 	Decide(ctx context.Context, req *model.DecisionRequest) (*model.DecisionResponse, error)
+}
+
+// StructuredProvider runs typed-output models (field extraction, decision
+// questions) that take a JSON body and return a JSON result, billed on the
+// input tokens the upstream reports.
+type StructuredProvider interface {
+	Name() string
+	RunStructured(ctx context.Context, providerModelID string, body map[string]any) (result json.RawMessage, inputTokens int, err error)
 }
 
 // ForecastingProvider defines the interface for time-series forecasting

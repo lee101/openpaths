@@ -8,6 +8,13 @@ type MusicGenerationRequest struct {
 	Duration     int           `json:"duration,omitempty"`
 	OutputFormat string        `json:"output_format,omitempty"`
 	AudioSetting *AudioSetting `json:"audio_setting,omitempty"`
+	// AudioURL, VoiceConsent, Quality and Voice drive the ManifoldGen song
+	// tools: a sung/rapped recording re-performed as a full song, or lyrics
+	// rendered with a guide voice at a quality tier.
+	AudioURL     string `json:"audio_url,omitempty"`
+	VoiceConsent bool   `json:"voice_consent,omitempty"`
+	Quality      string `json:"quality,omitempty"`
+	Voice        string `json:"voice,omitempty"`
 }
 
 type AudioSetting struct {

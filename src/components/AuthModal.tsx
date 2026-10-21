@@ -70,7 +70,7 @@ export function AuthModal({ open, onClose, onSuccess, initialMode = 'login', sur
             initial={{ opacity: 0, scale: 0.96, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 10 }}
-            className="bg-[#090909] border border-white/20 rounded-3xl w-full max-w-md p-6 md:p-8 shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
+            className="bg-[#090909] border border-white/20 rounded-3xl w-full max-w-md max-h-[92vh] overflow-y-auto p-6 md:p-8 shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
             data-testid="auth-modal"
           >
             <div className="flex items-start justify-between gap-4 mb-6">
@@ -82,12 +82,15 @@ export function AuthModal({ open, onClose, onSuccess, initialMode = 'login', sur
                 <X className="w-5 h-5" />
               </button>
             </div>
+            {mode === 'register' && <p className="-mt-3 mb-5 text-sm text-white/60">One account and API key for every image, video, 3D and chat model. Takes about 10 seconds.</p>}
             <form onSubmit={submit} className="space-y-4">
               {mode === 'register' && (
                 <input
                   value={name}
                   onChange={e => setName(e.target.value)}
                   placeholder="Name"
+                  autoComplete="name"
+                  autoFocus
                   className="w-full bg-white/[0.06] border border-white/30 rounded-lg py-3 px-4 text-white font-mono focus:outline-none focus:border-white/50"
                 />
               )}
@@ -96,6 +99,8 @@ export function AuthModal({ open, onClose, onSuccess, initialMode = 'login', sur
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="Email"
+                autoComplete="email"
+                autoFocus={mode === 'login'}
                 required
                 className="w-full bg-white/[0.06] border border-white/30 rounded-lg py-3 px-4 text-white font-mono focus:outline-none focus:border-white/50"
                 data-testid="auth-modal-email"
@@ -106,6 +111,7 @@ export function AuthModal({ open, onClose, onSuccess, initialMode = 'login', sur
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   placeholder="Password"
+                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                   required
                   minLength={8}
                   className="w-full bg-white/[0.06] border border-white/30 rounded-lg py-3 px-4 pr-12 text-white font-mono focus:outline-none focus:border-white/50"

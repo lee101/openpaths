@@ -39,6 +39,13 @@ providers:
     api_key: "${NETWRCK_API_KEY}"
     enabled: true
 
+  # Cloudflare Workers AI structured models (Clairic extraction, Clef
+  # decisions). Auth: CLOUDFLARE_API_KEY (+ CLOUDFLARE_EMAIL for the global key).
+  - name: cloudflare
+    base_url: "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run"
+    api_key: "${CLOUDFLARE_API_KEY}"
+    enabled: true
+
   - name: manifoldgen
     base_url: "https://manifoldgen.com"
     api_key: "${MANIFOLDGEN_API_KEY}"
@@ -410,15 +417,17 @@ models:
     supports_tools: true
     supports_vision: true
     fallback_models:
-      # Direct GLM-5.3 Flash carries the everyday auto-code share at its paid rate.
-      - "glm-5.3-flash"
+      # Sol is the primary workhorse; DeepSeek carries routine edits. Each
+      # tier falls back to a peer, then to the cheap Muse contributor.
       - "gpt-5.6-sol"
+      - "deepseek-v4-pro"
+      - "deepseek-v4-flash"
+      - "muse-spark-1.3-contributor"
       - "gpt-5-codex"
       - "gemini-3.7-flash"
       - "glm-5.3"
-      - "gpt-5.6-luna"
       - "claude-sonnet-5"
-      - "deepseek-v4-flash"
+      - "gpt-5.6-luna"
       - "or/gpt-5.6-terra"
 
   - id: "openpaths/auto-reasoning"
@@ -1423,6 +1432,41 @@ models:
     supports_tools: false
     supports_vision: false
 
+  # Lyrics to a full song: guide vocal re-performed by YuE2. Upstream quotes
+  # $0.19-$0.52 for 3 minutes by quality; billed flat with lyrics capped at
+  # ~3 minutes (540 words).
+  - id: "mg-lyric-song"
+    provider: manifoldgen
+    provider_model_id: "mg-lyric-song"
+    price_per_image: 0.60
+    aliases: ["lyrics-to-song", "lyric-music", "manifoldgen-lyric-song"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  # Your sung or rapped recording (+ style prompt, optional lyrics) becomes a
+  # produced full song. Requires voice_consent. Quoted upstream from the
+  # recording length (about $0.31 for 3 minutes); duration capped at 180s.
+  - id: "mg-voice-song"
+    provider: manifoldgen
+    provider_model_id: "mg-voice-song"
+    price_per_image: 0.60
+    aliases: ["voice-to-song", "voice-enhancer", "audio-to-song", "manifoldgen-voice-song"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  # Image captioning: one-sentence description of an image sent as an
+  # image_url chat content part.
+  - id: "mg-caption"
+    provider: manifoldgen
+    provider_model_id: "mg-caption"
+    price_per_request: 0.012
+    aliases: ["image-caption", "manifoldgen-caption", "caption"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
   # H3 text-to-SFX lane, ~5s effects.
   - id: "mg-sfx"
     provider: manifoldgen
@@ -1472,6 +1516,37 @@ models:
     provider_model_id: "video-dramatize"
     price_per_second: 0.10
     aliases: ["video-dramatizer", "manifoldgen-dramatize", "dramatize"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  # --- Cloudflare Workers AI structured models (billed on input tokens only) ---
+  - id: "clairic"
+    provider: cloudflare
+    provider_model_id: "@cf/cloudflare/clairic"
+    input_price_per_1m: 0.105
+    aliases: ["@cf/cloudflare/clairic", "cloudflare/clairic", "clairic-extraction"]
+    context_window: 65536
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "clef"
+    provider: cloudflare
+    provider_model_id: "@cf/cloudflare/clef"
+    input_price_per_1m: 0.252
+    aliases: ["@cf/cloudflare/clef", "cloudflare/clef"]
+    context_window: 65536
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "clef-flash"
+    provider: cloudflare
+    provider_model_id: "@cf/cloudflare/clef-flash"
+    input_price_per_1m: 0.105
+    aliases: ["@cf/cloudflare/clef-flash", "cloudflare/clef-flash"]
+    context_window: 65536
     supports_streaming: false
     supports_tools: false
     supports_vision: true
@@ -2832,7 +2907,7 @@ models:
 
   - id: "deepseek-v4-pro"
     provider: deepseek
-    provider_model_id: "deepseek-v4-flash"
+    provider_model_id: "deepseek-flash"
     input_price_per_1m: 0.435
     input_cache_hit_price_per_1m: 0.003625
     output_price_per_1m: 0.87
@@ -4698,6 +4773,18 @@ models:
 
   # --- Nous Research ---
   # Nous router catalog verified against /v1/models on 2026-10-11.
+  - id: "missingno"
+    provider: nous
+    provider_model_id: "stealth/missingno"
+    input_price_per_1m: 0
+    output_price_per_1m: 0
+    aliases: ["openpaths/free", "stealth/missingno"]
+    context_window: 262144
+    max_output_tokens: 131072
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
   - id: "nous/meituan/longcat-2.5-preview:free"
     provider: nous
     provider_model_id: "meituan/longcat-2.5-preview:free"

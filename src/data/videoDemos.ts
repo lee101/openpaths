@@ -42,7 +42,7 @@ export const VIDEO_DEMOS: Record<string, VideoDemo> = {
     aspectRatio: '16:9',
     generateAudio: true,
   },
-  'flux-3-video': {
+  'flux-3-max-video': {
     prompt: 'A precision glass terrarium sits on a dark studio desk, containing a living miniature forest whose glowing root network reroutes pulses of light around fallen branches in real time. Slow cinematic orbit, physically accurate reflections, rich moss detail, cool blue and warm amber lighting, soft mechanical room tone blended with forest ambience, no speech, no readable text, no logos.',
     outputUrl: '/static/video-gallery/bfl/flux-3-routing-terrarium-full.webm',
     resolution: 'HD',

@@ -170,7 +170,7 @@ export function Landing() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 font-mono text-sm">
           <AutoVariantCard modelId="openpaths/auto" title="Auto" purpose="Chat, agents, mixed workloads" backends="Gemini 3.7 Flash, GPT-5.6, GLM-5.3, Claude, DeepSeek" />
-          <AutoVariantCard modelId="openpaths/auto-code" title="Auto Code" purpose="Coding agents, bug fixes, refactors" backends="GPT-5.6 Sol, Gemini 3.7 (3D/UI), GLM-5.3, Luna for easy diffs" />
+          <AutoVariantCard modelId="openpaths/auto-code" title="Auto Code" purpose="Coding agents, bug fixes, refactors" backends="Frontier coder for real engineering, low-cost open-weight for routine edits, multimodal for 3D/UI" />
           <AutoVariantCard modelId="openpaths/auto-fast" title="Auto Fast" purpose="Low-latency chat" backends="DeepSeek V4 Flash, Gemini 3.7 Flash" />
           <AutoVariantCard modelId="openpaths/auto-cheap" title="Auto Cheap" purpose="Lowest acceptable cost" backends="GPT-5.6 Luna, Gemini Flash Lite" />
           <AutoVariantCard modelId="openpaths/auto-reasoning" title="Auto Reasoning" purpose="Planning, math, hard problems" backends="Auto thinking depth + GPT-5.6, Gemini 3.7, GLM-5.3" />

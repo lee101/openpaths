@@ -17,7 +17,7 @@ const TOOLS: Tool[] = [
   { name: 'generate_image', desc: 'Generate an image from a prompt, returns image URL(s).', args: 'model, prompt, size?, n?' },
   { name: 'generate_video', desc: 'Generate a video via first-party ManifoldGen models (kfold-video, wan-animate, video-dramatize, …) or third-party lanes. Returns the video URL or a job_id to poll.', args: 'model, prompt, image_url?, video_url?, duration?, aspect_ratio?' },
   { name: 'check_job', desc: 'Poll an async video or 3D job until it completes.', args: 'kind (video | text3d), job_id' },
-  { name: 'generate_music', desc: 'Generate full songs (mg-music) or short sound effects (mg-sfx) from a prompt and optional lyrics. Returns audio URL or data URI.', args: 'model, prompt?, lyrics?, duration?' },
+  { name: 'generate_music', desc: 'Generate full songs (mg-music, mg-lyric-song for lyrics, mg-voice-song for a sung recording) or short sound effects (mg-sfx) from a prompt and optional lyrics. Returns audio URL or data URI.', args: 'model, prompt?, lyrics?, duration?' },
   { name: 'text_to_speech', desc: 'Synthesize speech from text. Returns audio URL or base64 data URI.', args: 'model, input, voice?, language?, speed?' },
   { name: 'transcribe_audio', desc: 'Transcribe base64-encoded audio to text (Whisper family and more).', args: 'audio_base64, filename?, model?, language?, prompt?' },
   { name: 'generate_3d', desc: 'Generate a textured GLB model from a prompt or image URL. Returns the asset URL or a job_id to poll.', args: 'prompt | image_url, texture_size?' },

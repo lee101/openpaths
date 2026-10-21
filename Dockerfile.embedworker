@@ -1,0 +1,10 @@
+FROM golang:1.24 AS build
+WORKDIR /src
+COPY . .
+RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o /embedworker ./cmd/embedworker
+FROM debian:bookworm-slim
+WORKDIR /app
+COPY --from=build /embedworker /app/embedworker
+COPY model/modelint8_512dim.safetensors model/tokenizer.json /app/model/
+EXPOSE 8000
+CMD ["/app/embedworker"]

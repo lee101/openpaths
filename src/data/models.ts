@@ -64,14 +64,14 @@ const catalogModels: Model[] = [
     pricingType: 'second'
   },
   {
-    id: 'flux-3-video',
-    name: 'FLUX 3 Video',
+    id: 'flux-3-max-video',
+    name: 'FLUX 3 Max Video',
     provider: 'Black Forest Labs',
-    description: 'Multimodal video generation with native audio, multiple scenes, keyframes, multilingual dialogue, continuation, and video-to-video editing in clips up to 20 seconds.',
+    description: 'Multimodal video generation with native audio, multiple scenes, keyframes, and multilingual dialogue in clips up to 20 seconds, served via Fal.',
     contextLength: 'N/A',
     priceInput: 0.17,
     priceOutput: 0,
-    tags: ['video generation', 'text-to-video', 'image-to-video', 'video-to-video', 'audio'],
+    tags: ['video generation', 'text-to-video', 'image-to-video', 'audio'],
     released: '2026-07-23',
     popularity: -2,
     pricingType: 'second'
@@ -274,6 +274,87 @@ const catalogModels: Model[] = [
     pricingType: 'second'
   },
   {
+    id: 'clairic',
+    name: 'Clairic',
+    provider: 'Cloudflare',
+    description: 'Cloudflare Workers AI typed extraction model (@cf/cloudflare/clairic). POST /v1/extract with state text (plus up to 4 images) and a field map; get back typed answers with confidence, null probability and source spans. 64K context, billed on input tokens only.',
+    contextLength: 'N/A',
+    priceInput: 0.105,
+    priceOutput: 0,
+    tags: ['vision', 'fast'],
+    aliases: ['@cf/cloudflare/clairic', 'cloudflare/clairic', 'clairic-extraction'],
+    released: '2026-10-19',
+    popularity: -2
+  },
+  {
+    id: 'clef',
+    name: 'Clef',
+    provider: 'Cloudflare',
+    description: 'Cloudflare Workers AI decision model (@cf/cloudflare/clef). POST /v1/decide with state and yes/no, choice or score questions; get calibrated probabilities instead of generated text. 64K context, billed on input tokens only.',
+    contextLength: 'N/A',
+    priceInput: 0.252,
+    priceOutput: 0,
+    tags: ['vision', 'reasoning'],
+    aliases: ['@cf/cloudflare/clef', 'cloudflare/clef'],
+    released: '2026-10-19',
+    popularity: -2
+  },
+  {
+    id: 'clef-flash',
+    name: 'Clef Flash',
+    provider: 'Cloudflare',
+    description: 'The smaller, lower-latency Clef decision model (@cf/cloudflare/clef-flash) for latency-critical typed decisions via POST /v1/decide.',
+    contextLength: 'N/A',
+    priceInput: 0.105,
+    priceOutput: 0,
+    tags: ['vision', 'fast'],
+    aliases: ['@cf/cloudflare/clef-flash', 'cloudflare/clef-flash'],
+    released: '2026-10-19',
+    popularity: -2
+  },
+  {
+    id: 'mg-lyric-song',
+    name: 'Lyrics to Song',
+    provider: 'ManifoldGen',
+    description: 'Paste lyrics plus a style prompt and get a produced full song with vocals (up to about 3 minutes). Quality tiers studio, standard and lite pick the guide voice.',
+    contextLength: 'N/A',
+    priceInput: 0.60,
+    priceOutput: 0,
+    tags: ['audio'],
+    aliases: ['lyrics-to-song', 'lyric-music', 'manifoldgen-lyric-song'],
+    released: '2026-10-18',
+    popularity: -2,
+    pricingType: 'request'
+  },
+  {
+    id: 'mg-voice-song',
+    name: 'Voice to Full Song',
+    provider: 'ManifoldGen',
+    description: 'Send a recording of yourself singing or rapping plus a style prompt and optional lyrics; your performance is re-performed and produced into a full, beat-locked song. Requires voice consent.',
+    contextLength: 'N/A',
+    priceInput: 0.60,
+    priceOutput: 0,
+    tags: ['audio'],
+    aliases: ['voice-to-song', 'voice-enhancer', 'audio-to-song', 'manifoldgen-voice-song'],
+    released: '2026-10-18',
+    popularity: -2,
+    pricingType: 'request'
+  },
+  {
+    id: 'mg-caption',
+    name: 'Image Captioning',
+    provider: 'ManifoldGen',
+    description: 'Describe any image in one sentence. Send an image_url content part to /v1/chat/completions and read the caption from the assistant message.',
+    contextLength: 'N/A',
+    priceInput: 0.012,
+    priceOutput: 0,
+    tags: ['vision', 'fast'],
+    aliases: ['image-caption', 'manifoldgen-caption', 'caption'],
+    released: '2026-10-18',
+    popularity: -2,
+    pricingType: 'request'
+  },
+  {
     id: 'cutedsl-image',
     name: 'Z-Image Turbo',
     provider: 'CuteDSL',
@@ -450,7 +531,7 @@ const catalogModels: Model[] = [
     provider: 'OpenPaths',
     description: 'An extremely efficient local embedding model priced at $1 per billion tokens. Supports matryoshka `dimensions` and `encoding_format=base64`. Open source at lee101/gobed, so it is portable across environments.',
     contextLength: '256',
-    priceInput: 0.001,
+    priceInput: 1,
     priceOutput: 0,
     tags: ['embedding'],
     released: '2026-04-23',
@@ -511,7 +592,7 @@ const catalogModels: Model[] = [
     id: 'openpaths/auto-code',
     name: 'OpenPaths Auto Code',
     provider: 'OpenPaths',
-    description: 'Coding agents, bug fixes, and refactors. Routes easy diffs to GPT-5.6 Luna, visual frontend work to Gemini 3.7 Flash, open-weight coding to GLM-5.3, and hard architecture to GPT-5.6 Sol.',
+    description: 'Coding agents, bug fixes, and refactors. Matches each request to the model that handles it best: routine edits, explanations and tests go to a fast low-cost open-weight coder, visual frontend work to a multimodal specialist, and real engineering such as multi-file fixes, architecture and hard debugging to a frontier coding model. Only huge, highly ambiguous or optimization-heavy tasks reach the top tier. Every tier falls back to a peer model if a provider fails.',
     contextLength: '1M',
     priceInput: 2,
     priceOutput: 12,
@@ -614,6 +695,20 @@ const catalogModels: Model[] = [
     aliases: ['muse-spark-contributor', 'meta-muse-spark-contributor', 'meta-contributor'],
     released: '2026-09-06',
     popularity: 3
+  },
+  // --- TypeSafe ---
+  {
+    id: 'typesafe/jev-router',
+    name: 'Jev Router',
+    provider: 'TypeSafe',
+    description: 'Picks the model and reasoning effort for every request, balancing quality, speed and cost. Runs on Jev, TypeSafe’s first System One model, which scores each prompt on difficulty and precision and re-scores when the task changes.',
+    contextLength: '1M',
+    priceInput: 1.25,
+    priceOutput: 4.25,
+    tags: ['general', 'programming', 'reasoning', 'vision', 'agentic'],
+    aliases: ['jev-router', 'jev', 'typesafe-jev-router'],
+    released: '2026-10-05',
+    popularity: 2
   },
   {
     id: 'muse-image-1.0',
@@ -1886,6 +1981,25 @@ const catalogModels: Model[] = [
   },
 
   // --- Nous Research ---
+  {
+    "id": "missingno",
+    "name": "MissingNo",
+    "provider": "Nous Research",
+    "description": "Anonymous mystery model via Nous Research. Identity and benchmark performance are unverified.",
+    "contextLength": "256K",
+    "priceInput": 0.0,
+    "priceOutput": 0.0,
+    "tags": [
+      "general",
+      "free"
+    ],
+    "released": "2026-10-11",
+    "popularity": 35,
+    "aliases": [
+      "openpaths/free",
+      "stealth/missingno"
+    ]
+  },
   {
     "id": "nous/meituan/longcat-2.5-preview:free",
     "name": "Meituan: LongCat 2.5 Preview",

@@ -91,9 +91,9 @@ export function BflProviderShowcase({ models }: { models: Model[] }) {
                   <td className="py-4 pl-3 text-white/55">Rapid exploration</td>
                 </tr>
                 <tr className="align-top">
-                  <td className="py-4 pr-4 font-semibold">FLUX 3 Video</td>
+                  <td className="py-4 pr-4 font-semibold">FLUX 3 Max Video</td>
                   <td className="px-3 py-4"><strong>$0.17</strong> <span className="text-white/55">HD</span><br /><strong>$0.29</strong> <span className="text-white/55">FHD</span></td>
-                  <td className="px-3 py-4"><strong>$0.41</strong> <span className="text-white/55">HD</span><br /><strong>$0.53</strong> <span className="text-white/55">FHD</span></td>
+                  <td className="px-3 py-4 text-white/45">-</td>
                   <td className="py-4 pl-3 text-white/55">Quality, cost and latency</td>
                 </tr>
               </tbody>
@@ -125,7 +125,7 @@ export function BflProviderShowcase({ models }: { models: Model[] }) {
             </div>
             <div className="mt-4 flex flex-wrap gap-3 text-xs">
               <ModelLink model={byId.get('flux-3-video-draft')} />
-              <ModelLink model={byId.get('flux-3-video')} />
+              <ModelLink model={byId.get('flux-3-max-video')} />
             </div>
           </div>
         </div>

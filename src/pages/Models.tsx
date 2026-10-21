@@ -1,3 +1,4 @@
+import { maxVideoSeconds } from '../data/videoModelParams';
 import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { models, Tag, SortOption, parseContextLength } from '../data/models';
@@ -233,7 +234,7 @@ export function Models() {
                 </Link>
               </div>
               <div className="px-2 py-1 bg-white/10 rounded text-[10px] font-mono text-white/60">
-                {model.contextLength !== 'N/A' ? `${model.contextLength} ctx` : model.tags.includes('video generation') ? 'Video' : model.tags.includes('audio') ? 'Audio' : 'Image'}
+                {model.contextLength !== 'N/A' ? `${model.contextLength} ctx` : model.tags.includes('video generation') ? (maxVideoSeconds(model.id) > 0 ? `Video · up to ${maxVideoSeconds(model.id)}s` : 'Video') : model.tags.includes('audio') ? 'Audio' : 'Image'}
               </div>
             </div>
 

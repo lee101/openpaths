@@ -21,16 +21,19 @@ package manifoldgen
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/openpaths/openpaths/internal/model"
 	"github.com/openpaths/openpaths/internal/provider"
+	"github.com/openpaths/openpaths/internal/safefetch"
 )
 
 const DefaultBaseURL = "https://manifoldgen.com"
@@ -68,8 +71,63 @@ func (p *Provider) Name() string { return "manifoldgen" }
 
 func (p *Provider) HealthCheck(ctx context.Context) error { return nil }
 
+// ChatCompletion serves mg-caption: the last image in the conversation is
+// captioned and the caption returned as the assistant message.
 func (p *Provider) ChatCompletion(ctx context.Context, req *model.ChatCompletionRequest) (*model.ChatCompletionResponse, error) {
-	return nil, &provider.ProviderError{Provider: "manifoldgen", StatusCode: 400, Message: "manifoldgen does not support chat", Retryable: false}
+	if req.Model != "mg-caption" {
+		return nil, &provider.ProviderError{Provider: "manifoldgen", StatusCode: 400, Message: "manifoldgen does not support chat", Retryable: false}
+	}
+	imageURL := lastImageURL(req.Messages)
+	if imageURL == "" {
+		return nil, requestError("mg-caption needs an image: send an image_url content part")
+	}
+	env, err := p.callService(ctx, "caption", map[string]any{"image_url": imageURL})
+	if err != nil {
+		return nil, err
+	}
+	text := firstString(stringField(env.Result, "caption"), stringField(env.Result, "text"), stringField(env.Result, "description"))
+	if text == "" {
+		var plain string
+		if json.Unmarshal(env.Result, &plain) == nil {
+			text = strings.TrimSpace(plain)
+		}
+	}
+	if text == "" {
+		return nil, &provider.ProviderError{Provider: "manifoldgen", StatusCode: 502, Message: "no caption in result: " + string(env.Result), Retryable: false}
+	}
+	stop := "stop"
+	return &model.ChatCompletionResponse{
+		ID:      "chatcmpl-mgcap-" + strconv.FormatInt(time.Now().UnixNano(), 36),
+		Object:  "chat.completion",
+		Created: time.Now().Unix(),
+		Model:   req.Model,
+		Choices: []model.ChatChoice{{Message: &model.ChatMessage{Role: "assistant", Content: text}, FinishReason: &stop}},
+	}, nil
+}
+
+// lastImageURL finds the most recent image_url part (OpenAI content parts).
+func lastImageURL(messages []model.ChatMessage) string {
+	for i := len(messages) - 1; i >= 0; i-- {
+		parts, ok := messages[i].Content.([]any)
+		if !ok {
+			continue
+		}
+		for j := len(parts) - 1; j >= 0; j-- {
+			part, ok := parts[j].(map[string]any)
+			if !ok || part["type"] != "image_url" {
+				continue
+			}
+			switch v := part["image_url"].(type) {
+			case string:
+				return v
+			case map[string]any:
+				if u, _ := v["url"].(string); u != "" {
+					return u
+				}
+			}
+		}
+	}
+	return ""
 }
 
 func (p *Provider) ChatCompletionStream(ctx context.Context, req *model.ChatCompletionRequest) (<-chan provider.StreamEvent, error) {
@@ -552,8 +610,13 @@ func (p *Provider) generateDramatize(ctx context.Context, req *model.VideoGenera
 // vocals/lyrics) and sfx_generation (H3 text-to-audio). Both are queued jobs
 // whose terminal result carries an audio_url.
 func (p *Provider) GenerateMusic(ctx context.Context, req *model.MusicGenerationRequest) (*model.MusicGenerationResponse, error) {
-	if req.Model == "mg-sfx" {
+	switch req.Model {
+	case "mg-sfx":
 		return p.generateSFX(ctx, req)
+	case "mg-lyric-song":
+		return p.generateLyricSong(ctx, req)
+	case "mg-voice-song":
+		return p.generateVoiceSong(ctx, req)
 	}
 
 	prompt := strings.TrimSpace(req.Prompt)
@@ -584,6 +647,168 @@ func (p *Provider) GenerateMusic(ctx context.Context, req *model.MusicGeneration
 		resp.ExtraInfo = &model.MusicExtraInfo{Duration: d}
 	}
 	return resp, nil
+}
+
+// maxLyricSongWords keeps lyric songs inside the three-minute (about three
+// words per second) envelope the flat OpenPaths price is set against.
+const maxLyricSongWords = 540
+
+func (p *Provider) generateLyricSong(ctx context.Context, req *model.MusicGenerationRequest) (*model.MusicGenerationResponse, error) {
+	lyrics := strings.TrimSpace(req.Lyrics)
+	if len(strings.Fields(lyrics)) < 8 {
+		return nil, requestError("lyrics must contain at least a verse (8 words)")
+	}
+	if len(strings.Fields(lyrics)) > maxLyricSongWords {
+		return nil, requestError("lyrics are too long for one song (about 3 minutes, 540 words max)")
+	}
+	params := map[string]any{"lyrics": lyrics, "prompt": strings.TrimSpace(req.Prompt)}
+	if req.Quality != "" {
+		params["quality"] = strings.ToLower(strings.TrimSpace(req.Quality))
+	}
+	if req.Voice != "" {
+		params["voice"] = strings.TrimSpace(req.Voice)
+	}
+	result, err := p.submitAndResolve(ctx, "lyric_music", params)
+	if err != nil {
+		return nil, err
+	}
+	return musicResult(result)
+}
+
+func (p *Provider) generateVoiceSong(ctx context.Context, req *model.MusicGenerationRequest) (*model.MusicGenerationResponse, error) {
+	if strings.TrimSpace(req.AudioURL) == "" {
+		return nil, requestError("audio_url is required: a recording of you singing or rapping (https URL or data URI)")
+	}
+	if !req.VoiceConsent {
+		return nil, requestError("voice_consent must be true: confirm the recording is your own voice or you have the singer's permission")
+	}
+	uploaded, err := p.rehostAudio(ctx, req.AudioURL)
+	if err != nil {
+		return nil, err
+	}
+	params := map[string]any{"audio_url": uploaded, "voice_consent": true, "prompt": strings.TrimSpace(req.Prompt)}
+	if lyrics := strings.TrimSpace(req.Lyrics); lyrics != "" {
+		params["lyrics"] = lyrics
+	}
+	params["duration"] = clamp(req.Duration, 5, 180, 180)
+	result, err := p.submitAndResolve(ctx, "voice_enhancer", params)
+	if err != nil {
+		return nil, err
+	}
+	return musicResult(result)
+}
+
+func musicResult(result json.RawMessage) (*model.MusicGenerationResponse, error) {
+	audioURL := stringField(result, "audio_url")
+	if audioURL == "" {
+		return nil, &provider.ProviderError{Provider: "manifoldgen", StatusCode: 502, Message: "no audio_url in result: " + string(result), Retryable: false}
+	}
+	resp := &model.MusicGenerationResponse{Data: &model.MusicData{Audio: audioURL}}
+	if d := intValue(result, "duration_seconds"); d > 0 {
+		resp.ExtraInfo = &model.MusicExtraInfo{Duration: d}
+	}
+	return resp, nil
+}
+
+const maxRehostAudioBytes = 40 << 20
+
+var audioFetchClient = safefetch.NewClient(2 * time.Minute)
+
+// rehostAudio copies a caller-supplied recording (https URL or data URI) to a
+// ManifoldGen upload, which the voice tools require as their audio source.
+func (p *Provider) rehostAudio(ctx context.Context, src string) (string, error) {
+	src = strings.TrimSpace(src)
+	var data []byte
+	contentType := "audio/mpeg"
+	if strings.HasPrefix(src, "data:") {
+		head, payload, ok := strings.Cut(src, ",")
+		if !ok || !strings.Contains(head, ";base64") {
+			return "", requestError("audio_url data URI must be base64")
+		}
+		if mt := strings.TrimPrefix(strings.SplitN(head, ";", 2)[0], "data:"); strings.HasPrefix(mt, "audio/") {
+			contentType = mt
+		}
+		var err error
+		if data, err = base64.StdEncoding.DecodeString(payload); err != nil {
+			return "", requestError("audio_url data URI is not valid base64")
+		}
+	} else {
+		u, err := url.Parse(src)
+		if err != nil || u.Scheme != "https" {
+			return "", requestError("audio_url must be an https URL or a base64 data URI")
+		}
+		if err := safefetch.ValidateURL(u); err != nil {
+			return "", requestError("audio_url rejected: " + err.Error())
+		}
+		getReq, err := http.NewRequestWithContext(ctx, http.MethodGet, src, nil)
+		if err != nil {
+			return "", requestError("audio_url is invalid")
+		}
+		resp, err := audioFetchClient.Do(getReq)
+		if err != nil {
+			return "", requestError("could not fetch audio_url: " + err.Error())
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			return "", requestError(fmt.Sprintf("audio_url returned HTTP %d", resp.StatusCode))
+		}
+		if data, err = io.ReadAll(io.LimitReader(resp.Body, maxRehostAudioBytes+1)); err != nil {
+			return "", requestError("could not read audio_url: " + err.Error())
+		}
+		if ct := resp.Header.Get("Content-Type"); strings.HasPrefix(ct, "audio/") {
+			contentType = strings.SplitN(ct, ";", 2)[0]
+		}
+	}
+	if len(data) == 0 || len(data) > maxRehostAudioBytes {
+		return "", requestError("audio must be between 1 byte and 40 MB")
+	}
+
+	q := url.Values{"filename": {"voice-take" + audioExt(contentType)}, "content_type": {contentType}, "dataset": {"voice"}}
+	presignReq, err := http.NewRequestWithContext(ctx, http.MethodGet, p.baseURL+"/api/uploads/presign?"+q.Encode(), nil)
+	if err != nil {
+		return "", err
+	}
+	presignReq.Header.Set("Authorization", "Bearer "+p.apiKey)
+	presignResp, err := p.client.Do(presignReq)
+	if err != nil {
+		return "", &provider.ProviderError{Provider: "manifoldgen", StatusCode: 502, Message: err.Error(), Retryable: true, Err: err}
+	}
+	defer presignResp.Body.Close()
+	presignBody, _ := io.ReadAll(io.LimitReader(presignResp.Body, 1<<20))
+	if presignResp.StatusCode != http.StatusOK {
+		return "", &provider.ProviderError{Provider: "manifoldgen", StatusCode: presignResp.StatusCode, Message: manifoldgenError(presignBody, presignResp.StatusCode), Retryable: presignResp.StatusCode >= 500}
+	}
+	uploadURL, publicURL := stringField(presignBody, "upload_url"), stringField(presignBody, "public_url")
+	if uploadURL == "" || publicURL == "" {
+		return "", &provider.ProviderError{Provider: "manifoldgen", StatusCode: 502, Message: "presign returned no upload target", Retryable: false}
+	}
+	putReq, err := http.NewRequestWithContext(ctx, http.MethodPut, uploadURL, bytes.NewReader(data))
+	if err != nil {
+		return "", err
+	}
+	putReq.Header.Set("Content-Type", contentType)
+	putResp, err := p.client.Do(putReq)
+	if err != nil {
+		return "", &provider.ProviderError{Provider: "manifoldgen", StatusCode: 502, Message: "audio upload failed: " + err.Error(), Retryable: true, Err: err}
+	}
+	defer putResp.Body.Close()
+	io.Copy(io.Discard, putResp.Body)
+	if putResp.StatusCode < 200 || putResp.StatusCode >= 300 {
+		return "", &provider.ProviderError{Provider: "manifoldgen", StatusCode: 502, Message: fmt.Sprintf("audio upload failed: HTTP %d", putResp.StatusCode), Retryable: true}
+	}
+	return publicURL, nil
+}
+
+func audioExt(contentType string) string {
+	switch contentType {
+	case "audio/wav", "audio/x-wav", "audio/wave":
+		return ".wav"
+	case "audio/mp4", "audio/x-m4a", "audio/aac":
+		return ".m4a"
+	case "audio/ogg", "audio/webm", "audio/flac":
+		return "." + strings.TrimPrefix(contentType, "audio/")
+	}
+	return ".mp3"
 }
 
 func (p *Provider) generateSFX(ctx context.Context, req *model.MusicGenerationRequest) (*model.MusicGenerationResponse, error) {

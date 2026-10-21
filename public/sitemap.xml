@@ -2141,7 +2141,7 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://openpaths.io/models/flux-3-video</loc>
+    <loc>https://openpaths.io/models/flux-3-max-video</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -2341,12 +2341,22 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/models/openpaths%2Ffree</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/models/muse-spark-1.3</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://openpaths.io/models/muse-spark-1.3-contributor</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/typesafe%2Fjev-router</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
