@@ -4756,6 +4756,90 @@ models:
     supports_tools: true
     supports_vision: true
 
+  # openrouter: in=3 out=6 cache=0.75 per 1M, +5.5% fee
+  - id: "or/aion-3.5"
+    provider: openrouter
+    provider_model_id: "aion-labs/aion-3.5"
+    input_price_per_1m: 3.165
+    input_cache_hit_price_per_1m: 0.7913
+    output_price_per_1m: 6.33
+    aliases: ["aion-labs/aion-3.5", "openrouter/aion-labs/aion-3.5", "aion-3.5"]
+    context_window: 262144
+    max_output_tokens: 32768
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  # openrouter: in=0.3 out=1.5 cache=0.15 per 1M, +5.5% fee
+  - id: "or/command-a-plus"
+    provider: openrouter
+    provider_model_id: "cohere/command-a-plus"
+    input_price_per_1m: 0.3165
+    input_cache_hit_price_per_1m: 0.1583
+    output_price_per_1m: 1.5825
+    aliases: ["cohere/command-a-plus", "openrouter/cohere/command-a-plus", "command-a-plus"]
+    context_window: 192000
+    max_output_tokens: 64000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  # openrouter: in=0.1 out=0.35 cache=0.01 per 1M, +5.5% fee
+  - id: "or/mercury-3"
+    provider: openrouter
+    provider_model_id: "inception/mercury-3"
+    input_price_per_1m: 0.1055
+    input_cache_hit_price_per_1m: 0.0106
+    output_price_per_1m: 0.3693
+    aliases: ["inception/mercury-3", "openrouter/inception/mercury-3", "mercury-3"]
+    context_window: 1000000
+    max_output_tokens: 131072
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  # openrouter: in=0.075 out=0.225 cache=0.015 per 1M, +5.5% fee
+  - id: "or/ling-3.1-flash"
+    provider: openrouter
+    provider_model_id: "inclusionai/ling-3.1-flash"
+    input_price_per_1m: 0.0792
+    input_cache_hit_price_per_1m: 0.0159
+    output_price_per_1m: 0.2374
+    aliases: ["inclusionai/ling-3.1-flash", "openrouter/inclusionai/ling-3.1-flash", "ling-3.1-flash"]
+    context_window: 262144
+    max_output_tokens: 235929
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  # openrouter: in=0.05 out=0.7 cache=0.025 per 1M, +5.5% fee
+  - id: "or/lfm-2.5-24b-a2b"
+    provider: openrouter
+    provider_model_id: "liquid/lfm-2.5-24b-a2b"
+    input_price_per_1m: 0.0528
+    input_cache_hit_price_per_1m: 0.0264
+    output_price_per_1m: 0.7385
+    aliases: ["liquid/lfm-2.5-24b-a2b", "openrouter/liquid/lfm-2.5-24b-a2b", "lfm-2.5-24b-a2b"]
+    context_window: 128000
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  # openrouter: in=1.25 out=4.25 cache=0.15 per 1M, +5.5% fee
+  - id: "or/muse-spark-open"
+    provider: openrouter
+    provider_model_id: "meta/muse-spark-open"
+    input_price_per_1m: 1.3188
+    input_cache_hit_price_per_1m: 0.1583
+    output_price_per_1m: 4.4838
+    aliases: ["meta/muse-spark-open", "openrouter/meta/muse-spark-open", "muse-spark-open"]
+    context_window: 1048576
+    max_output_tokens: 943718
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
   # openrouter: in=0.3 out=1.2 cache=0.06 per 1M, +5.5% fee
   - id: "or/minimax-m3"
     provider: openrouter
@@ -4769,6 +4853,48 @@ models:
     supports_streaming: true
     supports_tools: true
     supports_vision: true
+
+  # openrouter: in=1.36 out=4.18 cache=0.14 per 1M, +5.5% fee
+  - id: "or/mistral-large-4-0"
+    provider: openrouter
+    provider_model_id: "mistralai/mistral-large-4-0"
+    input_price_per_1m: 1.4348
+    input_cache_hit_price_per_1m: 0.1477
+    output_price_per_1m: 4.4099
+    aliases: ["mistralai/mistral-large-4-0", "openrouter/mistralai/mistral-large-4-0", "mistral-large-4-0"]
+    context_window: 1048576
+    max_output_tokens: 262144
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  # openrouter: in=0.3 out=1 cache=0.04 per 1M, +5.5% fee
+  - id: "or/beam-1.0-501b-a23b"
+    provider: openrouter
+    provider_model_id: "reflection/beam-1.0-501b-a23b"
+    input_price_per_1m: 0.3165
+    input_cache_hit_price_per_1m: 0.0422
+    output_price_per_1m: 1.055
+    aliases: ["reflection/beam-1.0-501b-a23b", "openrouter/reflection/beam-1.0-501b-a23b", "beam-1.0-501b-a23b"]
+    context_window: 1048576
+    max_output_tokens: 943718
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
+  # openrouter: in=0.37 out=1.25 cache=0.09 per 1M, +5.5% fee
+  - id: "or/glm-5.3-flashx"
+    provider: openrouter
+    provider_model_id: "z-ai/glm-5.3-flashx"
+    input_price_per_1m: 0.3904
+    input_cache_hit_price_per_1m: 0.095
+    output_price_per_1m: 1.3188
+    aliases: ["z-ai/glm-5.3-flashx", "openrouter/z-ai/glm-5.3-flashx", "glm-5.3-flashx"]
+    context_window: 1048576
+    max_output_tokens: 131072
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
   # --- END openrouter-sync ---
 
   # --- Nous Research ---
@@ -4778,7 +4904,7 @@ models:
     provider_model_id: "stealth/missingno"
     input_price_per_1m: 0
     output_price_per_1m: 0
-    aliases: ["openpaths/free", "stealth/missingno"]
+    aliases: ["stealth/missingno"]
     context_window: 262144
     max_output_tokens: 131072
     supports_streaming: true

@@ -1,7 +1,16 @@
 {
   "fee": 0.055,
   "paid": [
-    "minimax/minimax-m3"
+    "aion-labs/aion-3.5",
+    "cohere/command-a-plus",
+    "inception/mercury-3",
+    "inclusionai/ling-3.1-flash",
+    "liquid/lfm-2.5-24b-a2b",
+    "meta/muse-spark-open",
+    "minimax/minimax-m3",
+    "mistralai/mistral-large-4-0",
+    "reflection/beam-1.0-501b-a23b",
+    "z-ai/glm-5.3-flashx"
   ],
   "free_rank": [
     "minimax/minimax-m3.1-flash:free",
@@ -24,5 +33,10 @@
     "nvidia/nemotron-3.5-content-safety:free"
   ],
   "free_min_context": 128000,
-  "free_aliases": ["free", "openpaths-free", "free-latest", "openpaths-auto-free"]
+  "free_aliases": [
+    "free",
+    "openpaths-free",
+    "free-latest",
+    "openpaths-auto-free"
+  ]
 }
