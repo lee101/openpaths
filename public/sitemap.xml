@@ -246,6 +246,11 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/vs/qwen-qwen3.8-max-0902-vs-typesafe-jev-router</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/vs/qwen-qwen3.8-max-0902-vs-runanywhere-qwen3.8-27b</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
@@ -256,12 +261,12 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://openpaths.io/vs/qwen-qwen3.8-max-0902-vs-deepseek-v4-flash</loc>
+    <loc>https://openpaths.io/vs/claude-fable-5-1-vs-muse-spark-1.3</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://openpaths.io/vs/claude-fable-5-1-vs-muse-spark-1.3</loc>
+    <loc>https://openpaths.io/vs/claude-fable-5-1-vs-typesafe-jev-router</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -276,7 +281,7 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://openpaths.io/vs/claude-fable-5-1-vs-deepseek-v4-flash</loc>
+    <loc>https://openpaths.io/vs/muse-spark-1.3-vs-typesafe-jev-router</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -291,22 +296,17 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://openpaths.io/vs/muse-spark-1.3-vs-deepseek-v4-flash</loc>
+    <loc>https://openpaths.io/vs/typesafe-jev-router-vs-runanywhere-qwen3.8-27b</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/vs/typesafe-jev-router-vs-gpt-5-chat-latest</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://openpaths.io/vs/runanywhere-qwen3.8-27b-vs-gpt-5-chat-latest</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://openpaths.io/vs/runanywhere-qwen3.8-27b-vs-deepseek-v4-flash</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://openpaths.io/vs/gpt-5-chat-latest-vs-deepseek-v4-flash</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -916,6 +916,56 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/llm-pricing/or--aion-3.5</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/llm-pricing/or--command-a-plus</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/llm-pricing/or--mercury-3</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/llm-pricing/or--ling-3.1-flash</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/llm-pricing/or--lfm-2.5-24b-a2b</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/llm-pricing/or--muse-spark-open</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/llm-pricing/or--minimax-m3</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/llm-pricing/or--mistral-large-4-0</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/llm-pricing/or--beam-1.0-501b-a23b</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/llm-pricing/or--glm-5.3-flashx</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/llm-pricing/gemini-2.5-flash</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
@@ -1156,6 +1206,21 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/llm-pricing/clairic</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/llm-pricing/clef</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/llm-pricing/clef-flash</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/llm-pricing/qwen--qwen3.8-max-0902</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
@@ -1306,6 +1371,16 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/llm-pricing/compare/claude-haiku-5-5-vs-clef</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/llm-pricing/compare/claude-haiku-5-5-vs-or--lfm-2.5-24b-a2b</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/llm-pricing/compare/claude-haiku-5-5-vs-together--deepseek-v3.1</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -1327,16 +1402,6 @@
   </url>
   <url>
     <loc>https://openpaths.io/llm-pricing/compare/claude-haiku-5-5-vs-deepseek-reasoner</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://openpaths.io/llm-pricing/compare/claude-haiku-5-5-vs-deepseek-chat</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://openpaths.io/llm-pricing/compare/claude-haiku-5-5-vs-qwen--qwen3.8-flash</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -1457,6 +1522,11 @@
   </url>
   <url>
     <loc>https://openpaths.io/llm-pricing/provider/runanywhere</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/llm-pricing/provider/cloudflare</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1691,6 +1761,11 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/providers/cloudflare</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/providers/netwrck</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -1859,6 +1934,11 @@
     <loc>https://openpaths.io/manifoldgen/docs</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/cloudflare/docs</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/netwrck/docs</loc>
@@ -2221,6 +2301,36 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/models/clairic</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/clef</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/clef-flash</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/mg-lyric-song</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/mg-voice-song</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/mg-caption</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/models/cutedsl-image</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -2337,11 +2447,6 @@
   </url>
   <url>
     <loc>https://openpaths.io/models/openpaths%2Fauto-image</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://openpaths.io/models/openpaths%2Ffree</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -3316,11 +3421,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://openpaths.io/models/flux-3-max-video</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://openpaths.io/models/hailuo-2.3</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
@@ -4206,432 +4306,671 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://openpaths.io/models/openpaths%2Ffree</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/or%2Fminimax-m3.1-flash%3Afree</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/or%2Fnemotron-3-ultra-550b-a55b%3Afree</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/or%2Finkling%3Afree</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/or%2Fnemotron-3.5-super-vl%3Afree</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/or%2Fnemotron-3-super-120b-a12b%3Afree</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/or%2Fdots-3-note-preview%3Afree</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/or%2Fnorth-mini-code%3Afree</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/or%2Flaguna-s-2.1%3Afree</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/or%2Fgemma-4-31b-it%3Afree</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/or%2Fxing4.0-29b-a4b%3Afree</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/or%2Finkling-small%3Afree</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/or%2Fnemotron-3.5-lightning%3Afree</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/or%2Fgemma-4-26b-a4b-it%3Afree</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/or%2Flaguna-xs-2.1%3Afree</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/or%2Fnemotron-3-nano-omni-30b-a3b-reasoning%3Afree</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/or%2Fopenrouter-free</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/or%2Faion-3.5</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/or%2Fcommand-a-plus</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/or%2Fmercury-3</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/or%2Fling-3.1-flash</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/or%2Flfm-2.5-24b-a2b</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/or%2Fmuse-spark-open</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/or%2Fminimax-m3</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/or%2Fmistral-large-4-0</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/or%2Fbeam-1.0-501b-a23b</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/models/or%2Fglm-5.3-flashx</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://openpaths.io/blog/openpaths-browse-agent-in-your-browser</loc>
+    <lastmod>2026-10-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/llm-routing-cost-latency-quality-experiment-checklist</loc>
+    <lastmod>2026-10-14</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/model-router-failure-checklist</loc>
+    <lastmod>2026-10-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/gemini-4-argon-pelican-bike</loc>
+    <lastmod>2026-10-14</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/missingno-free-pelican-bike</loc>
+    <lastmod>2026-10-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/blog/how-llm-routing-works-fallbacks-tiers-aliases</loc>
+    <lastmod>2026-10-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/blog/one-gateway-text-vision-speech-model-apis</loc>
+    <lastmod>2026-10-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://openpaths.io/blog/choosing-llm-by-cost-and-quality</loc>
+    <lastmod>2026-10-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/gemini-image-models-game-dev-concept-art</loc>
+    <lastmod>2026-10-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/gpt-6-1-sol-voxel-pelican-bike</loc>
+    <lastmod>2026-09-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/jev-router-system-one-model-routing</loc>
+    <lastmod>2026-10-05</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/agent-model-discovery-and-the-free-lane</loc>
+    <lastmod>2026-09-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/space-bunny-alpha-pelican-bike-svg</loc>
+    <lastmod>2026-09-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/xiaomi-mimo-v2-6-pelican-bike-svg</loc>
+    <lastmod>2026-09-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/glm53-flash-vs-deepseek-v41-flash-coding-comparison</loc>
+    <lastmod>2026-09-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/skills-marketplace-versioned-agent-skills</loc>
+    <lastmod>2026-09-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/union-alpha-unbiased-pareto-ensemble</loc>
+    <lastmod>2026-09-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/cerebras-qwen-3-8-27b</loc>
+    <lastmod>2026-09-05</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/provider-manifoldgen</loc>
+    <lastmod>2026-09-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/provider-cutedsl</loc>
+    <lastmod>2026-09-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/provider-papers</loc>
+    <lastmod>2026-09-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/provider-openpaths</loc>
+    <lastmod>2026-09-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/wan-3-text-to-video-and-image-to-video-api</loc>
+    <lastmod>2026-08-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/best-ai-api-for-coding-agents</loc>
+    <lastmod>2026-08-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/llm-router-for-ai-agents</loc>
+    <lastmod>2026-08-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/cheapest-gpt-api-alternative</loc>
+    <lastmod>2026-08-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/claude-api-fallback</loc>
+    <lastmod>2026-08-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/openai-api-fallback</loc>
+    <lastmod>2026-08-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/multi-provider-llm-api</loc>
+    <lastmod>2026-08-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/llm-load-balancing</loc>
+    <lastmod>2026-08-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/best-model-for-coding</loc>
+    <lastmod>2026-08-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/best-model-for-tool-calling</loc>
+    <lastmod>2026-08-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/litellm-alternative</loc>
+    <lastmod>2026-08-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/portkey-alternative</loc>
+    <lastmod>2026-08-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/no-cost-byok-18-providers</loc>
+    <lastmod>2026-08-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/why-this-model-routing-transparency</loc>
+    <lastmod>2026-08-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/llm-gateway-observability-real-stats</loc>
+    <lastmod>2026-08-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/best-llm-api-2026-compared</loc>
+    <lastmod>2026-08-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/best-image-generation-api-2026</loc>
+    <lastmod>2026-08-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/best-video-generation-api-2026</loc>
+    <lastmod>2026-08-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/ox-alpha-coding-workhorse</loc>
+    <lastmod>2026-08-23</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/deepseek-peak-off-peak-pricing-map</loc>
+    <lastmod>2026-08-23</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/qwen-uncensored-blackhat-boundary-test</loc>
+    <lastmod>2026-08-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/openpaths-harness-pinf</loc>
+    <lastmod>2026-08-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/building-compound-models</loc>
+    <lastmod>2026-08-05</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/inkling-small-thinking-machines</loc>
+    <lastmod>2026-07-31</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/kimi-k3-moonshot-1m-context</loc>
+    <lastmod>2026-07-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/learning-to-route-whitepaper</loc>
+    <lastmod>2026-07-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/use-openpaths-openai-compatible-router-anywhere</loc>
+    <lastmod>2026-06-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/llm-creative-coding-shader-video-benchmark</loc>
+    <lastmod>2026-06-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/image-model-tips-prompting-outpainting-editing</loc>
+    <lastmod>2026-06-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/video-model-tips-image-to-video-encoding</loc>
+    <lastmod>2026-06-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/image-generator-quality-compared-2026</loc>
+    <lastmod>2026-06-02</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/pelican-bicycle-opus-4-8-vs-gpt-5-5-xhigh</loc>
+    <lastmod>2026-06-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/pelican-bicycle-animated-svg-model-comparison</loc>
+    <lastmod>2026-05-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/image-to-3d-api-pixal3d-openpaths</loc>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/migrate-openai-anthropic-agent-sdks-to-openpaths</loc>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/openrouter-alternative-pool-credits-across-ai-providers</loc>
+    <lastmod>2026-05-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/together-ai-alternative-for-production-model-routing</loc>
+    <lastmod>2026-05-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/openai-api-alternative-for-multi-provider-ai-apps</loc>
+    <lastmod>2026-05-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/anthropic-api-alternative-with-claude-and-multi-model-fallbacks</loc>
+    <lastmod>2026-05-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/openpaths-agent-integrations-hermes-openclaw</loc>
+    <lastmod>2026-05-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/openpaths-sdk-integrations</loc>
+    <lastmod>2026-05-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/how-openpaths-is-hosted-on-codex-infinity</loc>
+    <lastmod>2026-04-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/gpt-image-2-on-openpaths</loc>
+    <lastmod>2026-04-23</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/switch-to-openpaths-in-2-lines</loc>
+    <lastmod>2026-03-03</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/state-of-ai-models-march-2026</loc>
+    <lastmod>2026-03-02</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/how-auto-models-work</loc>
+    <lastmod>2026-03-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/ai-art-generation-compared</loc>
+    <lastmod>2026-02-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/choosing-the-right-llm</loc>
+    <lastmod>2026-02-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/image-resolution-handling</loc>
+    <lastmod>2026-02-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/video-generation-guide</loc>
+    <lastmod>2026-02-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/openpaths-vs-openrouter</loc>
+    <lastmod>2026-02-15</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/music-and-speech-models</loc>
+    <lastmod>2026-02-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/free-ai-models</loc>
+    <lastmod>2026-02-05</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/provider-openai</loc>
+    <lastmod>2026-03-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/provider-anthropic</loc>
+    <lastmod>2026-03-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/provider-google</loc>
+    <lastmod>2026-03-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/provider-xai</loc>
+    <lastmod>2026-03-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/provider-deepseek</loc>
+    <lastmod>2026-03-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/provider-mistral</loc>
+    <lastmod>2026-03-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/provider-groq</loc>
+    <lastmod>2026-03-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/provider-minimax</loc>
+    <lastmod>2026-03-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/provider-together</loc>
+    <lastmod>2026-03-06</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/provider-zai</loc>
+    <lastmod>2026-03-06</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/provider-openrouter</loc>
+    <lastmod>2026-03-05</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/provider-netwrck</loc>
+    <lastmod>2026-03-05</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/provider-text-generator</loc>
+    <lastmod>2026-03-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://openpaths.io/blog/provider-fal</loc>
+    <lastmod>2026-03-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
