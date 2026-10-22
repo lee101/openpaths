@@ -95,6 +95,7 @@ const entries: SitemapEntry[] = [
     path: `/blog/${encodeURIComponent(post.slug)}`,
     changefreq: 'monthly' as const,
     priority: '0.7',
+    lastmod: post.date,
   })),
   ...posts.flatMap(post => post.alternativePath ? [{
     path: post.alternativePath,
@@ -113,7 +114,8 @@ const uniqueEntries = entries.filter(entry => {
 const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${uniqueEntries.map(entry => `  <url>
-    <loc>${escapeXml(`${BASE_URL}${entry.path}`)}</loc>
+    <loc>${escapeXml(`${BASE_URL}${entry.path}`)}</loc>${(entry as { lastmod?: string }).lastmod ? `
+    <lastmod>${(entry as { lastmod?: string }).lastmod}</lastmod>` : ''}
     <changefreq>${entry.changefreq}</changefreq>
     <priority>${entry.priority}</priority>
   </url>`).join('\n')}

@@ -14,6 +14,241 @@ export interface BlogPost {
 
 export const posts: BlogPost[] = [
   {
+    slug: 'how-llm-routing-works-fallbacks-tiers-aliases',
+    title: 'How LLM Routing Works: Aliases, Tiers and Fallback Chains',
+    excerpt: 'A practical tour of LLM routing: pick a logical model name, let the gateway choose the provider, and keep requests flowing when one provider is slow or down.',
+    date: '2026-10-22',
+    author: 'OpenPaths Team',
+    readTime: '5 min',
+    tags: ['llm routing', 'fallbacks', 'model aliases', 'openai compatible', 'reliability'],
+    content: `LLM routing sounds abstract until you see the three moving parts: a name you send, a list of places that can serve it, and a rule for choosing among them. Once those click, you can design an app that stays fast, affordable and available.
+
+## 1. Send a logical name
+
+Your code asks for a model. That model can be a specific one, such as \`deepseek-v4-flash\`, or a logical route such as \`openpaths/auto-code\`. A logical route says what kind of work you are doing and leaves the exact model to the gateway. When a better model arrives, your code keeps working and the route improves.
+
+OpenPaths ships several logical routes you can use today:
+
+- \`openpaths/auto\` for general work
+- \`openpaths/auto-cheap\` for easy, high volume tasks
+- \`openpaths/auto-fast\` for latency sensitive calls
+- \`openpaths/auto-reasoning\` for harder multi step problems
+- \`openpaths/auto-vision\` for prompts that include images
+- \`openpaths/auto-code\` for coding and agent loops
+- \`openpaths/auto-image\` for image generation
+
+Short aliases such as \`auto-cheap\` and \`auto-fast\` point to the same routes, which keeps config files tidy.
+
+## 2. Keep a fallback chain behind every route
+
+Each route lists an ordered chain of models and providers. If the first choice is rate limited, slow or returning errors, the request moves to the next entry. The chain should contain models of similar ability, so the experience stays steady even when the path changes.
+
+Good chains share these traits:
+
+- The first entry is the best balance of quality and price for the task.
+- The second entry comes from a different provider, so one outage affects only one link.
+- The last entry is cheap and widely available, so something always answers.
+
+You can see what happened on each call. Responses carry an \`x-openpaths-route\` header that names the model, provider and strategy used, which makes debugging a matter of reading one line.
+
+## 3. Choose a strategy
+
+Routing strategies answer the question "which healthy option goes first?" Price ordering suits batch jobs. Latency ordering suits chat. Quality ordering suits the hard step in an agent run. Pick per route, and keep the choice visible in your config so teammates can read it.
+
+## A minimal client
+
+Because the gateway speaks the OpenAI format, the only change in an existing app is the base URL and key:
+
+\`\`\`python
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://openpaths.io/v1",
+    api_key="OPENPATHS_API_KEY",
+)
+
+resp = client.chat.completions.create(
+    model="openpaths/auto-fast",
+    messages=[{"role": "user", "content": "Summarize this ticket in one sentence."}],
+)
+print(resp.choices[0].message.content)
+\`\`\`
+
+Use \`GET /v1/models\` to list everything available, including prices, so your app can discover new options without a redeploy.
+
+## Design tips
+
+1. **Name routes after jobs.** A route called \`summaries\` in your own config that maps to \`openpaths/auto-cheap\` documents intent and makes later changes a one line edit.
+2. **Pin when you need repeatability.** For evaluation runs, send the exact model ID so results compare cleanly. For production traffic, use the logical route.
+3. **Set sensible timeouts.** A fallback chain works best when a slow first entry gives way quickly. Keep client timeouts a little above your latency target.
+4. **Log the route header.** A week of \`x-openpaths-route\` values tells you which models carry your traffic and where cost accumulates.
+5. **Review prices monthly.** Model prices move. The catalog shows current input and output prices per million tokens, so a quick look keeps your choices fresh.
+
+## Try it
+
+Create a key, change one base URL, and send a request to \`openpaths/auto\`. Credits start at $5 and billing follows the tokens you use. Browse the [model catalog](/models) to compare options, then read about [choosing models by cost and quality](/blog/choosing-llm-by-cost-and-quality).`
+  },
+  {
+    slug: 'one-gateway-text-vision-speech-model-apis',
+    title: 'One Gateway for Text, Vision and Speech Model APIs',
+    excerpt: 'Chat, image understanding, image generation, text to speech and transcription through one key and one OpenAI compatible base URL.',
+    date: '2026-10-22',
+    author: 'OpenPaths Team',
+    readTime: '5 min',
+    tags: ['api gateway', 'text to speech', 'speech to text', 'vision', 'image generation', 'openai compatible'],
+    content: `Modern apps rarely use one kind of model. A support tool reads text, looks at screenshots, transcribes calls and speaks replies. Wiring four vendors means four keys, four invoices and four sets of error handling. A single gateway gives you one key, one base URL and one balance for all of it.
+
+## Text: chat completions
+
+The familiar endpoint works as expected:
+
+\`\`\`bash
+curl https://openpaths.io/v1/chat/completions \\
+  -H "Authorization: Bearer $OPENPATHS_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"model":"openpaths/auto","messages":[{"role":"user","content":"Draft a friendly refund reply."}]}'
+\`\`\`
+
+Anthropic style \`/v1/messages\` requests are supported too, so agent SDKs from either family can point at the same gateway.
+
+## Vision: images in, answers out
+
+Send an image inside a chat message and select \`openpaths/auto-vision\`, which routes to a model that reads images well. Typical jobs include extracting fields from receipts, describing a UI screenshot for a bug report, and checking product photos against a checklist.
+
+For generating pictures, use \`/v1/images/generations\`. For prompt driven edits of an existing picture, use \`/v1/images/edits\`. The \`openpaths/auto-image\` route keeps a fallback chain behind it so a busy provider does not stop your pipeline.
+
+## Speech to text
+
+\`/v1/audio/transcriptions\` accepts mp3, mp4, m4a, wav, webm, ogg and flac files. Pick a model by the tradeoff you want:
+
+- \`distil-whisper-large-v3-en\` for English at the lowest price
+- \`whisper-large-v3-turbo\` as a fast multilingual default
+- \`gpt-4o-mini-transcribe\` or \`gpt-4o-transcribe\` when accuracy matters most
+
+\`\`\`python
+import requests
+
+with open("call.mp3", "rb") as f:
+    r = requests.post(
+        "https://openpaths.io/v1/audio/transcriptions",
+        headers={"Authorization": "Bearer op_..."},
+        files={"file": f},
+        data={"model": "whisper-large-v3-turbo", "language": "en"},
+    )
+print(r.json()["text"])
+\`\`\`
+
+The optional \`language\` hint and \`prompt\` vocabulary hint help with names and product terms.
+
+## Text to speech
+
+\`/v1/audio/speech\` turns text into audio. Send a model, the input text and a voice:
+
+\`\`\`python
+r = requests.post(
+    "https://openpaths.io/v1/audio/speech",
+    headers={"Authorization": "Bearer op_..."},
+    json={"model": "speech-2.8-hd", "input": "Your order has shipped.", "voice": "alloy"},
+)
+open("reply.mp3", "wb").write(r.content)
+\`\`\`
+
+Use an HD model for finished audio such as voiceovers, and a Turbo model for live replies where speed counts.
+
+## A voice assistant in four calls
+
+1. Transcribe the caller's audio with \`whisper-large-v3-turbo\`.
+2. Send the transcript to \`openpaths/auto-fast\` for a quick answer.
+3. When the caller shares a photo, call \`openpaths/auto-vision\`.
+4. Speak the answer with a Turbo speech model.
+
+All four calls share one key and one usage view, so you can see exactly which step costs what.
+
+## Practical tips
+
+- **Start with the routes.** Logical names give you sensible defaults while you learn your traffic.
+- **Pin models in tests.** Use exact IDs for evaluations so results stay comparable.
+- **Keep audio short.** Split long recordings into segments, which speeds up transcription and makes retries cheap.
+- **Cache repeated speech.** Fixed prompts such as greetings can be generated once and stored.
+- **Read the catalog.** The [models page](/models) lists capabilities and prices side by side, and \`GET /v1/models\` returns the same data for code.
+
+## Try it
+
+Create an account, add credits from $5, and run the snippets above with your key. One integration covers text, vision and speech, and you can add video or music endpoints from the same account later.`
+  },
+  {
+    slug: 'choosing-llm-by-cost-and-quality',
+    title: 'Choosing an LLM by Cost and Quality: A Practical Method',
+    excerpt: 'A simple loop for matching models to tasks: define the job, build a small test set, compare price per good answer, and route accordingly.',
+    date: '2026-10-22',
+    author: 'OpenPaths Team',
+    readTime: '6 min',
+    tags: ['model selection', 'cost optimization', 'evaluation', 'pricing', 'llm routing'],
+    content: `The best model is the one that completes your task at a price your product can carry. That answer differs per task, so a short, repeatable method beats picking a favorite.
+
+## Step 1: Describe the job in one sentence
+
+"Classify support emails into six labels." "Write a patch for a failing test." "Describe a photo for alt text." Each sentence implies different needs: labels reward speed and consistency, patches reward reasoning, alt text rewards vision. Write the sentence first, because it points to the right class of model.
+
+## Step 2: Build a small test set
+
+Collect 20 to 50 real examples with the answer you would accept. Real traffic beats invented samples. Include a few hard cases, since those reveal differences between models. Store the set in a file so every future comparison uses the same inputs.
+
+## Step 3: Compare price per good answer
+
+Token prices are quoted per million tokens, for input and output separately. Cost per request is:
+
+\`\`\`
+cost = input_tokens / 1e6 * input_price + output_tokens / 1e6 * output_price
+\`\`\`
+
+The number that matters is cost divided by the share of answers you accept. A model that costs twice as much and passes 95 percent of your cases can be cheaper per good answer than a budget model that passes 50 percent. Compute both and compare.
+
+OpenPaths lists current prices in the [catalog](/models). A few logical routes show the price spread: \`openpaths/auto-cheap\` is listed at $0.20 input and $1.20 output per million tokens, \`openpaths/auto-fast\` at $0.15 and $0.60, and \`openpaths/auto-reasoning\` at $2.00 and $12.00. Check the catalog for the latest numbers before you plan a budget.
+
+## Step 4: Run the comparison through one endpoint
+
+Because every model sits behind the same API, a comparison script changes one string:
+
+\`\`\`python
+from openai import OpenAI
+client = OpenAI(base_url="https://openpaths.io/v1", api_key="OPENPATHS_API_KEY")
+
+for model in ["openpaths/auto-cheap", "openpaths/auto-fast", "openpaths/auto-reasoning"]:
+    out = client.chat.completions.create(
+        model=model,
+        messages=[{"role": "user", "content": sample}],
+    )
+    print(model, out.usage.total_tokens, out.choices[0].message.content[:80])
+\`\`\`
+
+Score each answer with a checker function when the task has a clear right answer, or with a quick human read for writing tasks.
+
+## Step 5: Split the workload
+
+Most products contain easy and hard calls. Send the easy majority to a low cost route and reserve the stronger model for the steps that need it. For an agent, that often means a fast model for tool arguments and summaries, and a reasoning model for planning and difficult code. Our [guide to LLM routing](/blog/how-llm-routing-works-fallbacks-tiers-aliases) shows how routes and fallbacks keep this split dependable.
+
+## Step 6: Watch latency as well
+
+Quality and price form two sides of a triangle, and speed is the third. Interactive chat benefits from \`openpaths/auto-fast\`. Overnight batch jobs can use the lowest price and wait. Measure time to first token for the former and total throughput for the latter.
+
+## Step 7: Revisit on a schedule
+
+New models appear often and prices move. Rerun your test set monthly, or whenever a promising model lands in the catalog. Because your set is saved, the rerun takes minutes.
+
+## Quick reference
+
+- **Classification, extraction, tagging:** start with a cheap or fast route.
+- **Chat with users:** a fast route, with a stronger fallback for escalations.
+- **Code and agents:** an \`auto-code\` route, plus reasoning for planning steps.
+- **Images in the prompt:** \`openpaths/auto-vision\`.
+- **Transcription:** a Whisper turbo model, with a GPT 4o transcribe model for the hardest audio.
+
+## Try it
+
+Create a key, run the loop above on your own examples, and keep the winning model per task in your config. Credits start at $5, and usage is itemized so you can confirm your savings against real bills.`
+  },
+  {
     slug: 'gemini-image-models-game-dev-concept-art',
     title: 'Nano Banana 2 Lite and 2.1 on OpenPaths: Game Dev Concept Art for 3.4 Cents an Image',
     excerpt: 'Gemini 3.1 Flash Lite Image and Nano Banana 2.1 are live: text-to-image and multi-image editing at $0.0336 per 1K image. We took one castle-builder screenshot and turned it into a night siege, a winter build, a dragon raid, a battle screen, an icon sheet and key art - nine images, about thirty cents.',
