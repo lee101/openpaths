@@ -4562,6 +4562,7 @@ models:
       - "or/nemotron-3.5-lightning:free"
       - "or/gemma-4-26b-a4b-it:free"
       - "or/laguna-xs-2.1:free"
+      - "or/flint-v1.0:free"
       - "or/nemotron-3-nano-omni-30b-a3b-reasoning:free"
       - "or/openrouter-free"
 
@@ -4733,6 +4734,18 @@ models:
     supports_tools: true
     supports_vision: false
 
+  - id: "or/flint-v1.0:free"
+    provider: openrouter
+    provider_model_id: "recursive/flint-v1.0:free"
+    input_price_per_1m: 0
+    output_price_per_1m: 0
+    aliases: ["recursive/flint-v1.0:free", "openrouter/recursive/flint-v1.0:free"]
+    context_window: 262144
+    max_output_tokens: 235929
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
   - id: "or/nemotron-3-nano-omni-30b-a3b-reasoning:free"
     provider: openrouter
     provider_model_id: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"
@@ -4784,6 +4797,62 @@ models:
     supports_tools: true
     supports_vision: true
 
+  # openrouter: in=0.15 out=0.6 cache=0.003 per 1M, +5.5% fee
+  - id: "or/deepseek-v4.1-flash-1017"
+    provider: openrouter
+    provider_model_id: "deepseek/deepseek-v4.1-flash-1017"
+    input_price_per_1m: 0.1583
+    input_cache_hit_price_per_1m: 0.0032
+    output_price_per_1m: 0.633
+    aliases: ["deepseek/deepseek-v4.1-flash-1017", "openrouter/deepseek/deepseek-v4.1-flash-1017", "deepseek-v4.1-flash-1017"]
+    context_window: 1048576
+    max_output_tokens: 393216
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  # openrouter: in=0.6 out=3 cache=0.06 per 1M, +5.5% fee
+  - id: "or/glimpse"
+    provider: openrouter
+    provider_model_id: "elorian/glimpse"
+    input_price_per_1m: 0.633
+    input_cache_hit_price_per_1m: 0.0633
+    output_price_per_1m: 3.165
+    aliases: ["elorian/glimpse", "openrouter/elorian/glimpse", "glimpse"]
+    context_window: 262144
+    max_output_tokens: 256000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  # openrouter: in=3 out=15 cache=0.3 per 1M, +5.5% fee
+  - id: "or/ember-1"
+    provider: openrouter
+    provider_model_id: "fireworks/ember-1"
+    input_price_per_1m: 3.165
+    input_cache_hit_price_per_1m: 0.3165
+    output_price_per_1m: 15.825
+    aliases: ["fireworks/ember-1", "openrouter/fireworks/ember-1", "ember-1"]
+    context_window: 1048576
+    max_output_tokens: 943718
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  # openrouter: in=0.04 out=0.15 cache=0.004 per 1M, +5.5% fee
+  - id: "or/mercury-2.5"
+    provider: openrouter
+    provider_model_id: "inception/mercury-2.5"
+    input_price_per_1m: 0.0422
+    input_cache_hit_price_per_1m: 0.0043
+    output_price_per_1m: 0.1583
+    aliases: ["inception/mercury-2.5", "openrouter/inception/mercury-2.5", "mercury-2.5"]
+    context_window: 260000
+    max_output_tokens: 65536
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+
   # openrouter: in=0.1 out=0.35 cache=0.01 per 1M, +5.5% fee
   - id: "or/mercury-3"
     provider: openrouter
@@ -4797,6 +4866,20 @@ models:
     supports_streaming: true
     supports_tools: true
     supports_vision: false
+
+  # openrouter: in=0.06 out=0.18 cache=0.012 per 1M, +5.5% fee
+  - id: "or/ling-3.0-flash-vl"
+    provider: openrouter
+    provider_model_id: "inclusionai/ling-3.0-flash-vl"
+    input_price_per_1m: 0.0633
+    input_cache_hit_price_per_1m: 0.0127
+    output_price_per_1m: 0.1899
+    aliases: ["inclusionai/ling-3.0-flash-vl", "openrouter/inclusionai/ling-3.0-flash-vl", "ling-3.0-flash-vl"]
+    context_window: 131072
+    max_output_tokens: 32768
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
 
   # openrouter: in=0.075 out=0.225 cache=0.015 per 1M, +5.5% fee
   - id: "or/ling-3.1-flash"
@@ -4840,6 +4923,20 @@ models:
     supports_tools: true
     supports_vision: true
 
+  # openrouter: in=4 out=20 cache=0.2 per 1M, +5.5% fee
+  - id: "or/muse-wonder"
+    provider: openrouter
+    provider_model_id: "meta/muse-wonder"
+    input_price_per_1m: 4.22
+    input_cache_hit_price_per_1m: 0.211
+    output_price_per_1m: 21.1
+    aliases: ["meta/muse-wonder", "openrouter/meta/muse-wonder", "muse-wonder"]
+    context_window: 1048576
+    max_output_tokens: 943718
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
   # openrouter: in=0.3 out=1.2 cache=0.06 per 1M, +5.5% fee
   - id: "or/minimax-m3"
     provider: openrouter
@@ -4868,6 +4965,47 @@ models:
     supports_tools: true
     supports_vision: true
 
+  # openrouter: in=0.075 out=0.25 cache=0.015 per 1M, +5.5% fee
+  - id: "or/nex-n2.5-pro"
+    provider: openrouter
+    provider_model_id: "nex-agi/nex-n2.5-pro"
+    input_price_per_1m: 0.0792
+    input_cache_hit_price_per_1m: 0.0159
+    output_price_per_1m: 0.2638
+    aliases: ["nex-agi/nex-n2.5-pro", "openrouter/nex-agi/nex-n2.5-pro", "nex-n2.5-pro"]
+    context_window: 262144
+    max_output_tokens: 235929
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  # openrouter: in=0.15 out=1.5 cache=0 per 1M, +5.5% fee
+  - id: "or/perceptron-mk1.5"
+    provider: openrouter
+    provider_model_id: "perceptron/perceptron-mk1.5"
+    input_price_per_1m: 0.1583
+    output_price_per_1m: 1.5825
+    aliases: ["perceptron/perceptron-mk1.5", "openrouter/perceptron/perceptron-mk1.5", "perceptron-mk1.5"]
+    context_window: 36864
+    max_output_tokens: 8192
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  # openrouter: in=4 out=12 cache=0.5 per 1M, +5.5% fee
+  - id: "or/qwen3.8-max-prime"
+    provider: openrouter
+    provider_model_id: "qwen/qwen3.8-max-prime"
+    input_price_per_1m: 4.22
+    input_cache_hit_price_per_1m: 0.5275
+    output_price_per_1m: 12.66
+    aliases: ["qwen/qwen3.8-max-prime", "openrouter/qwen/qwen3.8-max-prime", "qwen3.8-max-prime"]
+    context_window: 1000000
+    max_output_tokens: 131072
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
   # openrouter: in=0.3 out=1 cache=0.04 per 1M, +5.5% fee
   - id: "or/beam-1.0-501b-a23b"
     provider: openrouter
@@ -4882,6 +5020,48 @@ models:
     supports_tools: true
     supports_vision: false
 
+  # openrouter: in=2 out=6 cache=0.25 per 1M, +5.5% fee
+  - id: "or/fugu-max"
+    provider: openrouter
+    provider_model_id: "sakana/fugu-max"
+    input_price_per_1m: 2.11
+    input_cache_hit_price_per_1m: 0.2638
+    output_price_per_1m: 6.33
+    aliases: ["sakana/fugu-max", "openrouter/sakana/fugu-max", "fugu-max"]
+    context_window: 1000000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  # openrouter: in=1 out=2.7 cache=0.1 per 1M, +5.5% fee
+  - id: "or/step-5-preview"
+    provider: openrouter
+    provider_model_id: "stepfun/step-5-preview"
+    input_price_per_1m: 1.055
+    input_cache_hit_price_per_1m: 0.1055
+    output_price_per_1m: 2.8485
+    aliases: ["stepfun/step-5-preview", "openrouter/stepfun/step-5-preview", "step-5-preview"]
+    context_window: 1048576
+    max_output_tokens: 64000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  # openrouter: in=0.8 out=3.2 cache=0.03 per 1M, +5.5% fee
+  - id: "or/pareto-26.10"
+    provider: openrouter
+    provider_model_id: "unbiased/pareto-26.10"
+    input_price_per_1m: 0.844
+    input_cache_hit_price_per_1m: 0.0317
+    output_price_per_1m: 3.376
+    aliases: ["unbiased/pareto-26.10", "openrouter/unbiased/pareto-26.10", "pareto-26.10"]
+    context_window: 1048576
+    max_output_tokens: 131072
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
   # openrouter: in=0.37 out=1.25 cache=0.09 per 1M, +5.5% fee
   - id: "or/glm-5.3-flashx"
     provider: openrouter
@@ -4895,6 +5075,20 @@ models:
     supports_streaming: true
     supports_tools: true
     supports_vision: true
+
+  # openrouter: in=2.8 out=8.8 cache=0.56 per 1M, +5.5% fee
+  - id: "or/glm-5.3-prime"
+    provider: openrouter
+    provider_model_id: "z-ai/glm-5.3-prime"
+    input_price_per_1m: 2.954
+    input_cache_hit_price_per_1m: 0.5908
+    output_price_per_1m: 9.284
+    aliases: ["z-ai/glm-5.3-prime", "openrouter/z-ai/glm-5.3-prime", "glm-5.3-prime"]
+    context_window: 1000000
+    max_output_tokens: 131072
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
   # --- END openrouter-sync ---
 
   # --- Nous Research ---

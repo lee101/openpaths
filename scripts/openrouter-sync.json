@@ -3,14 +3,27 @@
   "paid": [
     "aion-labs/aion-3.5",
     "cohere/command-a-plus",
+    "deepseek/deepseek-v4.1-flash-1017",
+    "elorian/glimpse",
+    "fireworks/ember-1",
+    "inception/mercury-2.5",
     "inception/mercury-3",
+    "inclusionai/ling-3.0-flash-vl",
     "inclusionai/ling-3.1-flash",
     "liquid/lfm-2.5-24b-a2b",
     "meta/muse-spark-open",
+    "meta/muse-wonder",
     "minimax/minimax-m3",
     "mistralai/mistral-large-4-0",
+    "nex-agi/nex-n2.5-pro",
+    "perceptron/perceptron-mk1.5",
+    "qwen/qwen3.8-max-prime",
     "reflection/beam-1.0-501b-a23b",
-    "z-ai/glm-5.3-flashx"
+    "sakana/fugu-max",
+    "stepfun/step-5-preview",
+    "unbiased/pareto-26.10",
+    "z-ai/glm-5.3-flashx",
+    "z-ai/glm-5.3-prime"
   ],
   "free_rank": [
     "minimax/minimax-m3.1-flash:free",

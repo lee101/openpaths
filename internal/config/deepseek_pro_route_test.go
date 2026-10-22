@@ -15,8 +15,8 @@ func TestDeepSeekV4ProRoutesToFlash(t *testing.T) {
 		if m.ID != "deepseek-v4-pro" {
 			continue
 		}
-		if m.Provider != "deepseek" || m.ProviderModelID != "deepseek-v4-flash" {
-			t.Fatalf("deepseek-v4-pro route = %s/%s, want deepseek/deepseek-v4-flash", m.Provider, m.ProviderModelID)
+		if m.Provider != "deepseek" || m.ProviderModelID != "deepseek-flash" {
+			t.Fatalf("deepseek-v4-pro route = %s/%s, want deepseek/deepseek-flash", m.Provider, m.ProviderModelID)
 		}
 		wantFallbacks := []string{"nvidia/deepseek-v4-flash", "deepseek-reasoner", "nvidia/deepseek-v3.2", "together/deepseek-v3.1"}
 		if !reflect.DeepEqual(m.FallbackModels, wantFallbacks) {

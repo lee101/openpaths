@@ -531,7 +531,7 @@ const catalogModels: Model[] = [
     provider: 'OpenPaths',
     description: 'An extremely efficient local embedding model priced at $1 per billion tokens. Supports matryoshka `dimensions` and `encoding_format=base64`. Open source at lee101/gobed, so it is portable across environments.',
     contextLength: '256',
-    priceInput: 1,
+    priceInput: 0.001,
     priceOutput: 0,
     tags: ['embedding'],
     released: '2026-04-23',
@@ -5738,6 +5738,19 @@ const catalogModels: Model[] = [
     popularity: 10
   },
   {
+    id: 'or/flint-v1.0:free',
+    name: 'Recursive: Flint (free)',
+    provider: 'OpenRouter',
+    description: 'Flint is an open-weight mixture-of-experts model from Recursive, with about 2.5B active parameters out of 40B total, built by Recursive\'s autoresearch system Eureka Machine for coding agents. Routed through OpenRouter.',
+    contextLength: '256K',
+    priceInput: 0,
+    priceOutput: 0,
+    tags: ['free', 'general', 'reasoning', 'agentic'],
+    aliases: ['recursive/flint-v1.0:free', 'openrouter/recursive/flint-v1.0:free'],
+    released: '2026-10-21',
+    popularity: 10
+  },
+  {
     id: 'or/nemotron-3-nano-omni-30b-a3b-reasoning:free',
     name: 'NVIDIA: Nemotron 3 Nano Omni (free)',
     provider: 'OpenRouter',
@@ -5790,6 +5803,58 @@ const catalogModels: Model[] = [
     popularity: 10
   },
   {
+    id: 'or/deepseek-v4.1-flash-1017',
+    name: 'DeepSeek: DeepSeek V4.1 Flash 1017',
+    provider: 'OpenRouter',
+    description: 'DeepSeek V4.1 Flash 1017 is the October 17, 2026 snapshot of DeepSeek V4.1 Flash, served by DeepSeek under the `deepseek-flash` API model name. Routed through OpenRouter.',
+    contextLength: '1024K',
+    priceInput: 0.1583,
+    priceOutput: 0.633,
+    tags: ['general', 'vision', 'reasoning', 'agentic'],
+    aliases: ['deepseek/deepseek-v4.1-flash-1017', 'openrouter/deepseek/deepseek-v4.1-flash-1017', 'deepseek-v4.1-flash-1017'],
+    released: '2026-10-17',
+    popularity: 10
+  },
+  {
+    id: 'or/glimpse',
+    name: 'Elorian: Glimpse',
+    provider: 'OpenRouter',
+    description: 'Glimpse is a multimodal visual reasoning model from Elorian, built for visual understanding and complex visual reasoning in the physical world. Routed through OpenRouter.',
+    contextLength: '256K',
+    priceInput: 0.633,
+    priceOutput: 3.165,
+    tags: ['general', 'vision', 'reasoning', 'agentic'],
+    aliases: ['elorian/glimpse', 'openrouter/elorian/glimpse', 'glimpse'],
+    released: '2026-10-17',
+    popularity: 10
+  },
+  {
+    id: 'or/ember-1',
+    name: 'Fireworks: Ember-1',
+    provider: 'OpenRouter',
+    description: 'Ember-1 is a specialized reasoning model from Fireworks Research, built on [Kimi K3](https://openrouter.ai/moonshotai/kimi-k3). Routed through OpenRouter.',
+    contextLength: '1024K',
+    priceInput: 3.165,
+    priceOutput: 15.825,
+    tags: ['general', 'vision', 'reasoning', 'agentic'],
+    aliases: ['fireworks/ember-1', 'openrouter/fireworks/ember-1', 'ember-1'],
+    released: '2026-09-24',
+    popularity: 10
+  },
+  {
+    id: 'or/mercury-2.5',
+    name: 'Inception: Mercury 2.5',
+    provider: 'OpenRouter',
+    description: 'Mercury 2.5 is the fastest reasoning LLM, and the latest diffusion LLM (dLLM) from Inception. Routed through OpenRouter.',
+    contextLength: '254K',
+    priceInput: 0.0422,
+    priceOutput: 0.1583,
+    tags: ['general', 'reasoning', 'agentic'],
+    aliases: ['inception/mercury-2.5', 'openrouter/inception/mercury-2.5', 'mercury-2.5'],
+    released: '2026-09-08',
+    popularity: 10
+  },
+  {
     id: 'or/mercury-3',
     name: 'Inception: Mercury 3',
     provider: 'OpenRouter',
@@ -5800,6 +5865,19 @@ const catalogModels: Model[] = [
     tags: ['general', 'reasoning', 'agentic'],
     aliases: ['inception/mercury-3', 'openrouter/inception/mercury-3', 'mercury-3'],
     released: '2026-10-16',
+    popularity: 10
+  },
+  {
+    id: 'or/ling-3.0-flash-vl',
+    name: 'inclusionAI: Ling 3.0 Flash VL',
+    provider: 'OpenRouter',
+    description: 'Ling 3.0 Flash VL builds on Ling 3.0 Flash (124B total / 5.5B active MoE from InclusionAI), further strengthening its language capabilities while adding native visual perception and advanced visual... Routed through OpenRouter.',
+    contextLength: '128K',
+    priceInput: 0.0633,
+    priceOutput: 0.1899,
+    tags: ['general', 'vision', 'reasoning', 'agentic'],
+    aliases: ['inclusionai/ling-3.0-flash-vl', 'openrouter/inclusionai/ling-3.0-flash-vl', 'ling-3.0-flash-vl'],
+    released: '2026-09-10',
     popularity: 10
   },
   {
@@ -5842,6 +5920,19 @@ const catalogModels: Model[] = [
     popularity: 10
   },
   {
+    id: 'or/muse-wonder',
+    name: 'Meta: Muse Wonder',
+    provider: 'OpenRouter',
+    description: 'Muse Wonder is a frontier reasoning model from Meta, designed for complex personal and professional agentic tasks. Routed through OpenRouter.',
+    contextLength: '1024K',
+    priceInput: 4.22,
+    priceOutput: 21.1,
+    tags: ['general', 'vision', 'reasoning', 'agentic'],
+    aliases: ['meta/muse-wonder', 'openrouter/meta/muse-wonder', 'muse-wonder'],
+    released: '2026-10-12',
+    popularity: 10
+  },
+  {
     id: 'or/minimax-m3',
     name: 'MiniMax: MiniMax M3',
     provider: 'OpenRouter',
@@ -5868,6 +5959,45 @@ const catalogModels: Model[] = [
     popularity: 10
   },
   {
+    id: 'or/nex-n2.5-pro',
+    name: 'Nex AGI: Nex-N2.5-Pro',
+    provider: 'OpenRouter',
+    description: 'Nex-N2.5 is an agentic model built to turn goals into working, verified outcomes. Routed through OpenRouter.',
+    contextLength: '256K',
+    priceInput: 0.0792,
+    priceOutput: 0.2638,
+    tags: ['general', 'vision', 'reasoning', 'agentic'],
+    aliases: ['nex-agi/nex-n2.5-pro', 'openrouter/nex-agi/nex-n2.5-pro', 'nex-n2.5-pro'],
+    released: '2026-09-08',
+    popularity: 10
+  },
+  {
+    id: 'or/perceptron-mk1.5',
+    name: 'Perceptron: Perceptron Mk1.5',
+    provider: 'OpenRouter',
+    description: 'Perceptron Mk1.5 is Perceptron\'s embodied reasoning model for physical agents. Routed through OpenRouter.',
+    contextLength: '36K',
+    priceInput: 0.1583,
+    priceOutput: 1.5825,
+    tags: ['general', 'vision', 'reasoning', 'agentic'],
+    aliases: ['perceptron/perceptron-mk1.5', 'openrouter/perceptron/perceptron-mk1.5', 'perceptron-mk1.5'],
+    released: '2026-09-25',
+    popularity: 10
+  },
+  {
+    id: 'or/qwen3.8-max-prime',
+    name: 'Qwen: Qwen3.8 Max Prime',
+    provider: 'OpenRouter',
+    description: 'Qwen3.8 Max Prime is a higher-throughput variant of Qwen3.8 Max from Alibaba\'s Qwen team, served as a separate SKU at a higher price point. Routed through OpenRouter.',
+    contextLength: '1M',
+    priceInput: 4.22,
+    priceOutput: 12.66,
+    tags: ['general', 'vision', 'reasoning', 'agentic'],
+    aliases: ['qwen/qwen3.8-max-prime', 'openrouter/qwen/qwen3.8-max-prime', 'qwen3.8-max-prime'],
+    released: '2026-09-23',
+    popularity: 10
+  },
+  {
     id: 'or/beam-1.0-501b-a23b',
     name: 'Reflection: Beam 1.0 501B A23B',
     provider: 'OpenRouter',
@@ -5881,6 +6011,45 @@ const catalogModels: Model[] = [
     popularity: 10
   },
   {
+    id: 'or/fugu-max',
+    name: 'Sakana: Fugu Max',
+    provider: 'OpenRouter',
+    description: 'Fugu Max is the cost-performance model in Sakana AI\'s Fugu family. Routed through OpenRouter.',
+    contextLength: '1M',
+    priceInput: 2.11,
+    priceOutput: 6.33,
+    tags: ['general', 'vision', 'reasoning', 'agentic'],
+    aliases: ['sakana/fugu-max', 'openrouter/sakana/fugu-max', 'fugu-max'],
+    released: '2026-09-11',
+    popularity: 10
+  },
+  {
+    id: 'or/step-5-preview',
+    name: 'StepFun: Step 5 Preview',
+    provider: 'OpenRouter',
+    description: 'Step 5 Preview is StepFun\'s flagship model for agentic work, built on a sparse Mixture-of-Experts architecture (27B active / 600B total parameters). Routed through OpenRouter.',
+    contextLength: '1024K',
+    priceInput: 1.055,
+    priceOutput: 2.8485,
+    tags: ['general', 'vision', 'reasoning', 'agentic'],
+    aliases: ['stepfun/step-5-preview', 'openrouter/stepfun/step-5-preview', 'step-5-preview'],
+    released: '2026-10-08',
+    popularity: 10
+  },
+  {
+    id: 'or/pareto-26.10',
+    name: 'Pareto 26.10',
+    provider: 'OpenRouter',
+    description: 'Pareto is a multimodal composite model built for research, coding, and agentic workflows, while delivering frontier-level performance across a broad range of general-purpose tasks. Routed through OpenRouter.',
+    contextLength: '1024K',
+    priceInput: 0.844,
+    priceOutput: 3.376,
+    tags: ['general', 'vision', 'agentic'],
+    aliases: ['unbiased/pareto-26.10', 'openrouter/unbiased/pareto-26.10', 'pareto-26.10'],
+    released: '2026-10-15',
+    popularity: 10
+  },
+  {
     id: 'or/glm-5.3-flashx',
     name: 'Z.ai: GLM 5.3 FlashX',
     provider: 'OpenRouter',
@@ -5891,6 +6060,19 @@ const catalogModels: Model[] = [
     tags: ['general', 'vision', 'reasoning', 'agentic'],
     aliases: ['z-ai/glm-5.3-flashx', 'openrouter/z-ai/glm-5.3-flashx', 'glm-5.3-flashx'],
     released: '2026-09-18',
+    popularity: 10
+  },
+  {
+    id: 'or/glm-5.3-prime',
+    name: 'Z.ai: GLM 5.3 Prime',
+    provider: 'OpenRouter',
+    description: 'GLM-5.3-Prime is the high-speed variant of Z.ai\'s GLM-5.3, inheriting its full capabilities while delivering 1.5–2× the output throughput through inference acceleration. Routed through OpenRouter.',
+    contextLength: '1M',
+    priceInput: 2.954,
+    priceOutput: 9.284,
+    tags: ['general', 'reasoning', 'agentic'],
+    aliases: ['z-ai/glm-5.3-prime', 'openrouter/z-ai/glm-5.3-prime', 'glm-5.3-prime'],
+    released: '2026-09-23',
     popularity: 10
   },
   // --- END openrouter-sync ---

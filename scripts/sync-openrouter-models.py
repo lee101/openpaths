@@ -175,7 +175,9 @@ def main():
         if is_free:
             ladder.append(mid)
         pr = m.get("pricing") or {}
-        extra = {k: v for k, v in pr.items() if k not in ("prompt", "completion", "input_cache_read", "input_cache_write") and float(v or 0)}
+        extra = {k: v for k, v in pr.items() if k not in ("prompt", "completion", "input_cache_read", "input_cache_write", "overrides") and float(v or 0)}
+        if pr.get("overrides") and not is_free:
+            print(f"note: {pmid} has tiered/time-of-day overrides; billed at base rate", file=sys.stderr)
         if extra and not is_free:
             print(f"warn: {pmid} has unbilled OpenRouter charges {extra}", file=sys.stderr)
         aliases = [al for al in (pmid, "openrouter/" + pmid) if al not in taken and al != mid]
