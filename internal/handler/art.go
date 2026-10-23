@@ -93,10 +93,16 @@ func (h *ArtHandler) HandleReindex(ctx *fasthttp.RequestCtx) {
 type ArtHandler struct {
 	index *artindex.Service
 	db    *queries.ArtImageQueries
+
+	sitemaps *sitemapCache
 }
 
 func NewArtHandler(index *artindex.Service, db *queries.ArtImageQueries) *ArtHandler {
-	return &ArtHandler{index: index, db: db}
+	h := &ArtHandler{index: index, db: db, sitemaps: newSitemapCache()}
+	if db != nil {
+		go h.sitemaps.get(1, func(bc context.Context) ([]byte, error) { return h.buildImageSitemap(bc, 1) })
+	}
+	return h
 }
 
 func (h *ArtHandler) HandleStatus(ctx *fasthttp.RequestCtx) {
@@ -437,10 +443,23 @@ func (h *ArtHandler) HandleSitemapImages(ctx *fasthttp.RequestCtx) {
 	if page < 1 {
 		page = 1
 	}
-	rows, err := h.db.ListForSitemap(ctx, artSitemapPageSz, (page-1)*artSitemapPageSz)
+	body, err := h.sitemaps.get(page, func(bc context.Context) ([]byte, error) {
+		return h.buildImageSitemap(bc, page)
+	})
 	if err != nil {
 		ctx.SetStatusCode(fasthttp.StatusInternalServerError)
 		return
+	}
+	ctx.SetContentType("text/xml; charset=utf-8")
+	ctx.Response.Header.Set("Cache-Control", "public, max-age=600, stale-while-revalidate=86400")
+	ctx.SetStatusCode(fasthttp.StatusOK)
+	ctx.SetBody(body)
+}
+
+func (h *ArtHandler) buildImageSitemap(ctx context.Context, page int) ([]byte, error) {
+	rows, err := h.db.ListForSitemap(ctx, artSitemapPageSz, (page-1)*artSitemapPageSz)
+	if err != nil {
+		return nil, err
 	}
 	var b strings.Builder
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8"?>` + "\n")
@@ -464,9 +483,7 @@ func (h *ArtHandler) HandleSitemapImages(ctx *fasthttp.RequestCtx) {
 		b.WriteString("  </url>\n")
 	}
 	b.WriteString("</urlset>\n")
-	ctx.SetContentType("text/xml; charset=utf-8")
-	ctx.SetStatusCode(fasthttp.StatusOK)
-	ctx.SetBodyString(b.String())
+	return []byte(b.String()), nil
 }
 
 func writeSitemapURL(b *strings.Builder, loc, freq, priority string) {
