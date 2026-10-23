@@ -47,7 +47,7 @@ export function isChatModel(m: Model) {
  * (OpenRouter, Z.AI, NVIDIA): none touches app.nz / RunPod GPU capacity. The Go
  * guard test internal/config/free_models_guard_test.go enforces that against config.yaml.
  */
-export const FREE_MODEL_IDS = ['or/nemotron-nano', 'glm-4.6v-flash', 'nvidia/deepseek-v4-flash', 'or/space-bunny-alpha', 'nous/inclusionai/ling-3.0-flash-sante:free', 'nous/meituan/longcat-2.5-preview:free', 'nous/poolside/laguna-s-2.1:free', 'nous/poolside/laguna-xs-2.1:free', 'nous/stepfun/step-5-preview:free', 'nous/upstage/solar-mini4:free', 'missingno', 'openpaths/free', 'or/minimax-m3.1-flash:free', 'or/nemotron-3-ultra-550b-a55b:free', 'or/inkling:free', 'or/nemotron-3.5-super-vl:free', 'or/nemotron-3-super-120b-a12b:free', 'or/dots-3-note-preview:free', 'or/north-mini-code:free', 'or/laguna-s-2.1:free', 'or/gemma-4-31b-it:free', 'or/xing4.0-29b-a4b:free', 'or/inkling-small:free', 'or/nemotron-3.5-lightning:free', 'or/gemma-4-26b-a4b-it:free', 'or/laguna-xs-2.1:free', 'or/flint-v1.0:free', 'or/nemotron-3-nano-omni-30b-a3b-reasoning:free', 'or/openrouter-free'];
+export const FREE_MODEL_IDS = ['or/nemotron-nano', 'glm-4.6v-flash', 'nvidia/deepseek-v4-flash', 'or/space-bunny-alpha', 'nous/inclusionai/ling-3.0-flash-sante:free', 'nous/meituan/longcat-2.5-preview:free', 'nous/poolside/laguna-s-2.1:free', 'nous/poolside/laguna-xs-2.1:free', 'nous/stepfun/step-5-preview:free', 'nous/upstage/solar-mini4:free', 'missingno', 'openpaths/free', 'or/nemotron-3-ultra-550b-a55b:free', 'or/inkling:free', 'or/nemotron-3.5-super-vl:free', 'or/nemotron-3-super-120b-a12b:free', 'or/dots-3-note-preview:free', 'or/north-mini-code:free', 'or/laguna-s-2.1:free', 'or/gemma-4-31b-it:free', 'or/xing4.0-29b-a4b:free', 'or/inkling-small:free', 'or/nemotron-3.5-lightning:free', 'or/gemma-4-26b-a4b-it:free', 'or/laguna-xs-2.1:free', 'or/flint-v1.0:free', 'or/nemotron-3-nano-omni-30b-a3b-reasoning:free', 'or/openrouter-free'];
 
 const FREE_SET = new Set(FREE_MODEL_IDS);
 const isFreeChat = (m: Model) => FREE_SET.has(m.id);
@@ -360,8 +360,8 @@ export const CAPABILITIES: Capability[] = [
     name: 'Web Search',
     h1: 'Web Search API for LLMs and Agents',
     tagline: 'Neural search, grounded answers, research papers',
-    seoTitle: 'Web Search API for AI Agents - Exa, Gemini, Papers | OpenPaths',
-    seoDescription: 'Search the web and research papers with Exa, Gemini grounding, OpenAI web search, Grok and Papers behind one /v1/search endpoint. Per-request pricing.',
+    seoTitle: 'Web Search API for AI Agents - Exa, Parallel, Firecrawl, Perplexity | OpenPaths',
+    seoDescription: 'Search the web and research papers with Exa, Parallel, Firecrawl, Perplexity, DeepSeek, Gemini grounding, OpenAI web search, Grok, an agentic researcher and Papers behind one /v1/search endpoint. Per-request pricing.',
     intro: 'One endpoint returns ranked results with page contents or a grounded answer with citations, billed per request.',
     kind: 'studio',
     endpoint: '/search',
@@ -376,8 +376,14 @@ export const CAPABILITIES: Capability[] = [
       { id: 'gemini', name: 'Gemini grounded answer', provider: 'Google', price: '$0.004 / request' },
       { id: 'openai', name: 'OpenAI web search', provider: 'OpenAI', price: '$0.01 / request' },
       { id: 'grok', name: 'Grok live search', provider: 'xAI', price: '$0.01 / request' },
+      { id: 'openpaths', name: 'OpenPaths research agent', provider: 'OpenPaths', price: '$0.01 / request' },
+      { id: 'deepseek', name: 'DeepSeek search', provider: 'DeepSeek', price: '$0.00075 / search' },
+      { id: 'parallel', name: 'Parallel search', provider: 'Parallel via OpenRouter', price: '$0.0085 / request' },
+      { id: 'perplexity', name: 'Perplexity search', provider: 'Perplexity via OpenRouter', price: '$0.0085 / request' },
+      { id: 'firecrawl', name: 'Firecrawl search', provider: 'Firecrawl via OpenRouter', price: '$0.0725 / request (5 results)' },
+      { id: 'openrouter', name: 'OpenRouter auto search', provider: 'OpenRouter', price: '$0.0107 / request' },
     ],
-    faq: [FAQ_KEY.signup, { q: 'Which providers are supported?', a: 'provider accepts exa (default), papers, gemini, openai and grok.' }, FAQ_KEY.pricing],
+    faq: [FAQ_KEY.signup, { q: 'Which providers are supported?', a: 'provider accepts exa (default), papers, deepseek, kimi, kimi-pro, kimi-fetch, openpaths, parallel, firecrawl, perplexity, openrouter, gemini, openai and grok.' }, FAQ_KEY.pricing],
     related: ['chat-completions', 'embeddings', 'free-llm'],
   },
 ];

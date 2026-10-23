@@ -105,3 +105,36 @@ func TestOpenPathsAgentSearchLive(t *testing.T) {
 		t.Fatalf("openpaths: %d %v", st, out)
 	}
 }
+
+func TestOpenRouterSearchEngines(t *testing.T) {
+	var got map[string]any
+	up := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v1/chat/completions" || r.Header.Get("Authorization") != "Bearer k" {
+			t.Fatalf("bad request %s auth=%q", r.URL.Path, r.Header.Get("Authorization"))
+		}
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"ans [1]","annotations":[{"type":"url_citation","url_citation":{"url":"https://a.test","title":"A","content":"c"}},{"type":"url_citation","url_citation":{"url":"https://a.test","title":"dup"}}]}}]}`))
+	}))
+	defer up.Close()
+	h := NewSearchHandler(SearchProviderConfig{}, SearchProviderConfig{}, nil,
+		metrics.NewRecorder(metrics.NewCollector(nil, time.Hour))).
+		SetOpenRouterProvider(SearchProviderConfig{BaseURL: up.URL, APIKey: "k", Enabled: true})
+	st, out := runSearch(t, h, `{"provider":"parallel","query":"q","numResults":3,"mode":"fast","includeDomains":["arxiv.org"]}`)
+	if st != 200 || out["answer"] != "ans [1]" || len(out["citations"].([]any)) != 1 || out["provider"] != "parallel" {
+		t.Fatalf("status=%d out=%v", st, out)
+	}
+	tool := got["tools"].([]any)[0].(map[string]any)
+	p := tool["parameters"].(map[string]any)
+	if tool["type"] != "openrouter:web_search" || p["engine"] != "parallel" || p["mode"] != "fast" || p["max_results"] != float64(3) || p["allowed_domains"].([]any)[0] != "arxiv.org" {
+		t.Fatalf("tool = %v", tool)
+	}
+	if st, _ = runSearch(t, h, `{"provider":"firecrawl","query":"q","includeDomains":["a.com"],"excludeDomains":["b.com"]}`); st != 400 {
+		t.Fatalf("firecrawl both domain lists status=%d", st)
+	}
+	if st, _ = runSearch(t, h, `{"provider":"openrouter","engine":"bogus","query":"q"}`); st != 400 {
+		t.Fatalf("bogus engine status=%d", st)
+	}
+	if openrouterSearchPriceUSD("firecrawl", "", 5) <= openrouterSearchPriceUSD("perplexity", "", 5) {
+		t.Fatal("firecrawl should cost more than perplexity")
+	}
+}

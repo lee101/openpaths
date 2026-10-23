@@ -204,7 +204,7 @@ func main() {
 		case "deepseek":
 			p = deepseek.New(provCfg.APIKey, provCfg.BaseURL)
 		case "moonshot":
-			p = openai.NewCompatible("moonshot", provCfg.APIKey, provCfg.BaseURL, sanitizeOpenAICompatible)
+			p = openai.NewCompatible(openai.MoonshotProvider, provCfg.APIKey, provCfg.BaseURL, openai.SanitizeMoonshot)
 		case "thinkingmachines":
 			p = openai.NewCompatible("thinkingmachines", provCfg.APIKey, provCfg.BaseURL, sanitizeOpenAICompatible)
 		case "qwen":

@@ -26,12 +26,36 @@ type ProviderDef = {
   docs?: string;
   defaultModel?: string;
   costUSD: number;
+  orEngine?: boolean;
 };
+
+const OR_MODES: Record<string, string[]> = {
+  parallel: ['basic', 'advanced', 'fast', 'turbo'],
+  openrouter: ['', 'instant', 'fast', 'auto', 'deep-lite', 'deep', 'deep-reasoning'],
+};
+
+function orSearchCost(engine: string, mode: string, n: number): number {
+  let fee: number;
+  if (engine === 'firecrawl') fee = (0.005 + 0.0125 * n) * 1.1;
+  else if (engine === 'parallel') fee = (mode === 'turbo' || mode === 'fast' ? 0.0011 : 0.0055) + Math.max(0, n - 10) * 0.0011;
+  else if (engine === 'perplexity') fee = 0.0055;
+  else fee = mode === 'deep' || mode === 'deep-lite' ? 0.0132 : mode === 'deep-reasoning' ? 0.0165 : 0.0077;
+  return fee + 0.003;
+}
 
 const PROVIDERS: ProviderDef[] = [
   { id: 'gemini', label: 'Gemini Flash', kind: 'answer', logo: '/logos/google.svg', blurb: 'Google Flash with live Google Search grounding', defaultModel: 'gemini-3.7-flash', costUSD: 0.004 },
   { id: 'openai', label: 'OpenAI', kind: 'answer', logo: '/logos/openai.svg', blurb: 'GPT with the web_search tool', defaultModel: 'gpt-4o', costUSD: 0.01 },
   { id: 'grok', label: 'Grok', kind: 'answer', logo: '/logos/xai-64.webp', blurb: 'xAI Grok live search', defaultModel: 'grok-latest', costUSD: 0.01 },
+  { id: 'openpaths', label: 'OpenPaths Agent', kind: 'answer', logo: '/logos/openpaths.svg', blurb: 'Research agent: web search, paper search and page fetch with cited answers', defaultModel: 'deepseek-v4-flash', costUSD: 0.01 },
+  { id: 'parallel', label: 'Parallel', kind: 'answer', logo: '/logos/openrouter.svg', blurb: 'Parallel search API via OpenRouter, turbo to advanced modes', defaultModel: 'minimax/minimax-m3.1-flash', costUSD: 0.0085, orEngine: true },
+  { id: 'firecrawl', label: 'Firecrawl', kind: 'answer', logo: '/logos/openrouter.svg', blurb: 'Firecrawl search via OpenRouter, billed per returned result', defaultModel: 'minimax/minimax-m3.1-flash', costUSD: 0.08, orEngine: true },
+  { id: 'perplexity', label: 'Perplexity', kind: 'answer', logo: '/logos/openrouter.svg', blurb: 'Perplexity Search API ranked results via OpenRouter', defaultModel: 'minimax/minimax-m3.1-flash', costUSD: 0.0085, orEngine: true },
+  { id: 'openrouter', label: 'OpenRouter Auto', kind: 'answer', logo: '/logos/openrouter.svg', blurb: 'OpenRouter web_search tool: native provider search, falling back to Exa', defaultModel: 'minimax/minimax-m3.1-flash', costUSD: 0.0107, orEngine: true },
+  { id: 'deepseek', label: 'DeepSeek', kind: 'results', logo: '/logos/deepseek.svg', blurb: 'DeepSeek search and fetch API, $0.75 per 1,000 searches', costUSD: 0.00075 },
+  { id: 'kimi', label: 'Kimi Search', kind: 'results', logo: '/logos/kimi.svg', blurb: 'Moonshot Web Search Basic, $0.002 per search, optional full page content', costUSD: 0.002 },
+  { id: 'kimi-pro', label: 'Kimi Search Pro', kind: 'results', logo: '/logos/kimi.svg', blurb: 'Moonshot Web Search Pro: site filters, time windows and content chunks, $0.003 per search', costUSD: 0.003 },
+  { id: 'kimi-fetch', label: 'Kimi Fetch', kind: 'results', logo: '/logos/kimi.svg', blurb: 'Moonshot URL Fetch: any page as clean Markdown, $0.002 per call (query is the URL)', costUSD: 0.002 },
   { id: 'exa', label: 'Exa', kind: 'results', logo: '/logos/exa.svg', blurb: 'Neural web search with full contents', docs: '/exa/docs', costUSD: 0.0077 },
   { id: 'papers', label: 'Papers', kind: 'results', logo: '/logos/papers.webp', blurb: 'Research papers, methods, datasets & code', docs: '/papers/docs', costUSD: 0.001 },
 ];
@@ -125,6 +149,7 @@ export function Search() {
   const [papersHasCode, setPapersHasCode] = useState(false);
   const [papersIncludeGithubCode, setPapersIncludeGithubCode] = useState(false);
   const [model, setModel] = useState('');
+  const [orMode, setOrMode] = useState('');
   const [showOptions, setShowOptions] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -132,6 +157,7 @@ export function Search() {
   const [copied, setCopied] = useState(false);
 
   const provider = useMemo(() => PROVIDERS.find(p => p.id === providerId) || PROVIDERS[0], [providerId]);
+  const orModes = OR_MODES[provider.id];
   const isAnswer = provider.kind === 'answer';
 
   const body = useMemo(() => {
@@ -145,6 +171,41 @@ export function Search() {
         ...(papersRecent ? { sort: 'recent' } : {}),
         ...(papersHasCode ? { hasCode: true } : {}),
         ...(papersIncludeGithubCode ? { includeGithubCode: true } : {}),
+      };
+    }
+
+    if (provider.id === 'deepseek') {
+      return { provider: 'deepseek', query, numResults: Math.min(numResults, 50) };
+    }
+
+    if (provider.id === 'kimi-fetch') {
+      return { provider: 'kimi-fetch', query };
+    }
+
+    if (provider.id === 'kimi') {
+      return { provider: 'kimi', query, numResults: Math.min(numResults, 20), ...(fullText ? { include_content: true } : {}) };
+    }
+
+    if (provider.id === 'kimi-pro') {
+      return {
+        provider: 'kimi-pro',
+        query,
+        numResults: Math.min(numResults, 20),
+        ...(splitList(includeDomains) ? { includeDomains: splitList(includeDomains)!.slice(0, 5) } : {}),
+        ...(startDate ? { startPublishedDate: startDate } : {}),
+        ...(endDate ? { endPublishedDate: endDate } : {}),
+      };
+    }
+
+    if (provider.orEngine) {
+      return {
+        provider: provider.id,
+        query,
+        numResults: Math.min(numResults, 25),
+        ...(orMode ? { mode: orMode } : {}),
+        ...(splitList(includeDomains) ? { includeDomains: splitList(includeDomains) } : {}),
+        ...(provider.id === 'openrouter' && splitList(excludeDomains) ? { excludeDomains: splitList(excludeDomains) } : {}),
+        ...(model.trim() ? { model: model.trim() } : {}),
       };
     }
 
@@ -189,7 +250,7 @@ export function Search() {
       ...(livecrawlTimeout > 0 && livecrawl ? { livecrawlTimeout } : {}),
       ...(Object.keys(contents).length ? { contents } : {}),
     };
-  }, [category, endDate, excludeDomains, fullText, highlightChars, highlightQuery, highlights, includeDomains, livecrawl, livecrawlTimeout, mainContentOnly, maxAge, model, numResults, papersFormat, papersHasCode, papersIncludeGithubCode, papersRecent, papersType, provider, query, startDate, structuredOutputs, summaryQuery, summarySchema, textChars, type, userLocation]);
+  }, [orMode, category, endDate, excludeDomains, fullText, highlightChars, highlightQuery, highlights, includeDomains, livecrawl, livecrawlTimeout, mainContentOnly, maxAge, model, numResults, papersFormat, papersHasCode, papersIncludeGithubCode, papersRecent, papersType, provider, query, startDate, structuredOutputs, summaryQuery, summarySchema, textChars, type, userLocation]);
 
   const curl = useMemo(() => `curl ${window.location.origin}/v1/search \\
   -H "Content-Type: application/json" \\
@@ -197,13 +258,14 @@ export function Search() {
   -d '${JSON.stringify(body, null, 2)}'`, [apiKey, body]);
 
   const estimatedCost = useMemo(() => {
-    if (provider.kind === 'answer') return provider.costUSD;
+    if (provider.orEngine) return orSearchCost(provider.id, orMode, Math.min(numResults, 25));
+    if (provider.kind === 'answer' || provider.id === 'deepseek' || provider.id.startsWith('kimi')) return provider.costUSD;
     if (provider.id === 'papers') return 0.001;
     let cost = 0.0077;
     if (numResults > 10) cost += (numResults - 10) * 0.0011;
     if ((body as any).contents) cost += numResults * 0.0011;
     return cost;
-  }, [body, numResults, provider]);
+  }, [body, numResults, orMode, provider]);
 
   const runSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -244,8 +306,8 @@ export function Search() {
   return (
     <>
       <Seo
-        title="AI Search Playground - Gemini, OpenAI, Grok, Exa & Papers | OpenPaths"
-        description="A Google-style search console powered by Gemini Flash with Google Search grounding, plus OpenAI web search, Grok live search, Exa neural search and Papers research search - one /v1/search API."
+        title="AI Search Playground - Gemini, OpenAI, Grok, Parallel, Firecrawl, Perplexity, Exa & Papers | OpenPaths"
+        description="A Google-style search console powered by Gemini Flash with Google Search grounding, plus OpenAI web search, Grok live search, Parallel, Firecrawl and Perplexity via OpenRouter, DeepSeek search, Kimi search and fetch, an OpenPaths research agent, Exa neural search and Papers research search - one /v1/search API."
         path="/search"
       />
       <div className="min-h-screen bg-black">
@@ -286,10 +348,10 @@ export function Search() {
                   <button
                     key={p.id}
                     type="button"
-                    onClick={() => setProviderId(p.id)}
+                    onClick={() => { setProviderId(p.id); if (p.orEngine) setNumResults(5); else if (p.id === 'exa' || p.id === 'papers' || p.id === 'deepseek') setNumResults(10); }}
                     className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors ${provider.id === p.id ? 'border-white bg-white text-black' : 'border-white/20 bg-white/[0.06] text-white/65 hover:border-white/50'}`}
                   >
-                    <img src={p.logo} alt="" className={`h-4 w-4 rounded-sm ${provider.id === p.id ? '' : 'opacity-80'}`} />
+                    <img src={p.logo} alt="" className={`h-4 w-4 rounded-sm ${provider.id === p.id ? (p.orEngine ? 'invert' : '') : 'opacity-80'}`} />
                     {p.label}
                   </button>
                 ))}
@@ -402,7 +464,7 @@ export function Search() {
           <aside className="order-1 space-y-4 lg:order-2">
             <Panel title="Request" icon={<SearchIcon className="h-4 w-4" />}>
               <div className="flex items-center gap-2">
-                <img src={provider.logo} alt="" className="h-7 w-7 rounded-lg border border-white/20 bg-white p-1.5" />
+                <img src={provider.logo} alt="" className={`h-7 w-7 rounded-lg border border-white/20 p-1.5 ${provider.orEngine ? 'bg-black' : 'bg-white'}`} />
                 <div className="min-w-0">
                   <div className="truncate text-sm font-semibold">{provider.label}</div>
                   <div className="truncate text-[11px] text-white/45">{provider.blurb}</div>
@@ -432,6 +494,59 @@ export function Search() {
                     className="mt-2 w-full rounded border border-white/20 bg-black px-3 py-2.5 font-mono text-sm outline-none focus:border-white/60"
                   />
                 </>
+              )}
+
+              {provider.orEngine && (
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <Field label="Results">
+                    <input type="number" min={1} max={25} value={numResults} onChange={e => setNumResults(Number(e.target.value))} className="input" />
+                  </Field>
+                  {orModes && (
+                    <Field label="Mode">
+                      <select value={orMode} onChange={e => setOrMode(e.target.value)} className="input">
+                        {orModes.map(m => <option key={m} value={m}>{m || 'default'}</option>)}
+                      </select>
+                    </Field>
+                  )}
+                  <Field label="Only domains">
+                    <input value={includeDomains} onChange={e => setIncludeDomains(e.target.value)} placeholder="arxiv.org" className="input" />
+                  </Field>
+                </div>
+              )}
+
+              {provider.id === 'deepseek' && (
+                <div className="mt-4">
+                  <Field label="Results">
+                    <input type="number" min={1} max={50} value={numResults} onChange={e => setNumResults(Number(e.target.value))} className="input" />
+                  </Field>
+                </div>
+              )}
+
+              {(provider.id === 'kimi' || provider.id === 'kimi-pro') && (
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <Field label="Results">
+                    <input type="number" min={1} max={20} value={numResults} onChange={e => setNumResults(Number(e.target.value))} className="input" />
+                  </Field>
+                  {provider.id === 'kimi' ? (
+                    <Field label="Page content">
+                      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={fullText} onChange={e => setFullText(e.target.checked)} /> include_content</label>
+                    </Field>
+                  ) : (
+                    <Field label="Only sites (max 5)">
+                      <input value={includeDomains} onChange={e => setIncludeDomains(e.target.value)} placeholder="nobelprize.org" className="input" />
+                    </Field>
+                  )}
+                  {provider.id === 'kimi-pro' && (
+                    <>
+                      <Field label="From (YYYY-MM-DD)">
+                        <input value={startDate} onChange={e => setStartDate(e.target.value)} placeholder="2026-01" className="input" />
+                      </Field>
+                      <Field label="To (YYYY-MM-DD)">
+                        <input value={endDate} onChange={e => setEndDate(e.target.value)} placeholder="2026-09" className="input" />
+                      </Field>
+                    </>
+                  )}
+                </div>
               )}
 
               {provider.id === 'exa' && (

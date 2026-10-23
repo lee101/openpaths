@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Coins, Database, Image as ImageIcon, Search, Sparkles, Video, Wand2 } from 'lucide-react';
 import { Seo } from '../components/Seo';
 import { models, type Model } from '../data/models';
+import { PRICED_MODELS, PRICING_UPDATED, fmtRate, fmtTokens, type PricedModel } from '../lib/llmPricing';
 
 type VideoPrice = {
   id: string;
@@ -13,18 +14,27 @@ type VideoPrice = {
   notes: string;
 };
 
-const TEXT_MODEL_IDS = [
-  'openpaths/auto-cheap',
-  'openpaths/auto-fast',
-  'openpaths/auto',
-  'openpaths/auto-code',
-  'gpt-4o-mini',
-  'deepseek-chat',
-  'minimax-m2.7',
-  'gpt-5.4-mini',
-  'gpt-5.5',
-  'gemini-3.7-flash',
-  'claude-opus-5',
+const ROUTER_MODEL_IDS = ['openpaths/auto-cheap', 'openpaths/auto-fast', 'openpaths/auto', 'openpaths/auto-code'];
+
+const LATEST_MODEL_IDS = [
+  'claude-fable-5-1',
+  'claude-opus-5-5',
+  'claude-sonnet-5-5',
+  'claude-haiku-5-5',
+  'or/gpt-6-astra',
+  'gpt-6.1-sol',
+  'gpt-6-luna',
+  'gemini-4-argon',
+  'gemini-3.8-flash',
+  'grok-4.7',
+  'kimi-k3.1-pro',
+  'kimi-k3',
+  'glm-5.3',
+  'qwen/qwen3.8-max',
+  'deepseek-v4-pro',
+  'deepseek-v4-flash',
+  'or/minimax-m3.1-flash',
+  'or/mistral-large-4-0',
 ];
 
 const EMBEDDING_MODEL_IDS = ['text-embedding', 'gemini-embedding-001', 'gemini-embedding-2-preview'];
@@ -149,6 +159,78 @@ const SEARCH_ROWS = [
     notes: 'Applied when requesting highlights, full webpage text, or structured content extraction.',
   },
   {
+    id: 'openpaths-search',
+    name: 'OpenPaths Agent Search',
+    provider: 'OpenPaths',
+    unitPrice: 0.01,
+    unitLabel: '/ query',
+    notes: 'Research agent: web search, paper search and page fetch, returns a cited answer.',
+  },
+  {
+    id: 'gemini-search',
+    name: 'Gemini Flash Search',
+    provider: 'Google',
+    unitPrice: 0.004,
+    unitLabel: '/ query',
+    notes: 'Gemini with Google Search grounding; cited answer plus sources.',
+  },
+  {
+    id: 'openai-search',
+    name: 'OpenAI Web Search',
+    provider: 'OpenAI',
+    unitPrice: 0.01,
+    unitLabel: '/ query',
+    notes: 'GPT with the web_search tool; cited answer plus sources.',
+  },
+  {
+    id: 'grok-search',
+    name: 'Grok Live Search',
+    provider: 'xAI',
+    unitPrice: 0.01,
+    unitLabel: '/ query',
+    notes: 'xAI Grok live web and X search with citations.',
+  },
+  {
+    id: 'deepseek-search',
+    name: 'DeepSeek Search',
+    provider: 'DeepSeek',
+    unitPrice: 0.00075,
+    unitLabel: '/ search',
+    notes: 'Raw search results with optional page content. $0.75 per 1,000 searches.',
+  },
+  {
+    id: 'parallel-search',
+    name: 'Parallel Search',
+    provider: 'Parallel via OpenRouter',
+    unitPrice: 0.0085,
+    unitLabel: '/ query',
+    notes: 'Basic and advanced modes; turbo and fast are $0.004. Includes the synthesis model and the OpenRouter pass-through fee.',
+  },
+  {
+    id: 'perplexity-search',
+    name: 'Perplexity Search',
+    provider: 'Perplexity via OpenRouter',
+    unitPrice: 0.0085,
+    unitLabel: '/ query',
+    notes: 'Ranked web results with domain filtering and context size control.',
+  },
+  {
+    id: 'firecrawl-search',
+    name: 'Firecrawl Search',
+    provider: 'Firecrawl via OpenRouter',
+    unitPrice: 0.0725,
+    unitLabel: '/ query (5 results)',
+    notes: '$0.0055 per search plus $0.01375 per returned result, plus the synthesis model.',
+  },
+  {
+    id: 'openrouter-search',
+    name: 'OpenRouter Auto Search',
+    provider: 'OpenRouter',
+    unitPrice: 0.0107,
+    unitLabel: '/ query',
+    notes: 'Exa highlights through the OpenRouter web_search tool; deep modes cost $0.0162 to $0.0195.',
+  },
+  {
     id: 'papers-search',
     name: 'Papers Search',
     provider: 'Papers',
@@ -171,7 +253,11 @@ const PRICING_PAGE_DESCRIPTION =
   'OpenPaths keeps AI pricing as close to zero markup as practical, makes money from first-party AI services, and supports transparent pay-as-you-go pricing across text, embeddings, image, and video models.';
 
 export function Pricing() {
-  const textModels = pickModels(TEXT_MODEL_IDS);
+  const routerModels = pickModels(ROUTER_MODEL_IDS);
+  const latestModels = useMemo(() => {
+    const lookup = new Map(PRICED_MODELS.map((m) => [m.id, m]));
+    return LATEST_MODEL_IDS.map((id) => lookup.get(id)).filter((m): m is PricedModel => Boolean(m));
+  }, []);
   const embeddingModels = pickModels(EMBEDDING_MODEL_IDS);
   const localEmbeddingModels = pickModels(LOCAL_EMBEDDING_MODEL_IDS);
   const imageModels = pickModels(IMAGE_MODEL_IDS);
@@ -256,7 +342,7 @@ export function Pricing() {
             <WorkloadCard
               icon={<Search className="h-5 w-5" />}
               title="Web search"
-              body="Exa-powered search for AI applications with highlights, content extraction, and freshness controls."
+              body="One /v1/search API over Exa, Parallel, Firecrawl, Perplexity, DeepSeek, Gemini, OpenAI, Grok and an OpenPaths research agent."
               pricing="Priced per search request and extracted page"
             />
           </div>
@@ -304,9 +390,17 @@ export function Pricing() {
               <SectionHeading
                 icon={<Wand2 className="h-4 w-4" />}
                 title="Text Generation and Reasoning"
-                body="General chat, coding, tool use, and high-context reasoning models."
+                body={`Newest flagship and value models, generated from the live catalog (${PRICING_UPDATED}). Prices are per 1M tokens; cached input is billed at the cache-read rate.`}
               />
-              <TokenPricingTable models={textModels} />
+              <PricedTable models={latestModels} />
+              <div className="mt-4" />
+              <SectionHeading
+                icon={<Sparkles className="h-4 w-4" />}
+                title="Auto routers"
+                body="Let OpenPaths pick the model per request. You pay the rate of the model that served the call."
+              />
+              <TokenPricingTable models={routerModels} />
+              <AllModelsPricing />
             </div>
 
             <div>
@@ -379,7 +473,7 @@ export function Pricing() {
               <SectionHeading
                 icon={<Search className="h-4 w-4" />}
                 title="Search"
-                body="Exa and Papers search are available through `/v1/search` and the `/search` playground. Exa prices include the requested 10% OpenPaths markup; Papers is $1 per 1,000 searches."
+                body="Every engine is available through `/v1/search` and the `/search` playground. Prices include a 10% OpenPaths markup over the upstream fee; Papers is $1 per 1,000 searches. Bring your own key and Exa, Gemini, OpenAI, Grok, DeepSeek or OpenRouter searches cost $0 on OpenPaths."
               />
               <RequestPricingTable rows={SEARCH_ROWS} />
             </div>
@@ -403,13 +497,91 @@ export function Pricing() {
               />
               <FaqCard
                 question="Which model types are supported?"
-                answer="Text generation, reasoning, coding, embeddings, image generation, video generation, and Exa web search are all supported in the current catalog."
+                answer="Text generation, reasoning, coding, embeddings, image generation, video generation, and multi-engine web search are all supported in the current catalog."
               />
             </div>
           </div>
         </section>
       </div>
     </>
+  );
+}
+
+function AllModelsPricing() {
+  const [q, setQ] = useState('');
+  const [open, setOpen] = useState(false);
+  const rows = useMemo(() => {
+    const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
+    const sorted = [...PRICED_MODELS].sort((a, b) => (b.released || '').localeCompare(a.released || ''));
+    return terms.length
+      ? sorted.filter((m) => {
+          const hay = `${m.id} ${m.name} ${m.provider} ${m.aliases.join(' ')}`.toLowerCase();
+          return terms.every((t) => hay.includes(t));
+        })
+      : sorted;
+  }, [q]);
+  const shown = q || open ? rows : rows.slice(0, 15);
+  return (
+    <div className="mt-8">
+      <div className="mb-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="font-mono text-xs uppercase tracking-[0.18em] text-white/55">
+          All {PRICED_MODELS.length} token-priced models, newest first
+        </div>
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Filter: opus, gpt-6, deepseek, free..."
+          aria-label="Filter models"
+          className="w-full rounded border border-white/20 bg-black/40 px-3 py-2 font-mono text-sm text-white placeholder:text-white/35 md:w-80"
+        />
+      </div>
+      <PricedTable models={shown} />
+      <div className="mt-3 flex flex-wrap items-center gap-4 font-mono text-xs text-white/55">
+        <span>{rows.length === 0 ? 'No models match' : `Showing ${shown.length} of ${rows.length}`}</span>
+        {!q && rows.length > 15 && (
+          <button type="button" onClick={() => setOpen((v) => !v)} className="text-sky-300 hover:underline">
+            {open ? 'Show fewer' : 'Show all'}
+          </button>
+        )}
+        <Link to="/llm-pricing" className="text-sky-300 hover:underline">Compare and calculate costs</Link>
+      </div>
+    </div>
+  );
+}
+
+function PricedTable({ models }: { models: PricedModel[] }) {
+  return (
+    <div className="overflow-hidden rounded-[28px] border border-white/20 bg-black/45">
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-left">
+          <thead className="border-b border-white/20 bg-white/[0.06] font-mono text-[11px] uppercase tracking-[0.18em] text-white/45">
+            <tr>
+              <th className="px-4 py-3">Model</th>
+              <th className="px-4 py-3">Provider</th>
+              <th className="px-4 py-3">Context</th>
+              <th className="px-4 py-3">Input</th>
+              <th className="px-4 py-3">Cached</th>
+              <th className="px-4 py-3">Output</th>
+            </tr>
+          </thead>
+          <tbody>
+            {models.map((m) => (
+              <tr key={m.id} className="border-b border-white/6 last:border-b-0">
+                <td className="px-4 py-4">
+                  <Link to={`/models/${encodeURIComponent(m.id)}`} className="font-semibold hover:underline">{m.name}</Link>
+                  <div className="mt-1 font-mono text-xs text-white/40">{m.id}</div>
+                </td>
+                <td className="px-4 py-4 text-sm text-white/72">{m.provider}</td>
+                <td className="px-4 py-4 font-mono text-sm text-white/62">{m.context ? fmtTokens(m.context) : '-'}</td>
+                <td className="px-4 py-4 font-mono text-sm text-white">{fmtRate(m.input)} / 1M</td>
+                <td className="px-4 py-4 font-mono text-sm text-white/70">{m.cacheRead ? `${fmtRate(m.cacheRead)} / 1M` : '-'}</td>
+                <td className="px-4 py-4 font-mono text-sm text-white">{fmtRate(m.output)} / 1M</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 

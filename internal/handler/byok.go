@@ -46,6 +46,7 @@ var providerBaseURLs = map[string]string{
 	"fal":              "https://fal.run",
 	"bfl":              "https://api.bfl.ai",
 	"alibaba":          "https://dashscope-intl.aliyuncs.com",
+	"moonshot":         "https://api.moonshot.ai",
 }
 
 func getUserProviderKeys(ctx *fasthttp.RequestCtx) map[string]*queries.UserProviderKey {
@@ -97,6 +98,8 @@ func makeUserProvider(providerName, apiKey string) provider.Provider {
 		return bfl.New(apiKey, baseURL)
 	case "alibaba":
 		return alibaba.New(apiKey, baseURL)
+	case "moonshot":
+		return openai.NewCompatible(openai.MoonshotProvider, apiKey, baseURL, openai.SanitizeMoonshot)
 	}
 	return nil
 }

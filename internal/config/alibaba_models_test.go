@@ -20,7 +20,10 @@ func TestAlibabaDirectModels(t *testing.T) {
 		{"qwen/qwen3.8-max-0902", "qwen", "qwen3.8-max-0902", 2, 6, "qwen/qwen3.8-max"},
 		{"qwen/qwen3.8-omni-flash", "qwen", "qwen3.8-omni-flash", .15, .47, "qwen/qwen3.8-flash"},
 		{"qwen/qwen3.8-27b", "qwen", "qwen3.8-27b", .5, 3, "runanywhere/qwen3.8-27b"},
-		{"kimi-k3", "qwen", "kimi-k3", 3, 15, "or/kimi-k3"},
+		{"kimi-k3", "moonshot", "kimi-k3", 3, 15, "alibaba/kimi-k3"},
+		{"alibaba/kimi-k3", "qwen", "kimi-k3", 3, 15, ""},
+		{"kimi-k3.1-pro", "moonshot", "kimi-k3.1-pro", 2, 10, "or/kimi-k3.1-pro"},
+		{"kimi-k3.1-pro-highspeed", "moonshot", "kimi-k3.1-pro-highspeed", 4, 20, "kimi-k3.1-pro"},
 		{"decision-model-preview", "alibaba", "decision-model-preview", .042, 0, ""},
 		{"openpaths-decision", "gobed", "openpaths-decision", .002, 0, ""},
 	} {

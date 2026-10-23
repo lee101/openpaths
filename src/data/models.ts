@@ -2257,15 +2257,41 @@ const catalogModels: Model[] = [
 
   // --- Qwen / Moonshot / Together ---
   {
+    id: 'kimi-k3.1-pro',
+    name: 'Kimi K3.1 Pro',
+    provider: 'Moonshot AI',
+    description: 'Moonshot\'s newest flagship: always-on thinking with low/high/max reasoning effort, a 1M token context window, text, image, and video input, tool use with dynamic tool loading, and automatic context caching (5m or 1h TTL). Served directly by Moonshot at list price with OpenRouter fallback.',
+    contextLength: '1M',
+    priceInput: 2,
+    priceOutput: 10,
+    tags: ['general', 'reasoning', 'programming', 'vision', 'agentic', 'open-source'],
+    aliases: ['kimi-k3-1-pro', 'moonshotai/kimi-k3.1-pro', 'moonshot/kimi-k3.1-pro'],
+    released: '2026-10-21',
+    popularity: 34
+  },
+  {
+    id: 'kimi-k3.1-pro-highspeed',
+    name: 'Kimi K3.1 Pro Highspeed',
+    provider: 'Moonshot AI',
+    description: 'K3.1 Pro at 2-3x the output speed for responsive interactive and agent loops, with the same 1M context, vision, tool use, and reasoning effort controls.',
+    contextLength: '1M',
+    priceInput: 4,
+    priceOutput: 20,
+    tags: ['general', 'reasoning', 'programming', 'vision', 'agentic', 'open-source'],
+    aliases: ['kimi-k3-1-pro-highspeed', 'moonshotai/kimi-k3.1-pro-highspeed', 'moonshot/kimi-k3.1-pro-highspeed'],
+    released: '2026-10-21',
+    popularity: 20
+  },
+  {
     id: 'kimi-k3',
     name: 'Kimi K3',
     provider: 'Moonshot AI',
-    description: 'Moonshot flagship: 2.8T-parameter open-weights model with a 1M token context window, vision input, tool use, and deep reasoning for complex coding and long-horizon agentic work. Served by Alibaba Cloud Model Studio with OpenRouter fallback.',
+    description: 'Moonshot flagship: 2.8T-parameter open-weights model with a 1M token context window, vision input, tool use, and deep reasoning for complex coding and long-horizon agentic work. Served directly by Moonshot at list price with Alibaba Cloud and OpenRouter fallbacks.',
     contextLength: '1M',
     priceInput: 3,
     priceOutput: 15,
     tags: ['general', 'reasoning', 'programming', 'vision', 'agentic', 'open-source'],
-    aliases: ['kimi', 'kimi-k3-1m', 'moonshot-kimi-k3', 'alibaba/kimi-k3', 'moonshotai/kimi-k3'],
+    aliases: ['kimi', 'kimi-k3-1m', 'moonshot-kimi-k3', 'moonshot/kimi-k3', 'moonshotai/kimi-k3'],
     released: '2026-07-16',
     popularity: 30
   },
@@ -5546,27 +5572,14 @@ const catalogModels: Model[] = [
     id: 'openpaths/free',
     name: 'OpenPaths Free',
     provider: 'OpenPaths',
-    description: 'Zero-cost route across the free OpenRouter models: starts on MiniMax: MiniMax M3.1 Flash (free) and falls through the free ladder, never onto a paid model.',
+    description: 'Zero-cost route across the free OpenRouter models: starts on NVIDIA: Nemotron 3 Ultra (free) and falls through the free ladder, never onto a paid model.',
     contextLength: '1M',
     priceInput: 0,
     priceOutput: 0,
     tags: ['free', 'general', 'agentic'],
     aliases: ['free', 'openpaths-free', 'free-latest', 'openpaths-auto-free'],
-    released: '2026-10-19',
+    released: '2026-06-04',
     popularity: 40
-  },
-  {
-    id: 'or/minimax-m3.1-flash:free',
-    name: 'MiniMax: MiniMax M3.1 Flash (free)',
-    provider: 'OpenRouter',
-    description: 'MiniMax-M3.1-Flash is a multimodal model from MiniMax. Routed through OpenRouter.',
-    contextLength: '1M',
-    priceInput: 0,
-    priceOutput: 0,
-    tags: ['free', 'general', 'vision', 'reasoning', 'agentic'],
-    aliases: ['minimax/minimax-m3.1-flash:free', 'openrouter/minimax/minimax-m3.1-flash:free'],
-    released: '2026-10-19',
-    popularity: 10
   },
   {
     id: 'or/nemotron-3-ultra-550b-a55b:free',
@@ -5790,6 +5803,32 @@ const catalogModels: Model[] = [
     popularity: 10
   },
   {
+    id: 'or/aion-3.5-mini',
+    name: 'AionLabs: Aion 3.5 Mini',
+    provider: 'OpenRouter',
+    description: 'Aion 3.5 Mini is a multi-model roleplaying and storytelling system from AionLabs, built on the GLM family of models. Routed through OpenRouter.',
+    contextLength: '256K',
+    priceInput: 0.7385,
+    priceOutput: 1.477,
+    tags: ['general', 'reasoning', 'agentic'],
+    aliases: ['aion-labs/aion-3.5-mini', 'openrouter/aion-labs/aion-3.5-mini', 'aion-3.5-mini'],
+    released: '2026-09-23',
+    popularity: 10
+  },
+  {
+    id: 'or/seed-2-1-turbo',
+    name: 'ByteDance Seed: Seed 2.1 Turbo',
+    provider: 'OpenRouter',
+    description: 'Seed 2.1 Turbo is a multimodal model from ByteDance Seed for coding and long-horizon agent workflows. Routed through OpenRouter.',
+    contextLength: '256K',
+    priceInput: 0.5275,
+    priceOutput: 2.6375,
+    tags: ['general', 'vision', 'reasoning', 'agentic'],
+    aliases: ['bytedance-seed/seed-2-1-turbo', 'openrouter/bytedance-seed/seed-2-1-turbo', 'seed-2-1-turbo'],
+    released: '2026-08-12',
+    popularity: 10
+  },
+  {
     id: 'or/command-a-plus',
     name: 'Cohere: Command A+',
     provider: 'OpenRouter',
@@ -5800,6 +5839,19 @@ const catalogModels: Model[] = [
     tags: ['general', 'vision', 'reasoning', 'agentic'],
     aliases: ['cohere/command-a-plus', 'openrouter/cohere/command-a-plus', 'command-a-plus'],
     released: '2026-09-22',
+    popularity: 10
+  },
+  {
+    id: 'or/deepseek-v4-pro-0813',
+    name: 'DeepSeek: DeepSeek V4 Pro 0813',
+    provider: 'OpenRouter',
+    description: 'DeepSeek V4 Pro 0813 is a large-scale mixture-of-experts model from DeepSeek. Routed through OpenRouter.',
+    contextLength: '1024K',
+    priceInput: 0.6963,
+    priceOutput: 2.0889,
+    tags: ['general', 'reasoning', 'agentic'],
+    aliases: ['deepseek/deepseek-v4-pro-0813', 'openrouter/deepseek/deepseek-v4-pro-0813', 'deepseek-v4-pro-0813'],
+    released: '2026-08-12',
     popularity: 10
   },
   {
@@ -5839,6 +5891,19 @@ const catalogModels: Model[] = [
     tags: ['general', 'vision', 'reasoning', 'agentic'],
     aliases: ['fireworks/ember-1', 'openrouter/fireworks/ember-1', 'ember-1'],
     released: '2026-09-24',
+    popularity: 10
+  },
+  {
+    id: 'or/granite-4.2-8b',
+    name: 'IBM: Granite 4.2 8B',
+    provider: 'OpenRouter',
+    description: 'Granite 4.2 8B is a dense reasoning model from IBM. Routed through OpenRouter.',
+    contextLength: '128K',
+    priceInput: 0.0633,
+    priceOutput: 0.2638,
+    tags: ['general', 'reasoning', 'agentic'],
+    aliases: ['ibm-granite/granite-4.2-8b', 'openrouter/ibm-granite/granite-4.2-8b', 'granite-4.2-8b'],
+    released: '2026-08-31',
     popularity: 10
   },
   {
@@ -5907,6 +5972,19 @@ const catalogModels: Model[] = [
     popularity: 10
   },
   {
+    id: 'or/muse-spark-1.2',
+    name: 'Meta: Muse Spark 1.2',
+    provider: 'OpenRouter',
+    description: 'Muse Spark 1.2 is a reasoning model from Meta, designed for complex agentic tasks. Routed through OpenRouter.',
+    contextLength: '1024K',
+    priceInput: 1.3188,
+    priceOutput: 4.4838,
+    tags: ['general', 'vision', 'reasoning', 'agentic'],
+    aliases: ['meta/muse-spark-1.2', 'openrouter/meta/muse-spark-1.2', 'muse-spark-1.2'],
+    released: '2026-08-05',
+    popularity: 10
+  },
+  {
     id: 'or/muse-spark-open',
     name: 'Meta: Muse Spark Open',
     provider: 'OpenRouter',
@@ -5946,6 +6024,19 @@ const catalogModels: Model[] = [
     popularity: 10
   },
   {
+    id: 'or/minimax-m3.1-flash',
+    name: 'MiniMax: MiniMax M3.1 Flash',
+    provider: 'OpenRouter',
+    description: 'MiniMax-M3.1-Flash is a multimodal model from MiniMax. Routed through OpenRouter.',
+    contextLength: '1M',
+    priceInput: 0.1583,
+    priceOutput: 0.633,
+    tags: ['general', 'vision', 'reasoning', 'agentic'],
+    aliases: ['minimax/minimax-m3.1-flash', 'openrouter/minimax/minimax-m3.1-flash', 'minimax-m3.1-flash'],
+    released: '2026-10-19',
+    popularity: 10
+  },
+  {
     id: 'or/mistral-large-4-0',
     name: 'Mistral: Mistral Large 4',
     provider: 'OpenRouter',
@@ -5959,6 +6050,32 @@ const catalogModels: Model[] = [
     popularity: 10
   },
   {
+    id: 'or/moondream3.1-9b-a2b',
+    name: 'Moondream: Moondream 3.1',
+    provider: 'OpenRouter',
+    description: 'Moondream 3.1 is a vision-language model from Moondream, the successor to Moondream 3 Preview, with 9B total parameters and 2B active (mixture-of-experts). Routed through OpenRouter.',
+    contextLength: '31K',
+    priceInput: 0.3165,
+    priceOutput: 2.6375,
+    tags: ['general', 'vision', 'reasoning'],
+    aliases: ['moondream/moondream3.1-9b-a2b', 'openrouter/moondream/moondream3.1-9b-a2b', 'moondream3.1-9b-a2b'],
+    released: '2026-10-15',
+    popularity: 10
+  },
+  {
+    id: 'or/nex-n2.5-mini',
+    name: 'Nex AGI: Nex-N2.5-Mini',
+    provider: 'OpenRouter',
+    description: 'Nex-N2.5 is an agentic model built to turn goals into working, verified outcomes. Routed through OpenRouter.',
+    contextLength: '256K',
+    priceInput: 0.0264,
+    priceOutput: 0.1055,
+    tags: ['general', 'vision', 'reasoning'],
+    aliases: ['nex-agi/nex-n2.5-mini', 'openrouter/nex-agi/nex-n2.5-mini', 'nex-n2.5-mini'],
+    released: '2026-09-08',
+    popularity: 10
+  },
+  {
     id: 'or/nex-n2.5-pro',
     name: 'Nex AGI: Nex-N2.5-Pro',
     provider: 'OpenRouter',
@@ -5969,6 +6086,97 @@ const catalogModels: Model[] = [
     tags: ['general', 'vision', 'reasoning', 'agentic'],
     aliases: ['nex-agi/nex-n2.5-pro', 'openrouter/nex-agi/nex-n2.5-pro', 'nex-n2.5-pro'],
     released: '2026-09-08',
+    popularity: 10
+  },
+  {
+    id: 'or/nemotron-3.5-lightning',
+    name: 'NVIDIA: Nemotron 3.5 Lightning',
+    provider: 'OpenRouter',
+    description: 'NVIDIA Nemotron 3.5 Lightning is an open mixture-of-experts model from NVIDIA, with 3B active parameters out of 30B total. Routed through OpenRouter.',
+    contextLength: '256K',
+    priceInput: 0.0739,
+    priceOutput: 0.211,
+    tags: ['general', 'reasoning', 'agentic'],
+    aliases: ['nvidia/nemotron-3.5-lightning', 'openrouter/nvidia/nemotron-3.5-lightning', 'nemotron-3.5-lightning'],
+    released: '2026-08-11',
+    popularity: 10
+  },
+  {
+    id: 'or/nemotron-3.5-super-vl',
+    name: 'NVIDIA: Nemotron 3.5 Super VL',
+    provider: 'OpenRouter',
+    description: 'NVIDIA Nemotron 3.5 Super VL is an open multimodal mixture-of-experts model from NVIDIA, with 12B active parameters out of 120B total. Routed through OpenRouter.',
+    contextLength: '1024K',
+    priceInput: 0.1583,
+    priceOutput: 0.5275,
+    tags: ['general', 'vision', 'reasoning', 'agentic'],
+    aliases: ['nvidia/nemotron-3.5-super-vl', 'openrouter/nvidia/nemotron-3.5-super-vl', 'nemotron-3.5-super-vl'],
+    released: '2026-10-15',
+    popularity: 10
+  },
+  {
+    id: 'or/gpt-6-astra',
+    name: 'OpenAI: GPT-6 Astra',
+    provider: 'OpenRouter',
+    description: 'GPT-6 Astra is OpenAI\'s flagship model for demanding end-to-end work. Routed through OpenRouter.',
+    contextLength: '1025K',
+    priceInput: 10.55,
+    priceOutput: 52.75,
+    tags: ['general', 'vision', 'reasoning', 'agentic'],
+    aliases: ['openai/gpt-6-astra', 'openrouter/openai/gpt-6-astra', 'gpt-6-astra'],
+    released: '2026-09-04',
+    popularity: 10
+  },
+  {
+    id: 'or/gpt-6-astra-pro',
+    name: 'OpenAI: GPT-6 Astra Pro',
+    provider: 'OpenRouter',
+    description: 'GPT-6 Astra Pro is the same underlying model as [GPT-6 Astra](https://openrouter.ai/openai/gpt-6-astra), served with `reasoning.mode` set to `pro` for higher-quality responses on complex tasks. Routed through OpenRouter.',
+    contextLength: '1025K',
+    priceInput: 10.55,
+    priceOutput: 52.75,
+    tags: ['general', 'vision', 'reasoning', 'agentic'],
+    aliases: ['openai/gpt-6-astra-pro', 'openrouter/openai/gpt-6-astra-pro', 'gpt-6-astra-pro'],
+    released: '2026-09-04',
+    popularity: 10
+  },
+  {
+    id: 'or/gpt-6-luna-pro',
+    name: 'OpenAI: GPT-6 Luna Pro',
+    provider: 'OpenRouter',
+    description: 'GPT-6 Luna Pro is the same underlying model as [GPT-6 Luna](https://openrouter.ai/openai/gpt-6-luna), served with `reasoning.mode` set to `pro` for higher-quality responses on complex tasks. Routed through OpenRouter.',
+    contextLength: '1025K',
+    priceInput: 0.1055,
+    priceOutput: 0.5275,
+    tags: ['general', 'vision', 'reasoning', 'agentic'],
+    aliases: ['openai/gpt-6-luna-pro', 'openrouter/openai/gpt-6-luna-pro', 'gpt-6-luna-pro'],
+    released: '2026-09-22',
+    popularity: 10
+  },
+  {
+    id: 'or/gpt-6-sol-pro',
+    name: 'OpenAI: GPT-6 Sol Pro',
+    provider: 'OpenRouter',
+    description: 'GPT-6 Sol Pro is the same underlying model as [GPT-6 Sol](https://openrouter.ai/openai/gpt-6-sol), served with `reasoning.mode` set to `pro` for higher-quality responses on complex tasks. Routed through OpenRouter.',
+    contextLength: '1025K',
+    priceInput: 2.11,
+    priceOutput: 10.55,
+    tags: ['general', 'vision', 'reasoning', 'agentic'],
+    aliases: ['openai/gpt-6-sol-pro', 'openrouter/openai/gpt-6-sol-pro', 'gpt-6-sol-pro'],
+    released: '2026-09-22',
+    popularity: 10
+  },
+  {
+    id: 'or/gpt-6.1-sol-pro',
+    name: 'OpenAI: GPT-6.1 Sol Pro',
+    provider: 'OpenRouter',
+    description: 'GPT-6.1 Sol Pro is the same underlying model as [GPT-6.1 Sol](https://openrouter.ai/openai/gpt-6.1-sol), served with `reasoning.mode` set to `pro` for higher-quality responses on complex tasks. Routed through OpenRouter.',
+    contextLength: '1025K',
+    priceInput: 2.11,
+    priceOutput: 10.55,
+    tags: ['general', 'vision', 'reasoning', 'agentic'],
+    aliases: ['openai/gpt-6.1-sol-pro', 'openrouter/openai/gpt-6.1-sol-pro', 'gpt-6.1-sol-pro'],
+    released: '2026-09-29',
     popularity: 10
   },
   {
@@ -6003,7 +6211,7 @@ const catalogModels: Model[] = [
     provider: 'OpenRouter',
     description: 'Beam 1.0 is Reflection\'s open-weight reasoning model for coding and long-horizon agentic workflows. Routed through OpenRouter.',
     contextLength: '1024K',
-    priceInput: 0.3165,
+    priceInput: 0.2638,
     priceOutput: 1.055,
     tags: ['general', 'reasoning', 'agentic'],
     aliases: ['reflection/beam-1.0-501b-a23b', 'openrouter/reflection/beam-1.0-501b-a23b', 'beam-1.0-501b-a23b'],
@@ -6024,6 +6232,19 @@ const catalogModels: Model[] = [
     popularity: 10
   },
   {
+    id: 'or/fugu-ultra-v2',
+    name: 'Sakana: Fugu Ultra v2',
+    provider: 'OpenRouter',
+    description: 'Fugu Ultra v2 is the higher-performance model in Sakana AI\'s Fugu family. Routed through OpenRouter.',
+    contextLength: '1M',
+    priceInput: 5.275,
+    priceOutput: 31.65,
+    tags: ['general', 'vision', 'reasoning', 'agentic'],
+    aliases: ['sakana/fugu-ultra-v2', 'openrouter/sakana/fugu-ultra-v2', 'fugu-ultra-v2'],
+    released: '2026-09-11',
+    popularity: 10
+  },
+  {
     id: 'or/step-5-preview',
     name: 'StepFun: Step 5 Preview',
     provider: 'OpenRouter',
@@ -6037,6 +6258,19 @@ const catalogModels: Model[] = [
     popularity: 10
   },
   {
+    id: 'or/hy4-preview',
+    name: 'Tencent: Hy4 preview',
+    provider: 'OpenRouter',
+    description: 'Tencent: Hy4 preview is a mixture-of-experts model from Tencent, with 49B active parameters out of 770B total. Routed through OpenRouter.',
+    contextLength: '1024K',
+    priceInput: 0.8799,
+    priceOutput: 2.6386,
+    tags: ['general', 'reasoning', 'agentic'],
+    aliases: ['tencent/hy4-preview', 'openrouter/tencent/hy4-preview', 'hy4-preview'],
+    released: '2026-08-28',
+    popularity: 10
+  },
+  {
     id: 'or/pareto-26.10',
     name: 'Pareto 26.10',
     provider: 'OpenRouter',
@@ -6047,6 +6281,32 @@ const catalogModels: Model[] = [
     tags: ['general', 'vision', 'agentic'],
     aliases: ['unbiased/pareto-26.10', 'openrouter/unbiased/pareto-26.10', 'pareto-26.10'],
     released: '2026-10-15',
+    popularity: 10
+  },
+  {
+    id: 'or/pareto-26.9',
+    name: 'Pareto 26.9',
+    provider: 'OpenRouter',
+    description: 'Pareto is a multimodal composite model built for research, coding, and agentic workflows, while delivering frontier-level performance across a broad range of general-purpose tasks. Routed through OpenRouter.',
+    contextLength: '256K',
+    priceInput: 2.6375,
+    priceOutput: 7.9125,
+    tags: ['general', 'vision', 'agentic'],
+    aliases: ['unbiased/pareto-26.9', 'openrouter/unbiased/pareto-26.9', 'pareto-26.9'],
+    released: '2026-10-13',
+    popularity: 10
+  },
+  {
+    id: 'or/solar-pro4',
+    name: 'Upstage: Solar Pro 4',
+    provider: 'OpenRouter',
+    description: 'Solar Pro 4 is Upstage\'s cost-efficient large language model, featuring a 524K context window. Routed through OpenRouter.',
+    contextLength: '512K',
+    priceInput: 0.1583,
+    priceOutput: 0.633,
+    tags: ['general', 'reasoning', 'agentic'],
+    aliases: ['upstage/solar-pro4', 'openrouter/upstage/solar-pro4', 'solar-pro4'],
+    released: '2026-08-10',
     popularity: 10
   },
   {

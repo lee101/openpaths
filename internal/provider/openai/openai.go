@@ -187,6 +187,9 @@ func (p *OpenAIProvider) ChatCompletion(ctx context.Context, req *model.ChatComp
 	if p.sanitizeChat != nil {
 		p.sanitizeChat(&outReq)
 	}
+	if p.providerName != MoonshotProvider {
+		outReq.PromptCacheOptions = nil
+	}
 	p.applyPromptCacheKey(&outReq)
 	body, err := json.Marshal(&outReq)
 	if err != nil {
@@ -241,6 +244,9 @@ func (p *OpenAIProvider) ChatCompletionStream(ctx context.Context, req *model.Ch
 	normalizeSamplingParams(&outReq)
 	if p.sanitizeChat != nil {
 		p.sanitizeChat(&outReq)
+	}
+	if p.providerName != MoonshotProvider {
+		outReq.PromptCacheOptions = nil
 	}
 	p.applyPromptCacheKey(&outReq)
 

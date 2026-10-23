@@ -2268,8 +2268,42 @@
   "cacheRead": 0.1
  },
  {
+  "id": "kimi-k3.1-pro",
+  "provider": "moonshot",
+  "upstream": "kimi-k3.1-pro",
+  "input": 2.0,
+  "output": 10.0,
+  "context": 1048576,
+  "maxOutput": 131072,
+  "vision": true,
+  "tools": true,
+  "aliases": [
+   "kimi-k3-1-pro",
+   "moonshotai/kimi-k3.1-pro",
+   "moonshot/kimi-k3.1-pro"
+  ],
+  "cacheRead": 0.2
+ },
+ {
+  "id": "kimi-k3.1-pro-highspeed",
+  "provider": "moonshot",
+  "upstream": "kimi-k3.1-pro-highspeed",
+  "input": 4.0,
+  "output": 20.0,
+  "context": 1048576,
+  "maxOutput": 131072,
+  "vision": true,
+  "tools": true,
+  "aliases": [
+   "kimi-k3-1-pro-highspeed",
+   "moonshotai/kimi-k3.1-pro-highspeed",
+   "moonshot/kimi-k3.1-pro-highspeed"
+  ],
+  "cacheRead": 0.2
+ },
+ {
   "id": "kimi-k3",
-  "provider": "qwen",
+  "provider": "moonshot",
   "upstream": "kimi-k3",
   "input": 3.0,
   "output": 15.0,
@@ -2281,8 +2315,23 @@
    "kimi",
    "kimi-k3-1m",
    "moonshot-kimi-k3",
-   "alibaba/kimi-k3",
+   "moonshot/kimi-k3",
    "moonshotai/kimi-k3"
+  ],
+  "cacheRead": 0.3
+ },
+ {
+  "id": "alibaba/kimi-k3",
+  "provider": "qwen",
+  "upstream": "kimi-k3",
+  "input": 3.0,
+  "output": 15.0,
+  "context": 1048576,
+  "maxOutput": 131072,
+  "vision": true,
+  "tools": true,
+  "aliases": [
+   "alibaba-kimi-k3"
   ]
  },
  {
@@ -2299,6 +2348,21 @@
    "openrouter/kimi-k3"
   ],
   "cacheRead": 0.3
+ },
+ {
+  "id": "or/kimi-k3.1-pro",
+  "provider": "openrouter",
+  "upstream": "moonshotai/kimi-k3.1-pro",
+  "input": 2.0,
+  "output": 10.0,
+  "context": 1048576,
+  "maxOutput": 131072,
+  "vision": true,
+  "tools": true,
+  "aliases": [
+   "openrouter/kimi-k3.1-pro"
+  ],
+  "cacheRead": 0.2
  },
  {
   "id": "decision-model-preview",
@@ -3093,6 +3157,39 @@
   "cacheRead": 0.7913
  },
  {
+  "id": "or/aion-3.5-mini",
+  "provider": "openrouter",
+  "upstream": "aion-labs/aion-3.5-mini",
+  "input": 0.7385,
+  "output": 1.477,
+  "context": 262144,
+  "maxOutput": 32768,
+  "vision": false,
+  "tools": true,
+  "aliases": [
+   "aion-labs/aion-3.5-mini",
+   "openrouter/aion-labs/aion-3.5-mini",
+   "aion-3.5-mini"
+  ],
+  "cacheRead": 0.1899
+ },
+ {
+  "id": "or/seed-2-1-turbo",
+  "provider": "openrouter",
+  "upstream": "bytedance-seed/seed-2-1-turbo",
+  "input": 0.5275,
+  "output": 2.6375,
+  "context": 262144,
+  "maxOutput": 235929,
+  "vision": true,
+  "tools": true,
+  "aliases": [
+   "bytedance-seed/seed-2-1-turbo",
+   "openrouter/bytedance-seed/seed-2-1-turbo",
+   "seed-2-1-turbo"
+  ]
+ },
+ {
   "id": "or/command-a-plus",
   "provider": "openrouter",
   "upstream": "cohere/command-a-plus",
@@ -3108,6 +3205,23 @@
    "command-a-plus"
   ],
   "cacheRead": 0.1583
+ },
+ {
+  "id": "or/deepseek-v4-pro-0813",
+  "provider": "openrouter",
+  "upstream": "deepseek/deepseek-v4-pro-0813",
+  "input": 0.6963,
+  "output": 2.0889,
+  "context": 1048576,
+  "maxOutput": 393216,
+  "vision": false,
+  "tools": true,
+  "aliases": [
+   "deepseek/deepseek-v4-pro-0813",
+   "openrouter/deepseek/deepseek-v4-pro-0813",
+   "deepseek-v4-pro-0813"
+  ],
+  "cacheRead": 0.0233
  },
  {
   "id": "or/deepseek-v4.1-flash-1017",
@@ -3159,6 +3273,23 @@
    "ember-1"
   ],
   "cacheRead": 0.3165
+ },
+ {
+  "id": "or/granite-4.2-8b",
+  "provider": "openrouter",
+  "upstream": "ibm-granite/granite-4.2-8b",
+  "input": 0.0633,
+  "output": 0.2638,
+  "context": 131072,
+  "maxOutput": 117964,
+  "vision": false,
+  "tools": true,
+  "aliases": [
+   "ibm-granite/granite-4.2-8b",
+   "openrouter/ibm-granite/granite-4.2-8b",
+   "granite-4.2-8b"
+  ],
+  "cacheRead": 0.0159
  },
  {
   "id": "or/mercury-2.5",
@@ -3246,6 +3377,23 @@
   "cacheRead": 0.0264
  },
  {
+  "id": "or/muse-spark-1.2",
+  "provider": "openrouter",
+  "upstream": "meta/muse-spark-1.2",
+  "input": 1.3188,
+  "output": 4.4838,
+  "context": 1048576,
+  "maxOutput": 943718,
+  "vision": true,
+  "tools": true,
+  "aliases": [
+   "meta/muse-spark-1.2",
+   "openrouter/meta/muse-spark-1.2",
+   "muse-spark-1.2"
+  ],
+  "cacheRead": 0.1583
+ },
+ {
   "id": "or/muse-spark-open",
   "provider": "openrouter",
   "upstream": "meta/muse-spark-open",
@@ -3297,6 +3445,23 @@
   "cacheRead": 0.0633
  },
  {
+  "id": "or/minimax-m3.1-flash",
+  "provider": "openrouter",
+  "upstream": "minimax/minimax-m3.1-flash",
+  "input": 0.1583,
+  "output": 0.633,
+  "context": 1000000,
+  "maxOutput": 524288,
+  "vision": true,
+  "tools": true,
+  "aliases": [
+   "minimax/minimax-m3.1-flash",
+   "openrouter/minimax/minimax-m3.1-flash",
+   "minimax-m3.1-flash"
+  ],
+  "cacheRead": 0.0159
+ },
+ {
   "id": "or/mistral-large-4-0",
   "provider": "openrouter",
   "upstream": "mistralai/mistral-large-4-0",
@@ -3314,6 +3479,39 @@
   "cacheRead": 0.1477
  },
  {
+  "id": "or/moondream3.1-9b-a2b",
+  "provider": "openrouter",
+  "upstream": "moondream/moondream3.1-9b-a2b",
+  "input": 0.3165,
+  "output": 2.6375,
+  "context": 32000,
+  "maxOutput": 4096,
+  "vision": true,
+  "tools": false,
+  "aliases": [
+   "moondream/moondream3.1-9b-a2b",
+   "openrouter/moondream/moondream3.1-9b-a2b",
+   "moondream3.1-9b-a2b"
+  ]
+ },
+ {
+  "id": "or/nex-n2.5-mini",
+  "provider": "openrouter",
+  "upstream": "nex-agi/nex-n2.5-mini",
+  "input": 0.0264,
+  "output": 0.1055,
+  "context": 262144,
+  "maxOutput": 235929,
+  "vision": true,
+  "tools": false,
+  "aliases": [
+   "nex-agi/nex-n2.5-mini",
+   "openrouter/nex-agi/nex-n2.5-mini",
+   "nex-n2.5-mini"
+  ],
+  "cacheRead": 0.0027
+ },
+ {
   "id": "or/nex-n2.5-pro",
   "provider": "openrouter",
   "upstream": "nex-agi/nex-n2.5-pro",
@@ -3329,6 +3527,125 @@
    "nex-n2.5-pro"
   ],
   "cacheRead": 0.0159
+ },
+ {
+  "id": "or/nemotron-3.5-lightning",
+  "provider": "openrouter",
+  "upstream": "nvidia/nemotron-3.5-lightning",
+  "input": 0.0739,
+  "output": 0.211,
+  "context": 262144,
+  "maxOutput": 235929,
+  "vision": false,
+  "tools": true,
+  "aliases": [
+   "nvidia/nemotron-3.5-lightning",
+   "openrouter/nvidia/nemotron-3.5-lightning",
+   "nemotron-3.5-lightning"
+  ],
+  "cacheRead": 0.0422
+ },
+ {
+  "id": "or/nemotron-3.5-super-vl",
+  "provider": "openrouter",
+  "upstream": "nvidia/nemotron-3.5-super-vl",
+  "input": 0.1583,
+  "output": 0.5275,
+  "context": 1048576,
+  "maxOutput": 235929,
+  "vision": true,
+  "tools": true,
+  "aliases": [
+   "nvidia/nemotron-3.5-super-vl",
+   "openrouter/nvidia/nemotron-3.5-super-vl",
+   "nemotron-3.5-super-vl"
+  ],
+  "cacheRead": 0.0211
+ },
+ {
+  "id": "or/gpt-6-astra",
+  "provider": "openrouter",
+  "upstream": "openai/gpt-6-astra",
+  "input": 10.55,
+  "output": 52.75,
+  "context": 1050000,
+  "maxOutput": 128000,
+  "vision": true,
+  "tools": true,
+  "aliases": [
+   "openai/gpt-6-astra",
+   "openrouter/openai/gpt-6-astra",
+   "gpt-6-astra"
+  ],
+  "cacheRead": 1.055
+ },
+ {
+  "id": "or/gpt-6-astra-pro",
+  "provider": "openrouter",
+  "upstream": "openai/gpt-6-astra-pro",
+  "input": 10.55,
+  "output": 52.75,
+  "context": 1050000,
+  "maxOutput": 128000,
+  "vision": true,
+  "tools": true,
+  "aliases": [
+   "openai/gpt-6-astra-pro",
+   "openrouter/openai/gpt-6-astra-pro",
+   "gpt-6-astra-pro"
+  ],
+  "cacheRead": 1.055
+ },
+ {
+  "id": "or/gpt-6-luna-pro",
+  "provider": "openrouter",
+  "upstream": "openai/gpt-6-luna-pro",
+  "input": 0.1055,
+  "output": 0.5275,
+  "context": 1050000,
+  "maxOutput": 128000,
+  "vision": true,
+  "tools": true,
+  "aliases": [
+   "openai/gpt-6-luna-pro",
+   "openrouter/openai/gpt-6-luna-pro",
+   "gpt-6-luna-pro"
+  ],
+  "cacheRead": 0.0106
+ },
+ {
+  "id": "or/gpt-6-sol-pro",
+  "provider": "openrouter",
+  "upstream": "openai/gpt-6-sol-pro",
+  "input": 2.11,
+  "output": 10.55,
+  "context": 1050000,
+  "maxOutput": 128000,
+  "vision": true,
+  "tools": true,
+  "aliases": [
+   "openai/gpt-6-sol-pro",
+   "openrouter/openai/gpt-6-sol-pro",
+   "gpt-6-sol-pro"
+  ],
+  "cacheRead": 0.211
+ },
+ {
+  "id": "or/gpt-6.1-sol-pro",
+  "provider": "openrouter",
+  "upstream": "openai/gpt-6.1-sol-pro",
+  "input": 2.11,
+  "output": 10.55,
+  "context": 1050000,
+  "maxOutput": 128000,
+  "vision": true,
+  "tools": true,
+  "aliases": [
+   "openai/gpt-6.1-sol-pro",
+   "openrouter/openai/gpt-6.1-sol-pro",
+   "gpt-6.1-sol-pro"
+  ],
+  "cacheRead": 0.1055
  },
  {
   "id": "or/perceptron-mk1.5",
@@ -3367,10 +3684,10 @@
   "id": "or/beam-1.0-501b-a23b",
   "provider": "openrouter",
   "upstream": "reflection/beam-1.0-501b-a23b",
-  "input": 0.3165,
+  "input": 0.2638,
   "output": 1.055,
   "context": 1048576,
-  "maxOutput": 943718,
+  "maxOutput": 131072,
   "vision": false,
   "tools": true,
   "aliases": [
@@ -3378,7 +3695,7 @@
    "openrouter/reflection/beam-1.0-501b-a23b",
    "beam-1.0-501b-a23b"
   ],
-  "cacheRead": 0.0422
+  "cacheRead": 0.0528
  },
  {
   "id": "or/fugu-max",
@@ -3398,6 +3715,23 @@
   "cacheRead": 0.2638
  },
  {
+  "id": "or/fugu-ultra-v2",
+  "provider": "openrouter",
+  "upstream": "sakana/fugu-ultra-v2",
+  "input": 5.275,
+  "output": 31.65,
+  "context": 1000000,
+  "maxOutput": 128000,
+  "vision": true,
+  "tools": true,
+  "aliases": [
+   "sakana/fugu-ultra-v2",
+   "openrouter/sakana/fugu-ultra-v2",
+   "fugu-ultra-v2"
+  ],
+  "cacheRead": 0.5275
+ },
+ {
   "id": "or/step-5-preview",
   "provider": "openrouter",
   "upstream": "stepfun/step-5-preview",
@@ -3415,6 +3749,23 @@
   "cacheRead": 0.1055
  },
  {
+  "id": "or/hy4-preview",
+  "provider": "openrouter",
+  "upstream": "tencent/hy4-preview",
+  "input": 0.8799,
+  "output": 2.6386,
+  "context": 1048576,
+  "maxOutput": 64000,
+  "vision": false,
+  "tools": true,
+  "aliases": [
+   "tencent/hy4-preview",
+   "openrouter/tencent/hy4-preview",
+   "hy4-preview"
+  ],
+  "cacheRead": 0.0444
+ },
+ {
   "id": "or/pareto-26.10",
   "provider": "openrouter",
   "upstream": "unbiased/pareto-26.10",
@@ -3428,6 +3779,40 @@
    "unbiased/pareto-26.10",
    "openrouter/unbiased/pareto-26.10",
    "pareto-26.10"
+  ],
+  "cacheRead": 0.0317
+ },
+ {
+  "id": "or/pareto-26.9",
+  "provider": "openrouter",
+  "upstream": "unbiased/pareto-26.9",
+  "input": 2.6375,
+  "output": 7.9125,
+  "context": 262144,
+  "maxOutput": 131072,
+  "vision": true,
+  "tools": true,
+  "aliases": [
+   "unbiased/pareto-26.9",
+   "openrouter/unbiased/pareto-26.9",
+   "pareto-26.9"
+  ],
+  "cacheRead": 0.2638
+ },
+ {
+  "id": "or/solar-pro4",
+  "provider": "openrouter",
+  "upstream": "upstage/solar-pro4",
+  "input": 0.1583,
+  "output": 0.633,
+  "context": 524288,
+  "maxOutput": 131072,
+  "vision": false,
+  "tools": true,
+  "aliases": [
+   "upstage/solar-pro4",
+   "openrouter/upstage/solar-pro4",
+   "solar-pro4"
   ],
   "cacheRead": 0.0317
  },

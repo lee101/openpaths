@@ -234,12 +234,13 @@ var mcpTools = []map[string]any{
 	},
 	{
 		"name":        "web_search",
-		"description": "Search the web and return ranked results.",
+		"description": "Search the web and return ranked results, or a cited answer for answer engines.",
 		"inputSchema": map[string]any{
 			"type": "object",
 			"properties": map[string]any{
 				"query":      map[string]any{"type": "string"},
 				"numResults": map[string]any{"type": "integer", "description": "Default 10."},
+				"provider":   map[string]any{"type": "string", "enum": []string{"exa", "papers", "deepseek", "kimi", "kimi-pro", "kimi-fetch", "openpaths", "parallel", "firecrawl", "perplexity", "openrouter", "gemini", "openai", "grok"}, "description": "Search engine. Default exa."},
 			},
 			"required": []string{"query"},
 		},

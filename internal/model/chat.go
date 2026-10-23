@@ -50,6 +50,15 @@ type ChatCompletionRequest struct {
 	// OpenAI provider sets/forwards it (other OpenAI-compatible upstreams may
 	// reject unknown fields), so it is stripped for non-OpenAI endpoints.
 	PromptCacheKey string `json:"prompt_cache_key,omitempty"`
+
+	// PromptCacheOptions selects the Moonshot (Kimi) cache write TTL ("5m" or
+	// "1h"). Stripped for every other upstream.
+	PromptCacheOptions *PromptCacheOptions `json:"prompt_cache_options,omitempty"`
+}
+
+type PromptCacheOptions struct {
+	Mode string `json:"mode,omitempty"`
+	TTL  string `json:"ttl,omitempty"`
 }
 
 type ChatMessage struct {
@@ -107,7 +116,8 @@ type UsageInfo struct {
 }
 
 type PromptTokensDetails struct {
-	CachedTokens int `json:"cached_tokens,omitempty"`
+	CachedTokens     int `json:"cached_tokens,omitempty"`
+	CacheWriteTokens int `json:"cache_write_tokens,omitempty"`
 }
 
 func (u *UsageInfo) CachedPromptTokens() int {

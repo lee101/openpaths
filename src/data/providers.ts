@@ -127,9 +127,9 @@ export const providers: Provider[] = [
     slug: 'moonshot',
     name: 'Moonshot AI',
     url: 'https://platform.moonshot.ai',
-    description: 'Kimi K3 flagship (2.8T params, 1M context) plus long-context coding models served directly through Moonshot’s OpenAI-compatible API.',
+    description: 'Kimi K3.1 Pro and K3 (1M context, vision, tool use, reasoning effort) plus Kimi web search and URL fetch, served directly through Moonshot’s OpenAI-compatible API at list price.',
     featured: false,
-    logo: 'https://icons.duckduckgo.com/ip3/moonshot.ai.ico'
+    logo: '/logos/kimi.svg'
   },
   {
     slug: 'thinking-machines',

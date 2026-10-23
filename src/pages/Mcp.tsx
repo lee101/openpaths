@@ -22,7 +22,7 @@ const TOOLS: Tool[] = [
   { name: 'transcribe_audio', desc: 'Transcribe base64-encoded audio to text (Whisper family and more).', args: 'audio_base64, filename?, model?, language?, prompt?' },
   { name: 'generate_3d', desc: 'Generate a textured GLB model from a prompt or image URL. Returns the asset URL or a job_id to poll.', args: 'prompt | image_url, texture_size?' },
   { name: 'embed', desc: 'Create embedding vectors for text.', args: 'model, input' },
-  { name: 'web_search', desc: 'Search the web and return ranked results.', args: 'query, numResults?' },
+  { name: 'web_search', desc: 'Search the web and return ranked results, or a cited answer from answer engines.', args: 'query, numResults?, provider?' },
 ];
 
 function mcpUrl(apiBase: string): string {

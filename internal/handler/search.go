@@ -55,15 +55,17 @@ type SearchProviderConfig struct {
 }
 
 type SearchHandler struct {
-	exa      SearchProviderConfig
-	papers   SearchProviderConfig
-	gemini   SearchProviderConfig
-	openai   SearchProviderConfig
-	xai      SearchProviderConfig
-	deepseek SearchProviderConfig
-	billing  *billing.Engine
-	recorder *metrics.Recorder
-	client   *http.Client
+	exa        SearchProviderConfig
+	papers     SearchProviderConfig
+	gemini     SearchProviderConfig
+	openai     SearchProviderConfig
+	xai        SearchProviderConfig
+	deepseek   SearchProviderConfig
+	openrouter SearchProviderConfig
+	kimi       SearchProviderConfig
+	billing    *billing.Engine
+	recorder   *metrics.Recorder
+	client     *http.Client
 }
 
 func NewSearchHandler(exa, papers SearchProviderConfig, b *billing.Engine, rec *metrics.Recorder) *SearchHandler {
@@ -146,14 +148,23 @@ func (h *SearchHandler) HandleSearch(ctx *fasthttp.RequestCtx) {
 	case deepseekSearchProviderName:
 		h.handleDeepSeekSearch(ctx, payload, query, numResults, userID, apiKeyID)
 		return
+	case kimiSearchProviderName, kimiProSearchName:
+		h.handleKimiSearch(ctx, payload, searchProvider, query, numResults, userID, apiKeyID)
+		return
+	case kimiFetchProviderName:
+		h.handleKimiFetch(ctx, query, userID, apiKeyID)
+		return
 	case openpathsSearchProviderName:
 		h.handleOpenPathsSearch(ctx, payload, query, userID, apiKeyID)
+		return
+	case openrouterSearchProviderName, "firecrawl", "parallel", "perplexity":
+		h.handleOpenRouterSearch(ctx, payload, searchProvider, query, numResults, userID, apiKeyID)
 		return
 	case "", exaProviderName:
 		h.handleExaSearch(ctx, raw, payload, numResults, userID, apiKeyID)
 		return
 	default:
-		writeError(ctx, 400, "invalid_request", "provider must be one of: exa, papers, deepseek, openpaths, gemini, openai, grok")
+		writeError(ctx, 400, "invalid_request", "provider must be one of: exa, papers, deepseek, kimi, kimi-pro, kimi-fetch, openpaths, openrouter, parallel, firecrawl, perplexity, gemini, openai, grok")
 		return
 	}
 }
@@ -314,6 +325,8 @@ type answerResponse struct {
 	Citations     []answerResult `json:"citations"`
 	Results       []answerResult `json:"results"`
 	SearchQueries []string       `json:"searchQueries,omitempty"`
+
+	free bool
 }
 
 func stringFromPayload(v any, fallback string) string {
@@ -372,7 +385,7 @@ func (h *SearchHandler) runAnswerProvider(
 		return
 	}
 
-	if !byok && h.billing != nil {
+	if !byok && !resp.free && h.billing != nil {
 		if err := h.billing.DeductFixed(ctx, userID, billingModel, cost, fmt.Sprintf("Search: %s, model: %s", billingModel, modelName), ""); err != nil {
 			h.recorder.RecordErrorWithApp(userID, apiKeyID, billingModel, providerName, int(latency.Milliseconds()), 402, err.Error(), false, app.ID, app.URL, app.Title, app.Categories)
 			writeError(ctx, 402, "billing_error", "Insufficient credits. Please add credits to continue.")
