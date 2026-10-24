@@ -1205,6 +1205,59 @@ models:
     supports_tools: false
     supports_vision: true
 
+  # --- Kling 4.0 via Fal (720p $0.157/s, 1080p $0.235/s default). Video
+  # references/elements and edit bill $0.094/$0.141 per s on input+output length
+  # (min 2x output), so we bill 2x output seconds: $0.188 / $0.282 per s. ---
+  - id: "kling-4.0-text-to-video"
+    provider: fal
+    provider_model_id: "kling/v4/text-to-video"
+    price_per_second: 0.235
+    price_per_second_by_resolution:
+      720p: 0.157
+    aliases: ["kling-4", "kling-4.0", "kling-v4", "kling/v4/text-to-video"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "kling-4.0-image-to-video"
+    provider: fal
+    provider_model_id: "kling/v4/image-to-video"
+    price_per_second: 0.235
+    price_per_second_by_resolution:
+      720p: 0.157
+    aliases: ["kling-4-image", "kling-4.0-image", "kling-v4-image", "kling-4-i2v", "kling/v4/image-to-video"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "kling-4.0-reference-to-video"
+    provider: fal
+    provider_model_id: "kling/v4/reference-to-video"
+    price_per_second: 0.235
+    price_per_second_by_resolution:
+      720p: 0.157
+    price_per_second_with_video_input: 0.282
+    price_per_second_with_video_input_by_resolution:
+      720p: 0.188
+    aliases: ["kling-4-reference", "kling-4.0-reference", "kling-v4-reference", "kling/v4/reference-to-video"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "kling-4.0-video-edit"
+    provider: fal
+    provider_model_id: "kling/v4/video-to-video/edit"
+    price_per_second: 0.282
+    price_per_second_by_resolution:
+      720p: 0.188
+    price_per_second_with_video_input: 0.282
+    price_per_second_with_video_input_by_resolution:
+      720p: 0.188
+    aliases: ["kling-4-edit", "kling-4.0-edit", "kling-v4-edit", "kling/v4/video-to-video/edit"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
   # --- Kling 2.6 via Fal (Pro tier; $0.07/s off, $0.14/s on) ---
   - id: "fal-ai/kling-video/v2.6/pro/text-to-video"
     provider: fal

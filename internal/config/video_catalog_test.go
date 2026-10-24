@@ -34,6 +34,10 @@ func TestFalVideoCatalogRoutes(t *testing.T) {
 		{"fal-ai/kling-video/v3/standard/image-to-video", "fal-ai/kling-video/v3/standard/image-to-video", 0.126, true},
 		{"fal-ai/kling-video/v2.6/pro/text-to-video", "fal-ai/kling-video/v2.6/pro/text-to-video", 0.14, false},
 		{"fal-ai/kling-video/v2.6/pro/image-to-video", "fal-ai/kling-video/v2.6/pro/image-to-video", 0.14, true},
+		{"kling-4.0-text-to-video", "kling/v4/text-to-video", 0.235, false},
+		{"kling-4.0-image-to-video", "kling/v4/image-to-video", 0.235, true},
+		{"kling-4.0-reference-to-video", "kling/v4/reference-to-video", 0.235, true},
+		{"kling-4.0-video-edit", "kling/v4/video-to-video/edit", 0.282, true},
 		{"fal-ai/veo3.1", "fal-ai/veo3.1", 0.40, false},
 		{"fal-ai/veo3.1/image-to-video", "fal-ai/veo3.1/image-to-video", 0.40, true},
 		{"fal-ai/veo3.1/reference-to-video", "fal-ai/veo3.1/reference-to-video", 0.40, true},
@@ -78,6 +82,10 @@ func TestFalVideoCatalogRoutes(t *testing.T) {
 		{"wan-3.0-text-to-video", "480p", 0.05},
 		{"wan-3.0-image-to-video", "720p", 0.10},
 		{"wan-3.0-text-to-video", "720p", 0.10},
+		{"kling-4.0-text-to-video", "720p", 0.157},
+		{"kling-4.0-image-to-video", "720p", 0.157},
+		{"kling-4.0-reference-to-video", "720p", 0.157},
+		{"kling-4.0-video-edit", "720p", 0.188},
 	}
 	for _, c := range checks {
 		i := idx(c.id)

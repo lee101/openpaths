@@ -782,3 +782,25 @@ func TestEngineAccrueCarry(t *testing.T) {
 		t.Fatalf("1000 x 0.0256 units want 25 whole, got %d", total)
 	}
 }
+
+func TestCalculateVideoCost_VideoInputResolutionTiers(t *testing.T) {
+	pt := NewPricingTable([]model.ModelConfig{{
+		ID: "kling-ref", PricePerSecond: 0.235,
+		PricePerSecondByResolution:               map[string]float64{"720p": 0.157},
+		PricePerSecondWithVideoInput:             0.282,
+		PricePerSecondWithVideoInputByResolution: map[string]float64{"720p": 0.188},
+	}})
+	for _, c := range []struct {
+		video bool
+		res   string
+		want  int64
+	}{
+		{false, "720p", 78500}, {false, "1080p", 117500}, {false, "", 117500},
+		{true, "720p", 94000}, {true, "1080p", 141000}, {true, "", 141000},
+	} {
+		got, err := pt.CalculateVideoCostWithResolution("kling-ref", 50, c.video, c.res)
+		if err != nil || got < c.want-1 || got > c.want {
+			t.Errorf("video=%v res=%q = %d, %v; want %d", c.video, c.res, got, err, c.want)
+		}
+	}
+}

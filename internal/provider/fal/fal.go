@@ -1061,6 +1061,56 @@ func (p *FalProvider) GenerateVideo(ctx context.Context, req *model.VideoGenerat
 		}
 	}
 
+	// Kling 4.0 takes an integer duration and start_image_url; the edit route
+	// takes a singular source video_url. Generic generation fields are rejected.
+	if strings.HasPrefix(req.Model, "kling/v4/") {
+		for _, k := range []string{"fps", "generate_audio", "bitrate_mode", "seed", "end_user_id", "enable_safety_checker", "audio_urls"} {
+			delete(falReq, k)
+		}
+		if d := strings.ToLower(strings.TrimSpace(string(req.Duration))); d == "" || d == "auto" {
+			delete(falReq, "duration")
+		} else {
+			falReq["duration"] = intOrDefaultString(d, 5)
+		}
+		if falReq["aspect_ratio"] == "auto" && !strings.HasSuffix(req.Model, "/reference-to-video") {
+			delete(falReq, "aspect_ratio")
+		}
+		switch {
+		case strings.HasSuffix(req.Model, "/video-to-video/edit"):
+			delete(falReq, "aspect_ratio")
+			delete(falReq, "image_url")
+			delete(falReq, "end_image_url")
+			delete(falReq, "video_urls")
+			switch {
+			case req.VideoURL != "":
+				falReq["video_url"] = req.VideoURL
+			case req.Video != nil && req.Video.URL != "":
+				falReq["video_url"] = req.Video.URL
+			case len(req.VideoURLs) > 0:
+				falReq["video_url"] = req.VideoURLs[0]
+			}
+		case strings.HasSuffix(req.Model, "/image-to-video"):
+			delete(falReq, "aspect_ratio")
+			delete(falReq, "image_urls")
+			delete(falReq, "video_urls")
+			if v, ok := falReq["image_url"]; ok {
+				falReq["start_image_url"] = v
+				delete(falReq, "image_url")
+			}
+		case strings.HasSuffix(req.Model, "/reference-to-video"):
+			delete(falReq, "end_image_url")
+			if v, ok := falReq["image_url"]; ok {
+				falReq["start_image_url"] = v
+				delete(falReq, "image_url")
+			}
+		default:
+			delete(falReq, "image_url")
+			delete(falReq, "end_image_url")
+			delete(falReq, "image_urls")
+			delete(falReq, "video_urls")
+		}
+	}
+
 	// FLUX video upscale takes a singular source video_url plus upscale
 	// controls; generation-only fields are rejected by the endpoint schema.
 	if strings.Contains(req.Model, "flux-video-upscale") {
@@ -1436,6 +1486,9 @@ func (p *FalProvider) falQueueRequestBases(modelID, requestID string) []string {
 	}
 	if strings.Contains(modelID, "alibaba/happy-horse/") {
 		bases = append(bases, queueBase+"/alibaba/happy-horse/requests/"+requestID)
+	}
+	if strings.HasPrefix(modelID, "kling/v4/") {
+		bases = append(bases, queueBase+"/kling/v4/requests/"+requestID)
 	}
 	if strings.HasPrefix(modelID, "blackforestlabs/flux-3-max/") {
 		bases = append(bases, queueBase+"/blackforestlabs/flux-3-max/requests/"+requestID)

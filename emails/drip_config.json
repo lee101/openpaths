@@ -218,6 +218,16 @@
       "subject": "Gemini 4 Argon is live - Google pricing, OpenRouter fallback, and the best pelican yet",
       "template": "28-gemini-4-argon.html",
       "description": "Gemini 4 Argon launch: direct Google route at $2/$10 per M with same-price OpenRouter fallback, say-hi test, one-shot animated pelican-on-a-bicycle SVG"
+    },
+    {
+      "id": 29,
+      "delay_days": 1,
+      "kind": "model_launch",
+      "launch_date": "2026-10-24",
+      "max_age_days": 14,
+      "subject": "Kimi K3.1 Pro direct at list price, plus Kling 4.0 video from $0.157/s",
+      "template": "29-kimi-kling4.html",
+      "description": "Kimi K3.1 Pro/K3/Highspeed direct from Moonshot at list price with 1M context; Kling 4.0 text/image/reference/edit video at fal rates"
     }
   ]
 }

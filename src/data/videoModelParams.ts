@@ -107,6 +107,19 @@ const FAMILIES: Array<{ test: RegExp; spec: Partial<VideoParamSpec> }> = [
     },
   },
   {
+    // Kling 4.0: 720p/1080p, integer 3-30s duration, no audio/seed/negative prompt.
+    test: /^kling-4\.0/i,
+    spec: {
+      resolutions: ['720p', '1080p'],
+      durations: ['auto', ...Array.from({ length: 28 }, (_, index) => String(index + 3))],
+      aspectRatios: ['16:9', '9:16', '1:1', '21:9'],
+      generateAudio: false,
+      negativePrompt: false,
+      seed: false,
+      outputFormats: undefined,
+    },
+  },
+  {
     test: /^flux-3-video-draft$/i,
     spec: {
       resolutions: ['HD'],

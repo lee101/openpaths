@@ -3545,6 +3545,58 @@ const catalogModels: Model[] = [
     pricingType: 'second'
   },
   {
+    id: 'kling-4.0-text-to-video',
+    name: 'Kling 4.0 Text to Video',
+    provider: 'Kling',
+    description: 'Kling 4.0 text-to-video: 3-30s cinematic clips at 720p ($0.157/s) or 1080p ($0.235/s) with per-shot prompts.',
+    contextLength: 'N/A',
+    priceInput: 0.235,
+    priceOutput: 0,
+    tags: ['video generation'],
+    released: '2026-10-24',
+    popularity: 68,
+    pricingType: 'second'
+  },
+  {
+    id: 'kling-4.0-image-to-video',
+    name: 'Kling 4.0 Image to Video',
+    provider: 'Kling',
+    description: 'Kling 4.0 image-to-video: animate a start image (optional end frame) into a 3-30s clip at 720p ($0.157/s) or 1080p ($0.235/s).',
+    contextLength: 'N/A',
+    priceInput: 0.235,
+    priceOutput: 0,
+    tags: ['video generation', 'vision'],
+    released: '2026-10-24',
+    popularity: 68,
+    pricingType: 'second'
+  },
+  {
+    id: 'kling-4.0-reference-to-video',
+    name: 'Kling 4.0 Reference to Video',
+    provider: 'Kling',
+    description: 'Kling 4.0 reference-to-video: images, videos, and elements as @references; $0.157/s at 720p, $0.235/s at 1080p, $0.188/$0.282 per s with video references.',
+    contextLength: 'N/A',
+    priceInput: 0.235,
+    priceOutput: 0,
+    tags: ['video generation', 'vision'],
+    released: '2026-10-24',
+    popularity: 68,
+    pricingType: 'second'
+  },
+  {
+    id: 'kling-4.0-video-edit',
+    name: 'Kling 4.0 Video Edit',
+    provider: 'Kling',
+    description: 'Kling 4.0 video editing: edit a 3-30s source video with text and image references; $0.188/s at 720p, $0.282/s at 1080p.',
+    contextLength: 'N/A',
+    priceInput: 0.282,
+    priceOutput: 0,
+    tags: ['video generation', 'vision'],
+    released: '2026-10-24',
+    popularity: 68,
+    pricingType: 'second'
+  },
+  {
     id: 'fal-ai/veo3.1',
     name: 'Veo 3.1 Text to Video',
     provider: 'Google',

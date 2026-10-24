@@ -286,17 +286,21 @@ func (pt *PricingTable) CalculateVideoCostForDuration(modelID string, durationSe
 	if tierPrice, ok := resolutionPrice(cfg.PricePerInputVideoSecondByResolution, resolution); ok {
 		inputVideoRate = tierPrice
 	}
+	withVideoRate := cfg.PricePerSecondWithVideoInput
+	if tierPrice, ok := resolutionPrice(cfg.PricePerSecondWithVideoInputByResolution, resolution); ok {
+		withVideoRate = tierPrice
+	}
 	var totalDollars float64
 	switch {
 	case outputRate > 0:
 		totalDollars = outputRate * float64(durationSeconds)
 		if hasVideoInput && inputVideoRate > 0 {
 			totalDollars += inputVideoRate * float64(durationSeconds)
-		} else if hasVideoInput && cfg.PricePerSecondWithVideoInput > 0 {
-			totalDollars = cfg.PricePerSecondWithVideoInput * float64(durationSeconds)
+		} else if hasVideoInput && withVideoRate > 0 {
+			totalDollars = withVideoRate * float64(durationSeconds)
 		}
-	case hasVideoInput && cfg.PricePerSecondWithVideoInput > 0:
-		totalDollars = cfg.PricePerSecondWithVideoInput * float64(durationSeconds)
+	case hasVideoInput && withVideoRate > 0:
+		totalDollars = withVideoRate * float64(durationSeconds)
 	case cfg.PricePerVideo > 0:
 		totalDollars = cfg.PricePerVideo
 	default:
