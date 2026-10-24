@@ -71,6 +71,7 @@ import (
 
 func main() {
 	_ = godotenv.Load()
+	provider.TuneDefaultTransport()
 
 	configPath := flag.String("config", "config.yaml", "Path to config file")
 	flag.Parse()

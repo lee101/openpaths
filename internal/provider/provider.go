@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/openpaths/openpaths/internal/model"
 )
@@ -119,6 +120,20 @@ func (e *ProviderError) Error() string {
 
 func (e *ProviderError) Unwrap() error {
 	return e.Err
+}
+
+// TuneDefaultTransport raises the idle-connection limits of http.DefaultTransport.
+// Every provider and search client shares it, and the stock MaxIdleConnsPerHost
+// of 2 closes all but two keep-alive connections to a busy upstream after each
+// burst, forcing a fresh TCP+TLS handshake on the next one.
+func TuneDefaultTransport() {
+	t, ok := http.DefaultTransport.(*http.Transport)
+	if !ok {
+		return
+	}
+	t.MaxIdleConns = 1024
+	t.MaxIdleConnsPerHost = 256
+	t.IdleConnTimeout = 90 * time.Second
 }
 
 // defaultUserAgent identifies OpenPaths to upstream APIs. Go's default
