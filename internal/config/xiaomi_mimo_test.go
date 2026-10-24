@@ -19,9 +19,9 @@ func TestXiaomiMiMoV26OpenRouterRoutes(t *testing.T) {
 	want := map[string]struct {
 		in, cache, out float64
 	}{
-		"xiaomi/mimo-v2.6-pro":            {0.435, 0.0036, 0.87},
-		"xiaomi/mimo-v2.6-pro-ultraspeed": {4.35, 0.036, 8.70},
-		"xiaomi/mimo-v2.6-flash":          {0.14, 0.0028, 0.28},
+		"xiaomi/mimo-v2.6-pro":            {0.459, 0.0038, 0.9179},
+		"xiaomi/mimo-v2.6-pro-ultraspeed": {4.5893, 0.038, 9.1785},
+		"xiaomi/mimo-v2.6-flash":          {0.1477, 0.003, 0.2954},
 	}
 	aliases := map[string][]string{
 		"xiaomi/mimo-v2.6-pro":            {"mimo-v2.6-pro", "mimo-pro", "or/mimo-v2.6-pro", "or/xiaomi/mimo-v2.6-pro"},

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"math"
 	"path/filepath"
 	"testing"
 )
@@ -43,9 +44,10 @@ func TestGPT6TierModels(t *testing.T) {
 		{"gpt-6.1-sol", "openai", "gpt-6.1-sol", "gpt6.1-sol", 2.00, 0.10, 10.00, 4.00, 272000, true},
 		{"gpt-6-sol", "openai", "gpt-6.1-sol", "gpt6-sol", 2.00, 0.20, 10.00, 4.00, 272000, true},
 		{"gpt-6-luna", "openai", "gpt-6-luna", "gpt6-luna", 0.10, 0.01, 0.50, 0.20, 272000, true},
-		{"or/gpt-6.1-sol", "openrouter", "openai/gpt-6.1-sol", "openai/gpt-6.1-sol", 2.00, 0.10, 10.00, 4.00, 272000, false},
-		{"or/gpt-6-sol", "openrouter", "openai/gpt-6.1-sol", "openai/gpt-6-sol", 2.00, 0.20, 10.00, 4.00, 272000, false},
-		{"or/gpt-6-luna", "openrouter", "openai/gpt-6-luna", "openai/gpt-6-luna", 0.10, 0.01, 0.50, 0.20, 272000, false},
+		// OpenRouter lanes: OpenRouter's rate plus its 5.5% fee, rounded up.
+		{"or/gpt-6.1-sol", "openrouter", "openai/gpt-6.1-sol", "openai/gpt-6.1-sol", 2.11, 0.1055, 10.55, 4.22, 272000, false},
+		{"or/gpt-6-sol", "openrouter", "openai/gpt-6.1-sol", "openai/gpt-6-sol", 2.11, 0.20, 10.55, 4.22, 272000, false},
+		{"or/gpt-6-luna", "openrouter", "openai/gpt-6-luna", "openai/gpt-6-luna", 0.1055, 0.0106, 0.5275, 0.211, 272000, false},
 	}
 	for _, w := range want {
 		i, ok := byID[w.id]
@@ -64,12 +66,14 @@ func TestGPT6TierModels(t *testing.T) {
 		if m.LongContextThreshold != w.longThreshold {
 			t.Errorf("%s long_context_threshold = %d, want %d", w.id, m.LongContextThreshold, w.longThreshold)
 		}
-		// Above the threshold input and cache double; output is 1.5x.
-		if m.InputPricePer1MLong != w.long || m.OutputPricePer1MLong != w.out*1.5 {
+		// Above the threshold input and cache double; output is 1.5x (to the
+		// 4-decimal rounding the fee-adjusted OpenRouter lanes carry).
+		near := func(a, b float64) bool { return math.Abs(a-b) < 1e-4 }
+		if m.InputPricePer1MLong != w.long || !near(m.OutputPricePer1MLong, w.out*1.5) {
 			t.Errorf("%s long-context pricing = %v/%v, want %v/%v",
 				w.id, m.InputPricePer1MLong, m.OutputPricePer1MLong, w.long, w.out*1.5)
 		}
-		if m.InputCacheHitPricePer1MLong != w.cache*2 {
+		if !near(m.InputCacheHitPricePer1MLong, w.cache*2) {
 			t.Errorf("%s long-context cache rate = %v, want %v", w.id, m.InputCacheHitPricePer1MLong, w.cache*2)
 		}
 		if m.ContextWindow != 1050000 || m.MaxOutputTokens != 128000 {

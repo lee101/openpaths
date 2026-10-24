@@ -37,8 +37,13 @@ func TestQwen38FlashModels(t *testing.T) {
 		default:
 			continue
 		}
-		if m.InputPricePer1M != 0.15 || (m.ID == "or/qwen3.8-flash" && m.InputCacheHitPricePer1M != 0.016) || (m.ID == "qwen/qwen3.8-flash" && m.InputCacheHitPricePer1M != 0.03) || m.OutputPricePer1M != 0.47 {
-			t.Errorf("%s pricing = %v/%v/%v, want 0.15/0.016/0.47", m.ID, m.InputPricePer1M, m.InputCacheHitPricePer1M, m.OutputPricePer1M)
+		// The OpenRouter lane adds OpenRouter's 5.5% fee to the same list price.
+		in, cache, out := 0.15, 0.03, 0.47
+		if m.ID == "or/qwen3.8-flash" {
+			in, cache, out = 0.1583, 0.0169, 0.4959
+		}
+		if m.InputPricePer1M != in || m.InputCacheHitPricePer1M != cache || m.OutputPricePer1M != out {
+			t.Errorf("%s pricing = %v/%v/%v, want %v/%v/%v", m.ID, m.InputPricePer1M, m.InputCacheHitPricePer1M, m.OutputPricePer1M, in, cache, out)
 		}
 		if m.ContextWindow != 1000000 || m.MaxOutputTokens != 131072 {
 			t.Errorf("%s limits = %d/%d, want 1000000/131072", m.ID, m.ContextWindow, m.MaxOutputTokens)

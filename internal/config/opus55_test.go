@@ -106,7 +106,8 @@ func TestOpus55RoutesTheWholeOpusFamily(t *testing.T) {
 		t.Error("claude-opus-5-5 has no fallback_models")
 	}
 
-	// The short OpenRouter Opus lane follows the flagship and its list price too.
+	// The short OpenRouter Opus lane follows the flagship at its list price plus
+	// OpenRouter's 5.5% fee.
 	oi, ok := byID["or/claude-opus"]
 	if !ok {
 		t.Fatal("or/claude-opus missing from config")
@@ -115,7 +116,7 @@ func TestOpus55RoutesTheWholeOpusFamily(t *testing.T) {
 	if lane.Provider != "openrouter" || lane.ProviderModelID != "anthropic/claude-opus-5.5" {
 		t.Errorf("or/claude-opus routes to %q/%q, want openrouter/anthropic/claude-opus-5.5", lane.Provider, lane.ProviderModelID)
 	}
-	if lane.InputPricePer1M != 4.00 || lane.OutputPricePer1M != 20.00 {
-		t.Errorf("or/claude-opus pricing = %v/%v, want 4/20", lane.InputPricePer1M, lane.OutputPricePer1M)
+	if lane.InputPricePer1M != 4.22 || lane.OutputPricePer1M != 21.10 {
+		t.Errorf("or/claude-opus pricing = %v/%v, want 4.22/21.1", lane.InputPricePer1M, lane.OutputPricePer1M)
 	}
 }

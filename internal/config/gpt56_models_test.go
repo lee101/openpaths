@@ -27,7 +27,7 @@ func TestGPT56TierModels(t *testing.T) {
 		alias             string
 	}{
 		{"gpt-5.6-sol", "gpt-6.1-sol", 4.00, 20.00, "gpt5.6-sol"},
-		{"gpt-5.6-terra", "gpt-5.6-terra", 2.00, 12.00, "gpt5.6-terra"},
+		{"gpt-5.6-terra", "gpt-6-luna", 2.00, 12.00, "gpt5.6-terra"},
 		{"gpt-5.6-luna", "gpt-6-luna", 0.20, 1.20, "gpt5.6-luna"},
 	}
 	for _, w := range want {
@@ -94,8 +94,8 @@ func TestGPT56OpenRouterMirrors(t *testing.T) {
 		longInput, longCache, longOut float64
 	}{
 		"or/gpt-5.6-sol":   {"openai/gpt-6.1-sol", 5, .5, 30, 10, 1, 45},
-		"or/gpt-5.6-terra": {"openai/gpt-5.6-terra", 1, .1, 6, 2, .2, 9},
-		"or/gpt-5.6-luna":  {"openai/gpt-6-luna", .1, .01, .6, .2, .02, .9},
+		"or/gpt-5.6-terra": {"openai/gpt-6-luna", 1, .1, 6, 2, .2, 9},
+		"or/gpt-5.6-luna":  {"openai/gpt-6-luna", .1055, .0106, .6, .211, .0211, .9},
 	}
 	for id, expected := range want {
 		got := byID[id]

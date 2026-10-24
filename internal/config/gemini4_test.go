@@ -32,7 +32,8 @@ func TestGemini4ArgonDirectWithOpenRouterFallback(t *testing.T) {
 	if f.Provider != "openrouter" || f.ProviderModelID != "google/gemini-4-argon" {
 		t.Errorf("fallback route = %s/%s", f.Provider, f.ProviderModelID)
 	}
-	if f.InputPricePer1M != m.InputPricePer1M || f.OutputPricePer1M != m.OutputPricePer1M {
-		t.Error("fallback price differs from primary")
+	// The OpenRouter lane bills its own rate plus OpenRouter's fee, never below the primary.
+	if f.InputPricePer1M < m.InputPricePer1M || f.OutputPricePer1M < m.OutputPricePer1M {
+		t.Error("fallback price undercuts the primary")
 	}
 }

@@ -58,26 +58,26 @@ func TestAuditedTokenPrices(t *testing.T) {
 		// platform.claude.com/docs/en/about-claude/pricing (cache hits on Opus
 		// 5.5 bill at 0.05x base, not the usual 0.1x)
 		"claude-opus-5-5": {4.00, 0.20, 20.00},
-		"or/claude-opus":  {4.00, 0.20, 20.00},
+		"or/claude-opus":  {4.22, 0.211, 21.10},
 		// z.ai launch pricing / openrouter.ai/api/v1/models
 		"glm-5.3-flash":    {0.075, 0.015, 0.25},
 		"glm-5.3":          {1.40, 0.26, 4.40},
 		"or/glm-5.3":       {1.40, 0.26, 4.40},
 		"or/gpt-5.6-sol":   {5.00, 0.50, 30.00},
 		"or/gpt-5.6-terra": {1.00, 0.10, 6.00},
-		"or/gpt-5.6-luna":  {0.10, 0.01, 0.60},
-		"or/gpt-6-sol":     {2.00, 0.20, 10.00},
-		"or/gpt-6-luna":    {0.10, 0.01, 0.50},
-		"or/gpt-6.1-sol":   {2.00, 0.10, 10.00},
+		"or/gpt-5.6-luna":  {0.1055, 0.0106, 0.60},
+		"or/gpt-6-sol":     {2.11, 0.20, 10.55},
+		"or/gpt-6-luna":    {0.1055, 0.0106, 0.5275},
+		"or/gpt-6.1-sol":   {2.11, 0.1055, 10.55},
 		"or/qwen3.8-max":   {2.00, 0.25, 6.00},
 		"or/gpt-5-codex":   {1.75, 0.175, 14.00},
 		// console.groq.com/docs/pricing (gpt-oss verified Aug 2026)
 		"groq/gpt-oss-120b": {0.15, 0.075, 0.60},
 		"groq/gpt-oss-20b":  {0.075, 0.0375, 0.30},
-		// openrouter.ai/api/v1/models (Xiaomi's own card; no direct lane)
-		"xiaomi/mimo-v2.6-pro":            {0.435, 0.0036, 0.87},
-		"xiaomi/mimo-v2.6-pro-ultraspeed": {4.35, 0.036, 8.70},
-		"xiaomi/mimo-v2.6-flash":          {0.14, 0.0028, 0.28},
+		// openrouter.ai/api/v1/models (Xiaomi's own card; no direct lane) + 5.5% OpenRouter fee
+		"xiaomi/mimo-v2.6-pro":            {0.459, 0.0038, 0.9179},
+		"xiaomi/mimo-v2.6-pro-ultraspeed": {4.5893, 0.038, 9.1785},
+		"xiaomi/mimo-v2.6-flash":          {0.1477, 0.003, 0.2954},
 	}
 	for id, w := range want {
 		m, ok := byName[id]

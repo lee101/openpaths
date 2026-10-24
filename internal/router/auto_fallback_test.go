@@ -33,11 +33,11 @@ func TestAutoTierConfig_PrimaryModels(t *testing.T) {
 		models[m.ID] = m.ProviderModelID
 	}
 
-	if got := models["openpaths/auto-code"]; got != "gpt-5.6-terra" {
-		t.Fatalf("openpaths/auto-code provider_model_id = %q, want %q", got, "gpt-5.6-terra")
+	if got := models["openpaths/auto-code"]; got != "gpt-6-luna" {
+		t.Fatalf("openpaths/auto-code provider_model_id = %q, want %q", got, "gpt-6-luna")
 	}
-	if got := models["openpaths/auto-reasoning"]; got != "gpt-5.6-terra" {
-		t.Fatalf("openpaths/auto-reasoning provider_model_id = %q, want %q", got, "gpt-5.6-terra")
+	if got := models["openpaths/auto-reasoning"]; got != "gpt-6-luna" {
+		t.Fatalf("openpaths/auto-reasoning provider_model_id = %q, want %q", got, "gpt-6-luna")
 	}
 	if got := models["openpaths/auto-cheap"]; got != "gpt-5.6-luna" {
 		t.Fatalf("openpaths/auto-cheap provider_model_id = %q, want %q", got, "gpt-5.6-luna")

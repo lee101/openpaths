@@ -180,7 +180,7 @@
  {
   "id": "openpaths/auto-code",
   "provider": "openai",
-  "upstream": "gpt-5.6-terra",
+  "upstream": "gpt-6-luna",
   "input": 2.0,
   "output": 12.0,
   "context": 1050000,
@@ -197,7 +197,7 @@
  {
   "id": "openpaths/auto-reasoning",
   "provider": "openai",
-  "upstream": "gpt-5.6-terra",
+  "upstream": "gpt-6-luna",
   "input": 2.0,
   "output": 12.0,
   "context": 1050000,
@@ -404,7 +404,7 @@
  {
   "id": "gpt-5.6-terra",
   "provider": "openai",
-  "upstream": "gpt-5.6-terra",
+  "upstream": "gpt-6-luna",
   "input": 2.0,
   "output": 12.0,
   "context": 1050000,
@@ -436,7 +436,7 @@
  {
   "id": "gpt-5.6",
   "provider": "openai",
-  "upstream": "gpt-5.6-terra",
+  "upstream": "gpt-6-luna",
   "input": 2.0,
   "output": 12.0,
   "context": 1050000,
@@ -1989,8 +1989,8 @@
   "id": "or/gemini-4-argon",
   "provider": "openrouter",
   "upstream": "google/gemini-4-argon",
-  "input": 2.0,
-  "output": 10.0,
+  "input": 2.11,
+  "output": 10.55,
   "context": 1048576,
   "maxOutput": 65536,
   "vision": true,
@@ -1999,7 +1999,7 @@
    "openrouter/gemini-4-argon",
    "openrouter/google/gemini-4-argon"
   ],
-  "cacheRead": 0.1
+  "cacheRead": 0.1055
  },
  {
   "id": "or/gpt-5-codex",
@@ -2021,22 +2021,28 @@
   "id": "or/gpt-5.4",
   "provider": "openrouter",
   "upstream": "openai/gpt-5.4",
-  "input": 2.5,
-  "output": 15.0,
+  "input": 2.6375,
+  "output": 15.825,
   "context": 1050000,
   "maxOutput": 128000,
   "vision": true,
   "tools": true,
   "aliases": [
    "or/gpt-5.2"
-  ]
+  ],
+  "longContext": {
+   "threshold": 272000,
+   "input": 5.275,
+   "output": 23.7375,
+   "cacheRead": null
+  }
  },
  {
   "id": "or/gpt-5.4-mini",
   "provider": "openrouter",
   "upstream": "openai/gpt-5.4-mini",
-  "input": 0.75,
-  "output": 4.5,
+  "input": 0.7913,
+  "output": 4.7475,
   "context": 400000,
   "maxOutput": 128000,
   "vision": true,
@@ -2047,8 +2053,8 @@
   "id": "or/gpt-5.4-nano",
   "provider": "openrouter",
   "upstream": "openai/gpt-5.4-nano",
-  "input": 0.2,
-  "output": 1.25,
+  "input": 0.211,
+  "output": 1.3188,
   "context": 400000,
   "maxOutput": 128000,
   "vision": true,
@@ -2059,15 +2065,21 @@
   "id": "or/gpt-5.5",
   "provider": "openrouter",
   "upstream": "openai/gpt-5.5",
-  "input": 5.0,
-  "output": 30.0,
+  "input": 5.275,
+  "output": 31.65,
   "context": 1050000,
   "maxOutput": 128000,
   "vision": true,
   "tools": true,
   "aliases": [
    "or/gpt-5-5"
-  ]
+  ],
+  "longContext": {
+   "threshold": 272000,
+   "input": 10.55,
+   "output": 47.475,
+   "cacheRead": null
+  }
  },
  {
   "id": "or/gpt-5.6-sol",
@@ -2091,7 +2103,7 @@
  {
   "id": "or/gpt-5.6-terra",
   "provider": "openrouter",
-  "upstream": "openai/gpt-5.6-terra",
+  "upstream": "openai/gpt-6-luna",
   "input": 1.0,
   "output": 6.0,
   "context": 1050000,
@@ -2111,46 +2123,46 @@
   "id": "or/gpt-5.6-luna",
   "provider": "openrouter",
   "upstream": "openai/gpt-6-luna",
-  "input": 0.1,
+  "input": 0.1055,
   "output": 0.6,
   "context": 1050000,
   "maxOutput": 128000,
   "vision": true,
   "tools": true,
   "aliases": [],
-  "cacheRead": 0.01,
+  "cacheRead": 0.0106,
   "longContext": {
    "threshold": 272000,
-   "input": 0.2,
+   "input": 0.211,
    "output": 0.9,
-   "cacheRead": 0.02
+   "cacheRead": 0.0211
   }
  },
  {
   "id": "or/gpt-6.1-sol",
   "provider": "openrouter",
   "upstream": "openai/gpt-6.1-sol",
-  "input": 2.0,
-  "output": 10.0,
+  "input": 2.11,
+  "output": 10.55,
   "context": 1050000,
   "maxOutput": 128000,
   "vision": true,
   "tools": true,
   "aliases": [],
-  "cacheRead": 0.1,
+  "cacheRead": 0.1055,
   "longContext": {
    "threshold": 272000,
-   "input": 4.0,
-   "output": 15.0,
-   "cacheRead": 0.2
+   "input": 4.22,
+   "output": 15.825,
+   "cacheRead": 0.211
   }
  },
  {
   "id": "or/gpt-6-sol",
   "provider": "openrouter",
   "upstream": "openai/gpt-6.1-sol",
-  "input": 2.0,
-  "output": 10.0,
+  "input": 2.11,
+  "output": 10.55,
   "context": 1050000,
   "maxOutput": 128000,
   "vision": true,
@@ -2159,8 +2171,8 @@
   "cacheRead": 0.2,
   "longContext": {
    "threshold": 272000,
-   "input": 4.0,
-   "output": 15.0,
+   "input": 4.22,
+   "output": 15.825,
    "cacheRead": 0.4
   }
  },
@@ -2168,19 +2180,19 @@
   "id": "or/gpt-6-luna",
   "provider": "openrouter",
   "upstream": "openai/gpt-6-luna",
-  "input": 0.1,
-  "output": 0.5,
+  "input": 0.1055,
+  "output": 0.5275,
   "context": 1050000,
   "maxOutput": 128000,
   "vision": true,
   "tools": true,
   "aliases": [],
-  "cacheRead": 0.01,
+  "cacheRead": 0.0106,
   "longContext": {
    "threshold": 272000,
-   "input": 0.2,
-   "output": 0.75,
-   "cacheRead": 0.02
+   "input": 0.211,
+   "output": 0.7913,
+   "cacheRead": 0.0211
   }
  },
  {
@@ -2353,8 +2365,8 @@
   "id": "or/kimi-k3.1-pro",
   "provider": "openrouter",
   "upstream": "moonshotai/kimi-k3.1-pro",
-  "input": 2.0,
-  "output": 10.0,
+  "input": 2.11,
+  "output": 10.55,
   "context": 1048576,
   "maxOutput": 131072,
   "vision": true,
@@ -2362,7 +2374,7 @@
   "aliases": [
    "openrouter/kimi-k3.1-pro"
   ],
-  "cacheRead": 0.2
+  "cacheRead": 0.211
  },
  {
   "id": "decision-model-preview",
@@ -2403,21 +2415,21 @@
   "id": "or/qwen3.8-flash",
   "provider": "openrouter",
   "upstream": "qwen/qwen3.8-flash",
-  "input": 0.15,
-  "output": 0.47,
+  "input": 0.1583,
+  "output": 0.4959,
   "context": 1000000,
   "maxOutput": 131072,
   "vision": true,
   "tools": true,
   "aliases": [],
-  "cacheRead": 0.016
+  "cacheRead": 0.0169
  },
  {
   "id": "or/claude-sonnet",
   "provider": "openrouter",
   "upstream": "anthropic/claude-sonnet-5",
-  "input": 2.0,
-  "output": 10.0,
+  "input": 2.11,
+  "output": 10.55,
   "context": 1000000,
   "maxOutput": 128000,
   "vision": true,
@@ -2428,34 +2440,34 @@
   "id": "or/claude-fable",
   "provider": "openrouter",
   "upstream": "anthropic/claude-fable-5.1",
-  "input": 10.0,
-  "output": 50.0,
+  "input": 10.55,
+  "output": 52.75,
   "context": 1000000,
   "maxOutput": 128000,
   "vision": true,
   "tools": true,
   "aliases": [],
-  "cacheRead": 0.25
+  "cacheRead": 0.2638
  },
  {
   "id": "or/claude-opus",
   "provider": "openrouter",
   "upstream": "anthropic/claude-opus-5.5",
-  "input": 4.0,
-  "output": 20.0,
+  "input": 4.22,
+  "output": 21.1,
   "context": 1000000,
   "maxOutput": 128000,
   "vision": true,
   "tools": true,
   "aliases": [],
-  "cacheRead": 0.2
+  "cacheRead": 0.211
  },
  {
   "id": "or/gemini-3.5-flash",
   "provider": "openrouter",
   "upstream": "google/gemini-3.5-flash",
-  "input": 1.5,
-  "output": 9.0,
+  "input": 1.5825,
+  "output": 9.495,
   "context": 1000000,
   "maxOutput": 65536,
   "vision": true,
@@ -2467,7 +2479,7 @@
   "provider": "openrouter",
   "upstream": "deepseek/deepseek-chat",
   "input": 0.28,
-  "output": 0.42,
+  "output": 1.0853,
   "context": 128000,
   "maxOutput": 8192,
   "vision": false,
@@ -2484,14 +2496,20 @@
   "maxOutput": 16384,
   "vision": true,
   "tools": true,
-  "aliases": []
+  "aliases": [],
+  "longContext": {
+   "threshold": 200000,
+   "input": 4.22,
+   "output": 15.0,
+   "cacheRead": null
+  }
  },
  {
   "id": "xiaomi/mimo-v2.6-pro",
   "provider": "openrouter",
   "upstream": "xiaomi/mimo-v2.6-pro",
-  "input": 0.435,
-  "output": 0.87,
+  "input": 0.459,
+  "output": 0.9179,
   "context": 1048576,
   "maxOutput": 131072,
   "vision": true,
@@ -2502,14 +2520,14 @@
    "or/mimo-v2.6-pro",
    "or/xiaomi/mimo-v2.6-pro"
   ],
-  "cacheRead": 0.0036
+  "cacheRead": 0.0038
  },
  {
   "id": "xiaomi/mimo-v2.6-pro-ultraspeed",
   "provider": "openrouter",
   "upstream": "xiaomi/mimo-v2.6-pro-ultraspeed",
-  "input": 4.35,
-  "output": 8.7,
+  "input": 4.5893,
+  "output": 9.1785,
   "context": 1048576,
   "maxOutput": 131072,
   "vision": true,
@@ -2520,14 +2538,14 @@
    "or/mimo-v2.6-pro-ultraspeed",
    "or/xiaomi/mimo-v2.6-pro-ultraspeed"
   ],
-  "cacheRead": 0.036
+  "cacheRead": 0.038
  },
  {
   "id": "xiaomi/mimo-v2.6-flash",
   "provider": "openrouter",
   "upstream": "xiaomi/mimo-v2.6-flash",
-  "input": 0.14,
-  "output": 0.28,
+  "input": 0.1477,
+  "output": 0.2954,
   "context": 1048576,
   "maxOutput": 131072,
   "vision": true,
@@ -2538,7 +2556,7 @@
    "or/mimo-v2.6-flash",
    "or/xiaomi/mimo-v2.6-flash"
   ],
-  "cacheRead": 0.0028
+  "cacheRead": 0.003
  },
  {
   "id": "openpaths-embed",
@@ -2622,8 +2640,8 @@
   "id": "or/stepfun-flash",
   "provider": "openrouter",
   "upstream": "stepfun/step-3.5-flash",
-  "input": 0.1,
-  "output": 0.3,
+  "input": 0.1055,
+  "output": 0.3165,
   "context": 256000,
   "maxOutput": 8192,
   "vision": false,
@@ -2637,8 +2655,8 @@
   "id": "or/solar-pro-3",
   "provider": "openrouter",
   "upstream": "upstage/solar-pro-3",
-  "input": 0.15,
-  "output": 0.6,
+  "input": 0.1583,
+  "output": 0.633,
   "context": 128000,
   "maxOutput": 8192,
   "vision": false,
@@ -2652,7 +2670,7 @@
   "id": "or/arcee-trinity",
   "provider": "openrouter",
   "upstream": "arcee-ai/trinity-large-thinking",
-  "input": 0.22,
+  "input": 0.2638,
   "output": 0.85,
   "context": 131072,
   "maxOutput": 8192,
@@ -2667,8 +2685,8 @@
   "id": "or/arcee-trinity-mini",
   "provider": "openrouter",
   "upstream": "arcee-ai/trinity-large-thinking",
-  "input": 0.15,
-  "output": 0.5,
+  "input": 0.2638,
+  "output": 0.844,
   "context": 131072,
   "maxOutput": 8192,
   "vision": false,
@@ -2915,8 +2933,8 @@
   "id": "or/inkling",
   "provider": "openrouter",
   "upstream": "thinkingmachines/inkling",
-  "input": 1.0,
-  "output": 4.05,
+  "input": 1.055,
+  "output": 4.2728,
   "context": 524288,
   "maxOutput": 32768,
   "vision": true,
@@ -3210,8 +3228,8 @@
   "id": "or/deepseek-v4-pro-0813",
   "provider": "openrouter",
   "upstream": "deepseek/deepseek-v4-pro-0813",
-  "input": 0.6963,
-  "output": 2.0889,
+  "input": 1.3926,
+  "output": 4.1778,
   "context": 1048576,
   "maxOutput": 393216,
   "vision": false,
@@ -3221,14 +3239,14 @@
    "openrouter/deepseek/deepseek-v4-pro-0813",
    "deepseek-v4-pro-0813"
   ],
-  "cacheRead": 0.0233
+  "cacheRead": 0.0465
  },
  {
   "id": "or/deepseek-v4.1-flash-1017",
   "provider": "openrouter",
   "upstream": "deepseek/deepseek-v4.1-flash-1017",
-  "input": 0.1583,
-  "output": 0.633,
+  "input": 0.3165,
+  "output": 1.266,
   "context": 1048576,
   "maxOutput": 393216,
   "vision": true,
@@ -3238,7 +3256,7 @@
    "openrouter/deepseek/deepseek-v4.1-flash-1017",
    "deepseek-v4.1-flash-1017"
   ],
-  "cacheRead": 0.0032
+  "cacheRead": 0.0064
  },
  {
   "id": "or/glimpse",
@@ -3450,7 +3468,7 @@
   "upstream": "minimax/minimax-m3.1-flash",
   "input": 0.1583,
   "output": 0.633,
-  "context": 1000000,
+  "context": 1048576,
   "maxOutput": 524288,
   "vision": true,
   "tools": true,
@@ -3577,7 +3595,13 @@
    "openrouter/openai/gpt-6-astra",
    "gpt-6-astra"
   ],
-  "cacheRead": 1.055
+  "cacheRead": 1.055,
+  "longContext": {
+   "threshold": 272000,
+   "input": 21.1,
+   "output": 79.125,
+   "cacheRead": 2.11
+  }
  },
  {
   "id": "or/gpt-6-astra-pro",
@@ -3594,7 +3618,13 @@
    "openrouter/openai/gpt-6-astra-pro",
    "gpt-6-astra-pro"
   ],
-  "cacheRead": 1.055
+  "cacheRead": 1.055,
+  "longContext": {
+   "threshold": 272000,
+   "input": 21.1,
+   "output": 79.125,
+   "cacheRead": 2.11
+  }
  },
  {
   "id": "or/gpt-6-luna-pro",
@@ -3611,7 +3641,13 @@
    "openrouter/openai/gpt-6-luna-pro",
    "gpt-6-luna-pro"
   ],
-  "cacheRead": 0.0106
+  "cacheRead": 0.0106,
+  "longContext": {
+   "threshold": 272000,
+   "input": 0.211,
+   "output": 0.7913,
+   "cacheRead": 0.0211
+  }
  },
  {
   "id": "or/gpt-6-sol-pro",
@@ -3628,7 +3664,13 @@
    "openrouter/openai/gpt-6-sol-pro",
    "gpt-6-sol-pro"
   ],
-  "cacheRead": 0.211
+  "cacheRead": 0.211,
+  "longContext": {
+   "threshold": 272000,
+   "input": 4.22,
+   "output": 15.825,
+   "cacheRead": 0.422
+  }
  },
  {
   "id": "or/gpt-6.1-sol-pro",
@@ -3645,7 +3687,13 @@
    "openrouter/openai/gpt-6.1-sol-pro",
    "gpt-6.1-sol-pro"
   ],
-  "cacheRead": 0.1055
+  "cacheRead": 0.1055,
+  "longContext": {
+   "threshold": 272000,
+   "input": 4.22,
+   "output": 15.825,
+   "cacheRead": 0.211
+  }
  },
  {
   "id": "or/perceptron-mk1.5",
@@ -3729,7 +3777,13 @@
    "openrouter/sakana/fugu-ultra-v2",
    "fugu-ultra-v2"
   ],
-  "cacheRead": 0.5275
+  "cacheRead": 0.5275,
+  "longContext": {
+   "threshold": 272000,
+   "input": 10.55,
+   "output": 47.475,
+   "cacheRead": 1.055
+  }
  },
  {
   "id": "or/step-5-preview",

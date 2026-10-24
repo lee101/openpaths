@@ -46,7 +46,7 @@ func TestClaudeFable51Catalog(t *testing.T) {
 		t.Errorf("OpenRouter fallback = %s/%s, want openrouter/anthropic/claude-fable-5.1",
 			fallback.Provider, fallback.ProviderModelID)
 	}
-	if fallback.InputCacheHitPricePer1M != 0.25 {
-		t.Errorf("OpenRouter fallback cache-hit pricing = %v, want 0.25", fallback.InputCacheHitPricePer1M)
+	if fallback.InputCacheHitPricePer1M != 0.2638 {
+		t.Errorf("OpenRouter fallback cache-hit pricing = %v, want 0.2638 (OpenRouter 0.25 + 5.5%% fee)", fallback.InputCacheHitPricePer1M)
 	}
 }

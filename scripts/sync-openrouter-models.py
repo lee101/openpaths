@@ -80,6 +80,134 @@ def raw_per_million(per_token):
     return float((Decimal(str(per_token or 0)) * 1_000_000).normalize())
 
 
+def long_tier(pr):
+    """OpenRouter's long-context override: the whole request bills at it above min_prompt_tokens."""
+    for o in pr.get("overrides") or []:
+        if o.get("min_prompt_tokens") and set(o) <= {"min_prompt_tokens", "prompt", "completion", "input_cache_read", "input_cache_write"}:
+            return o
+    return None
+
+
+def peak_rates(pr):
+    """Base rate raised to the most expensive time-of-day window: one flat price must cover the peak."""
+    out = {k: Decimal(str(pr.get(k) or 0)) for k in ("prompt", "completion", "input_cache_read")}
+    for o in pr.get("overrides") or []:
+        if o.get("min_prompt_tokens"):
+            continue
+        for k in out:
+            out[k] = max(out[k], Decimal(str(o.get(k) or 0)))
+    return {k: str(v) for k, v in out.items()}
+
+
+def floors(pr, fee):
+    """config field -> minimum billable price per 1M (OpenRouter rate + fee)."""
+    base = peak_rates(pr)
+    out = {
+        "input_price_per_1m": per_million(base["prompt"], fee),
+        "output_price_per_1m": per_million(base["completion"], fee),
+        "input_cache_hit_price_per_1m": per_million(base["input_cache_read"], fee),
+    }
+    if lt := long_tier(pr):
+        out |= {
+            "input_price_per_1m_long": per_million(lt.get("prompt"), fee),
+            "output_price_per_1m_long": per_million(lt.get("completion"), fee),
+            "input_cache_hit_price_per_1m_long": per_million(lt.get("input_cache_read"), fee),
+        }
+    return {k: v for k, v in out.items() if v}
+
+
+def upstream_comment(pr, fee):
+    base = peak_rates(pr)
+    s = (f"  # openrouter: in={fmt(raw_per_million(base['prompt']))} out={fmt(raw_per_million(base['completion']))}"
+         f" cache={fmt(raw_per_million(base['input_cache_read']))}")
+    if lt := long_tier(pr):
+        s += (f" long@{lt['min_prompt_tokens']} in={fmt(raw_per_million(lt.get('prompt')))}"
+              f" out={fmt(raw_per_million(lt.get('completion')))} cache={fmt(raw_per_million(lt.get('input_cache_read')))}")
+    return s + f" per 1M, +{fee * 100:g}% fee"
+
+
+ASSET_PRICE_RE = re.compile(r"    price_per_|    price_first_|    price_extra_")
+PRICE_LINE_RE = re.compile(r"    ((?:input|output|input_cache_hit)_price_per_1m(?:_long)?): (-?[0-9.]+)\s*$")
+
+
+def floor_manual(text, catalog, settings, report):
+    """Raise hand-written OpenRouter entries to OpenRouter's rate + fee and
+    move retired upstreams onto their configured successor; returns new text."""
+    fee, succ = settings["fee"], settings.get("successors", {})
+    lines = text.split("\n")
+    starts = [i for i, l in enumerate(lines) if l.startswith("  - id: ")]
+    out, prev = [], 0
+    for n, start in enumerate(starts):
+        end = starts[n + 1] if n + 1 < len(starts) else len(lines)
+        while end > start + 1 and (lines[end - 1].startswith("  #") or not lines[end - 1].strip()):
+            end -= 1
+        head, entry = lines[prev:start], lines[start:end]
+        prev = end
+        mid = entry[0].split(":", 1)[1].strip().strip('"')
+        body = "\n".join(entry)
+        pm = re.search(r'\n    provider_model_id: "?([^"\n]+?)"?\s*(?:\n|$)', body)
+        if "\n    provider: openrouter" not in body or not pm or any(ASSET_PRICE_RE.match(l) for l in entry):
+            out += head + entry
+            continue
+        pmid = pm[1]
+        if pmid in succ and succ[pmid] in catalog:
+            entry = [l.replace(f'"{pmid}"', f'"{succ[pmid]}"') if l.startswith("    provider_model_id:") else l for l in entry]
+            report.append(f"route: {mid} {pmid} -> {succ[pmid]}")
+            pmid = succ[pmid]
+        if pmid not in catalog or pmid.endswith(":free") or pmid == ROUTER:
+            out += head + entry
+            continue
+        pr = catalog[pmid].get("pricing") or {}
+        want = floors(pr, fee)
+        have = {}
+        for i, l in enumerate(entry):
+            if m := PRICE_LINE_RE.match(l):
+                have[m[1]] = i
+                if m[1] in want and float(m[2]) + 1e-9 < want[m[1]]:
+                    entry[i] = f"    {m[1]}: {fmt(want[m[1]])}"
+                    report.append(f"price: {mid} {m[1]} {m[2]} -> {fmt(want[m[1]])}")
+        for f in ("input_price_per_1m", "output_price_per_1m"):
+            if f not in have and f in want:
+                at = max(have.values(), default=next(i for i, l in enumerate(entry) if l.startswith("    provider_model_id:")))
+                entry.insert(at + 1, f"    {f}: {fmt(want[f])}")
+                have = {k: (v + 1 if v > at else v) for k, v in have.items()} | {f: at + 1}
+                report.append(f"price: {mid} {f} unset -> {fmt(want[f])}")
+        lt = long_tier(pr)
+        if lt and not any(l.startswith("    long_context_threshold:") for l in entry):
+            # Without a long tier, billing falls back to the base rate (cache
+            # hits to the input rate when no cache rate is set); add a long
+            # price only where that fallback undercuts OpenRouter's long rate.
+            val = {k: float(PRICE_LINE_RE.match(entry[i])[2]) for k, i in have.items()}
+            base = {"input_price_per_1m_long": val.get("input_price_per_1m", 0),
+                    "output_price_per_1m_long": val.get("output_price_per_1m", 0),
+                    "input_cache_hit_price_per_1m_long": val.get("input_cache_hit_price_per_1m") or val.get("input_price_per_1m", 0)}
+            add = [f"    {f}: {fmt(want[f])}" for f in ("input_price_per_1m_long", "input_cache_hit_price_per_1m_long", "output_price_per_1m_long")
+                   if f in want and base[f] + 1e-9 < want[f]]
+            if add:
+                at = max(have.values())
+                entry[at + 1:at + 1] = add + [f"    long_context_threshold: {lt['min_prompt_tokens']}"]
+                report.append(f"price: {mid} adds OpenRouter long tier @{lt['min_prompt_tokens']}")
+        comment = upstream_comment(pr, fee)
+        if head and head[-1].startswith("  # openrouter: "):
+            head = head[:-1]
+        out += head + [comment] + entry
+    out += lines[prev:]
+    return "\n".join(out)
+
+
+def sync_site_prices(site_text, prices):
+    """Mirror billed per-token prices into hand-written src/data/models.ts entries."""
+    for mid, (inp, outp) in prices.items():
+        m = re.search(r"(?s)\n  \{\s*\n\s*[\"']?id[\"']?: [\"']" + re.escape(mid) + r"[\"'],.*?\n  \}", site_text)
+        if not m:
+            continue
+        blk = m[0]
+        blk = re.sub(r'([\"\']?priceInput[\"\']?: )-?[0-9.]+', lambda x: x[1] + fmt(inp), blk, 1)
+        blk = re.sub(r'([\"\']?priceOutput[\"\']?: )-?[0-9.]+', lambda x: x[1] + fmt(outp), blk, 1)
+        site_text = site_text[:m.start()] + blk + site_text[m.end():]
+    return site_text
+
+
 def fmt(x):
     return ("%.4f" % x).rstrip("0").rstrip(".") if x else "0"
 
@@ -135,6 +263,9 @@ def main():
 
     yaml_text = CONFIG.read_text()
     y_head, y_old, y_tail = split_block(yaml_text, Y_BEGIN, Y_END)
+    report = []
+    y_head = floor_manual(y_head, catalog, settings, report)
+    y_tail = floor_manual(y_tail, catalog, settings, report)
     manual = manual_models(y_head + y_tail)
     taken = {m["id"] for m in manual} | {al for m in manual for al in m["aliases"]}
     by_pmid = {m["pmid"]: m["id"] for m in manual if m["provider"] == "openrouter" and m["pmid"]}
@@ -175,9 +306,7 @@ def main():
         if is_free:
             ladder.append(mid)
         pr = m.get("pricing") or {}
-        extra = {k: v for k, v in pr.items() if k not in ("prompt", "completion", "input_cache_read", "input_cache_write", "overrides") and float(v or 0)}
-        if pr.get("overrides") and not is_free:
-            print(f"note: {pmid} has tiered/time-of-day overrides; billed at base rate", file=sys.stderr)
+        extra = {k: v for k, v in pr.items() if k not in ("prompt", "completion", "input_cache_read", "input_cache_write", "overrides", "web_search") and float(v or 0)}
         if extra and not is_free:
             print(f"warn: {pmid} has unbilled OpenRouter charges {extra}", file=sys.stderr)
         aliases = [al for al in (pmid, "openrouter/" + pmid) if al not in taken and al != mid]
@@ -186,22 +315,20 @@ def main():
             if base not in taken:
                 aliases.append(base)
         taken.update(aliases + [mid])
-        inp = 0 if is_free else per_million(pr.get("prompt"), fee)
-        out = 0 if is_free else per_million(pr.get("completion"), fee)
-        cache = 0 if is_free else per_million(pr.get("input_cache_read"), fee)
-        lines = []
-        if not is_free:
-            lines.append(f"  # openrouter: in={fmt(raw_per_million(pr.get('prompt')))} out={fmt(raw_per_million(pr.get('completion')))}"
-                         f" cache={fmt(raw_per_million(pr.get('input_cache_read')))} per 1M, +{fee * 100:g}% fee")
+        fl = {} if is_free else floors(pr, fee)
+        inp, out = fl.get("input_price_per_1m", 0), fl.get("output_price_per_1m", 0)
+        lines = [] if is_free else [upstream_comment(pr, fee)]
         lines += [
             f"  - id: {json.dumps(mid)}",
             "    provider: openrouter",
             f"    provider_model_id: {json.dumps(pmid)}",
-            f"    input_price_per_1m: {fmt(inp)}",
         ]
-        if cache:
-            lines.append(f"    input_cache_hit_price_per_1m: {fmt(cache)}")
-        lines.append(f"    output_price_per_1m: {fmt(out)}")
+        for f in ("input_price_per_1m", "input_cache_hit_price_per_1m", "output_price_per_1m",
+                  "input_price_per_1m_long", "input_cache_hit_price_per_1m_long", "output_price_per_1m_long"):
+            if f in fl or f in ("input_price_per_1m", "output_price_per_1m"):
+                lines.append(f"    {f}: {fmt(fl.get(f, 0))}")
+        if "input_price_per_1m_long" in fl:
+            lines.append(f"    long_context_threshold: {long_tier(pr)['min_prompt_tokens']}")
         if aliases:
             lines.append(f"    aliases: [{', '.join(json.dumps(x) for x in aliases)}]")
         if c["ctx"]:
@@ -271,9 +398,9 @@ def main():
 
     y_body = "\n" + "\n\n".join(entries) + "\n"
     if y_old is None:
-        if Y_ANCHOR not in yaml_text:
+        if Y_ANCHOR not in y_head:
             sys.exit(f"anchor {Y_ANCHOR!r} not found in config.yaml")
-        new_yaml = yaml_text.replace(Y_ANCHOR, Y_BEGIN + y_body + Y_END + "\n\n" + Y_ANCHOR, 1)
+        new_yaml = y_head.replace(Y_ANCHOR, Y_BEGIN + y_body + Y_END + "\n\n" + Y_ANCHOR, 1)
     else:
         new_yaml = y_head + Y_BEGIN + y_body + Y_END + y_tail
 
@@ -286,6 +413,13 @@ def main():
         new_site = site_text.replace(T_ANCHOR, "\n" + T_BEGIN + t_body + T_END + T_ANCHOR, 1)
     else:
         new_site = t_head + T_BEGIN + t_body + T_END + t_tail
+    repriced = {r.split()[1] for r in report if r.startswith("price: ")}
+    billed = {}
+    for blk in re.split(r"\n(?=  - id: )", y_head + y_tail):
+        if (m := re.match(r'  - id: "?([^"\s]+)"?', blk)) and m[1] in repriced:
+            get = lambda f: float((re.search(rf"\n    {f}: ([0-9.]+)", blk) or [0, 0])[1])
+            billed[m[1]] = (get("input_price_per_1m"), get("output_price_per_1m"))
+    new_site = sync_site_prices(new_site, billed)
 
     caps_text = CAPS.read_text()
     fm = re.search(r"FREE_MODEL_IDS = \[([^\]]*)\]", caps_text)
@@ -300,6 +434,8 @@ def main():
         print(f"warn: {by_pmid[p]} ({p}) is no longer in the OpenRouter catalog", file=sys.stderr)
 
     changed = [p.relative_to(ROOT) for p, old, new in ((CONFIG, yaml_text, new_yaml), (SITE, site_text, new_site), (CAPS, caps_text, new_caps)) if old != new]
+    for r in report:
+        print(r)
     print(f"openpaths/free: {' -> '.join(ladder)}")
     print(f"paid: {', '.join(settings['paid']) or '-'}")
     if a.check:
