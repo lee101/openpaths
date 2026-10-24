@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"strconv"
 	"strings"
 	"sync"
@@ -23,25 +24,28 @@ type CryptoStore interface {
 	ListUnsweptCheckouts(ctx context.Context) ([]*model.CryptoCheckoutIntent, error)
 	UpdateCheckoutStatus(ctx context.Context, id string, status model.CryptoCheckoutStatus, txSig string) error
 	MarkCheckoutSwept(ctx context.Context, id string) error
+	ClaimPaid(ctx context.Context, id, txSig string, creditsCents int64) (bool, error)
+	ReleaseClaim(ctx context.Context, id string) error
+	CountPendingForUser(ctx context.Context, userID string) (int, error)
 	MarkExpiredCheckouts(ctx context.Context) (int64, error)
 }
 
 type Config struct {
-	Enabled          bool
-	WalletPubkey     string
-	HDWalletSeed     []byte
-	CodexTokenMint   string
-	BagsAPIKey       string
-	MinTopupUSD      float64
+	Enabled        bool
+	WalletPubkey   string
+	HDWalletSeed   []byte
+	CodexTokenMint string
+	BagsAPIKey     string
+	MinTopupUSD    float64
 }
 
 type Service struct {
-	cfg       Config
-	store     CryptoStore
-	billing   *billing.Engine
-	rpc       *RPCClient
-	prices    *PriceFeed
-	stopCh    chan struct{}
+	cfg     Config
+	store   CryptoStore
+	billing *billing.Engine
+	rpc     *RPCClient
+	prices  *PriceFeed
+	stopCh  chan struct{}
 
 	sseSubscribers map[string][]chan string
 	sseMu          sync.RWMutex
@@ -86,8 +90,17 @@ func (s *Service) CreateCheckout(ctx context.Context, userID string, req *model.
 		return nil, fmt.Errorf("minimum topup is $%.0f", s.cfg.MinTopupUSD)
 	}
 
-	usdAmount := req.AmountUSD
-	creditsCents := int64(usdAmount * 10000) // hundredths-of-a-cent per $1
+	if math.IsNaN(req.AmountUSD) || math.IsInf(req.AmountUSD, 0) || req.AmountUSD > maxTopupUSD {
+		return nil, fmt.Errorf("maximum topup is $%.0f", maxTopupUSD)
+	}
+	if n, err := s.store.CountPendingForUser(ctx, userID); err != nil {
+		return nil, fmt.Errorf("pending check: %w", err)
+	} else if n >= maxPendingPerUser {
+		return nil, fmt.Errorf("too many open checkouts, wait for them to expire")
+	}
+
+	usdAmount := math.Round(req.AmountUSD*100) / 100
+	creditsCents := int64(math.Round(usdAmount * 10000)) // hundredths-of-a-cent per $1
 
 	var amountUI string
 	var amountLamports uint64
@@ -95,9 +108,12 @@ func (s *Service) CreateCheckout(ctx context.Context, userID string, req *model.
 
 	if req.Method == model.CryptoMethodSOL {
 		solPrice := s.prices.SOLPrice()
+		if solPrice <= 0 {
+			return nil, fmt.Errorf("SOL price unavailable, try again shortly")
+		}
 		solAmount := usdAmount / solPrice
 		amountUI = fmt.Sprintf("%.6f", solAmount)
-		amountLamports = uint64(solAmount * 1e9)
+		amountLamports = uint64(math.Ceil(solAmount * 1e9))
 	} else {
 		if s.cfg.CodexTokenMint == "" {
 			return nil, fmt.Errorf("CODEX token not configured")
@@ -105,9 +121,12 @@ func (s *Service) CreateCheckout(ctx context.Context, userID string, req *model.
 		mint = s.cfg.CodexTokenMint
 		// No discount -- market rate
 		codexPrice := s.prices.CODEXPrice()
+		if codexPrice <= 0 {
+			return nil, fmt.Errorf("CODEX price unavailable, try again shortly")
+		}
 		codexAmount := usdAmount / codexPrice
 		amountUI = fmt.Sprintf("%.2f", codexAmount)
-		amountLamports = uint64(codexAmount * 1e9)
+		amountLamports = uint64(math.Ceil(codexAmount * 1e9))
 	}
 
 	depositIndex, err := s.store.NextDepositIndex(ctx)
@@ -207,6 +226,8 @@ func (s *Service) broadcast(intentID string, status model.CryptoCheckoutStatus, 
 // Background workers
 
 const (
+	maxTopupUSD        = 10000.0
+	maxPendingPerUser  = 5
 	freshPollInterval  = 30 * time.Second
 	honorPollInterval  = 1 * time.Hour
 	maxBackoffInterval = 5 * time.Minute
@@ -265,7 +286,7 @@ func (s *Service) checkPendingPayments() bool {
 			continue
 		}
 
-		txSig, verified, wasRateLimited := s.verifyPaymentOnChain(intent)
+		txSig, received, verified, wasRateLimited := s.verifyPaymentOnChain(intent)
 
 		s.intentLastCheckedMu.Lock()
 		s.intentLastChecked[intent.ID] = now
@@ -277,7 +298,7 @@ func (s *Service) checkPendingPayments() bool {
 		}
 
 		if verified {
-			s.processPayment(intent, txSig)
+			s.processPayment(intent, txSig, received)
 			s.intentLastCheckedMu.Lock()
 			delete(s.intentLastChecked, intent.ID)
 			s.intentLastCheckedMu.Unlock()
@@ -288,7 +309,7 @@ func (s *Service) checkPendingPayments() bool {
 	return rateLimited
 }
 
-func (s *Service) verifyPaymentOnChain(intent *model.CryptoCheckoutIntent) (string, bool, bool) {
+func (s *Service) verifyPaymentOnChain(intent *model.CryptoCheckoutIntent) (string, uint64, bool, bool) {
 	params := []interface{}{
 		intent.DepositPubkey,
 		map[string]interface{}{"limit": 10},
@@ -296,7 +317,7 @@ func (s *Service) verifyPaymentOnChain(intent *model.CryptoCheckoutIntent) (stri
 
 	body, err := s.rpc.Call("getSignaturesForAddress", params, 10*time.Second)
 	if err != nil {
-		return "", false, isRateLimit(err)
+		return "", 0, false, isRateLimit(err)
 	}
 
 	var rpcResp struct {
@@ -310,25 +331,25 @@ func (s *Service) verifyPaymentOnChain(intent *model.CryptoCheckoutIntent) (stri
 		} `json:"error"`
 	}
 	if err := json.Unmarshal(body, &rpcResp); err != nil {
-		return "", false, false
+		return "", 0, false, false
 	}
 	if rpcResp.Error != nil {
 		rl := rpcResp.Error.Code == 429 || strings.Contains(strings.ToLower(rpcResp.Error.Message), "rate")
-		return "", false, rl
+		return "", 0, false, rl
 	}
 
 	for _, sig := range rpcResp.Result {
 		if sig.Err != nil {
 			continue
 		}
-		if s.verifyTxDetails(intent, sig.Signature) {
-			return sig.Signature, true, false
+		if received, ok := s.verifyTxDetails(intent, sig.Signature); ok {
+			return sig.Signature, received, true, false
 		}
 	}
-	return "", false, false
+	return "", 0, false, false
 }
 
-func (s *Service) verifyTxDetails(intent *model.CryptoCheckoutIntent, txSig string) bool {
+func (s *Service) verifyTxDetails(intent *model.CryptoCheckoutIntent, txSig string) (uint64, bool) {
 	params := []interface{}{
 		txSig,
 		map[string]interface{}{
@@ -339,7 +360,7 @@ func (s *Service) verifyTxDetails(intent *model.CryptoCheckoutIntent, txSig stri
 
 	body, err := s.rpc.Call("getTransaction", params, 10*time.Second)
 	if err != nil {
-		return false
+		return 0, false
 	}
 
 	var txResp struct {
@@ -375,10 +396,10 @@ func (s *Service) verifyTxDetails(intent *model.CryptoCheckoutIntent, txSig stri
 		} `json:"result"`
 	}
 	if err := json.Unmarshal(body, &txResp); err != nil {
-		return false
+		return 0, false
 	}
 	if txResp.Result.Meta.Err != nil {
-		return false
+		return 0, false
 	}
 
 	targetPubkey := intent.DepositPubkey
@@ -393,16 +414,16 @@ func (s *Service) verifyTxDetails(intent *model.CryptoCheckoutIntent, txSig stri
 			}
 		}
 		if walletIndex == -1 || walletIndex >= len(txResp.Result.Meta.PreBalances) || walletIndex >= len(txResp.Result.Meta.PostBalances) {
-			return false
+			return 0, false
 		}
 		pre := txResp.Result.Meta.PreBalances[walletIndex]
 		post := txResp.Result.Meta.PostBalances[walletIndex]
 		if post <= pre {
-			return false
+			return 0, false
 		}
 		received := post - pre
 		minExpected := uint64(float64(intent.AmountLamports) * 0.99)
-		return received >= minExpected
+		return received, received >= minExpected
 	}
 
 	// SPL token transfer
@@ -420,28 +441,50 @@ func (s *Service) verifyTxDetails(intent *model.CryptoCheckoutIntent, txSig stri
 		}
 	}
 	if postAmount <= preAmount {
-		return false
+		return 0, false
 	}
 	received := postAmount - preAmount
 	minExpected := uint64(float64(intent.AmountLamports) * 0.99)
-	return received >= minExpected
+	return received, received >= minExpected
 }
 
-func (s *Service) processPayment(intent *model.CryptoCheckoutIntent, txSig string) {
+func (s *Service) processPayment(intent *model.CryptoCheckoutIntent, txSig string, received uint64) {
 	ctx := context.Background()
-	if err := s.store.UpdateCheckoutStatus(ctx, intent.ID, model.CryptoStatusPaid, txSig); err != nil {
-		log.Printf("crypto: update status failed: %v", err)
+	credits := intent.CreditsCents
+	if time.Now().After(intent.ExpiresAt) && intent.Mint == "" {
+		// late payment: quote has lapsed, credit the lower of quoted and current value
+		if p := s.prices.SOLPrice(); p > 0 {
+			cur := int64(math.Floor(float64(received) / 1e9 * p * 10000))
+			if cur < credits {
+				credits = cur
+			}
+		} else {
+			return
+		}
+	}
+	if credits <= 0 {
+		return
+	}
+	claimed, err := s.store.ClaimPaid(ctx, intent.ID, txSig, credits)
+	if err != nil {
+		log.Printf("crypto: claim failed: %v", err)
+		return
+	}
+	if !claimed {
+		return
+	}
+
+	desc := fmt.Sprintf("Crypto %s: $%.2f, tx: %s", intent.Method, float64(credits)/10000, truncate(txSig, 16))
+	if err := s.billing.Deposit(ctx, intent.UserID, credits, desc); err != nil {
+		log.Printf("crypto: deposit credits failed, releasing claim id=%s: %v", intent.ID, err)
+		if rerr := s.store.ReleaseClaim(ctx, intent.ID); rerr != nil {
+			log.Printf("crypto: CRITICAL release claim failed id=%s tx=%s: %v", intent.ID, txSig, rerr)
+		}
 		return
 	}
 	s.broadcast(intent.ID, model.CryptoStatusPaid, txSig)
 
-	desc := fmt.Sprintf("Crypto %s: $%.2f, tx: %s", intent.Method, intent.AmountUSD, truncate(txSig, 16))
-	if err := s.billing.Deposit(ctx, intent.UserID, intent.CreditsCents, desc); err != nil {
-		log.Printf("crypto: deposit credits failed: %v", err)
-		return
-	}
-
-	log.Printf("crypto payment: user=%s credits=%d method=%s tx=%s", intent.UserID, intent.CreditsCents, intent.Method, txSig)
+	log.Printf("crypto payment: user=%s credits=%d method=%s tx=%s", intent.UserID, credits, intent.Method, txSig)
 }
 
 func (s *Service) expiredCleaner() {

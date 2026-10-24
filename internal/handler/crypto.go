@@ -44,6 +44,7 @@ func (h *CryptoHandler) HandleGetCheckout(ctx *fasthttp.RequestCtx) {
 		writeError(ctx, 404, "not_found", "Checkout not found")
 		return
 	}
+	intent.UserID = ""
 	writeJSON(ctx, 200, intent)
 }
 

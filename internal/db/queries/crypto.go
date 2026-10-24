@@ -97,6 +97,31 @@ func (q *CryptoQueries) UpdateCheckoutStatus(ctx context.Context, id string, sta
 	return err
 }
 
+func (q *CryptoQueries) ClaimPaid(ctx context.Context, id, txSig string, creditsCents int64) (bool, error) {
+	tag, err := q.pool.Exec(ctx,
+		`UPDATE crypto_checkout_intents SET status = 'paid', tx_sig = $2, credits_cents = $3, paid_at = now()
+		 WHERE id = $1 AND status = 'pending'`, id, txSig, creditsCents)
+	if err != nil {
+		return false, err
+	}
+	return tag.RowsAffected() == 1, nil
+}
+
+func (q *CryptoQueries) ReleaseClaim(ctx context.Context, id string) error {
+	_, err := q.pool.Exec(ctx,
+		`UPDATE crypto_checkout_intents SET status = 'pending', paid_at = NULL
+		 WHERE id = $1 AND status = 'paid' AND NOT swept`, id)
+	return err
+}
+
+func (q *CryptoQueries) CountPendingForUser(ctx context.Context, userID string) (int, error) {
+	var n int
+	err := q.pool.QueryRow(ctx,
+		`SELECT count(*) FROM crypto_checkout_intents
+		 WHERE user_id = $1 AND status = 'pending' AND expires_at > now()`, userID).Scan(&n)
+	return n, err
+}
+
 func (q *CryptoQueries) MarkCheckoutSwept(ctx context.Context, id string) error {
 	_, err := q.pool.Exec(ctx,
 		`UPDATE crypto_checkout_intents SET swept = TRUE WHERE id = $1`, id)

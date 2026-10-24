@@ -7,9 +7,15 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"sort"
 	"strconv"
 	"sync"
 	"time"
+)
+
+const (
+	maxPriceAge = 20 * time.Minute
+	rateFactor  = 0.97
 )
 
 const (
@@ -18,19 +24,19 @@ const (
 )
 
 type PriceFeed struct {
-	solPrice      float64
-	solMu         sync.RWMutex
-	codexPrice    float64
-	codexMu       sync.RWMutex
-	codexMint     string
-	bagsAPIKey    string
-	stopCh        chan struct{}
+	solPrice   float64
+	solAt      time.Time
+	solMu      sync.RWMutex
+	codexPrice float64
+	codexAt    time.Time
+	codexMu    sync.RWMutex
+	codexMint  string
+	bagsAPIKey string
+	stopCh     chan struct{}
 }
 
 func NewPriceFeed(codexMint, bagsAPIKey string) *PriceFeed {
 	return &PriceFeed{
-		solPrice:   100.0,
-		codexPrice: 0.001,
 		codexMint:  codexMint,
 		bagsAPIKey: bagsAPIKey,
 		stopCh:     make(chan struct{}),
@@ -49,13 +55,19 @@ func (p *PriceFeed) Stop() {
 func (p *PriceFeed) SOLPrice() float64 {
 	p.solMu.RLock()
 	defer p.solMu.RUnlock()
-	return p.solPrice
+	if p.solPrice <= 0 || time.Since(p.solAt) > maxPriceAge {
+		return 0
+	}
+	return p.solPrice * rateFactor
 }
 
 func (p *PriceFeed) CODEXPrice() float64 {
 	p.codexMu.RLock()
 	defer p.codexMu.RUnlock()
-	return p.codexPrice
+	if p.codexPrice <= 0 || time.Since(p.codexAt) > maxPriceAge {
+		return 0
+	}
+	return p.codexPrice * rateFactor
 }
 
 func (p *PriceFeed) CODEXMint() string {
@@ -76,42 +88,90 @@ func (p *PriceFeed) solPriceLoop() {
 	}
 }
 
-func (p *PriceFeed) updateSOLPrice() {
+func fetchJSONPrice(url string, extract func([]byte) float64) float64 {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-
-	req, err := http.NewRequestWithContext(ctx, "GET",
-		"https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd", nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
-		return
+		return 0
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return
+		return 0
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return
+		return 0
 	}
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
-		return
+		return 0
 	}
+	return extract(body)
+}
 
-	var result struct {
-		Solana struct {
-			USD float64 `json:"usd"`
-		} `json:"solana"`
+func (p *PriceFeed) updateSOLPrice() {
+	sources := []func() float64{
+		func() float64 {
+			return fetchJSONPrice("https://api.coinbase.com/v2/prices/SOL-USD/spot", func(b []byte) float64 {
+				var r struct {
+					Data struct {
+						Amount string `json:"amount"`
+					} `json:"data"`
+				}
+				if json.Unmarshal(b, &r) != nil {
+					return 0
+				}
+				v, _ := strconv.ParseFloat(r.Data.Amount, 64)
+				return v
+			})
+		},
+		func() float64 {
+			return fetchJSONPrice("https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd", func(b []byte) float64 {
+				var r struct {
+					Solana struct {
+						USD float64 `json:"usd"`
+					} `json:"solana"`
+				}
+				if json.Unmarshal(b, &r) != nil {
+					return 0
+				}
+				return r.Solana.USD
+			})
+		},
+		func() float64 {
+			return fetchJSONPrice("https://api.binance.com/api/v3/ticker/price?symbol=SOLUSDT", func(b []byte) float64 {
+				var r struct {
+					Price string `json:"price"`
+				}
+				if json.Unmarshal(b, &r) != nil {
+					return 0
+				}
+				v, _ := strconv.ParseFloat(r.Price, 64)
+				return v
+			})
+		},
 	}
-	if err := json.Unmarshal(body, &result); err != nil {
+	var got []float64
+	for _, f := range sources {
+		if v := f(); v > 1 && v < 100000 {
+			got = append(got, v)
+		}
+	}
+	if len(got) == 0 {
+		log.Printf("SOL price: all sources failed")
 		return
 	}
-	if result.Solana.USD > 0 {
-		p.solMu.Lock()
-		p.solPrice = result.Solana.USD
-		p.solMu.Unlock()
-		log.Printf("SOL price: $%.2f", result.Solana.USD)
+	sort.Float64s(got)
+	price := got[len(got)/2]
+	if len(got) == 2 {
+		price = got[0]
 	}
+	p.solMu.Lock()
+	p.solPrice = price
+	p.solAt = time.Now()
+	p.solMu.Unlock()
+	log.Printf("SOL price: $%.2f (%d sources)", price, len(got))
 }
 
 func (p *PriceFeed) codexPriceLoop() {
@@ -187,6 +247,7 @@ func (p *PriceFeed) updateCODEXPrice() {
 	if newPrice > 0 && newPrice < 1000 {
 		p.codexMu.Lock()
 		p.codexPrice = newPrice
+		p.codexAt = time.Now()
 		p.codexMu.Unlock()
 		log.Printf("CODEX price: $%.6f (%.0f/SOL)", newPrice, codexPerSOL)
 	}

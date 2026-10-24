@@ -19,7 +19,7 @@ const (
 
 type CryptoCheckoutIntent struct {
 	ID             string               `json:"id"`
-	UserID         string               `json:"user_id"`
+	UserID         string               `json:"user_id,omitempty"`
 	Method         CryptoMethod         `json:"method"`
 	AmountUSD      float64              `json:"amount_usd"`
 	AmountLamports uint64               `json:"amount_lamports"`

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/rand"
 	"flag"
 	"fmt"
 	"log"
@@ -13,6 +12,7 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/mr-tron/base58"
 	"github.com/openpaths/openpaths/internal/agent"
 	"github.com/openpaths/openpaths/internal/artindex"
 	"github.com/openpaths/openpaths/internal/audio"
@@ -36,6 +36,7 @@ import (
 	"github.com/openpaths/openpaths/internal/provider/anthropic"
 	"github.com/openpaths/openpaths/internal/provider/appnz"
 	"github.com/openpaths/openpaths/internal/provider/bfl"
+	"github.com/openpaths/openpaths/internal/provider/cloudflare"
 	"github.com/openpaths/openpaths/internal/provider/cursor"
 	"github.com/openpaths/openpaths/internal/provider/cutedsl"
 	"github.com/openpaths/openpaths/internal/provider/deepseek"
@@ -45,7 +46,6 @@ import (
 	"github.com/openpaths/openpaths/internal/provider/google"
 	"github.com/openpaths/openpaths/internal/provider/groq"
 	"github.com/openpaths/openpaths/internal/provider/localwhisper"
-	"github.com/openpaths/openpaths/internal/provider/cloudflare"
 	"github.com/openpaths/openpaths/internal/provider/manifoldgen"
 	metaprovider "github.com/openpaths/openpaths/internal/provider/meta"
 	"github.com/openpaths/openpaths/internal/provider/minimax"
@@ -486,6 +486,7 @@ func main() {
 	}
 
 	srv := server.New(&server.Dependencies{
+		CryptoSvc:        cryptoSvc,
 		Config:           cfg,
 		Router:           modelRouter,
 		Billing:          billingEngine,
@@ -565,9 +566,12 @@ func sanitizeOpenAICompatible(req *model.ChatCompletionRequest) {
 func initCrypto(cfg *config.Config, database *db.DB, billingEngine *billing.Engine) *crypto.Service {
 	seed, err := crypto.DecodeHex(cfg.Crypto.HDWalletSeed)
 	if err != nil || len(seed) < 32 {
-		log.Printf("HD wallet seed not configured, generating random seed")
-		seed = make([]byte, 64)
-		rand.Read(seed)
+		log.Printf("crypto disabled: HD_WALLET_SEED missing or invalid (need >=32 bytes hex); refusing ephemeral seed")
+		return nil
+	}
+	if pk, derr := base58.Decode(cfg.Crypto.WalletPubkey); derr != nil || len(pk) != 32 {
+		log.Printf("crypto disabled: SOLANA_WALLET_PUBKEY invalid")
+		return nil
 	}
 
 	endpoints := make([]*crypto.RPCEndpoint, 0, 2)
