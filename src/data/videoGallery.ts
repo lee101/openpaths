@@ -121,7 +121,7 @@ export const videoGallery: VideoGalleryItem[] = [
     model: "K-Fold Video Generator",
     modelId: "kfold-video",
     prompt: "A cartographer moves through a luminous paper landscape, ink rivers flowing into new constellations, graceful camera drift, tactile cinematic detail.",
-    videoUrl: "https://manifoldgenstatic.manifoldgen.com/gallery/videos/wan_animate_cartographer_standard_5s_20260816.mp4",
+    videoUrl: "https://manifoldgenstatic.manifoldgen.com/gallery/videos/wan_animate_cartographer_standard_5s_20260816.webm",
     duration: 5,
     resolution: "HD",
     aspectRatio: "16:9",
