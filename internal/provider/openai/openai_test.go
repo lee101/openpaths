@@ -112,6 +112,7 @@ func TestIsReasoningModel(t *testing.T) {
 		{"gpt-6-luna", true},
 		{"gpt-6-astra", true},
 		{"gpt-6.1-sol", true},
+		{"gpt-6.1-terra", true},
 		{"o1", true},
 		{"o3", true},
 		{"o4-mini", true},
@@ -466,5 +467,29 @@ func TestIsRetryableStatus_ResponsesOnlyModel(t *testing.T) {
 				t.Errorf("isRetryableStatus(%d, %q) = %v, want %v", tc.code, tc.body, got, tc.want)
 			}
 		})
+	}
+}
+
+func TestNormalizeToolEffort(t *testing.T) {
+	tool := model.Tool{Type: "function"}
+	req := &model.ChatCompletionRequest{Model: "gpt-6.1-terra", ReasoningEffort: "medium", Tools: []model.Tool{tool}}
+	normalizeToolEffort(req)
+	if req.ReasoningEffort != "none" {
+		t.Errorf("terra with tools effort = %q, want none", req.ReasoningEffort)
+	}
+	noTools := &model.ChatCompletionRequest{Model: "gpt-6.1-terra", ReasoningEffort: "high"}
+	normalizeToolEffort(noTools)
+	if noTools.ReasoningEffort != "high" {
+		t.Errorf("terra without tools effort = %q, want high", noTools.ReasoningEffort)
+	}
+	luna := &model.ChatCompletionRequest{Model: "gpt-6-luna", Tools: []model.Tool{tool}}
+	normalizeToolEffort(luna)
+	if luna.ReasoningEffort != "none" {
+		t.Errorf("luna with tools effort = %q, want none", luna.ReasoningEffort)
+	}
+	sol := &model.ChatCompletionRequest{Model: "gpt-6.1-sol", ReasoningEffort: "high", Tools: []model.Tool{tool}}
+	normalizeToolEffort(sol)
+	if sol.ReasoningEffort != "high" {
+		t.Errorf("sol effort rewritten to %q", sol.ReasoningEffort)
 	}
 }

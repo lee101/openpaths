@@ -475,6 +475,31 @@
   }
  },
  {
+  "id": "gpt-6.1-terra",
+  "provider": "openai",
+  "upstream": "gpt-6.1-terra",
+  "input": 1.0,
+  "output": 5.0,
+  "context": 1050000,
+  "maxOutput": 128000,
+  "vision": true,
+  "tools": true,
+  "aliases": [
+   "gpt6.1-terra",
+   "gpt61-terra",
+   "gpt-6-1-terra",
+   "terra-6.1",
+   "openai/gpt-6.1-terra"
+  ],
+  "cacheRead": 0.05,
+  "longContext": {
+   "threshold": 272000,
+   "input": 2.0,
+   "output": 7.5,
+   "cacheRead": 0.1
+  }
+ },
+ {
   "id": "gpt-6-sol",
   "provider": "openai",
   "upstream": "gpt-6.1-sol",
@@ -1586,7 +1611,15 @@
    "openrouter/stealth/union-alpha",
    "openpaths/stealth/union-alpha",
    "openpaths/union-alpha",
-   "openpaths-union-alpha"
+   "openpaths-union-alpha",
+   "openrouter/deepseek-v4-flash-floor",
+   "openrouter/deepseek/deepseek-v4-flash:floor",
+   "deepseek-v4-flash-floor",
+   "or/deepseek-v4-flash-floor",
+   "deepseek/deepseek-v4.1-flash-1017",
+   "openrouter/deepseek/deepseek-v4.1-flash-1017",
+   "deepseek-v4.1-flash-1017",
+   "or/deepseek-v4.1-flash-1017"
   ],
   "cacheRead": 0.003,
   "schedule": {
@@ -1639,7 +1672,11 @@
   "tools": true,
   "aliases": [
    "deepseek-pro",
-   "deepseek-v4-reasoning"
+   "deepseek-v4-reasoning",
+   "deepseek/deepseek-v4-pro-0813",
+   "openrouter/deepseek/deepseek-v4-pro-0813",
+   "deepseek-v4-pro-0813",
+   "or/deepseek-v4-pro-0813"
   ],
   "cacheRead": 0.003625,
   "schedule": {
@@ -1678,7 +1715,8 @@
   "vision": false,
   "tools": true,
   "aliases": [
-   "deepseek"
+   "deepseek",
+   "or/deepseek-chat"
   ]
  },
  {
@@ -1969,23 +2007,6 @@
   ]
  },
  {
-  "id": "or/deepseek-v4-flash-floor",
-  "provider": "openrouter",
-  "upstream": "deepseek/deepseek-v4-flash:floor",
-  "input": 0.0826,
-  "output": 0.1652,
-  "context": 1048576,
-  "maxOutput": 384000,
-  "vision": false,
-  "tools": true,
-  "aliases": [
-   "openrouter/deepseek-v4-flash-floor",
-   "openrouter/deepseek/deepseek-v4-flash:floor",
-   "deepseek-v4-flash-floor"
-  ],
-  "cacheRead": 0.01652
- },
- {
   "id": "or/gemini-4-argon",
   "provider": "openrouter",
   "upstream": "google/gemini-4-argon",
@@ -2155,6 +2176,27 @@
    "input": 4.22,
    "output": 15.825,
    "cacheRead": 0.211
+  }
+ },
+ {
+  "id": "or/gpt-6.1-terra",
+  "provider": "openrouter",
+  "upstream": "openai/gpt-6.1-terra",
+  "input": 1.055,
+  "output": 5.275,
+  "context": 1050000,
+  "maxOutput": 128000,
+  "vision": true,
+  "tools": true,
+  "aliases": [
+   "openai/gpt-6.1-terra"
+  ],
+  "cacheRead": 0.0528,
+  "longContext": {
+   "threshold": 272000,
+   "input": 2.11,
+   "output": 7.9125,
+   "cacheRead": 0.1056
   }
  },
  {
@@ -2471,18 +2513,6 @@
   "context": 1000000,
   "maxOutput": 65536,
   "vision": true,
-  "tools": true,
-  "aliases": []
- },
- {
-  "id": "or/deepseek-chat",
-  "provider": "openrouter",
-  "upstream": "deepseek/deepseek-chat",
-  "input": 0.28,
-  "output": 1.0853,
-  "context": 128000,
-  "maxOutput": 8192,
-  "vision": false,
   "tools": true,
   "aliases": []
  },
@@ -3223,40 +3253,6 @@
    "command-a-plus"
   ],
   "cacheRead": 0.1583
- },
- {
-  "id": "or/deepseek-v4-pro-0813",
-  "provider": "openrouter",
-  "upstream": "deepseek/deepseek-v4-pro-0813",
-  "input": 1.3926,
-  "output": 4.1778,
-  "context": 1048576,
-  "maxOutput": 393216,
-  "vision": false,
-  "tools": true,
-  "aliases": [
-   "deepseek/deepseek-v4-pro-0813",
-   "openrouter/deepseek/deepseek-v4-pro-0813",
-   "deepseek-v4-pro-0813"
-  ],
-  "cacheRead": 0.0465
- },
- {
-  "id": "or/deepseek-v4.1-flash-1017",
-  "provider": "openrouter",
-  "upstream": "deepseek/deepseek-v4.1-flash-1017",
-  "input": 0.3165,
-  "output": 1.266,
-  "context": 1048576,
-  "maxOutput": 393216,
-  "vision": true,
-  "tools": true,
-  "aliases": [
-   "deepseek/deepseek-v4.1-flash-1017",
-   "openrouter/deepseek/deepseek-v4.1-flash-1017",
-   "deepseek-v4.1-flash-1017"
-  ],
-  "cacheRead": 0.0064
  },
  {
   "id": "or/glimpse",

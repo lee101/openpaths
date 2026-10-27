@@ -677,7 +677,7 @@ func TestAutoRouter_CodeTaskRoutesEverydayTestsToDeepSeekFlash(t *testing.T) {
 	}
 }
 
-func TestAutoRouter_CodeTaskRoutesShaderVFXToGPT56SolHigh(t *testing.T) {
+func TestAutoRouter_CodeTaskRoutesShaderVFXToGeminiFlashHigh(t *testing.T) {
 	ar := NewAutoRouter(&fakeEmbedder{})
 	if err := ar.Init(context.Background()); err != nil {
 		t.Fatalf("Init() error = %v", err)
@@ -687,8 +687,8 @@ func TestAutoRouter_CodeTaskRoutesShaderVFXToGPT56SolHigh(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ResolveAuto() error = %v", err)
 	}
-	if got.ModelID != "gpt-5.6-sol" {
-		t.Fatalf("ModelID = %q, want gpt-5.6-sol", got.ModelID)
+	if got.ModelID != "gemini-3.7-flash" {
+		t.Fatalf("ModelID = %q, want gemini-3.7-flash", got.ModelID)
 	}
 	if got.ReasoningEffort != "high" {
 		t.Fatalf("ReasoningEffort = %q, want high", got.ReasoningEffort)
@@ -779,5 +779,28 @@ func TestDefaultRoutingTables_CodeTaskTierMix(t *testing.T) {
 	}
 	if counts["gpt-5.6-sol"] == 0 || counts["deepseek-v4-flash"] == 0 {
 		t.Fatalf("code-task needs both Sol and DeepSeek lanes: %v", counts)
+	}
+}
+
+func TestDefaultRoutingTables_CodeTaskHasTerraMidFrontier(t *testing.T) {
+	counts := map[string]int{}
+	for _, e := range defaultRoutingTables()["code-task"] {
+		counts[e.ModelID]++
+	}
+	if counts["gpt-6.1-terra"] == 0 {
+		t.Fatalf("code-task needs a GPT-6.1 Terra lane: %v", counts)
+	}
+}
+
+func TestDefaultRoutingTables_CodeTaskCreativeAndAdultStayOffSol(t *testing.T) {
+	for _, e := range defaultRoutingTables()["code-task"] {
+		if e.ModelID != "gpt-5.6-sol" {
+			continue
+		}
+		for _, w := range []string{"nsfw", "creative coding", "shader", "creative writing"} {
+			if strings.Contains(e.Description, w) {
+				t.Fatalf("code-task Sol entry %q should be a flash lane", e.Description)
+			}
+		}
 	}
 }

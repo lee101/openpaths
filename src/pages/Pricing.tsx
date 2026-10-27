@@ -23,6 +23,7 @@ const LATEST_MODEL_IDS = [
   'claude-haiku-5-5',
   'or/gpt-6-astra',
   'gpt-6.1-sol',
+  'gpt-6.1-terra',
   'gpt-6-luna',
   'gemini-4-argon',
   'gemini-3.8-flash',

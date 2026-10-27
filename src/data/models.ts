@@ -1023,6 +1023,19 @@ const catalogModels: Model[] = [
     popularity: 5
   },
   {
+    id: 'gpt-6.1-terra',
+    name: 'GPT-6.1 Terra',
+    provider: 'OpenAI',
+    description: 'The step below Sol for everyday engineering and agent work: $1 in, $5 out, cached input at $0.05 per million. 1.05M-token context, text and image input, reasoning effort up to xhigh, native tool use.',
+    contextLength: '1.05M',
+    priceInput: 1,
+    priceOutput: 5,
+    tags: ['general', 'vision', 'programming', 'reasoning', 'agentic'],
+    aliases: ['gpt6.1-terra', 'gpt61-terra'],
+    released: '2026-10-27',
+    popularity: 5
+  },
+  {
     id: 'gpt-6-sol',
     name: 'GPT-6 Sol',
     provider: 'OpenAI',
@@ -5891,32 +5904,6 @@ const catalogModels: Model[] = [
     tags: ['general', 'vision', 'reasoning', 'agentic'],
     aliases: ['cohere/command-a-plus', 'openrouter/cohere/command-a-plus', 'command-a-plus'],
     released: '2026-09-22',
-    popularity: 10
-  },
-  {
-    id: 'or/deepseek-v4-pro-0813',
-    name: 'DeepSeek: DeepSeek V4 Pro 0813',
-    provider: 'OpenRouter',
-    description: 'DeepSeek V4 Pro 0813 is a large-scale mixture-of-experts model from DeepSeek. Routed through OpenRouter.',
-    contextLength: '1024K',
-    priceInput: 1.3926,
-    priceOutput: 4.1778,
-    tags: ['general', 'reasoning', 'agentic'],
-    aliases: ['deepseek/deepseek-v4-pro-0813', 'openrouter/deepseek/deepseek-v4-pro-0813', 'deepseek-v4-pro-0813'],
-    released: '2026-08-12',
-    popularity: 10
-  },
-  {
-    id: 'or/deepseek-v4.1-flash-1017',
-    name: 'DeepSeek: DeepSeek V4.1 Flash 1017',
-    provider: 'OpenRouter',
-    description: 'DeepSeek V4.1 Flash 1017 is the October 17, 2026 snapshot of DeepSeek V4.1 Flash, served by DeepSeek under the `deepseek-flash` API model name. Routed through OpenRouter.',
-    contextLength: '1024K',
-    priceInput: 0.3165,
-    priceOutput: 1.266,
-    tags: ['general', 'vision', 'reasoning', 'agentic'],
-    aliases: ['deepseek/deepseek-v4.1-flash-1017', 'openrouter/deepseek/deepseek-v4.1-flash-1017', 'deepseek-v4.1-flash-1017'],
-    released: '2026-10-17',
     popularity: 10
   },
   {

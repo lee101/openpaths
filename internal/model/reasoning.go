@@ -22,6 +22,10 @@ var reasoningVocabularies = []reasoningVocabulary{
 	// 2026-09-22). The model docs list "max" for reasoning.effort on the
 	// Responses API, so the chat-completions set is the narrower one.
 	{matches: family("gpt-6"), supported: effortSet("none", "low", "medium", "high", "xhigh")},
+	// GPT-6.1 Terra takes the full none..xhigh set but rejects "minimal" and
+	// "max" (probed against api.openai.com 2026-10-27). Ahead of the 6.1 Sol
+	// entry, which would otherwise match the whole dotted family.
+	{matches: bareFamily("gpt-6.1-terra"), supported: effortSet("none", "low", "medium", "high", "xhigh")},
 	// GPT-6.1 Sol takes four efforts on /v1/chat/completions and nothing else:
 	// "Unsupported value: 'reasoning_effort' does not support 'none' with this
 	// model. Supported values are: 'low', 'medium', 'high', and 'xhigh'"

@@ -519,6 +519,8 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			{Description: "causal inference counterfactual analysis confounders identification strategy", ModelID: "gemini-3.7-flash", ReasoningEffort: "high"},
 			{Description: "multi region disaster recovery migration with rollback consistency and failure injection", ModelID: "gemini-3.7-flash", ReasoningEffort: "high"},
 			{Description: "reconcile contradictory requirements evidence sources and hidden constraints", ModelID: "gemini-3.7-flash", ReasoningEffort: "high"},
+			{Description: "senior engineer design review moderate complexity tradeoffs recommendation", ModelID: "gpt-6.1-terra", ReasoningEffort: "high"},
+			{Description: "difficult code review performance regression profiling hot path concurrency scalability", ModelID: "gpt-5.6-sol", ReasoningEffort: "high"},
 			// High-effort algorithmic / math / systems.
 			{Description: "formal verification compiler design cryptography research deep scientific reasoning", ModelID: "gemini-3.7-flash", ReasoningEffort: "high"},
 			{Description: "prove a theorem derive a formula or solve a hard math olympiad style problem", ModelID: "gemini-3.7-flash", ReasoningEffort: "high"},
@@ -588,7 +590,7 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			{Description: "debug fix bug error exception crash investigate stack trace reproduce failing case regression", ModelID: "deepseek-v4-pro", ReasoningEffort: "high"},
 			{Description: "implement feature add function method class component endpoint api route handler business logic", ModelID: "deepseek-v4-flash", ReasoningEffort: "medium"},
 			{Description: "write unit test integration test test case mock stub coverage assertion table driven", ModelID: "deepseek-v4-flash", ReasoningEffort: "medium"},
-			{Description: "code review analyze quality security vulnerability check audit patch suggestion diff feedback", ModelID: "deepseek-v4-pro", ReasoningEffort: "high"},
+			{Description: "surface level code review style naming readability small pull request nitpicks diff feedback quality check", ModelID: "gpt-6.1-terra", ReasoningEffort: "medium"},
 			{Description: "refactor cleanup restructure module rename variable extract helper simplify dead code", ModelID: "deepseek-v4-flash", ReasoningEffort: "medium"},
 			{Description: "explain how this code works walkthrough summarize what this function does onboarding", ModelID: "deepseek-v4-flash", ReasoningEffort: "low"},
 			{Description: "sql query migration schema design model orm prisma database index", ModelID: "deepseek-v4-flash", ReasoningEffort: "low"},
@@ -596,11 +598,10 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			{Description: "python node typescript golang shell script automation cli tool utility snippet", ModelID: "deepseek-v4-flash", ReasoningEffort: "low"},
 			{Description: "api integration third party sdk client library webhook payload request response http rest", ModelID: "deepseek-v4-flash", ReasoningEffort: "low"},
 			{Description: "error handling validation input sanitization edge cases defensive checks retry backoff", ModelID: "deepseek-v4-flash", ReasoningEffort: "medium"},
-			{Description: "dockerfile docker compose kubernetes manifest helm chart ci cd pipeline github actions workflow", ModelID: "deepseek-v4-flash", ReasoningEffort: "low"},
+			{Description: "dockerfile docker compose kubernetes manifest helm chart ci cd pipeline github actions workflow", ModelID: "gpt-6.1-terra", ReasoningEffort: "low"},
 			{Description: "documentation readme changelog docstring jsdoc typedoc godoc code comments", ModelID: "deepseek-v4-flash", ReasoningEffort: "low"},
 			{Description: "authentication authorization login signup oauth jwt session middleware flow", ModelID: "deepseek-v4-flash", ReasoningEffort: "medium"},
 			// Trivial mechanical edits stay on the cheap fast tier.
-			{Description: "resolve this git diff merge conflict cherry pick rebase", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
 			{Description: "remove this text delete unused import rename variable lint fix typo", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
 			{Description: "git commit push pull branch checkout status diff log", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
 			{Description: "shell command bash script terminal automation", ModelID: "gpt-5.4-nano", ReasoningEffort: "none"},
@@ -609,11 +610,23 @@ func defaultRoutingTables() map[string][]AutoEntry {
 			{Description: "frontend ui ux layout component react vue svelte tailwind css", ModelID: "gemini-3.7-flash", ReasoningEffort: "medium"},
 			{Description: "game design threejs physics simulation clock gears cogs mechanism", ModelID: "gemini-3.7-flash", ReasoningEffort: "high"},
 			// High-end VFX / GPU graphics — frontier only
-			{Description: "glsl hlsl shader authoring fragment vertex compute raymarching render pipeline post processing effect particle system vfx simulation gpu graphics", ModelID: "gpt-5.6-sol", ReasoningEffort: "high"},
+			{Description: "glsl hlsl shader authoring fragment vertex compute raymarching render pipeline post processing effect particle system vfx simulation gpu graphics", ModelID: "gemini-3.7-flash", ReasoningEffort: "high"},
+			{Description: "creative coding generative art p5js processing shadertoy visual toy audio reactive demoscene interactive sketch", ModelID: "gemini-3.7-flash", ReasoningEffort: "medium"},
+			{Description: "nsfw adult erotic roleplay bot companion character app game code explicit mature content tooling", ModelID: "deepseek-v4-flash", ReasoningEffort: "medium"},
+			{Description: "creative writing story fiction prose dialogue worldbuilding narrative game script", ModelID: "deepseek-v4-flash", ReasoningEffort: "low"},
 			// Stock trading / HFT / quant — frontier only
 			{Description: "stock trading system backtesting engine order book market data feed quant strategy risk model hft low latency execution tick data", ModelID: "gpt-5.6-sol", ReasoningEffort: "high"},
 			// AI / LLM development — frontier only
 			{Description: "llm ai development fine tuning training run inference optimization kv cache quantization tokenizer rag pipeline embedding search cuda kernel eval harness", ModelID: "gpt-5.6-sol", ReasoningEffort: "high"},
+			// Mid-frontier — GPT-6.1 Terra ($1/$5): real engineering that is easier than Sol work
+			{Description: "multi file feature spanning several modules with tests and integration wiring", ModelID: "gpt-6.1-terra", ReasoningEffort: "medium"},
+			{Description: "intermittent flaky failing test root cause analysis across services and logs", ModelID: "gpt-6.1-terra", ReasoningEffort: "high"},
+			{Description: "git merge conflict cherry pick rebase release branch tag changelog history cleanup", ModelID: "gpt-6.1-terra", ReasoningEffort: "low"},
+			{Description: "deploy release rollout ci failing build pipeline fix staging production config", ModelID: "gpt-6.1-terra", ReasoningEffort: "low"},
+			{Description: "difficult code review performance regression hot path allocation locking cache behavior scalability risk", ModelID: "gpt-5.6-sol", ReasoningEffort: "high"},
+			{Description: "upgrade framework library version breaking changes migrate call sites", ModelID: "gpt-6.1-terra", ReasoningEffort: "medium"},
+			{Description: "agentic loop edit files run tests read output iterate until passing", ModelID: "gpt-6.1-terra", ReasoningEffort: "low"},
+			{Description: "slow query tuning index plan explain analyze schema performance", ModelID: "gpt-6.1-terra", ReasoningEffort: "medium"},
 			// Top tier: huge scope, hugely ambiguous specs, or optimization where
 			// marginal quality pays for itself.
 			{Description: "optimize performance end to end profile benchmark squeeze latency throughput memory hot path tuning", ModelID: "claude-opus-latest", ReasoningEffort: "high"},

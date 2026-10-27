@@ -154,6 +154,20 @@ func normalizeSamplingParams(req *model.ChatCompletionRequest) {
 	req.Stop = nil
 }
 
+// normalizeToolEffort pins reasoning_effort to "none" when a GPT-6.1 Terra or
+// GPT-6 Luna request carries function tools: chat completions answers "Function
+// tools with reasoning_effort are not supported ... set reasoning_effort to
+// 'none'" for any other value, including the unset default. Sol is excluded:
+// 6.1 Sol has no "none" and refuses tools on this endpoint outright.
+func normalizeToolEffort(req *model.ChatCompletionRequest) {
+	if len(req.Tools) == 0 {
+		return
+	}
+	if strings.HasPrefix(req.Model, "gpt-6.1-terra") || strings.HasPrefix(req.Model, "gpt-6-luna") {
+		req.ReasoningEffort = "none"
+	}
+}
+
 // isRetryableStatus reports whether an upstream failure should let the router
 // fall back to the next candidate model/provider. Beyond the usual transient
 // 5xx/429 cases, some models (e.g. gpt-5-codex) are only served on the
@@ -184,6 +198,7 @@ func (p *OpenAIProvider) ChatCompletion(ctx context.Context, req *model.ChatComp
 	outReq.ChatTemplateKwargs = cloneMap(req.ChatTemplateKwargs)
 	normalizeMaxTokens(&outReq)
 	normalizeSamplingParams(&outReq)
+	normalizeToolEffort(&outReq)
 	if p.sanitizeChat != nil {
 		p.sanitizeChat(&outReq)
 	}
@@ -242,6 +257,7 @@ func (p *OpenAIProvider) ChatCompletionStream(ctx context.Context, req *model.Ch
 	}
 	normalizeMaxTokens(&outReq)
 	normalizeSamplingParams(&outReq)
+	normalizeToolEffort(&outReq)
 	if p.sanitizeChat != nil {
 		p.sanitizeChat(&outReq)
 	}

@@ -42,10 +42,12 @@ func TestGPT6TierModels(t *testing.T) {
 		requireFallbacks bool
 	}{
 		{"gpt-6.1-sol", "openai", "gpt-6.1-sol", "gpt6.1-sol", 2.00, 0.10, 10.00, 4.00, 272000, true},
+		{"gpt-6.1-terra", "openai", "gpt-6.1-terra", "gpt6.1-terra", 1.00, 0.05, 5.00, 2.00, 272000, true},
 		{"gpt-6-sol", "openai", "gpt-6.1-sol", "gpt6-sol", 2.00, 0.20, 10.00, 4.00, 272000, true},
 		{"gpt-6-luna", "openai", "gpt-6-luna", "gpt6-luna", 0.10, 0.01, 0.50, 0.20, 272000, true},
 		// OpenRouter lanes: OpenRouter's rate plus its 5.5% fee, rounded up.
 		{"or/gpt-6.1-sol", "openrouter", "openai/gpt-6.1-sol", "openai/gpt-6.1-sol", 2.11, 0.1055, 10.55, 4.22, 272000, false},
+		{"or/gpt-6.1-terra", "openrouter", "openai/gpt-6.1-terra", "openai/gpt-6.1-terra", 1.055, 0.0528, 5.275, 2.11, 272000, false},
 		{"or/gpt-6-sol", "openrouter", "openai/gpt-6.1-sol", "openai/gpt-6-sol", 2.11, 0.20, 10.55, 4.22, 272000, false},
 		{"or/gpt-6-luna", "openrouter", "openai/gpt-6-luna", "openai/gpt-6-luna", 0.1055, 0.0106, 0.5275, 0.211, 272000, false},
 	}

@@ -1729,6 +1729,31 @@ models:
       - "gpt-5.6-terra"
       - "or/gpt-6.1-sol"
 
+  # GPT-6.1 Terra: the step below Sol - $1 in / $0.05 cached / $5 out, same
+  # 1.05M window, 272K long-context cliff (2x input and cache, 1.5x output;
+  # matches openrouter.ai/api/v1/models). Efforts none..xhigh on chat
+  # completions; function tools are refused unless effort is "none", which the
+  # openai provider forces for tool requests.
+  - id: "gpt-6.1-terra"
+    provider: openai
+    provider_model_id: "gpt-6.1-terra"
+    input_price_per_1m: 1.00
+    input_cache_hit_price_per_1m: 0.05
+    output_price_per_1m: 5.00
+    input_price_per_1m_long: 2.00
+    input_cache_hit_price_per_1m_long: 0.10
+    output_price_per_1m_long: 7.50
+    long_context_threshold: 272000
+    aliases: ["gpt6.1-terra", "gpt61-terra", "gpt-6-1-terra", "terra-6.1", "openai/gpt-6.1-terra"]
+    context_window: 1050000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models:
+      - "or/gpt-6.1-terra"
+      - "gpt-5.6-terra"
+
   # The 6.0 id keeps its own rate card (cache reads stay at 10% of input) and
   # now rides the 6.1 upstream.
   - id: "gpt-6-sol"
@@ -2932,7 +2957,7 @@ models:
       off_peak_input_cache_hit_price_per_1m: 0.003
       off_peak_output_price_per_1m: 0.60
       weekend_off_peak_effective_at: "2026-08-22T16:00:00Z"
-    aliases: ["deepseek-flash", "deepseek-v4", "deepseek-v4.1-flash", "stealth/union-alpha", "union-alpha", "or/union-alpha", "openrouter/stealth/union-alpha", "openpaths/stealth/union-alpha", "openpaths/union-alpha", "openpaths-union-alpha"]
+    aliases: ["deepseek-flash", "deepseek-v4", "deepseek-v4.1-flash", "stealth/union-alpha", "union-alpha", "or/union-alpha", "openrouter/stealth/union-alpha", "openpaths/stealth/union-alpha", "openpaths/union-alpha", "openpaths-union-alpha", "openrouter/deepseek-v4-flash-floor", "openrouter/deepseek/deepseek-v4-flash:floor", "deepseek-v4-flash-floor", "or/deepseek-v4-flash-floor", "deepseek/deepseek-v4.1-flash-1017", "openrouter/deepseek/deepseek-v4.1-flash-1017", "deepseek-v4.1-flash-1017", "or/deepseek-v4.1-flash-1017"]
     context_window: 1000000
     max_output_tokens: 384000
     supports_streaming: true
@@ -2943,7 +2968,6 @@ models:
       - "deepseek-chat"
       - "nvidia/deepseek-v3.2"
       - "together/deepseek-v3.1"
-      - "or/deepseek-chat"
 
   # DeepSeek V4.1 Flash image-input experimental endpoint (legacy name
   # deepseek-v4-flash-vision-exp retired upstream; served by V4.1 Flash).
@@ -2982,7 +3006,7 @@ models:
       off_peak_input_cache_hit_price_per_1m: 0.022
       off_peak_output_price_per_1m: 1.98
       weekend_off_peak_effective_at: "2026-08-22T16:00:00Z"
-    aliases: ["deepseek-pro", "deepseek-v4-reasoning"]
+    aliases: ["deepseek-pro", "deepseek-v4-reasoning", "deepseek/deepseek-v4-pro-0813", "openrouter/deepseek/deepseek-v4-pro-0813", "deepseek-v4-pro-0813", "or/deepseek-v4-pro-0813"]
     context_window: 1000000
     max_output_tokens: 384000
     supports_streaming: true
@@ -2999,7 +3023,7 @@ models:
     provider_model_id: "deepseek-chat"
     input_price_per_1m: 0.14
     output_price_per_1m: 0.28
-    aliases: ["deepseek"]
+    aliases: ["deepseek", "or/deepseek-chat"]
     context_window: 128000
     max_output_tokens: 8192
     supports_streaming: true
@@ -3008,7 +3032,6 @@ models:
     fallback_models:
       - "nvidia/deepseek-v3.2"
       - "together/deepseek-v3.1"
-      - "or/deepseek-chat"
 
   - id: "deepseek-reasoner"
     provider: deepseek
@@ -3266,20 +3289,6 @@ models:
     deprecated_note: "Groq decommissioned llama-3.1-8b-instant on 2026-08-16; compatibility route uses Groq gpt-oss-20b."
 
   # --- OpenRouter (fallback access to any model) ---
-  - id: "or/deepseek-v4-flash-floor"
-    provider: openrouter
-    provider_model_id: "deepseek/deepseek-v4-flash:floor"
-    input_price_per_1m: 0.0826
-    input_cache_hit_price_per_1m: 0.01652
-    output_price_per_1m: 0.1652
-    aliases: ["openrouter/deepseek-v4-flash-floor", "openrouter/deepseek/deepseek-v4-flash:floor", "deepseek-v4-flash-floor"]
-    fallback_models: ["openpaths/auto-cheap", "deepseek-v4-flash"]
-    context_window: 1048576
-    max_output_tokens: 384000
-    supports_streaming: true
-    supports_tools: true
-    supports_vision: false
-
   # openrouter: in=2 out=10 cache=0.1 per 1M, +5.5% fee
   - id: "or/gemini-4-argon"
     provider: openrouter
@@ -3438,6 +3447,24 @@ models:
     input_cache_hit_price_per_1m_long: 0.211
     output_price_per_1m_long: 15.825
     long_context_threshold: 272000
+    context_window: 1050000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  # openrouter: in=1 out=5 cache=0.05 long@272000 in=2 out=7.5 cache=0.1 per 1M, +5.5% fee
+  - id: "or/gpt-6.1-terra"
+    provider: openrouter
+    provider_model_id: "openai/gpt-6.1-terra"
+    input_price_per_1m: 1.055
+    input_cache_hit_price_per_1m: 0.0528
+    output_price_per_1m: 5.275
+    input_price_per_1m_long: 2.11
+    input_cache_hit_price_per_1m_long: 0.1056
+    output_price_per_1m_long: 7.9125
+    long_context_threshold: 272000
+    aliases: ["openai/gpt-6.1-terra"]
     context_window: 1050000
     max_output_tokens: 128000
     supports_streaming: true
@@ -3745,18 +3772,6 @@ models:
     supports_streaming: true
     supports_tools: true
     supports_vision: true
-
-  # openrouter: in=0.2574 out=1.0287 cache=0 per 1M, +5.5% fee
-  - id: "or/deepseek-chat"
-    provider: openrouter
-    provider_model_id: "deepseek/deepseek-chat"
-    input_price_per_1m: 0.28
-    output_price_per_1m: 1.0853
-    context_window: 128000
-    max_output_tokens: 8192
-    supports_streaming: true
-    supports_tools: true
-    supports_vision: false
 
   # openrouter: in=2 out=6 cache=0.5 long@200000 in=4 out=12 cache=1 per 1M, +5.5% fee
   - id: "or/grok-4"
@@ -4966,34 +4981,6 @@ models:
     supports_tools: true
     supports_vision: true
 
-  # openrouter: in=1.32 out=3.96 cache=0.044 per 1M, +5.5% fee
-  - id: "or/deepseek-v4-pro-0813"
-    provider: openrouter
-    provider_model_id: "deepseek/deepseek-v4-pro-0813"
-    input_price_per_1m: 1.3926
-    input_cache_hit_price_per_1m: 0.0465
-    output_price_per_1m: 4.1778
-    aliases: ["deepseek/deepseek-v4-pro-0813", "openrouter/deepseek/deepseek-v4-pro-0813", "deepseek-v4-pro-0813"]
-    context_window: 1048576
-    max_output_tokens: 393216
-    supports_streaming: true
-    supports_tools: true
-    supports_vision: false
-
-  # openrouter: in=0.3 out=1.2 cache=0.006 per 1M, +5.5% fee
-  - id: "or/deepseek-v4.1-flash-1017"
-    provider: openrouter
-    provider_model_id: "deepseek/deepseek-v4.1-flash-1017"
-    input_price_per_1m: 0.3165
-    input_cache_hit_price_per_1m: 0.0064
-    output_price_per_1m: 1.266
-    aliases: ["deepseek/deepseek-v4.1-flash-1017", "openrouter/deepseek/deepseek-v4.1-flash-1017", "deepseek-v4.1-flash-1017"]
-    context_window: 1048576
-    max_output_tokens: 393216
-    supports_streaming: true
-    supports_tools: true
-    supports_vision: true
-
   # openrouter: in=0.6 out=3 cache=0.06 per 1M, +5.5% fee
   - id: "or/glimpse"
     provider: openrouter
@@ -5854,7 +5841,6 @@ models:
     fallback_models:
       - "deepseek-chat"
       - "together/deepseek-v3.1"
-      - "or/deepseek-chat"
 
   - id: "nvidia/deepseek-v4-flash"
     provider: nvidia
