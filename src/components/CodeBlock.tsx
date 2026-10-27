@@ -1,4 +1,43 @@
-import hljs from 'highlight.js/lib/common';
+import hljs from 'highlight.js/lib/core';
+import bash from 'highlight.js/lib/languages/bash';
+import python from 'highlight.js/lib/languages/python';
+import javascript from 'highlight.js/lib/languages/javascript';
+import typescript from 'highlight.js/lib/languages/typescript';
+import json from 'highlight.js/lib/languages/json';
+import go from 'highlight.js/lib/languages/go';
+import powershell from 'highlight.js/lib/languages/powershell';
+import markdown from 'highlight.js/lib/languages/markdown';
+import yaml from 'highlight.js/lib/languages/yaml';
+import xml from 'highlight.js/lib/languages/xml';
+import sql from 'highlight.js/lib/languages/sql';
+import css from 'highlight.js/lib/languages/css';
+import diff from 'highlight.js/lib/languages/diff';
+import shell from 'highlight.js/lib/languages/shell';
+import ini from 'highlight.js/lib/languages/ini';
+import rust from 'highlight.js/lib/languages/rust';
+import java from 'highlight.js/lib/languages/java';
+import csharp from 'highlight.js/lib/languages/csharp';
+import plaintext from 'highlight.js/lib/languages/plaintext';
+
+hljs.registerLanguage('bash', bash);
+hljs.registerLanguage('python', python);
+hljs.registerLanguage('javascript', javascript);
+hljs.registerLanguage('typescript', typescript);
+hljs.registerLanguage('json', json);
+hljs.registerLanguage('go', go);
+hljs.registerLanguage('powershell', powershell);
+hljs.registerLanguage('markdown', markdown);
+hljs.registerLanguage('yaml', yaml);
+hljs.registerLanguage('xml', xml);
+hljs.registerLanguage('sql', sql);
+hljs.registerLanguage('css', css);
+hljs.registerLanguage('diff', diff);
+hljs.registerLanguage('shell', shell);
+hljs.registerLanguage('ini', ini);
+hljs.registerLanguage('rust', rust);
+hljs.registerLanguage('java', java);
+hljs.registerLanguage('csharp', csharp);
+hljs.registerLanguage('plaintext', plaintext);
 
 type CodeBlockProps = {
   code: string;

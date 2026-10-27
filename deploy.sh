@@ -213,8 +213,17 @@ for (const route of manifest) {
 }
 
 # --- Site deploy: build frontend + sync to R2 ---
+scan_dist_secrets() {
+    require_cmd gitleaks
+    green "gitleaks scan of ${DIST_DIR}..."
+    gitleaks dir "${DIST_DIR}" --config .gitleaks.toml --no-banner --redact --log-level error \
+        || { red "secrets found in ${DIST_DIR}; aborting"; exit 1; }
+}
+
 deploy_site() {
     build_frontend
+
+    scan_dist_secrets
 
     green "syncing to R2 (${STATIC_BUCKET})..."
     require_cmd aws

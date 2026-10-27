@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { Zap, Code2, ArrowRight, Check, Copy, KeyRound, Github, Search, Layers, Activity, Sparkles, ArrowUpRight, Video } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { ArtificialAnalysisBenchmarkSection } from '../components/ArtificialAnalysisCharts';
+const ArtificialAnalysisBenchmarkSection = lazy(() => import('../components/ArtificialAnalysisCharts').then(m => ({ default: m.ArtificialAnalysisBenchmarkSection })));
 import { CodeBlock } from '../components/CodeBlock';
 import { artGallery } from '../data/artGallery';
 import { videoGallery } from '../data/videoGallery';
@@ -201,7 +201,7 @@ export function Landing() {
             <FrontierMetric value="$0.11" label="Mean cascade cost" detail="verified runs" />
             <FrontierMetric value="30×" label="Lower cost per solve" detail="research baseline" />
           </div>
-          <ArtificialAnalysisBenchmarkSection compact />
+          <Suspense fallback={<div className="min-h-[480px]" />}><ArtificialAnalysisBenchmarkSection compact /></Suspense>
           <div className="mt-6 flex flex-wrap items-center justify-end gap-4 font-mono text-xs text-white/60">
             <div className="flex gap-4">
               <Link to="/blog/learning-to-route-whitepaper" className="text-white/70 hover:text-white">Research <ArrowRight className="ml-1 inline h-3.5 w-3.5" /></Link>
