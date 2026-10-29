@@ -2940,11 +2940,33 @@ JSON`;
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      handleSend();
+      return;
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
   }
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      if (showSettings) {
+        event.preventDefault();
+        setShowSettings(false);
+        return;
+      }
+      if (anyStreaming) {
+        event.preventDefault();
+        stopAll();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [anyStreaming, showSettings]);
 
   const hasMessages = panes.some(p => p.messages.length > 0);
 
@@ -4295,6 +4317,7 @@ function MessageBubble({
                 }
                 if (event.key === 'Escape') {
                   event.preventDefault();
+                  event.stopPropagation();
                   setDraft(message.content);
                   setEditing(false);
                 }
@@ -4391,6 +4414,7 @@ function ModelSelect({ value, onChange, models }: { value: string; onChange: (v:
   const [search, setSearch] = useState('');
   const ref = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -4426,7 +4450,10 @@ function ModelSelect({ value, onChange, models }: { value: string; onChange: (v:
   return (
     <div ref={ref} className="relative min-w-0">
       <button
+        ref={triggerRef}
         onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        aria-haspopup="listbox"
         className="flex items-center gap-1 text-xs font-mono text-white/80 hover:text-white truncate"
       >
         <span className="truncate">{currentLabel}</span>
@@ -4439,6 +4466,13 @@ function ModelSelect({ value, onChange, models }: { value: string; onChange: (v:
               ref={searchRef}
               value={search}
               onChange={e => setSearch(e.target.value)}
+              onKeyDown={e => {
+                if (e.key !== 'Escape') return;
+                e.preventDefault();
+                e.stopPropagation();
+                setOpen(false);
+                triggerRef.current?.focus({ preventScroll: true });
+              }}
               placeholder="Search models..."
               className="w-full bg-white/10 border-none rounded px-2.5 py-1.5 text-xs font-mono text-white placeholder:text-white/45 focus:outline-none"
             />

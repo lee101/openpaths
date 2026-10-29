@@ -188,6 +188,14 @@ export const providers: Provider[] = [
     logo: '/logos/runanywhere.svg'
   },
   {
+    slug: 'seedream',
+    name: 'Seedream (BytePlus ModelArk)',
+    url: 'https://www.byteplus.com/en/product/modelark',
+    description: 'BytePlus ModelArk direct: DeepSeek-V4.1-Flash (1M context) at $0.15 input, $0.003 cached input, $0.60 output per 1M tokens, plus Seedream image generation.',
+    featured: false,
+    logo: '/logos/seedream.svg'
+  },
+  {
     slug: 'runpod',
     name: 'Runpod',
     url: 'https://runpod.io',

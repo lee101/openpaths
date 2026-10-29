@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FileText, Image as ImageIcon, Loader2, Search, Sparkles, X } from 'lucide-react';
 import { Seo } from '../components/Seo';
+import { useDialog } from '../lib/useDialog';
 import {
   getSavedResponse,
   isAuthenticated,
@@ -85,6 +86,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
   const [similar, setSimilar] = useState<SavedResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeId, setActiveId] = useState(id);
+  const dialogRef = useDialog({ open: true, onClose });
 
   useEffect(() => {
     let cancelled = false;
@@ -105,10 +107,15 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/80 p-4 sm:p-8" onClick={onClose}>
       <div
-        className="relative w-full max-w-3xl rounded-2xl border border-white/20 bg-neutral-950 p-6 my-4"
+        ref={dialogRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Saved response details"
+        className="relative my-4 w-full max-w-3xl rounded-2xl border border-white/20 bg-neutral-950 p-6 outline-none"
         onClick={e => e.stopPropagation()}
       >
-        <button onClick={onClose} className="absolute right-4 top-4 text-white/55 hover:text-white">
+        <button onClick={onClose} aria-label="Close details" className="absolute right-4 top-4 text-white/55 hover:text-white">
           <X className="w-5 h-5" />
         </button>
         {loading || !item ? (
@@ -277,6 +284,7 @@ function UsageSearchPage({ kind }: { kind: 'text' | 'image' }) {
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder={`Search your ${isImage ? 'images' : 'prompts and outputs'}…`}
+              data-keyboard-search
               className="w-full rounded-2xl border border-white/20 bg-white/10 py-3 pl-12 pr-4 text-white placeholder-white/30 focus:border-white/50 focus:outline-none"
             />
           </div>

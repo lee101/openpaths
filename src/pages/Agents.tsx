@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Agent, AgentConfig, Preset, ToolSpec, listAgents, fetchPresets, createAgent, uploadSource } from '../lib/agents';
 import { getStoredAPIKey, getStoredToken } from '../lib/session';
+import { useDialog } from '../lib/useDialog';
 
 type Draft = {
   name: string;
@@ -290,26 +291,11 @@ function BuilderDialog({ loggedIn, preset, draft, setDraft, tools, files, addFil
 }) {
   const Icon = preset ? presetIcons[preset.key] || Bot : Bot;
   const nameInputRef = useRef<HTMLInputElement>(null);
-  const closeRef = useRef(onClose);
-  closeRef.current = onClose;
-
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    nameInputRef.current?.focus();
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') closeRef.current();
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener('keydown', onKeyDown);
-    };
-  }, []);
+  const dialogRef = useDialog({ open: true, onClose, initialFocusRef: nameInputRef });
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 p-0 backdrop-blur-sm sm:items-center sm:p-5" role="dialog" aria-modal="true" aria-label={preset ? `Build ${preset.name}` : 'Build an agent'} onMouseDown={event => event.target === event.currentTarget && onClose()}>
-      <div className="max-h-[94vh] w-full max-w-4xl overflow-y-auto rounded-t-2xl border border-white/20 bg-[#0a0a0a] shadow-2xl sm:rounded-2xl">
+      <div ref={dialogRef} tabIndex={-1} className="max-h-[94vh] w-full max-w-4xl overflow-y-auto rounded-t-2xl border border-white/20 bg-[#0a0a0a] shadow-2xl outline-none sm:rounded-2xl">
         <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-white/20 bg-[#0a0a0a]/95 px-5 py-4 backdrop-blur sm:px-7">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/20 bg-white/[0.07]"><Icon className="h-5 w-5 text-white/70" /></div>

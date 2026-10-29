@@ -107,6 +107,18 @@ const FAMILIES: Array<{ test: RegExp; spec: Partial<VideoParamSpec> }> = [
     },
   },
   {
+    // Pruna P-Video / P-Video-Edit on Runpod: 720p/1080p, integer 1-10s duration.
+    test: /^p-video/i,
+    spec: {
+      resolutions: ['720p', '1080p'],
+      durations: ['auto', ...Array.from({ length: 10 }, (_, index) => String(index + 1))],
+      aspectRatios: ['16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '1:1'],
+      generateAudio: true,
+      negativePrompt: false,
+      outputFormats: undefined,
+    },
+  },
+  {
     // Kling 4.0: 720p/1080p, integer 3-30s duration, no audio/seed/negative prompt.
     test: /^kling-4\.0/i,
     spec: {

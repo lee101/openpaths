@@ -53,6 +53,7 @@ import { GuardrailsPanel } from '../components/GuardrailsPanel';
 import { ProviderKeysPanel } from '../components/ProviderKeysPanel';
 import { AUTH_EVENT, clearApiKey, setApiKey as storeApiKey } from '../lib/api';
 import { trackAuthCompleted, trackAuthStarted } from '../lib/th';
+import { useDialog } from '../lib/useDialog';
 
 const API_BASE = '';
 const RECOMMENDED_THRESHOLD_USD = 100;
@@ -388,6 +389,7 @@ function PaymentMethodSetupModal({
   onClose: () => void;
   onSaved: () => Promise<void> | void;
 }) {
+  const dialogRef = useDialog({ open, onClose });
   const appearance = {
     theme: 'night' as const,
     variables: {
@@ -412,16 +414,21 @@ function PaymentMethodSetupModal({
           }}
         >
           <motion.div
+            ref={dialogRef}
+            tabIndex={-1}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="payment-method-modal-title"
             initial={{ opacity: 0, scale: 0.96, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 10 }}
-            className="bg-[#090909] border border-white/20 rounded-3xl w-full max-w-xl p-6 md:p-8"
+            className="bg-[#090909] border border-white/20 rounded-3xl w-full max-w-xl p-6 md:p-8 outline-none"
             data-testid="payment-method-modal"
           >
             <div className="flex items-start justify-between gap-4 mb-6">
               <div>
                 <p className="text-xs font-mono uppercase tracking-[0.2em] text-white/50 mb-2">Stripe card</p>
-                <h2 className="text-2xl font-bold tracking-tight">Save a card for auto-topup</h2>
+                <h2 id="payment-method-modal-title" className="text-2xl font-bold tracking-tight">Save a card for auto-topup</h2>
                 <p className="text-sm text-white/55 mt-2">Your card stays in Stripe. OpenPaths uses it only for the prepaid auto-topup rule you save here.</p>
               </div>
               <button onClick={onClose} className="text-white/55 hover:text-white transition-colors shrink-0">

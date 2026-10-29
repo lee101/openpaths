@@ -1,9 +1,10 @@
 import React, { Suspense, useState, useEffect } from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Menu, User, Wallet, X } from 'lucide-react';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Keyboard, Menu, Search, User, Wallet, X } from 'lucide-react';
 import { AdSenseSlot } from './AdSenseSlot';
 import { AuthModal } from './AuthModal';
 import { TopUpModal } from './TopUpModal';
+import { KeyboardShortcutsDialog } from './KeyboardShortcutsDialog';
 import { AUTH_EVENT, CREDITS_REQUIRED_EVENT } from '../lib/api';
 import { AUTH_REQUIRED_EVENT } from '../lib/paywall';
 
@@ -113,17 +114,68 @@ function accountInitials() {
 
 export function Layout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const isPlayground = location.pathname === '/playground';
   const showAds = !isPlayground && !['/account', '/usage', '/admin'].some(path => location.pathname === path || location.pathname.startsWith(`${path}/`));
   const isLoggedIn = useIsLoggedIn();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [authSurface, setAuthSurface] = useState<string | null>(null);
   const [topUpSurface, setTopUpSurface] = useState<string | null>(null);
   const initials = accountInitials();
 
   useEffect(() => {
     setMobileMenuOpen(false);
+    setShortcutsOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const editable = Boolean(target?.closest('input, textarea, select, [contenteditable="true"]'));
+      const dialogOpen = Boolean(document.querySelector('[role="dialog"][aria-modal="true"]'));
+      const questionMark = event.key === '?' || (event.key === '/' && event.shiftKey);
+
+      if (dialogOpen && !(shortcutsOpen && questionMark)) return;
+
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setMobileMenuOpen(false);
+        navigate('/search', { state: { focusSearch: true } });
+        return;
+      }
+
+      if (editable || event.metaKey || event.ctrlKey || event.altKey) return;
+
+      if (questionMark) {
+        event.preventDefault();
+        setMobileMenuOpen(false);
+        setShortcutsOpen(open => !open);
+        return;
+      }
+
+      if (event.key === '/') {
+        event.preventDefault();
+        setMobileMenuOpen(false);
+        const searchInput = document.querySelector<HTMLElement>('[data-keyboard-search]');
+        if (searchInput) searchInput.focus();
+        else navigate('/search', { state: { focusSearch: true } });
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [navigate, shortcutsOpen]);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      event.preventDefault();
+      setMobileMenuOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [mobileMenuOpen]);
 
   useEffect(() => {
     const openTopUp = (e: Event) => setTopUpSurface((e as CustomEvent<{ surface?: string }>).detail?.surface || 'credits_required');
@@ -138,6 +190,9 @@ export function Layout() {
 
   return (
     <div className={`bg-black text-white font-sans selection:bg-white selection:text-black flex flex-col ${isPlayground ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[80] focus:rounded focus:bg-white focus:px-4 focus:py-2 focus:font-mono focus:text-sm focus:font-bold focus:text-black">
+        Skip to content
+      </a>
       <nav className="relative border-b border-white/20 px-4 py-3 sm:px-6 sm:py-4 flex items-center justify-between bg-black/90 backdrop-blur-md z-50 shrink-0">
         <Link to="/" className="flex items-center gap-2">
           <img src="/openpaths-road-logo.svg" alt="" width="24" height="24" className="h-6 w-6 brightness-0 invert" />
@@ -184,6 +239,31 @@ export function Layout() {
           )}
           <button
             type="button"
+            onClick={() => {
+              setMobileMenuOpen(false);
+              navigate('/search', { state: { focusSearch: true } });
+            }}
+            className="inline-flex h-9 w-9 items-center justify-center rounded border border-white/20 bg-white/[0.06] text-white/70 transition-colors hover:border-white/45 hover:text-white"
+            aria-label="Open search"
+            aria-keyshortcuts="Meta+K Control+K"
+            title="Open search (Ctrl/⌘ K)"
+            data-testid="nav-search"
+          >
+            <Search className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setShortcutsOpen(true)}
+            className="hidden h-9 w-9 items-center justify-center rounded border border-white/20 bg-white/[0.06] text-white/70 transition-colors hover:border-white/45 hover:text-white sm:inline-flex"
+            aria-label="Keyboard shortcuts"
+            aria-keyshortcuts="?"
+            title="Keyboard shortcuts (?)"
+            data-testid="nav-shortcuts"
+          >
+            <Keyboard className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
             className="inline-flex h-9 w-9 items-center justify-center rounded border border-white/20 bg-white/[0.06] text-white/70 transition-colors hover:border-white/45 hover:text-white"
             aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={mobileMenuOpen}
@@ -226,8 +306,9 @@ export function Layout() {
 
       <AuthModal open={authSurface !== null} surface={authSurface || undefined} onClose={() => setAuthSurface(null)} />
       <TopUpModal open={topUpSurface !== null} surface={topUpSurface || undefined} onClose={() => setTopUpSurface(null)} />
+      <KeyboardShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
 
-      <main className="flex-1 min-h-0">
+      <main id="main" tabIndex={-1} className="flex-1 min-h-0 outline-none">
         <Suspense fallback={<div className="min-h-screen" aria-busy="true" />}>
           <Outlet />
         </Suspense>

@@ -373,6 +373,15 @@ const EXAMPLES: Record<string, ProviderExample> = {
       'Wally Cloud accepts reasoning tiers low, medium, xhigh (default), and none; max and minimal are remapped server-side before they reach the upstream.',
     ],
   },
+  seedream: {
+    description: 'BytePlus ModelArk direct: DeepSeek-V4.1-Flash and Seedream image generation, billed per million tokens or per image against prepaid credits.',
+    endpoint: '/v1',
+    chatModel: 'seedream/deepseek-v4.1-flash',
+    notes: [
+      '`seedream/deepseek-v4.1-flash` runs DeepSeek-V4.1-Flash 1017 on ModelArk at $0.15 input, $0.003 cached input and $0.60 output per 1M tokens (1M context, 384k max output), with DeepSeek direct as failover.',
+      'Seedream 4.5 ($0.04/image) and 4.0 ($0.03/image) are available through `/v1/images/generations` as `seedream-4.5` and `seedream-4.0`.',
+    ],
+  },
   runpod: {
     description: 'Runpod serverless GPU inference hosting GLM-5.3 through an OpenAI-compatible vLLM endpoint, billed per million tokens against prepaid credits.',
     endpoint: '/v1',

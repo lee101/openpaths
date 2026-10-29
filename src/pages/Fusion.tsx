@@ -432,6 +432,12 @@ console.log(data.choices[0].message.content);`, [endpoint, keyLabel, payload]);
                 <textarea
                   value={prompt}
                   onChange={event => setPrompt(event.target.value)}
+                  onKeyDown={event => {
+                    if (!(event.metaKey || event.ctrlKey) || event.key !== 'Enter' || loading) return;
+                    event.preventDefault();
+                    void runFusion();
+                  }}
+                  aria-keyshortcuts="Meta+Enter Control+Enter"
                   className="min-h-[170px] w-full resize-y rounded border border-white/20 bg-black p-4 text-sm leading-6 text-white outline-none placeholder:text-white/45 focus:border-white/60"
                   placeholder="Ask a question that benefits from multiple perspectives..."
                 />

@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Folder as FolderIcon, FolderPlus, Plus, Pin, PinOff, Archive, Trash2, Tag as TagIcon,
   ChevronDown, ChevronRight, Search, X, MoreHorizontal, FolderInput, Settings2, Check, ArchiveRestore,
 } from 'lucide-react';
 import * as conv from '../lib/conversations';
 import type { Conversation, Folder, ConvFilter } from '../lib/conversations';
+import { useDialog } from '../lib/useDialog';
 
 interface Props {
   activeId: string | null;
@@ -86,7 +87,14 @@ export function ChatSidebar({ activeId, onSelect, onNewChat }: Props) {
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Escape') {
+                if (search) setSearch('');
+                else e.currentTarget.blur();
+              }
+            }}
             placeholder="Search chats"
+            data-keyboard-search
             className="w-full pl-7 pr-2 py-1.5 rounded-md bg-white/10 border border-white/20 text-xs text-white/90 placeholder-white/40 focus:outline-none focus:border-white/45"
           />
         </div>
@@ -229,12 +237,41 @@ const ConvRow: React.FC<ConvRowProps> = ({ c, depth, active, selectMode, selecte
 
 function ConvMenu({ id, folders, archived, onClose }: { id: string; folders: Folder[]; archived: boolean; onClose: () => void }) {
   const c = conv.getConversation(id);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  useEffect(() => {
+    const returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    menuRef.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus({ preventScroll: true });
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        onCloseRef.current();
+        return;
+      }
+      if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+      const items: HTMLElement[] = Array.from(menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? []);
+      if (items.length === 0) return;
+      event.preventDefault();
+      const current = items.indexOf(document.activeElement as HTMLElement);
+      const next = event.key === 'ArrowDown'
+        ? (current + 1) % items.length
+        : (current - 1 + items.length) % items.length;
+      items[next].focus({ preventScroll: true });
+    };
+    document.addEventListener('keydown', onKeyDown, true);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown, true);
+      if (returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });
+    };
+  }, []);
   if (!c) return null;
   const act = (fn: () => void) => { fn(); onClose(); };
   return (
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
-      <div className="fixed z-50 bottom-16 left-2 w-60 rounded-lg border border-white/15 bg-zinc-900 shadow-xl p-1 text-xs">
+      <div ref={menuRef} role="menu" aria-label="Conversation actions" className="fixed z-50 bottom-16 left-2 w-60 rounded-lg border border-white/15 bg-zinc-900 shadow-xl p-1 text-xs">
         <MenuItem icon={c.pinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />} label={c.pinned ? 'Unpin' : 'Pin'} onClick={() => act(() => conv.togglePinned(id))} />
         <MenuItem icon={<Pin className="w-3.5 h-3.5 opacity-0" />} label="Rename" onClick={() => act(() => { const t = prompt('Rename chat:', c.title); if (t) conv.renameConversation(id, t); })} />
         <MenuItem icon={<TagIcon className="w-3.5 h-3.5" />} label="Edit tags" onClick={() => act(() => { const t = prompt('Tags (comma separated):', c.tags.join(', ')); if (t !== null) conv.setTags(id, t.split(',')); })} />
@@ -254,7 +291,7 @@ interface MenuItemProps { icon: React.ReactNode; label: string; onClick: () => v
 
 const MenuItem: React.FC<MenuItemProps> = ({ icon, label, onClick, danger }) => {
   return (
-    <button onClick={onClick} className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-left hover:bg-white/10 ${danger ? 'text-red-400' : 'text-white/85'}`}>
+    <button role="menuitem" onClick={onClick} className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-left hover:bg-white/10 ${danger ? 'text-red-400' : 'text-white/85'}`}>
       {icon}<span className="truncate">{label}</span>
     </button>
   );
@@ -273,6 +310,8 @@ function FolderEditor({ folder, onClose }: { folder: Folder; onClose: () => void
   const [systemPrompt, setSystemPrompt] = useState(folder.systemPrompt || '');
   const [dynamicContext, setDynamicContext] = useState(folder.dynamicContext || '');
   const [defaultModel, setDefaultModel] = useState(folder.defaultModel || '');
+  const nameRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useDialog({ open: true, onClose, initialFocusRef: nameRef });
 
   function save() {
     conv.updateFolder(folder.id, { name: name.trim() || folder.name, systemPrompt, dynamicContext, defaultModel: defaultModel.trim() || undefined });
@@ -282,13 +321,13 @@ function FolderEditor({ folder, onClose }: { folder: Folder; onClose: () => void
   return (
     <>
       <div className="fixed inset-0 z-50 bg-black/60" onClick={onClose} />
-      <div className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(92vw,440px)] rounded-xl border border-white/15 bg-zinc-900 p-4 shadow-2xl">
+      <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Project folder" className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(92vw,440px)] rounded-xl border border-white/15 bg-zinc-900 p-4 shadow-2xl outline-none">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-white flex items-center gap-2"><FolderIcon className="w-4 h-4" /> Project folder</h3>
-          <button onClick={onClose} className="text-white/55 hover:text-white"><X className="w-4 h-4" /></button>
+          <button onClick={onClose} className="text-white/55 hover:text-white" aria-label="Close"><X className="w-4 h-4" /></button>
         </div>
         <div className="space-y-3 text-xs">
-          <Field label="Name"><input value={name} onChange={e => setName(e.target.value)} className={inputCls} /></Field>
+          <Field label="Name"><input ref={nameRef} value={name} onChange={e => setName(e.target.value)} className={inputCls} /></Field>
           <Field label="Default model (optional)" hint="Model id applied when starting a chat here">
             <input value={defaultModel} onChange={e => setDefaultModel(e.target.value)} placeholder="e.g. claude or auto" className={inputCls} />
           </Field>

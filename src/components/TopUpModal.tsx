@@ -5,6 +5,7 @@ import { loadStripe } from '@stripe/stripe-js/pure';
 import { EmbeddedCheckout, EmbeddedCheckoutProvider } from '@stripe/react-stripe-js';
 import { api } from '../lib/api';
 import { track } from '../lib/th';
+import { useDialog } from '../lib/useDialog';
 
 const RECOMMENDED_TOPUP_USD = 200;
 const QUICK_TOPUP_AMOUNTS = [25, 100, 200, 500];
@@ -37,6 +38,7 @@ export function TopUpModal({
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const dialogRef = useDialog({ open, onClose });
 
   useEffect(() => {
     if (stripePk) setPk(stripePk);
@@ -111,19 +113,21 @@ export function TopUpModal({
           }}
         >
           <motion.div
+            ref={dialogRef}
+            tabIndex={-1}
             initial={{ opacity: 0, scale: 0.96, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 10 }}
-            className="bg-[#090909] border border-white/20 rounded-3xl w-full max-w-2xl p-6 md:p-8 max-h-[90vh] overflow-y-auto shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
+            className="bg-[#090909] border border-white/20 rounded-3xl w-full max-w-2xl p-6 md:p-8 max-h-[90vh] overflow-y-auto shadow-[0_24px_80px_rgba(0,0,0,0.45)] outline-none"
             data-testid="stripe-modal"
             role="dialog"
             aria-modal="true"
-            aria-label="Add prepaid credits"
+            aria-labelledby="topup-modal-title"
           >
             <div className="flex items-start justify-between gap-4 mb-6">
               <div>
                 <p className="text-xs font-mono uppercase tracking-[0.2em] text-white/50 mb-2">Prepaid credits</p>
-                <h2 className="text-2xl font-bold tracking-tight">{clientSecret ? 'Complete Stripe payment' : 'Add funds'}</h2>
+                <h2 id="topup-modal-title" className="text-2xl font-bold tracking-tight">{clientSecret ? 'Complete Stripe payment' : 'Add funds'}</h2>
               </div>
               <button onClick={onClose} aria-label="Close checkout" className="text-white/55 hover:text-white transition-colors shrink-0" data-testid="stripe-modal-close">
                 <X className="w-5 h-5" />
@@ -162,6 +166,7 @@ export function TopUpModal({
                       aria-label="Credit amount in USD"
                       value={amount}
                       onChange={e => setAmount(Number(e.target.value))}
+                      data-autofocus
                       data-testid="custom-amount-input"
                       className="w-full bg-white/[0.06] border border-white/30 rounded-2xl py-4 pl-10 pr-4 text-white font-mono focus:outline-none focus:border-white/50"
                     />

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Loader2, Plus, Shield, Trash2, X } from 'lucide-react';
 import {
   CustomFilter,
@@ -16,6 +16,7 @@ import {
   updateGuardrail,
   usdToCents,
 } from '../lib/guardrails';
+import { useDialog } from '../lib/useDialog';
 
 type ApiKey = { id: string; name: string; key_prefix: string };
 
@@ -35,6 +36,8 @@ export function GuardrailsPanel({ apiKeys }: Props) {
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [userDefault, setUserDefault] = useState(false);
   const [saving, setSaving] = useState(false);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useDialog({ open: Boolean(editing), onClose: () => setEditing(null), initialFocusRef: nameInputRef });
 
   const reload = async () => {
     setLoading(true);
@@ -199,11 +202,12 @@ export function GuardrailsPanel({ apiKeys }: Props) {
 
       {draft && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-0 sm:p-6">
-          <div className="w-full max-w-3xl max-h-[92vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl border border-white/20 bg-[#0b0b0c] shadow-2xl">
+          <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Edit guardrail" className="w-full max-w-3xl max-h-[92vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl border border-white/20 bg-[#0b0b0c] shadow-2xl outline-none">
             <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/20 bg-[#0b0b0c]/95 px-5 py-4 backdrop-blur">
               <div>
                 <div className="text-xs font-mono uppercase tracking-[0.2em] text-white/50">Guardrail</div>
                 <input
+                  ref={nameInputRef}
                   value={draft.name}
                   onChange={e => setEditing({ ...draft, name: e.target.value })}
                   className="mt-1 bg-transparent text-xl font-semibold tracking-tight outline-none border-b border-transparent focus:border-white/40 w-full"
