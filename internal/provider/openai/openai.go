@@ -52,6 +52,12 @@ func NewCompatible(providerName, apiKey, baseURL string, sanitizeChat func(*mode
 
 func (p *OpenAIProvider) Name() string { return p.providerName }
 
+// WrapTransport lets compatible upstreams with a non-/v1 path layout (e.g.
+// BytePlus ModelArk's /api/v3) rewrite requests before they are sent.
+func (p *OpenAIProvider) WrapTransport(wrap func(http.RoundTripper) http.RoundTripper) {
+	p.client.Transport = wrap(p.client.Transport)
+}
+
 // applyPromptCacheKey sets OpenAI's prompt_cache_key to a stable per-prefix hash
 // (model + system + tools) so repeat requests route to the same prompt cache,
 // raising the cache-hit rate and lowering our spend. It is applied ONLY to the

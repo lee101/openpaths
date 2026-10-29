@@ -126,6 +126,7 @@ GOMAXPROCS=3 go build -tags="gpu cuda" \
 | `FAL_ADMIN_API_KEY` | Optional. fal admin key used by `rotation/rotate_provider_key.py`; falls back to `FAL_API_KEY` if unset |
 | `Z_API_KEY` | Z.AI API key |
 | `RUNANYWHERE_API_KEY` | RunAnywhere (Wally Cloud) API key |
+| `SEEDREAM_API_KEY` | BytePlus ModelArk key (DeepSeek-V4.1-Flash direct, Seedream images) |
 | `RUNPOD_API_KEY` | Runpod serverless endpoint key (GLM-5.3 route) |
 | `TEXTGENERATOR_API_KEY` | Text-Generator.io API key |
 | `MISTRAL_API_KEY` | Mistral API key |

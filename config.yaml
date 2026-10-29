@@ -210,6 +210,13 @@ providers:
     api_key: "${RUNPOD_API_KEY}"
     enabled: true
 
+  # BytePlus ModelArk direct (DeepSeek-V4.1-Flash + Seedream images).
+  # Base URL includes /api/v3; the provider rewrites the client's /v1 paths.
+  - name: seedream
+    base_url: "https://ark.ap-southeast.bytepluses.com/api/v3"
+    api_key: "${SEEDREAM_API_KEY}"
+    enabled: true
+
 models:
   - id: "flux-3-image"
     provider: bfl
@@ -1261,6 +1268,93 @@ models:
     price_per_second_with_video_input_by_resolution:
       720p: 0.188
     aliases: ["kling-4-edit", "kling-4.0-edit", "kling-v4-edit", "kling/v4/video-to-video/edit"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  # --- Runpod Public Endpoints video (list price per output second). P-Video:
+  # $0.02/s 720p, $0.04/s 1080p (draft mode not exposed, billed at standard).
+  # P-Video-Edit: $0.045/s standard. ---
+  - id: "p-video"
+    provider: runpod
+    provider_model_id: "p-video"
+    price_per_second: 0.04
+    price_per_second_by_resolution:
+      720p: 0.02
+    aliases: ["pruna-video", "pruna/p-video", "runpod/p-video"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "p-video-edit"
+    provider: runpod
+    provider_model_id: "p-video-edit"
+    price_per_second: 0.045
+    aliases: ["pruna-video-edit", "pruna/p-video-edit", "runpod/p-video-edit"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "runpod/seedance-2.5-i2v"
+    provider: runpod
+    provider_model_id: "16jsvx5ncmm24x"
+    price_per_second: 0.36
+    price_per_second_by_resolution:
+      480p: 0.18
+      1080p: 0.90
+      4k: 1.80
+    aliases: ["runpod-seedance-2.5-i2v"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "runpod/seedance-2.5-t2v"
+    provider: runpod
+    provider_model_id: "tdq07exynr7zux"
+    price_per_second: 0.36
+    price_per_second_by_resolution:
+      480p: 0.18
+      1080p: 0.90
+      4k: 1.80
+    aliases: ["runpod-seedance-2.5-t2v"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "runpod/wan-2.6-i2v"
+    provider: runpod
+    provider_model_id: "wan-2-6-i2v"
+    price_per_second: 0.1
+    price_per_second_by_resolution:
+      1080p: 0.15
+    aliases: ["runpod-wan-2.6-i2v"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "runpod/vidu-q3-i2v"
+    provider: runpod
+    provider_model_id: "vidu-q3-i2v"
+    price_per_second: 0.15
+    aliases: ["runpod-vidu-q3-i2v"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "runpod/vidu-q3-t2v"
+    provider: runpod
+    provider_model_id: "vidu-q3-t2v"
+    price_per_second: 0.15
+    aliases: ["runpod-vidu-q3-t2v"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "runpod/kling-o1-r2v"
+    provider: runpod
+    provider_model_id: "kling-video-o1-r2v"
+    price_per_second: 0.112
+    aliases: ["runpod-kling-o1-r2v"]
     supports_streaming: false
     supports_tools: false
     supports_vision: true
@@ -2946,9 +3040,11 @@ models:
   # names are still accepted but served by DeepSeek-V4.1-Flash (model name
   # "deepseek-flash") and billed at the Flash price: peak $0.30/$0.006/$1.20,
   # off-peak half that, effective 2026-09-10.
+  # Primary route: BytePlus ModelArk direct (cheaper to run than DeepSeek's
+  # peak rate); circuit-breaks to DeepSeek direct (deepseek-v4-flash-direct).
   - id: "deepseek-v4-flash"
-    provider: deepseek
-    provider_model_id: "deepseek-flash"
+    provider: seedream
+    provider_model_id: "deepseek-v4-1-flash-261017"
     input_price_per_1m: 0.15
     input_cache_hit_price_per_1m: 0.003
     output_price_per_1m: 0.60
@@ -2971,10 +3067,312 @@ models:
     supports_tools: true
     supports_vision: false
     fallback_models:
+      - "deepseek-v4-flash-direct"
       - "nvidia/deepseek-v4-pro"
       - "deepseek-chat"
       - "nvidia/deepseek-v3.2"
       - "together/deepseek-v3.1"
+
+  # DeepSeek-V4.1-Flash 1017 served directly by BytePlus ModelArk (Seedream
+  # provider, SEEDREAM_API_KEY). Idle-time list price $0.15/$0.003/$0.60 per M;
+  # 1024k context, 384k max output. Peak-hour rates (Mon-Fri 09-12, 14-18 UTC+8)
+  # are not published on the model page, so idle pricing is used throughout.
+  - id: "seedream/deepseek-v4.1-flash"
+    provider: seedream
+    provider_model_id: "deepseek-v4-1-flash-261017"
+    input_price_per_1m: 0.15
+    input_cache_hit_price_per_1m: 0.003
+    output_price_per_1m: 0.60
+    aliases: ["seedream-deepseek-v4.1-flash", "modelark/deepseek-v4.1-flash"]
+    context_window: 1024000
+    max_output_tokens: 384000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models:
+      - "deepseek-v4-flash-direct"
+
+  # --- Seedream images via BytePlus ModelArk (list price per image) ---
+  # fal Seedream: circuit-breaker fallback for the direct ModelArk Seedream models.
+  - id: "fal-seedream-4.5"
+    provider: fal
+    provider_model_id: "fal-ai/bytedance/seedream/v4.5/text-to-image"
+    price_per_image: 0.04
+    aliases: ["fal-seedream-4-5"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "fal-seedream-4.0"
+    provider: fal
+    provider_model_id: "fal-ai/bytedance/seedream/v4/text-to-image"
+    price_per_image: 0.03
+    aliases: ["fal-seedream-4-0"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  # Seed 2.1 Turbo via ModelArk (advertising rate $0.50 in / $2.50 out per M).
+  - id: "seedream/seed-2.1-turbo"
+    provider: seedream
+    provider_model_id: "dola-seed-2-1-turbo-260628"
+    input_price_per_1m: 0.50
+    output_price_per_1m: 2.50
+    aliases: ["seed-2.1-turbo", "dola-seed-2.1-turbo", "bytedance/seed-2.1-turbo"]
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  # DeepSeek-V4.1-Flash-Economy: slower time-to-first-token background tier.
+  # Rush-hour list price shown ($0.24/$0.0048/$0.96); off-peak rate not published.
+  - id: "seedream/deepseek-v4.1-flash-economy"
+    provider: seedream
+    provider_model_id: "deepseek-v4-1-flash-economy-261017"
+    input_price_per_1m: 0.24
+    input_cache_hit_price_per_1m: 0.0048
+    output_price_per_1m: 0.96
+    aliases: ["deepseek-v4.1-flash-economy", "deepseek-flash-economy", "deepseek-v4-flash-economy", "seedream-deepseek-economy"]
+    context_window: 1024000
+    max_output_tokens: 384000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  # Seedance 2.5 direct from ModelArk. Billed per token ($10.7/M, $6.4/M with
+  # video input); converted to per-second at ~24fps (480p 864x496, 720p 1280x720,
+  # 1080p 1920x1080 = ~10k/21.6k/48.6k tokens/s). Duration 4-30s.
+  - id: "seedream/seedance-2.5"
+    provider: seedream
+    provider_model_id: "dreamina-seedance-2-5-260628"
+    price_per_second: 0.232
+    price_per_second_by_resolution:
+      480p: 0.108
+      1080p: 0.52
+    price_per_second_with_video_input: 0.139
+    price_per_second_with_video_input_by_resolution:
+      480p: 0.065
+      1080p: 0.311
+    aliases: ["seedance-2.5-direct", "dreamina-seedance-2.5", "seedream-seedance-2.5"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  # Seedream 5.0 Flash: $0.018/output image; one image per request.
+  - id: "seedream-5.0-flash"
+    provider: seedream
+    provider_model_id: "dola-seedream-5-0-flash-260915"
+    price_per_image: 0.018
+    aliases: ["seedream-5-0-flash", "seedream-5-flash", "dola-seedream-5-0-flash", "bytedance/seedream-5.0-flash"]
+    supported_sizes: ["1K", "2K", "4K", "2048x2048", "2304x1728", "1728x2304", "2560x1440", "1440x2560"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+    fallback_models:
+      - "fal-seedream-4.5"
+
+  # Seedream 5.0 Pro (dola-*): $0.045/output image, $0.003/input image (first free).
+  - id: "seedream-5.0-pro"
+    provider: seedream
+    provider_model_id: "dola-seedream-5-0-pro-260628"
+    price_per_image: 0.045
+    price_per_input_image: 0.003
+    aliases: ["seedream-5-0-pro", "seedream-5-pro", "dola-seedream-5-0-pro", "bytedance/seedream-5.0-pro"]
+    supported_sizes: ["1K", "2K", "4K", "2048x2048", "2304x1728", "1728x2304", "2560x1440", "1440x2560"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+    fallback_models:
+      - "fal-seedream-4.5"
+
+  - id: "seedream-4.5"
+    provider: seedream
+    provider_model_id: "seedream-4-5-251128"
+    price_per_image: 0.04
+    aliases: ["seedream-4-5", "seedream", "bytedance/seedream-4.5"]
+    supported_sizes: ["1K", "2K", "4K", "2048x2048", "2304x1728", "1728x2304", "2560x1440", "1440x2560"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+    fallback_models:
+      - "fal-seedream-4.5"
+
+  - id: "seedream-4.0"
+    provider: seedream
+    provider_model_id: "seedream-4-0-250828"
+    price_per_image: 0.03
+    aliases: ["seedream-4-0", "bytedance/seedream-4.0"]
+    supported_sizes: ["1K", "2K", "4K", "2048x2048", "2304x1728", "1728x2304", "2560x1440", "1440x2560"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+    fallback_models:
+      - "fal-seedream-4.0"
+
+
+  - id: "deepseek-v4-flash-direct"
+    provider: deepseek
+    provider_model_id: "deepseek-flash"
+    input_price_per_1m: 0.15
+    input_cache_hit_price_per_1m: 0.003
+    output_price_per_1m: 0.60
+    scheduled_token_pricing:
+      effective_at: "2026-09-10T00:00:00Z"
+      peak_windows_utc:
+        - {start: "01:00", end: "04:00"}
+        - {start: "06:00", end: "10:00"}
+      peak_input_price_per_1m: 0.30
+      peak_input_cache_hit_price_per_1m: 0.006
+      peak_output_price_per_1m: 1.20
+      off_peak_input_price_per_1m: 0.15
+      off_peak_input_cache_hit_price_per_1m: 0.003
+      off_peak_output_price_per_1m: 0.60
+      weekend_off_peak_effective_at: "2026-08-22T16:00:00Z"
+    aliases: ["deepseek-flash-direct"]
+    context_window: 1000000
+    max_output_tokens: 384000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: false
+    fallback_models:
+      - "nvidia/deepseek-v4-pro"
+      - "deepseek-chat"
+      - "nvidia/deepseek-v3.2"
+      - "together/deepseek-v3.1"
+
+  # DeepSeek-V4.1-Flash 1017 served directly by BytePlus ModelArk (Seedream
+  # provider, SEEDREAM_API_KEY). Idle-time list price $0.15/$0.003/$0.60 per M;
+  # 1024k context, 384k max output. Peak-hour rates (Mon-Fri 09-12, 14-18 UTC+8)
+  # are not published on the model page, so idle pricing is used throughout.
+  - id: "seedream/deepseek-v4.1-flash"
+    provider: seedream
+    provider_model_id: "deepseek-v4-1-flash-261017"
+    input_price_per_1m: 0.15
+    input_cache_hit_price_per_1m: 0.003
+    output_price_per_1m: 0.60
+    aliases: ["deepseek-flash-direct"]
+    context_window: 1024000
+    max_output_tokens: 384000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models:
+      - "deepseek-v4-flash"
+
+  # --- Seedream images via BytePlus ModelArk (list price per image) ---
+  # fal Seedream: circuit-breaker fallback for the direct ModelArk Seedream models.
+  - id: "fal-seedream-4.5"
+    provider: fal
+    provider_model_id: "fal-ai/bytedance/seedream/v4.5/text-to-image"
+    price_per_image: 0.04
+    aliases: ["deepseek-flash-direct"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  - id: "fal-seedream-4.0"
+    provider: fal
+    provider_model_id: "fal-ai/bytedance/seedream/v4/text-to-image"
+    price_per_image: 0.03
+    aliases: ["deepseek-flash-direct"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: false
+
+  # Seed 2.1 Turbo via ModelArk (advertising rate $0.50 in / $2.50 out per M).
+  - id: "seedream/seed-2.1-turbo"
+    provider: seedream
+    provider_model_id: "dola-seed-2-1-turbo-260628"
+    input_price_per_1m: 0.50
+    output_price_per_1m: 2.50
+    aliases: ["deepseek-flash-direct"]
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  # DeepSeek-V4.1-Flash-Economy: slower time-to-first-token background tier.
+  # Rush-hour list price shown ($0.24/$0.0048/$0.96); off-peak rate not published.
+  - id: "seedream/deepseek-v4.1-flash-economy"
+    provider: seedream
+    provider_model_id: "deepseek-v4-1-flash-economy-261017"
+    input_price_per_1m: 0.24
+    input_cache_hit_price_per_1m: 0.0048
+    output_price_per_1m: 0.96
+    aliases: ["deepseek-flash-direct"]
+    context_window: 1024000
+    max_output_tokens: 384000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  # Seedance 2.5 direct from ModelArk. Billed per token ($10.7/M, $6.4/M with
+  # video input); converted to per-second at ~24fps (480p 864x496, 720p 1280x720,
+  # 1080p 1920x1080 = ~10k/21.6k/48.6k tokens/s). Duration 4-30s.
+  - id: "seedream/seedance-2.5"
+    provider: seedream
+    provider_model_id: "dreamina-seedance-2-5-260628"
+    price_per_second: 0.232
+    price_per_second_by_resolution:
+      480p: 0.108
+      1080p: 0.52
+    price_per_second_with_video_input: 0.139
+    price_per_second_with_video_input_by_resolution:
+      480p: 0.065
+      1080p: 0.311
+    aliases: ["deepseek-flash-direct"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  # Seedream 5.0 Flash: $0.018/output image; one image per request.
+  - id: "seedream-5.0-flash"
+    provider: seedream
+    provider_model_id: "dola-seedream-5-0-flash-260915"
+    price_per_image: 0.018
+    aliases: ["deepseek-flash-direct"]
+    supported_sizes: ["1K", "2K", "4K", "2048x2048", "2304x1728", "1728x2304", "2560x1440", "1440x2560"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+    fallback_models:
+      - "fal-seedream-4.5"
+
+  # Seedream 5.0 Pro (dola-*): $0.045/output image, $0.003/input image (first free).
+  - id: "seedream-5.0-pro"
+    provider: seedream
+    provider_model_id: "dola-seedream-5-0-pro-260628"
+    price_per_image: 0.045
+    price_per_input_image: 0.003
+    aliases: ["deepseek-flash-direct"]
+    supported_sizes: ["1K", "2K", "4K", "2048x2048", "2304x1728", "1728x2304", "2560x1440", "1440x2560"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+    fallback_models:
+      - "fal-seedream-4.5"
+
+  - id: "seedream-4.5"
+    provider: seedream
+    provider_model_id: "seedream-4-5-251128"
+    price_per_image: 0.04
+    aliases: ["deepseek-flash-direct"]
+    supported_sizes: ["1K", "2K", "4K", "2048x2048", "2304x1728", "1728x2304", "2560x1440", "1440x2560"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+    fallback_models:
+      - "fal-seedream-4.5"
+
+  - id: "seedream-4.0"
+    provider: seedream
+    provider_model_id: "seedream-4-0-250828"
+    price_per_image: 0.03
+    aliases: ["deepseek-flash-direct"]
+    supported_sizes: ["1K", "2K", "4K", "2048x2048", "2304x1728", "1728x2304", "2560x1440", "1440x2560"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+    fallback_models:
+      - "fal-seedream-4.0"
 
   # DeepSeek V4.1 Flash image-input experimental endpoint (legacy name
   # deepseek-v4-flash-vision-exp retired upstream; served by V4.1 Flash).

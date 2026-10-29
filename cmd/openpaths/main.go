@@ -54,6 +54,8 @@ import (
 	"github.com/openpaths/openpaths/internal/provider/nous"
 	"github.com/openpaths/openpaths/internal/provider/nvidia"
 	"github.com/openpaths/openpaths/internal/provider/openai"
+	"github.com/openpaths/openpaths/internal/provider/runpod"
+	"github.com/openpaths/openpaths/internal/provider/seedream"
 	"github.com/openpaths/openpaths/internal/provider/openrouter"
 	"github.com/openpaths/openpaths/internal/provider/sakana"
 	"github.com/openpaths/openpaths/internal/provider/textgenerator"
@@ -249,9 +251,13 @@ func main() {
 			// Wally Cloud (RunAnywhere) is OpenAI-compatible
 			// (/v1/chat/completions) and hosts glm-5.3-flash and qwen3.8-27b.
 			p = openai.NewCompatible("runanywhere", provCfg.APIKey, provCfg.BaseURL, sanitizeOpenAICompatible)
+		case "seedream":
+			// BytePlus ModelArk direct: DeepSeek-V4.1-Flash chat + Seedream images.
+			p = seedream.New(provCfg.APIKey, provCfg.BaseURL)
 		case "runpod":
 			// Runpod serverless vLLM endpoint (OpenAI-compatible) hosting glm-5.3.
-			p = openai.NewCompatible("runpod", provCfg.APIKey, provCfg.BaseURL, sanitizeOpenAICompatible)
+			// Also serves Runpod Public Endpoints video models (P-Video, Seedance, WAN, Vidu).
+			p = runpod.New(openai.NewCompatible("runpod", provCfg.APIKey, provCfg.BaseURL, sanitizeOpenAICompatible), provCfg.APIKey)
 		case "fireworks":
 			p = fireworks.New(provCfg.APIKey, provCfg.BaseURL)
 			transcribers = append(transcribers, fireworks.NewTranscriber(provCfg.APIKey, provCfg.BaseURL))

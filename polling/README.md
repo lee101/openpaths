@@ -53,3 +53,4 @@ Current direct targets:
 | Cursor | `composer-2.5` |
 | RunAnywhere | `runanywhere/glm-5.3-flash` |
 | Runpod | `glm-5.3` |
+| Seedream (ModelArk) | `seedream/deepseek-v4.1-flash` |
