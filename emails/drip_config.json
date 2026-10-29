@@ -228,6 +228,16 @@
       "subject": "Kimi K3.1 Pro direct at list price, plus Kling 4.0 video from $0.157/s",
       "template": "29-kimi-kling4.html",
       "description": "Kimi K3.1 Pro/K3/Highspeed direct from Moonshot at list price with 1M context; Kling 4.0 text/image/reference/edit video at fal rates"
+    },
+    {
+      "id": 30,
+      "delay_days": 1,
+      "kind": "model_launch",
+      "launch_date": "2026-10-29",
+      "max_age_days": 14,
+      "subject": "GLM-5.3 price drop: $0.77 in / $2.42 out per M, now served from Runpod",
+      "template": "30-glm53-runpod.html",
+      "description": "GLM-5.3 routed to new Runpod provider at $0.77/$0.143/$2.42 per M (was $1.40/$0.26/$4.40), Z.AI direct failover, say-hi test"
     }
   ]
 }

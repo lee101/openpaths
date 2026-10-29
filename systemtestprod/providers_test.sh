@@ -145,6 +145,10 @@ echo ""
 test_chat "Qwen 3.8 27B (Cerebras)" "cerebras/qwen-3.8-27b" "openai" "none"
 echo ""
 
+# --- Runpod (GLM-5.3) ---
+test_chat "GLM-5.3 (Runpod)" "glm-5.3" "openai" "low" 64
+echo ""
+
 # --- RunAnywhere (Wally Cloud) ---
 test_chat "GLM-5.3-Flash (RunAnywhere)" "runanywhere/glm-5.3-flash" "openai" "low" 64
 test_chat "Qwen 3.8 27B (RunAnywhere)" "runanywhere/qwen3.8-27b" "openai" "low" 64

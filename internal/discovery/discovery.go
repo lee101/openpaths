@@ -132,6 +132,8 @@ func (s *Service) discoverProvider(ctx context.Context, p model.ProviderConfig) 
 		return s.discoverOpenAICompat(ctx, p, "cerebras")
 	case "runanywhere":
 		return s.discoverOpenAICompat(ctx, p, "runanywhere")
+	case "runpod":
+		return s.discoverOpenAICompat(ctx, p, "runpod")
 	case "nvidia":
 		return s.discoverOpenAICompat(ctx, p, "nvidia")
 	case "fireworks":

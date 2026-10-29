@@ -373,6 +373,15 @@ const EXAMPLES: Record<string, ProviderExample> = {
       'Wally Cloud accepts reasoning tiers low, medium, xhigh (default), and none; max and minimal are remapped server-side before they reach the upstream.',
     ],
   },
+  runpod: {
+    description: 'Runpod serverless GPU inference hosting GLM-5.3 through an OpenAI-compatible vLLM endpoint, billed per million tokens against prepaid credits.',
+    endpoint: '/v1',
+    chatModel: 'glm-5.3',
+    notes: [
+      '`glm-5.3` routes to Runpod at $0.77 input, $0.143 cached input and $2.42 output per 1M tokens, with Z.AI direct (`zai/glm-5.3`) as automatic failover.',
+      'Accepts `reasoning_effort` and standard OpenAI chat-completions parameters including tools and streaming.',
+    ],
+  },
   fireworks: {
     description: 'Fast inference for GPT-OSS 120B, GLM-5 and Whisper v3 Large.',
     endpoint: '/v1',

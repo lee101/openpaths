@@ -188,6 +188,14 @@ export const providers: Provider[] = [
     logo: '/logos/runanywhere.svg'
   },
   {
+    slug: 'runpod',
+    name: 'Runpod',
+    url: 'https://runpod.io',
+    description: 'Runpod serverless GPU inference hosting GLM-5.3 through an OpenAI-compatible vLLM endpoint: $0.77 input, $0.143 cached input, $2.42 output per 1M tokens.',
+    featured: false,
+    logo: '/logos/runpod.webp'
+  },
+  {
     slug: 'minimax',
     name: 'MiniMax',
     url: 'https://minimax.io',

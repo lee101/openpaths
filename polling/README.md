@@ -52,3 +52,4 @@ Current direct targets:
 | NVIDIA | `nvidia/deepseek-v3.2` |
 | Cursor | `composer-2.5` |
 | RunAnywhere | `runanywhere/glm-5.3-flash` |
+| Runpod | `glm-5.3` |

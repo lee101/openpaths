@@ -61,7 +61,8 @@ func TestAuditedTokenPrices(t *testing.T) {
 		"or/claude-opus":  {4.22, 0.211, 21.10},
 		// z.ai launch pricing / openrouter.ai/api/v1/models
 		"glm-5.3-flash":    {0.075, 0.015, 0.25},
-		"glm-5.3":          {1.40, 0.26, 4.40},
+		"glm-5.3":          {0.77, 0.143, 2.42},
+		"zai/glm-5.3":      {1.40, 0.26, 4.40},
 		"or/glm-5.3":       {1.40, 0.26, 4.40},
 		"or/gpt-5.6-sol":   {5.00, 0.50, 30.00},
 		"or/gpt-5.6-terra": {1.00, 0.10, 6.00},

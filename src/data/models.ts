@@ -2551,10 +2551,10 @@ const catalogModels: Model[] = [
     id: 'glm-5.3',
     name: 'GLM-5.3',
     provider: 'Z.AI',
-    description: 'Newest GLM flagship with 1M context and always-on reasoning at low/high/max effort. Routes direct to z.ai, falling back to OpenRouter then GLM-5.2.',
+    description: 'Newest GLM flagship with 1M context and always-on reasoning at low/high/max effort. Routes to Runpod ($0.77 in / $0.143 cached / $2.42 out), falling back to z.ai direct, OpenRouter then GLM-5.2.',
     contextLength: '1M',
-    priceInput: 1.4,
-    priceOutput: 4.4,
+    priceInput: 0.77,
+    priceOutput: 2.42,
     tags: ['general', 'reasoning', 'agentic', 'programming', 'open-source'],
     released: '2026-08-13',
     popularity: 20

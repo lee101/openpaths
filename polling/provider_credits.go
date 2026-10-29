@@ -53,6 +53,7 @@ var targetSpecs = []struct {
 	{Provider: "nvidia", ModelID: "nvidia/deepseek-v3.2"},
 	{Provider: "cursor", ModelID: "composer-2.5"},
 	{Provider: "runanywhere", ModelID: "runanywhere/glm-5.3-flash"},
+	{Provider: "runpod", ModelID: "glm-5.3"},
 }
 
 type providerRegistry interface {

@@ -2764,7 +2764,7 @@
   }
  },
  {
-  "id": "glm-5.3",
+  "id": "zai/glm-5.3",
   "provider": "zai",
   "upstream": "glm-5.3",
   "input": 1.4,
@@ -2774,11 +2774,29 @@
   "vision": false,
   "tools": true,
   "aliases": [
-   "zai/glm-5.3",
-   "glm53",
-   "glm-5.3-latest"
+   "zai-direct/glm-5.3"
   ],
   "cacheRead": 0.26
+ },
+ {
+  "id": "glm-5.3",
+  "provider": "runpod",
+  "upstream": "glm-5.3",
+  "input": 0.77,
+  "output": 2.42,
+  "context": 1048576,
+  "maxOutput": 131072,
+  "vision": false,
+  "tools": true,
+  "aliases": [
+   "glm-latest",
+   "glm53",
+   "glm-5.3-latest",
+   "runpod/glm-5.3",
+   "zai-glm5.3",
+   "zai-glm53"
+  ],
+  "cacheRead": 0.143
  },
  {
   "id": "zai/glm-5",
@@ -2808,24 +2826,6 @@
    "zai-glm5.1",
    "zai-glm51"
   ]
- },
- {
-  "id": "glm-5.3",
-  "provider": "zai",
-  "upstream": "glm-5.3",
-  "input": 1.4,
-  "output": 4.4,
-  "context": 1310720,
-  "maxOutput": 131072,
-  "vision": false,
-  "tools": true,
-  "aliases": [
-   "glm-latest",
-   "zai/glm-5.3",
-   "zai-glm5.3",
-   "zai-glm53"
-  ],
-  "cacheRead": 0.26
  },
  {
   "id": "or/glm-5.3",
