@@ -20,6 +20,7 @@ Two classes of provider:
 | Anthropic | BYO | `ANTHROPIC_API_KEY` | `ANTHROPIC_NEW_API_KEY` or `ANTHROPIC_REPLACEMENT_API_KEY`; optional `ANTHROPIC_ADMIN_KEY`/`ANTHROPIC_ADMIN_API_KEY` to deactivate the previous key |
 | Mistral | BYO | `MISTRAL_API_KEY` | `MISTRAL_NEW_API_KEY` or `MISTRAL_REPLACEMENT_API_KEY` |
 | Nous | BYO | `NOUS_API_KEY` | `NOUS_NEW_API_KEY` or `NOUS_REPLACEMENT_API_KEY` |
+| Together | BYO | `TOGETHER_API_KEY` | `TOGETHER_NEW_API_KEY` or `TOGETHER_REPLACEMENT_API_KEY` (no key-management API; create at https://api.together.ai/settings/projects/~current/api-keys) |
 
 **OpenAI** creates a project service account, validates the one-time returned key against `/v1/models`, writes it, then revokes the previous `OPENAI_API_KEY` (deleting its service account when applicable) once it uniquely identifies it. **fal** creates a key through the Platform API and uses the one-time returned full key.
 
@@ -39,6 +40,7 @@ python3 rotation/rotate_provider_key.py xai          # needs XAI_MANAGEMENT_KEY
 ANTHROPIC_NEW_API_KEY="sk-ant-api03-..." python3 rotation/rotate_provider_key.py anthropic
 MISTRAL_NEW_API_KEY="..." python3 rotation/rotate_provider_key.py mistral
 NOUS_NEW_API_KEY="..."    python3 rotation/rotate_provider_key.py nous
+TOGETHER_NEW_API_KEY="..." python3 rotation/rotate_provider_key.py together --fanout
 python3 rotation/rotate_provider_key.py all
 
 # OpenRouter fan-out, including ~/.secretbashrc and OpenPaths prod. The purge

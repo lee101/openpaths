@@ -70,13 +70,13 @@ def first_env_value(names: list[str], env_file_values: dict[str, str], required:
     return ""
 
 
-def request_json(
+def request_any(
     method: str,
     url: str,
     headers: dict[str, str],
     payload: dict[str, object] | None = None,
     timeout: int = 30,
-) -> dict[str, object]:
+) -> object:
     body = None
     request_headers = dict(headers)
     if payload is not None:
@@ -94,9 +94,19 @@ def request_json(
         raise RotationError(f"{method} {url} failed: {exc.reason}") from exc
 
     try:
-        data = json.loads(response_body)
+        return json.loads(response_body)
     except json.JSONDecodeError as exc:
         raise RotationError(f"{method} {url} returned invalid JSON") from exc
+
+
+def request_json(
+    method: str,
+    url: str,
+    headers: dict[str, str],
+    payload: dict[str, object] | None = None,
+    timeout: int = 30,
+) -> dict[str, object]:
+    data = request_any(method, url, headers, payload, timeout)
     if not isinstance(data, dict):
         raise RotationError(f"{method} {url} returned JSON that is not an object")
     return data
@@ -446,6 +456,28 @@ def create_nous_key(alias: str, env_file_values: dict[str, str]) -> RotationResu
     )
 
 
+def validate_together_key(api_key: str) -> None:
+    data = request_any("GET", "https://api.together.xyz/v1/models", {"Authorization": f"Bearer {api_key}"})
+    models = data.get("data") if isinstance(data, dict) else data
+    if not isinstance(models, list) or not models:
+        raise RotationError("New together API key validation did not return a models list")
+
+
+def create_together_key(alias: str, env_file_values: dict[str, str]) -> RotationResult:
+    del alias  # Together has no key-management API; keys are created in the console.
+    names = ["TOGETHER_NEW_API_KEY", "TOGETHER_REPLACEMENT_API_KEY"]
+    source, new_key = next(((n, os.environ.get(n) or env_file_values.get(n) or "") for n in names if os.environ.get(n) or env_file_values.get(n)), ("", ""))
+    if not new_key:
+        raise RotationError(f"Missing required environment variable: {' or '.join(names)}")
+    validate_together_key(new_key)
+    return RotationResult(
+        provider="together",
+        env_key="TOGETHER_API_KEY",
+        secret=new_key,
+        metadata={"new_key_source": source, "new_key_validated": True},
+    )
+
+
 def openrouter_provisioning_key(env_file_values: dict[str, str]) -> str:
     return first_env_value(
         [
@@ -628,6 +660,7 @@ ROTATORS: dict[str, Callable[[str, dict[str, str]], RotationResult]] = {
     "xai": create_xai_key,
     "mistral": create_mistral_key,
     "nous": create_nous_key,
+    "together": create_together_key,
 }
 
 

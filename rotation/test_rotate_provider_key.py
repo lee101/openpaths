@@ -43,6 +43,31 @@ class ByoKeyTests(unittest.TestCase):
                 r.create_mistral_key("alias", {"MISTRAL_NEW_API_KEY": "newkey"})
 
 
+class TogetherTests(unittest.TestCase):
+    def test_validates_bare_list_models(self):
+        http = FakeHTTP({("GET", "api.together.xyz/v1/models"): [{"id": "meta-llama/Llama-3-8b"}]})
+        with mock.patch.object(r, "request_any", http), mock.patch.dict("os.environ", {}, clear=True):
+            result = r.create_together_key("alias", {"TOGETHER_NEW_API_KEY": "tgp_new"})
+        self.assertEqual(result.env_key, "TOGETHER_API_KEY")
+        self.assertEqual(result.secret, "tgp_new")
+        self.assertEqual(result.metadata["new_key_source"], "TOGETHER_NEW_API_KEY")
+
+    def test_rejects_error_payload(self):
+        http = FakeHTTP({("GET", "api.together.xyz/v1/models"): {"error": {"code": "invalid_api_key"}}})
+        with mock.patch.object(r, "request_any", http), mock.patch.dict("os.environ", {}, clear=True):
+            with self.assertRaises(r.RotationError):
+                r.create_together_key("alias", {"TOGETHER_REPLACEMENT_API_KEY": "tgp_bad"})
+
+    def test_missing_new_key_is_skippable(self):
+        with mock.patch.dict("os.environ", {}, clear=True):
+            with self.assertRaises(r.RotationError) as ctx:
+                r.create_together_key("alias", {})
+        self.assertTrue(str(ctx.exception).startswith("Missing required environment variable:"))
+
+    def test_registered(self):
+        self.assertIs(r.ROTATORS["together"], r.create_together_key)
+
+
 class OpenRouterTests(unittest.TestCase):
     def test_create_returns_secret_and_hash(self):
         http = FakeHTTP({
