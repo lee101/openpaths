@@ -60,3 +60,18 @@ printf "hello local whisper\n" > "$out/$base.txt"
 		t.Fatalf("Text = %q", resp.Text)
 	}
 }
+
+func TestSafeAudioFilename(t *testing.T) {
+	for in, want := range map[string]string{
+		"clip.wav":         "clip.wav",
+		"":                 "audio.webm",
+		"..":               "audio.webm",
+		"../../etc/passwd": "passwd.webm",
+		"a\\..\\b.wav":     "audio.webm",
+		"a\x00.wav":        "audio.webm",
+	} {
+		if got := safeAudioFilename(in); got != want {
+			t.Errorf("safeAudioFilename(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
