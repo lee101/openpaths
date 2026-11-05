@@ -29,6 +29,7 @@ import (
 	"github.com/openpaths/openpaths/internal/handler"
 	"github.com/openpaths/openpaths/internal/metrics"
 	"github.com/openpaths/openpaths/internal/middleware"
+	"github.com/openpaths/openpaths/internal/model"
 	"github.com/openpaths/openpaths/internal/promptlib"
 	"github.com/openpaths/openpaths/internal/provider"
 	"github.com/openpaths/openpaths/internal/router"
@@ -162,11 +163,17 @@ func New(deps *Dependencies) *Server {
 		middleware.Logging(),
 	)
 
-	r.POST("/v1/chat/completions", apiKeyChain(chatH.HandleChatCompletion))
-	r.GET("/v1/models", apiKeyChain(modelsH.HandleListModels))
-	r.GET("/v1/models/{model_id}", apiKeyChain(modelsH.HandleGetModel))
+	scoped := func(chain middleware.Middleware, scope string) middleware.Middleware {
+		return func(h fasthttp.RequestHandler) fasthttp.RequestHandler {
+			return middleware.RequireScope(scope, chain(h))
+		}
+	}
+
+	r.POST("/v1/chat/completions", scoped(apiKeyChain, model.ScopeChat)(chatH.HandleChatCompletion))
+	r.GET("/v1/models", scoped(apiKeyChain, model.ScopeModels)(modelsH.HandleListModels))
+	r.GET("/v1/models/{model_id}", scoped(apiKeyChain, model.ScopeModels)(modelsH.HandleGetModel))
 	realtimeH := handler.NewRealtimeHandler(deps.Router, deps.Billing, deps.Recorder, deps.Config.Providers)
-	r.GET("/v1/realtime", realtimeChain(realtimeH.HandleRealtime))
+	r.GET("/v1/realtime", scoped(realtimeChain, model.ScopeRealtime)(realtimeH.HandleRealtime))
 	log.Printf("Realtime WebSocket endpoint enabled at /v1/realtime (openai, gemini native protocol)")
 
 	searchH := handler.NewSearchHandler(
@@ -181,55 +188,55 @@ func New(deps *Dependencies) *Server {
 	).SetDeepSeekProvider(handler.DeepSeekSearchProviderConfig(deps.Config.Providers)).
 		SetOpenRouterProvider(handler.OpenRouterSearchProviderConfig(deps.Config.Providers)).
 		SetKimiProvider(handler.KimiSearchProviderConfig(deps.Config.Providers))
-	r.POST("/v1/search", searchChain(searchH.HandleSearch))
+	r.POST("/v1/search", scoped(searchChain, model.ScopeSearch)(searchH.HandleSearch))
 	handler.LogExaSearchPricing()
 	log.Printf("Search endpoint enabled at /v1/search (exa, papers, deepseek, kimi, kimi-pro, kimi-fetch, openpaths, openrouter engines: exa/parallel/firecrawl/perplexity, gemini, openai, grok)")
 
 	anthH := handler.NewAnthropicHandler(deps.Router, deps.Billing, deps.Recorder)
 	anthH.SetAccess(deps.AccessQ)
 	anthH.SetResponseSaver(deps.Saver)
-	r.POST("/v1/messages", apiKeyChain(anthH.HandleMessages))
+	r.POST("/v1/messages", scoped(apiKeyChain, model.ScopeChat)(anthH.HandleMessages))
 	log.Printf("Anthropic-compatible /v1/messages endpoint enabled")
 
 	imageH := handler.NewImageHandler(deps.Router, deps.Billing, deps.Recorder)
 	imageH.SetAccess(deps.AccessQ)
 	imageH.SetStorage(deps.Storage)
 	imageH.SetResponseSaver(deps.Saver)
-	r.POST("/v1/images/generations", middleware.PaywallContract(apiKeyChain(imageH.HandleImageGeneration)))
-	r.POST("/v1/images/edits", middleware.PaywallContract(apiKeyChain(imageH.HandleImageGeneration)))
+	r.POST("/v1/images/generations", middleware.PaywallContract(scoped(apiKeyChain, model.ScopeImages)(imageH.HandleImageGeneration)))
+	r.POST("/v1/images/edits", middleware.PaywallContract(scoped(apiKeyChain, model.ScopeImages)(imageH.HandleImageGeneration)))
 	log.Printf("Image generation endpoint enabled")
 
 	model3DH := handler.NewModel3DHandler(deps.Router, deps.Billing, deps.Recorder, deps.Model3DJobQ)
 	model3DH.SetAccess(deps.AccessQ)
-	r.POST("/v1/3d/generations", middleware.PaywallContract(trackLongRequest(apiKeyChain(model3DH.HandleModel3DGeneration))))
-	r.GET("/v1/3d/generations/{job_id}", middleware.PaywallContract(apiKeyChain(model3DH.HandleModel3DGenerationJob)))
-	r.GET("/v1/3d/generations/{job_id}/status", middleware.PaywallContract(apiKeyChain(model3DH.HandleModel3DGenerationJob)))
+	r.POST("/v1/3d/generations", middleware.PaywallContract(trackLongRequest(scoped(apiKeyChain, model.Scope3D)(model3DH.HandleModel3DGeneration))))
+	r.GET("/v1/3d/generations/{job_id}", middleware.PaywallContract(scoped(apiKeyChain, model.Scope3D)(model3DH.HandleModel3DGenerationJob)))
+	r.GET("/v1/3d/generations/{job_id}/status", middleware.PaywallContract(scoped(apiKeyChain, model.Scope3D)(model3DH.HandleModel3DGenerationJob)))
 	log.Printf("3D generation endpoint enabled")
 
 	textTo3DH := handler.NewTextTo3DHandler(imageH, model3DH, deps.Billing)
-	r.POST("/v1/3d/text-generations", middleware.PaywallContract(trackLongRequest(apiKeyChain(textTo3DH.HandleTextTo3DGeneration))))
-	r.GET("/v1/3d/text-generations/{job_id}", middleware.PaywallContract(apiKeyChain(textTo3DH.HandleTextTo3DGenerationJob)))
-	r.GET("/v1/3d/text-generations/{job_id}/status", middleware.PaywallContract(apiKeyChain(textTo3DH.HandleTextTo3DGenerationJob)))
+	r.POST("/v1/3d/text-generations", middleware.PaywallContract(trackLongRequest(scoped(apiKeyChain, model.Scope3D)(textTo3DH.HandleTextTo3DGeneration))))
+	r.GET("/v1/3d/text-generations/{job_id}", middleware.PaywallContract(scoped(apiKeyChain, model.Scope3D)(textTo3DH.HandleTextTo3DGenerationJob)))
+	r.GET("/v1/3d/text-generations/{job_id}/status", middleware.PaywallContract(scoped(apiKeyChain, model.Scope3D)(textTo3DH.HandleTextTo3DGenerationJob)))
 	log.Printf("Text-to-3D generation endpoint enabled")
 
 	riggingH := handler.NewMeshRiggingHandler(deps.Router, deps.Billing, deps.Recorder)
-	r.POST("/v1/3d/rigging", middleware.PaywallContract(trackLongRequest(apiKeyChain(riggingH.HandleMeshRigging))))
-	r.GET("/v1/3d/rigging/{job_id}", middleware.PaywallContract(apiKeyChain(riggingH.HandleMeshRiggingJob)))
-	r.GET("/v1/3d/rigging/{job_id}/status", middleware.PaywallContract(apiKeyChain(riggingH.HandleMeshRiggingJob)))
+	r.POST("/v1/3d/rigging", middleware.PaywallContract(trackLongRequest(scoped(apiKeyChain, model.Scope3D)(riggingH.HandleMeshRigging))))
+	r.GET("/v1/3d/rigging/{job_id}", middleware.PaywallContract(scoped(apiKeyChain, model.Scope3D)(riggingH.HandleMeshRiggingJob)))
+	r.GET("/v1/3d/rigging/{job_id}/status", middleware.PaywallContract(scoped(apiKeyChain, model.Scope3D)(riggingH.HandleMeshRiggingJob)))
 	log.Printf("3D mesh rigging endpoint enabled")
 
 	videoH := handler.NewVideoHandler(deps.Router, deps.Billing, deps.Recorder, deps.VideoJobQ)
 	videoH.SetAccess(deps.AccessQ)
 	videoH.SetStorage(deps.Storage)
-	r.POST("/v1/videos/generations", middleware.PaywallContract(trackLongRequest(apiKeyChain(videoH.HandleVideoGeneration))))
-	r.POST("/v1/videos/edits", middleware.PaywallContract(trackLongRequest(apiKeyChain(videoH.HandleVideoEdit))))
-	r.POST("/v1/videos/extensions", middleware.PaywallContract(trackLongRequest(apiKeyChain(videoH.HandleVideoExtension))))
-	r.GET("/v1/videos/generations/{job_id}", middleware.PaywallContract(apiKeyChain(videoH.HandleVideoGenerationJob)))
-	r.GET("/v1/videos/generations/{job_id}/status", middleware.PaywallContract(apiKeyChain(videoH.HandleVideoGenerationJob)))
-	r.GET("/v1/videos/edits/{job_id}", middleware.PaywallContract(apiKeyChain(videoH.HandleVideoGenerationJob)))
-	r.GET("/v1/videos/edits/{job_id}/status", middleware.PaywallContract(apiKeyChain(videoH.HandleVideoGenerationJob)))
-	r.GET("/v1/videos/extensions/{job_id}", middleware.PaywallContract(apiKeyChain(videoH.HandleVideoGenerationJob)))
-	r.GET("/v1/videos/extensions/{job_id}/status", middleware.PaywallContract(apiKeyChain(videoH.HandleVideoGenerationJob)))
+	r.POST("/v1/videos/generations", middleware.PaywallContract(trackLongRequest(scoped(apiKeyChain, model.ScopeVideo)(videoH.HandleVideoGeneration))))
+	r.POST("/v1/videos/edits", middleware.PaywallContract(trackLongRequest(scoped(apiKeyChain, model.ScopeVideo)(videoH.HandleVideoEdit))))
+	r.POST("/v1/videos/extensions", middleware.PaywallContract(trackLongRequest(scoped(apiKeyChain, model.ScopeVideo)(videoH.HandleVideoExtension))))
+	r.GET("/v1/videos/generations/{job_id}", middleware.PaywallContract(scoped(apiKeyChain, model.ScopeVideo)(videoH.HandleVideoGenerationJob)))
+	r.GET("/v1/videos/generations/{job_id}/status", middleware.PaywallContract(scoped(apiKeyChain, model.ScopeVideo)(videoH.HandleVideoGenerationJob)))
+	r.GET("/v1/videos/edits/{job_id}", middleware.PaywallContract(scoped(apiKeyChain, model.ScopeVideo)(videoH.HandleVideoGenerationJob)))
+	r.GET("/v1/videos/edits/{job_id}/status", middleware.PaywallContract(scoped(apiKeyChain, model.ScopeVideo)(videoH.HandleVideoGenerationJob)))
+	r.GET("/v1/videos/extensions/{job_id}", middleware.PaywallContract(scoped(apiKeyChain, model.ScopeVideo)(videoH.HandleVideoGenerationJob)))
+	r.GET("/v1/videos/extensions/{job_id}/status", middleware.PaywallContract(scoped(apiKeyChain, model.ScopeVideo)(videoH.HandleVideoGenerationJob)))
 	log.Printf("Video generation endpoint enabled")
 
 	researchH := handler.NewResearchHandler(
@@ -237,52 +244,52 @@ func New(deps *Dependencies) *Server {
 		handler.ExaSearchProviderConfig(deps.Config.Providers),
 		handler.PapersSearchProviderConfig(deps.Config.Providers),
 	)
-	r.POST("/v1/deep-research", apiKeyChain(researchH.HandleCreate))
-	r.GET("/v1/deep-research", apiKeyChain(researchH.HandleList))
-	r.GET("/v1/deep-research/{job_id}", apiKeyChain(researchH.HandleGet))
+	r.POST("/v1/deep-research", scoped(apiKeyChain, model.ScopeSearch)(researchH.HandleCreate))
+	r.GET("/v1/deep-research", scoped(apiKeyChain, model.ScopeSearch)(researchH.HandleList))
+	r.GET("/v1/deep-research/{job_id}", scoped(apiKeyChain, model.ScopeSearch)(researchH.HandleGet))
 	log.Printf("Deep research endpoint enabled at /v1/deep-research")
 
 	artifactsH := handler.NewArtifactHandler(deps.ArtifactQ, deps.Billing)
 	// Public API: free get, billed search ($1/1000), list + create via API key.
 	r.GET("/v1/artifacts", publicChain(artifactsH.HandleListPublic))
-	r.GET("/v1/artifacts/search", searchChain(artifactsH.HandleSearch))
-	r.POST("/v1/artifacts", searchChain(artifactsH.HandleCreate))
+	r.GET("/v1/artifacts/search", scoped(searchChain, model.ScopeArtifacts)(artifactsH.HandleSearch))
+	r.POST("/v1/artifacts", scoped(searchChain, model.ScopeArtifacts)(artifactsH.HandleCreate))
 	r.GET("/v1/artifacts/{id}", publicChain(artifactsH.HandleGet))
 	// Dashboard: owner-scoped CRUD + free search of own+public.
-	r.GET("/account/artifacts", accountChain(artifactsH.HandleListMine))
-	r.POST("/account/artifacts", accountChain(artifactsH.HandleCreate))
-	r.GET("/account/artifacts/search", accountChain(artifactsH.HandleSearchMine))
-	r.GET("/account/artifacts/{id}", accountChain(artifactsH.HandleGetMine))
-	r.PUT("/account/artifacts/{id}", accountChain(artifactsH.HandleUpdate))
-	r.DELETE("/account/artifacts/{id}", accountChain(artifactsH.HandleDelete))
+	r.GET("/account/artifacts", scoped(accountChain, model.ScopeArtifacts)(artifactsH.HandleListMine))
+	r.POST("/account/artifacts", scoped(accountChain, model.ScopeArtifacts)(artifactsH.HandleCreate))
+	r.GET("/account/artifacts/search", scoped(accountChain, model.ScopeArtifacts)(artifactsH.HandleSearchMine))
+	r.GET("/account/artifacts/{id}", scoped(accountChain, model.ScopeArtifacts)(artifactsH.HandleGetMine))
+	r.PUT("/account/artifacts/{id}", scoped(accountChain, model.ScopeArtifacts)(artifactsH.HandleUpdate))
+	r.DELETE("/account/artifacts/{id}", scoped(accountChain, model.ScopeArtifacts)(artifactsH.HandleDelete))
 	log.Printf("Artifacts endpoints enabled at /v1/artifacts and /account/artifacts")
 
 	musicH := handler.NewMusicHandler(deps.Router, deps.Billing, deps.Recorder)
-	r.POST("/v1/music/generations", middleware.PaywallContract(apiKeyChain(musicH.HandleMusicGeneration)))
+	r.POST("/v1/music/generations", middleware.PaywallContract(scoped(apiKeyChain, model.ScopeAudio)(musicH.HandleMusicGeneration)))
 	log.Printf("Music generation endpoint enabled")
 
 	structuredH := handler.NewStructuredHandler(deps.Router, deps.Billing, deps.Recorder)
-	r.POST("/v1/extract", apiKeyChain(structuredH.HandleExtract))
-	r.POST("/v1/decide", apiKeyChain(structuredH.HandleDecide))
+	r.POST("/v1/extract", scoped(apiKeyChain, model.ScopeChat)(structuredH.HandleExtract))
+	r.POST("/v1/decide", scoped(apiKeyChain, model.ScopeChat)(structuredH.HandleDecide))
 	log.Printf("Structured extraction (Clairic) and decision (Clef) endpoints enabled")
 
 	forecastH := handler.NewForecastingHandler(deps.Router, deps.Billing, deps.Recorder)
-	r.POST("/v1/forecasts", apiKeyChain(forecastH.HandleForecast))
-	r.POST("/v1/forecasts/generations", apiKeyChain(forecastH.HandleForecast))
+	r.POST("/v1/forecasts", scoped(apiKeyChain, model.ScopeChat)(forecastH.HandleForecast))
+	r.POST("/v1/forecasts/generations", scoped(apiKeyChain, model.ScopeChat)(forecastH.HandleForecast))
 	log.Printf("Time-series forecasting endpoint enabled")
 
 	speechH := handler.NewSpeechHandler(deps.Router, deps.Billing, deps.Recorder)
 	speechH.SetAccess(deps.AccessQ)
 	speechH.SetAutoEmotion(deps.AutoEmotion)
-	r.POST("/v1/audio/speech", apiKeyChain(speechH.HandleSpeechGeneration))
-	r.POST("/v1/tts", apiKeyChain(speechH.HandleSpeechGeneration))
+	r.POST("/v1/audio/speech", scoped(apiKeyChain, model.ScopeAudio)(speechH.HandleSpeechGeneration))
+	r.POST("/v1/tts", scoped(apiKeyChain, model.ScopeAudio)(speechH.HandleSpeechGeneration))
 	log.Printf("Speech generation endpoint enabled")
 
 	embeddingH := handler.NewEmbeddingHandler(deps.Router, deps.Billing, deps.Recorder, deps.Embedders)
-	r.POST("/v1/embeddings", apiKeyChain(embeddingH.HandleEmbedding))
+	r.POST("/v1/embeddings", scoped(apiKeyChain, model.ScopeEmbeddings)(embeddingH.HandleEmbedding))
 	decisionH := handler.NewDecisionHandler(deps.Router, deps.Billing, deps.Recorder, deps.Embedders)
-	r.POST("/v1/systemone", apiKeyChain(decisionH.HandleDecision))
-	r.POST("/v1/decisions", apiKeyChain(decisionH.HandleDecision))
+	r.POST("/v1/systemone", scoped(apiKeyChain, model.ScopeEmbeddings)(decisionH.HandleDecision))
+	r.POST("/v1/decisions", scoped(apiKeyChain, model.ScopeEmbeddings)(decisionH.HandleDecision))
 	log.Printf("Embedding endpoint enabled (%d fallback providers)", len(deps.Embedders))
 
 	// MCP server: exposes all models over the Model Context Protocol. Runs under
@@ -291,8 +298,8 @@ func New(deps *Dependencies) *Server {
 	var transcriptionH *handler.TranscriptionHandler
 	if len(deps.Transcribers) > 0 {
 		transcriptionH = handler.NewTranscriptionHandler(deps.Router, deps.Billing, deps.Transcribers, deps.Recorder)
-		r.POST("/v1/audio/transcriptions", apiKeyChain(transcriptionH.HandleTranscription))
-		r.POST("/v1/stt", apiKeyChain(transcriptionH.HandleTranscription))
+		r.POST("/v1/audio/transcriptions", scoped(apiKeyChain, model.ScopeAudio)(transcriptionH.HandleTranscription))
+		r.POST("/v1/stt", scoped(apiKeyChain, model.ScopeAudio)(transcriptionH.HandleTranscription))
 		log.Printf("Transcription endpoint enabled (%d providers)", len(deps.Transcribers))
 	}
 
@@ -310,13 +317,13 @@ func New(deps *Dependencies) *Server {
 		middleware.BYOKLoader(deps.ProviderKeyQ),
 		middleware.RateLimit(),
 	)
-	r.POST("/mcp", mcpChain(mcpH.HandleMCP))
-	r.POST("/v1/mcp", mcpChain(mcpH.HandleMCP))
+	r.POST("/mcp", scoped(mcpChain, model.ScopeMCP)(mcpH.HandleMCP))
+	r.POST("/v1/mcp", scoped(mcpChain, model.ScopeMCP)(mcpH.HandleMCP))
 	log.Printf("MCP server enabled at /mcp (chat, list_models, generate_image, generate_video, check_job, generate_music, text_to_speech, transcribe_audio, generate_3d, embed, web_search)")
 
 	if deps.Storage != nil {
 		uploadH := handler.NewUploadHandler(deps.Storage)
-		r.POST("/v1/files/upload", apiKeyChain(uploadH.HandleUpload))
+		r.POST("/v1/files/upload", scoped(apiKeyChain, model.ScopeFiles)(uploadH.HandleUpload))
 		log.Printf("File upload endpoint enabled")
 	}
 
@@ -326,7 +333,7 @@ func New(deps *Dependencies) *Server {
 		unsubH := handler.NewUnsubscribeHandler(deps.SuppressionQ, deps.UserQ, deps.Config.JWT.Secret)
 		r.GET("/unsubscribe", publicChain(unsubH.HandleUnsubscribe))
 		r.POST("/unsubscribe", publicChain(unsubH.HandleUnsubscribe))
-		r.POST("/account/unsubscribe", accountChain(unsubH.HandleAccountUnsubscribe))
+		r.POST("/account/unsubscribe", scoped(accountChain, model.ScopeAccountManage)(unsubH.HandleAccountUnsubscribe))
 	}
 
 	registerMin, registerHour, registerDay := middleware.RegisterIPLimits()
@@ -346,59 +353,64 @@ func New(deps *Dependencies) *Server {
 	r.POST("/auth/login", loginChain(authH.HandleLogin))
 	r.POST("/auth/logout", publicChain(authH.HandleLogout))
 
-	r.GET("/account/keys", accountChain(accountH.HandleListAPIKeys))
-	r.POST("/account/keys", accountChain(accountH.HandleCreateAPIKey))
-	r.DELETE("/account/keys", accountChain(accountH.HandleRevokeAPIKeys))
-	r.DELETE("/account/keys/{id}", accountChain(accountH.HandleRevokeAPIKey))
-	r.GET("/account/balance", accountChain(accountH.HandleGetBalance))
-	r.GET("/account/transactions", accountChain(accountH.HandleGetTransactions))
+	for _, prefix := range []string{"/account/keys", "/v1/keys"} {
+		r.GET(prefix+"/scopes", publicChain(accountH.HandleKeyScopes))
+		r.GET(prefix+"/me", scoped(accountChain, model.ScopeNone)(accountH.HandleKeyMe))
+		r.GET(prefix, scoped(accountChain, model.ScopeKeysManage)(accountH.HandleListAPIKeys))
+		r.POST(prefix, scoped(accountChain, model.ScopeKeysManage)(accountH.HandleCreateAPIKey))
+		r.POST(prefix+"/{id}/rotate", scoped(accountChain, model.ScopeKeysManage)(accountH.HandleRotateAPIKey))
+		r.DELETE(prefix+"/{id}", scoped(accountChain, model.ScopeKeysManage)(accountH.HandleRevokeAPIKey))
+	}
+	r.DELETE("/account/keys", scoped(accountChain, model.ScopeKeysManage)(accountH.HandleRevokeAPIKeys))
+	r.GET("/account/balance", scoped(accountChain, model.ScopeBillingRead)(accountH.HandleGetBalance))
+	r.GET("/account/transactions", scoped(accountChain, model.ScopeBillingRead)(accountH.HandleGetTransactions))
 
 	guardrailH := handler.NewGuardrailHandler(deps.GuardrailQ, deps.APIKeyQ)
-	r.GET("/account/guardrails", accountChain(guardrailH.HandleList))
-	r.POST("/account/guardrails", accountChain(guardrailH.HandleCreate))
-	r.GET("/account/guardrails/events", accountChain(guardrailH.HandleEvents))
-	r.GET("/account/guardrails/{id}", accountChain(guardrailH.HandleGet))
-	r.PUT("/account/guardrails/{id}", accountChain(guardrailH.HandleUpdate))
-	r.DELETE("/account/guardrails/{id}", accountChain(guardrailH.HandleDelete))
-	r.PUT("/account/guardrails/{id}/assignments", accountChain(guardrailH.HandleAssignments))
+	r.GET("/account/guardrails", scoped(accountChain, model.ScopeAccountManage)(guardrailH.HandleList))
+	r.POST("/account/guardrails", scoped(accountChain, model.ScopeAccountManage)(guardrailH.HandleCreate))
+	r.GET("/account/guardrails/events", scoped(accountChain, model.ScopeAccountManage)(guardrailH.HandleEvents))
+	r.GET("/account/guardrails/{id}", scoped(accountChain, model.ScopeAccountManage)(guardrailH.HandleGet))
+	r.PUT("/account/guardrails/{id}", scoped(accountChain, model.ScopeAccountManage)(guardrailH.HandleUpdate))
+	r.DELETE("/account/guardrails/{id}", scoped(accountChain, model.ScopeAccountManage)(guardrailH.HandleDelete))
+	r.PUT("/account/guardrails/{id}/assignments", scoped(accountChain, model.ScopeAccountManage)(guardrailH.HandleAssignments))
 	log.Printf("Guardrails endpoints enabled at /account/guardrails")
 
 	// Model IAM + billshock guards + teams (opt-in, open by default).
-	r.GET("/account/model-rules", accountChain(orgH.HandleModelRules))
-	r.POST("/account/model-rules", accountChain(orgH.HandleModelRules))
-	r.DELETE("/account/model-rules", accountChain(orgH.HandleModelRules))
-	r.GET("/account/billing-guards", accountChain(orgH.HandleBillingGuards))
-	r.POST("/account/billing-guards", accountChain(orgH.HandleBillingGuards))
-	r.GET("/account/orgs", accountChain(orgH.HandleOrgs))
-	r.POST("/account/orgs", accountChain(orgH.HandleOrgs))
-	r.POST("/account/orgs/{slug}/invites", accountChain(orgH.HandleOrgInvite))
-	r.POST("/account/orgs/{slug}/join", accountChain(orgH.HandleOrgJoin))
-	r.GET("/account/orgs/{slug}/members", accountChain(orgH.HandleOrgMembers))
-	r.DELETE("/account/orgs/{slug}/members/{user_id}", accountChain(orgH.HandleOrgMembers))
+	r.GET("/account/model-rules", scoped(accountChain, model.ScopeAccountManage)(orgH.HandleModelRules))
+	r.POST("/account/model-rules", scoped(accountChain, model.ScopeAccountManage)(orgH.HandleModelRules))
+	r.DELETE("/account/model-rules", scoped(accountChain, model.ScopeAccountManage)(orgH.HandleModelRules))
+	r.GET("/account/billing-guards", scoped(accountChain, model.ScopeAccountManage)(orgH.HandleBillingGuards))
+	r.POST("/account/billing-guards", scoped(accountChain, model.ScopeAccountManage)(orgH.HandleBillingGuards))
+	r.GET("/account/orgs", scoped(accountChain, model.ScopeAccountManage)(orgH.HandleOrgs))
+	r.POST("/account/orgs", scoped(accountChain, model.ScopeAccountManage)(orgH.HandleOrgs))
+	r.POST("/account/orgs/{slug}/invites", scoped(accountChain, model.ScopeAccountManage)(orgH.HandleOrgInvite))
+	r.POST("/account/orgs/{slug}/join", scoped(accountChain, model.ScopeAccountManage)(orgH.HandleOrgJoin))
+	r.GET("/account/orgs/{slug}/members", scoped(accountChain, model.ScopeAccountManage)(orgH.HandleOrgMembers))
+	r.DELETE("/account/orgs/{slug}/members/{user_id}", scoped(accountChain, model.ScopeAccountManage)(orgH.HandleOrgMembers))
 	// Keep legacy credit-minting paths fail-closed. Credit issuance is driven by
 	// verified Stripe webhooks/reconciliation, never by request-body amounts.
-	r.POST("/account/credits", accountChain(creditsH.HandleAddCredits))
-	r.POST("/account/credits/add", accountChain(creditsH.HandleAddCredits))
+	r.POST("/account/credits", scoped(accountChain, model.ScopeAccountManage)(creditsH.HandleAddCredits))
+	r.POST("/account/credits/add", scoped(accountChain, model.ScopeAccountManage)(creditsH.HandleAddCredits))
 
 	if deps.ProviderKeyQ != nil {
 		pkH := handler.NewProviderKeysHandler(deps.ProviderKeyQ)
-		r.GET("/account/provider-keys", accountChain(pkH.HandleList))
-		r.POST("/account/provider-keys", accountChain(pkH.HandleUpsert))
-		r.POST("/account/provider-keys/bulk", accountChain(pkH.HandleBulkUpsert))
-		r.DELETE("/account/provider-keys", accountChain(pkH.HandleDelete))
+		r.GET("/account/provider-keys", scoped(accountChain, model.ScopeAccountManage)(pkH.HandleList))
+		r.POST("/account/provider-keys", scoped(accountChain, model.ScopeAccountManage)(pkH.HandleUpsert))
+		r.POST("/account/provider-keys/bulk", scoped(accountChain, model.ScopeAccountManage)(pkH.HandleBulkUpsert))
+		r.DELETE("/account/provider-keys", scoped(accountChain, model.ScopeAccountManage)(pkH.HandleDelete))
 		openAIAuthH := handler.NewOpenAIOAuthHandler(deps.ProviderKeyQ, deps.Config.JWT.Secret)
-		r.POST("/account/openai/start", accountChain(openAIAuthH.HandleStart))
-		r.POST("/account/openai/device/start", accountChain(openAIAuthH.HandleDeviceStart))
-		r.POST("/account/openai/device/poll", accountChain(openAIAuthH.HandleDevicePoll))
-		r.POST("/account/openai/browser/start", accountChain(openAIAuthH.HandleBrowserStart))
-		r.POST("/account/openai/browser/complete", accountChain(openAIAuthH.HandleBrowserComplete))
+		r.POST("/account/openai/start", scoped(accountChain, model.ScopeAccountManage)(openAIAuthH.HandleStart))
+		r.POST("/account/openai/device/start", scoped(accountChain, model.ScopeAccountManage)(openAIAuthH.HandleDeviceStart))
+		r.POST("/account/openai/device/poll", scoped(accountChain, model.ScopeAccountManage)(openAIAuthH.HandleDevicePoll))
+		r.POST("/account/openai/browser/start", scoped(accountChain, model.ScopeAccountManage)(openAIAuthH.HandleBrowserStart))
+		r.POST("/account/openai/browser/complete", scoped(accountChain, model.ScopeAccountManage)(openAIAuthH.HandleBrowserComplete))
 		r.GET("/account/openai/callback", publicChain(openAIAuthH.HandleCallback))
 		log.Printf("BYOK provider keys endpoints enabled")
 	}
 
 	if deps.CryptoSvc != nil {
 		cryptoH := handler.NewCryptoHandler(deps.CryptoSvc)
-		r.POST("/crypto/checkout", accountChain(cryptoH.HandleCreateCheckout))
+		r.POST("/crypto/checkout", scoped(accountChain, model.ScopeAccountManage)(cryptoH.HandleCreateCheckout))
 		r.GET("/crypto/checkout/{id}", publicChain(cryptoH.HandleGetCheckout))
 		r.GET("/crypto/checkout/{id}/events", publicChain(cryptoH.HandleCheckoutEvents))
 		r.GET("/crypto/prices", publicChain(cryptoH.HandlePrices))
@@ -407,16 +419,16 @@ func New(deps *Dependencies) *Server {
 
 	if deps.StripeSvc != nil {
 		atH := handler.NewAutotopupHandler(deps.UserQ, deps.StripeSvc)
-		r.POST("/account/stripe/setup", accountChain(atH.HandleStripeSetup))
-		r.POST("/account/stripe/confirm", accountChain(atH.HandleStripeConfirm))
-		r.GET("/account/stripe/payment-methods", accountChain(atH.HandleListPaymentMethods))
-		r.DELETE("/account/stripe/payment-methods/{id}", accountChain(atH.HandleDeletePaymentMethod))
-		r.POST("/account/autotopup/settings", accountChain(atH.HandleUpdateAutotopupSettings))
-		r.GET("/account/autotopup/settings", accountChain(atH.HandleGetAutotopupSettings))
+		r.POST("/account/stripe/setup", scoped(accountChain, model.ScopeAccountManage)(atH.HandleStripeSetup))
+		r.POST("/account/stripe/confirm", scoped(accountChain, model.ScopeAccountManage)(atH.HandleStripeConfirm))
+		r.GET("/account/stripe/payment-methods", scoped(accountChain, model.ScopeAccountManage)(atH.HandleListPaymentMethods))
+		r.DELETE("/account/stripe/payment-methods/{id}", scoped(accountChain, model.ScopeAccountManage)(atH.HandleDeletePaymentMethod))
+		r.POST("/account/autotopup/settings", scoped(accountChain, model.ScopeAccountManage)(atH.HandleUpdateAutotopupSettings))
+		r.GET("/account/autotopup/settings", scoped(accountChain, model.ScopeAccountManage)(atH.HandleGetAutotopupSettings))
 
 		checkoutH := handler.NewCheckoutHandler(deps.StripeSvc, deps.UserQ, deps.Billing, deps.StripeDepositQ, deps.Config.Stripe.CreditsPriceID, deps.Config.Stripe.WebhookSecret)
 		checkoutH.SetGuards(deps.GuardQ)
-		r.POST("/account/stripe/checkout", accountChain(checkoutH.HandleCreateCheckout))
+		r.POST("/account/stripe/checkout", scoped(accountChain, model.ScopeAccountManage)(checkoutH.HandleCreateCheckout))
 		r.GET("/account/stripe/config", publicChain(checkoutH.HandleStripeConfig))
 		r.POST("/stripe/webhooks", publicChain(checkoutH.HandleWebhook))
 
@@ -434,7 +446,7 @@ func New(deps *Dependencies) *Server {
 	// Live evals: public snapshot, admin-triggered sweeps.
 	r.GET("/v1/evals/results", publicChain(evalsH.HandleResults))
 	r.GET("/v1/evals/status", publicChain(evalsH.HandleStatus))
-	r.POST("/v1/evals/run", accountChain(adminH.RequireAdmin(evalsH.HandleRun)))
+	r.POST("/v1/evals/run", scoped(accountChain, model.ScopeAccountManage)(adminH.RequireAdmin(evalsH.HandleRun)))
 	r.GET("/stats/apps", publicChain(statsH.HandleAppStats))
 	r.GET("/og/apps/{slug}.svg", publicChain(statsH.HandleAppOGImage))
 	r.GET("/art/search", publicChain(artH.HandleSearch))
@@ -447,8 +459,8 @@ func New(deps *Dependencies) *Server {
 	r.GET("/v1/art/list", publicChain(artH.HandleList))
 	r.GET("/v1/art/item", publicChain(artH.HandleItem))
 	r.GET("/v1/art/tags", publicChain(artH.HandleTags))
-	r.POST("/v1/art/index", accountChain(adminH.RequireAdmin(artH.HandleIndex)))
-	r.POST("/v1/art/reindex", accountChain(adminH.RequireAdmin(artH.HandleReindex)))
+	r.POST("/v1/art/index", scoped(accountChain, model.ScopeAccountManage)(adminH.RequireAdmin(artH.HandleIndex)))
+	r.POST("/v1/art/reindex", scoped(accountChain, model.ScopeAccountManage)(adminH.RequireAdmin(artH.HandleReindex)))
 
 	// Prompt library (the /prompts directory). Read-only, public, gobed-powered search.
 	// Served under /v1 only so the client-side /prompts SPA routes are untouched.
@@ -459,8 +471,8 @@ func New(deps *Dependencies) *Server {
 	r.GET("/v1/skills", publicChain(skillsH.HandleList))
 	r.GET("/v1/skills/meta", publicChain(skillsH.HandleMeta))
 	r.GET("/v1/skills/search", publicChain(skillsH.HandleSearch))
-	r.POST("/v1/skills", accountChain(skillsH.HandleCreate))
-	r.POST("/v1/skills/reindex", accountChain(adminH.RequireAdmin(skillsH.HandleReindex)))
+	r.POST("/v1/skills", scoped(accountChain, model.ScopeAccountManage)(skillsH.HandleCreate))
+	r.POST("/v1/skills/reindex", scoped(accountChain, model.ScopeAccountManage)(adminH.RequireAdmin(skillsH.HandleReindex)))
 	// One catch-all: fasthttp/router also claims the bare "/files" path for a
 	// "{filepath:*}" route, so a separate "/files" registration panics.
 	r.GET("/v1/skills/{slug}/files/{filepath:*}", publicChain(func(ctx *fasthttp.RequestCtx) {
@@ -471,68 +483,68 @@ func New(deps *Dependencies) *Server {
 		skillsH.HandleFileRaw(ctx)
 	}))
 	r.GET("/v1/skills/{slug}", publicChain(skillsH.HandleGet))
-	r.PUT("/v1/skills/{slug}", accountChain(skillsH.HandleUpdate))
-	r.DELETE("/v1/skills/{slug}", accountChain(skillsH.HandleDelete))
+	r.PUT("/v1/skills/{slug}", scoped(accountChain, model.ScopeAccountManage)(skillsH.HandleUpdate))
+	r.DELETE("/v1/skills/{slug}", scoped(accountChain, model.ScopeAccountManage)(skillsH.HandleDelete))
 
 	// Agents: user-built tool-use agents with connected data sources.
 	r.GET("/v1/agents/presets", publicChain(agentsH.HandlePresets))
-	r.GET("/v1/agents", accountChain(agentsH.HandleList))
-	r.POST("/v1/agents", accountChain(agentsH.HandleCreate))
-	r.GET("/v1/agents/{id}", accountChain(agentsH.HandleGet))
-	r.PATCH("/v1/agents/{id}", accountChain(agentsH.HandleUpdate))
-	r.DELETE("/v1/agents/{id}", accountChain(agentsH.HandleDelete))
-	r.POST("/v1/agents/{id}/run", accountChain(agentsH.HandleRun))
-	r.POST("/v1/agents/{id}/run/stream", accountChain(agentsH.HandleRunStream))
-	r.GET("/v1/agents/{id}/runs", accountChain(agentsH.HandleRuns))
-	r.GET("/v1/agents/{id}/sources", accountChain(agentsH.HandleListSources))
-	r.POST("/v1/agents/{id}/sources", accountChain(agentsH.HandleCreateSource))
-	r.POST("/v1/agents/{id}/sources/upload", accountChain(agentsH.HandleUploadSource))
-	r.DELETE("/v1/agents/{id}/sources/{sid}", accountChain(agentsH.HandleDeleteSource))
-	r.GET("/v1/agents/{id}/search", accountChain(agentsH.HandleSearch))
+	r.GET("/v1/agents", scoped(accountChain, model.ScopeAgents)(agentsH.HandleList))
+	r.POST("/v1/agents", scoped(accountChain, model.ScopeAgents)(agentsH.HandleCreate))
+	r.GET("/v1/agents/{id}", scoped(accountChain, model.ScopeAgents)(agentsH.HandleGet))
+	r.PATCH("/v1/agents/{id}", scoped(accountChain, model.ScopeAgents)(agentsH.HandleUpdate))
+	r.DELETE("/v1/agents/{id}", scoped(accountChain, model.ScopeAgents)(agentsH.HandleDelete))
+	r.POST("/v1/agents/{id}/run", scoped(accountChain, model.ScopeAgents)(agentsH.HandleRun))
+	r.POST("/v1/agents/{id}/run/stream", scoped(accountChain, model.ScopeAgents)(agentsH.HandleRunStream))
+	r.GET("/v1/agents/{id}/runs", scoped(accountChain, model.ScopeAgents)(agentsH.HandleRuns))
+	r.GET("/v1/agents/{id}/sources", scoped(accountChain, model.ScopeAgents)(agentsH.HandleListSources))
+	r.POST("/v1/agents/{id}/sources", scoped(accountChain, model.ScopeAgents)(agentsH.HandleCreateSource))
+	r.POST("/v1/agents/{id}/sources/upload", scoped(accountChain, model.ScopeAgents)(agentsH.HandleUploadSource))
+	r.DELETE("/v1/agents/{id}/sources/{sid}", scoped(accountChain, model.ScopeAgents)(agentsH.HandleDeleteSource))
+	r.GET("/v1/agents/{id}/search", scoped(accountChain, model.ScopeAgents)(agentsH.HandleSearch))
 
 	// Share-a-chat: publish a transcript, read it publicly at /chat/:slug.
 	sharedChatH := handler.NewSharedChatHandler(deps.SharedChatQ)
-	r.POST("/v1/chats/share", accountChain(sharedChatH.HandleShare))
+	r.POST("/v1/chats/share", scoped(accountChain, model.ScopeAccountManage)(sharedChatH.HandleShare))
 	r.GET("/v1/chats/shared", publicChain(sharedChatH.HandleGetShared))
 
-	r.GET("/account/stats/timeseries", accountChain(acctStatsH.HandleUserTimeSeries))
-	r.GET("/account/stats/by-api-key", accountChain(acctStatsH.HandleUserSpendByAPIKey))
-	r.GET("/account/stats/by-provider", accountChain(acctStatsH.HandleUserSpendByProvider))
-	r.GET("/account/stats/by-product", accountChain(acctStatsH.HandleUserSpendByProduct))
-	r.GET("/account/stats/by-model", accountChain(acctStatsH.HandleUserSpendByModel))
-	r.GET("/account/stats/by-app", accountChain(acctStatsH.HandleUserSpendByApp))
-	r.GET("/account/stats/activity", accountChain(acctStatsH.HandleUserActivity))
-	r.GET("/account/stats/recent", accountChain(acctStatsH.HandleUserRecentUsage))
-	r.GET("/account/stats/by-api-key/{key_id}/models", accountChain(acctStatsH.HandleUserAPIKeyDrilldown))
-	r.GET("/account/stats/by-provider/{provider}/models", accountChain(acctStatsH.HandleUserProviderDrilldown))
-	r.GET("/admin/users/spend", accountChain(adminH.RequireAdmin(adminH.HandleUserSpend)))
-	r.GET("/admin/users/{user_id}/usage", accountChain(adminH.RequireAdmin(adminH.HandleUserUsage)))
-	r.GET("/admin/openai-max-plan", accountChain(adminH.RequireAdmin(adminH.HandleOpenAIMaxPlanStatus)))
-	r.POST("/admin/openai-max-plan/refresh", accountChain(adminH.RequireAdmin(adminH.HandleOpenAIMaxPlanRefresh)))
+	r.GET("/account/stats/timeseries", scoped(accountChain, model.ScopeUsageRead)(acctStatsH.HandleUserTimeSeries))
+	r.GET("/account/stats/by-api-key", scoped(accountChain, model.ScopeUsageRead)(acctStatsH.HandleUserSpendByAPIKey))
+	r.GET("/account/stats/by-provider", scoped(accountChain, model.ScopeUsageRead)(acctStatsH.HandleUserSpendByProvider))
+	r.GET("/account/stats/by-product", scoped(accountChain, model.ScopeUsageRead)(acctStatsH.HandleUserSpendByProduct))
+	r.GET("/account/stats/by-model", scoped(accountChain, model.ScopeUsageRead)(acctStatsH.HandleUserSpendByModel))
+	r.GET("/account/stats/by-app", scoped(accountChain, model.ScopeUsageRead)(acctStatsH.HandleUserSpendByApp))
+	r.GET("/account/stats/activity", scoped(accountChain, model.ScopeUsageRead)(acctStatsH.HandleUserActivity))
+	r.GET("/account/stats/recent", scoped(accountChain, model.ScopeUsageRead)(acctStatsH.HandleUserRecentUsage))
+	r.GET("/account/stats/by-api-key/{key_id}/models", scoped(accountChain, model.ScopeUsageRead)(acctStatsH.HandleUserAPIKeyDrilldown))
+	r.GET("/account/stats/by-provider/{provider}/models", scoped(accountChain, model.ScopeUsageRead)(acctStatsH.HandleUserProviderDrilldown))
+	r.GET("/admin/users/spend", scoped(accountChain, model.ScopeAccountManage)(adminH.RequireAdmin(adminH.HandleUserSpend)))
+	r.GET("/admin/users/{user_id}/usage", scoped(accountChain, model.ScopeAccountManage)(adminH.RequireAdmin(adminH.HandleUserUsage)))
+	r.GET("/admin/openai-max-plan", scoped(accountChain, model.ScopeAccountManage)(adminH.RequireAdmin(adminH.HandleOpenAIMaxPlanStatus)))
+	r.POST("/admin/openai-max-plan/refresh", scoped(accountChain, model.ScopeAccountManage)(adminH.RequireAdmin(adminH.HandleOpenAIMaxPlanRefresh)))
 
 	// Private saved-response search + settings (response saving feature).
 	usageH := handler.NewUsageHandler(deps.Saver, deps.UserQ)
-	r.GET("/account/usage/settings", accountChain(usageH.HandleGetSettings))
-	r.POST("/account/usage/settings", accountChain(usageH.HandleUpdateSettings))
-	r.GET("/account/usage/responses", accountChain(usageH.HandleSearch))
-	r.GET("/account/usage/responses/{id}", accountChain(usageH.HandleItem))
+	r.GET("/account/usage/settings", scoped(accountChain, model.ScopeUsageRead)(usageH.HandleGetSettings))
+	r.POST("/account/usage/settings", scoped(accountChain, model.ScopeAccountManage)(usageH.HandleUpdateSettings))
+	r.GET("/account/usage/responses", scoped(accountChain, model.ScopeUsageRead)(usageH.HandleSearch))
+	r.GET("/account/usage/responses/{id}", scoped(accountChain, model.ScopeUsageRead)(usageH.HandleItem))
 
 	if deps.FineTuneQ != nil && len(deps.FineTuneProvs) > 0 {
 		ftH := handler.NewFineTuneHandler(deps.FineTuneQ, deps.FineTuneProvs, deps.Storage)
-		r.POST("/v1/files", apiKeyChain(ftH.HandleUploadFile))
-		r.GET("/v1/files", apiKeyChain(ftH.HandleListFiles))
-		r.POST("/v1/fine_tuning/jobs", apiKeyChain(ftH.HandleCreateJob))
-		r.GET("/v1/fine_tuning/jobs", apiKeyChain(ftH.HandleListJobs))
-		r.GET("/v1/fine_tuning/jobs/{job_id}", apiKeyChain(ftH.HandleGetJob))
-		r.POST("/v1/fine_tuning/jobs/{job_id}/cancel", apiKeyChain(ftH.HandleCancelJob))
-		r.GET("/v1/fine_tuning/jobs/{job_id}/events", apiKeyChain(ftH.HandleListEvents))
+		r.POST("/v1/files", scoped(apiKeyChain, model.ScopeFiles)(ftH.HandleUploadFile))
+		r.GET("/v1/files", scoped(apiKeyChain, model.ScopeFiles)(ftH.HandleListFiles))
+		r.POST("/v1/fine_tuning/jobs", scoped(apiKeyChain, model.ScopeFineTuning)(ftH.HandleCreateJob))
+		r.GET("/v1/fine_tuning/jobs", scoped(apiKeyChain, model.ScopeFineTuning)(ftH.HandleListJobs))
+		r.GET("/v1/fine_tuning/jobs/{job_id}", scoped(apiKeyChain, model.ScopeFineTuning)(ftH.HandleGetJob))
+		r.POST("/v1/fine_tuning/jobs/{job_id}/cancel", scoped(apiKeyChain, model.ScopeFineTuning)(ftH.HandleCancelJob))
+		r.GET("/v1/fine_tuning/jobs/{job_id}/events", scoped(apiKeyChain, model.ScopeFineTuning)(ftH.HandleListEvents))
 		log.Printf("Fine-tuning endpoints enabled (%d providers)", len(deps.FineTuneProvs))
 	}
 
 	if deps.Discovery != nil {
 		disc := deps.Discovery
 		metaQ := deps.ModelMetaQ
-		r.POST("/admin/discovery/run", accountChain(adminH.RequireAdmin(func(ctx *fasthttp.RequestCtx) {
+		r.POST("/admin/discovery/run", scoped(accountChain, model.ScopeAccountManage)(adminH.RequireAdmin(func(ctx *fasthttp.RequestCtx) {
 			n, err := disc.DiscoverAll(ctx)
 			if err != nil {
 				handler.WriteJSONPublic(ctx, 500, map[string]any{"error": err.Error()})
@@ -540,7 +552,7 @@ func New(deps *Dependencies) *Server {
 			}
 			handler.WriteJSONPublic(ctx, 200, map[string]any{"indexed": n})
 		})))
-		r.GET("/admin/discovery/models", accountChain(adminH.RequireAdmin(func(ctx *fasthttp.RequestCtx) {
+		r.GET("/admin/discovery/models", scoped(accountChain, model.ScopeAccountManage)(adminH.RequireAdmin(func(ctx *fasthttp.RequestCtx) {
 			prov := string(ctx.QueryArgs().Peek("provider"))
 			var models []*queries.ModelMetadata
 			var err error
@@ -560,9 +572,9 @@ func New(deps *Dependencies) *Server {
 
 	if deps.Announcer != nil {
 		announceH := handler.NewAnnounceHandler(deps.Announcer, deps.Discovery)
-		r.POST("/admin/announce/model", accountChain(adminH.RequireAdmin(announceH.HandleAnnounce)))
-		r.GET("/admin/announce/candidates", accountChain(adminH.RequireAdmin(announceH.HandleCandidates)))
-		r.GET("/admin/announce/{model_id:*}", accountChain(adminH.RequireAdmin(announceH.HandleStatus)))
+		r.POST("/admin/announce/model", scoped(accountChain, model.ScopeAccountManage)(adminH.RequireAdmin(announceH.HandleAnnounce)))
+		r.GET("/admin/announce/candidates", scoped(accountChain, model.ScopeAccountManage)(adminH.RequireAdmin(announceH.HandleCandidates)))
+		r.GET("/admin/announce/{model_id:*}", scoped(accountChain, model.ScopeAccountManage)(adminH.RequireAdmin(announceH.HandleStatus)))
 		log.Printf("Model announcement endpoints enabled")
 	}
 

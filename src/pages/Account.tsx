@@ -25,6 +25,7 @@ import {
   Wallet,
   X,
   Trash2,
+  RotateCw,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -936,6 +937,8 @@ export function Account() {
   const [stripeModalOpen, setStripeModalOpen] = useState(false);
   const [checkoutAmount, setCheckoutAmount] = useState(RECOMMENDED_TOPUP_USD);
   const [newKeyName, setNewKeyName] = useState('');
+  const [scopeCatalog, setScopeCatalog] = useState<{ name: string; description: string }[]>([]);
+  const [newKeyScopes, setNewKeyScopes] = useState<string[]>([]);
   const [newKeyResult, setNewKeyResult] = useState<string | null>(null);
   const [newKeyVisible, setNewKeyVisible] = useState(false);
   const [openAIAuthNotice, setOpenAIAuthNotice] = useState<string | null>(null);
@@ -1064,6 +1067,17 @@ export function Account() {
       })
       .catch(() => {});
   }, [apiKey]);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/v1/keys/scopes`)
+      .then(r => r.json())
+      .then(d => {
+        const scopes = Array.isArray(d.scopes) ? d.scopes : [];
+        setScopeCatalog(scopes);
+        setNewKeyScopes(scopes.map((s: any) => s.name).filter((n: string) => n !== 'keys:manage'));
+      })
+      .catch(() => {});
+  }, []);
 
   const fetchProviderKeys = useCallback(() => {
     if (!apiKey) return Promise.resolve();
@@ -1223,7 +1237,7 @@ export function Account() {
   const createKey = async () => {
     setKeyError('');
     try {
-      const res = await api('/account/keys', { method: 'POST', body: JSON.stringify({ name: newKeyName || 'Default' }) });
+      const res = await api('/account/keys', { method: 'POST', body: JSON.stringify({ name: newKeyName || 'Default', scopes: newKeyScopes }) });
       const data = await res.json();
       if (!res.ok) {
         setKeyError(data.error?.message || 'Failed to create API key');
@@ -1233,7 +1247,7 @@ export function Account() {
       setNewKeyVisible(false);
       // Save the API credential for Playground/tools, but keep the dashboard on
       // its JWT session so this key can be revoked without signing the user out.
-      storeApiKey(data.key);
+      if (scopeCatalog.every(s => s.name === 'keys:manage' || newKeyScopes.includes(s.name))) storeApiKey(data.key);
       setNewKeyName('');
       await fetchKeys();
     } catch {
@@ -1255,6 +1269,27 @@ export function Account() {
     } catch {
       setKeyError('Failed to delete API key');
     }
+  };
+
+  const rotateKey = async (id: string) => {
+    setKeyError('');
+    try {
+      const res = await api(`/account/keys/${id}/rotate`, { method: 'POST', body: JSON.stringify({ grace_seconds: 3600 }) });
+      const data = await res.json();
+      if (!res.ok) {
+        setKeyError(data.error?.message || 'Failed to rotate API key');
+        return;
+      }
+      setNewKeyResult(data.key);
+      setNewKeyVisible(false);
+      await fetchKeys();
+    } catch {
+      setKeyError('Failed to rotate API key');
+    }
+  };
+
+  const toggleNewKeyScope = (name: string) => {
+    setNewKeyScopes(scopes => scopes.includes(name) ? scopes.filter(s => s !== name) : [...scopes, name]);
   };
 
   const toggleKeySelection = (id: string) => {
@@ -1841,6 +1876,15 @@ export function Account() {
               </button>
             </div>
 
+            <div className="flex flex-wrap gap-x-4 gap-y-2 mb-6" data-testid="key-scopes">
+              {scopeCatalog.map(s => (
+                <label key={s.name} title={s.description} className="flex items-center gap-2 text-xs font-mono text-white/70">
+                  <input type="checkbox" checked={newKeyScopes.includes(s.name)} onChange={() => toggleNewKeyScope(s.name)} className="accent-white" />
+                  {s.name}
+                </label>
+              ))}
+            </div>
+
             {keyError && <p role="alert" className="mb-4 text-sm font-mono text-red-300">{keyError}</p>}
 
             {apiKeys.length === 0 ? (
@@ -1854,12 +1898,20 @@ export function Account() {
                       <div>
                         <div className="font-bold text-sm">{k.name}</div>
                         <code className="font-mono text-xs text-white/55">{k.key_prefix}...</code>
+                        <div className="font-mono text-[10px] text-white/45 mt-1">
+                          {(k.scopes || []).join(', ')}
+                          {k.expires_at ? ` | expires ${new Date(k.expires_at).toLocaleDateString()}` : ''}
+                          {k.revoked_at ? ` | revokes ${new Date(k.revoked_at).toLocaleString()}` : ''}
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="px-2 py-1 bg-green-500/10 text-green-400 text-[10px] font-mono rounded border border-green-500/20" data-testid="key-status">
                         Active
                       </span>
+                      <button type="button" aria-label={`Rotate ${k.name} API key`} onClick={e => { e.stopPropagation(); void rotateKey(k.id); }} className="text-white/60 hover:text-white px-2 py-1">
+                        <RotateCw className="w-3.5 h-3.5" />
+                      </button>
                       <button type="button" aria-label={`Delete ${k.name} API key`} onClick={e => { e.stopPropagation(); void revokeKey(k.id); }} className="text-xs font-mono text-red-400/60 hover:text-red-400 px-2 py-1">
                         Delete
                       </button>

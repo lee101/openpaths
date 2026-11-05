@@ -8,6 +8,7 @@ import (
 
 	"github.com/valyala/fasthttp"
 
+	"github.com/openpaths/openpaths/internal/middleware"
 	"github.com/openpaths/openpaths/internal/model"
 	"github.com/openpaths/openpaths/internal/router"
 )
@@ -42,6 +43,23 @@ func TestMCPInitialize(t *testing.T) {
 	si, _ := m["serverInfo"].(map[string]any)
 	if si["name"] != mcpServerName {
 		t.Fatalf("bad serverInfo: %v", m["serverInfo"])
+	}
+}
+
+func TestMCPToolScopeEnforced(t *testing.T) {
+	h := &MCPHandler{}
+	var ctx fasthttp.RequestCtx
+	ctx.SetUserValue(middleware.CtxKeyAPIKey, &model.APIKey{Scopes: []string{model.ScopeMCP, model.ScopeModels}})
+	_, rpcErr := h.callTool(&ctx, json.RawMessage(`{"name":"generate_image","arguments":{}}`))
+	if rpcErr == nil || rpcErr.Data.(map[string]string)["required_scope"] != model.ScopeImages {
+		t.Fatalf("image tool allowed without scope: %+v", rpcErr)
+	}
+	if _, rpcErr := h.callTool(&ctx, json.RawMessage(`{"name":"check_job","arguments":{"job_id":"x","kind":"text3d"}}`)); rpcErr == nil {
+		t.Fatal("3d job check allowed without scope")
+	}
+	ctx.SetUserValue(middleware.CtxKeyAPIKey, &model.APIKey{Scopes: []string{model.ScopeMCP, model.ScopeVideo}})
+	if _, rpcErr := h.callTool(&ctx, json.RawMessage(`{"name":"generate_video","arguments":{}}`)); rpcErr != nil && rpcErr.Code == -32003 {
+		t.Fatal("permitted tool denied")
 	}
 }
 

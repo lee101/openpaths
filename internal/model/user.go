@@ -33,4 +33,8 @@ type APIKey struct {
 	LastUsedAt   *time.Time `json:"last_used_at,omitempty"`
 	Revoked      bool       `json:"revoked"`
 	RateLimitRPM int        `json:"rate_limit_rpm"`
+	Scopes       []string   `json:"scopes"`
+	ExpiresAt    *time.Time `json:"expires_at,omitempty"`
+	RevokedAt    *time.Time `json:"revoked_at,omitempty"`
+	RotatedFrom  *string    `json:"rotated_from,omitempty"`
 }

@@ -207,6 +207,9 @@ type ErrorDetail struct {
 	Message string  `json:"message"`
 	Type    string  `json:"type"`
 	Code    *string `json:"code,omitempty"`
+
+	Hint          string `json:"hint,omitempty"`
+	RequiredScope string `json:"required_scope,omitempty"`
 }
 
 // ModelInfo represents a model in the /v1/models response.

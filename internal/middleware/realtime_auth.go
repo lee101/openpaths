@@ -93,7 +93,10 @@ func RealtimeAuth(apiKeyQ *queries.APIKeyQueries, jwtService *auth.JWTService) M
 			if strings.HasPrefix(credential, auth.APIKeyPrefix) {
 				apiKey, err := apiKeyQ.ValidateKey(ctx, auth.HashAPIKey(credential))
 				if err != nil {
-					writeAuthError(ctx, "Invalid API key", "invalid_api_key")
+					keyAuthFailure(ctx, err)
+					return
+				}
+				if !authorizeKey(ctx, apiKey) {
 					return
 				}
 				ctx.SetUserValue(CtxKeyUserID, apiKey.UserID)

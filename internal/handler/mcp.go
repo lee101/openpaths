@@ -14,6 +14,7 @@ import (
 
 	"github.com/valyala/fasthttp"
 
+	"github.com/openpaths/openpaths/internal/middleware"
 	"github.com/openpaths/openpaths/internal/model"
 	"github.com/openpaths/openpaths/internal/router"
 )
@@ -150,7 +151,7 @@ func (h *MCPHandler) route(ctx *fasthttp.RequestCtx, req *rpcRequest) (any, *rpc
 	case "ping":
 		return map[string]any{}, nil
 	case "tools/list":
-		return map[string]any{"tools": mcpTools}, nil
+		return map[string]any{"tools": mcpToolsListing()}, nil
 	case "tools/call":
 		return h.callTool(ctx, req.Params)
 	case "resources/list":
@@ -340,10 +341,50 @@ type toolCallParams struct {
 	Arguments json.RawMessage `json:"arguments"`
 }
 
+func scopeRPCError(scope string) *rpcError {
+	return &rpcError{Code: -32003, Message: "API key lacks required scope: " + scope, Data: map[string]string{"code": "insufficient_scope", "required_scope": scope}}
+}
+
+func mcpToolsListing() []map[string]any {
+	out := make([]map[string]any, len(mcpTools))
+	for i, t := range mcpTools {
+		c := make(map[string]any, len(t))
+		for k, v := range t {
+			c[k] = v
+		}
+		name, _ := t["name"].(string)
+		scope := mcpToolScopes[name]
+		if name == "check_job" {
+			scope = model.ScopeVideo + " (kind=video) or " + model.Scope3D + " (kind=text3d)"
+		}
+		if scope != "" {
+			c["description"] = fmt.Sprintf("%v Requires API key scopes %s and %s.", t["description"], model.ScopeMCP, scope)
+		}
+		out[i] = c
+	}
+	return out
+}
+
+var mcpToolScopes = map[string]string{
+	"chat":             model.ScopeChat,
+	"list_models":      model.ScopeModels,
+	"generate_image":   model.ScopeImages,
+	"generate_video":   model.ScopeVideo,
+	"generate_music":   model.ScopeAudio,
+	"text_to_speech":   model.ScopeAudio,
+	"transcribe_audio": model.ScopeAudio,
+	"generate_3d":      model.Scope3D,
+	"embed":            model.ScopeEmbeddings,
+	"web_search":       model.ScopeSearch,
+}
+
 func (h *MCPHandler) callTool(ctx *fasthttp.RequestCtx, params json.RawMessage) (any, *rpcError) {
 	var p toolCallParams
 	if err := json.Unmarshal(params, &p); err != nil {
 		return nil, &rpcError{Code: -32602, Message: "Invalid params: " + err.Error()}
+	}
+	if scope, known := mcpToolScopes[p.Name]; known && !middleware.ScopeAllowed(ctx, scope) {
+		return nil, scopeRPCError(scope)
 	}
 	args := p.Arguments
 	if len(args) == 0 {
@@ -611,7 +652,15 @@ func (h *MCPHandler) toolCheckJob(ctx *fasthttp.RequestCtx, args json.RawMessage
 	}
 	var handler fasthttp.RequestHandler
 	var uri string
-	switch strings.ToLower(strings.TrimSpace(a.Kind)) {
+	kind := strings.ToLower(strings.TrimSpace(a.Kind))
+	jobScope := model.ScopeVideo
+	if kind == "text3d" {
+		jobScope = model.Scope3D
+	}
+	if !middleware.ScopeAllowed(ctx, jobScope) {
+		return nil, scopeRPCError(jobScope)
+	}
+	switch kind {
 	case "", "video":
 		if h.video == nil {
 			return toolError("video jobs are not enabled on this server"), nil

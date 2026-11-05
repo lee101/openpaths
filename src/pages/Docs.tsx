@@ -7,27 +7,33 @@ import { Seo } from '../components/Seo';
 import { providers, FALLBACK_LOGO } from '../data/providers';
 
 const ENDPOINTS = [
-  { method: 'POST', path: '/v1/chat/completions', description: 'OpenAI-compatible chat completions (streaming + tools).' },
-  { method: 'POST', path: '/v1/messages', description: 'Anthropic-compatible Messages API for Claude SDKs and agent SDKs.' },
-  { method: 'GET', path: '/v1/models', description: 'List all available models and capabilities.' },
-  { method: 'POST', path: '/v1/images/generations', description: 'Generate images (Gemini Nano Banana, GPT Image 2, Flux, RA1, Klein, and more). See /docs/image-generation.' },
-  { method: 'POST', path: '/v1/images/edits', description: 'Edit images and image-to-image workflows (GPT Image 2, Grok Imagine Image).' },
-  { method: 'POST', path: '/v1/3d/generations', description: 'Generate textured GLB models from image URLs with Pixal3D.' },
-  { method: 'POST', path: '/v1/3d/text-generations', description: 'Generate a GLB straight from a text prompt (auto image then Pixal3D).' },
-  { method: 'POST', path: '/v1/3d/rigging', description: 'Auto-rig a humanoid GLB into a rigged character (GLB + FBX) with Meshy.' },
-  { method: 'POST', path: '/v1/3d/generations', description: 'Also retextures a mesh: pass model trellis-2-retexture with mesh_url + image_url.' },
-  { method: 'POST', path: '/v1/videos/generations', description: 'Generate videos (Wan 3.0, FLUX 3 Max, MiniMax H3, Sora 2, Grok Imagine, Hailuo, LTX).' },
-  { method: 'POST', path: '/v1/videos/edits', description: 'Edit an existing video with Grok Imagine Video.' },
-  { method: 'POST', path: '/v1/videos/extensions', description: 'Extend an existing video from its last frame with Grok Imagine Video.' },
-  { method: 'POST', path: '/v1/audio/transcriptions', description: 'Transcribe speech to text (Whisper, GPT-4o Transcribe).' },
-  { method: 'POST', path: '/v1/audio/speech', description: 'Text-to-speech (xAI TTS, MiniMax Speech 2.8 HD).' },
-  { method: 'POST', path: '/v1/stt', description: 'xAI Speech to Text shortcut; defaults to xai-stt.' },
-  { method: 'POST', path: '/v1/tts', description: 'xAI Text to Speech shortcut; defaults to xai-tts.' },
-  { method: 'POST', path: '/v1/systemone', description: 'Typed decisions (yes/no, choice, score) with probabilities; TypeSafe SDK compatible. Models decision-model-preview and openpaths-decision (first-party gobed, $0.002/M).' },
-  { method: 'POST', path: '/v1/embeddings', description: 'Generate vector embeddings (OpenPaths, Google Gemini, Mistral, Nemotron).' },
+  { method: 'POST', path: '/v1/chat/completions', scope: 'chat.completions', description: 'OpenAI-compatible chat completions (streaming + tools).' },
+  { method: 'POST', path: '/v1/messages', scope: 'chat.completions', description: 'Anthropic-compatible Messages API for Claude SDKs and agent SDKs.' },
+  { method: 'GET', path: '/v1/models', scope: 'models:read', description: 'List all available models and capabilities.' },
+  { method: 'POST', path: '/v1/images/generations', scope: 'images', description: 'Generate images (Gemini Nano Banana, GPT Image 2, Flux, RA1, Klein, and more). See /docs/image-generation.' },
+  { method: 'POST', path: '/v1/images/edits', scope: 'images', description: 'Edit images and image-to-image workflows (GPT Image 2, Grok Imagine Image).' },
+  { method: 'POST', path: '/v1/3d/generations', scope: '3d', description: 'Generate textured GLB models from image URLs with Pixal3D.' },
+  { method: 'POST', path: '/v1/3d/text-generations', scope: '3d', description: 'Generate a GLB straight from a text prompt (auto image then Pixal3D).' },
+  { method: 'POST', path: '/v1/3d/rigging', scope: '3d', description: 'Auto-rig a humanoid GLB into a rigged character (GLB + FBX) with Meshy.' },
+  { method: 'POST', path: '/v1/3d/generations', scope: '3d', description: 'Also retextures a mesh: pass model trellis-2-retexture with mesh_url + image_url.' },
+  { method: 'POST', path: '/v1/videos/generations', scope: 'video', description: 'Generate videos (Wan 3.0, FLUX 3 Max, MiniMax H3, Sora 2, Grok Imagine, Hailuo, LTX).' },
+  { method: 'POST', path: '/v1/videos/edits', scope: 'video', description: 'Edit an existing video with Grok Imagine Video.' },
+  { method: 'POST', path: '/v1/videos/extensions', scope: 'video', description: 'Extend an existing video from its last frame with Grok Imagine Video.' },
+  { method: 'POST', path: '/v1/audio/transcriptions', scope: 'audio', description: 'Transcribe speech to text (Whisper, GPT-4o Transcribe).' },
+  { method: 'POST', path: '/v1/audio/speech', scope: 'audio', description: 'Text-to-speech (xAI TTS, MiniMax Speech 2.8 HD).' },
+  { method: 'POST', path: '/v1/stt', scope: 'audio', description: 'xAI Speech to Text shortcut; defaults to xai-stt.' },
+  { method: 'POST', path: '/v1/tts', scope: 'audio', description: 'xAI Text to Speech shortcut; defaults to xai-tts.' },
+  { method: 'POST', path: '/v1/systemone', scope: 'embeddings', description: 'Typed decisions (yes/no, choice, score) with probabilities; TypeSafe SDK compatible. Models decision-model-preview and openpaths-decision (first-party gobed, $0.002/M).' },
+  { method: 'POST', path: '/v1/embeddings', scope: 'embeddings', description: 'Generate vector embeddings (OpenPaths, Google Gemini, Mistral, Nemotron).' },
   { method: 'GET', path: '/v1/artifacts/{id}', description: 'Retrieve an artifact and all its files (free).' },
-  { method: 'GET', path: '/v1/artifacts/search', description: 'Search public artifacts by title, description, or tag ($1 per 1,000 searches).' },
-  { method: 'POST', path: '/v1/artifacts', description: 'Create an artifact (multi-file web app) from the API.' },
+  { method: 'GET', path: '/v1/artifacts/search', scope: 'artifacts', description: 'Search public artifacts by title, description, or tag ($1 per 1,000 searches).' },
+  { method: 'POST', path: '/v1/artifacts', scope: 'artifacts', description: 'Create an artifact (multi-file web app) from the API.' },
+  { method: 'GET', path: '/v1/keys/scopes', description: 'Public scope catalog for API keys.' },
+  { method: 'GET', path: '/v1/keys/me', description: 'Scopes, expiry and is_management for the calling key.' },
+  { method: 'GET', path: '/v1/keys', scope: 'keys:manage', description: 'List API keys (no secrets). Management key or dashboard session only.' },
+  { method: 'POST', path: '/v1/keys', scope: 'keys:manage', description: 'Create a key with {name, scopes[], expires_in_days?}; the secret is returned once.' },
+  { method: 'POST', path: '/v1/keys/{id}/rotate', scope: 'keys:manage', description: 'Rotate a key with {grace_seconds?} (0-86400, default 0); the old key is revoked after the grace period.' },
+  { method: 'DELETE', path: '/v1/keys/{id}', scope: 'keys:manage', description: 'Revoke a key immediately.' },
 ];
 
 type Tab = 'chat' | 'fusion' | 'images' | '3d' | 'text-to-3d' | 'videos' | 'transcription';
@@ -249,6 +255,18 @@ export function Docs() {
             </p>
           </div>
 
+          <div className="rounded-xl border border-white/20 bg-black/40 p-4 mb-5">
+            <div className="text-xs font-mono text-white/55 mb-2">Scoped API keys</div>
+            <p className="text-sm text-white/60 mb-3">
+              Send a key as `Authorization: Bearer &lt;key&gt;` or `X-API-Key: &lt;key&gt;`. Each key carries scopes (listed per endpoint below); a call outside them returns 403 with `error.code=insufficient_scope`, `error.required_scope` and `WWW-Authenticate: Bearer error="insufficient_scope", scope="&lt;scope&gt;"`. A key holding `keys:manage` is a management key: only it, or your dashboard session, can list, create, rotate or revoke keys. It receives no usage scopes unless you add them. Keys created before scopes existed keep every usage scope but cannot manage keys.
+            </p>
+            <CodeBlock
+              language="bash"
+              code={`curl ${apiBase}/keys -H "Authorization: Bearer $MANAGEMENT_KEY" -H "Content-Type: application/json" \\\n  -d '{"name":"ci","scopes":["chat.completions","models:read"],"expires_in_days":90}'\ncurl -X POST ${apiBase}/keys/KEY_ID/rotate -H "Authorization: Bearer $MANAGEMENT_KEY" -d '{"grace_seconds":3600}'`}
+              preClassName="rounded-lg border border-white/20 bg-black/60 p-3 text-xs leading-5"
+            />
+          </div>
+
           <div className="space-y-3">
             {ENDPOINTS.map(endpoint => (
               <div key={endpoint.path} className="rounded-xl border border-white/20 p-4">
@@ -257,6 +275,7 @@ export function Docs() {
                   <code className="text-sm text-white/90">{endpoint.path}</code>
                 </div>
                 <p className="text-sm text-white/50">{endpoint.description}</p>
+                {endpoint.scope && <p className="text-xs font-mono text-white/40 mt-1">scope: {endpoint.scope}</p>}
               </div>
             ))}
           </div>

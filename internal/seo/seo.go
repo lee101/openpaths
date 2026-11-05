@@ -329,6 +329,17 @@ func (c *Catalog) LLMsTxt() string {
 	} {
 		fmt.Fprintf(&b, "- [%s](%s%s): %s\n", linkLabel(l[0]), BaseURL, l[0], l[1])
 	}
+	b.WriteString("\n## API keys\n\n")
+	b.WriteString("- Auth: `Authorization: Bearer <key>` or `X-API-Key: <key>`. 401 carries `WWW-Authenticate: Bearer`; a missing scope returns 403 `insufficient_scope` with `error.required_scope`.\n")
+	b.WriteString("- Scopes: ")
+	for i, s := range model.AllScopes() {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.WriteString("`" + s + "`")
+	}
+	b.WriteString(". Each endpoint needs the scope matching its group; `keys:manage` marks a management key and grants no usage scopes by itself.\n")
+	b.WriteString("- Keys API (management key or dashboard session): `GET /v1/keys/scopes`, `GET /v1/keys/me`, `GET /v1/keys`, `POST /v1/keys` {name, scopes[], expires_in_days?}, `POST /v1/keys/{id}/rotate` {grace_seconds? 0-86400}, `DELETE /v1/keys/{id}`. Secrets are shown once.\n")
 	g := c.grouped()
 	for _, t := range sectionOrder {
 		list := g[t]
