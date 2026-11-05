@@ -497,3 +497,39 @@ func TestNormalizeToolEffort(t *testing.T) {
 		t.Errorf("sol effort rewritten to %q", sol.ReasoningEffort)
 	}
 }
+
+func TestGPTImageDefaultsToWebP(t *testing.T) {
+	for _, tc := range []struct {
+		model, format string
+		wantFormat    string
+		wantComp      int
+	}{
+		{"gpt-image-2.6-flare", "", "webp", 85},
+		{"gpt-image-2", "webp", "webp", 85},
+		{"gpt-image-1", "png", "png", -1},
+		{"gpt-image-1", "jpg", "jpeg", 85},
+		{"dall-e-3", "", "", -1},
+	} {
+		var got struct {
+			OutputFormat      string `json:"output_format"`
+			OutputCompression *int   `json:"output_compression"`
+		}
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			body, _ := io.ReadAll(r.Body)
+			_ = json.Unmarshal(body, &got)
+			json.NewEncoder(w).Encode(model.ImageGenerationResponse{})
+		}))
+		p := New("test-key", server.URL)
+		_, err := p.GenerateImage(context.Background(), &model.ImageGenerationRequest{Model: tc.model, Prompt: "a cat", OutputFormat: tc.format})
+		server.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got.OutputFormat != tc.wantFormat {
+			t.Errorf("%s/%s: format %q want %q", tc.model, tc.format, got.OutputFormat, tc.wantFormat)
+		}
+		if tc.wantComp < 0 && got.OutputCompression != nil || tc.wantComp >= 0 && (got.OutputCompression == nil || *got.OutputCompression != tc.wantComp) {
+			t.Errorf("%s/%s: compression %v want %d", tc.model, tc.format, got.OutputCompression, tc.wantComp)
+		}
+	}
+}

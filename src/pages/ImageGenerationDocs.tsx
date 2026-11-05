@@ -20,6 +20,8 @@ const PARAMS: Array<[string, string, string]> = [
   ['aspect_ratio', 'string', `Explicit aspect ratio for Gemini models, overriding size: ${GEMINI_ASPECT_RATIOS.join(', ')}.`],
   ['image_url / image_urls / reference_image_urls / images', 'string | string[]', 'Reference images for edits and multi-image composition. HTTPS URLs or data: URLs.'],
   ['response_format', 'string', 'url or b64_json. Gemini image models return b64_json.'],
+  ['output_format', 'string', 'webp (default), png or jpeg. Images are returned and stored as WebP at quality 85 unless you ask for png or jpeg; PNG and JPEG results from other providers are converted to WebP when smaller.'],
+  ['output_compression', 'integer', 'GPT Image models only: 0 to 100 quality for webp and jpeg output. Default 85.'],
 ];
 
 const FAQ = [
@@ -202,7 +204,7 @@ export function ImageGenerationDocs() {
             . Flare is the fast tier (about 10 to 25 seconds per image in our runs), Sunburst is slower (about 25 to 45 seconds). All four generate and edit through the same endpoints, price at $0.06 per 1K image ($0.11 at 2K and 4K, plus $0.01 per input image on edits), and fall back to GPT Image 2 if OpenAI is unavailable.
           </p>
           <p className="mb-4 max-w-3xl text-white/60">
-            Parameters: <code className="text-white">size</code> (1024x1024, 1536x1024, 1024x1536, 2048x2048, 2048x1152, 3840x2160, 2160x3840), <code className="text-white">quality</code> (low, medium, high, auto), <code className="text-white">n</code>, and <code className="text-white">image_url</code> / <code className="text-white">image_urls</code> for edits. Responses are base64 PNG or a rehosted URL. Compare all four side by side in the <Link to="/gpt-image" className="text-white underline underline-offset-4">GPT Image tool</Link>.
+            Parameters: <code className="text-white">size</code> (1024x1024, 1536x1024, 1024x1536, 2048x2048, 2048x1152, 3840x2160, 2160x3840), <code className="text-white">quality</code> (low, medium, high, auto), <code className="text-white">n</code>, and <code className="text-white">image_url</code> / <code className="text-white">image_urls</code> for edits. Responses are WebP at quality 85 by default (set output_format to png or jpeg to opt out), as base64 or a rehosted URL. Compare all four side by side in the <Link to="/gpt-image" className="text-white underline underline-offset-4">GPT Image tool</Link>.
           </p>
           <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {GPT_IMAGE_MODELS.map(m => (

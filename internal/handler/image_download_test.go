@@ -4,9 +4,12 @@ import (
 	"bytes"
 	"context"
 	"image"
+	"image/color"
 	"image/png"
 	"net/http"
 	"net/http/httptest"
+	"os/exec"
+	"strings"
 	"sync/atomic"
 	"testing"
 
@@ -46,11 +49,11 @@ func TestRehostImageURLRejectsOversize(t *testing.T) {
 		t.Fatal(err)
 	}
 	h := &ImageHandler{store: store}
-	if _, _, _, err := h.rehostImageURL(context.Background(), srv.URL, 0); err == nil {
+	if _, _, _, err := h.rehostImageURL(context.Background(), srv.URL, 0, false); err == nil {
 		t.Fatal("want oversize error")
 	}
 	resp := &model.ImageGenerationResponse{Data: []model.ImageData{{URL: srv.URL}}}
-	h.rehostImageURLs(context.Background(), resp)
+	h.rehostImageURLs(context.Background(), resp, false)
 	if resp.Data[0].URL != srv.URL {
 		t.Fatalf("url = %q, want upstream kept", resp.Data[0].URL)
 	}
@@ -64,8 +67,37 @@ func TestRehostImageURLStoresWithDimensions(t *testing.T) {
 	defer srv.Close()
 	store, _ := storage.NewLocalStore(t.TempDir(), "https://assets.test")
 	h := &ImageHandler{store: store}
-	u, w, hh, err := h.rehostImageURL(context.Background(), srv.URL, 1)
+	u, w, hh, err := h.rehostImageURL(context.Background(), srv.URL, 1, false)
 	if err != nil || w != 8 || hh != 5 || u == srv.URL {
 		t.Fatalf("u=%q %dx%d err=%v", u, w, hh, err)
 	}
+}
+
+func TestRehostImageURLConvertsPNGToWebP(t *testing.T) {
+	if _, err := exec.LookPath("cwebp"); err != nil {
+		t.Skip("cwebp not installed")
+	}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/png")
+		_, _ = w.Write(gradientPNG(512, 512))
+	}))
+	defer srv.Close()
+	store, _ := storage.NewLocalStore(t.TempDir(), "https://assets.test")
+	h := &ImageHandler{store: store}
+	u, w, hh, err := h.rehostImageURL(context.Background(), srv.URL, 0, true)
+	if err != nil || w != 512 || hh != 512 || !strings.HasSuffix(u, ".webp") {
+		t.Fatalf("u=%q %dx%d err=%v", u, w, hh, err)
+	}
+}
+
+func gradientPNG(w, h int) []byte {
+	img := image.NewRGBA(image.Rect(0, 0, w, h))
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			img.Set(x, y, color.RGBA{uint8(x / 2), uint8(y / 2), uint8((x * y) / 997), 255})
+		}
+	}
+	var buf bytes.Buffer
+	_ = png.Encode(&buf, img)
+	return buf.Bytes()
 }

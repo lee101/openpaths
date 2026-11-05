@@ -237,7 +237,8 @@
       "max_age_days": 14,
       "subject": "GLM-5.3 price drop: $0.77 in / $2.42 out per M, now served from Runpod",
       "template": "30-glm53-runpod.html",
-      "description": "GLM-5.3 routed to new Runpod provider at $0.77/$0.143/$2.42 per M (was $1.40/$0.26/$4.40), Z.AI direct failover, say-hi test"
+      "description": "GLM-5.3 routed to new Runpod provider at $0.77/$0.143/$2.42 per M (was $1.40/$0.26/$4.40), Z.AI direct failover, say-hi test",
+      "hold": true
     },
     {
       "id": 31,
@@ -247,7 +248,8 @@
       "max_age_days": 14,
       "subject": "Seedream 5.0 images from $0.018, Seedance 2.5 video and DeepSeek V4.1 Flash direct from BytePlus ModelArk",
       "template": "31-seedream-modelark.html",
-      "description": "New BytePlus ModelArk provider: DeepSeek V4.1 Flash (and Economy background tier), Seedream 5.0 Flash/Pro images, Seedance 2.5 video, Seed 2.1 Turbo"
+      "description": "New BytePlus ModelArk provider: DeepSeek V4.1 Flash (and Economy background tier), Seedream 5.0 Flash/Pro images, Seedance 2.5 video, Seed 2.1 Turbo",
+      "hold": true
     },
     {
       "id": 32,

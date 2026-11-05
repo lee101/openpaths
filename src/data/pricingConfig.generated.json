@@ -2526,7 +2526,7 @@
   "provider": "openrouter",
   "upstream": "moonshotai/kimi-k3",
   "input": 3.0,
-  "output": 15.0,
+  "output": 16.88,
   "context": 1048576,
   "maxOutput": 131072,
   "vision": true,
@@ -3495,8 +3495,8 @@
   "upstream": "inclusionai/ling-3.1-flash",
   "input": 0.0792,
   "output": 0.2374,
-  "context": 262144,
-  "maxOutput": 235929,
+  "context": 1000000,
+  "maxOutput": 262144,
   "vision": false,
   "tools": true,
   "aliases": [
@@ -3612,8 +3612,8 @@
   "id": "or/mistral-large-4-0",
   "provider": "openrouter",
   "upstream": "mistralai/mistral-large-4-0",
-  "input": 1.4348,
-  "output": 4.4099,
+  "input": 0.7385,
+  "output": 2.2155,
   "context": 1048576,
   "maxOutput": 262144,
   "vision": true,
@@ -3623,7 +3623,7 @@
    "openrouter/mistralai/mistral-large-4-0",
    "mistral-large-4-0"
   ],
-  "cacheRead": 0.1477
+  "cacheRead": 0.0739
  },
  {
   "id": "or/moondream3.1-9b-a2b",
@@ -3699,7 +3699,7 @@
   "input": 0.1583,
   "output": 0.5275,
   "context": 1048576,
-  "maxOutput": 235929,
+  "maxOutput": 943718,
   "vision": true,
   "tools": true,
   "aliases": [
@@ -4014,7 +4014,7 @@
    "openrouter/z-ai/glm-5.3-flashx",
    "glm-5.3-flashx"
   ],
-  "cacheRead": 0.095
+  "cacheRead": 0.0792
  },
  {
   "id": "or/glm-5.3-prime",

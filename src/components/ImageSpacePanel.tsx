@@ -9,6 +9,7 @@ import { normalizeUploadedAssetUrl } from '../lib/uploadUrls';
 import { ensureSpaceApiKey, paywallBeforeRun, paywallFromResponse, type Paywall } from '../lib/paywall';
 import { SubscribePrompt } from './SubscribePrompt';
 import { AUTH_EVENT } from '../lib/api';
+import { b64ImageSrc } from '../lib/imageData';
 
 type Lang = 'python' | 'javascript' | 'curl';
 type ImageResult = { url?: string; b64_json?: string };
@@ -25,7 +26,7 @@ function storedAPIKey() {
 
 function responseSource(result?: ImageResult) {
   if (result?.url) return result.url;
-  if (result?.b64_json) return `data:image/png;base64,${result.b64_json}`;
+  if (result?.b64_json) return b64ImageSrc(result.b64_json);
   return '';
 }
 

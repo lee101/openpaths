@@ -13,6 +13,7 @@ type ImageGenerationRequest struct {
 	Style               string       `json:"style,omitempty"`
 	ResponseFormat      string       `json:"response_format,omitempty"`
 	OutputFormat        string       `json:"output_format,omitempty"`
+	OutputCompression   *int         `json:"output_compression,omitempty"`
 	ImageSize           any          `json:"image_size,omitempty"`
 	Image               *ImageInput  `json:"image,omitempty"`
 	Images              []ImageInput `json:"images,omitempty"`
