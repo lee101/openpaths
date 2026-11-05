@@ -10,7 +10,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"path/filepath"
 	"strings"
 	"time"
 )
@@ -56,11 +55,7 @@ func defaultR2PublicURL(bucket string) string {
 }
 
 func (s *R2Store) Upload(ctx context.Context, filename string, contentType string, r io.Reader) (string, error) {
-	ext := filepath.Ext(filename)
-	if ext == "" {
-		ext = ".bin"
-	}
-	key := "uploads/" + generateID() + ext
+	key := "uploads/" + generateID() + safeExt(filename)
 
 	body, err := io.ReadAll(r)
 	if err != nil {

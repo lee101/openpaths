@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -30,11 +31,18 @@ func NewLocalStore(dir, baseURL string) (*LocalStore, error) {
 	return &LocalStore{dir: dir, baseURL: strings.TrimRight(baseURL, "/")}, nil
 }
 
-func (s *LocalStore) Upload(_ context.Context, filename string, _ string, r io.Reader) (string, error) {
+var safeExtRe = regexp.MustCompile(`^\.[A-Za-z0-9]{1,16}$`)
+
+func safeExt(filename string) string {
 	ext := filepath.Ext(filename)
-	if ext == "" {
-		ext = ".bin"
+	if !safeExtRe.MatchString(ext) {
+		return ".bin"
 	}
+	return ext
+}
+
+func (s *LocalStore) Upload(_ context.Context, filename string, _ string, r io.Reader) (string, error) {
+	ext := safeExt(filename)
 	id := generateID()
 	stored := id + ext
 
