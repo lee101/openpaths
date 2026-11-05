@@ -31,6 +31,7 @@ const TextTo3D = lazy(() => import('./pages/TextTo3D').then(module => ({ default
 const Rig3D = lazy(() => import('./pages/Rig3D').then(module => ({ default: module.Rig3D })));
 const Retexture3D = lazy(() => import('./pages/Retexture3D').then(module => ({ default: module.Retexture3D })));
 const TextToImage = lazy(() => import('./pages/TextToImage').then(module => ({ default: module.TextToImage })));
+const GptImage = lazy(() => import('./pages/GptImage').then(module => ({ default: module.GptImage })));
 const ImageEdit = lazy(() => import('./pages/ImageEdit').then(module => ({ default: module.ImageEdit })));
 const VideoExtension = lazy(() => import('./pages/VideoExtension').then(module => ({ default: module.VideoExtension })));
 const ImageToVideo = lazy(() => import('./pages/ImageToVideo').then(module => ({ default: module.ImageToVideo })));
@@ -127,6 +128,7 @@ export default function App() {
           <Route path="retexture-3d" element={<Retexture3D />} />
           <Route path="text-to-image" element={<TextToImage />} />
           <Route path="image-edit" element={<ImageEdit />} />
+          <Route path="gpt-image" element={<GptImage />} />
           <Route path="video-extension" element={<VideoExtension />} />
           <Route path="character-animator" element={<CharacterAnimator />} />
           <Route path="music-generator" element={<MusicGenerator />} />

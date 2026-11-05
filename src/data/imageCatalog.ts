@@ -11,7 +11,7 @@ export const imageModels: Model[] = models
 
 export const geminiImageModels = imageModels.filter(m => m.provider === 'Google' && m.id.startsWith('gemini'));
 
-export const FEATURED_IMAGE_IDS = ['gpt-image-2', 'gemini-nano-banana-2.1', 'gemini-3.1-flash-lite-image', 'ra1', 'flux-pro'];
+export const FEATURED_IMAGE_IDS = ['gpt-image-2.6-sunburst', 'gpt-image-2.6-flare', 'gpt-image-2', 'gemini-nano-banana-2.1', 'gemini-3.1-flash-lite-image', 'ra1', 'flux-pro'];
 
 export const featuredImageModels = FEATURED_IMAGE_IDS
   .map(id => imageModels.find(m => m.id === id))

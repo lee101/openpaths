@@ -66,6 +66,17 @@ export const TOOLS: ToolEntry[] = [
     seoDescription: 'Generate images from text with the OpenPaths auto image endpoint - routes to GPT Image 2, RA1, Flux, and more with near-zero markup.',
   },
   {
+    slug: 'gpt-image',
+    path: '/gpt-image',
+    name: 'GPT Image 2.6',
+    tagline: 'Sunburst · Flare · 2.6 and 2.5',
+    description: 'OpenAI\'s newest image models. Generate and edit with accurate text and layouts, and compare Sunburst and Flare outputs side by side.',
+    price: '$0.06 / 1K image',
+    keywords: 'gpt image 2.6 2.5 sunburst flare openai image generation edit typography poster text rendering',
+    seoTitle: 'GPT Image 2.6 API - Sunburst and Flare | OpenPaths',
+    seoDescription: 'Generate and edit images with GPT Image 2.6 and 2.5 Sunburst and Flare through one OpenAI-compatible API. $0.06 per 1K image, with real example outputs from every model.',
+  },
+  {
     slug: 'image-edit',
     path: '/image-edit',
     name: 'Image Style Transfer',

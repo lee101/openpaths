@@ -1,4 +1,9 @@
+import { GPT_IMAGE_MODELS, GPT_IMAGE_PROMPTS, GPT_IMAGE_SECONDS, gptImageOutput, gptImageThumb } from './gptImageShowcase';
+
 export interface ImageDemo {
+  thumbUrl?: string;
+  label?: string;
+  meta?: string;
   imageUrl?: string;
   outputUrl: string;
   prompt?: string;
@@ -110,3 +115,24 @@ export const IMAGE_DEMOS: Record<string, ImageDemo> = {
     },
   },
 };
+
+export const IMAGE_EXAMPLES: Record<string, ImageDemo[]> = {};
+
+for (const m of GPT_IMAGE_MODELS) {
+  IMAGE_EXAMPLES[m.id] = GPT_IMAGE_PROMPTS.map(p => {
+    const seconds = GPT_IMAGE_SECONDS[`${m.id}/${p.slug}`];
+    const payload: Record<string, unknown> = { model: m.id, prompt: p.prompt, size: p.size, quality: 'high', n: 1, ...(p.inputUrl ? { image_url: p.inputUrl } : {}) };
+    return {
+      title: `${m.name} · ${p.title}`,
+      label: p.title,
+      meta: `${p.size} · ~${seconds}s`,
+      description: `${p.edit ? 'A reference edit: one photo in, the same scene out.' : 'A text-to-image generation.'} Generated with the OpenPaths images API at ${p.size}, high quality, in about ${seconds} seconds for $0.06.`,
+      imageUrl: p.inputUrl,
+      outputUrl: gptImageOutput(m.id, p.slug),
+      thumbUrl: gptImageThumb(m.id, p.slug),
+      prompt: p.prompt,
+      payload,
+    };
+  });
+  IMAGE_DEMOS[m.id] = IMAGE_EXAMPLES[m.id][1];
+}

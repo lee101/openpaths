@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Check, Copy, Loader2, Upload, Wand2 } from 'lucide-react';
 import { CodeBlock } from './CodeBlock';
 import type { ImageDemo } from '../data/imageDemos';
+import { GPT_IMAGE_MODELS, GPT_IMAGE_SIZES, GPT_IMAGE_QUALITIES } from '../data/gptImageShowcase';
 import { OPENPATHS_IMAGE_MODELS } from '../lib/artificialAnalysisImages';
 import { prepareUploadFile } from '../lib/imageUpload';
 import { normalizeUploadedAssetUrl } from '../lib/uploadUrls';
@@ -94,7 +95,8 @@ export function ImageSpacePanel({
   modelId,
   modelName,
   imageToImage,
-  demo,
+  demo: baseDemo,
+  examples,
   initialPrompt,
   priceLabel,
 }: {
@@ -102,21 +104,26 @@ export function ImageSpacePanel({
   modelName: string;
   imageToImage: boolean;
   demo?: ImageDemo;
+  examples?: ImageDemo[];
   initialPrompt?: string;
   priceLabel?: string;
 }) {
+  const [exampleIdx, setExampleIdx] = useState(-1);
+  useEffect(() => { setExampleIdx(-1); }, [modelId]);
+  const demo = exampleIdx >= 0 && examples?.[exampleIdx] ? examples[exampleIdx] : baseDemo;
   const isBFLFlux2Pro = modelId === 'flux-2-pro-preview';
+  const isGPTImage = GPT_IMAGE_MODELS.some(m => m.id === modelId);
   const isFlux3 = modelId === 'flux-3-image';
   const isGeminiImage = modelId === 'gemini-3.1-flash-lite-image' || modelId === 'gemini-nano-banana-2.1';
-  const requiresInput = imageToImage && !isBFLFlux2Pro && !isFlux3 && !isGeminiImage;
+  const requiresInput = imageToImage && !isBFLFlux2Pro && !isFlux3 && !isGeminiImage && !isGPTImage;
   const catalogExample = OPENPATHS_IMAGE_MODELS.find(item => item.openpathsId === modelId);
   const initialPayload = useMemo<Record<string, unknown>>(() => demo?.payload || {
     model: modelId,
     prompt: DEFAULT_PROMPT,
     ...(isBFLFlux2Pro
       ? { size: '1024x1024', n: 1, output_format: 'webp', safety_tolerance: 5, disable_pup: false }
-      : isGeminiImage ? { aspect_ratio: '16:9', n: 1 } : imageToImage ? { image_url: DEFAULT_INPUT } : { size: '1024x1024', n: 1 }),
-  }, [demo, imageToImage, isBFLFlux2Pro, isGeminiImage, modelId]);
+      : isGeminiImage ? { aspect_ratio: '16:9', n: 1 } : isGPTImage ? { size: '1024x1024', quality: 'high', n: 1 } : imageToImage ? { image_url: DEFAULT_INPUT } : { size: '1024x1024', n: 1 }),
+  }, [demo, imageToImage, isBFLFlux2Pro, isGeminiImage, isGPTImage, modelId]);
   const starterPrompt = String(initialPrompt || demo?.prompt || initialPayload.prompt || '');
   const starterInput = String(demo?.imageUrl || initialPayload.image_url || (Array.isArray(initialPayload.reference_image_urls) ? initialPayload.reference_image_urls[0] : '') || (requiresInput ? DEFAULT_INPUT : ''));
   const starterOutput = demo?.outputUrl || catalogExample?.image || DEFAULT_OUTPUT;
@@ -125,6 +132,7 @@ export function ImageSpacePanel({
   const [prompt, setPrompt] = useState(starterPrompt);
   const [inputUrl, setInputUrl] = useState(starterInput);
   const [size, setSize] = useState(String(initialPayload.size || '1024x1024'));
+  const [quality, setQuality] = useState(String(initialPayload.quality || 'high'));
   const [resolution, setResolution] = useState(String(initialPayload.resolution || '1k'));
   const [aspectRatio, setAspectRatio] = useState(String(initialPayload.aspect_ratio || 'auto'));
   const [grounding, setGrounding] = useState(true);
@@ -145,6 +153,7 @@ export function ImageSpacePanel({
     setPrompt(starterPrompt);
     setInputUrl(starterInput);
     setSize(String(initialPayload.size || '1024x1024'));
+    setQuality(String(initialPayload.quality || 'high'));
     setResolution(String(initialPayload.resolution || '1k'));
     setAspectRatio(String(initialPayload.aspect_ratio || 'auto'));
     setGrounding(initialPayload.grounding !== false);
@@ -200,12 +209,15 @@ export function ImageSpacePanel({
     if (isGeminiImage) {
       return { model: modelId, prompt, aspect_ratio: aspectRatio === 'auto' ? '16:9' : aspectRatio, n: 1, ...(inputUrl ? { image_url: inputUrl } : {}) };
     }
+    if (isGPTImage) {
+      return { model: modelId, prompt, size, quality, n: 1, ...(inputUrl ? { image_url: inputUrl } : {}) };
+    }
     if (isFlux3) {
       return { model: modelId, prompt, resolution, aspect_ratio: aspectRatio, grounding, safety_tolerance: safetyTolerance,
         ...(references.trim() ? { images: references.split(/\s+/).filter(Boolean) } : {}) };
     }
     return next;
-  }, [isFlux3, isGeminiImage, resolution, aspectRatio, grounding, safetyTolerance, references, demo, imageToImage, initialPayload, inputUrl, isBFLFlux2Pro, modelId, outputFormat, prompt, promptUpsampling, size]);
+  }, [isFlux3, isGeminiImage, isGPTImage, quality, resolution, aspectRatio, grounding, safetyTolerance, references, demo, imageToImage, initialPayload, inputUrl, isBFLFlux2Pro, modelId, outputFormat, prompt, promptUpsampling, size]);
   const snippet = useMemo(() => snippetFor(payload, lang, apiKey), [apiKey, lang, payload]);
 
   const uploadImage = async (file?: File) => {
@@ -250,7 +262,7 @@ export function ImageSpacePanel({
     setError('');
     setPaywall(null);
     try {
-      const resp = await fetch((isFlux3 ? Boolean(references.trim()) : isGeminiImage ? Boolean(inputUrl.trim()) : imageToImage) ? '/v1/images/edits' : '/v1/images/generations', {
+      const resp = await fetch((isFlux3 ? Boolean(references.trim()) : (isGeminiImage || isGPTImage) ? Boolean(inputUrl.trim()) : imageToImage) ? '/v1/images/edits' : '/v1/images/generations', {
         method: 'POST',
         headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -352,6 +364,21 @@ export function ImageSpacePanel({
           </label>
         )}
 
+        {isGPTImage && (
+          <div className="mt-2.5 grid grid-cols-2 gap-2.5">
+            <label className="text-xs text-white/60">Size
+              <select value={size} onChange={e => setSize(e.target.value)} className={inputCls} data-testid="mp-image-size">
+                {GPT_IMAGE_SIZES.map(([value, label]) => <option key={value} value={value} className="bg-black">{label}</option>)}
+              </select>
+            </label>
+            <label className="text-xs text-white/60">Quality
+              <select value={quality} onChange={e => setQuality(e.target.value)} className={inputCls} data-testid="mp-image-quality">
+                {GPT_IMAGE_QUALITIES.map(value => <option key={value} value={value} className="bg-black">{value}</option>)}
+              </select>
+            </label>
+          </div>
+        )}
+
         {isBFLFlux2Pro && (
           <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <label className="block">
@@ -387,6 +414,27 @@ export function ImageSpacePanel({
         {error && <p className="mt-3 rounded border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs font-mono text-red-200" role="alert">{error}</p>}
         {isFlux3 && <p className="mt-3 text-[11px] leading-relaxed text-white/50">Generate from a prompt or edit with references. Refer to images by position. Add composition boxes at the end of the prompt as [top, left, bottom, right] on a 0–1000 grid. Auto aspect uses the first reference or a square canvas.</p>}
       </div>
+
+      {examples && examples.length > 1 && (
+        <div className="border-t border-white/20 p-4 lg:col-span-2" data-testid="mp-image-examples">
+          <h3 className="mb-3 font-mono text-xs font-bold uppercase tracking-[0.14em] text-white/65">Example outputs · click to load the prompt</h3>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {examples.map((ex, i) => {
+              const active = ex.outputUrl === demo?.outputUrl;
+              return (
+                <button key={ex.outputUrl} type="button" onClick={() => setExampleIdx(i)} aria-pressed={active} data-testid="mp-image-example"
+                  className={`group overflow-hidden rounded-lg border bg-black text-left transition-colors ${active ? 'border-white/70' : 'border-white/15 hover:border-white/45'}`}>
+                  <img src={ex.thumbUrl || ex.outputUrl} alt={ex.title} loading="lazy" className="aspect-square w-full bg-black object-contain" />
+                  <span className="block border-t border-white/15 px-2.5 py-2">
+                    <span className="block truncate font-mono text-[11px] text-white/80">{ex.label || ex.title}</span>
+                    {ex.meta && <span className="mt-0.5 block font-mono text-[10px] text-white/45">{ex.meta}</span>}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="border-t border-white/20 p-4 lg:col-span-2">
         <div className="mb-3 flex flex-wrap items-end justify-between gap-3">

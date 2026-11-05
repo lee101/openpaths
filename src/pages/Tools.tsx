@@ -10,6 +10,7 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   lyria: Music,
   'text-to-image': ImageIcon,
   'image-edit': WandSparkles,
+  'gpt-image': ImageIcon,
   'text-to-video': Clapperboard,
   'image-to-video': Clapperboard,
   'video-extension': Clapperboard,

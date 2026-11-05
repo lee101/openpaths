@@ -26,6 +26,10 @@ func TestGenerateImageResponseFormatByModel(t *testing.T) {
 	}{
 		{"dall-e-3", false}, // newer images backend rejects response_format
 		{"gpt-image-2", false},
+		{"gpt-image-2.6-sunburst", false},
+		{"gpt-image-2.6-flare", false},
+		{"gpt-image-2.5-sunburst", false},
+		{"gpt-image-2.5-flare", false},
 		{"dall-e-2", true}, // legacy model still honours it
 	}
 	for _, tt := range tests {

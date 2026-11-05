@@ -6,6 +6,7 @@ import { CodeBlock } from '../components/CodeBlock';
 import { GEMINI_ASPECT_RATIOS, geminiImageModels, imageModels, imagePriceLabel } from '../data/imageCatalog';
 import { faqLd, softwareApplicationLd, SITE_URL } from '../lib/seoSchema';
 import { modelPath, providerPath } from '../lib/paths';
+import { GPT_IMAGE_MODELS, GPT_IMAGE_PROMPTS, GPT_IMAGE_SECONDS, gptImageThumb } from '../data/gptImageShowcase';
 
 const PRIMARY = geminiImageModels.find(m => m.id === 'gemini-nano-banana-2.1') || geminiImageModels[0];
 const PRIMARY_ID = PRIMARY?.id || 'gemini-nano-banana-2.1';
@@ -94,6 +95,31 @@ const result = await client.images.generate({
 
 console.log(result.data[0].b64_json?.slice(0, 32));`;
 
+const GPT_PY = `from openai import OpenAI
+import base64
+
+client = OpenAI(base_url="${BASE}", api_key="op-...")
+
+result = client.images.generate(
+    model="gpt-image-2.6-flare",
+    prompt="Minimalist poster for a jazz night titled MIDNIGHT ROUTES, deep blue and gold",
+    size="1024x1536",
+    quality="high",
+)
+
+open("poster.png", "wb").write(base64.b64decode(result.data[0].b64_json))`;
+
+const GPT_EDIT = `curl ${BASE}/images/edits \\
+  -H "Authorization: Bearer $OPENPATHS_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "model": "gpt-image-2.6-sunburst",
+    "prompt": "Change the label text to say OPENPATHS and make the liquid emerald green",
+    "image_url": "https://openpathsstatic.openpaths.io/static/uploads/playground/hidream-edit/perfume.jpg",
+    "size": "1024x1024",
+    "quality": "high"
+  }'`;
+
 const RESPONSE = `{
   "created": 1790000000,
   "data": [
@@ -103,7 +129,7 @@ const RESPONSE = `{
 
 export function ImageGenerationDocs() {
   const title = 'Image Generation API - Gemini Nano Banana, GPT Image, Flux | OpenPaths';
-  const description = `Generate and edit images through one OpenAI-compatible endpoint. Gemini Nano Banana 2.1 and 2 Lite, GPT Image 2, Flux and ${Math.max(imageModels.length - 4, 0)}+ more image models with per-image pricing, reference images and aspect ratios.`;
+  const description = `Generate and edit images through one OpenAI-compatible endpoint. Gemini Nano Banana 2.1 and 2 Lite, GPT Image 2.6 and 2.5 (Sunburst, Flare), GPT Image 2, Flux and ${Math.max(imageModels.length - 4, 0)}+ more image models with per-image pricing, reference images and aspect ratios.`;
   const jsonLd = [
     {
       '@context': 'https://schema.org',
@@ -166,6 +192,33 @@ export function ImageGenerationDocs() {
           </div>
         </section>
 
+        <section className="mb-12" id="gpt-image">
+          <h2 className="mb-4 text-2xl font-bold tracking-tight">GPT Image 2.6 and 2.5 (Sunburst and Flare)</h2>
+          <p className="mb-4 max-w-3xl text-white/60">
+            OpenAI's newest image models are routable today:{' '}
+            {GPT_IMAGE_MODELS.map((m, i) => (
+              <React.Fragment key={m.id}>{i > 0 && ', '}<Link to={modelPath(m.id)} className="font-mono text-white underline underline-offset-4">{m.id}</Link></React.Fragment>
+            ))}
+            . Flare is the fast tier (about 10 to 25 seconds per image in our runs), Sunburst is slower (about 25 to 45 seconds). All four generate and edit through the same endpoints, price at $0.06 per 1K image ($0.11 at 2K and 4K, plus $0.01 per input image on edits), and fall back to GPT Image 2 if OpenAI is unavailable.
+          </p>
+          <p className="mb-4 max-w-3xl text-white/60">
+            Parameters: <code className="text-white">size</code> (1024x1024, 1536x1024, 1024x1536, 2048x2048, 2048x1152, 3840x2160, 2160x3840), <code className="text-white">quality</code> (low, medium, high, auto), <code className="text-white">n</code>, and <code className="text-white">image_url</code> / <code className="text-white">image_urls</code> for edits. Responses are base64 PNG or a rehosted URL. Compare all four side by side in the <Link to="/gpt-image" className="text-white underline underline-offset-4">GPT Image tool</Link>.
+          </p>
+          <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {GPT_IMAGE_MODELS.map(m => (
+              <Link key={m.id} to={modelPath(m.id)} className="overflow-hidden rounded-lg border border-white/20 bg-black hover:border-white/50">
+                <img src={gptImageThumb(m.id, 'poster')} alt={`${m.name} example: jazz poster`} loading="lazy" className="aspect-[2/3] w-full object-cover" />
+                <span className="block border-t border-white/15 px-2.5 py-2 font-mono text-[11px] text-white/70">{m.name}<span className="block text-white/45">~{GPT_IMAGE_SECONDS[`${m.id}/poster`]}s · $0.06</span></span>
+              </Link>
+            ))}
+          </div>
+          <p className="mb-2 text-xs font-mono text-white/45">Prompt: {GPT_IMAGE_PROMPTS.find(p => p.slug === 'poster')?.prompt}</p>
+          <div className="space-y-4">
+            <CodeBlock language="python" label="Python" code={GPT_PY} containerClassName="overflow-hidden rounded-lg border border-white/20 bg-black/40" headerClassName="bg-white/[0.06]" preClassName="text-xs" />
+            <CodeBlock language="bash" label="cURL (edit)" code={GPT_EDIT} containerClassName="overflow-hidden rounded-lg border border-white/20 bg-black/40" headerClassName="bg-white/[0.06]" preClassName="text-xs" />
+          </div>
+        </section>
+
         <section className="mb-12">
           <h2 className="mb-4 text-2xl font-bold tracking-tight">Gemini Nano Banana image models</h2>
           <p className="mb-4 max-w-3xl text-white/60">
@@ -214,7 +267,7 @@ export function ImageGenerationDocs() {
           </div>
         </section>
         <p className="mt-10 font-mono text-xs text-white/50">
-          <Link to="/docs" className="hover:text-white">All API docs</Link> · <Link to="/pricing" className="hover:text-white">Pricing</Link> · <Link to="/image-edit" className="hover:text-white">Image edit tool</Link>
+          <Link to="/docs" className="hover:text-white">All API docs</Link> · <Link to="/pricing" className="hover:text-white">Pricing</Link> · <Link to="/image-edit" className="hover:text-white">Image edit tool</Link> · <Link to="/gpt-image" className="hover:text-white">GPT Image tool</Link>
         </p>
       </article>
     </>
