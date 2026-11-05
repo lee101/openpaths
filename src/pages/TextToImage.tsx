@@ -5,6 +5,7 @@ import { CodeBlock } from '../components/CodeBlock';
 import { Link } from 'react-router-dom';
 import { AUTO_IMAGE, featuredImageModels } from '../data/imageCatalog';
 import { modelPath } from '../lib/paths';
+import { b64ImageSrc, b64ImageExt } from '../lib/imageData';
 
 const DEFAULT_PROMPT = 'A beige ceramic coffee mug on a wooden table, soft natural window light, editorial product photo';
 const EXAMPLE_OUTPUT_URL = 'https://openpathsstatic.openpaths.io/static/uploads/text-to-image/mug-example.jpg';
@@ -44,7 +45,7 @@ function getAPIErrorMessage(data: unknown, fallback: string) {
 
 function imageSrc(d: ImageData) {
   if (d.url) return d.url;
-  if (d.b64_json) return `data:image/png;base64,${d.b64_json}`;
+  if (d.b64_json) return b64ImageSrc(d.b64_json);
   return '';
 }
 
@@ -223,7 +224,7 @@ console.log(data.data[0].url);`,
                         <div key={i} className="overflow-hidden rounded border border-white/20 bg-black">
                           {src && <img src={src} alt={`Generated ${i + 1}`} className="h-auto w-full" />}
                           {src && (
-                            <a href={src} download={`openpaths-${i + 1}.png`} className="flex items-center justify-center gap-2 border-t border-white/20 px-3 py-2 text-xs font-mono text-white/50 hover:text-white">
+                            <a href={src} download={`openpaths-${i + 1}.${d.b64_json ? b64ImageExt(d.b64_json) : 'png'}`} className="flex items-center justify-center gap-2 border-t border-white/20 px-3 py-2 text-xs font-mono text-white/50 hover:text-white">
                               <Download className="h-3.5 w-3.5" /> Download
                             </a>
                           )}

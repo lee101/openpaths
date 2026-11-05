@@ -1,0 +1,21 @@
+{
+  "model": "gpt-image-2.5-sunburst",
+  "prompt": "A beige ceramic coffee mug on a wooden table, soft natural window light, editorial product photo, with the handwritten text 'OPEN PATHS' on a chalkboard behind it",
+  "size": "1024x1024",
+  "edit": false,
+  "quality": "high",
+  "ms": 39294,
+  "usage": {
+    "input_tokens": 40,
+    "input_tokens_details": {
+      "image_tokens": 0,
+      "text_tokens": 40
+    },
+    "output_tokens": 1756,
+    "output_tokens_details": {
+      "image_tokens": 1756,
+      "text_tokens": 0
+    },
+    "total_tokens": 1796
+  }
+}

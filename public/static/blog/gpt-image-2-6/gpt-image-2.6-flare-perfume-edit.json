@@ -1,0 +1,21 @@
+{
+  "model": "gpt-image-2.6-flare",
+  "prompt": "Change the label text to say OPENPATHS and make the liquid emerald green",
+  "size": "1024x1024",
+  "edit": true,
+  "quality": "high",
+  "ms": 14813,
+  "usage": {
+    "input_tokens": 1539,
+    "input_tokens_details": {
+      "image_tokens": 1508,
+      "text_tokens": 31
+    },
+    "output_tokens": 1758,
+    "output_tokens_details": {
+      "image_tokens": 1758,
+      "text_tokens": 0
+    },
+    "total_tokens": 3297
+  }
+}

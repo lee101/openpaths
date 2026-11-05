@@ -1,0 +1,21 @@
+{
+  "model": "gpt-image-2.6-sunburst",
+  "prompt": "Minimalist poster for a jazz night titled MIDNIGHT ROUTES, bold typography, deep blue and gold, saxophone silhouette, small text at the bottom: Fri 9pm, Blue Door Club",
+  "size": "1024x1536",
+  "edit": false,
+  "quality": "high",
+  "ms": 32402,
+  "usage": {
+    "input_tokens": 46,
+    "input_tokens_details": {
+      "image_tokens": 0,
+      "text_tokens": 46
+    },
+    "output_tokens": 1372,
+    "output_tokens_details": {
+      "image_tokens": 1372,
+      "text_tokens": 0
+    },
+    "total_tokens": 1418
+  }
+}

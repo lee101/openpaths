@@ -237,7 +237,8 @@
       "max_age_days": 14,
       "subject": "GLM-5.3 price drop: $0.77 in / $2.42 out per M, now served from Runpod",
       "template": "30-glm53-runpod.html",
-      "description": "GLM-5.3 routed to new Runpod provider at $0.77/$0.143/$2.42 per M (was $1.40/$0.26/$4.40), Z.AI direct failover, say-hi test"
+      "description": "GLM-5.3 routed to new Runpod provider at $0.77/$0.143/$2.42 per M (was $1.40/$0.26/$4.40), Z.AI direct failover, say-hi test",
+      "hold": true
     },
     {
       "id": 31,
@@ -247,7 +248,18 @@
       "max_age_days": 14,
       "subject": "Seedream 5.0 images from $0.018, Seedance 2.5 video and DeepSeek V4.1 Flash direct from BytePlus ModelArk",
       "template": "31-seedream-modelark.html",
-      "description": "New BytePlus ModelArk provider: DeepSeek V4.1 Flash (and Economy background tier), Seedream 5.0 Flash/Pro images, Seedance 2.5 video, Seed 2.1 Turbo"
+      "description": "New BytePlus ModelArk provider: DeepSeek V4.1 Flash (and Economy background tier), Seedream 5.0 Flash/Pro images, Seedance 2.5 video, Seed 2.1 Turbo",
+      "hold": true
+    },
+    {
+      "id": 32,
+      "delay_days": 1,
+      "kind": "model_launch",
+      "launch_date": "2026-11-05",
+      "max_age_days": 14,
+      "subject": "GPT Image 2.6 Sunburst and Flare are live: see all four models' outputs",
+      "template": "32-gpt-image-2-6.html",
+      "description": "OpenAI GPT Image 2.6/2.5 Sunburst and Flare at $0.06 per 1K image, generate and edit, with real side-by-side outputs, /gpt-image tool and docs"
     }
   ]
 }

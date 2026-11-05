@@ -9,6 +9,7 @@ import { buildVideoPayload, type VideoBaseValues } from '../lib/videoPayload';
 import { prepareUploadFile } from '../lib/imageUpload';
 import { normalizeUploadedAssetUrl } from '../lib/uploadUrls';
 import { fetchPrompts, loadSavedPrompts, removeSavedPrompt, savePrompt, type SavedPrompt } from '../lib/promptLibrary';
+import { b64ImageSrc } from '../lib/imageData';
 import type { LibraryPrompt } from '../data/promptLibrary';
 import { ChatSidebar } from '../components/ChatSidebar';
 import { saveConversation, getConversation, getFolder, effectiveSystemPrompt, deriveTitle } from '../lib/conversations';
@@ -4198,7 +4199,7 @@ function MessageBubble({
   );
   const isUser = message.role === 'user';
   const imageSrc = message.imageB64
-    ? `data:image/png;base64,${message.imageB64}`
+    ? b64ImageSrc(message.imageB64)
     : message.imageUrl || null;
   const audioSrc = message.audioB64
     ? `data:audio/${message.audioFormat || 'mpeg'};base64,${message.audioB64}`

@@ -1,0 +1,21 @@
+{
+  "model": "gpt-image-2.6-flare",
+  "prompt": "Clean infographic titled \"How an API gateway routes a request\" with four numbered steps in a left-to-right flow: 1 Client request, 2 Auth and rate limit, 3 Pick best model, 4 Stream response. Flat vector style, white background, teal and orange accents, crisp legible labels.",
+  "size": "1536x1024",
+  "edit": false,
+  "quality": "high",
+  "ms": 12507,
+  "usage": {
+    "input_tokens": 69,
+    "input_tokens_details": {
+      "image_tokens": 0,
+      "text_tokens": 69
+    },
+    "output_tokens": 1353,
+    "output_tokens_details": {
+      "image_tokens": 1353,
+      "text_tokens": 0
+    },
+    "total_tokens": 1422
+  }
+}

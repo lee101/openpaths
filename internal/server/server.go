@@ -652,6 +652,7 @@ func New(deps *Dependencies) *Server {
 			{"/tools/lyria", "0.7", "monthly"},
 			{"/text-to-image", "0.7", "monthly"},
 			{"/image-edit", "0.7", "monthly"},
+			{"/gpt-image", "0.8", "monthly"},
 			{"/text-to-video", "0.7", "monthly"},
 			{"/image-to-video", "0.7", "monthly"},
 			{"/video-extension", "0.7", "monthly"},
@@ -1051,6 +1052,10 @@ var toolPageMeta = map[string]pageMeta{
 	"/image-edit": {
 		Title:       "AI Image Style Transfer | OpenPaths",
 		Description: "Upload an image and describe a new visual direction. OpenPaths routes the edit through GPT Image 2 and image-editing fallbacks.",
+	},
+	"/gpt-image": {
+		Title:       "GPT Image 2.6 API - Sunburst and Flare | OpenPaths",
+		Description: "Generate and edit images with GPT Image 2.6 and 2.5 Sunburst and Flare through one OpenAI-compatible API. $0.06 per 1K image, with real example outputs from every model.",
 	},
 	"/text-to-video": {
 		Title:       "Text to Video API - Wan 3.0 | OpenPaths",

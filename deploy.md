@@ -6,7 +6,7 @@
 ssh -o StrictHostKeyChecking=no administrator@93.127.141.100
 ```
 
-SSH config alias: `openpaths-prod`
+SSH target: `administrator@93.127.141.100` (default `API_HOST`; the old `openpaths-prod` alias no longer exists)
 Remote dir: `/nvme0n1-disk/code/openpaths`
 Managed by: supervisord (service name: `openpaths`)
 
@@ -16,6 +16,7 @@ Managed by: supervisord (service name: `openpaths`)
 ./deploy.sh site    # build frontend, sync to R2 (openpathsstatic bucket)
 ./deploy.sh api     # build Go binary, scp to prod, restart
 ./deploy.sh env     # sync .env to prod
+./deploy.sh emails  # sync emails/ to prod (no deletes) and restart so the drip config reloads
 ./deploy.sh setup   # create remote dirs + supervisor config
 ./deploy.sh all     # site + api (default)
 ```
@@ -25,6 +26,8 @@ Managed by: supervisord (service name: `openpaths`)
 **site** - `npm run build`, then `aws s3 sync` dist to Cloudflare R2 bucket `openpathsstatic`, purges CF cache.
 
 **api** - Cross-compiles `CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o dist/openpaths-api ./cmd/openpaths/`, scps binary + config.yaml + dist/ to prod, swaps binary and restarts via supervisorctl.
+
+**emails** - Also runs as part of `api`. Templates are rsynced without `--delete` (prod-only files stay). `emails/drip_config.json` is merged by `scripts/merge_drip_config.py`: git entries replace prod entries with the same id, new ids are appended, prod-only entries are kept, and the previous file is saved as `drip_config.json.bak`. An entry with `"hold": true` is synced but never sent; remove it and run `./deploy.sh emails` to launch.
 
 **env** - Copies local `.env` to prod server.
 

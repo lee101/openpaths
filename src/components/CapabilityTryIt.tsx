@@ -8,6 +8,7 @@ import { ensureSpaceApiKey, paywallBeforeRun, paywallFromResponse, type Paywall 
 import { isFreeModel, priceSummary } from '../lib/modelPricing';
 import type { Model } from '../data/models';
 import { DEFAULT_INPUT, buildSnippets, type Capability, type Lang } from '../data/capabilities';
+import { b64ImageSrc } from '../lib/imageData';
 
 type Result =
   | { kind: 'text'; text: string; meta?: string }
@@ -238,7 +239,7 @@ export function parseResult(cap: Capability, data: any): Result {
       return { kind: 'text', text: data?.text || '(no speech detected)' };
     case 'image': {
       const item = data?.data?.[0];
-      const src = item?.url || (item?.b64_json ? `data:image/png;base64,${item.b64_json}` : '');
+      const src = item?.url || (item?.b64_json ? b64ImageSrc(item.b64_json) : '');
       if (!src) throw new Error('No image was returned.');
       return { kind: 'image', src };
     }

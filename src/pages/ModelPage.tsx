@@ -13,7 +13,7 @@ import { modelOgPath } from '../lib/modelOg';
 import { modelSeoTitle } from '../lib/modelSeo';
 import { isPromotionActive, models, type Model } from '../data/models';
 import { providersByName, getProviderLogo } from '../data/providers';
-import { IMAGE_DEMOS } from '../data/imageDemos';
+import { IMAGE_DEMOS, IMAGE_EXAMPLES } from '../data/imageDemos';
 import { VIDEO_DEMOS } from '../data/videoDemos';
 import { maxVideoSeconds } from '../data/videoModelParams';
 import { modelPath, providerDocsPath, providerPath } from '../lib/paths';
@@ -119,6 +119,7 @@ export function ModelPage() {
               modelName={model.name}
               imageToImage={model.tags.includes('image-to-image')}
               demo={imageDemo}
+              examples={IMAGE_EXAMPLES[model.id]}
               initialPrompt={initialPrompt}
               priceLabel={formatPrice(model, model.priceInput, 'input')}
             />

@@ -34,6 +34,7 @@ type DripEmail struct {
 	Kind        string `json:"kind,omitempty"`
 	LaunchDate  string `json:"launch_date,omitempty"`
 	MaxAgeDays  int    `json:"max_age_days,omitempty"`
+	Hold        bool   `json:"hold,omitempty"`
 }
 
 const KindModelLaunch = "model_launch"
@@ -138,8 +139,8 @@ func isTestEmail(email string) bool {
 // Call this periodically (e.g. every hour via a ticker).
 func (r *DripRunner) RunScheduled(ctx context.Context) {
 	for _, de := range r.config.Emails {
-		if de.DelayDays == 0 {
-			continue // welcome email is sent on signup
+		if de.DelayDays == 0 || de.Hold {
+			continue // welcome email is sent on signup; held emails are not launched yet
 		}
 
 		signupBefore, err := de.signupCutoff()
