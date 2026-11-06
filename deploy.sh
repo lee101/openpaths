@@ -251,6 +251,23 @@ deploy_emails() {
     green "emails synced, ${API_SERVICE} restarted (drip config is read at startup)"
 }
 
+# --- Config: prod config.yaml drifts (OpenRouter sync), so only add git-only non-openrouter models to it ---
+sync_config() {
+    if [[ "${CONFIG_MODE:-merge}" == "git" ]]; then
+        green "syncing config (git overwrites prod)..."
+        scp_cmd config.yaml "${API_HOST}:${REMOTE_DIR}/config.yaml"
+        return
+    fi
+    green "merging config into prod's live config.yaml..."
+    local tmp
+    tmp=$(mktemp -d)
+    ssh_cmd "cat ${REMOTE_DIR}/config.yaml" > "${tmp}/prod.yaml"
+    uv run --with pyyaml python scripts/merge_config.py "${tmp}/prod.yaml" config.yaml "${tmp}/merged.yaml"
+    scp_cmd "${tmp}/merged.yaml" "${API_HOST}:${REMOTE_DIR}/config.yaml.new"
+    ssh_cmd "cd ${REMOTE_DIR} && cp config.yaml config.yaml.bak-deploy && mv config.yaml.new config.yaml"
+    rm -rf "${tmp}"
+}
+
 # --- API deploy: build Go binary + deploy to server ---
 deploy_api() {
     build_frontend
@@ -278,8 +295,7 @@ deploy_api() {
 
     sync_emails
 
-    green "syncing config..."
-    scp_cmd config.yaml "${API_HOST}:${REMOTE_DIR}/config.yaml"
+    sync_config
 
     green "swapping binary + restarting..."
     ssh_cmd bash -s <<REMOTE

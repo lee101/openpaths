@@ -25,7 +25,7 @@ Managed by: supervisord (service name: `openpaths`)
 
 **site** - `npm run build`, then `aws s3 sync` dist to Cloudflare R2 bucket `openpathsstatic`, purges CF cache.
 
-**api** - Cross-compiles `CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o dist/openpaths-api ./cmd/openpaths/`, scps binary + config.yaml + dist/ to prod, swaps binary and restarts via supervisorctl.
+**api** - Cross-compiles `CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o dist/openpaths-api ./cmd/openpaths/`, scps binary + dist/, merges git-only non-openrouter models into prod's live config.yaml (`CONFIG_MODE=git` overwrites; prod keeps `config.yaml.bak-deploy`) to prod, swaps binary and restarts via supervisorctl.
 
 **emails** - Also runs as part of `api`. Templates are rsynced without `--delete` (prod-only files stay). `emails/drip_config.json` is merged by `scripts/merge_drip_config.py`: git entries replace prod entries with the same id, new ids are appended, prod-only entries are kept, and the previous file is saved as `drip_config.json.bak`. An entry with `"hold": true` is synced but never sent; remove it and run `./deploy.sh emails` to launch.
 

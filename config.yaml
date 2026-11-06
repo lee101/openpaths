@@ -4454,8 +4454,8 @@ models:
     supports_tools: true
     supports_vision: false
     fallback_models:
-      - "nvidia/deepseek-v4-pro"
-      - "glm-4.6v-flashx"
+      - "or/nemotron-3-ultra-550b-a55b:free"
+      - "or/inkling:free"
 
   # openrouter: in=0.25 out=0.8 cache=0.06 per 1M, +5.5% fee
   - id: "or/arcee-trinity"
@@ -4633,9 +4633,6 @@ models:
     aliases: ["glm-vision-flash"]
     context_window: 128000
     max_output_tokens: 8192
-    fallback_models:
-      - "glm-4.6v-flashx"
-      - "zai/glm-5.1"
     supports_streaming: true
     supports_tools: true
     supports_vision: true

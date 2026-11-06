@@ -86,6 +86,7 @@ func Load(path string) (*Config, error) {
 	}
 
 	cfg.applyDefaults()
+	cfg.dropPaidFallbacksFromFree()
 
 	// Override provider API keys from environment
 	for i := range cfg.Providers {
