@@ -1061,6 +1061,17 @@ func (p *Provider) generateUpscale(ctx context.Context, req *model.ImageGenerati
 		imageURL = stringField(result, "url")
 	}
 	if imageURL == "" {
+		// The fallback backend returns {"data":[{"url":...}]}.
+		var shaped struct {
+			Data []struct {
+				URL string `json:"url"`
+			} `json:"data"`
+		}
+		if json.Unmarshal(result, &shaped) == nil && len(shaped.Data) > 0 {
+			imageURL = strings.TrimSpace(shaped.Data[0].URL)
+		}
+	}
+	if imageURL == "" {
 		return nil, &provider.ProviderError{Provider: "manifoldgen", StatusCode: 502, Message: "no image_url in result: " + string(result), Retryable: false}
 	}
 	return &model.ImageGenerationResponse{

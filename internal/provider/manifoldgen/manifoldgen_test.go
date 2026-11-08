@@ -577,7 +577,15 @@ func TestGenerateImageUpscaleRoutesScale(t *testing.T) {
 			t.Fatalf("%s: %v %#v", tc.model, err, resp)
 		}
 	}
-	p, _ := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) { t.Fatal("no HTTP call expected") })
+	p, _ := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"result":{"backend":"fallback","data":[{"url":"https://x/fb.png"}],"scale":2}}`))
+	})
+	resp, err := p.GenerateImage(context.Background(), &model.ImageGenerationRequest{Model: "image-upscale", ImageURL: "https://x/a.png"})
+	if err != nil || resp.Data[0].URL != "https://x/fb.png" {
+		t.Fatalf("fallback shape: %v %#v", err, resp)
+	}
+	p, _ = newTestProvider(t, func(w http.ResponseWriter, r *http.Request) { t.Fatal("no HTTP call expected") })
 	if _, err := p.GenerateImage(context.Background(), &model.ImageGenerationRequest{Model: "image-upscale"}); err == nil {
 		t.Fatal("expected image_url validation error")
 	}
