@@ -2,14 +2,12 @@ package handler
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"strconv"
 	"time"
 
 	"github.com/valyala/fasthttp"
 
-	"github.com/openpaths/openpaths/internal/auth"
 	"github.com/openpaths/openpaths/internal/billing"
 	"github.com/openpaths/openpaths/internal/db/queries"
 	"github.com/openpaths/openpaths/internal/middleware"
@@ -24,85 +22,6 @@ type AccountHandler struct {
 
 func NewAccountHandler(apiKeyQ *queries.APIKeyQueries, creditQ *queries.CreditQueries, billing *billing.Engine, reconciler *billing.Reconciler) *AccountHandler {
 	return &AccountHandler{apiKeyQ: apiKeyQ, creditQ: creditQ, billing: billing, reconciler: reconciler}
-}
-
-// HandleListAPIKeys handles GET /account/keys.
-func (h *AccountHandler) HandleListAPIKeys(ctx *fasthttp.RequestCtx) {
-	userID, _ := ctx.UserValue(middleware.CtxKeyUserID).(string)
-
-	keys, err := h.apiKeyQ.ListByUser(ctx, userID)
-	if err != nil {
-		writeError(ctx, 500, "server_error", "Failed to list API keys")
-		return
-	}
-
-	writeJSON(ctx, 200, map[string]any{"keys": keys})
-}
-
-type createKeyRequest struct {
-	Name string `json:"name"`
-}
-
-type revokeKeysRequest struct { IDs []string `json:"ids"` }
-
-func (h *AccountHandler) HandleRevokeAPIKeys(ctx *fasthttp.RequestCtx) {
-	userID, _ := ctx.UserValue(middleware.CtxKeyUserID).(string)
-	var req revokeKeysRequest
-	if err := json.Unmarshal(ctx.PostBody(), &req); err != nil || len(req.IDs) == 0 {
-		writeError(ctx, 400, "invalid_request", "ids are required")
-		return
-	}
-	if err := h.apiKeyQ.RevokeMany(ctx, req.IDs, userID); err != nil {
-		writeError(ctx, 500, "server_error", "Failed to revoke API keys")
-		return
-	}
-	writeJSON(ctx, 200, map[string]any{"message": "API keys revoked", "count": len(req.IDs)})
-}
-
-// HandleCreateAPIKey handles POST /account/keys.
-func (h *AccountHandler) HandleCreateAPIKey(ctx *fasthttp.RequestCtx) {
-	userID, _ := ctx.UserValue(middleware.CtxKeyUserID).(string)
-
-	var req createKeyRequest
-	if err := json.Unmarshal(ctx.PostBody(), &req); err != nil {
-		req.Name = "Default"
-	}
-	if req.Name == "" {
-		req.Name = "Default"
-	}
-
-	rawKey, hash, prefix, err := auth.GenerateAPIKey()
-	if err != nil {
-		writeError(ctx, 500, "server_error", "Failed to generate API key")
-		return
-	}
-
-	key, err := h.apiKeyQ.Create(ctx, userID, hash, prefix, req.Name)
-	if err != nil {
-		writeError(ctx, 500, "server_error", "Failed to create API key")
-		return
-	}
-
-	writeJSON(ctx, 201, map[string]any{
-		"key":     rawKey, // Only shown once
-		"id":      key.ID,
-		"name":    key.Name,
-		"prefix":  key.KeyPrefix,
-		"message": "Save this key securely. It will not be shown again.",
-	})
-}
-
-// HandleRevokeAPIKey handles DELETE /account/keys/{id}.
-func (h *AccountHandler) HandleRevokeAPIKey(ctx *fasthttp.RequestCtx) {
-	userID, _ := ctx.UserValue(middleware.CtxKeyUserID).(string)
-	keyID, _ := ctx.UserValue("id").(string)
-
-	if err := h.apiKeyQ.Revoke(ctx, keyID, userID); err != nil {
-		writeError(ctx, 404, "not_found", "API key not found")
-		return
-	}
-
-	writeJSON(ctx, 200, map[string]any{"message": "API key revoked"})
 }
 
 // HandleGetBalance handles GET /account/balance.

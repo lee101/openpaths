@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Check, Copy, ExternalLink, Globe, Loader2, Search as SearchIcon, SlidersHorizontal } from 'lucide-react';
 import { CodeBlock } from '../components/CodeBlock';
 import { Seo } from '../components/Seo';
@@ -111,6 +112,8 @@ function hostLabel(url?: string): string {
 }
 
 export function Search() {
+  const location = useLocation();
+  const queryInputRef = useRef<HTMLInputElement>(null);
   const [apiKey, setApiKey] = useState(() => getStoredAPIKey());
   const [providerId, setProviderId] = useState<string>('gemini');
   const [query, setQuery] = useState('Latest news on Nvidia');
@@ -155,6 +158,13 @@ export function Search() {
   const [error, setError] = useState('');
   const [response, setResponse] = useState<any>(null);
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    const state = location.state as { focusSearch?: boolean } | null;
+    if (!state?.focusSearch) return;
+    queryInputRef.current?.focus();
+    queryInputRef.current?.select();
+  }, [location.key, location.state]);
 
   const provider = useMemo(() => PROVIDERS.find(p => p.id === providerId) || PROVIDERS[0], [providerId]);
   const orModes = OR_MODES[provider.id];
@@ -326,10 +336,12 @@ export function Search() {
               <div className="flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.07] px-4 py-2 shadow-lg shadow-black/30 focus-within:border-white/40">
                 <SearchIcon className="h-5 w-5 shrink-0 text-white/55" />
                 <input
+                  ref={queryInputRef}
                   value={query}
                   onChange={e => setQuery(e.target.value)}
                   placeholder="Ask anything…"
                   aria-label="Search query"
+                  data-keyboard-search
                   className="w-full bg-transparent px-1 py-2 text-base outline-none placeholder:text-white/45"
                 />
                 <button

@@ -40,8 +40,10 @@ func NewWithAttribution(apiKey, baseURL, appReferer, appTitle, appCategories str
 	if appTitle == "" {
 		appTitle = "OpenPaths"
 	}
+	inner := oai.NewCompatible("openrouter", apiKey, baseURL, sanitizeForOpenRouter)
+	inner.SetRequestHeaderHook(sessionHeader)
 	return &OpenRouterProvider{
-		OpenAIProvider: oai.NewCompatible("openrouter", apiKey, baseURL, sanitizeForOpenRouter),
+		OpenAIProvider: inner,
 		apiKey:         apiKey,
 		baseURL:        baseURL,
 		appReferer:     appReferer,
@@ -52,6 +54,15 @@ func NewWithAttribution(apiKey, baseURL, appReferer, appTitle, appCategories str
 }
 
 func (p *OpenRouterProvider) Name() string { return "openrouter" }
+
+// sessionHeader forwards the request's session id as x-session-id, which
+// OpenRouter uses as a sticky routing key so prompt-cache hits keep landing on
+// the same upstream endpoint.
+func sessionHeader(req *model.ChatCompletionRequest, h http.Header) {
+	if req.SessionID != "" {
+		h.Set("x-session-id", req.SessionID)
+	}
+}
 
 // sanitizeForOpenRouter removes cross-provider hints that OpenRouter does not
 // understand on the raw chat request payload.
@@ -136,6 +147,7 @@ func (p *OpenRouterProvider) ChatCompletion(ctx context.Context, req *model.Chat
 		return nil, fmt.Errorf("create request: %w", err)
 	}
 	p.setHeaders(httpReq)
+	sessionHeader(req, httpReq.Header)
 
 	resp, err := p.client.Do(httpReq)
 	if err != nil {

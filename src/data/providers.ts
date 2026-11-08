@@ -188,6 +188,22 @@ export const providers: Provider[] = [
     logo: '/logos/runanywhere.svg'
   },
   {
+    slug: 'seedream',
+    name: 'Seedream (BytePlus ModelArk)',
+    url: 'https://www.byteplus.com/en/product/modelark',
+    description: 'BytePlus ModelArk direct: DeepSeek-V4.1-Flash (1M context) at $0.15 input, $0.003 cached input, $0.60 output per 1M tokens, plus Seedream image generation.',
+    featured: false,
+    logo: '/logos/seedream.svg'
+  },
+  {
+    slug: 'runpod',
+    name: 'Runpod',
+    url: 'https://runpod.io',
+    description: 'Runpod serverless GPU inference hosting GLM-5.3 through an OpenAI-compatible vLLM endpoint: $0.77 input, $0.143 cached input, $2.42 output per 1M tokens.',
+    featured: false,
+    logo: '/logos/runpod.webp'
+  },
+  {
     slug: 'minimax',
     name: 'MiniMax',
     url: 'https://minimax.io',

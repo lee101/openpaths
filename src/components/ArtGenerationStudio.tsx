@@ -13,6 +13,7 @@ import { AuthModal } from './AuthModal';
 import { TopUpModal } from './TopUpModal';
 import { type ZImageArtItem } from '../data/zimageArt';
 import { AUTH_EVENT, getApiKey } from '../lib/api';
+import { b64ImageSrc } from '../lib/imageData';
 
 export type ArtGenerationMode = 'image' | 'video';
 
@@ -144,7 +145,7 @@ function formatPrice(value: number): string {
 
 function imageSource(image: ImageData): string {
   if (image.url) return image.url;
-  if (image.b64_json) return `data:image/png;base64,${image.b64_json}`;
+  if (image.b64_json) return b64ImageSrc(image.b64_json);
   return '';
 }
 

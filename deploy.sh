@@ -14,7 +14,7 @@ fi
 STATIC_BUCKET="${STATIC_BUCKET:-openpathsstatic}"
 R2_ENDPOINT="${R2_ENDPOINT:-https://${R2_ACCOUNT_ID:-f76d25b8b86cfa5638f43016510d8f77}.r2.cloudflarestorage.com}"
 STATIC_URL="${STATIC_URL:-https://openpathsstatic.openpaths.io}"
-API_HOST="${API_HOST:-openpaths-prod}"
+API_HOST="${API_HOST:-administrator@93.127.141.100}"
 API_SERVICE="openpaths"
 REMOTE_DIR="/nvme0n1-disk/code/openpaths"
 DIST_DIR="dist"
@@ -241,6 +241,42 @@ deploy_site() {
     green "site deployed to ${STATIC_URL}"
 }
 
+# --- Emails: git is source of truth, prod-only files and entries are kept ---
+sync_emails() {
+    green "syncing emails (no deletes)..."
+    local tmp
+    tmp=$(mktemp -d)
+    ssh_cmd "cat ${REMOTE_DIR}/emails/drip_config.json" > "${tmp}/prod.json"
+    python3 scripts/merge_drip_config.py "${tmp}/prod.json" emails/drip_config.json "${tmp}/merged.json"
+    rsync_cmd --chmod=Du=rwx,Dgo=rx,Fu=rw,Fgo=r --exclude='drip_config.json' emails/ "${API_HOST}:${REMOTE_DIR}/emails/"
+    scp_cmd "${tmp}/merged.json" "${API_HOST}:${REMOTE_DIR}/emails/drip_config.json.new"
+    ssh_cmd "cd ${REMOTE_DIR}/emails && cp drip_config.json drip_config.json.bak && mv drip_config.json.new drip_config.json && chmod 644 drip_config.json"
+    rm -rf "${tmp}"
+}
+
+deploy_emails() {
+    sync_emails
+    ssh_cmd "sudo supervisorctl restart ${API_SERVICE}"
+    green "emails synced, ${API_SERVICE} restarted (drip config is read at startup)"
+}
+
+# --- Config: prod config.yaml drifts (OpenRouter sync), so only add git-only non-openrouter models to it ---
+sync_config() {
+    if [[ "${CONFIG_MODE:-merge}" == "git" ]]; then
+        green "syncing config (git overwrites prod)..."
+        scp_cmd config.yaml "${API_HOST}:${REMOTE_DIR}/config.yaml"
+        return
+    fi
+    green "merging config into prod's live config.yaml..."
+    local tmp
+    tmp=$(mktemp -d)
+    ssh_cmd "cat ${REMOTE_DIR}/config.yaml" > "${tmp}/prod.yaml"
+    uv run --with pyyaml python scripts/merge_config.py "${tmp}/prod.yaml" config.yaml "${tmp}/merged.yaml"
+    scp_cmd "${tmp}/merged.yaml" "${API_HOST}:${REMOTE_DIR}/config.yaml.new"
+    ssh_cmd "cd ${REMOTE_DIR} && cp config.yaml config.yaml.bak-deploy && mv config.yaml.new config.yaml"
+    rm -rf "${tmp}"
+}
+
 # --- API deploy: build Go binary + deploy to server ---
 deploy_api() {
     build_frontend
@@ -266,8 +302,9 @@ deploy_api() {
     green "syncing frontend dist..."
     rsync_cmd --exclude='openpaths-api*' dist/ "${API_HOST}:${REMOTE_DIR}/dist/"
 
-    green "syncing config..."
-    scp_cmd config.yaml "${API_HOST}:${REMOTE_DIR}/config.yaml"
+    sync_emails
+
+    sync_config
 
     green "swapping binary + restarting..."
     ssh_cmd bash -s <<REMOTE
@@ -337,6 +374,7 @@ case "$CMD" in
     site)    deploy_site ;;
     api)     deploy_api ;;
     env)     deploy_env ;;
+    emails)  deploy_emails ;;
     setup)   deploy_setup ;;
     cache)   purge_cf_cache; green "cloudflare cache purged" ;;
     all)

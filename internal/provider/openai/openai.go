@@ -27,7 +27,21 @@ type OpenAIProvider struct {
 	baseURL      string
 	providerName string
 	sanitizeChat func(*model.ChatCompletionRequest)
+	headerHook   func(*model.ChatCompletionRequest, http.Header)
 	client       *http.Client
+}
+
+// SetRequestHeaderHook registers a callback that can add upstream request
+// headers derived from the request (for example a sticky-routing session id).
+// Unset by default, so no provider sends extra headers unless it opts in.
+func (p *OpenAIProvider) SetRequestHeaderHook(h func(*model.ChatCompletionRequest, http.Header)) {
+	p.headerHook = h
+}
+
+func (p *OpenAIProvider) applyHeaderHook(req *model.ChatCompletionRequest, h http.Header) {
+	if p.headerHook != nil {
+		p.headerHook(req, h)
+	}
 }
 
 func New(apiKey, baseURL string) *OpenAIProvider {
@@ -51,6 +65,12 @@ func NewCompatible(providerName, apiKey, baseURL string, sanitizeChat func(*mode
 }
 
 func (p *OpenAIProvider) Name() string { return p.providerName }
+
+// WrapTransport lets compatible upstreams with a non-/v1 path layout (e.g.
+// BytePlus ModelArk's /api/v3) rewrite requests before they are sent.
+func (p *OpenAIProvider) WrapTransport(wrap func(http.RoundTripper) http.RoundTripper) {
+	p.client.Transport = wrap(p.client.Transport)
+}
 
 // applyPromptCacheKey sets OpenAI's prompt_cache_key to a stable per-prefix hash
 // (model + system + tools) so repeat requests route to the same prompt cache,
@@ -217,6 +237,7 @@ func (p *OpenAIProvider) ChatCompletion(ctx context.Context, req *model.ChatComp
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Authorization", "Bearer "+p.apiKey)
+	p.applyHeaderHook(req, httpReq.Header)
 
 	resp, err := p.client.Do(httpReq)
 	if err != nil {
@@ -277,6 +298,7 @@ func (p *OpenAIProvider) ChatCompletionStream(ctx context.Context, req *model.Ch
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Authorization", "Bearer "+p.apiKey)
+	p.applyHeaderHook(req, httpReq.Header)
 
 	resp, err := p.client.Do(httpReq)
 	if err != nil {

@@ -20,13 +20,15 @@ import (
 )
 
 type openaiImageRequest struct {
-	Model          string `json:"model"`
-	Prompt         string `json:"prompt"`
-	N              int    `json:"n,omitempty"`
-	Size           string `json:"size,omitempty"`
-	Quality        string `json:"quality,omitempty"`
-	Style          string `json:"style,omitempty"`
-	ResponseFormat string `json:"response_format,omitempty"`
+	Model             string `json:"model"`
+	Prompt            string `json:"prompt"`
+	N                 int    `json:"n,omitempty"`
+	Size              string `json:"size,omitempty"`
+	Quality           string `json:"quality,omitempty"`
+	Style             string `json:"style,omitempty"`
+	ResponseFormat    string `json:"response_format,omitempty"`
+	OutputFormat      string `json:"output_format,omitempty"`
+	OutputCompression *int   `json:"output_compression,omitempty"`
 }
 
 func (p *OpenAIProvider) GenerateImage(ctx context.Context, req *model.ImageGenerationRequest) (*model.ImageGenerationResponse, error) {
@@ -59,6 +61,7 @@ func (p *OpenAIProvider) GenerateImage(ctx context.Context, req *model.ImageGene
 	if isGPTImage {
 		// GPT Image models don't support "style"; they use quality only.
 		out.Style = ""
+		out.OutputFormat, out.OutputCompression = gptImageOutputFormat(req)
 	}
 	if !rejectsResponseFormat && out.ResponseFormat == "" {
 		out.ResponseFormat = "b64_json"
@@ -146,6 +149,12 @@ func (p *OpenAIProvider) editImage(ctx context.Context, req *model.ImageGenerati
 	if req.Quality != "" {
 		fields["quality"] = req.Quality
 	}
+	if format, compression := gptImageOutputFormat(req); format != "" {
+		fields["output_format"] = format
+		if compression != nil {
+			fields["output_compression"] = fmt.Sprintf("%d", *compression)
+		}
+	}
 	if req.ResponseFormat != "" {
 		fields["response_format"] = req.ResponseFormat
 	}
@@ -182,6 +191,30 @@ func (p *OpenAIProvider) editImage(ctx context.Context, req *model.ImageGenerati
 		return nil, fmt.Errorf("unmarshal image edit response: %w", err)
 	}
 	return &result, nil
+}
+
+// gptImageOutputFormat defaults GPT Image models to WebP at quality 85 unless
+// the caller asks for png or jpeg, cutting response size and stored bytes.
+func gptImageOutputFormat(req *model.ImageGenerationRequest) (string, *int) {
+	if !strings.HasPrefix(strings.ToLower(req.Model), "gpt-image") {
+		return "", nil
+	}
+	format := strings.ToLower(strings.TrimSpace(req.OutputFormat))
+	switch format {
+	case "", "webp":
+		format = "webp"
+	case "jpg", "jpeg":
+		format = "jpeg"
+	case "png":
+		return "png", nil
+	default:
+		return "", nil
+	}
+	compression := 85
+	if req.OutputCompression != nil && *req.OutputCompression >= 0 && *req.OutputCompression <= 100 {
+		compression = *req.OutputCompression
+	}
+	return format, &compression
 }
 
 const (

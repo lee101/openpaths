@@ -8,7 +8,7 @@ import (
 )
 
 func TestUsageInsertBatch(t *testing.T) {
-	pool := schemaTestPool(t, "usage", "", "001_initial.sql", "014_app_attribution.sql", "024_usage_ttft.sql")
+	pool := schemaTestPool(t, "usage", "", "001_initial.sql", "014_app_attribution.sql", "024_usage_ttft.sql", "036_usage_request_count.sql")
 	ctx := context.Background()
 	var user, key string
 	if err := pool.QueryRow(ctx, `INSERT INTO users (email, password_hash) VALUES ('a@b.c', 'x') RETURNING id::text`).Scan(&user); err != nil {

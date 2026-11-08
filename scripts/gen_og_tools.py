@@ -72,6 +72,11 @@ TOOLS: dict[str, tuple[str, str, str]] = {
         "Text to Image",
         "IMAGE / AUTO IMAGE ENDPOINT",
     ),
+    "gpt-image": (
+        "a polished glass prism on a dark reflective stage splitting one beam of light into a radiant sunburst of amber and teal rays, small floating blank picture frames catching the colors",
+        "GPT Image 2.6",
+        "IMAGE / SUNBURST / FLARE",
+    ),
     "image-edit": (
         "a framed photograph of a snowy mountain lake standing on dark glass, its right half repainted in vivid stylised color while the left half stays muted realism, split cleanly down the centre",
         "Image Style Transfer",
@@ -151,6 +156,7 @@ TOOL_PATHS = {
     "google-tts": "/tools/google-tts",
     "lyria": "/tools/lyria",
     "text-to-image": "/text-to-image",
+    "gpt-image": "/gpt-image",
     "image-edit": "/image-edit",
     "text-to-video": "/text-to-video",
     "image-to-video": "/image-to-video",

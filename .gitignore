@@ -60,3 +60,5 @@ AGENTS.md
 public/sitemap.xml
 dist-next/
 .ua.patch
+
+rotation/.openpaths-rotation-state*.json

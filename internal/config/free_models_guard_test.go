@@ -24,7 +24,7 @@ var (
 // (and its RunPod overflow lane, which omniserve restricts to paid/sub tiers).
 var firstPartyGPU = map[string]bool{
 	"appnz": true, "appnz-qwen": true, "netwrck": true, "manifoldgen": true,
-	"cutedsl": true, "gobed": true, "textgenerator": true, "runanywhere": true,
+	"cutedsl": true, "gobed": true, "textgenerator": true, "runanywhere": true, "runpod": true,
 }
 
 func isPriced(t *testing.T, m *model.ModelConfig) bool {

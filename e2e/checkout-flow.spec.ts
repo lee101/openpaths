@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test';
 // Tests: register -> logout -> login -> open stripe checkout dialog
 // All in a single test, no page reloads
 
-const BASE = 'http://openpaths.local:8090';
+const BASE = process.env.TARGET_URL || 'http://openpaths.local:8090';
 const unique = () => `e2e_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
 test.describe('Full Checkout Flow (live backend)', () => {
@@ -28,9 +28,11 @@ test.describe('Full Checkout Flow (live backend)', () => {
     await page.getByTestId('auth-password').fill(password);
     await page.getByTestId('auth-submit').click();
 
-    // Should land on the dashboard overview (no reload)
-    await expect(page.locator('h1:has-text("Overview")')).toBeVisible({ timeout: 10000 });
-    await expect(page.locator(`text=${email}`)).toBeVisible();
+    // Should land on the signed-in dashboard (no reload). The landing tab has changed over time, so assert the
+    // account sidebar + email, then open Overview explicitly for the balance check.
+    await expect(page.getByRole('heading', { name: 'Account', level: 2 })).toBeVisible({ timeout: 10000 });
+    await expect(page.locator(`text=${email}`).first()).toBeVisible();
+    await page.getByRole('button', { name: 'Overview' }).click();
 
     // Balance should show $0.00 for new account
     await expect(page.getByTestId('balance')).toContainText('$0.00');
@@ -53,9 +55,9 @@ test.describe('Full Checkout Flow (live backend)', () => {
     await page.getByTestId('auth-password').fill(password);
     await page.getByTestId('auth-submit').click();
 
-    // Should be back on overview
-    await expect(page.locator('h1:has-text("Overview")')).toBeVisible({ timeout: 10000 });
-    await expect(page.locator(`text=${email}`)).toBeVisible();
+    // Should be back on the signed-in dashboard
+    await expect(page.getByRole('heading', { name: 'Account', level: 2 })).toBeVisible({ timeout: 10000 });
+    await expect(page.locator(`text=${email}`).first()).toBeVisible();
 
     // Verify we got a valid token back
     const newToken = await page.evaluate(() => localStorage.getItem('op_token'));
@@ -78,17 +80,15 @@ test.describe('Full Checkout Flow (live backend)', () => {
     await expect(page.getByTestId('stripe-modal')).toBeVisible();
     await expect(page.locator('h2:has-text("Add Funds")')).toBeVisible();
 
-    // Verify amount buttons
-    for (const amt of [10, 25, 50, 100]) {
-      await expect(page.getByTestId(`amount-${amt}`)).toBeVisible();
-    }
-
-    // Default is $25
-    await expect(page.getByTestId('stripe-checkout-btn')).toContainText('Pay $25');
-
-    // Change to $10
-    await page.getByTestId('amount-10').click();
-    await expect(page.getByTestId('stripe-checkout-btn')).toContainText('Pay $10');
+    // Credit packs are data-driven (amounts change); assert there are packs, then pick the smallest one.
+    const packs = page.locator('[data-testid^="amount-"]');
+    await expect(packs.first()).toBeVisible();
+    const ids = await packs.evaluateAll(els => els.map(e => e.getAttribute('data-testid') || ''));
+    const amounts = ids.map(i => Number(i.replace('amount-', ''))).filter(n => n > 0).sort((x, y) => x - y);
+    expect(amounts.length).toBeGreaterThan(1);
+    const pick = amounts[0];
+    await page.getByTestId(`amount-${pick}`).click();
+    await expect(page.getByTestId('stripe-checkout-btn')).toContainText(`Pay $${pick}`);
 
     // Click checkout - this hits the real Stripe API
     await page.getByTestId('stripe-checkout-btn').click();
@@ -112,7 +112,7 @@ test.describe('Full Checkout Flow (live backend)', () => {
     await expect(page.locator(`text=${email}`)).toBeVisible();
 
     // Verify no navigation/reloads by checking URL is still /account
-    expect(page.url()).toBe(BASE + '/account');
+    expect(new URL(page.url()).pathname).toBe('/account');
   });
 
   test('login with wrong password shows error', async ({ page }) => {

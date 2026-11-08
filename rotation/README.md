@@ -82,3 +82,7 @@ Anthropic is supported when a freshly-created console key is supplied for one
 run, for example: `ANTHROPIC_NEW_API_KEY='...' rotation/rotate-passwords.sh`.
 Without that variable it is skipped safely; OpenAI and OpenRouter remain fully
 automatable with the encrypted management bundles.
+
+## OpenPaths API keys
+
+`rotate_openpaths_keys.py` rotates every OpenPaths API key of one account. Keys are stored as sha256 hashes, so it finds each key by hashing every `op-` / `sk-op-` token in local and prod env/config files and matching against the account's active hashes. Default is a dry run; `--apply` mints replacements and swaps them into the files that held the old key (old keys stay valid), `--finalize` revokes the old and any unreferenced active keys after dependent services restart. State is written to the gitignored `rotation/.openpaths-rotation-state.json`.

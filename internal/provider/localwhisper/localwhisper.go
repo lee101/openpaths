@@ -146,7 +146,7 @@ func providerError(status int, message string, retryable bool, err error) *provi
 
 func safeAudioFilename(name string) string {
 	base := filepath.Base(strings.TrimSpace(name))
-	if base == "." || base == string(filepath.Separator) || base == "" {
+	if base == "." || base == ".." || base == string(filepath.Separator) || base == "" || strings.ContainsAny(base, "\\\x00") {
 		return "audio.webm"
 	}
 	ext := filepath.Ext(base)

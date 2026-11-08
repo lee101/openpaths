@@ -228,7 +228,17 @@ func (h *ImageHandler) executeImageGeneration(ctx context.Context, req *model.Im
 				}
 			}
 		}
-		h.rehostImageURLs(ctx, resp)
+		webp := imgutil.WantsWebP(req.OutputFormat)
+		if webp {
+			for j := range resp.Data {
+				if resp.Data[j].B64JSON != "" {
+					if enc, ok := imgutil.ToWebPB64(ctx, resp.Data[j].B64JSON); ok {
+						resp.Data[j].B64JSON = enc
+					}
+				}
+			}
+		}
+		h.rehostImageURLs(ctx, resp, webp)
 
 		h.router.MarkModelHealthy(cand.Provider.Name(), cand.ModelCfg.ID)
 		imageCount := len(resp.Data)
@@ -298,7 +308,7 @@ func (h *ImageHandler) deductImageCost(ctx context.Context, userID, modelID stri
 
 func isPromptlessImageModel(modelID string) bool {
 	m := strings.ToLower(modelID)
-	return strings.Contains(m, "outpaint") || strings.Contains(m, "extend")
+	return strings.Contains(m, "outpaint") || strings.Contains(m, "extend") || strings.HasPrefix(m, "image-upscale")
 }
 
 func hasImageInput(req model.ImageGenerationRequest) bool {
@@ -383,7 +393,7 @@ func downloadImageDimensionsWith(ctx context.Context, client *http.Client, sourc
 	return imageDimensions(body)
 }
 
-func (h *ImageHandler) rehostImageURLs(ctx context.Context, resp *model.ImageGenerationResponse) {
+func (h *ImageHandler) rehostImageURLs(ctx context.Context, resp *model.ImageGenerationResponse, webp bool) {
 	if h.store == nil || resp == nil {
 		return
 	}
@@ -391,7 +401,7 @@ func (h *ImageHandler) rehostImageURLs(ctx context.Context, resp *model.ImageGen
 		if resp.Data[i].URL == "" {
 			continue
 		}
-		url, width, height, err := h.rehostImageURL(ctx, resp.Data[i].URL, i)
+		url, width, height, err := h.rehostImageURL(ctx, resp.Data[i].URL, i, webp)
 		if err != nil {
 			log.Printf("image rehost [%d]: %v, keeping upstream URL", i, err)
 			continue
@@ -406,7 +416,7 @@ func (h *ImageHandler) rehostImageURLs(ctx context.Context, resp *model.ImageGen
 	}
 }
 
-func (h *ImageHandler) rehostImageURL(ctx context.Context, sourceURL string, index int) (string, int, int, error) {
+func (h *ImageHandler) rehostImageURL(ctx context.Context, sourceURL string, index int, webp bool) (string, int, int, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, sourceURL, nil)
 	if err != nil {
 		return "", 0, 0, err
@@ -426,7 +436,6 @@ func (h *ImageHandler) rehostImageURL(ctx context.Context, sourceURL string, ind
 	if len(body) > maxImageDownloadBytes {
 		return "", 0, 0, fmt.Errorf("image exceeds %d bytes", maxImageDownloadBytes)
 	}
-	width, height := imageDimensions(body)
 	contentType := resp.Header.Get("Content-Type")
 	ext := extFromContentType(contentType)
 	if ext == "" {
@@ -434,6 +443,12 @@ func (h *ImageHandler) rehostImageURL(ctx context.Context, sourceURL string, ind
 	}
 	if ext == "" {
 		ext = ".png"
+	}
+	width, height := imageDimensions(body)
+	if webp {
+		if enc, ok := imgutil.ToWebP(ctx, body); ok {
+			body, contentType, ext = enc, "image/webp", ".webp"
+		}
 	}
 	url, err := h.store.Upload(ctx, fmt.Sprintf("generated-%d%s", index+1, ext), contentType, bytes.NewReader(body))
 	return url, width, height, err

@@ -71,9 +71,10 @@ type anthMessage struct {
 }
 
 type anthTool struct {
-	Name        string `json:"name"`
-	Description string `json:"description,omitempty"`
-	InputSchema any    `json:"input_schema,omitempty"`
+	Name         string              `json:"name"`
+	Description  string              `json:"description,omitempty"`
+	InputSchema  any                 `json:"input_schema,omitempty"`
+	CacheControl *model.CacheControl `json:"cache_control,omitempty"`
 }
 
 type anthResponse struct {
@@ -141,6 +142,7 @@ func (h *AnthropicHandler) HandleMessages(ctx *fasthttp.RequestCtx) {
 	}
 
 	chatReq := anthToInternal(&req)
+	chatReq.SessionID = requestSessionID(ctx, ctx.PostBody())
 
 	autoResult := h.router.MaybeResolveAutoWithTier(ctx, chatReq.Model, "", chatReq.TaskTier, extractChatPrompt(chatReq.Messages))
 	useAutoReasoning := router.IsAutoReasoningEffort(chatReq.ReasoningEffort)
@@ -493,16 +495,30 @@ func anthToInternal(req *anthRequest) *model.ChatCompletionRequest {
 			})
 		}
 	case []any:
-		// Array of content blocks
+		// Array of content blocks. Keep the blocks when any carries
+		// cache_control so the breakpoint position survives.
 		var systemText string
+		var blocks []any
+		cached := false
 		for _, block := range s {
 			if m, ok := block.(map[string]any); ok {
 				if t, ok := m["text"].(string); ok {
 					systemText += t
+					if t != "" {
+						blocks = append(blocks, m)
+					}
+					if m["cache_control"] != nil {
+						cached = true
+					}
 				}
 			}
 		}
-		if systemText != "" {
+		if cached && len(blocks) > 0 {
+			chatReq.Messages = append(chatReq.Messages, model.ChatMessage{
+				Role:    "system",
+				Content: blocks,
+			})
+		} else if systemText != "" {
 			chatReq.Messages = append(chatReq.Messages, model.ChatMessage{
 				Role:    "system",
 				Content: systemText,
@@ -525,6 +541,7 @@ func anthToInternal(req *anthRequest) *model.ChatCompletionRequest {
 				Description: tool.Description,
 				Parameters:  tool.InputSchema,
 			},
+			CacheControl: tool.CacheControl,
 		})
 	}
 

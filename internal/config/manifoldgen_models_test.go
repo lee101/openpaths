@@ -52,6 +52,9 @@ func TestManifoldGenFirstPartyCatalog(t *testing.T) {
 		{id: "mg-tts", upstream: "mg-tts", perChar1M: 50},
 		{id: "h3-image", upstream: "h3-image", perImage: 0.30},
 		{id: "h3-image-edit", upstream: "h3-image-edit", perImage: 0.35, vision: true},
+		{id: "image-upscale", upstream: "image-upscale", perImage: 0.02, vision: true},
+		{id: "image-upscale-4x", upstream: "image-upscale-4x", perImage: 0.03, vision: true},
+		{id: "image-upscale-creative", upstream: "image-upscale-creative", perImage: 0.15, vision: true},
 		{id: "video-dramatize", upstream: "video-dramatize", perSecond: 0.10, vision: true},
 	}
 

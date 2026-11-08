@@ -3,6 +3,7 @@ import { Eye, EyeOff, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { setApiKey } from '../lib/api';
 import { trackAuthCompleted, trackAuthStarted } from '../lib/th';
+import { useDialog } from '../lib/useDialog';
 
 export function AuthModal({ open, onClose, onSuccess, initialMode = 'login', surface = 'auth_modal' }: { open: boolean; onClose: () => void; onSuccess?: () => void; initialMode?: 'login' | 'register'; surface?: string }) {
   const [mode, setMode] = useState<'login' | 'register'>(initialMode);
@@ -12,6 +13,7 @@ export function AuthModal({ open, onClose, onSuccess, initialMode = 'login', sur
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const dialogRef = useDialog({ open, onClose });
 
   useEffect(() => {
     if (!open) return;
@@ -67,16 +69,21 @@ export function AuthModal({ open, onClose, onSuccess, initialMode = 'login', sur
           }}
         >
           <motion.div
+            ref={dialogRef}
+            tabIndex={-1}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="auth-modal-title"
             initial={{ opacity: 0, scale: 0.96, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 10 }}
-            className="bg-[#090909] border border-white/20 rounded-3xl w-full max-w-md max-h-[92vh] overflow-y-auto p-6 md:p-8 shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
+            className="bg-[#090909] border border-white/20 rounded-3xl w-full max-w-md max-h-[92vh] overflow-y-auto p-6 md:p-8 shadow-[0_24px_80px_rgba(0,0,0,0.45)] outline-none"
             data-testid="auth-modal"
           >
             <div className="flex items-start justify-between gap-4 mb-6">
               <div>
                 <p className="text-xs font-mono uppercase tracking-[0.2em] text-white/50 mb-2">OpenPaths</p>
-                <h2 className="text-2xl font-bold tracking-tight">{mode === 'login' ? 'Sign In' : 'Create Account'}</h2>
+                <h2 id="auth-modal-title" className="text-2xl font-bold tracking-tight">{mode === 'login' ? 'Sign In' : 'Create Account'}</h2>
               </div>
               <button onClick={onClose} className="text-white/55 hover:text-white transition-colors shrink-0" data-testid="auth-modal-close">
                 <X className="w-5 h-5" />
@@ -90,7 +97,7 @@ export function AuthModal({ open, onClose, onSuccess, initialMode = 'login', sur
                   onChange={e => setName(e.target.value)}
                   placeholder="Name"
                   autoComplete="name"
-                  autoFocus
+                  data-autofocus={mode === 'register' ? '' : undefined}
                   className="w-full bg-white/[0.06] border border-white/30 rounded-lg py-3 px-4 text-white font-mono focus:outline-none focus:border-white/50"
                 />
               )}
@@ -100,7 +107,7 @@ export function AuthModal({ open, onClose, onSuccess, initialMode = 'login', sur
                 onChange={e => setEmail(e.target.value)}
                 placeholder="Email"
                 autoComplete="email"
-                autoFocus={mode === 'login'}
+                data-autofocus={mode === 'login' ? '' : undefined}
                 required
                 className="w-full bg-white/[0.06] border border-white/30 rounded-lg py-3 px-4 text-white font-mono focus:outline-none focus:border-white/50"
                 data-testid="auth-modal-email"

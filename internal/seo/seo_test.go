@@ -86,7 +86,7 @@ func TestSitemapWellFormedAndCoversEveryModel(t *testing.T) {
 func TestLLMsTxt(t *testing.T) {
 	c := realCatalog(t)
 	txt := c.LLMsTxt()
-	for _, want := range []string{"# OpenPaths", "\n> ", "## Image generation models", "(https://openpaths.io/models/gemini-nano-banana-2.1)", "`gemini-nano-banana-2.1`", "/docs/image-generation"} {
+	for _, want := range []string{"# OpenPaths", "\n> ", "## Image generation models", "(https://openpaths.io/models/gemini-nano-banana-2.1)", "`gemini-nano-banana-2.1`", "/docs/image-generation", "`keys:manage`", "POST /v1/keys/{id}/rotate"} {
 		if !strings.Contains(txt, want) {
 			t.Errorf("llms.txt missing %q", want)
 		}

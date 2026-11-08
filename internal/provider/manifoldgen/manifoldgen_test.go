@@ -553,3 +553,32 @@ func TestParseSize(t *testing.T) {
 		t.Fatal("auto should not parse")
 	}
 }
+
+func TestGenerateImageUpscaleRoutesScale(t *testing.T) {
+	for _, tc := range []struct {
+		model    string
+		scale    float64
+		creative bool
+	}{{"image-upscale", 2, false}, {"image-upscale-4x", 4, false}, {"image-upscale-creative", 2, true}} {
+		p, _ := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {
+			var payload map[string]any
+			json.NewDecoder(r.Body).Decode(&payload)
+			if payload["service"] != "upscale_image" || payload["scale"] != tc.scale || payload["image_url"] != "https://x/a.png" {
+				t.Fatalf("%s payload = %#v", tc.model, payload)
+			}
+			if (payload["model"] == "creative") != tc.creative {
+				t.Fatalf("%s creative flag = %v", tc.model, payload["model"])
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.Write([]byte(`{"result":{"image_url":"https://x/up.png"}}`))
+		})
+		resp, err := p.GenerateImage(context.Background(), &model.ImageGenerationRequest{Model: tc.model, ImageURL: "https://x/a.png"})
+		if err != nil || len(resp.Data) != 1 || resp.Data[0].URL != "https://x/up.png" {
+			t.Fatalf("%s: %v %#v", tc.model, err, resp)
+		}
+	}
+	p, _ := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) { t.Fatal("no HTTP call expected") })
+	if _, err := p.GenerateImage(context.Background(), &model.ImageGenerationRequest{Model: "image-upscale"}); err == nil {
+		t.Fatal("expected image_url validation error")
+	}
+}

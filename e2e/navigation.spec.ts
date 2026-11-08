@@ -71,6 +71,39 @@ test.describe('Global Navigation', () => {
     await expect(page).toHaveURL('/');
   });
 
+  test('Escape closes the auth dialog and restores focus', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByTestId('nav-get-started');
+    await trigger.click();
+    await expect(page.getByTestId('auth-modal')).toBeVisible();
+    await expect(page.getByTestId('auth-modal-email')).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('auth-modal')).not.toBeVisible();
+    await expect(trigger).toBeFocused();
+  });
+
+  test('question mark opens keyboard shortcuts and Escape closes it', async ({ page }) => {
+    await page.goto('/');
+    await page.keyboard.press('Shift+/');
+    await expect(page.getByTestId('keyboard-shortcuts')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('keyboard-shortcuts')).not.toBeVisible();
+  });
+
+  test('Control+K opens search with the query focused', async ({ page }) => {
+    await page.goto('/');
+    await page.keyboard.press('Control+K');
+    await expect(page).toHaveURL('/search');
+    await expect(page.locator('[data-keyboard-search]')).toBeFocused();
+  });
+
+  test('slash focuses the page search box', async ({ page }) => {
+    await page.goto('/search');
+    await page.locator('[data-keyboard-search]').blur();
+    await page.keyboard.press('/');
+    await expect(page.locator('[data-keyboard-search]')).toBeFocused();
+  });
+
   test('footer renders', async ({ page }) => {
     await page.goto('/');
     const footer = page.locator('footer');

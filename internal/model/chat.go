@@ -1,5 +1,7 @@
 package model
 
+import "encoding/json"
+
 // ChatCompletionRequest mirrors the OpenAI chat completion request format.
 type ChatCompletionRequest struct {
 	Model               string          `json:"model"`
@@ -54,6 +56,11 @@ type ChatCompletionRequest struct {
 	// PromptCacheOptions selects the Moonshot (Kimi) cache write TTL ("5m" or
 	// "1h"). Stripped for every other upstream.
 	PromptCacheOptions *PromptCacheOptions `json:"prompt_cache_options,omitempty"`
+
+	// SessionID is a sticky-routing key taken from the body "session_id" or the
+	// x-session-id header. It is never serialized; only the OpenRouter provider
+	// forwards it, as the x-session-id header.
+	SessionID string `json:"-"`
 }
 
 type PromptCacheOptions struct {
@@ -170,6 +177,31 @@ type Tool struct {
 	Type       string        `json:"type"`
 	Function   *ToolFunction `json:"function,omitempty"`
 	Parameters any           `json:"parameters,omitempty"`
+
+	// CacheControl is read from the request but never serialized, so
+	// providers that marshal Tool directly cannot leak it to upstreams that
+	// reject unknown fields. Only the Anthropic provider uses it.
+	CacheControl *CacheControl `json:"-"`
+}
+
+// UnmarshalJSON reads the client's optional tool-level cache_control.
+func (t *Tool) UnmarshalJSON(data []byte) error {
+	type plain Tool
+	aux := struct {
+		*plain
+		CacheControl *CacheControl `json:"cache_control"`
+	}{plain: (*plain)(t)}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	t.CacheControl = aux.CacheControl
+	return nil
+}
+
+// CacheControl is a client-supplied Anthropic-style prompt cache breakpoint.
+type CacheControl struct {
+	Type string `json:"type"`
+	TTL  string `json:"ttl,omitempty"`
 }
 
 type ToolFunction struct {
@@ -207,6 +239,9 @@ type ErrorDetail struct {
 	Message string  `json:"message"`
 	Type    string  `json:"type"`
 	Code    *string `json:"code,omitempty"`
+
+	Hint          string `json:"hint,omitempty"`
+	RequiredScope string `json:"required_scope,omitempty"`
 }
 
 // ModelInfo represents a model in the /v1/models response.
