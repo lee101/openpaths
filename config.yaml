@@ -1666,6 +1666,35 @@ models:
     supports_tools: false
     supports_vision: true
 
+  # ManifoldGen image upscaler: same prices as manifoldgen.com. Faithful 2x/4x
+  # upscale of a source image (image_url); creative redraws micro-detail.
+  - id: "image-upscale"
+    provider: manifoldgen
+    provider_model_id: "image-upscale"
+    price_per_image: 0.02
+    aliases: ["manifoldgen-upscale", "upscale-2x", "image-upscale-2x"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "image-upscale-4x"
+    provider: manifoldgen
+    provider_model_id: "image-upscale-4x"
+    price_per_image: 0.03
+    aliases: ["manifoldgen-upscale-4x", "upscale-4x"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "image-upscale-creative"
+    provider: manifoldgen
+    provider_model_id: "image-upscale-creative"
+    price_per_image: 0.15
+    aliases: ["manifoldgen-upscale-creative", "creative-upscale"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
   # Video dramatizer agent: one source clip plus a creative brief becomes a
   # finished multi-shot edit. Billed at $0.10/s of planned edit time; a
   # nominal six-shot, five-second-per-shot run lands near $3 upstream.

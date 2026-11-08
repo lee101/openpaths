@@ -894,6 +894,9 @@ func videoInputURL(video *model.VideoInput) string {
 // (source-image edits with up to 8 reference images). Both are queued jobs
 // whose terminal result carries an image_url.
 func (p *Provider) GenerateImage(ctx context.Context, req *model.ImageGenerationRequest) (*model.ImageGenerationResponse, error) {
+	if scale, creative, ok := upscaleModel(req.Model); ok {
+		return p.generateUpscale(ctx, req, scale, creative)
+	}
 	service := "h3_image"
 	params := map[string]any{"prompt": req.Prompt}
 
@@ -1018,4 +1021,50 @@ func parseSize(size string) (int, int, bool) {
 		return 0, 0, false
 	}
 	return w, h, true
+}
+
+// upscaleModel maps the image-upscale* provider model ids onto the ManifoldGen
+// upscale_image service: scale factor and whether the creative upscaler is used.
+func upscaleModel(id string) (scale int, creative bool, ok bool) {
+	switch id {
+	case "image-upscale":
+		return 2, false, true
+	case "image-upscale-4x":
+		return 4, false, true
+	case "image-upscale-creative":
+		return 2, true, true
+	}
+	return 0, false, false
+}
+
+func (p *Provider) generateUpscale(ctx context.Context, req *model.ImageGenerationRequest, scale int, creative bool) (*model.ImageGenerationResponse, error) {
+	source := firstString(req.ImageURL)
+	if source == "" && len(req.ImageURLs) > 0 {
+		source = req.ImageURLs[0]
+	}
+	if source == "" && req.Image != nil {
+		source = req.Image.URL
+	}
+	if source == "" {
+		return nil, requestError("image_url is required for image upscale")
+	}
+	params := map[string]any{"image_url": source, "scale": scale}
+	if creative {
+		params["model"] = "creative"
+	}
+	result, err := p.submitAndResolve(ctx, "upscale_image", params)
+	if err != nil {
+		return nil, err
+	}
+	imageURL := stringField(result, "image_url")
+	if imageURL == "" {
+		imageURL = stringField(result, "url")
+	}
+	if imageURL == "" {
+		return nil, &provider.ProviderError{Provider: "manifoldgen", StatusCode: 502, Message: "no image_url in result: " + string(result), Retryable: false}
+	}
+	return &model.ImageGenerationResponse{
+		Created: time.Now().Unix(),
+		Data:    []model.ImageData{{URL: imageURL}},
+	}, nil
 }

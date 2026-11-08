@@ -308,7 +308,7 @@ func (h *ImageHandler) deductImageCost(ctx context.Context, userID, modelID stri
 
 func isPromptlessImageModel(modelID string) bool {
 	m := strings.ToLower(modelID)
-	return strings.Contains(m, "outpaint") || strings.Contains(m, "extend")
+	return strings.Contains(m, "outpaint") || strings.Contains(m, "extend") || strings.HasPrefix(m, "image-upscale")
 }
 
 func hasImageInput(req model.ImageGenerationRequest) bool {
