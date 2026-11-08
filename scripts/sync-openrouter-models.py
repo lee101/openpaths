@@ -154,7 +154,7 @@ def floor_manual(text, catalog, settings, report):
             entry = [l.replace(f'"{pmid}"', f'"{succ[pmid]}"') if l.startswith("    provider_model_id:") else l for l in entry]
             report.append(f"route: {mid} {pmid} -> {succ[pmid]}")
             pmid = succ[pmid]
-        if pmid not in catalog or pmid.endswith(":free") or pmid == ROUTER:
+        if pmid not in catalog or pmid.endswith(":free") or pmid in settings.get("free_extra", []) or pmid == ROUTER:
             out += head + entry
             continue
         pr = catalog[pmid].get("pricing") or {}
@@ -278,7 +278,7 @@ def main():
     free = []
     for pmid, m in catalog.items():
         c = caps(m)
-        if not pmid.endswith(":free") or pmid in settings["free_exclude"]:
+        if not (pmid.endswith(":free") or pmid in settings.get("free_extra", [])) or pmid in settings["free_exclude"]:
             continue
         if not (c["tools"] and c["text_out"]) or c["ctx"] < settings["free_min_context"]:
             continue

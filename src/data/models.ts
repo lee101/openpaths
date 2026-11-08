@@ -5637,14 +5637,27 @@ const catalogModels: Model[] = [
     id: 'openpaths/free',
     name: 'OpenPaths Free',
     provider: 'OpenPaths',
-    description: 'Zero-cost route across the free OpenRouter models: starts on NVIDIA: Nemotron 3 Ultra (free) and falls through the free ladder, never onto a paid model.',
-    contextLength: '1M',
+    description: 'Zero-cost route across the free OpenRouter models: starts on Crouton Alpha and falls through the free ladder, never onto a paid model.',
+    contextLength: '1024K',
     priceInput: 0,
     priceOutput: 0,
     tags: ['free', 'general', 'agentic'],
     aliases: ['free', 'openpaths-free', 'free-latest', 'openpaths-auto-free'],
-    released: '2026-06-04',
+    released: '2026-11-03',
     popularity: 40
+  },
+  {
+    id: 'or/crouton-alpha',
+    name: 'Crouton Alpha',
+    provider: 'OpenRouter',
+    description: 'Crouton Alpha is a lightweight model built for scalable coding, agentic, and multimodal workflows. Routed through OpenRouter.',
+    contextLength: '1024K',
+    priceInput: 0,
+    priceOutput: 0,
+    tags: ['free', 'general', 'vision', 'reasoning', 'agentic'],
+    aliases: ['stealth/crouton-alpha', 'openrouter/stealth/crouton-alpha'],
+    released: '2026-11-03',
+    popularity: 10
   },
   {
     id: 'or/nemotron-3-ultra-550b-a55b:free',
@@ -5686,19 +5699,6 @@ const catalogModels: Model[] = [
     popularity: 10
   },
   {
-    id: 'or/nemotron-3-super-120b-a12b:free',
-    name: 'NVIDIA: Nemotron 3 Super (free)',
-    provider: 'OpenRouter',
-    description: 'NVIDIA Nemotron 3 Super is a 120B-parameter open hybrid MoE model, activating just 12B parameters for maximum compute efficiency and accuracy in complex multi-agent applications. Routed through OpenRouter.',
-    contextLength: '256K',
-    priceInput: 0,
-    priceOutput: 0,
-    tags: ['free', 'general', 'reasoning', 'agentic'],
-    aliases: ['nvidia/nemotron-3-super-120b-a12b:free', 'openrouter/nvidia/nemotron-3-super-120b-a12b:free'],
-    released: '2026-03-11',
-    popularity: 10
-  },
-  {
     id: 'or/dots-3-note-preview:free',
     name: 'Dots Studio: Dots3-Note Preview (free)',
     provider: 'OpenRouter',
@@ -5722,19 +5722,6 @@ const catalogModels: Model[] = [
     tags: ['free', 'general', 'reasoning', 'agentic'],
     aliases: ['cohere/north-mini-code:free', 'openrouter/cohere/north-mini-code:free'],
     released: '2026-06-17',
-    popularity: 10
-  },
-  {
-    id: 'or/laguna-s-2.1:free',
-    name: 'Poolside: Laguna S 2.1 (free)',
-    provider: 'OpenRouter',
-    description: 'Laguna S 2.1 is the latest coding agent model from [Poolside](<https://poolside.ai/>). Routed through OpenRouter.',
-    contextLength: '256K',
-    priceInput: 0,
-    priceOutput: 0,
-    tags: ['free', 'general', 'reasoning', 'agentic'],
-    aliases: ['poolside/laguna-s-2.1:free', 'openrouter/poolside/laguna-s-2.1:free'],
-    released: '2026-07-21',
     popularity: 10
   },
   {
@@ -5800,19 +5787,6 @@ const catalogModels: Model[] = [
     tags: ['free', 'general', 'vision', 'reasoning', 'agentic'],
     aliases: ['google/gemma-4-26b-a4b-it:free', 'openrouter/google/gemma-4-26b-a4b-it:free'],
     released: '2026-04-03',
-    popularity: 10
-  },
-  {
-    id: 'or/laguna-xs-2.1:free',
-    name: 'Poolside: Laguna XS 2.1 (free)',
-    provider: 'OpenRouter',
-    description: 'Laguna XS 2.1 is the latest coding agent model in the 33B-A3B category from [Poolside](https://poolside.ai/) and a step forward from their Laguna XS.2 model (released in April 2026). Routed through OpenRouter.',
-    contextLength: '256K',
-    priceInput: 0,
-    priceOutput: 0,
-    tags: ['free', 'general', 'reasoning', 'agentic'],
-    aliases: ['poolside/laguna-xs-2.1:free', 'openrouter/poolside/laguna-xs-2.1:free'],
-    released: '2026-07-02',
     popularity: 10
   },
   {
@@ -5989,7 +5963,7 @@ const catalogModels: Model[] = [
     name: 'inclusionAI: Ling 3.1 Flash',
     provider: 'OpenRouter',
     description: 'Ling 3.1 Flash is a hybrid reasoning mixture-of-experts model from inclusionAI, with 25B active parameters out of 560B total. Routed through OpenRouter.',
-    contextLength: '256K',
+    contextLength: '1M',
     priceInput: 0.0792,
     priceOutput: 0.2374,
     tags: ['general', 'reasoning', 'agentic'],
@@ -6081,8 +6055,8 @@ const catalogModels: Model[] = [
     provider: 'OpenRouter',
     description: 'Mistral Large 4 is a frontier multimodal (text and image input) model from Mistral AI built for reasoning, coding, and agentic workloads. Routed through OpenRouter.',
     contextLength: '1024K',
-    priceInput: 1.4348,
-    priceOutput: 4.4099,
+    priceInput: 0.7385,
+    priceOutput: 2.2155,
     tags: ['general', 'vision', 'reasoning', 'agentic'],
     aliases: ['mistralai/mistral-large-4-0', 'openrouter/mistralai/mistral-large-4-0', 'mistral-large-4-0'],
     released: '2026-10-06',

@@ -103,7 +103,7 @@ func TestOpenRouterSyncedPricesCoverTheFee(t *testing.T) {
 			if isPriced(t, m) {
 				t.Errorf("%s is priced but has no '# openrouter:' upstream price line", id)
 			}
-			if id != "openpaths/free" && !strings.HasSuffix(m.ProviderModelID, ":free") && m.ProviderModelID != "openrouter/free" {
+			if id != "openpaths/free" && !strings.HasSuffix(m.ProviderModelID, ":free") && m.ProviderModelID != "stealth/crouton-alpha" && m.ProviderModelID != "openrouter/free" {
 				t.Errorf("%s bills $0 but routes to paid OpenRouter model %s", id, m.ProviderModelID)
 			}
 			continue
