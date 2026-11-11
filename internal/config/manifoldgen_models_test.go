@@ -56,6 +56,7 @@ func TestManifoldGenFirstPartyCatalog(t *testing.T) {
 		{id: "image-upscale-4x", upstream: "image-upscale-4x", perImage: 0.03, vision: true},
 		{id: "image-upscale-creative", upstream: "image-upscale-creative", perImage: 0.15, vision: true},
 		{id: "video-dramatize", upstream: "video-dramatize", perSecond: 0.10, vision: true},
+		{id: "orbit-video", upstream: "orbit-video", vision: true},
 	}
 
 	for _, w := range want {
@@ -94,6 +95,7 @@ func TestManifoldGenFirstPartyCatalog(t *testing.T) {
 		"transparent-video":   "remove-video-background",
 		"dramatize":           "video-dramatize",
 		"video-dramatizer":    "video-dramatize",
+		"photo-orbit":         "orbit-video",
 	} {
 		if got := known[alias]; got != id {
 			t.Errorf("alias %q resolves to %q, want %q", alias, got, id)

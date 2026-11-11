@@ -590,3 +590,47 @@ func TestGenerateImageUpscaleRoutesScale(t *testing.T) {
 		t.Fatal("expected image_url validation error")
 	}
 }
+
+func TestGenerateOrbitRequiresImageAndMapsService(t *testing.T) {
+	var gotService string
+	var gotBody map[string]any
+	p, _ := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/api/service":
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatal(err)
+			}
+			gotService, _ = body["service"].(string)
+			gotBody = body
+			json.NewEncoder(w).Encode(map[string]any{
+				"result": map[string]any{"job_id": "o1", "status": "queued", "status_url": "/api/video-jobs/o1"},
+			})
+		case r.Method == http.MethodGet && r.URL.Path == "/api/video-jobs/o1":
+			json.NewEncoder(w).Encode(map[string]any{
+				"job": map[string]any{"status": "completed", "result": map[string]any{"video_url": "https://static.example/orbit.mp4"}},
+			})
+		default:
+			t.Fatalf("unexpected request %s %s", r.Method, r.URL.Path)
+		}
+	})
+	if _, err := p.GenerateVideo(context.Background(), &model.VideoGenerationRequest{Model: "orbit-video"}); err == nil {
+		t.Fatal("expected image_url validation error")
+	}
+	if gotService != "" {
+		t.Fatalf("no upstream call expected before validation, got %q", gotService)
+	}
+	resp, err := p.GenerateVideo(context.Background(), &model.VideoGenerationRequest{Model: "orbit-video", ImageURL: "https://x/photo.jpg"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gotService != "orbit_video" || gotBody["image_url"] != "https://x/photo.jpg" {
+		t.Fatalf("service=%q body=%#v", gotService, gotBody)
+	}
+	if _, set := gotBody["prompt"]; set {
+		t.Fatalf("empty prompt must be omitted so upstream default applies: %#v", gotBody)
+	}
+	if resp.VideoURL != "https://static.example/orbit.mp4" || resp.BackendUsed != "manifoldgen" {
+		t.Fatalf("resp = %#v", resp)
+	}
+}

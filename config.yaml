@@ -1571,6 +1571,18 @@ models:
     supports_tools: false
     supports_vision: true
 
+  # Frozen-time 360 degree camera orbit from one photo (H3 FL2VA plus the
+  # 360-Orbit LoRA, photo pinned as first and last keyframe); ~3 s clip, fixed
+  # upstream price.
+  - id: "orbit-video"
+    provider: manifoldgen
+    provider_model_id: "orbit-video"
+    price_per_video: 0.50
+    aliases: ["orbit", "photo-orbit", "360-orbit", "manifoldgen-orbit"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
   # Transparent WebM background removal at the public per-second rate.
   - id: "remove-video-background"
     provider: manifoldgen

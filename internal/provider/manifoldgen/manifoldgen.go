@@ -366,6 +366,8 @@ func (p *Provider) GenerateVideo(ctx context.Context, req *model.VideoGeneration
 		return p.generateBackgroundRemoval(ctx, req)
 	case "video-dramatize":
 		return p.generateDramatize(ctx, req)
+	case "orbit-video":
+		return p.generateOrbit(ctx, req)
 	default:
 		return p.generateKFoldVideo(ctx, req)
 	}
@@ -551,6 +553,42 @@ func (p *Provider) generateBackgroundRemoval(ctx context.Context, req *model.Vid
 		resp.OutputFormat = ct
 	}
 	return resp, nil
+}
+
+// generateOrbit drives orbit_video: one photo becomes a frozen-time 360 degree
+// camera orbit (H3 FL2VA plus the 360-Orbit LoRA, photo pinned as first and
+// last keyframe). The upstream price is fixed per clip; the prompt is optional
+// and falls back to the upstream frozen-instant default.
+func (p *Provider) generateOrbit(ctx context.Context, req *model.VideoGenerationRequest) (*model.VideoGenerationResponse, error) {
+	imageURL := firstString(req.ImageURL)
+	if imageURL == "" && len(req.ImageURLs) > 0 {
+		imageURL = strings.TrimSpace(req.ImageURLs[0])
+	}
+	if imageURL == "" {
+		return nil, requestError("image_url is required: orbit-video orbits a single photo")
+	}
+	params := map[string]any{"image_url": imageURL}
+	if prompt := strings.TrimSpace(req.Prompt); prompt != "" {
+		if len(prompt) > 2000 {
+			return nil, requestError("prompt must be at most 2000 characters")
+		}
+		params["prompt"] = prompt
+	}
+	if req.NumInferenceSteps > 0 {
+		params["num_steps"] = clamp(req.NumInferenceSteps, 8, 40, 28)
+	}
+	if req.Seed != nil {
+		params["seed"] = *req.Seed
+	}
+	result, err := p.submitAndResolveDeadline(ctx, "orbit_video", params, 95*time.Minute)
+	if err != nil {
+		return nil, err
+	}
+	videoURL := stringField(result, "video_url")
+	if videoURL == "" {
+		return nil, &provider.ProviderError{Provider: "manifoldgen", StatusCode: 502, Message: "no video_url in result: " + string(result), Retryable: false}
+	}
+	return &model.VideoGenerationResponse{VideoURL: videoURL, Model: req.Model, BackendUsed: p.Name()}, nil
 }
 
 // generateDramatize drives video_dramatize — a long-running agent that turns

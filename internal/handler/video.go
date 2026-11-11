@@ -454,6 +454,9 @@ func videoJobBudget(modelID string) time.Duration {
 	case modelID == "video-dramatize":
 		// video-dramatize rides the upstream dramatizer agent SLA (~30-60 min).
 		return 60 * time.Minute
+	case modelID == "orbit-video":
+		// Orbit rides a scale-to-zero RunPod endpoint; cold start plus ~3 s clip.
+		return 45 * time.Minute
 	case model.IsWan3DirectVideo(modelID):
 		// Alibaba queues 30s 1080P Wan jobs for well over 15 minutes at peak.
 		return 30 * time.Minute
