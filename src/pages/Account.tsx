@@ -700,6 +700,15 @@ interface OpenAIBrowserAuthState {
   expires_at?: string;
 }
 
+// A gateway (Cloudflare) can answer with an HTML error page; surface its HTTP status instead of a generic "Network error".
+async function readJSONResponse(res: Response): Promise<any> {
+  try {
+    return await res.json();
+  } catch {
+    return { error: { message: `Server returned HTTP ${res.status} (not JSON). Try again; if it repeats, the API is failing upstream.` } };
+  }
+}
+
 const OPENAI_DEVICE_AUTH_SESSION_KEY = 'op_openai_device_auth';
 const OPENAI_BROWSER_AUTH_SESSION_KEY = 'op_openai_browser_auth';
 
@@ -1324,7 +1333,7 @@ export function Account() {
     setOpenAIDeviceStatus('idle');
     try {
       const res = await api('/account/openai/device/start', { method: 'POST', body: JSON.stringify({}) });
-      const data = await res.json();
+      const data = await readJSONResponse(res);
       if (!res.ok || !data.login_id || !data.verification_url || !data.user_code) {
         setOpenAIAuthError(data.error?.message || 'Failed to start OpenAI device sign-in');
         setOpenAIDeviceStatus('error');
@@ -1357,7 +1366,7 @@ export function Account() {
         method: 'POST',
         body: JSON.stringify({ login_id: openAIDeviceAuth.login_id }),
       });
-      const data = await res.json();
+      const data = await readJSONResponse(res);
       if (res.status === 202 || data.status === 'pending') {
         setOpenAIDeviceStatus('pending');
         setOpenAIDeviceMessage(data.message || 'Waiting for OpenAI device authorization...');
@@ -1404,7 +1413,7 @@ export function Account() {
     setOpenAIBrowserInput('');
     try {
       const res = await api('/account/openai/browser/start', { method: 'POST', body: JSON.stringify({}) });
-      const data = await res.json();
+      const data = await readJSONResponse(res);
       if (!res.ok || !data.login_id || !data.authorization_url) {
         setOpenAIAuthError(data.error?.message || 'Failed to start OpenAI browser sign-in');
         return;
@@ -1437,7 +1446,7 @@ export function Account() {
           callback_url: openAIBrowserInput.trim(),
         }),
       });
-      const data = await res.json();
+      const data = await readJSONResponse(res);
       if (!res.ok || data.status !== 'success') {
         setOpenAIAuthError(data.error?.message || 'OpenAI browser sign-in failed');
         if ((res.status === 400 && data.error?.code !== 'invalid_request') || res.status === 410) {

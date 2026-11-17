@@ -590,7 +590,7 @@ func exchangeOpenAIIDTokenForAPIKey(ctx context.Context, idToken string) (string
 	defer resp.Body.Close()
 	respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return "", fmt.Errorf("api key token exchange returned HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(respBody)))
+		return "", fmt.Errorf("api key token exchange returned HTTP %d: %s", resp.StatusCode, openAIErrorSummary(respBody))
 	}
 	var parsed struct {
 		AccessToken string `json:"access_token"`

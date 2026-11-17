@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -125,6 +126,36 @@ func writeOpenAIOAuthTicketError(ctx *fasthttp.RequestCtx, err error) {
 	writeError(ctx, fasthttp.StatusBadRequest, "openai_auth_invalid", "OpenAI sign-in session is invalid. Start a new sign-in.")
 }
 
+// writeOpenAIUpstreamError reports a failed call to auth.openai.com. It uses 422, not 502: Cloudflare replaces
+// 502/504 bodies with its own HTML page, which the Account page could only show as "Network error".
+func writeOpenAIUpstreamError(ctx *fasthttp.RequestCtx, prefix string, err error) {
+	log.Printf("openai oauth: %s: %v", prefix, err)
+	writeError(ctx, fasthttp.StatusUnprocessableEntity, "openai_auth_error", prefix+": "+err.Error())
+}
+
+// openAIErrorSummary extracts OpenAI's error code/message from a JSON error body (never tokens), else a short prefix.
+func openAIErrorSummary(body []byte) string {
+	var parsed struct {
+		Error any    `json:"error"`
+		Desc  string `json:"error_description"`
+	}
+	if json.Unmarshal(body, &parsed) == nil && parsed.Error != nil {
+		switch e := parsed.Error.(type) {
+		case string:
+			return strings.TrimSpace(e + " " + parsed.Desc)
+		case map[string]any:
+			code, _ := e["code"].(string)
+			msg, _ := e["message"].(string)
+			return strings.TrimSpace(code + " " + msg)
+		}
+	}
+	s := strings.TrimSpace(string(body))
+	if len(s) > 200 {
+		s = s[:200]
+	}
+	return s
+}
+
 func (h *OpenAIOAuthHandler) HandleStart(ctx *fasthttp.RequestCtx) {
 	// Keep the original generic route compatible with clients that already use
 	// it for device auth. Browser fallback has explicit /browser/* endpoints.
@@ -143,7 +174,7 @@ func (h *OpenAIOAuthHandler) HandleDeviceStart(ctx *fasthttp.RequestCtx) {
 	}
 	deviceCode, err := requestOpenAIDeviceUserCode(ctx)
 	if err != nil {
-		writeError(ctx, 502, "openai_auth_error", "Failed to start OpenAI device sign-in: "+err.Error())
+		writeOpenAIUpstreamError(ctx, "Failed to start OpenAI device sign-in", err)
 		return
 	}
 	now := time.Now()
@@ -207,13 +238,13 @@ func (h *OpenAIOAuthHandler) HandleDevicePoll(ctx *fasthttp.RequestCtx) {
 		return
 	}
 	if err != nil {
-		writeError(ctx, 502, "openai_auth_error", "OpenAI device sign-in failed: "+err.Error())
+		writeOpenAIUpstreamError(ctx, "OpenAI device sign-in failed", err)
 		return
 	}
 
 	authJSON, err := completeOpenAIDeviceAuth(ctx, codeResp)
 	if err != nil {
-		writeError(ctx, 502, "openai_auth_error", "OpenAI device sign-in failed: "+err.Error())
+		writeOpenAIUpstreamError(ctx, "OpenAI device sign-in failed", err)
 		return
 	}
 	if err := h.pkQ.UpsertAuthJSON(ctx, userID, openAIMaxPlanProvider, authJSON); err != nil {
@@ -305,7 +336,7 @@ func (h *OpenAIOAuthHandler) HandleBrowserComplete(ctx *fasthttp.RequestCtx) {
 	}
 	authJSON, err := completeOpenAIOAuth(ctx, code, pending.RedirectURI, pending.CodeVerifier)
 	if err != nil {
-		writeError(ctx, 502, "openai_auth_error", "OpenAI browser sign-in failed: "+err.Error())
+		writeOpenAIUpstreamError(ctx, "OpenAI browser sign-in failed", err)
 		return
 	}
 	if err := h.pkQ.UpsertAuthJSON(ctx, userID, openAIMaxPlanProvider, authJSON); err != nil {
@@ -376,7 +407,7 @@ func completeOpenAIOAuth(ctx context.Context, code, redirectURI, codeVerifier st
 	}
 	apiKey, err := exchangeOpenAIIDTokenForAPIKey(ctx, tokens.IDToken)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("signed in, but OpenAI would not issue an API key for this account (%w)", err)
 	}
 	auth := map[string]any{
 		"auth_mode":      "chatgpt",
@@ -470,11 +501,14 @@ func pollOpenAIDeviceToken(ctx context.Context, deviceAuthID, userCode string) (
 	}
 	defer resp.Body.Close()
 	respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
-	if resp.StatusCode == fasthttp.StatusForbidden || resp.StatusCode == fasthttp.StatusNotFound {
-		return nil, errOpenAIDevicePending
-	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("device token request returned HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(respBody)))
+		// OpenAI answers 403 {"error":{"code":"deviceauth_authorization_pending"}} until the user approves (same handling as pi).
+		summary := openAIErrorSummary(respBody)
+		if resp.StatusCode == fasthttp.StatusForbidden || resp.StatusCode == fasthttp.StatusNotFound ||
+			strings.HasPrefix(summary, "deviceauth_authorization_pending") || strings.HasPrefix(summary, "slow_down") {
+			return nil, errOpenAIDevicePending
+		}
+		return nil, fmt.Errorf("device token request returned HTTP %d: %s", resp.StatusCode, summary)
 	}
 	var parsed openAIDeviceTokenResp
 	if err := json.Unmarshal(respBody, &parsed); err != nil {
@@ -513,7 +547,7 @@ func exchangeOpenAICodeForTokens(ctx context.Context, code, redirectURI, codeVer
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("token exchange returned HTTP %d", resp.StatusCode)
+		return nil, fmt.Errorf("token exchange returned HTTP %d: %s", resp.StatusCode, openAIErrorSummary(body))
 	}
 	var parsed openAIRefreshTokenResponse
 	if err := json.Unmarshal(body, &parsed); err != nil {

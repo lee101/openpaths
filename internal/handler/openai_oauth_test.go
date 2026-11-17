@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -10,6 +11,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/valyala/fasthttp"
 )
 
 func TestOpenAIOAuthLoginTicketSurvivesHandlerRestart(t *testing.T) {
@@ -286,5 +289,60 @@ func TestCompleteOpenAIDeviceAuthUsesDeviceCallback(t *testing.T) {
 	}
 	if auth["OPENAI_API_KEY"] != "sk-openai" {
 		t.Fatalf("unexpected auth: %+v", auth)
+	}
+}
+
+func TestPollOpenAIDeviceTokenPendingAndErrors(t *testing.T) {
+	cases := []struct {
+		name    string
+		status  int
+		body    string
+		pending bool
+		errHas  string
+	}{
+		{"403 pending json", 403, `{"error":{"code":"deviceauth_authorization_pending","message":"Device authorization is pending."}}`, true, ""},
+		{"400 pending code", 400, `{"error":{"code":"deviceauth_authorization_pending"}}`, true, ""},
+		{"slow down", 429, `{"error":"slow_down"}`, true, ""},
+		{"404", 404, ``, true, ""},
+		{"expired", 400, `{"error":{"code":"deviceauth_expired","message":"Device code expired"}}`, false, "deviceauth_expired Device code expired"},
+		{"html", 500, `<html>oops</html>`, false, "HTTP 500: <html>oops</html>"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(tc.status)
+				_, _ = w.Write([]byte(tc.body))
+			}))
+			defer srv.Close()
+			t.Setenv("OPENAI_OAUTH_ISSUER", srv.URL)
+			_, err := pollOpenAIDeviceToken(context.Background(), "dev", "CODE")
+			if tc.pending {
+				if !errors.Is(err, errOpenAIDevicePending) {
+					t.Fatalf("want pending, got %v", err)
+				}
+				return
+			}
+			if err == nil || errors.Is(err, errOpenAIDevicePending) || !strings.Contains(err.Error(), tc.errHas) {
+				t.Fatalf("want error containing %q, got %v", tc.errHas, err)
+			}
+		})
+	}
+}
+
+func TestOpenAIErrorSummaryNeverEchoesTokens(t *testing.T) {
+	got := openAIErrorSummary([]byte(`{"error":"invalid_grant","error_description":"Code expired","access_token":"secret-token"}`))
+	if got != "invalid_grant Code expired" || strings.Contains(got, "secret") {
+		t.Fatalf("summary = %q", got)
+	}
+}
+
+func TestOpenAIUpstreamErrorIs422JSON(t *testing.T) {
+	var ctx fasthttp.RequestCtx
+	writeOpenAIUpstreamError(&ctx, "OpenAI browser sign-in failed", errors.New("token exchange returned HTTP 400: invalid_grant"))
+	if ctx.Response.StatusCode() != fasthttp.StatusUnprocessableEntity {
+		t.Fatalf("status = %d, want 422 (Cloudflare rewrites 502 bodies)", ctx.Response.StatusCode())
+	}
+	if !strings.Contains(string(ctx.Response.Body()), "invalid_grant") {
+		t.Fatalf("body = %s", ctx.Response.Body())
 	}
 }

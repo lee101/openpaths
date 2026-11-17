@@ -809,9 +809,11 @@ func spaHandler(dir string, api fasthttp.RequestHandler, apiKeyQ *queries.APIKey
 			api(ctx)
 			return
 		}
+		// /account/apikeys is a frontend page (linked from API auth errors), not an API route.
+		isAccountPage := path == "/account/apikeys" && (ctx.IsGet() || ctx.IsHead())
 		if strings.HasPrefix(path, "/v1/") ||
 			strings.HasPrefix(path, "/auth/") ||
-			strings.HasPrefix(path, "/account/") ||
+			(strings.HasPrefix(path, "/account/") && !isAccountPage) ||
 			strings.HasPrefix(path, "/crypto/") ||
 			strings.HasPrefix(path, "/stripe/") ||
 			strings.HasPrefix(path, "/stats/") ||
