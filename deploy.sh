@@ -10,6 +10,19 @@ if [[ -f .env ]]; then
     set +a
 fi
 
+# --- Deploy lock: serialize deploys (dist/ clean+build, R2 sync, binary swap) ---
+# A second deploy waits for the first, then builds from the then-current tree.
+DEPLOY_LOCK_FILE="${DEPLOY_LOCK_FILE:-/nvme0n1-disk/tmp/openpaths-deploy.lock}"
+if [[ -z "${OPENPATHS_DEPLOY_LOCKED:-}" ]] && command -v flock >/dev/null 2>&1; then
+    mkdir -p "$(dirname "$DEPLOY_LOCK_FILE")"
+    exec 9>"$DEPLOY_LOCK_FILE"
+    if ! flock -n 9; then
+        echo "another openpaths deploy is running; waiting (up to ${DEPLOY_LOCK_WAIT_SECONDS:-1800}s)..."
+        flock -w "${DEPLOY_LOCK_WAIT_SECONDS:-1800}" 9 || { echo "timed out waiting for deploy lock" >&2; exit 1; }
+    fi
+    export OPENPATHS_DEPLOY_LOCKED=1
+fi
+
 # --- Config ---
 STATIC_BUCKET="${STATIC_BUCKET:-openpathsstatic}"
 R2_ENDPOINT="${R2_ENDPOINT:-https://${R2_ACCOUNT_ID:-f76d25b8b86cfa5638f43016510d8f77}.r2.cloudflarestorage.com}"
@@ -208,8 +221,25 @@ for (const route of manifest) {
             --endpoint-url "${R2_ENDPOINT}" \
             --content-type "text/html; charset=utf-8" \
             --cache-control "public, max-age=300" \
-            >/dev/null
+            >/dev/null </dev/null
     done
+}
+
+verify_site_health() {
+    local base="${SITE_URL:-https://openpaths.io}" bad=0 code path
+    sleep 3
+    for path in / /models /pricing; do
+        code=$(curl -s -o /dev/null -m 20 -w '%{http_code}' "${base}${path}" || echo 000)
+        if [[ "$code" != "200" ]]; then
+            red "health check ${path} -> ${code}"
+            bad=1
+        fi
+    done
+    if [[ "$bad" == 1 ]]; then
+        red "site unhealthy after deploy"
+        exit 1
+    fi
+    green "site healthy"
 }
 
 # --- Site deploy: build frontend + sync to R2 ---
@@ -238,6 +268,7 @@ deploy_site() {
 
     upload_prerender_routes
     purge_cf_cache
+    verify_site_health
     green "site deployed to ${STATIC_URL}"
 }
 

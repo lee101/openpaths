@@ -1083,7 +1083,8 @@ func reasoningToBudget(effort string, maxOutputTokens *int) int {
 }
 
 func reasoningToThinkingLevel(modelID, effort string) string {
-	if !strings.Contains(strings.ToLower(modelID), "gemini-3.5-flash") {
+	lm := strings.ToLower(modelID)
+	if !strings.Contains(lm, "gemini-3.5-flash") && !strings.Contains(lm, "gemini-4-") {
 		return ""
 	}
 	switch strings.ToLower(strings.TrimSpace(effort)) {

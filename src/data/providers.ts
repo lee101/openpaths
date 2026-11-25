@@ -135,7 +135,7 @@ export const providers: Provider[] = [
     slug: 'thinking-machines',
     name: 'Thinking Machines',
     url: 'https://thinkingmachines.ai',
-    description: 'Inkling and Inkling-Small, open-weights multimodal mixture-of-experts models for coding, reasoning, tool use, and customizable thinking effort, with native text, image, and audio input.',
+    description: 'Inkling, Inkling-Small, and the second-generation Inkling 2 Small and Inkling 2 Mini, open-weights multimodal models for coding, reasoning, tool use, and customizable thinking effort, with native text and image input.',
     featured: false,
     logo: 'https://icons.duckduckgo.com/ip3/thinkingmachines.ai.ico'
   },

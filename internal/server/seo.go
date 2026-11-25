@@ -27,6 +27,7 @@ func registerSEORoutes(r *fasthttprouter.Router, cat *seo.Catalog) {
 	}
 	r.GET("/llms.txt", text(cat.LLMsTxt))
 	r.GET("/llms-full.txt", text(cat.LLMsFullTxt))
+	registerDiscoveryRoutes(r, cat.LLMsTxt)
 	r.GET("/sitemap-models.xml", func(ctx *fasthttp.RequestCtx) {
 		ctx.SetContentType("text/xml; charset=utf-8")
 		ctx.Response.Header.Set("Cache-Control", "public, max-age=3600")

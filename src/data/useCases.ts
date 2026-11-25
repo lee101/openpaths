@@ -329,4 +329,163 @@ export const useCases: UseCase[] = [
       },
     ],
   },
+  {
+    slug: 'openai-compatible-gateway',
+    title: 'Drop-in OpenAI-compatible API gateway',
+    metaTitle: 'OpenAI-Compatible API Gateway for Every Model | OpenPaths',
+    metaDescription:
+      'Change one base URL to reach Claude, GPT, Gemini, Grok, Kimi, Qwen and open models. OpenAI and Anthropic compatible, automatic fallbacks, near-zero markup, BYOK.',
+    hero: 'Keep your OpenAI SDK code. Change the base URL. Reach every model.',
+    pains: [
+      'Switching providers means rewriting SDK calls, auth and error handling.',
+      'Each lab has its own billing, rate limits and outage behavior.',
+      'Hard-coded model names go stale every time a new frontier model ships.',
+    ],
+    why: [
+      'POST /v1/chat/completions follows the OpenAI schema; POST /v1/messages follows the Anthropic schema.',
+      'Set base_url to https://openpaths.io/v1 in the OpenAI SDK, LangChain, LiteLLM or any compatible client.',
+      'openpaths/auto picks a model per request, and -latest aliases track the newest release of a family.',
+      'GET /v1/models lists every model with pricing so clients can discover ids programmatically.',
+      'Automatic fallback chains retry on another provider when one fails or rate-limits.',
+    ],
+    routes: [
+      { need: 'Let the router choose', model: 'openpaths/auto' },
+      { need: 'Frontier reasoning', model: 'claude-opus-5' },
+      { need: 'Fast and cheap general chat', model: 'claude-haiku-5-5' },
+    ],
+    code: CURL('openpaths/auto', 'Summarize the trade-offs of event sourcing in five bullets'),
+    faq: [
+      {
+        question: 'Which SDKs work with OpenPaths?',
+        answer:
+          'Any client that lets you set a base URL: the OpenAI SDKs, the Anthropic SDKs via /v1/messages, LangChain, LlamaIndex, Vercel AI SDK and LiteLLM.',
+      },
+      {
+        question: 'Where is the machine-readable spec?',
+        answer:
+          'An OpenAPI 3.1 document is served at https://openpaths.io/openapi.json, and llms.txt and llms-full.txt list every model id.',
+      },
+      {
+        question: 'Does OpenPaths add a markup?',
+        answer:
+          'OpenPaths keeps pricing as close to the provider price as practical. Current per-model prices are on /pricing and each /models page.',
+      },
+    ],
+  },
+  {
+    slug: 'llm-cost-reduction',
+    title: 'Cut LLM API costs with routing',
+    metaTitle: 'Reduce LLM API Costs with Smart Model Routing | OpenPaths',
+    metaDescription:
+      'Route easy requests to cheaper models, keep frontier models for hard ones, bring your own keys at $0 recorded cost, and compare per-token prices across providers.',
+    hero: 'Pay frontier prices only for requests that need a frontier model.',
+    pains: [
+      'Every request goes to the most expensive model by default.',
+      'Per-token prices differ widely and change often across providers.',
+      'Spend is spread over many invoices with no single view.',
+    ],
+    why: [
+      'openpaths/auto routes by request difficulty so simple prompts do not hit top-tier pricing.',
+      'The /calculator and /llm-pricing pages compare published per-token prices side by side.',
+      'Bring your own provider keys and those requests are recorded at $0 on OpenPaths.',
+      'Organizations get pooled credits, spend guards and per-member limits.',
+      'Usage and cost by model are visible in one dashboard.',
+    ],
+    routes: [
+      { need: 'Automatic cost-aware routing', model: 'openpaths/auto' },
+      { need: 'Cheap, fast Claude tier', model: 'claude-haiku-5-5' },
+      { need: 'Hard reasoning when needed', model: 'claude-opus-5' },
+    ],
+    code: CURL('openpaths/auto', 'Classify this support ticket as billing, bug or feature request'),
+    faq: [
+      {
+        question: 'How do I estimate monthly spend?',
+        answer:
+          'Use /calculator with your monthly input and output token volume, or compare models on /llm-pricing.',
+      },
+      {
+        question: 'Can I set spend limits?',
+        answer:
+          'Yes. Teams and organizations support spend controls and billing guards; see /teams.',
+      },
+      {
+        question: 'Does BYOK avoid double paying?',
+        answer:
+          'Requests served on your own provider key bypass your OpenPaths balance and are recorded as $0.',
+      },
+    ],
+  },
+  {
+    slug: 'mcp-and-agent-tools',
+    title: 'One MCP server for every model',
+    metaTitle: 'MCP Server for All AI Models | Claude, Cursor, Agents | OpenPaths',
+    metaDescription:
+      'Connect Claude Desktop, Claude Code, Cursor and any MCP client to every OpenPaths model with one secret key. Scoped keys, rotation and agent-readable docs.',
+    hero: 'Give any MCP client or autonomous agent access to every model with a scoped key.',
+    pains: [
+      'Agents need credentials for many providers and leak risk grows with each one.',
+      'Agent frameworks need machine-readable API descriptions to call tools correctly.',
+      'Rotating a shared key breaks every running agent at once.',
+    ],
+    why: [
+      'POST /mcp speaks MCP JSON-RPC; setup steps for each client are on /mcp.',
+      'Scoped API keys limit an agent to chat, images, embeddings or models only.',
+      'Key rotation supports a grace period so running agents keep working.',
+      '/llms.txt, /llms-full.txt and /openapi.json describe the whole API for agents.',
+      'A 401 carries WWW-Authenticate: Bearer and a missing scope returns insufficient_scope.',
+    ],
+    routes: [
+      { need: 'Agent default', model: 'openpaths/auto' },
+      { need: 'Agentic coding', model: 'openpaths/auto-code' },
+    ],
+    code: CURL('openpaths/auto', 'List the tools you can call and what each one does'),
+    faq: [
+      {
+        question: 'How do I add OpenPaths to Claude Code or Cursor?',
+        answer: 'Follow the client-specific snippets on /mcp. Use a key scoped to what the agent needs.',
+      },
+      {
+        question: 'Can an agent discover the API on its own?',
+        answer:
+          'Yes. Fetch /.well-known/api-catalog, /openapi.json or /llms.txt; all are public and cacheable.',
+      },
+    ],
+  },
+  {
+    slug: 'embeddings-and-search',
+    title: 'Embeddings and semantic search API',
+    metaTitle: 'Embeddings API for RAG and Semantic Search | OpenPaths',
+    metaDescription:
+      'OpenAI-compatible POST /v1/embeddings behind the same key as chat, image and video models. Use it for RAG, semantic search and reranking pipelines.',
+    hero: 'Embeddings, chat and generation behind one key and one invoice.',
+    pains: [
+      'RAG stacks need an embedding provider plus a separate chat provider.',
+      'Switching embedding models forces re-indexing and new SDK code.',
+      'Embedding spend is easy to lose track of next to chat spend.',
+    ],
+    why: [
+      'POST /v1/embeddings follows the OpenAI request and response shape.',
+      'The same key and balance cover embeddings and the models that answer from them.',
+      'The /search playground shows grounded search with citations.',
+      'Per-model pricing for embedding models is listed on /models.',
+    ],
+    routes: [
+      { need: 'Answer from retrieved context', model: 'openpaths/auto' },
+      { need: 'Long-context synthesis', model: 'claude-sonnet-5-5' },
+    ],
+    code: `curl https://openpaths.io/v1/embeddings \\
+  -H "Authorization: Bearer $OPENPATHS_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"model": "openpaths-embed", "input": "semantic search over support tickets"}'`,
+    faq: [
+      {
+        question: 'Is the embeddings endpoint OpenAI compatible?',
+        answer: 'Yes. Send model and input to POST /v1/embeddings and read data[].embedding.',
+      },
+      {
+        question: 'Which embedding models are available?',
+        answer: 'See /models filtered to embeddings, or GET /v1/models, for current ids and prices.',
+      },
+    ],
+  },
 ];

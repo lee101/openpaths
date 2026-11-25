@@ -1376,6 +1376,19 @@ const catalogModels: Model[] = [
 
   // --- Google Gemini ---
   {
+    id: 'gemini-4-carbon',
+    name: 'Gemini 4 Carbon',
+    provider: 'Google',
+    description: 'Google\'s most capable Gemini 4 model: extended verification, strict schema adherence, 1M context, tools and multimodal input. Served direct from Google at list price, with OpenRouter as an automatic fallback.',
+    contextLength: '1M',
+    priceInput: 4,
+    priceOutput: 20,
+    tags: ['general', 'vision', 'programming', 'reasoning'],
+    aliases: ['gemini-carbon', 'gemini-4-carbon-high', 'google/gemini-4-carbon'],
+    released: '2026-11-10',
+    popularity: 7
+  },
+  {
     id: 'gemini-4-argon',
     name: 'Gemini 4 Argon',
     provider: 'Google',
@@ -2266,6 +2279,45 @@ const catalogModels: Model[] = [
     aliases: ['inkling', 'thinking-machines-inkling', 'tml/inkling'],
     released: '2026-07-15',
     popularity: 22
+  },
+  {
+    id: 'inkling-2-small',
+    name: 'Inkling 2 Small',
+    provider: 'Thinking Machines',
+    description: 'Thinking Machines\' second-generation open-weights MoE: 594B total parameters with 17B active, native text and image input, adjustable thinking effort, and a 1M-token context window. Served directly by Together with the OpenRouter route as fallback.',
+    contextLength: '1M',
+    priceInput: 0.3,
+    priceOutput: 1,
+    tags: ['general', 'reasoning', 'programming', 'vision', 'agentic', 'open-source'],
+    aliases: ['thinkingmachines/inkling-2-small', 'tml/inkling-2-small', 'inkling-2-s'],
+    released: '2026-11-09',
+    popularity: 24
+  },
+  {
+    id: 'or/inkling-2-small',
+    name: 'Thinking Machines: Inkling 2 Small',
+    provider: 'OpenRouter',
+    description: 'Inkling 2 Small is Thinking Machines\' 594B-parameter open-weights MoE with 17B active, native text and image input, adjustable thinking effort, and a 1M-token context window. Routed through OpenRouter.',
+    contextLength: '1M',
+    priceInput: 0.3165,
+    priceOutput: 1.055,
+    tags: ['general', 'vision', 'reasoning', 'agentic'],
+    aliases: ['openrouter/thinkingmachines/inkling-2-small'],
+    released: '2026-11-09',
+    popularity: 10
+  },
+  {
+    id: 'or/inkling-2-mini',
+    name: 'Thinking Machines: Inkling 2 Mini',
+    provider: 'OpenRouter',
+    description: 'Inkling 2 Mini is Thinking Machines\' 26.4B-parameter open-weights looped transformer with 3.4B active parameters and 5.4B effective active parameters per token across three loop passes. Native text and image input, adjustable thinking effort, and a 1M-token context window. Routed through OpenRouter.',
+    contextLength: '1M',
+    priceInput: 0.1055,
+    priceOutput: 0.422,
+    tags: ['general', 'vision', 'reasoning', 'agentic'],
+    aliases: ['thinkingmachines/inkling-2-mini', 'openrouter/thinkingmachines/inkling-2-mini', 'inkling-2-mini'],
+    released: '2026-11-21',
+    popularity: 10
   },
 
   // --- Qwen / Moonshot / Together ---

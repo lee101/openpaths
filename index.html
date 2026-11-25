@@ -17,6 +17,11 @@
     <meta name="twitter:description" content="Search and we shall find. Neural learned paths for 1ms routing across 432+ models and 15+ providers. Try Open Pathways." />
     <meta name="twitter:image" content="https://openpaths.io/og-image.png" />
     <link rel="canonical" href="https://openpaths.io/" />
+    <link rel="alternate" type="text/plain" href="/llms.txt" title="llms.txt" />
+    <link rel="service-desc" type="application/json" href="/openapi.json" />
+    <link rel="api-catalog" href="/.well-known/api-catalog" />
+    <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+    <link rel="preload" href="/openpaths-road-logo.svg" as="image" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" media="print" onload="this.media='all'" />
@@ -41,6 +46,36 @@
             "url": "https://openpaths.io/",
             "logo": "https://openpaths.io/openpaths-road-logo.svg",
             "description": "Open source model router for 1ms routing across 432+ large model providers and art generators."
+          },
+          {
+            "@type": "SoftwareApplication",
+            "@id": "https://openpaths.io/#software",
+            "name": "OpenPaths",
+            "applicationCategory": "DeveloperApplication",
+            "operatingSystem": "Web",
+            "url": "https://openpaths.io/",
+            "description": "OpenAI- and Anthropic-compatible AI gateway with one API key for language, image, video, speech, music, embedding and 3D models, smart routing, automatic fallbacks and near-zero markup.",
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD", "description": "Pay as you go at provider prices with near-zero markup" },
+            "publisher": { "@id": "https://openpaths.io/#organization" }
+          },
+          {
+            "@type": "FAQPage",
+            "mainEntity": [
+              { "@type": "Question", "name": "What is OpenPaths?", "acceptedAnswer": { "@type": "Answer", "text": "OpenPaths is an open source model router and AI gateway. One API key and one base URL (https://openpaths.io/v1) reach language, image, video, speech, music, embedding and 3D models from many providers." } },
+              { "@type": "Question", "name": "Is OpenPaths compatible with the OpenAI and Anthropic SDKs?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. POST /v1/chat/completions follows the OpenAI schema and POST /v1/messages follows the Anthropic schema. Change the base URL and keep your existing code." } },
+              { "@type": "Question", "name": "How does OpenPaths pricing work?", "acceptedAnswer": { "@type": "Answer", "text": "Pay as you go at the provider price with near-zero markup. Requests on your own provider keys (BYOK) are recorded at $0. See https://openpaths.io/pricing." } },
+              { "@type": "Question", "name": "What does openpaths/auto do?", "acceptedAnswer": { "@type": "Answer", "text": "openpaths/auto routes each request to a suitable model automatically, with automatic fallbacks when a provider fails or rate-limits." } },
+              { "@type": "Question", "name": "Is there an OpenAPI spec or MCP server?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. The OpenAPI 3.1 spec is at https://openpaths.io/openapi.json, the MCP endpoint is https://openpaths.io/mcp, and llms.txt plus llms-full.txt list every model id." } }
+            ]
+          },
+          {
+            "@type": "HowTo",
+            "name": "Call any model through OpenPaths",
+            "step": [
+              { "@type": "HowToStep", "name": "Get an API key", "text": "Sign in at https://openpaths.io and create a key under API keys." },
+              { "@type": "HowToStep", "name": "Set the base URL", "text": "Point your OpenAI or Anthropic client at https://openpaths.io/v1." },
+              { "@type": "HowToStep", "name": "Choose a model", "text": "Pass a model id from /models, or use openpaths/auto to let the router choose." }
+            ]
           },
           {
             "@type": "WebSite",
@@ -81,6 +116,35 @@
             </div>
           </div>
         </div>
+      </section>
+      <section class="border-b border-white/20 px-6 py-16 max-w-5xl mx-auto w-full text-left">
+        <h2 class="text-2xl font-bold mb-4">One OpenAI-compatible API for every model</h2>
+        <p class="text-white/70 mb-6">OpenPaths gives you a single key and base URL (<code>https://openpaths.io/v1</code>) for language, image, video, speech, music, embedding and 3D models. It speaks the OpenAI and Anthropic schemas, routes with <code>openpaths/auto</code>, retries on another provider when one fails, and keeps markup near zero. Bring your own provider keys and those requests record $0.</p>
+        <ul class="grid md:grid-cols-2 gap-3 text-white/80">
+          <li><a href="/models">Model directory with pricing</a></li>
+          <li><a href="/pricing">Pricing</a></li>
+          <li><a href="/docs">API docs</a></li>
+          <li><a href="/mcp">MCP server</a></li>
+          <li><a href="/alternatives">OpenRouter and gateway alternatives</a></li>
+          <li><a href="/use-cases">Use cases</a></li>
+          <li><a href="/providers">Providers</a></li>
+          <li><a href="/byok">Bring your own key</a></li>
+          <li><a href="/evals">Model evals and speed</a></li>
+          <li><a href="/compare">Compare models</a></li>
+          <li><a href="/llm-pricing">LLM pricing comparison</a></li>
+          <li><a href="/tools">Image, video and audio tools</a></li>
+          <li><a href="/openapi.json">OpenAPI spec</a></li>
+          <li><a href="/llms.txt">llms.txt</a></li>
+          <li><a href="/status">Status</a></li>
+          <li><a href="/blog">Blog</a></li>
+        </ul>
+        <h2 class="text-2xl font-bold mt-10 mb-3">Common questions</h2>
+        <h3 class="font-semibold">Is it compatible with the OpenAI and Anthropic SDKs?</h3>
+        <p class="text-white/70 mb-3">Yes. Use <code>/v1/chat/completions</code> or <code>/v1/messages</code> and only change the base URL.</p>
+        <h3 class="font-semibold">How is it priced?</h3>
+        <p class="text-white/70 mb-3">Pay as you go at provider prices with near-zero markup; BYOK requests record $0.</p>
+        <h3 class="font-semibold">How do agents discover the API?</h3>
+        <p class="text-white/70">Through <code>/openapi.json</code>, <code>/.well-known/api-catalog</code>, <code>/llms.txt</code> and the <code>/mcp</code> endpoint.</p>
       </section>
     </div></div>
     <script>if(location.pathname!=='/'){var s=document.getElementById('static-shell');s&&s.remove()}</script>

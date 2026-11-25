@@ -5,6 +5,25 @@ import (
 	"testing"
 )
 
+func TestGemini4CarbonDirectWithOpenRouterFallback(t *testing.T) {
+	cfg, err := Load(filepath.Join("..", "..", "config.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	by := map[string]int{}
+	for i, m := range cfg.Models {
+		by[m.ID] = i
+	}
+	m := cfg.Models[by["gemini-4-carbon"]]
+	if m.Provider != "google" || m.InputPricePer1M != 4 || m.OutputPricePer1M != 20 || len(m.FallbackModels) != 1 {
+		t.Fatalf("carbon = %+v", m)
+	}
+	f := cfg.Models[by["or/gemini-4-carbon"]]
+	if f.ProviderModelID != "google/gemini-4-carbon" || f.InputPricePer1M < 4 {
+		t.Fatalf("fallback = %+v", f)
+	}
+}
+
 func TestGemini4ArgonDirectWithOpenRouterFallback(t *testing.T) {
 	cfg, err := Load(filepath.Join("..", "..", "config.yaml"))
 	if err != nil {

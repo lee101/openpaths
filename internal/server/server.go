@@ -804,6 +804,16 @@ func spaHandler(dir string, api fasthttp.RequestHandler, apiKeyQ *queries.APIKey
 
 	return func(ctx *fasthttp.RequestCtx) {
 		path := string(ctx.Path())
+		if path == "/" || path == "/docs" || path == "/models" {
+			ctx.Response.Header.Set("Link", discoveryLinkHeader)
+		}
+		defer func() {
+			if ctx.Response.Header.Peek("Cache-Control") == nil {
+				if cc := staticCacheControl(path, ctx.Response.StatusCode()); cc != "" {
+					ctx.Response.Header.Set("Cache-Control", cc)
+				}
+			}
+		}()
 		// POST /mcp is the MCP JSON-RPC server; GET /mcp is the docs SPA page.
 		if path == "/mcp" && ctx.IsPost() {
 			api(ctx)
@@ -825,6 +835,7 @@ func spaHandler(dir string, api fasthttp.RequestHandler, apiKeyQ *queries.APIKey
 			path == "/unsubscribe" ||
 			path == "/llms.txt" ||
 			path == "/llms-full.txt" ||
+			isDiscoveryPath(path) ||
 			strings.HasPrefix(path, "/sitemap") {
 			api(ctx)
 			return
