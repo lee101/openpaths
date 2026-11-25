@@ -27,14 +27,16 @@ func main() {
 	live := flag.Bool("live", false, "fetch live upstream prices (OpenRouter public API)")
 	update := flag.Bool("update-ledger", false, "with -live: write refreshed costs into scripts/pricing-guard/upstream-costs.json")
 	out := flag.String("out", "", "write the markdown report here (default stdout)")
+	ledgerFlag := flag.String("ledger", "", "upstream cost ledger (default <repo>/scripts/pricing-guard/upstream-costs.json); "+
+		"lets a newer guard check an older prod checkout that predates the ledger")
 	flag.Parse()
-	if err := run(*repo, *live, *update, *out); err != nil {
+	if err := run(*repo, *ledgerFlag, *live, *update, *out); err != nil {
 		fmt.Fprintln(os.Stderr, "pricing-guard:", err)
 		os.Exit(2)
 	}
 }
 
-func run(repo string, live, update bool, out string) error {
+func run(repo, ledgerOverride string, live, update bool, out string) error {
 	p := func(rel string) string { return filepath.Join(repo, rel) }
 	cfg, err := config.Load(p("config.yaml"))
 	if err != nil {
@@ -45,6 +47,9 @@ func run(repo string, live, update bool, out string) error {
 		return err
 	}
 	ledgerPath := p("scripts/pricing-guard/upstream-costs.json")
+	if ledgerOverride != "" {
+		ledgerPath = ledgerOverride
+	}
 	ledger, err := pricingguard.LoadLedger(ledgerPath)
 	if err != nil {
 		return err

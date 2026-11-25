@@ -81,8 +81,17 @@ notify() { # notify SUBJECT < body
 log "checking $REPO (report $REPORT)"
 # The guard binary is built from this script's checkout so a newer guard can
 # check an older prod tree; the checked files come from $REPO.
-(cd "$SELF_DIR/../.." && go run ./cmd/pricing-guard -repo "$REPO" -live -out "$REPORT") 2>"$ERR"
-rc=$?
+# Build first: `go run` reports any non-zero program exit as 1, which would turn a
+# guard failure (2) into "findings" (1) and email an empty table.
+GUARD_BIN="$STATE_DIR/pricing-guard"
+LEDGER="$REPO/scripts/pricing-guard/upstream-costs.json"
+[ -f "$LEDGER" ] || LEDGER="$SELF_DIR/upstream-costs.json"   # prod tree may predate the ledger
+if (cd "$SELF_DIR/../.." && go build -o "$GUARD_BIN" ./cmd/pricing-guard) 2>"$ERR"; then
+    "$GUARD_BIN" -repo "$REPO" -ledger "$LEDGER" -live -out "$REPORT" 2>>"$ERR"
+    rc=$?
+else
+    rc=2
+fi
 # A failed check is retried at the next weekly tick instead of in 3 weeks.
 [ "$rc" -le 1 ] && date +%s > "$LAST"
 
