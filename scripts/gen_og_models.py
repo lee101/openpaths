@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -21,8 +22,24 @@ MANIFEST = OUT / "manifest.json"
 BG, WHITE, DIM, ACC = (5, 7, 11), (246, 248, 251), (150, 162, 178), (110, 231, 183)
 
 
+FONT_DIRS = [
+    Path(d) for d in (
+        os.environ.get("OPENPATHS_FONT_DIR", ""),
+        "/usr/share/fonts/truetype/dejavu",  # Debian/Ubuntu (fonts-dejavu-core)
+        "/usr/share/fonts/dejavu",  # Fedora/Arch
+        str(Path.home() / "Library/Fonts"),  # macOS: brew install --cask font-dejavu
+        "/Library/Fonts",
+        "/opt/homebrew/share/fonts",
+    ) if d
+]
+
+
 def font(name: str, size: int):
-    return ImageFont.truetype(f"/usr/share/fonts/truetype/dejavu/{name}", size)
+    for d in FONT_DIRS:
+        if (d / name).is_file():
+            return ImageFont.truetype(str(d / name), size)
+    raise SystemExit(f"{name} not found in {[str(d) for d in FONT_DIRS]}; install DejaVu fonts "
+                     "(apt: fonts-dejavu-core, macOS: brew install --cask font-dejavu) or set OPENPATHS_FONT_DIR")
 
 
 F_TITLE = [font("DejaVuSans-Bold.ttf", s) for s in (76, 64, 54, 46)]
