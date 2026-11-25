@@ -1,0 +1,7 @@
+{"data": [
+  {"id": "acme/paid", "pricing": {"prompt": "0.000001", "completion": "0.000004", "input_cache_read": "0.0000001"}},
+  {"id": "acme/peaky", "pricing": {"prompt": "0.000001", "completion": "0.000002",
+    "overrides": [{"prompt": "0.000002", "completion": "0.000003"}, {"min_prompt_tokens": 200000, "prompt": "0.000004", "completion": "0.000008"}]}},
+  {"id": "acme/was-free", "pricing": {"prompt": "0.0000005", "completion": "0.000001"}},
+  {"id": "acme/free:free", "pricing": {"prompt": "0", "completion": "0"}}
+]}

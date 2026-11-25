@@ -1,0 +1,13 @@
+[Unit]
+Description=Run the openpaths pricing guard every 3 weeks
+
+[Timer]
+# systemd calendars cannot say "every 3 weeks", so the timer ticks weekly and
+# pricing_guard.sh skips until PRICING_GUARD_MIN_DAYS (20) have passed since the
+# last completed run. Persistent=true runs a tick missed while the box was down.
+OnCalendar=Mon *-*-* 09:17:00 UTC
+Persistent=true
+RandomizedDelaySec=15m
+
+[Install]
+WantedBy=timers.target

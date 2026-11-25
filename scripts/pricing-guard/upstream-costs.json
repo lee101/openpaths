@@ -1,0 +1,793 @@
+{
+  "_comment": [
+    "Recorded upstream cost per route for direct (non-OpenRouter) providers, USD per 1M tokens, before markup.",
+    "Key: \u003cprovider\u003e/\u003cprovider_model_id\u003e from config.yaml -- cost follows where a request is sent, not our catalogue id.",
+    "ref: OpenRouter model id + endpoint tag of the serving provider own standard tier; the pricing guard re-reads",
+    "GET https://openrouter.ai/api/v1/models/\u003cref.openrouter\u003e/endpoints and refreshes in/out/cache with -live -update-ledger.",
+    "Entries without ref are maintained by hand from the provider rate card named in source.",
+    "internal/config/upstream_cost_floor_test.go fails make test if any model bills below these."
+  ],
+  "routes": {
+    "anthropic/claude-fable-5": {
+      "in": 10,
+      "out": 50,
+      "cache": 1,
+      "source": "openrouter endpoints anthropic/claude-fable-5 [anthropic]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "anthropic/claude-fable-5",
+        "tag": "anthropic"
+      }
+    },
+    "anthropic/claude-fable-5-1": {
+      "in": 10,
+      "out": 50,
+      "cache": 0.25,
+      "source": "openrouter endpoints anthropic/claude-fable-5.1 [anthropic]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "anthropic/claude-fable-5.1",
+        "tag": "anthropic"
+      }
+    },
+    "anthropic/claude-haiku-4-5-20251001": {
+      "in": 1,
+      "out": 5,
+      "cache": 0.1,
+      "source": "openrouter endpoints anthropic/claude-haiku-4.5 [anthropic]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "anthropic/claude-haiku-4.5",
+        "tag": "anthropic"
+      }
+    },
+    "anthropic/claude-haiku-5-5": {
+      "in": 0.1,
+      "out": 0.5,
+      "cache": 0.01,
+      "long_threshold": 100000,
+      "long_in": 0.5,
+      "long_out": 2.5,
+      "long_cache": 0.05,
+      "source": "openrouter endpoints anthropic/claude-haiku-5.5 [anthropic]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "anthropic/claude-haiku-5.5",
+        "tag": "anthropic"
+      }
+    },
+    "anthropic/claude-opus-5-5": {
+      "in": 4,
+      "out": 20,
+      "cache": 0.2,
+      "source": "openrouter endpoints anthropic/claude-opus-5.5 [anthropic]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "anthropic/claude-opus-5.5",
+        "tag": "anthropic"
+      }
+    },
+    "anthropic/claude-sonnet-4-5-20250929": {
+      "in": 3,
+      "out": 15,
+      "cache": 0.3,
+      "long_threshold": 200000,
+      "long_in": 6,
+      "long_out": 22.5,
+      "long_cache": 0.6,
+      "source": "openrouter endpoints anthropic/claude-sonnet-4.5 [anthropic]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "anthropic/claude-sonnet-4.5",
+        "tag": "anthropic"
+      }
+    },
+    "anthropic/claude-sonnet-4-6": {
+      "in": 3,
+      "out": 15,
+      "cache": 0.3,
+      "source": "openrouter endpoints anthropic/claude-sonnet-4.6 [anthropic]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "anthropic/claude-sonnet-4.6",
+        "tag": "anthropic"
+      }
+    },
+    "anthropic/claude-sonnet-5": {
+      "in": 2,
+      "out": 10,
+      "cache": 0.2,
+      "source": "openrouter endpoints anthropic/claude-sonnet-5 [anthropic]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "anthropic/claude-sonnet-5",
+        "tag": "anthropic"
+      }
+    },
+    "anthropic/claude-sonnet-5-5": {
+      "in": 2,
+      "out": 10,
+      "cache": 0.1,
+      "source": "openrouter endpoints anthropic/claude-sonnet-5.5 [anthropic]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "anthropic/claude-sonnet-5.5",
+        "tag": "anthropic"
+      }
+    },
+    "cerebras/qwen-3.8-27b": {
+      "in": 0.99,
+      "out": 1.49,
+      "cache": 0.99,
+      "source": "openrouter endpoints qwen/qwen3.8-27b [cerebras/fp16]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "qwen/qwen3.8-27b",
+        "tag": "cerebras/fp16"
+      }
+    },
+    "deepseek/deepseek-flash": {
+      "in": 0.15,
+      "out": 0.6,
+      "cache": 0.003,
+      "source": "api-docs.deepseek.com/quick_start/pricing (V4.1 Flash, off-peak base)",
+      "verified": "2026-11-25",
+      "note": "peak-hour rates are billed via scheduled_token_pricing; the guard compares base rates only"
+    },
+    "fireworks/accounts/fireworks/models/deepseek-v4-pro": {
+      "in": 1.74,
+      "out": 3.48,
+      "cache": 0.145,
+      "source": "docs.fireworks.ai/serverless/pricing (as pinned in TestAuditedTokenPrices)",
+      "verified": "2026-11-25"
+    },
+    "fireworks/accounts/fireworks/models/glm-5.2": {
+      "in": 1.4,
+      "out": 4.4,
+      "cache": 0.14,
+      "source": "docs.fireworks.ai/serverless/pricing (as pinned in TestAuditedTokenPrices)",
+      "verified": "2026-11-25"
+    },
+    "fireworks/accounts/fireworks/models/gpt-oss-120b": {
+      "in": 0.15,
+      "out": 0.6,
+      "cache": 0.015,
+      "source": "openrouter endpoints openai/gpt-oss-120b [fireworks]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "openai/gpt-oss-120b",
+        "tag": "fireworks"
+      }
+    },
+    "fireworks/accounts/fireworks/models/kimi-k2.6": {
+      "in": 0.95,
+      "out": 4,
+      "cache": 0.16,
+      "source": "docs.fireworks.ai/serverless/pricing (as pinned in TestAuditedTokenPrices)",
+      "verified": "2026-11-25"
+    },
+    "google/gemini-2.5-flash": {
+      "in": 0.3,
+      "out": 2.5,
+      "cache": 0.03,
+      "source": "openrouter endpoints google/gemini-2.5-flash [google-ai-studio]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "google/gemini-2.5-flash",
+        "tag": "google-ai-studio"
+      }
+    },
+    "google/gemini-2.5-pro": {
+      "in": 1.25,
+      "out": 10,
+      "cache": 0.125,
+      "long_threshold": 200000,
+      "long_in": 2.5,
+      "long_out": 15,
+      "long_cache": 0.25,
+      "source": "openrouter endpoints google/gemini-2.5-pro [google-ai-studio]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "google/gemini-2.5-pro",
+        "tag": "google-ai-studio"
+      }
+    },
+    "google/gemini-3-flash-preview": {
+      "in": 0.5,
+      "out": 3,
+      "cache": 0.05,
+      "source": "openrouter endpoints google/gemini-3-flash-preview [google-ai-studio]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "google/gemini-3-flash-preview",
+        "tag": "google-ai-studio"
+      }
+    },
+    "google/gemini-3.1-flash-lite": {
+      "in": 0.25,
+      "out": 1.5,
+      "cache": 0.025,
+      "source": "openrouter endpoints google/gemini-3.1-flash-lite [google-ai-studio]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "google/gemini-3.1-flash-lite",
+        "tag": "google-ai-studio"
+      }
+    },
+    "google/gemini-3.8-flash": {
+      "in": 0.75,
+      "out": 3.75,
+      "cache": 0.075,
+      "source": "openrouter endpoints google/gemini-3.8-flash [google-ai-studio]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "google/gemini-3.8-flash",
+        "tag": "google-ai-studio"
+      }
+    },
+    "google/gemini-4-argon": {
+      "in": 2,
+      "out": 10,
+      "cache": 0.1,
+      "source": "openrouter endpoints google/gemini-4-argon [google-ai-studio]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "google/gemini-4-argon",
+        "tag": "google-ai-studio"
+      }
+    },
+    "groq/openai/gpt-oss-120b": {
+      "in": 0.15,
+      "out": 0.6,
+      "cache": 0.075,
+      "source": "openrouter endpoints openai/gpt-oss-120b [groq]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "openai/gpt-oss-120b",
+        "tag": "groq"
+      }
+    },
+    "groq/openai/gpt-oss-20b": {
+      "in": 0.075,
+      "out": 0.3,
+      "cache": 0.0375,
+      "source": "openrouter endpoints openai/gpt-oss-20b [groq]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "openai/gpt-oss-20b",
+        "tag": "groq"
+      }
+    },
+    "meta/muse-spark-1.3": {
+      "in": 1.25,
+      "out": 4.25,
+      "cache": 0.15,
+      "source": "openrouter endpoints meta/muse-spark-1.3 [meta]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "meta/muse-spark-1.3",
+        "tag": "meta"
+      }
+    },
+    "meta/muse-spark-1.3-contributor": {
+      "in": 0.1,
+      "out": 0.2,
+      "cache": 0.002,
+      "source": "openrouter endpoints meta/muse-spark-1.3-contributor [meta]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "meta/muse-spark-1.3-contributor",
+        "tag": "meta"
+      }
+    },
+    "mistral/codestral-latest": {
+      "in": 0.3,
+      "out": 0.9,
+      "cache": 0.03,
+      "source": "openrouter endpoints mistralai/codestral-2508 [mistral]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "mistralai/codestral-2508",
+        "tag": "mistral"
+      },
+      "note": "Mistral *-latest alias mapped to the current dated model on OpenRouter"
+    },
+    "mistral/devstral-medium-latest": {
+      "in": 0.4,
+      "out": 2,
+      "cache": 0.04,
+      "source": "openrouter endpoints mistralai/devstral-2512 [mistral/eu]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "mistralai/devstral-2512",
+        "tag": "mistral/eu"
+      },
+      "note": "Mistral *-latest alias mapped to the current dated model on OpenRouter"
+    },
+    "mistral/ministral-14b-latest": {
+      "in": 0.2,
+      "out": 0.2,
+      "cache": 0.02,
+      "source": "openrouter endpoints mistralai/ministral-14b-2512 [mistral/zdr]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "mistralai/ministral-14b-2512",
+        "tag": "mistral/zdr"
+      },
+      "note": "Mistral *-latest alias mapped to the current dated model on OpenRouter"
+    },
+    "mistral/ministral-3b-latest": {
+      "in": 0.1,
+      "out": 0.1,
+      "cache": 0.01,
+      "source": "openrouter endpoints mistralai/ministral-3b-2512 [mistral/zdr]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "mistralai/ministral-3b-2512",
+        "tag": "mistral/zdr"
+      },
+      "note": "Mistral *-latest alias mapped to the current dated model on OpenRouter"
+    },
+    "mistral/ministral-8b-latest": {
+      "in": 0.15,
+      "out": 0.15,
+      "cache": 0.015,
+      "source": "openrouter endpoints mistralai/ministral-8b-2512 [mistral/zdr]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "mistralai/ministral-8b-2512",
+        "tag": "mistral/zdr"
+      },
+      "note": "Mistral *-latest alias mapped to the current dated model on OpenRouter"
+    },
+    "mistral/mistral-large-latest": {
+      "in": 0.5,
+      "out": 1.5,
+      "cache": 0.05,
+      "source": "openrouter endpoints mistralai/mistral-large-2512 [mistral/zdr]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "mistralai/mistral-large-2512",
+        "tag": "mistral/zdr"
+      },
+      "note": "Mistral *-latest alias mapped to the current dated model on OpenRouter"
+    },
+    "mistral/mistral-medium-latest": {
+      "in": 1.5,
+      "out": 7.5,
+      "source": "openrouter endpoints mistralai/mistral-medium-3-5 [mistral/zdr]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "mistralai/mistral-medium-3-5",
+        "tag": "mistral/zdr"
+      },
+      "note": "mistral-medium-latest is assumed to resolve to Mistral Medium 3.5; confirm against GET api.mistral.ai/v1/models aliases"
+    },
+    "mistral/mistral-small-latest": {
+      "in": 0.15,
+      "out": 0.6,
+      "cache": 0.015,
+      "source": "openrouter endpoints mistralai/mistral-small-2603 [mistral/zdr]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "mistralai/mistral-small-2603",
+        "tag": "mistral/zdr"
+      },
+      "note": "Mistral *-latest alias mapped to the current dated model on OpenRouter"
+    },
+    "mistral/open-mistral-nemo": {
+      "in": 0.15,
+      "out": 0.15,
+      "cache": 0.015,
+      "source": "openrouter endpoints mistralai/mistral-nemo [mistral/eu]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "mistralai/mistral-nemo",
+        "tag": "mistral/eu"
+      },
+      "note": "Mistral *-latest alias mapped to the current dated model on OpenRouter"
+    },
+    "moonshot/kimi-k3": {
+      "in": 3,
+      "out": 15,
+      "cache": 0.3,
+      "source": "openrouter endpoints moonshotai/kimi-k3 [moonshotai]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "moonshotai/kimi-k3",
+        "tag": "moonshotai"
+      }
+    },
+    "moonshot/kimi-k3.1-pro": {
+      "in": 2,
+      "out": 10,
+      "cache": 0.2,
+      "source": "openrouter endpoints moonshotai/kimi-k3.1-pro [moonshotai/mxfp4]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "moonshotai/kimi-k3.1-pro",
+        "tag": "moonshotai/mxfp4"
+      }
+    },
+    "moonshot/kimi-k3.1-pro-highspeed": {
+      "in": 4,
+      "out": 20,
+      "cache": 0.2,
+      "source": "openrouter endpoints moonshotai/kimi-k3.1-pro [moonshotai/highspeed]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "moonshotai/kimi-k3.1-pro",
+        "tag": "moonshotai/highspeed"
+      }
+    },
+    "openai/gpt-4o": {
+      "in": 2.5,
+      "out": 10,
+      "cache": 1.25,
+      "source": "openrouter endpoints openai/gpt-4o [openai]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "openai/gpt-4o",
+        "tag": "openai"
+      }
+    },
+    "openai/gpt-4o-mini": {
+      "in": 0.15,
+      "out": 0.6,
+      "cache": 0.075,
+      "source": "openrouter endpoints openai/gpt-4o-mini [openai]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "openai/gpt-4o-mini",
+        "tag": "openai"
+      }
+    },
+    "openai/gpt-5-mini": {
+      "in": 0.25,
+      "out": 2,
+      "cache": 0.025,
+      "source": "openrouter endpoints openai/gpt-5-mini [openai]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "openai/gpt-5-mini",
+        "tag": "openai"
+      }
+    },
+    "openai/gpt-5.4": {
+      "in": 2.5,
+      "out": 15,
+      "cache": 0.25,
+      "long_threshold": 272000,
+      "long_in": 5,
+      "long_out": 22.5,
+      "long_cache": 0.5,
+      "source": "openrouter endpoints openai/gpt-5.4 [openai]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "openai/gpt-5.4",
+        "tag": "openai"
+      }
+    },
+    "openai/gpt-5.4-mini": {
+      "in": 0.75,
+      "out": 4.5,
+      "cache": 0.075,
+      "source": "openrouter endpoints openai/gpt-5.4-mini [openai]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "openai/gpt-5.4-mini",
+        "tag": "openai"
+      }
+    },
+    "openai/gpt-5.4-nano": {
+      "in": 0.2,
+      "out": 1.25,
+      "cache": 0.02,
+      "source": "openrouter endpoints openai/gpt-5.4-nano [openai]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "openai/gpt-5.4-nano",
+        "tag": "openai"
+      }
+    },
+    "openai/gpt-5.5": {
+      "in": 5,
+      "out": 30,
+      "cache": 0.5,
+      "long_threshold": 272000,
+      "long_in": 10,
+      "long_out": 45,
+      "long_cache": 1,
+      "source": "openrouter endpoints openai/gpt-5.5 [openai]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "openai/gpt-5.5",
+        "tag": "openai"
+      }
+    },
+    "openai/gpt-5.5-pro": {
+      "in": 30,
+      "out": 180,
+      "long_threshold": 272000,
+      "long_in": 60,
+      "long_out": 270,
+      "source": "openrouter endpoints openai/gpt-5.5-pro [openai]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "openai/gpt-5.5-pro",
+        "tag": "openai"
+      }
+    },
+    "openai/gpt-5.6-luna": {
+      "in": 0.2,
+      "out": 1.2,
+      "cache": 0.02,
+      "long_threshold": 272000,
+      "long_in": 0.4,
+      "long_out": 1.8,
+      "long_cache": 0.04,
+      "source": "openrouter endpoints openai/gpt-5.6-luna [openai]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "openai/gpt-5.6-luna",
+        "tag": "openai"
+      }
+    },
+    "openai/gpt-6-luna": {
+      "in": 0.1,
+      "out": 0.5,
+      "cache": 0.01,
+      "long_threshold": 272000,
+      "long_in": 0.2,
+      "long_out": 0.75,
+      "long_cache": 0.02,
+      "source": "openrouter endpoints openai/gpt-6-luna [openai]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "openai/gpt-6-luna",
+        "tag": "openai"
+      }
+    },
+    "openai/gpt-6.1-sol": {
+      "in": 2,
+      "out": 10,
+      "cache": 0.1,
+      "long_threshold": 272000,
+      "long_in": 4,
+      "long_out": 15,
+      "long_cache": 0.2,
+      "source": "openrouter endpoints openai/gpt-6.1-sol [openai]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "openai/gpt-6.1-sol",
+        "tag": "openai"
+      }
+    },
+    "openai/gpt-6.1-terra": {
+      "in": 1,
+      "out": 5,
+      "cache": 0.05,
+      "long_threshold": 272000,
+      "long_in": 2,
+      "long_out": 7.5,
+      "long_cache": 0.1,
+      "source": "openrouter endpoints openai/gpt-6.1-terra [openai]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "openai/gpt-6.1-terra",
+        "tag": "openai"
+      }
+    },
+    "openai/o3": {
+      "in": 2,
+      "out": 8,
+      "cache": 0.5,
+      "source": "openrouter endpoints openai/o3 [openai]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "openai/o3",
+        "tag": "openai"
+      }
+    },
+    "qwen/qwen3.8-27b": {
+      "in": 0.425,
+      "out": 2.55,
+      "cache": 0.085,
+      "source": "openrouter endpoints qwen/qwen3.8-27b [alibaba]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "qwen/qwen3.8-27b",
+        "tag": "alibaba"
+      }
+    },
+    "qwen/qwen3.8-flash": {
+      "in": 0.15,
+      "out": 0.47,
+      "cache": 0.016,
+      "source": "openrouter endpoints qwen/qwen3.8-flash [alibaba]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "qwen/qwen3.8-flash",
+        "tag": "alibaba"
+      }
+    },
+    "qwen/qwen3.8-max-0902": {
+      "in": 2,
+      "out": 6,
+      "cache": 0.25,
+      "source": "openrouter endpoints qwen/qwen3.8-max-0902 [alibaba]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "qwen/qwen3.8-max-0902",
+        "tag": "alibaba"
+      }
+    },
+    "qwen/qwen3.8-omni-flash": {
+      "in": 0.15,
+      "out": 0.47,
+      "cache": 0.016,
+      "source": "openrouter endpoints qwen/qwen3.8-omni-flash [alibaba]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "qwen/qwen3.8-omni-flash",
+        "tag": "alibaba"
+      }
+    },
+    "together/thinkingmachines/Inkling": {
+      "in": 1,
+      "out": 4.05,
+      "cache": 0.17,
+      "source": "openrouter endpoints thinkingmachines/inkling [together]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "thinkingmachines/inkling",
+        "tag": "together"
+      }
+    },
+    "xai/grok-4.20-0309-non-reasoning": {
+      "in": 1.25,
+      "out": 2.5,
+      "cache": 0.2,
+      "long_threshold": 200000,
+      "long_in": 2.5,
+      "long_out": 5,
+      "long_cache": 0.4,
+      "source": "openrouter endpoints x-ai/grok-4.20 [xai]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "x-ai/grok-4.20",
+        "tag": "xai"
+      }
+    },
+    "xai/grok-4.20-0309-reasoning": {
+      "in": 1.25,
+      "out": 2.5,
+      "cache": 0.2,
+      "long_threshold": 200000,
+      "long_in": 2.5,
+      "long_out": 5,
+      "long_cache": 0.4,
+      "source": "openrouter endpoints x-ai/grok-4.20 [xai]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "x-ai/grok-4.20",
+        "tag": "xai"
+      }
+    },
+    "xai/grok-4.20-non-reasoning": {
+      "in": 1.25,
+      "out": 2.5,
+      "cache": 0.2,
+      "long_threshold": 200000,
+      "long_in": 2.5,
+      "long_out": 5,
+      "long_cache": 0.4,
+      "source": "openrouter endpoints x-ai/grok-4.20 [xai]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "x-ai/grok-4.20",
+        "tag": "xai"
+      }
+    },
+    "xai/grok-4.3": {
+      "in": 1.25,
+      "out": 2.5,
+      "cache": 0.2,
+      "long_threshold": 200000,
+      "long_in": 2.5,
+      "long_out": 5,
+      "long_cache": 0.4,
+      "source": "openrouter endpoints x-ai/grok-4.3 [xai]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "x-ai/grok-4.3",
+        "tag": "xai"
+      }
+    },
+    "xai/grok-4.6": {
+      "in": 2,
+      "out": 6,
+      "cache": 0.5,
+      "long_threshold": 200000,
+      "long_in": 4,
+      "long_out": 12,
+      "long_cache": 1,
+      "source": "openrouter endpoints x-ai/grok-4.6 [xai]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "x-ai/grok-4.6",
+        "tag": "xai"
+      }
+    },
+    "xai/grok-4.7": {
+      "in": 2,
+      "out": 6,
+      "cache": 0.5,
+      "long_threshold": 200000,
+      "long_in": 4,
+      "long_out": 12,
+      "long_cache": 1,
+      "source": "openrouter endpoints x-ai/grok-4.7 [xai]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "x-ai/grok-4.7",
+        "tag": "xai"
+      }
+    },
+    "zai/glm-4.6v": {
+      "in": 0.3,
+      "out": 0.9,
+      "cache": 0.05,
+      "source": "openrouter endpoints z-ai/glm-4.6v [z-ai/fp8]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "z-ai/glm-4.6v",
+        "tag": "z-ai/fp8"
+      }
+    },
+    "zai/glm-5": {
+      "in": 1,
+      "out": 3.2,
+      "cache": 0.2,
+      "source": "openrouter endpoints z-ai/glm-5 [z-ai/fp8]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "z-ai/glm-5",
+        "tag": "z-ai/fp8"
+      }
+    },
+    "zai/glm-5.1": {
+      "in": 1.4,
+      "out": 4.4,
+      "cache": 0.26,
+      "source": "openrouter endpoints z-ai/glm-5.1 [z-ai/fp8]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "z-ai/glm-5.1",
+        "tag": "z-ai/fp8"
+      }
+    },
+    "zai/glm-5.3": {
+      "in": 1.4,
+      "out": 4.4,
+      "cache": 0.26,
+      "source": "openrouter endpoints z-ai/glm-5.3 [z-ai/fp8]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "z-ai/glm-5.3",
+        "tag": "z-ai/fp8"
+      }
+    },
+    "zai/glm-5.3-flash": {
+      "in": 0.15,
+      "out": 0.5,
+      "cache": 0.03,
+      "source": "openrouter endpoints z-ai/glm-5.3-flash [z-ai/fp8]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "z-ai/glm-5.3-flash",
+        "tag": "z-ai/fp8"
+      }
+    }
+  }
+}

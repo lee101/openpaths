@@ -1,0 +1,9 @@
+models:
+  # openrouter: in=1 out=4 cache=0.1 per 1M, +5.5% fee
+  - id: "or/paid"
+    provider: openrouter
+  # openrouter: in=1 out=2 cache=0 long@200000 in=4 out=8 cache=0 per 1M, +5.5% fee
+  - id: or/peaky
+    provider: openrouter
+  - id: "or/free"
+    provider: openrouter

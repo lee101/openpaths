@@ -1,0 +1,17 @@
+[Unit]
+Description=openpaths pricing guard (bill >= upstream cost, advertised == billed)
+Documentation=file:///nvme0n1-disk/code/openpaths/scripts/pricing-guard/pricing_guard.sh
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=administrator
+WorkingDirectory=/nvme0n1-disk/code/openpaths
+Environment=HOME=/home/administrator
+Environment=PRICING_GUARD_REPO=/nvme0n1-disk/code/openpaths
+Environment=PRICING_GUARD_AUTOFIX=1
+ExecStart=/nvme0n1-disk/code/openpaths/scripts/pricing-guard/pricing_guard.sh
+# The autofix agent can run up to ~1.5h per agent in the chain.
+TimeoutStartSec=6h
+Nice=10
