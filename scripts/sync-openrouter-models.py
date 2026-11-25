@@ -424,7 +424,10 @@ def main():
     caps_text = CAPS.read_text()
     fm = re.search(r"FREE_MODEL_IDS = \[([^\]]*)\]", caps_text)
     old_gen = set(re.findall(r'  - id: "([^"]+)"', y_old or ""))
-    keep = [x for x in re.findall(r"'([^']+)'", fm[1]) if x not in old_gen]
+    # Keep hand-written free ids; drop ids no longer configured anywhere (a
+    # withdrawn generated model that predates this config's generated block).
+    manual_ids = {m["id"] for m in manual}
+    keep = [x for x in re.findall(r"'([^']+)'", fm[1]) if x not in old_gen and x in manual_ids]
     gen_free = [FREE_ID] + [x for x in ladder if x not in keep and not x in {m["id"] for m in manual}]
     ids = keep + [x for x in gen_free if x not in keep]
     new_caps = caps_text[:fm.start(1)] + ", ".join(ts_str(x) for x in ids) + caps_text[fm.end(1):]

@@ -18,8 +18,9 @@ func TestGLM53FlashRoute(t *testing.T) {
 		if m.Provider != "zai" || m.ProviderModelID != "glm-5.3-flash" {
 			t.Fatalf("route = %s/%s, want zai/glm-5.3-flash", m.Provider, m.ProviderModelID)
 		}
-		if m.InputPricePer1M != .075 || m.InputCacheHitPricePer1M != .015 || m.OutputPricePer1M != .25 {
-			t.Errorf("promotion pricing = %v/%v/%v, want .075/.015/.25", m.InputPricePer1M, m.InputCacheHitPricePer1M, m.OutputPricePer1M)
+		// Z.AI list price; the 50% launch promotion ended 2026-09-09.
+		if m.InputPricePer1M != .15 || m.InputCacheHitPricePer1M != .03 || m.OutputPricePer1M != .50 {
+			t.Errorf("pricing = %v/%v/%v, want .15/.03/.50", m.InputPricePer1M, m.InputCacheHitPricePer1M, m.OutputPricePer1M)
 		}
 		if m.ContextWindow != 1048576 || m.MaxOutputTokens != 131072 {
 			t.Errorf("limits = %d/%d, want 1048576/131072", m.ContextWindow, m.MaxOutputTokens)
@@ -27,12 +28,8 @@ func TestGLM53FlashRoute(t *testing.T) {
 		if !m.SupportsStreaming || !m.SupportsTools || !m.SupportsVision {
 			t.Errorf("capabilities = streaming:%t tools:%t vision:%t", m.SupportsStreaming, m.SupportsTools, m.SupportsVision)
 		}
-		pricing := m.ScheduledTokenPricing
-		if pricing == nil || pricing.EffectiveAt != "2026-09-09T16:00:00Z" ||
-			pricing.OffPeakInputPricePer1M != .15 ||
-			pricing.OffPeakInputCacheHitPer1M != .03 ||
-			pricing.OffPeakOutputPricePer1M != .50 {
-			t.Errorf("post-promotion pricing = %+v", pricing)
+		if m.ScheduledTokenPricing != nil {
+			t.Errorf("expired promotion schedule still configured: %+v", m.ScheduledTokenPricing)
 		}
 	}
 	if !found {

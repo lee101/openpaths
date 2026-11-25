@@ -42,7 +42,8 @@ func TestAuditedTokenPrices(t *testing.T) {
 		"fireworks/glm-5.2":         {1.40, 0.14, 4.40},
 		"fireworks/kimi-k2.6":       {0.95, 0.16, 4.00},
 		// api.x.ai/v1/language-models
-		"grok-4.5": {2.00, 0.30, 6.00},
+		// grok-4.5 routes to grok-4.7, whose cache hit is $0.50.
+		"grok-4.5": {2.00, 0.50, 6.00},
 		"grok-4.3": {1.25, 0.20, 2.50},
 		"grok-4.7": {2.00, 0.50, 6.00},
 		// ai.google.dev/gemini-api/docs/pricing
@@ -60,7 +61,7 @@ func TestAuditedTokenPrices(t *testing.T) {
 		"claude-opus-5-5": {4.00, 0.20, 20.00},
 		"or/claude-opus":  {4.22, 0.211, 21.10},
 		// z.ai launch pricing / openrouter.ai/api/v1/models
-		"glm-5.3-flash":    {0.075, 0.015, 0.25},
+		"glm-5.3-flash":    {0.15, 0.03, 0.50}, // launch promo ended 2026-09-09
 		"glm-5.3":          {0.77, 0.143, 2.42},
 		"zai/glm-5.3":      {1.40, 0.26, 4.40},
 		"or/glm-5.3":       {1.40, 0.26, 4.40},

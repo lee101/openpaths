@@ -6,6 +6,9 @@ import (
 	"regexp"
 	"strconv"
 	"testing"
+	"time"
+
+	"github.com/openpaths/openpaths/internal/pricingguard"
 )
 
 var (
@@ -28,7 +31,7 @@ func TestSitePricesMatchBilledPrices(t *testing.T) {
 	// second, request, etc., and the site puts that per-asset number in
 	// priceInput. Different units, so compare only models billed per token.
 	billed := map[string]struct{ in, out float64 }{}
-	for _, m := range cfg.Models {
+	for i, m := range cfg.Models {
 		assetPriced := m.PricePerRequest + m.PricePer1MCharacters + m.PricePerImage + m.PricePerMegapixel +
 			m.PriceFirstMegapixel + m.PriceExtraMegapixel + m.PricePerInputImage +
 			m.PricePerVideo + m.PricePerSecond + m.PricePerSecondWithVideoInput + m.PricePerInputVideoSecond +
@@ -39,7 +42,10 @@ func TestSitePricesMatchBilledPrices(t *testing.T) {
 		if m.InputPricePer1M == 0 && m.OutputPricePer1M == 0 {
 			continue
 		}
-		billed[m.ID] = struct{ in, out float64 }{m.InputPricePer1M, m.OutputPricePer1M}
+		// Once a scheduled tariff is in force the card must show it (off-peak
+		// "from" price), not the superseded base rate.
+		in, _, out := pricingguard.HeadlineRates(&cfg.Models[i], time.Now())
+		billed[m.ID] = struct{ in, out float64 }{in, out}
 	}
 
 	raw, err := os.ReadFile(filepath.Join("..", "..", "src", "data", "models.ts"))
