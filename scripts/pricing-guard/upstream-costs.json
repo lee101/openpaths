@@ -30,6 +30,17 @@
         "tag": "anthropic"
       }
     },
+    "anthropic/claude-fable-5-2": {
+      "in": 8,
+      "out": 40,
+      "cache": 0.2,
+      "source": "openrouter endpoints anthropic/claude-fable-5.2 [anthropic]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "anthropic/claude-fable-5.2",
+        "tag": "anthropic"
+      }
+    },
     "anthropic/claude-haiku-4-5-20251001": {
       "in": 1,
       "out": 5,
@@ -233,6 +244,17 @@
       "verified": "2026-11-25",
       "ref": {
         "openrouter": "google/gemini-4-argon",
+        "tag": "google-ai-studio"
+      }
+    },
+    "google/gemini-4-carbon": {
+      "in": 2,
+      "out": 10,
+      "cache": 0.1,
+      "source": "openrouter endpoints google/gemini-4-carbon [google-ai-studio]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "google/gemini-4-carbon",
         "tag": "google-ai-studio"
       }
     },
@@ -641,6 +663,17 @@
       "verified": "2026-11-25",
       "ref": {
         "openrouter": "thinkingmachines/inkling",
+        "tag": "together"
+      }
+    },
+    "together/thinkingmachines/Inkling-2-Small": {
+      "in": 0.3,
+      "out": 1,
+      "cache": 0.03,
+      "source": "openrouter endpoints thinkingmachines/inkling-2-small [together]",
+      "verified": "2026-11-25",
+      "ref": {
+        "openrouter": "thinkingmachines/inkling-2-small",
         "tag": "together"
       }
     },

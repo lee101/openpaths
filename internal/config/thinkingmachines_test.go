@@ -2,8 +2,8 @@ package config
 
 import "testing"
 
-// TINKER_API_KEY is still unset, so both Inkling ids are served from the open
-// weights on Together (probed working 2026-07-31) with OpenRouter as the
+// TINKER_API_KEY is still unset, so the Inkling ids are served from the open
+// weights on Together (probed working 2026-11-21) with OpenRouter as the
 // fallback hop. Repoint these if a Tinker key is ever configured.
 func TestThinkingMachinesInklingConfig(t *testing.T) {
 	cfg, err := Load("../../config.yaml")
@@ -36,10 +36,12 @@ func TestThinkingMachinesInklingConfig(t *testing.T) {
 		in        float64
 		out       float64
 		cacheHit  float64
+		context   int
 		fallbacks []string
 	}{
-		{"thinkingmachines/inkling", "thinkingmachines/Inkling", 1.00, 4.05, 0.17, []string{"or/inkling"}},
-		{"inkling-small", "thinkingmachines/Inkling-Small", 0.50, 1.20, 0.10, []string{"thinkingmachines/inkling"}},
+		{"thinkingmachines/inkling", "thinkingmachines/Inkling", 1.00, 4.05, 0.17, 524288, []string{"or/inkling"}},
+		{"inkling-small", "thinkingmachines/Inkling-Small", 0.50, 1.20, 0.10, 524288, []string{"thinkingmachines/inkling"}},
+		{"inkling-2-small", "thinkingmachines/Inkling-2-Small", 0.30, 1.00, 0.03, 1048576, []string{"or/inkling-2-small"}},
 	}
 
 	for _, w := range want {
@@ -59,8 +61,8 @@ func TestThinkingMachinesInklingConfig(t *testing.T) {
 			t.Errorf("%s pricing = %v/%v (cache %v), want %v/%v (cache %v)",
 				w.id, m.InputPricePer1M, m.OutputPricePer1M, m.InputCacheHitPricePer1M, w.in, w.out, w.cacheHit)
 		}
-		if m.ContextWindow != 524288 {
-			t.Errorf("%s context window = %d, want 524288 (Together serves 512K of the 1M window)", w.id, m.ContextWindow)
+		if m.ContextWindow != w.context {
+			t.Errorf("%s context window = %d, want %d", w.id, m.ContextWindow, w.context)
 		}
 		if !m.SupportsStreaming || !m.SupportsTools || !m.SupportsVision {
 			t.Errorf("%s capability flags are incomplete", w.id)
@@ -82,5 +84,18 @@ func TestThinkingMachinesInklingConfig(t *testing.T) {
 	}
 	if m := &cfg.Models[i]; m.Provider != "openrouter" || m.ProviderModelID != "thinkingmachines/inkling" {
 		t.Errorf("or/inkling route = %s/%s", m.Provider, m.ProviderModelID)
+	}
+	for id, upstream := range map[string]string{
+		"or/inkling-2-mini":  "thinkingmachines/inkling-2-mini",
+		"or/inkling-2-small": "thinkingmachines/inkling-2-small",
+	} {
+		i, ok := byID[id]
+		if !ok {
+			t.Errorf("%s missing from config", id)
+			continue
+		}
+		if m := &cfg.Models[i]; m.Provider != "openrouter" || m.ProviderModelID != upstream {
+			t.Errorf("%s route = %s/%s, want openrouter/%s", id, m.Provider, m.ProviderModelID, upstream)
+		}
 	}
 }

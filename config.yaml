@@ -1681,35 +1681,6 @@ models:
     supports_tools: false
     supports_vision: true
 
-  # ManifoldGen image upscaler: same prices as manifoldgen.com. Faithful 2x/4x
-  # upscale of a source image (image_url); creative redraws micro-detail.
-  - id: "image-upscale"
-    provider: manifoldgen
-    provider_model_id: "image-upscale"
-    price_per_image: 0.02
-    aliases: ["manifoldgen-upscale", "upscale-2x", "image-upscale-2x"]
-    supports_streaming: false
-    supports_tools: false
-    supports_vision: true
-
-  - id: "image-upscale-4x"
-    provider: manifoldgen
-    provider_model_id: "image-upscale-4x"
-    price_per_image: 0.03
-    aliases: ["manifoldgen-upscale-4x", "upscale-4x"]
-    supports_streaming: false
-    supports_tools: false
-    supports_vision: true
-
-  - id: "image-upscale-creative"
-    provider: manifoldgen
-    provider_model_id: "image-upscale-creative"
-    price_per_image: 0.15
-    aliases: ["manifoldgen-upscale-creative", "creative-upscale"]
-    supports_streaming: false
-    supports_tools: false
-    supports_vision: true
-
   # Video dramatizer agent: one source clip plus a creative brief becomes a
   # finished multi-shot edit. Billed at $0.10/s of planned edit time; a
   # nominal six-shot, five-second-per-shot run lands near $3 upstream.
@@ -2781,6 +2752,21 @@ models:
     supports_vision: true
 
   # --- Google Gemini ---
+  # Carbon: Google standard list price (we do not pass through the intro discount that ends 2026-11-30).
+  - id: "gemini-4-carbon"
+    provider: google
+    provider_model_id: "gemini-4-carbon"
+    input_price_per_1m: 4.00
+    input_cache_hit_price_per_1m: 0.40
+    output_price_per_1m: 20.00
+    aliases: ["gemini-carbon", "gemini-4-carbon-high", "google/gemini-4-carbon"]
+    fallback_models: ["or/gemini-4-carbon"]
+    context_window: 1048576
+    max_output_tokens: 65536
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
   - id: "gemini-4-argon"
     provider: google
     provider_model_id: "gemini-4-argon"
@@ -3857,6 +3843,20 @@ models:
 
   # --- OpenRouter (fallback access to any model) ---
   # openrouter: in=2 out=10 cache=0.1 per 1M, +5.5% fee
+  - id: "or/gemini-4-carbon"
+    provider: openrouter
+    provider_model_id: "google/gemini-4-carbon"
+    input_price_per_1m: 4.22
+    input_cache_hit_price_per_1m: 0.422
+    output_price_per_1m: 21.10
+    aliases: ["openrouter/gemini-4-carbon", "openrouter/google/gemini-4-carbon"]
+    context_window: 1048576
+    max_output_tokens: 65536
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  # openrouter: in=2 out=10 cache=0.1 per 1M, +5.5% fee
   - id: "or/gemini-4-argon"
     provider: openrouter
     provider_model_id: "google/gemini-4-argon"
@@ -4772,6 +4772,20 @@ models:
     supports_vision: true
     fallback_models: ["thinkingmachines/inkling"]
 
+  - id: "inkling-2-small"
+    provider: together
+    provider_model_id: "thinkingmachines/Inkling-2-Small"
+    input_price_per_1m: 0.30
+    input_cache_hit_price_per_1m: 0.03
+    output_price_per_1m: 1.00
+    aliases: ["thinkingmachines/inkling-2-small", "tml/inkling-2-small"]
+    context_window: 1048576
+    max_output_tokens: 32768
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+    fallback_models: ["or/inkling-2-small"]
+
   # openrouter: in=1 out=4.05 cache=0.17 per 1M, +5.5% fee
   - id: "or/inkling"
     provider: openrouter
@@ -4780,6 +4794,34 @@ models:
     output_price_per_1m: 4.2728
     context_window: 524288
     max_output_tokens: 32768
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  # openrouter: in=0.075 out=0.3 cache=0.015 per 1M, +5.5% fee
+  - id: "or/inkling-2-mini"
+    provider: openrouter
+    provider_model_id: "thinkingmachines/inkling-2-mini"
+    input_price_per_1m: 0.1055
+    input_cache_hit_price_per_1m: 0.0211
+    output_price_per_1m: 0.422
+    aliases: ["thinkingmachines/inkling-2-mini", "openrouter/thinkingmachines/inkling-2-mini", "inkling-2-mini"]
+    context_window: 1048576
+    max_output_tokens: 65536
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+  # openrouter: in=0.3 out=1 cache=0.03 per 1M, +5.5% fee
+  - id: "or/inkling-2-small"
+    provider: openrouter
+    provider_model_id: "thinkingmachines/inkling-2-small"
+    input_price_per_1m: 0.3165
+    input_cache_hit_price_per_1m: 0.0317
+    output_price_per_1m: 1.055
+    aliases: ["openrouter/thinkingmachines/inkling-2-small"]
+    context_window: 1048576
+    max_output_tokens: 943718
     supports_streaming: true
     supports_tools: true
     supports_vision: true
@@ -6346,3 +6388,51 @@ models:
     fallback_models:
       - "devstral-medium-latest"
       - "codestral-latest"
+
+  - id: "image-upscale"
+    provider: manifoldgen
+    provider_model_id: "image-upscale"
+    price_per_image: 0.02
+    aliases: ["manifoldgen-upscale", "upscale-2x", "image-upscale-2x"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "image-upscale-4x"
+    provider: manifoldgen
+    provider_model_id: "image-upscale-4x"
+    price_per_image: 0.03
+    aliases: ["manifoldgen-upscale-4x", "upscale-4x"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  - id: "image-upscale-creative"
+    provider: manifoldgen
+    provider_model_id: "image-upscale-creative"
+    price_per_image: 0.15
+    aliases: ["manifoldgen-upscale-creative", "creative-upscale"]
+    supports_streaming: false
+    supports_tools: false
+    supports_vision: true
+
+  # Video dramatizer agent: one source clip plus a creative brief becomes a
+  # finished multi-shot edit. Billed at $0.10/s of planned edit time; a
+  # nominal six-shot, five-second-per-shot run lands near $3 upstream.
+  # Duration is required from the caller as the planned total edit seconds
+  # (8..100).
+
+  - id: "claude-fable-5-2"
+    provider: anthropic
+    provider_model_id: "claude-fable-5-2"
+    input_cache_hit_price_per_1m: 0.20
+    input_price_per_1m: 8.00
+    output_price_per_1m: 40.00
+    aliases: ["fable-5.2", "fable-5-2", "claude-fable-5.2"]
+    context_window: 1000000
+    max_output_tokens: 128000
+    supports_streaming: true
+    supports_tools: true
+    supports_vision: true
+
+

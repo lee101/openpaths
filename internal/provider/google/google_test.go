@@ -229,3 +229,12 @@ func TestRedactKey(t *testing.T) {
 		t.Fatalf("got %q", got)
 	}
 }
+
+func TestReasoningToThinkingLevel_Gemini4(t *testing.T) {
+	if got := reasoningToThinkingLevel("gemini-4-carbon", "high"); got != "HIGH" {
+		t.Fatalf("got %q", got)
+	}
+	if got := reasoningToThinkingLevel("gemini-3.8-flash", "high"); got != "" {
+		t.Fatalf("got %q", got)
+	}
+}

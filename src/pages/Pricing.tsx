@@ -25,6 +25,7 @@ const LATEST_MODEL_IDS = [
   'gpt-6.1-sol',
   'gpt-6.1-terra',
   'gpt-6-luna',
+  'gemini-4-carbon',
   'gemini-4-argon',
   'gemini-3.8-flash',
   'grok-4.7',

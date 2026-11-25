@@ -1245,6 +1245,23 @@
   ]
  },
  {
+  "id": "gemini-4-carbon",
+  "provider": "google",
+  "upstream": "gemini-4-carbon",
+  "input": 4.0,
+  "output": 20.0,
+  "context": 1048576,
+  "maxOutput": 65536,
+  "vision": true,
+  "tools": true,
+  "aliases": [
+   "gemini-carbon",
+   "gemini-4-carbon-high",
+   "google/gemini-4-carbon"
+  ],
+  "cacheRead": 0.4
+ },
+ {
   "id": "gemini-4-argon",
   "provider": "google",
   "upstream": "gemini-4-argon",
@@ -2180,6 +2197,22 @@
   "aliases": [
    "llama-8b"
   ]
+ },
+ {
+  "id": "or/gemini-4-carbon",
+  "provider": "openrouter",
+  "upstream": "google/gemini-4-carbon",
+  "input": 4.22,
+  "output": 21.1,
+  "context": 1048576,
+  "maxOutput": 65536,
+  "vision": true,
+  "tools": true,
+  "aliases": [
+   "openrouter/gemini-4-carbon",
+   "openrouter/google/gemini-4-carbon"
+  ],
+  "cacheRead": 0.422
  },
  {
   "id": "or/gemini-4-argon",
@@ -3120,6 +3153,22 @@
   "cacheRead": 0.1
  },
  {
+  "id": "inkling-2-small",
+  "provider": "together",
+  "upstream": "thinkingmachines/Inkling-2-Small",
+  "input": 0.3,
+  "output": 1.0,
+  "context": 1048576,
+  "maxOutput": 32768,
+  "vision": true,
+  "tools": true,
+  "aliases": [
+   "thinkingmachines/inkling-2-small",
+   "tml/inkling-2-small"
+  ],
+  "cacheRead": 0.03
+ },
+ {
   "id": "or/inkling",
   "provider": "openrouter",
   "upstream": "thinkingmachines/inkling",
@@ -3130,6 +3179,38 @@
   "vision": true,
   "tools": true,
   "aliases": []
+ },
+ {
+  "id": "or/inkling-2-mini",
+  "provider": "openrouter",
+  "upstream": "thinkingmachines/inkling-2-mini",
+  "input": 0.1055,
+  "output": 0.422,
+  "context": 1048576,
+  "maxOutput": 65536,
+  "vision": true,
+  "tools": true,
+  "aliases": [
+   "thinkingmachines/inkling-2-mini",
+   "openrouter/thinkingmachines/inkling-2-mini",
+   "inkling-2-mini"
+  ],
+  "cacheRead": 0.0211
+ },
+ {
+  "id": "or/inkling-2-small",
+  "provider": "openrouter",
+  "upstream": "thinkingmachines/inkling-2-small",
+  "input": 0.3165,
+  "output": 1.055,
+  "context": 1048576,
+  "maxOutput": 943718,
+  "vision": true,
+  "tools": true,
+  "aliases": [
+   "openrouter/thinkingmachines/inkling-2-small"
+  ],
+  "cacheRead": 0.0317
  },
  {
   "id": "minimax-m2.5",
@@ -4313,5 +4394,22 @@
    "devstral-2",
    "devstral-2-123b"
   ]
+ },
+ {
+  "id": "claude-fable-5-2",
+  "provider": "anthropic",
+  "upstream": "claude-fable-5-2",
+  "input": 8.0,
+  "output": 40.0,
+  "context": 1000000,
+  "maxOutput": 128000,
+  "vision": true,
+  "tools": true,
+  "aliases": [
+   "fable-5.2",
+   "fable-5-2",
+   "claude-fable-5.2"
+  ],
+  "cacheRead": 0.2
  }
 ]

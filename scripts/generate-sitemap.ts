@@ -6,6 +6,7 @@ import { artificialAnalysisModels } from '../src/lib/artificialAnalysis';
 import { seedApps } from '../src/data/seedApps';
 import { TOOLS } from '../src/data/tools';
 import { allPricingSeo } from '../src/lib/llmPricingSeo';
+import { useCases } from '../src/data/useCases';
 import { apiSitemapPaths } from '../src/lib/apiPagesSeo';
 
 const BASE_URL = 'https://openpaths.io';
@@ -47,8 +48,10 @@ const entries: SitemapEntry[] = [
   ...allPricingSeo().map(page => ({ path: page.path, changefreq: 'weekly' as const, priority: page.path === '/llm-pricing' ? '0.9' : page.path.includes('/compare/') ? '0.7' : '0.6' })),
   { path: '/status', changefreq: 'daily', priority: '0.5' },
   { path: '/teams', changefreq: 'weekly', priority: '0.8' },
+  { path: '/openapi.json', changefreq: 'weekly', priority: '0.6' },
+  { path: '/llms.txt', changefreq: 'weekly', priority: '0.6' },
   { path: '/use-cases', changefreq: 'weekly', priority: '0.8' },
-  ...['coding-agents', 'customer-support-automation', 'content-pipelines', 'data-extraction', 'education-tutoring', 'creative-media'].map(slug => ({
+  ...useCases.map(u => u.slug).map(slug => ({
     path: `/use-cases/${slug}`,
     changefreq: 'weekly' as const,
     priority: '0.7',
